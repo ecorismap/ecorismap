@@ -135,8 +135,13 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 7
+        versionName '0.0.1'
+    }
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.browser:browser:1.3.0'
+        }
     }
     splits {
         abi {
@@ -154,6 +159,7 @@ android {
             keyPassword 'android'
         }
     }
+    ndkVersion "24.0.8215888"
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -161,9 +167,11 @@ android {
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
+
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+
         }
     }
 
@@ -190,6 +198,7 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules
+
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
@@ -245,3 +254,4 @@ task copyDownloadableDepsToLibs(type: Copy) {
 
 apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
 applyNativeModulesAppBuildGradle(project)
+
