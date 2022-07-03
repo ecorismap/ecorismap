@@ -53,3 +53,21 @@ buck-out/
 .expo/
 web-build/
 dist/
+
+# Cypress
+serviceAccount.json
+cypress.env.json
+
+#firebase
+.env
+.runtimeconfig.json
+firebase-debug.log
+firestore-debug.log
+emulatorExport/
+
+#secret key include
+google-service.json
+AndroidManifest.xml
+
+# mapbox,firebase,recapture key
+.config

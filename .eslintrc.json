@@ -1,0 +1,33 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:react/recommended",
+    "@react-native-community",
+    "plugin:react-native/all",
+    // "plugin:jest/recommended",
+    "plugin:cypress/recommended",
+    "prettier"
+  ],
+  "globals": {
+    "JSX": true
+  },
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["react", "react-hooks", "prettier", "react-native", "jest"],
+  "rules": {
+    "no-console": "warn",
+    "no-alert": "off",
+    "react-native/no-inline-styles": 0,
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off"
+    //"complexity": ["error", 10]
+  }
+}

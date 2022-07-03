@@ -1,0 +1,48 @@
+diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
+index 444eb33..2f9bcb0 100644
+--- a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
++++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
+@@ -17,7 +17,13 @@ import android.os.IBinder;
+ import androidx.annotation.Nullable;
+ import android.util.Log;
+ 
++import android.content.pm.ApplicationInfo;
++import android.content.pm.PackageManager;
++import androidx.core.app.NotificationCompat;
++
+ public class LocationTaskService extends Service {
++  public static final String META_DATA_DEFAULT_ICON_KEY = "expo.modules.notifications.default_notification_icon";
++
+   private static final String TAG = "LocationTaskService";
+   private static int sServiceId = 481756;
+ 
+@@ -106,10 +112,28 @@ public class LocationTaskService extends Service {
+     }
+ 
+     return builder.setCategory(Notification.CATEGORY_SERVICE)
+-        .setSmallIcon(getApplicationInfo().icon)
++        .setSmallIcon(getIcon())
+         .build();
+   }
+ 
++     /**
++   * The method first tries to get the icon from the manifest's meta-data {@link #META_DATA_DEFAULT_ICON_KEY}.
++   * If a custom setting is not found, the method falls back to using app icon.
++   *
++   * @return Resource ID for icon that should be used as a notification icon.
++   */
++  protected int getIcon() {
++    try {
++      ApplicationInfo ai = mParentContext.getPackageManager().getApplicationInfo(mParentContext.getPackageName(), PackageManager.GET_META_DATA);
++      if (ai.metaData.containsKey(META_DATA_DEFAULT_ICON_KEY)) {
++        return ai.metaData.getInt(META_DATA_DEFAULT_ICON_KEY);
++      }
++    } catch (PackageManager.NameNotFoundException | ClassCastException e) {
++      Log.e("expo-notifications", "Could not have fetched default notification icon.");
++    }
++    return mParentContext.getApplicationInfo().icon;
++  }
++
+   @TargetApi(26)
+   private void prepareChannel(String id) {
+     NotificationManager notificationManager = (NotificationManager) getSystemService(Activity.NOTIFICATION_SERVICE);

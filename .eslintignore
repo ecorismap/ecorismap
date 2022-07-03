@@ -1,0 +1,4 @@
+web/*
+node_modules/*
+react-native-maps_patch/*
+cypress/*

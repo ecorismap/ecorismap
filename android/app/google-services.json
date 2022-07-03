@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1078318131283",
+    "project_id": "ecorismap-25f5e",
+    "storage_bucket": "ecorismap-25f5e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1078318131283:android:d77ee7d4fc83057349fea6",
+        "android_client_info": {
+          "package_name": "jp.co.ecoris.ecorismap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1078318131283-a5esskh3e6jaifett0jmop2d0ib7ur24.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "jp.co.ecoris.ecorismap",
+            "certificate_hash": "8316d512e0195d5eac62739a84a02b6a3c8a28d7"
+          }
+        },
+        {
+          "client_id": "1078318131283-fvvlo7i6b3qsqsduicn0263mj36jagom.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgbdiL2R1nDtohX-CkGdh6Fco_-UaAQB8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1078318131283-fvvlo7i6b3qsqsduicn0263mj36jagom.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

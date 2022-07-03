@@ -1,4 +1,4 @@
-package com.ecorismap;
+package jp.co.ecoris.ecorismap;
 
 import android.app.Application;
 import android.content.Context;
@@ -19,6 +19,9 @@ import com.facebook.react.bridge.JSIModulePackage;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+
+import android.database.CursorWindow;
+import java.lang.reflect.Field;
 
 public class MainApplication extends Application implements ReactApplication {
   private final ReactNativeHost mReactNativeHost = new ReactNativeHostWrapper(
@@ -62,6 +65,15 @@ public class MainApplication extends Application implements ReactApplication {
   public void onConfigurationChanged(@NonNull Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
     ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig);
+    try {
+      Field field = CursorWindow.class.getDeclaredField("sCursorWindowSize");
+      field.setAccessible(true);
+      field.set(null, 100 * 1024 * 1024); //100MB
+      } catch (Exception e) {
+        if (BuildConfig.DEBUG) {
+          e.printStackTrace();
+          }
+    }
   }
 
   /**

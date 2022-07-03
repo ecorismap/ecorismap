@@ -1,0 +1,190 @@
+diff --git a/node_modules/react-native-scale-bar/src/HorizontalLine.js b/node_modules/react-native-scale-bar/src/HorizontalLine.js
+index 827bbee..2f555d9 100644
+--- a/node_modules/react-native-scale-bar/src/HorizontalLine.js
++++ b/node_modules/react-native-scale-bar/src/HorizontalLine.js
+@@ -14,16 +14,29 @@ type Props = {
+ export default class HorizontalLine extends Component<Props> {
+   render() {
+     return (
++      <>
++      
+       <View
+         style={{
+           bottom: this.props.padding_bottom,
+           left: this.props.padding_left,
+           width: this.props.length,
+           position: "absolute",
+-          height: LINE_SIZE,
++          height: LINE_SIZE+1,
+           backgroundColor: LINE_COLOR
+         }}
+       />
++      <View
++      style={{
++        bottom: this.props.padding_bottom+2,
++        left: this.props.padding_left,
++        width: this.props.length-1,
++        position: "absolute",
++        height: LINE_SIZE,
++        backgroundColor: "#FFFFFF55"
++      }}
++    />
++    </>
+     );
+   }
+ }
+diff --git a/node_modules/react-native-scale-bar/src/ScaleBarModel.js b/node_modules/react-native-scale-bar/src/ScaleBarModel.js
+index 93323f9..95f9df2 100644
+--- a/node_modules/react-native-scale-bar/src/ScaleBarModel.js
++++ b/node_modules/react-native-scale-bar/src/ScaleBarModel.js
+@@ -1,6 +1,7 @@
+ // @flow
+ 
+-import R from "ramda";
++import * as R from 'ramda';
++const { curry } = R;
+ 
+ import {
+   TILE_SIZE_METERS_AT_0_ZOOM,
+diff --git a/node_modules/react-native-scale-bar/src/ScaleBarView.js b/node_modules/react-native-scale-bar/src/ScaleBarView.js
+index 670a6e9..b043c89 100644
+--- a/node_modules/react-native-scale-bar/src/ScaleBarView.js
++++ b/node_modules/react-native-scale-bar/src/ScaleBarView.js
+@@ -23,16 +23,16 @@ export default class ScaleBarView extends Component<Props> {
+     return (
+       <View>
+         <ScaleText
+-          padding_bottom={this.props.padding_bottom + 1}
++          padding_bottom={this.props.padding_bottom + 5}
+           padding_left={this.props.padding_left}
+           text={this.props.scaleTextMeters}
+         />
+ 
+-        <ScaleText
+-          padding_bottom={this.props.padding_bottom - 14}
++        {/* <ScaleText
++          padding_bottom={this.props.padding_bottom - 12}
+           padding_left={this.props.padding_left}
+           text={this.props.scaleTextFeet}
+-        />
++        /> */}
+ 
+         <HorizontalLine
+           padding_bottom={this.props.padding_bottom}
+@@ -44,14 +44,16 @@ export default class ScaleBarView extends Component<Props> {
+           padding_bottom={this.props.padding_bottom}
+           padding_left={this.props.padding_left}
+           length={LIMIT_SIZE}
++          position={"left"}
+         />
+         <VerticalLine
+           padding_bottom={this.props.padding_bottom}
+           padding_left={this.props.padding_left + this.props.lengthMeter}
+           length={LIMIT_SIZE}
++          position={"right"}
+         />
+ 
+-        <VerticalLine
++        {/* <VerticalLine
+           padding_bottom={this.props.padding_bottom - LIMIT_SIZE}
+           padding_left={this.props.padding_left}
+           length={LIMIT_SIZE}
+@@ -60,7 +62,7 @@ export default class ScaleBarView extends Component<Props> {
+           padding_bottom={this.props.padding_bottom - LIMIT_SIZE}
+           padding_left={this.props.padding_left + this.props.lengthFeet}
+           length={LIMIT_SIZE}
+-        />
++        /> */}
+       </View>
+     );
+   }
+diff --git a/node_modules/react-native-scale-bar/src/ScaleText.js b/node_modules/react-native-scale-bar/src/ScaleText.js
+index a04dbfd..8493ba7 100644
+--- a/node_modules/react-native-scale-bar/src/ScaleText.js
++++ b/node_modules/react-native-scale-bar/src/ScaleText.js
+@@ -21,8 +21,14 @@ export default class ScaleText extends Component<Props> {
+       >
+         <Text
+           style={{
+-            fontSize: 10,
+-            color: "black"
++            fontSize: 12,
++            color: "black",
++            textShadowOffset: {
++              width: 1,
++              height: 1
++            },
++            textShadowColor: "#FFFFFF",
++            textShadowRadius: 1
+           }}
+         >
+           {this.props.text}
+diff --git a/node_modules/react-native-scale-bar/src/VerticalLine.js b/node_modules/react-native-scale-bar/src/VerticalLine.js
+index a9c56ca..8f2d3b0 100644
+--- a/node_modules/react-native-scale-bar/src/VerticalLine.js
++++ b/node_modules/react-native-scale-bar/src/VerticalLine.js
+@@ -8,22 +8,49 @@ import { LINE_SIZE, LINE_COLOR } from "./constants";
+ type Props = {
+   padding_left: number,
+   padding_bottom: number,
+-  length: number
++  length: number,
++  position:string
+ };
+ 
+ export default class VerticalLine extends Component<Props> {
+   render() {
+     return (
++      <>
++      {this.props.position==="right"&&
++      <View
++      style={{
++        bottom: this.props.padding_bottom+2,
++        left: this.props.padding_left-2,
++        height: this.props.length-3,
++        position: "absolute",
++        width: LINE_SIZE+0.5,
++        backgroundColor: "#FFFFFF55"
++      }}
++    />
++  }
+       <View
+         style={{
+           bottom: this.props.padding_bottom,
+           left: this.props.padding_left,
+           height: this.props.length,
+           position: "absolute",
+-          width: LINE_SIZE,
++          width: LINE_SIZE+1,
+           backgroundColor: LINE_COLOR
+         }}
+       />
++      {this.props.position==="left"&&
++      <View
++      style={{
++        bottom: this.props.padding_bottom+2,
++        left: this.props.padding_left+2,
++        height: this.props.length-3,
++        position: "absolute",
++        width: LINE_SIZE+0.5,
++        backgroundColor: "#FFFFFF55"
++      }}
++    />
++  }
++    </>
+     );
+   }
+ }
+diff --git a/node_modules/react-native-scale-bar/src/constants.js b/node_modules/react-native-scale-bar/src/constants.js
+index 675c7df..588f9d1 100644
+--- a/node_modules/react-native-scale-bar/src/constants.js
++++ b/node_modules/react-native-scale-bar/src/constants.js
+@@ -1,6 +1,6 @@
+ export const LINE_SIZE = 1;
+-export const LINE_COLOR = "rgba(10, 10, 10, 1)";
+-export const LIMIT_SIZE = 5;
++export const LINE_COLOR = "rgba(10, 10, 10, 0.6)";
++export const LIMIT_SIZE = 7;
+ export const SCALE_SCREEN_RATIO = 0.45;
+ 
+ export const FEET_PER_METER = 3.28084;

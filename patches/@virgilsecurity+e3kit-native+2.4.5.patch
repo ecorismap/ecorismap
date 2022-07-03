@@ -1,0 +1,43 @@
+diff --git a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
+index 56662d2..a7aeb07 100644
+--- a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
++++ b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
+@@ -38,7 +38,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
+ 
+ var reactNativeVirgilCrypto = require('react-native-virgil-crypto');
+ var reactNativeKeychain = require('react-native-keychain');
+-var reactNative = _interopDefault(require('react-native'));
++var reactNative = _interopDefault(require('@react-native-async-storage/async-storage'));
+ 
+ var global$1 = (typeof global !== "undefined" ? global :
+             typeof self !== "undefined" ? self :
+diff --git a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
+index 4687abc..35a74e9 100644
+--- a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
++++ b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
+@@ -33,7 +33,7 @@
+ import { virgilCrypto, virgilBrainKeyCrypto, HashAlgorithm } from 'react-native-virgil-crypto';
+ export { KeyPairType } from 'react-native-virgil-crypto';
+ import { getGenericPassword, setGenericPassword, resetGenericPassword } from 'react-native-keychain';
+-import reactNative from 'react-native';
++import reactNative from '@react-native-async-storage/async-storage';
+ 
+ var global$1 = (typeof global !== "undefined" ? global :
+             typeof self !== "undefined" ? self :
+diff --git a/node_modules/@virgilsecurity/e3kit-native/dist/types/EThree.d.ts b/node_modules/@virgilsecurity/e3kit-native/dist/types/EThree.d.ts
+index 89b89fe..b57e306 100644
+--- a/node_modules/@virgilsecurity/e3kit-native/dist/types/EThree.d.ts
++++ b/node_modules/@virgilsecurity/e3kit-native/dist/types/EThree.d.ts
+@@ -3,10 +3,10 @@ import { AbstractEThree } from '@virgilsecurity/e3kit-base';
+ import { Data, EThreeCtorOptions, EThreeInitializeOptions } from './types';
+ import './asyncstoragedown-clear-polyfill';
+ export interface EThreeNativeInitializeOptions extends EThreeInitializeOptions {
+-    AsyncStorage: import('react-native').AsyncStorageStatic;
++    AsyncStorage: import('@react-native-async-storage/async-storage').AsyncStorageStatic;
+ }
+ export interface EThreeNativeCtorOptions extends EThreeCtorOptions {
+-    AsyncStorage: import('react-native').AsyncStorageStatic;
++    AsyncStorage: import('@react-native-async-storage/async-storage').AsyncStorageStatic;
+ }
+ export declare class EThree extends AbstractEThree {
+     /**

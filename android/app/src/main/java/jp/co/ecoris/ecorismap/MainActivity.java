@@ -1,4 +1,4 @@
-package com.ecorismap;
+package jp.co.ecoris.ecorismap;
 
 import android.os.Build;
 import android.os.Bundle;
