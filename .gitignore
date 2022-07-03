@@ -66,8 +66,10 @@ firestore-debug.log
 emulatorExport/
 
 #secret key include
-google-service.json
-AndroidManifest.xml
+android/app/google-services.json
+android/app/src/main/AndroidManifest.xml
+GoogleService-Info.plist
+ios/ecorismap/AppDelegate.m
 
 # mapbox,firebase,recapture key
 .config
