@@ -135,8 +135,8 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName '0.0.1'
+        versionCode 21
+        versionName '0.1.1'
     }
     configurations.all {
         resolutionStrategy {
@@ -192,6 +192,7 @@ android {
 }
 
 dependencies {
+
     implementation platform('com.google.firebase:firebase-bom:30.2.0')
     implementation 'com.google.firebase:firebase-analytics'
 

@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-scale-bar/src/HorizontalLine.js b/node_modules/react-native-scale-bar/src/HorizontalLine.js
-index 827bbee..2f555d9 100644
+index 827bbee..b28b5a3 100644
 --- a/node_modules/react-native-scale-bar/src/HorizontalLine.js
 +++ b/node_modules/react-native-scale-bar/src/HorizontalLine.js
 @@ -14,16 +14,29 @@ type Props = {
@@ -13,8 +13,9 @@ index 827bbee..2f555d9 100644
            bottom: this.props.padding_bottom,
            left: this.props.padding_left,
            width: this.props.length,
-           position: "absolute",
+-          position: "absolute",
 -          height: LINE_SIZE,
++          position: "relative",
 +          height: LINE_SIZE+1,
            backgroundColor: LINE_COLOR
          }}
@@ -24,7 +25,7 @@ index 827bbee..2f555d9 100644
 +        bottom: this.props.padding_bottom+2,
 +        left: this.props.padding_left,
 +        width: this.props.length-1,
-+        position: "absolute",
++        position: "relative",
 +        height: LINE_SIZE,
 +        backgroundColor: "#FFFFFF55"
 +      }}

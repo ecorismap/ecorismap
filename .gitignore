@@ -30,6 +30,7 @@ build/
 local.properties
 *.iml
 *.hprof
+*.aab
 
 # node.js
 #
@@ -64,6 +65,7 @@ cypress.env.json
 firebase-debug.log
 firestore-debug.log
 emulatorExport/
+*.cache
 
 #secret key include
 android/app/google-services.json

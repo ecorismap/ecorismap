@@ -639,6 +639,8 @@ PODS:
     - React-Core
   - Expo (44.0.6):
     - ExpoModulesCore
+  - ExpoLocalization (12.0.1):
+    - ExpoModulesCore
   - ExpoModulesCore (0.6.5):
     - React-Core
     - ReactCommon/turbomodule/core
@@ -789,7 +791,7 @@ PODS:
     - GoogleUtilities/Network (~> 7.7)
     - "GoogleUtilities/NSData+zlib (~> 7.7)"
     - nanopb (~> 2.30908.0)
-  - GoogleDataTransport (9.1.4):
+  - GoogleDataTransport (9.2.0):
     - GoogleUtilities/Environment (~> 7.7)
     - nanopb (< 2.30910.0, >= 2.30908.0)
     - PromisesObjC (< 3.0, >= 1.2)
@@ -1174,32 +1176,32 @@ PODS:
     - React-Core
   - RNCPicker (2.4.2):
     - React-Core
-  - RNFBApp (14.11.1):
+  - RNFBApp (14.9.4):
     - Firebase/CoreOnly (= 8.15.0)
     - React-Core
-  - RNFBAppCheck (14.11.1):
+  - RNFBAppCheck (14.9.4):
     - Firebase/AppCheck (= 8.15.0)
     - React-Core
     - RNFBApp
-  - RNFBAuth (14.11.1):
+  - RNFBAuth (14.9.4):
     - Firebase/Auth (= 8.15.0)
     - React-Core
     - RNFBApp
-  - RNFBFirestore (14.11.1):
+  - RNFBFirestore (14.9.4):
     - Firebase/Firestore (= 8.15.0)
     - React-Core
     - RNFBApp
-  - RNFBFunctions (14.11.1):
+  - RNFBFunctions (14.9.4):
     - Firebase/Functions (= 8.15.0)
     - React-Core
     - RNFBApp
-  - RNFBStorage (14.11.1):
+  - RNFBStorage (14.9.4):
     - Firebase/Storage (= 8.15.0)
     - React-Core
     - RNFBApp
   - RNGestureHandler (2.5.0):
     - React-Core
-  - RNKeychain (8.1.0):
+  - RNKeychain (7.0.0):
     - React-Core
   - RNReanimated (2.3.3):
     - DoubleConversion
@@ -1285,6 +1287,7 @@ DEPENDENCIES:
   - EXManifests (from `../node_modules/expo-manifests/ios`)
   - EXMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - Expo (from `../node_modules/expo/ios`)
+  - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core/ios`)
   - EXSharing (from `../node_modules/expo-sharing/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
@@ -1422,6 +1425,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-media-library/ios"
   Expo:
     :path: "../node_modules/expo/ios"
+  ExpoLocalization:
+    :path: "../node_modules/expo-localization/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core/ios"
   EXSharing:
@@ -1560,6 +1565,7 @@ SPEC CHECKSUMS:
   EXManifests: d3464cd2278f4a19cd80c1aa673231570b534c11
   EXMediaLibrary: 843669e1d9d38965057830138609ee99ef260cf1
   Expo: 534e51e607aba8229293297da5585f4b26f50fa1
+  ExpoLocalization: 72b4524c167da6c4e2a0bbe09176ff8b2c4eddbe
   ExpoModulesCore: 32c0ccb47f477d330ee93db72505380adf0de09a
   EXSharing: 328228a9f14503cfdec68892796478a7a15b8d4d
   EXSplashScreen: 21669e598804ee810547dbb6692c8deb5dd8dbf3
@@ -1582,7 +1588,7 @@ SPEC CHECKSUMS:
   glog: 73c2498ac6884b13ede40eda8228cb1eee9d9d62
   Google-Maps-iOS-Utils: 95d5ca4d2004314eff88c1819b969db6cac37ab6
   GoogleAppMeasurement: 4c19f031220c72464d460c9daa1fb5d1acce958e
-  GoogleDataTransport: 5fffe35792f8b96ec8d6775f5eccd83c998d5a3b
+  GoogleDataTransport: 1c8145da7117bd68bbbed00cf304edb6a24de00f
   GoogleMaps: 086ae1dab659eaa7339bdb30fc88e2f44e7c597c
   GoogleUtilities: e0913149f6b0625b553d70dae12b49fc62914fd1
   "gRPC-C++": 9675f953ace2b3de7c506039d77be1f2e77a8db2
@@ -1625,14 +1631,14 @@ SPEC CHECKSUMS:
   ReactCommon: 8fea6422328e2fc093e25c9fac67adbcf0f04fb4
   RNCAsyncStorage: 6bd5a7ba3dde1c3facba418aa273f449bdc5437a
   RNCPicker: 0250e95ad170569a96f5b0555cdd5e65b9084dca
-  RNFBApp: 9646e09d041ea159b84584865212e4cf33acd179
-  RNFBAppCheck: 8cc7402e7528c7881c2f2fe2313116d9cac52047
-  RNFBAuth: af943e3ba071b5f4d18896c31e6cba3a77b1fa08
-  RNFBFirestore: 70f47946084f6ce68c827c4a770613e0adb46da3
-  RNFBFunctions: 0e7c0a20c35fca0f828b2eeec8d0ff1718390e68
-  RNFBStorage: 814adb8c5bf4ff86a0b0641d750a64d6d48d9a75
+  RNFBApp: bef4ec5a6d31a3da9bf285379d0c4857c6b7313e
+  RNFBAppCheck: 9e01539187f7c3d6e3b7db94286db0bd954c1a27
+  RNFBAuth: 8694f1f043c75424455726b9b246a9ce12fb5518
+  RNFBFirestore: 841f319bfba0fbf3bd48fae80145301941219dd6
+  RNFBFunctions: 0987b6054bf93c66dacf82776748ab08df29c7cd
+  RNFBStorage: 13b60bcfa41b195ee2eb9297afb8b2966eaabe83
   RNGestureHandler: bad495418bcbd3ab47017a38d93d290ebd406f50
-  RNKeychain: c442b8512802a20cab4db3e3a1cf53e4731615bc
+  RNKeychain: f75b8c8b2f17d3b2aa1f25b4a0ac5b83d947ff8f
   RNReanimated: 0e5ef4a7e4e79f84efbe5b40771c31044c51e7d0
   RNScreens: d6da2b9e29cf523832c2542f47bf1287318b1868
   RNSVG: 302bfc9905bd8122f08966dc2ce2d07b7b52b9f8
@@ -1648,6 +1654,6 @@ SPEC CHECKSUMS:
   VSCCrypto: e2c8df89e0dc348c2713554f6a2c8864e1cf412d
   Yoga: e6ecf3fa25af9d4c87e94ad7d5d292eedef49749
 
-PODFILE CHECKSUM: 0f17a9ddc5cf528494780343fc3b10615009bce5
+PODFILE CHECKSUM: 1596c8ce7452bfb0d8b736f446ea9e4238f7a599
 
 COCOAPODS: 1.11.2
