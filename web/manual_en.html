@@ -1,0 +1,749 @@
+<!DOCTYPE html><html><head>
+      <title>manual_en</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      
+      <link rel="stylesheet" href="file:////Users/mizutani/.vscode/extensions/shd101wyy.markdown-preview-enhanced-0.6.3/node_modules/@shd101wyy/mume/dependencies/katex/katex.min.css">
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      <style>
+      /**
+ * prism.js Github theme based on GitHub's theme.
+ * @author Sam Clarke
+ */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: #333;
+  background: none;
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.4;
+
+  -moz-tab-size: 8;
+  -o-tab-size: 8;
+  tab-size: 8;
+
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+  padding: .8em;
+  overflow: auto;
+  /* border: 1px solid #ddd; */
+  border-radius: 3px;
+  /* background: #fff; */
+  background: #f5f5f5;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+  padding: .1em;
+  border-radius: .3em;
+  white-space: normal;
+  background: #f5f5f5;
+}
+
+.token.comment,
+.token.blockquote {
+  color: #969896;
+}
+
+.token.cdata {
+  color: #183691;
+}
+
+.token.doctype,
+.token.punctuation,
+.token.variable,
+.token.macro.property {
+  color: #333;
+}
+
+.token.operator,
+.token.important,
+.token.keyword,
+.token.rule,
+.token.builtin {
+  color: #a71d5d;
+}
+
+.token.string,
+.token.url,
+.token.regex,
+.token.attr-value {
+  color: #183691;
+}
+
+.token.property,
+.token.number,
+.token.boolean,
+.token.entity,
+.token.atrule,
+.token.constant,
+.token.symbol,
+.token.command,
+.token.code {
+  color: #0086b3;
+}
+
+.token.tag,
+.token.selector,
+.token.prolog {
+  color: #63a35c;
+}
+
+.token.function,
+.token.namespace,
+.token.pseudo-element,
+.token.class,
+.token.class-name,
+.token.pseudo-class,
+.token.id,
+.token.url-reference .token.variable,
+.token.attr-name {
+  color: #795da3;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+.token.title,
+.token.title .token.punctuation {
+  font-weight: bold;
+  color: #1d3e81;
+}
+
+.token.list {
+  color: #ed6a43;
+}
+
+.token.inserted {
+  background-color: #eaffea;
+  color: #55a532;
+}
+
+.token.deleted {
+  background-color: #ffecec;
+  color: #bd2c00;
+}
+
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+
+/* JSON */
+.language-json .token.property {
+  color: #183691;
+}
+
+.language-markup .token.tag .token.punctuation {
+  color: #333;
+}
+
+/* CSS */
+code.language-css,
+.language-css .token.function {
+  color: #0086b3;
+}
+
+/* YAML */
+.language-yaml .token.atrule {
+  color: #63a35c;
+}
+
+code.language-yaml {
+  color: #183691;
+}
+
+/* Ruby */
+.language-ruby .token.function {
+  color: #333;
+}
+
+/* Markdown */
+.language-markdown .token.url {
+  color: #795da3;
+}
+
+/* Makefile */
+.language-makefile .token.symbol {
+  color: #795da3;
+}
+
+.language-makefile .token.variable {
+  color: #183691;
+}
+
+.language-makefile .token.builtin {
+  color: #0086b3;
+}
+
+/* Bash */
+.language-bash .token.keyword {
+  color: #0086b3;
+}
+
+/* highlight */
+pre[data-line] {
+  position: relative;
+  padding: 1em 0 1em 3em;
+}
+pre[data-line] .line-highlight-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+  display: block;
+  width: 100%;
+}
+
+pre[data-line] .line-highlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: inherit 0;
+  margin-top: 1em;
+  background: hsla(24, 20%, 50%,.08);
+  background: linear-gradient(to right, hsla(24, 20%, 50%,.1) 70%, hsla(24, 20%, 50%,0));
+  pointer-events: none;
+  line-height: inherit;
+  white-space: pre;
+}
+
+pre[data-line] .line-highlight:before, 
+pre[data-line] .line-highlight[data-end]:after {
+  content: attr(data-start);
+  position: absolute;
+  top: .4em;
+  left: .6em;
+  min-width: 1em;
+  padding: 0 .5em;
+  background-color: hsla(24, 20%, 50%,.4);
+  color: hsl(24, 20%, 95%);
+  font: bold 65%/1.5 sans-serif;
+  text-align: center;
+  vertical-align: .3em;
+  border-radius: 999px;
+  text-shadow: none;
+  box-shadow: 0 1px white;
+}
+
+pre[data-line] .line-highlight[data-end]:after {
+  content: attr(data-end);
+  top: auto;
+  bottom: .4em;
+}html body{font-family:"Helvetica Neue",Helvetica,"Segoe UI",Arial,freesans,sans-serif;font-size:16px;line-height:1.6;color:#333;background-color:#fff;overflow:initial;box-sizing:border-box;word-wrap:break-word}html body>:first-child{margin-top:0}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{line-height:1.2;margin-top:1em;margin-bottom:16px;color:#000}html body h1{font-size:2.25em;font-weight:300;padding-bottom:.3em}html body h2{font-size:1.75em;font-weight:400;padding-bottom:.3em}html body h3{font-size:1.5em;font-weight:500}html body h4{font-size:1.25em;font-weight:600}html body h5{font-size:1.1em;font-weight:600}html body h6{font-size:1em;font-weight:600}html body h1,html body h2,html body h3,html body h4,html body h5{font-weight:600}html body h5{font-size:1em}html body h6{color:#5c5c5c}html body strong{color:#000}html body del{color:#5c5c5c}html body a:not([href]){color:inherit;text-decoration:none}html body a{color:#08c;text-decoration:none}html body a:hover{color:#00a3f5;text-decoration:none}html body img{max-width:100%}html body>p{margin-top:0;margin-bottom:16px;word-wrap:break-word}html body>ul,html body>ol{margin-bottom:16px}html body ul,html body ol{padding-left:2em}html body ul.no-list,html body ol.no-list{padding:0;list-style-type:none}html body ul ul,html body ul ol,html body ol ol,html body ol ul{margin-top:0;margin-bottom:0}html body li{margin-bottom:0}html body li.task-list-item{list-style:none}html body li>p{margin-top:0;margin-bottom:0}html body .task-list-item-checkbox{margin:0 .2em .25em -1.8em;vertical-align:middle}html body .task-list-item-checkbox:hover{cursor:pointer}html body blockquote{margin:16px 0;font-size:inherit;padding:0 15px;color:#5c5c5c;background-color:#f0f0f0;border-left:4px solid #d6d6d6}html body blockquote>:first-child{margin-top:0}html body blockquote>:last-child{margin-bottom:0}html body hr{height:4px;margin:32px 0;background-color:#d6d6d6;border:0 none}html body table{margin:10px 0 15px 0;border-collapse:collapse;border-spacing:0;display:block;width:100%;overflow:auto;word-break:normal;word-break:keep-all}html body table th{font-weight:bold;color:#000}html body table td,html body table th{border:1px solid #d6d6d6;padding:6px 13px}html body dl{padding:0}html body dl dt{padding:0;margin-top:16px;font-size:1em;font-style:italic;font-weight:bold}html body dl dd{padding:0 16px;margin-bottom:16px}html body code{font-family:Menlo,Monaco,Consolas,'Courier New',monospace;font-size:.85em !important;color:#000;background-color:#f0f0f0;border-radius:3px;padding:.2em 0}html body code::before,html body code::after{letter-spacing:-0.2em;content:"\00a0"}html body pre>code{padding:0;margin:0;font-size:.85em !important;word-break:normal;white-space:pre;background:transparent;border:0}html body .highlight{margin-bottom:16px}html body .highlight pre,html body pre{padding:1em;overflow:auto;font-size:.85em !important;line-height:1.45;border:#d6d6d6;border-radius:3px}html body .highlight pre{margin-bottom:0;word-break:normal}html body pre code,html body pre tt{display:inline;max-width:initial;padding:0;margin:0;overflow:initial;line-height:inherit;word-wrap:normal;background-color:transparent;border:0}html body pre code:before,html body pre tt:before,html body pre code:after,html body pre tt:after{content:normal}html body p,html body blockquote,html body ul,html body ol,html body dl,html body pre{margin-top:0;margin-bottom:16px}html body kbd{color:#000;border:1px solid #d6d6d6;border-bottom:2px solid #c7c7c7;padding:2px 4px;background-color:#f0f0f0;border-radius:3px}@media print{html body{background-color:#fff}html body h1,html body h2,html body h3,html body h4,html body h5,html body h6{color:#000;page-break-after:avoid}html body blockquote{color:#5c5c5c}html body pre{page-break-inside:avoid}html body table{display:table}html body img{display:block;max-width:100%;max-height:100%}html body pre,html body code{word-wrap:break-word;white-space:pre}}.markdown-preview{width:100%;height:100%;box-sizing:border-box}.markdown-preview .pagebreak,.markdown-preview .newpage{page-break-before:always}.markdown-preview pre.line-numbers{position:relative;padding-left:3.8em;counter-reset:linenumber}.markdown-preview pre.line-numbers>code{position:relative}.markdown-preview pre.line-numbers .line-numbers-rows{position:absolute;pointer-events:none;top:1em;font-size:100%;left:0;width:3em;letter-spacing:-1px;border-right:1px solid #999;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.markdown-preview pre.line-numbers .line-numbers-rows>span{pointer-events:none;display:block;counter-increment:linenumber}.markdown-preview pre.line-numbers .line-numbers-rows>span:before{content:counter(linenumber);color:#999;display:block;padding-right:.8em;text-align:right}.markdown-preview .mathjax-exps .MathJax_Display{text-align:center !important}.markdown-preview:not([for="preview"]) .code-chunk .btn-group{display:none}.markdown-preview:not([for="preview"]) .code-chunk .status{display:none}.markdown-preview:not([for="preview"]) .code-chunk .output-div{margin-bottom:16px}.scrollbar-style::-webkit-scrollbar{width:8px}.scrollbar-style::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}.scrollbar-style::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode]){position:relative;width:100%;height:100%;top:0;left:0;margin:0;padding:0;overflow:auto}html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{position:relative;top:0}@media screen and (min-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em calc(50% - 457px + 2em)}}@media screen and (max-width:914px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode]) .markdown-preview{font-size:14px !important;padding:1em}}@media print{html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{display:none}}html body[for="html-export"]:not([data-presentation-mode]) #sidebar-toc-btn{position:fixed;bottom:8px;left:8px;font-size:28px;cursor:pointer;color:inherit;z-index:99;width:32px;text-align:center;opacity:.4}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] #sidebar-toc-btn{opacity:1}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc{position:fixed;top:0;left:0;width:300px;height:100%;padding:32px 0 48px 0;font-size:14px;box-shadow:0 0 4px rgba(150,150,150,0.33);box-sizing:border-box;overflow:auto;background-color:inherit}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar{width:8px}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-track{border-radius:10px;background-color:transparent}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc::-webkit-scrollbar-thumb{border-radius:5px;background-color:rgba(150,150,150,0.66);border:4px solid rgba(150,150,150,0.66);background-clip:content-box}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc a{text-decoration:none}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc ul{padding:0 1.6em;margin-top:.8em}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc li{margin-bottom:.8em}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .md-sidebar-toc ul{list-style-type:none}html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{left:300px;width:calc(100% -  300px);padding:2em calc(50% - 457px -  150px);margin:0;box-sizing:border-box}@media screen and (max-width:1274px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{padding:2em}}@media screen and (max-width:450px){html body[for="html-export"]:not([data-presentation-mode])[html-show-sidebar-toc] .markdown-preview{width:100%}}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .markdown-preview{left:50%;transform:translateX(-50%)}html body[for="html-export"]:not([data-presentation-mode]):not([html-show-sidebar-toc]) .md-sidebar-toc{display:none}
+/* Please visit the URL below for more information: */
+/*   https://shd101wyy.github.io/markdown-preview-enhanced/#/customize-css */
+.markdown-preview.markdown-preview h1,
+.markdown-preview.markdown-preview h2 {
+  border-bottom: 1px solid #eaecef;
+}
+.md-sidebar-toc.md-sidebar-toc {
+  padding-top: 40px;
+}
+#sidebar-toc-btn {
+  bottom: unset;
+  top: 8px;
+}
+
+      </style>
+    </head>
+    <body for="html-export">
+      <div class="mume markdown-preview  ">
+      <style>
+table {
+    border-collapse: collapse;
+}
+table, th, td {
+     border: none!important;
+     vertical-align:top;
+}
+@media only screen and (max-width: 750px) {
+    img { width: 100%; }
+}
+</style>
+<div style="text-align: right;">
+13/9/2022 updated 
+</div>
+<img src="images/toplogo_en.png" width="460">
+<h2 class="mume-header" id="what-is-ecorismap">What is EcorisMap?</h2>
+
+<p>EcorisMap is an application that allows you to record and check your location with your smartphone.</p>
+<p>Main features</p>
+<ul>
+<li>Location information can be displayed and recorded on a map.</li>
+<li>Any map published in map tile format can be loaded.</li>
+<li>You can import GeoJSON or GPX format data created by GIS and set labels and colors.</li>
+<li>You can set your own items to be recorded, and use forms such as lists and checkboxes.</li>
+<li>Recorded data can be exported in CSV, GeoJSON, and GPX formats.</li>
+<li>You can use it in offline mode even in places where there is no Internet environment.</li>
+</ul>
+<h2 class="mume-header" id="quick-start">Quick Start</h2>
+
+<h3 class="mume-header" id="main-screen">Main screen</h3>
+
+<table>
+<thead>
+<tr>
+<th>Home</th>
+<th>Add Points</th>
+<th>Select Map</th>
+<th>Map Settings</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="images/HomeScreen.png" width="180px"></td>
+<td><img src="images/PointAddScreen.png" width="180px"></td>
+<td><img src="images/MapScreen.png" width="180px"></td>
+<td><img src="images/MapSettingScreen.png" width="180px"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Layer List</th>
+<th>Layer Settings</th>
+<th>Data</th>
+<th>Data Editing</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="images/LayersScreen.png" width="250px"></td>
+<td><img src="images/LayerEditScreen.png" width="180px"></td>
+<td><img src="images/DataScreen.png" width="180px"></td>
+<td><img src="images/DataEditScreen.png" width="180px"></td>
+</tr>
+</tbody>
+</table>
+<h3 class="mume-header" id="procedure">Procedure</h3>
+
+<h4 class="mume-header" id="a-map-preparation">A. Map Preparation</h4>
+
+<ol>
+<li>press the map selection button on the home screen. 2.<br>
+Select the map you wish to view on the map selection screen. 3.<br>
+If you wish to use the map offline, download the map. 4.</li>
+<li>if you want to add a map, add a new map setting or select from the list of map settings.</li>
+</ol>
+<h4 class="mume-header" id="b-prepare-data-to-be-displayed">B. Prepare data to be displayed</h4>
+
+<ol>
+<li>press the Layer List button from the Home screen</li>
+<li>import the data you want to display (GeoJSON or GPX) by pressing the Import button. 2.<br>
+Change the style (color) of the data. 3.<br>
+If you want to display labels, select the field name you want to use for the labels.</li>
+</ol>
+<h4 class="mume-header" id="c-setting-up-layers-for-recording">C. Setting up layers for recording</h4>
+
+<p>On the Layer List screen, click the Add New button to create a layer to be used for recording data. 2.<br>
+On the Layer Settings screen, add a layer name, style, and fields, and save the layer. 3.<br>
+3. To edit an existing layer, press the Layer Settings button.</p>
+<h4 class="mume-header" id="d-using-in-the-field">D. Using in the Field</h4>
+
+<ol>
+<li>turn on GPS and navigate to your current location</li>
+<li>for offline use, switch to offline mode on the map selection screen.<br>
+To record a track, press the track button to start recording. Press again to end recording. 4.<br>
+To record location information, switch the layer to edit mode on the layer list screen. 4.<br>
+Select the Point tool or Line tool on the Home screen to add points or lines. 5.</li>
+<li>enter the field values in the Data Edit screen and save the data.</li>
+</ol>
+<h4 class="mume-header" id="e-exporting-data">E. Exporting Data</h4>
+
+<ol>
+<li>select a layer from the Layer List screen to display data. 2.</li>
+<li>select the data and press the Export button.</li>
+</ol>
+<h2 class="mume-header" id="basic-operations">Basic Operations</h2>
+
+<h3 class="mume-header" id="home">Home</h3>
+
+<p>On the Home screen, you can operate the map and various function buttons.<br>
+<img src="images/HomeScreen.png" width="300" align="right" style="margin-left:10px"></p>
+<p><strong>(1) Map Selection Button</strong>.<br>
+Opens the map selection screen.</p>
+<p><strong>(2) Record Track</strong>.<br>
+Press the track button to start recording. Press again to end recording. The track will be recorded on a linetype layer that is in edit mode. cmt field will record the total distance. (If there is no cmt field, it will not be recorded.)</p>
+<p><strong>(3) Layer List button</strong><br>
+Opens the Layer List screen.</p>
+<p><strong>(4) Select Point and Line Tools</strong><br>
+Displays the Point Tool and Line Tool.</p>
+<p><strong>(5) Settings button</strong><br>
+Opens the Settings screen.</p>
+<p><strong>(6) Compass</strong><br>
+Toggles between north-up (north direction up) and heading-up (direction of travel up) on the map.</p>
+<p><strong>(7) Zoom</strong><br>
+Changes the scale of the map. You can also change it by pinching in and out of the screen.</p>
+<p><strong>(8) GPS</strong>.<br>
+Activates GPS to display current location. When activated, it is in the current location tracking mode. Drag the map to release the tracking mode, and press the GPS button again to enter the tracking mode. Pressing the GPS button while in track mode turns it off.<br>
+The orange marker indicates the current location within 1.5 meters of accuracy, and the red marker indicates accuracy within 1.5 meters of accuracy.</p>
+<br clear="right">
+<h3 class="mume-header" id="map-selection">Map Selection</h3>
+
+<p>The map selection screen allows you to select and set the map to be displayed.<br>
+<img src="images/MapScreen.png" width="300" align="right"></p>
+<p><strong>(1)Select map</strong>.<br>
+Select the map to be displayed. Maps with transparency settings can be overlaid with the map below.</p>
+<p><strong>(2)Map Settings button</strong><br>
+Opens the map settings.</p>
+<p><strong>(3)Download button</strong><br>
+Opens the map download screen.</p>
+<p><strong>(4) Map settings list button</strong> Opens a list of pre-registered map settings.<br>
+Opens a list of pre-registered map settings.</p>
+<p><strong>(5) Add Map Setting Button</strong> Opens the Add New Map Setting screen.<br>
+Opens the Add New Map Setting screen.</p>
+<p><strong>(6)Toggle Offline Mode</strong> Toggles between offline and online mode.<br>
+Switches between offline mode and online mode. Offline mode loads previously downloaded maps from the cache and displays them. Use this mode in places where there is no Internet environment.</p>
+<br clear="right">
+<h3 class="mume-header" id="downloading-maps">Downloading maps</h3>
+
+<p>The map download screen downloads maps for offline use.<br>
+<img src="images/MapDownloadScreen.png" width="300" align="right"></p>
+<p><strong>(1)Download map</strong>.<br>
+Navigate to the area and coverage you need and press the Download button. A map with zoom levels 0-16 covering that area will be downloaded.</p>
+<p><strong>(2)Delete map</strong>.<br>
+Delete a map that has already been downloaded. The already downloaded area will be displayed in orange.<br>
+<br clear="right"></p>
+<h3 class="mume-header" id="map-settings">Map Settings</h3>
+
+<p>The Map Settings screen allows you to register and configure the display settings for map tiles.<br>
+<img src="images/MapSettingScreen.png" width="300" align="right"></p>
+<p><strong>(1)Map name</strong>.</p>
+<p><strong>(2)URL of the map tile</strong><br>
+Enter in a format such as <a href="https://example/%7Bz%7D/%7Bx%7D/%7By%7D.png">https://example/{z}/{x}/{y}.png</a>. Please read the terms of use of the map to determine if it can be used.</p>
+<p><strong>(3)Source Indication</strong>.<br>
+Please indicate the source of the map according to the map&apos;s terms of use.</p>
+<p><strong>(4) Transparency setting 0 (opaque) to 1 (transparent)</strong><br>
+Maps with transparency settings can be superimposed on the map below. Use this setting when you want to superimpose a shaded undulation map.</p>
+<p><strong>(5)Minimum Zoom</strong>.<br>
+Maps will not be displayed at zoom levels lower than this value.</p>
+<p><strong>(6)Maximum zoom</strong>.<br>
+Maps will not be displayed at zoom levels greater than this value.</p>
+<p><strong>(7) Fixed zoom</strong>.<br>
+At zoom levels greater than this value, the map at the fixed zoom level is enlarged.</p>
+<p><strong>(8)High resolution</strong>.<br>
+Displays the map at one zoom level higher. Use this function when you want to display a detailed map in a wide area on a standard Geographical Survey Institute map.</p>
+<p><strong>(9)Y-axis reversal</strong><br>
+Check this box when loading TMS tiles (Y-axis origin is down). The default is XYZ tiles (Y-axis origin is up).</p>
+<p><strong>(10)Delete setting</strong>.<br>
+Delete this map setting.</p>
+<br clear="right">
+<h3 class="mume-header" id="map-settings-list">Map Settings List</h3>
+
+<p>The Map Settings List screen displays pre-registered map settings.<br>
+<img src="images/MapListScreen.png" width="300" align="right"></p>
+<p><strong>(1)Add Map Setting button</strong>.<br>
+Map settings will be added to the map selection screen.</p>
+<p><strong>(2)Reload button</strong><br>
+Reloads a list of pre-registered map settings. The URL of the map settings list is specified on the settings screen.</p>
+<br clear="right">
+<h3 class="mume-header" id="layer-list">Layer List</h3>
+
+<p>The Layer List screen displays a list of layers and accesses their data and layer settings.<br>
+<img src="images/LayersScreen.png" width="300" align="right"></p>
+<p><strong>(1)Display Switch Button</strong>.<br>
+Toggles the display of layer data.</p>
+<p><strong>(2)Style button</strong><br>
+Opens the layer style setting screen.</p>
+<p><strong>(3)Edit checkbox</strong><br>
+Selects the layer to be in edit mode. When adding or editing points or lines, layers in edit mode are targeted. Layers of the same type (point or line) cannot be in edit mode at the same time.</p>
+<p><strong>(4)Data Confirmation</strong>.<br>
+Tap a layer name to open the layer&apos;s data screen.</p>
+<p><strong>(5)Label Setting</strong><br>
+Select a field name to be displayed as a label.</p>
+<p><strong>(6)Layer setting button</strong><br>
+Opens the Layer Settings screen.</p>
+<p><strong>(7)Data Import button</strong><br>
+Import GeoJSON or GPX data. GeoJSON supports latitude and longitude points, lines, and polygons. GPX supports waypoints and tracks. Files can also be imported by opening them directly in EcorisMap.</p>
+<p><strong>(8)Add Layer Settings button</strong>.<br>
+Opens the Layer Settings screen to add a new layer.</p>
+<br clear="right">
+<h3 class="mume-header" id="layer-settings">Layer Settings</h3>
+
+<p>The Layer Settings screen sets the layer name, type, and data fields.<br>
+<img src="images/LayerEditScreen.png" width="300" align="right"></p>
+<p><strong>(1)Layer Name</strong>.<br>
+Enter a layer name.</p>
+<p><strong>(2)Style Setting Button</strong><br>
+Opens the style setting window.</p>
+<p><strong>(3)Select Type</strong><br>
+Select a type. Point, Line, Polygon, None are supported. Polygon is read-only. None&quot; is used to record data without location information.</p>
+<p><strong>(4)Add Field button</strong>.<br>
+Adds a field.</p>
+<p><strong>(5)Field Name</strong><br>
+Enter a field name.</p>
+<p><strong>(6)Data Format</strong><br>
+Select the data format. String, Sequential Number, Date, Date, Time, Time Range, Integer, Decimal, Numeric Range, List, Radio Button, Check Button, Photo, Table, and List Table are supported.</p>
+<p><strong>(7)Delete Field button</strong>.<br>
+Deletes a field.</p>
+<p><strong>(8)Set Default Value, List Item</strong>.<br>
+Sets default values for string and integer fields. Sets candidate values for lists, radio buttons, check buttons, tables, and list tables.</p>
+<p><strong>(9)Change Display Order Button</strong><br>
+Changes the display order of fields.</p>
+<p><strong>(10)Delete Layer Button</strong><br>
+Deletes a layer and its data.</p>
+<p><strong>(11)Save Settings</strong><br>
+Saves changes to the layer settings.</p>
+<br clear="right">
+<h3 class="mume-header" id="style-settings">Style Settings</h3>
+
+<p>In the style setting screen, you can set the style (color) of the layer.<br>
+<img src="images/LayerEditStyleScreen.png" width="300" align="right"></p>
+<p><strong>(1)Color Type</strong>.<br>
+Selects the color application method. Single color and category are supported. Category fills in a color for each field value.</p>
+<p><strong>(2)Transparency</strong>.<br>
+Set the transparency of the fill when it is a polygon. 0 (opaque) to 1 (transparent). When the transparency setting is set to 1, the polygon&apos;s border is displayed.</p>
+<p><strong>(3)Field Name</strong>.<br>
+Selects the field name when the color type is category.</p>
+<p><strong>(4)Color Ramp</strong>.<br>
+Selects the color fill method to be automatically obtained when the color type is category. Only random is supported at this time.</p>
+<p><strong>(5)Auto Get Button</strong><br>
+When the color type is category, this button automatically gets the value of the field and sets the color according to the color ramp.</p>
+<p><strong>(6)Add Color Button</strong><br>
+Manually adds a color to a field value when the color type is category.</p>
+<p><strong>(7) Set Color</strong>.<br>
+Select a color with the color picker.</p>
+<p><strong>(8) Delete Color Settings button</strong><br>
+Deletes the color settings for the field.</p>
+<br clear="right">
+<h3 class="mume-header" id="field-value-settings">Field Value Settings</h3>
+
+<p>The Field Value Settings screen allows you to set default values for fields and candidate values for lists and checkboxes.<br>
+<img src="images/LayerEditValueListScreen.png" width="300" align="right"></p>
+<p><strong>(1)Value</strong>.<br>
+Enter default value or list or checkbox value.</p>
+<p><strong>(2)Add Value Button</strong><br>
+Add a value.</p>
+<p><strong>(3)Add &quot;other&quot; value</strong>.<br>
+Add &quot;Other&quot; value.</p>
+<p><strong>(4) Delete value button</strong><br>
+Deletes a value.</p>
+<br clear="right">
+<h3 class="mume-header" id="data">Data</h3>
+
+<p>The Data Screen displays a list of data and allows access and manipulation of each data.<br>
+<img src="images/DataScreen.png" width="300" align="right"></p>
+<p><strong>(1)Display Switch Button</strong><br>
+Switches the display of data. The button in the header toggles between all data.</p>
+<p><strong>(2) Data selection checkbox</strong><br>
+Select data to be deleted or exported. The checkbox in the header selects all data.</p>
+<p><strong>(3) Change ascending or descending order</strong>.<br>
+Tap a field name to change the ascending or descending order of data display.</p>
+<p><strong>(4) Enter or edit data</strong>.<br>
+Tap data to open the edit screen for that data.</p>
+<p><strong>(5)Add Data button</strong><br>
+Adds new data. The default value of coordinates is 0,0.</p>
+<p><strong>(6)Delete button</strong><br>
+Deletes the selected data.</p>
+<p><strong>(7) Export button</strong><br>
+Exports the selected data.</p>
+<br clear="right">
+<h3 class="mume-header" id="data-edit">Data Edit</h3>
+
+<p>The Data Edit screen allows you to enter and edit data.<br>
+<img src="images/DataEditScreen.png" width="300" align="right"></p>
+<p><strong>(1)Layer name</strong>.<br>
+Displays the layer name of the data.</p>
+<p><strong>(2)Field</strong>.<br>
+Enter or select a value according to the field type.</p>
+<p><strong>(3)Take Photo Button</strong><br>
+Takes a photo.</p>
+<p><strong>(4) Select Photo Button</strong><br>
+Selects a photo.</p>
+<p><strong>(5) View and Delete Photo</strong>.<br>
+Tap a photo to enlarge it. You can also delete it.</p>
+<p><strong>(6)Switch coordinates display button</strong>.<br>
+Switches the display of coordinates between decimal and hexadecimal.</p>
+<p><strong>(7)Move to Data button</strong><br>
+Moves the map to the data location.</p>
+<p><strong>(8)GoogleMap button</strong><br>
+Displays the data location on Google Map. This is useful when using route information, etc.</p>
+<p><strong>(9)Delete button</strong><br>
+Deletes data.</p>
+<p><strong>(10)Save button</strong><br>
+Saves data changes.</p>
+<br clear="right">
+<h3 class="mume-header" id="add-point">Add Point</h3>
+
+<p>Adds point location information with the Point Tool.<br>
+<img src="images/PointAddScreen.png" width="300" align="right"></p>
+<p><strong>(1)Show Point Tool button</strong>.<br>
+Displays the Point Tool.</p>
+<p><strong>(2)Line tool button</strong><br>
+Displays the Line tool.</p>
+<p><strong>(3)Add to Current Location button</strong><br>
+Adds a point to the current location. GPS must be turned on.</p>
+<p><strong>(4)Add button to any location</strong>.<br>
+Add a point to the tapped location on the map.</p>
+<p><strong>(5)Move Point button</strong><br>
+With the button selected, press and hold the point and drag to move it.</p>
+<br clear="right">
+<h3 class="mume-header" id="add-line">Add Line</h3>
+
+<p>Add line position information with the line tool.<br>
+<img src="images/LineAddScreen.png" width="300" align="right"></p>
+<p><strong>(1)Add Line button</strong>.<br>
+Trace over the map to add a line. You can modify a line by tracing it while it is selected (blue dashed line).</p>
+<p><strong>(2)Select line button</strong><br>
+Select the line you want to modify. Select the button and tap the line you wish to correct. When selected, the line will become a blue dashed line.</p>
+<p><strong>(3)Screen move button</strong><br>
+Use this button to move the screen while keeping the line selected. Select the button and drag the map.</p>
+<p><strong>(4) Save button</strong><br>
+Saves line edits.</p>
+<p><strong>(5) Redo button</strong><br>
+Redo button** redoes the line edit once. Pressing it twice discards the previous edits.</p>
+<p><strong>(6) Delete button</strong><br>
+Deletes the selected line.</p>
+<br clear="right">
+<h3 class="mume-header" id="split-screen">Split screen</h3>
+
+<p>The home screen can be divided and displayed.<br>
+<img src="images/DividedScreen.png" width="300" align="right"></p>
+<p><strong>(1)Split screen button</strong><br>
+Switches between split-screen and full-screen display. Use this button when you want to view data and a map at the same time.</p>
+<p><strong>(2)Close button</strong><br>
+Closes the display screen and displays the home screen.</p>
+<br clear="right">
+<h3 class="mume-header" id="settings">Settings</h3>
+
+<p>In the Settings screen, you can refer to various settings and manuals, etc.<br>
+<img src="images/SettingsScreen.png" width="300" align="right"></p>
+<p><strong>(1)Map settings list URL</strong>.<br>
+Specify the URL for the map&apos;s settings list. The map settings list screen will load data from the URL specified here.</p>
+<p><strong>(2)Backup data</strong>.<br>
+Saves the current data and settings. Previous backup data will be overwritten.</p>
+<p><strong>(3)Restore data</strong>.<br>
+Restores saved data and settings.</p>
+<p><strong>(4)Clear Map Cache</strong><br>
+Clears all cache of downloaded maps.</p>
+<p><strong>(5)Initialize App</strong><br>
+Restores the app to its initial state. All EcorisMap data and settings in the device will be reset.</p>
+<p><strong>(6)How to use EcorisMap</strong>.<br>
+Displays how to use (this site).</p>
+<p><strong>(7)Terms of Use</strong><br>
+Displays the Terms of Use.</p>
+<p><strong>(8)Version</strong> Displays the version of EcorisMap.<br>
+Displays the version.</p>
+<br clear="right">
+<h2 class="mume-header" id="applications">Applications</h2>
+
+<h3 class="mume-header" id="create-a-map-setting-list">Create a map setting list</h3>
+
+<img src="images/SpreadSheet.png" width="800">
+<p>If you create a map settings list in a Google Spreadsheet, you can import it into EcorisMap.</p>
+<ol>
+<li>correctly enter the following configuration item names in the first line of the Google Spreadsheet</li>
+</ol>
+<ul>
+<li>name</li>
+<li>url</li>
+<li>attribution</li>
+<li>transparency</li>
+<li>overzoomThreshold</li>
+<li>highResolutionEnabled</li>
+<li>minimumZ</li>
+<li>maximumZ</li>
+<li>flipY 2.<br>
+Enter the setting values on the second line. 3.</li>
+</ul>
+<ol start="3">
+<li>go to File --&gt; Publish to Web --&gt; Select Sheet --&gt; Select Comma Separated Values (.csv)<br>
+<img src="images/SpreadSheet2.png" width="400"> 4.</li>
+<li>copy and paste the link into EcorisMap Settings --&gt; Map Settings List URL</li>
+<li>click the reload button on the map settings list screen to load it.</li>
+</ol>
+
+      </div>
+      <div class="md-sidebar-toc"><ul>
+<li><a href="#what-is-ecorismap">What is EcorisMap?</a></li>
+<li><a href="#quick-start">Quick Start</a>
+<ul>
+<li><a href="#main-screen">Main screen</a></li>
+<li><a href="#procedure">Procedure</a>
+<ul>
+<li><a href="#a-map-preparation">A. Map Preparation</a></li>
+<li><a href="#b-prepare-data-to-be-displayed">B. Prepare data to be displayed</a></li>
+<li><a href="#c-setting-up-layers-for-recording">C. Setting up layers for recording</a></li>
+<li><a href="#d-using-in-the-field">D. Using in the Field</a></li>
+<li><a href="#e-exporting-data">E. Exporting Data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#basic-operations">Basic Operations</a>
+<ul>
+<li><a href="#home">Home</a></li>
+<li><a href="#map-selection">Map Selection</a></li>
+<li><a href="#downloading-maps">Downloading maps</a></li>
+<li><a href="#map-settings">Map Settings</a></li>
+<li><a href="#map-settings-list">Map Settings List</a></li>
+<li><a href="#layer-list">Layer List</a></li>
+<li><a href="#layer-settings">Layer Settings</a></li>
+<li><a href="#style-settings">Style Settings</a></li>
+<li><a href="#field-value-settings">Field Value Settings</a></li>
+<li><a href="#data">Data</a></li>
+<li><a href="#data-edit">Data Edit</a></li>
+<li><a href="#add-point">Add Point</a></li>
+<li><a href="#add-line">Add Line</a></li>
+<li><a href="#split-screen">Split screen</a></li>
+<li><a href="#settings">Settings</a></li>
+</ul>
+</li>
+<li><a href="#applications">Applications</a>
+<ul>
+<li><a href="#create-a-map-setting-list">Create a map setting list</a></li>
+</ul>
+</li>
+</ul>
+</div>
+      <a id="sidebar-toc-btn">&#x2261;</a>
+    
+    
+    
+    
+    
+    
+    
+    
+<script>
+
+var sidebarTOCBtn = document.getElementById('sidebar-toc-btn')
+sidebarTOCBtn.addEventListener('click', function(event) {
+  event.stopPropagation()
+  if (document.body.hasAttribute('html-show-sidebar-toc')) {
+    document.body.removeAttribute('html-show-sidebar-toc')
+  } else {
+    document.body.setAttribute('html-show-sidebar-toc', true)
+  }
+})
+</script>
+      
+  
+    </body></html>

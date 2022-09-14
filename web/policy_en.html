@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width'>
+  <title>Privacy Policy</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      padding: 1em;
+    }
+
+    br {
+      line-height: 1;
+    }
+
+    /*ol要素の共通設定*/
+
+    ol ol {
+      padding-left: 1em;
+      margin-left: 3em;
+      /*入れ子が起こるたびにインデント．0でもよいと思う*/
+    }
+
+    ol li:before {
+      display: inline-block;
+      text-align: right;
+      /*i), ii)などを右寄せさせるため*/
+      width: 2em;
+      /*リスト番号の幅*/
+      margin-right: 1em;
+      /*リスト番号と文章の間隔*/
+      margin-left: -3em;
+      /*上の2つと足して0になるように設定*/
+    }
+
+    /*カウンターの設定（olの階層ごとに設定）*/
+    ol>li {
+      counter-increment: level1;
+    }
+
+    ol.brackets>li {
+      counter-increment: level1;
+      list-style-type: none;
+      counter-increment: cnt;
+      margin-left: 1em;
+    }
+
+    ol.brackets>li:before {
+      content: "(" counter(cnt) ") ";
+    }
+
+    ol>li>ol>li {
+      counter-increment: level2;
+      list-style-type: none;
+      counter-increment: cnt;
+      /*同上*/
+    }
+
+    ol>li>ol>li:before {
+      content: "(" counter(cnt) ") ";
+      /*小文字のローマ数字*/
+    }
+
+    #contents {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Privacy Policy</h1>
+  ecoris inc. (the "Company") sets forth this Privacy Policy (this "Policy") with regard to the
+  treatment of user information, including but not limited to personal information, in the course of the performance of
+  Service provided by the Company (the "Service"), as follows;
+
+  <h2>1 User Information to be Collected and Method of Collection</h2>
+
+  For purposes of this Policy, "User Information" means information identifying users, history of actions in the Service
+  and other information created or accumulated in relation to users or their devices, that are collected by the Company
+  pursuant to this Policy.
+
+  The User Information that the Company may collect in the course of the Service is as follows, depending on the method
+  of collection.
+
+  <ol class="brackets">
+    <li id="contents">Information provided by the user
+      <p>The information to be provided by the user for or through the use of the Service is as follows:</p>
+      <ul>
+        <li>Email address for user registration;</li>
+        <li>Payment information such as name, address, and credit card information when purchasing paid services.
+          Since the credit card payment is handled by a payment processing company, we do not retain credit card numbers
+          or security codes;</li>
+
+      </ul>
+    </li>
+    <li id="contents">Information automatically collected by the Company in the course of the user's use of the Service
+      <p>The Company may collect information regarding access to or use of the Service, which includes the following.
+      </p>
+      <ul>
+        <li>referer</li>
+        <li>IP address</li>
+        <li>information regarding server access logs</li>
+        <li>cookies, ADID, IDFA and other identifiers</li>
+      </ul>
+    </li>
+  </ol>
+
+
+
+  <h2>2 Purpose of Use</h2>
+
+  Specific purposes of use of the User Information for the provision of the Service are as follows:
+
+  <ol class="brackets">
+    <li>provision, maintenance, protection and improvement of the Service, including but not limited to acceptance of
+      registration for the Service, identification, record of user settings and payment of use fees that are related to
+      the
+      Service;</li>
+    <li>measurement of traffic and actions of the user</li>
+    <li>distribution, display and measuring effect of advertisements</li>
+    <li>guidance and response to inquiries relating to the Service;</li>
+    <li>addressing a violation of rules, regulations or policies of the Company relating to the Service (the
+      "Rules");
+      and</li>
+    <li>notice of modification to the Rules or related matters.</li>
+  </ol>
+
+  <h2>3 Outside Transmissions</h2>
+  <p>
+    For a better experience, our Service uses third-party services that may collect user information. We request will be
+    retained by us and used as described in this privacy policy.
+    Link to privacy policy of third party service providers.
+  </p>
+  <a href="https://www.google.com/policies/privacy/" target="_blank"
+    rel="noopener noreferrer">https://www.google.com/policies/privacy/</a>
+
+  <h2>4 Provision of Personal Information to Third Parties</h2>
+
+  The Company shall not provide to any third party (including the same outside Japan) personal information contained
+  in
+  the User Information without the prior consent of the user, except where such provision is required due to any of
+  the
+  following circumstances:
+
+  <ol class="brackets">
+    <li>
+      The Company authorizes such third party to handle the personal information in whole or in part to the extent
+      necessary to accomplish the purpose of the use;
+    </li>
+    <li>The personal information is provided through a business transfer by way of merger or other similar
+      transactions;</li>
+    <li>
+      The personal information is provided to an affiliated party or a provider of an information collection module
+      pursuant to Section 4 hereof;
+    </li>
+    <li>
+      The Company is required to cooperate with state or local governmental organizations or their agents to perform
+      their duties or obligations pursuant to applicable laws and regulations, and such performance is likely to be
+      precluded if the consent of the user must be obtained; and
+    </li>
+    <li>
+      In addition to the foregoing, the Company is entitled to provide information pursuant to the Act on the
+      Protection
+      of Personal Information (the "Act") or other applicable laws and regulations.
+    </li>
+  </ol>
+
+
+  <h2>5 Disclosure, correction, deletion, etc. of Personal Information</h2>
+
+  Upon request from the user to disclose, correction, deletion its personal information under the Act, the Company
+  shall, without delay,
+  do to the user such information after confirming that the request is made by the user itself, to the extent
+  required to do so under the Act and other applicable laws and regulations.
+
+  <h2>6 Inquiries</h2>
+
+  Any suggestions, questions, complaints, or other inquiries on the handling of the User Information must be
+  submitted
+  to:
+
+  <p>
+    ecoris inc.<br>
+    map@ecoris.co.jp
+  </p>
+
+  <h2>7 Procedure to Amend this Privacy Policy</h2>
+
+  The Company may amend this Privacy Policy as necessary; provided, however, that in the event of an amendment to
+  this
+  Privacy Policy that legally requires the consent thereto of the users, this Privacy Policy after the amendment
+  shall
+  be applied only to the users that have given the consent in the manner specified by the Company. In the event of
+  any
+  amendment to this Privacy Policy, the Company shall inform the effective time and content of the amended Privacy
+  Policy by posting on the website of the Company or other appropriate way, or notify the user of the same.
+
+  <p>
+    This Policy shall be executed in the Japanese language. Japanese shall be the governing language and any
+    translation
+    of this Policy into any other language is for convenience of reference only and shall not bind the parties
+    hereto.
+  </p>
+
+  <p>Prescribed on 10/08/2022</p>
+  <!-- [Revised on mm/dd/yy] -->
+
+</body>
+
+</html>
