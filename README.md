@@ -6,7 +6,7 @@ EcorisMap is an application that records locations and information with your sma
 
 
   
-Install
+WebSite
 -------------
 
 https://ecoris-map.web.app
@@ -18,13 +18,6 @@ Documentation
   [English Document](https://ecoris-map.web.app/manual_en.html)
   
   [日本語のドキュメント](https://ecoris-map.web.app/manual_ja.html)
-
-
-Change Log
---------------------------------------------
-ver. 0.1.1
-- beta release
-
 
 
 License
