@@ -135,8 +135,8 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 21
-        versionName '0.1.1'
+        versionCode 26
+        versionName '0.1.6'
     }
     configurations.all {
         resolutionStrategy {

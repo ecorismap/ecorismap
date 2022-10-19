@@ -61,11 +61,13 @@ cypress.env.json
 
 #firebase
 .env
+appkey.txt
 .runtimeconfig.json
 firebase-debug.log
 firestore-debug.log
 emulatorExport/
 *.cache
+config.ts
 
 #secret key include
 android/app/google-services.json

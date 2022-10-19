@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "ecoris-map"
-  }
+    "default": "ecoris-map",
+    "staging": "ecoris-map"
+  },
+  "targets": {}
 }

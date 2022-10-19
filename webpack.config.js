@@ -5,7 +5,7 @@ module.exports = async function (env, argv) {
     {
       ...env,
       babel: {
-        dangerouslyAddModulePathsToTranspile: ['react-map-gl'], // this line!
+        dangerouslyAddModulePathsToTranspile: ['react-map-gl', '@tmcw/togeojson'], // this line!
       },
     },
     argv
