@@ -1,0 +1,633 @@
+{
+  "constants": {
+    "colortype": {
+      "single": "Single",
+      "categorized": "Categorized",
+      "user": "User"
+    },
+    "colorramp": {
+      "random": "Random"
+    },
+    "dataformat": {
+      "string": "String",
+      "serial": "Serial",
+      "datetime": "DateTime",
+      "datestring": "Date",
+      "timestring": "Time",
+      "timerange": "TimeRange",
+      "integer": "Integer",
+      "decimal": "Deciaml",
+      "numberrange": "NumberRange",
+      "list": "List",
+      "radio": "Radio",
+      "check": "Check",
+      "photo": "Photo",
+      "reference": "Reference",
+      "table": "Table",
+      "listtable": "ListTable"
+    },
+    "permission": {
+      "private": "Private",
+      "public": "Public",
+      "common": "Common"
+    },
+    "featuretype": {
+      "point": "Point",
+      "line": "Line",
+      "polygon": "Polgon",
+      "none": "None"
+    },
+    "roletype": {
+      "member": "Member",
+      "admin": "Admin",
+      "owner": "Owner"
+    },
+    "createproject": {
+      "default": "default",
+      "save": "save",
+      "copy": "copy"
+    }
+  },
+  "tutrials": {
+    "pointtool": {
+      "add": "Add points anywhere. \nPlease touch the place you want to add.",
+      "add_location": "Add a point at the current position. \nTurn on GPS and touch the screen.",
+      "move": "Move point. \nPlease press and hold the point."
+    },
+    "home_btn": {
+      "gps": "Turn on GPS. \nPress it again to switch off GPS, follow your current location, and jump.",
+      "track": "Record a track."
+    },
+    "layers_btn": {
+      "import": "Import GeoJSON, GPX, KML, KMZ files."
+    },
+    "termsOfUse": "Do you agree to the terms of use and start?",
+    "maps_btn": {
+      "online": "Switch to offline mode. \nMaps are loaded from cache.",
+      "offline": "Switch to online mode. \nMaps are loaded from the net."
+    }
+  },
+  "Project": {
+    "message": {}
+  },
+  "DataEdit": {
+    "navigation": {
+      "title": " "
+    },
+    "confirm": {
+      "deleteData": "Do you want to delete the data?",
+      "takePhoto": "Cameras are not available on the web",
+      "removePhoto": "Do you want to delete the photo?",
+      "downloadPhoto": "Do you want to download photos?",
+      "changeRecord": "Do you want to discard your changes?",
+      "gotoBack": "Would you like to discard your changes and return?",
+      "close": "Do you want to discard your changes?"
+    },
+    "alert": {
+      "referenceData": "Please save your changes once."
+    }
+  },
+  "common": {
+    "point": "point",
+    "track": "track",
+    "polygon": "polygon",
+    "message": {},
+    "login": "Login",
+    "manual": "manual",
+    "issue": "defect report",
+    "privacypolicy": "privacy policy",
+    "project": "project",
+    "user": "user",
+    "owner": "owner",
+    "projectName": "project name",
+    "overview": "overview",
+    "usage": "usage amount",
+    "license": "license",
+    "member": "member",
+    "preparation": "preparation",
+    "copySource": "copy source",
+    "back": "Back",
+    "colorType": "color type",
+    "transparency": "transparency",
+    "fieldName": "field name",
+    "colorLamp": "color lamp",
+    "longitude": "longitude",
+    "latitude": "latitude",
+    "permission": "permission",
+    "value": "value",
+    "addOther": "Added \"Other\"",
+    "layerName": "layer name",
+    "select": "selection",
+    "close": "close",
+    "delete": "delete",
+    "export": "export",
+    "fieldValue": "field value",
+    "color": "color",
+    "selectColor": "choose a color",
+    "source": "source",
+    "dataFormat": "data format",
+    "setValue": "value",
+    "type": "type",
+    "visible": "visible",
+    "edit": "edit",
+    "label": "label",
+    "layerSetting": "layer settings",
+    "add": "add",
+    "admin": "Administrator",
+    "mapListURL": "Map list URL",
+    "name": "name",
+    "sourceName": "source notation",
+    "minZoom": "minimum zoom",
+    "maxZoom": "maximum zoom",
+    "fixZoom": "fixed zoom",
+    "highResolution": "high resolution",
+    "Yaxis": "Y-axis inversion",
+    "original": "Copy source",
+    "other": "others...",
+    "satelliteImage": "Satellite image",
+    "standardMap": "Standard map",
+    "style": "style",
+    "url": "URL",
+    "reset": "reset",
+    "confirm": "confirmation",
+    "termsOfUse": "terms of use",
+    "ndash": "–",
+    "fileName": "file name",
+    "includePhoto": "including photo",
+    "version": "Ver.",
+    "distance": "distance"
+  },
+  "firebase": {
+    "message": {
+      "failEncryptPhoto": "Photo encryption failed",
+      "failUploadPhoto": "Photo upload failed",
+      "failGetPhoto": "Failed to get the photo",
+      "failDecryptPhoto": "Photo decryption failed",
+      "failDeletePhoto": "Failed to delete photo",
+      "failDeleteProjectPhoto": "Failed to delete project photos",
+      "failUpdateUser": "Failed to update user information",
+      "unkownUser": "The user is unknown."
+    }
+  },
+  "Settings": {
+    "maplisturl": {
+      "text": "Map list URL",
+      "info": "Input the URL of the map settings list."
+    },
+    "file_save": {
+      "text": "Save data to file",
+      "info": "Save the current data and settings to the file in ecorismap format."
+    },
+    "file_open": {
+      "text": "Load data file",
+      "info": "Load the saved data and settings from the ecorismap format file."
+    },
+    "mapcachedelete": {
+      "text": "Clear map cache",
+      "info": "Clear map cache and download files."
+    },
+    "photocachedelete": {
+      "text": "Clear photo cache",
+      "info": "Clear the photo cache."
+    },
+    "apriclear": {
+      "info": "Reset the app to its initial state. \nAll data and settings in the device will be reset.",
+      "text": "App initialization"
+    },
+    "manual": {
+      "text": "Manual and Terms of use",
+      "info": "Display the online manual and terms of use."
+    },
+    "confirm": {
+      "saveDataToLocalStorage": "Do you want to save the current data and settings? \nPreviously saved data will be overwritten.",
+      "clearLocalStorage": "Initialize? \nAll data and settings will be reset.",
+      "clearTileCache": "Clear map cache and download files?",
+      "clearPhotoCache": "Clear photo cache?",
+      "fileNew": "Clear current data?",
+      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
+    },
+    "alert": {
+      "saveDataToLocalStorage": "Saved.",
+      "loadEcorisMapFile": "File is loaded.",
+      "clearTileCache": "Cleared the map cache.",
+      "clearPhotoCache": "Cleared the photo cache."
+    },
+    "navigation": {
+      "title": "Setting"
+    },
+    "termsOfUse": {
+      "info": "Display the terms of use.",
+      "text": "Terms of use"
+    },
+    "version": {
+      "info": "Current version. \nYou can check the change history.",
+      "text": "Version"
+    },
+    "OSSLicense": {
+      "txt": "Open Source License",
+      "info": "Displays the open source license used in this software."
+    },
+    "file_new": {
+      "text": "Clear data",
+      "info": "Clear the current data."
+    }
+  },
+  "Purchases": {
+    "title": "Apply for upgrade (paid plan)",
+    "menu1": "1. Plan selection",
+    "menu2": "2. Confirmation of precautions",
+    "confirmCheck": "I have confirmed the following notes.",
+    "apply": "apply",
+    "notes": "Notes",
+    "accountInfo": "account information",
+    "currentPlan": "Current plan",
+    "errorMessage1": "We apologize for the inconvenience.",
+    "errorMessage2": "Please try again due to a communication error.",
+    "applicationChange": "Click here to confirm application information, issue receipts, change plans, and cancel",
+    "applicationInfo": "Application information",
+    "navigation": {
+      "title": " "
+    }
+  },
+  "Account": {
+    "title": {
+      "login": "Login",
+      "resetUserPassword": "Password reset",
+      "updateUserProfile": "Profile update",
+      "changeUserPassword": "Change Password",
+      "registEncryptPassword": "Registration of encrypted password",
+      "backupEncryptPassword": "Registration of encrypted password",
+      "restoreEncryptKey": "Restore encryption key",
+      "resetEncryptKey": "Encrypt key reset",
+      "changeEncryptPassword": "Change encrypted password",
+      "deleteUserAccount": "Account deletion",
+      "deleteAllProjects": "Delete all projects",
+      "createUserAccount": "Create an account"
+    },
+    "placeholder": {
+      "changePassword": "Password before change",
+      "newPassword": "After change (6 or more single-byte alphanumers)",
+      "password": "password (6 or more single-byte alphanumerical characters)",
+      "pin": "PIN (4 digits)",
+      "displayName": "display name",
+      "iconURL": "icon image URL"
+    },
+    "text": {
+      "forgetPassword": "Did you forget your password?",
+      "createAccount": "Create an account",
+      "next": "Next"
+    },
+    "alert": {
+      "activate": "Please check your email and activate.",
+      "resetPassword": "Please check your email and reset your password.",
+      "registEncryptKey": "To log in, please register your encryption key.",
+      "updateUserProfile": "Profile updated.",
+      "changeUserPassword": "Account password changed.",
+      "changeEncryptPassword": "Encrypted password changed.",
+      "backupEncryptPassword": "Encryption key registered.",
+      "FailResetEncryptKey": "Failed to reset the encryption key.",
+      "resetEncryptKey": "The encryption key has been reset. \nPlease continue to register the encrypted password.",
+      "FailDeleteUserAccount": "Failed to delete the account.",
+      "deleteUserAccount": "I deleted my account.",
+      "deleteAllProjects": "Deleted all projects.",
+      "needResetEncryptKey": "You need to reset the encryption key.",
+      "FailRestoreEncryptKey": "Failed to restore the encryption key.",
+      "FailBackupEncryptPassword": "Failed to register the encryption key.",
+      "FailRegistEncryptPassword": "Failed to register the encryption key."
+    },
+    "message": {
+      "inputMail": "Please enter your e-mail address",
+      "inputPassword": "Please enter your login password."
+    }
+  },
+  "AccountSettings": {
+    "account_edit": {
+      "text": "Profile update",
+      "info": "Change the display name and icon image."
+    },
+    "password_change": {
+      "text": "Change login password",
+      "info": "Change the login password for your account."
+    },
+    "password_cchange": {},
+    "encryption_password_change": {
+      "text": "Change encrypted password",
+      "info": "The password used for encryption. \nYou will need it to log in with another device. \nYou will also need it when you reinstall the app."
+    },
+    "encryption_key_reset": {
+      "text": "Encrypt key reset",
+      "info": "If you lose your smartphone, reset the encryption key from your browser to protect your data."
+    },
+    "account_delete": {
+      "text": "Account deletion",
+      "info": "Delete the account. \nAll projects owned by you will also be deleted."
+    },
+    "upgrade": {
+      "text": "Upgrade (paid plan)",
+      "info": "You can increase the number of projects and members that can be added."
+    },
+    "project_import": {
+      "text": "Import project data",
+      "info": "Import the data and settings exported from the project. \nThe user information in the data will be reset."
+    },
+    "project_delete_all": {
+      "info": "Erase all data in your own project.",
+      "text": "Delete all projects"
+    },
+    "confirm": {
+      "resetEncryptKey": "Do you really want to reset the encryption key?",
+      "deleteUserAccount": "Do you really want to delete your account?",
+      "deleteAllProjects": "Do you want to delete all projects?"
+    },
+    "message": {
+      "resetEncryptKey": "Please enter your login password.",
+      "deleteUserAccount": "Please enter your login password.",
+      "deleteAllProjects": "Please enter your login password."
+    },
+    "alert": {
+      "deleteAllProjects": "Please execute after closing the project."
+    },
+    "navigation": {
+      "title": "Account settings"
+    }
+  },
+  "coomon": {
+    "minutes": "Minutes",
+    "second": "Seconds"
+  },
+  "Maps": {
+    "modal": {
+      "title": "Map settings",
+      "placeholder": {
+        "name": "name"
+      }
+    },
+    "confirm": {
+      "deleteMap": "Do you want to delete it?"
+    },
+    "navigation": {
+      "title": "Map selection"
+    }
+  },
+  "Projects": {
+    "alert": {
+      "addProject": "Please upgrade to add projects."
+    },
+    "navigation": {
+      "title": "Project list"
+    }
+  },
+  "ProjectEdit": {
+    "alert": {
+      "openProjectWeb": "To open the project, upgrade or remove the other project.",
+      "openProject": "Cannot open because the maximum number of projects has been exceeded. \nDelete the project or check the web version for more details.",
+      "exportProject": "Project data export is only available in the web version",
+      "deleteProject": "The project has been deleted.",
+      "addMemberWeb": "Please upgrade to add members.",
+      "addMember": "Cannot be added because the maximum number of members has been exceeded. \nCheck the web version for details.",
+      "settingProject": "You can change the project settings."
+    },
+    "confirm": {
+      "deleteProject": "Do you want to delete the project?",
+      "gotoBack": "Do you want to discard your changes?"
+    },
+    "navigation": {
+      "title": "project"
+    }
+  },
+  "LayerEdit": {
+    "confirm": {
+      "deleteLayer": "Do you want to delete the layer? \nThe data in the layer is also deleted.",
+      "gotoBack": "Would you like to discard your changes and return?"
+    },
+    "navigation": {
+      "title": "Layer settings"
+    }
+  },
+  "Data": {
+    "alert": {
+      "exportData": "Members cannot export data.",
+      "checkFieldInput": "Please enter the following values ​​correctly."
+    },
+    "confirm": {
+      "deleteData": "Do you want to delete the data?"
+    },
+    "navigation": {
+      "title": " "
+    }
+  },
+  "hooks": {
+    "confirm": {
+      "stopDownload": "Do you want to stop the download?",
+      "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?"
+    },
+    "alert": {
+      "completeDownload": "The map download is complete.",
+      "pleaseActivate": "Please check your email and activate.",
+      "errorDownload": "Map download failed. \nPlease check the network environment."
+    },
+    "message": {
+      "pleaseLogin": "Please login",
+      "cannotUploadData": "Cannot upload because the layer settings have been updated.",
+      "noCopyProject": "No project to copy",
+      "unknownError": "Unknown error.",
+      "cannotAddProject": "Cannot be added while editing a project",
+      "cannotFindUser": "User not found.",
+      "cannotChangeInTracking": "It cannot be changed while the track is being recorded.",
+      "cannotDeleteInTracking": "It cannot be deleted while the track is being recorded.",
+      "cannotDeleteOthers": "Other people's data cannot be deleted.",
+      "cannotEditInTracking": "It cannot be edited while the track is being recorded.",
+      "cannotEditOthers": "You cannot edit the data of others.",
+      "cannotEditOthersInWork": "You cannot edit data created by others while you are investigating.",
+      "cannotExportPolygonInGPX": "Polygons cannot be exported with gpx",
+      "cannotGetFileSize": "Unable to get file size",
+      "cannotImportData": "Cannot import due to the large size of the data.",
+      "cannotImportInProjectOpen": "Cannot be loaded when the project is open",
+      "cannotInProjectOpen": "Not possible when the project is open.",
+      "cannotInTracking": "Not possible while recording a track.",
+      "cannotLoadEcorisMapFile": "Cannot be loaded when the project is open",
+      "cannotLoadDataInTrackking": "Not possible while recording a track.",
+      "cannotSaveDataToLocalStorage": "Cannot be saved when the project is open",
+      "cannotThisLayer": "Not available at this layer",
+      "changeProjectName": "There is a project with the same name. \nPlease change the project name.",
+      "couldnotSaveData": "No data is saved",
+      "downloaded": "Downloaded.",
+      "duplicateMembers": "Duplicate members.",
+      "emailInUse": "That email address is already in use.",
+      "errorInitEncrypt": "There is a problem with the encryption initialization.",
+      "failAddGroupMembers": "Failed to add member",
+      "failCreateBackupKey": "Failed to create backup key.",
+      "failCreateE3kitGroup": "Failed to create a group.",
+      "failDeleteAccount": "Failed to delete the user account.",
+      "failDeleteE3kitGroup": "Failed to delete members of the group",
+      "failDeleteEncryptKey": "Failed to delete the encryption key. \nThis is an unexpected error.",
+      "failDeleteGroup": "Failed to delete the group",
+      "failDeleteGroupMembers": "Failed to delete member",
+      "failDeleteProject": "Failed to delete the project. \nThis is an unexpected error.",
+      "failExport": "Export failed.",
+      "failGetData": "Failed to get the data.",
+      "failLoadE3kitGroup": "Unable to load group.",
+      "failResetEncryptKey": "Failed to reset the encryption key.",
+      "failRestoreBackupKey": "Backup restore failed.",
+      "failSetProfile": "Failed to set the profile.",
+      "failUpdateProfile": "Failed to update your profile.",
+      "failUploadPhoto": "You cannot upload because the photo capacity has been exceeded. \nCheck the web version for details.",
+      "failUserCheck": "User check failed.",
+      "finishTrackking": "Please finish recording the track first",
+      "inputEncryptPassword": "Please enter the encrypted password.",
+      "inputMaplistURL": "Please set the map list URL correctly.",
+      "inputProjectName": "Please enter the project name.",
+      "inputValidDisplayName": "Please enter the display name correctly",
+      "inputValidIconURL": "icon Please enter the URL of the image correctly",
+      "inputValidMail": "Please enter your e-mail address correctly",
+      "inputValidPassword": "Please enter the password correctly",
+      "inputValidUpdatePassword": "Please enter the changed password correctly",
+      "invalidAccount": "Contains an invalid account. \nPlease add after the member signs up.",
+      "invalidCoordinate": "There is an invalid input in latitude and longitude.",
+      "invalidDataFormat": "The data format is incorrect.",
+      "invalidEmail": "Invalid email address.",
+      "invalidEmailOrPassword": "The email or password is incorrect.",
+      "invalidFileType": "The file type is different.",
+      "lockProject": "You can't do it when you have a project open.",
+      "noActivate": "Your account has not been activated.",
+      "noEditMode": "You are not in edit mode.",
+      "noEditingLayer": "Not an edit layer.",
+      "noLayerToEdit": "There are no layers to edit.",
+      "noPermissionToCommon": "Common layers can only be edited by the administrator",
+      "noUser": "User does not exist.",
+      "onlyAdminCanEdit": "Only admins can edit",
+      "onlySupportWeb": "Only web version is supported",
+      "openProject": "Please open the project.",
+      "permitAccessGPS": "To use GPS, allow location access.",
+      "pleaseActivate": "Please check your email and activate.",
+      "pleaseReLogin": "The user is unknown. \nPlease log in again.",
+      "registEncryptPassword": "Please register the encrypted password.",
+      "turnOnGPS": "Please turn on GPS.",
+      "unkownURL": "The url is unknown.",
+      "unlockToEditCommon": "Unlock to edit the common layer.",
+      "updateProjectInfo": "Updated the project information.",
+      "updateProjectSettings": "Updated project settings.",
+      "upgradeForPhoto": "Please upgrade to upload your photos.",
+      "wrongPassword": "The password is incorrect.",
+      "tooManyMapList": "There are too many lists. \nPlease keep it within 50 pieces.",
+      "failInitializeUser": "Your session has expired. \nPlease log in again.",
+      "receiveFile": "I have imported the file.",
+      "failReceiveFile": "Failed to load file.",
+      "wrongExtension": "Incorrect file type.",
+      "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
+      "disableEditProject": "Cannot be edited while the project is open.",
+      "inputCorrectFilename": "Please enter a valid file name.",
+      "failSaveFile": "Failed to save file."
+    },
+    "notification": {
+      "inTracking": "Recording a track. \nPress the button on the track to finish."
+    }
+  },
+  "Home": {
+    "alert": {
+      "compass": "Turn on GPS to use the compass",
+      "download": "Data downloaded.",
+      "gps": "Please turn on GPS",
+      "gpsWeb": "Not available in the web version",
+      "gpsWithTrack": "Stop recording the track to turn off GPS.",
+      "saveProject": "Project settings have been changed.",
+      "sync": "Share your current location.",
+      "trackWeb": "Track logs are not available in the web version",
+      "upload": "Data uploaded.",
+      "uploadLicense": "You cannot upload because the photo capacity has been exceeded. \nCheck the web version for details.",
+      "uploadLicenseWeb": "Please upgrade to upload your photos.",
+      "discardChanges": "The data is being edited. \nPlease save first.",
+      "termsOfuse": "If you do not agree, please stop using it.",
+      "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen."
+    },
+    "confirm": {
+      "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
+      "deleteTiles": "Do you want to delete the downloaded map?",
+      "discard": "Do you want to discard your changes?",
+      "discardLogout": "There is a project in editing. \nDo you want to discard and log out?",
+      "discardProject": "Do you want to discard the changes in the project settings?",
+      "drag": "Do you want to change the position?",
+      "logout": "Do you want to log out?",
+      "saveProject": "Do you want to save the project settings?",
+      "track": "Do you want to stop recording the track?"
+    },
+    "navigation": {
+      "download": "Map download"
+    }
+  },
+  "LayerEditFeatureStyle": {
+    "navigation": {
+      "title": "Style settings"
+    }
+  },
+  "LayerEditFieldItem": {
+    "navigation": {
+      "title": "Setting the value"
+    }
+  },
+  "Layers": {
+    "navigation": {
+      "title": "Layer list"
+    }
+  },
+  "MapList": {
+    "navigation": {
+      "title": "Map list"
+    }
+  },
+  "utils": {
+    "Project": {
+      "message": {
+        "validateBusinessB": "You can add 5 projects with the Business B plan.",
+        "validateProjectBasic": "You can add 5 projects in the basic plan.",
+        "validateProjectBusinessA": "You can add 10 projects in the Business A plan.",
+        "validateProjectFree": "Only one project can be added with the free plan.",
+        "validateProjectPro": "You can add 10 projects with Pro Plan.",
+        "validateUndefined": "The license is unknown.",
+        "validateMemberFree": "You can add 3 members in the free plan.",
+        "validateMemberBasic": "Up to 5 members can be added with the basic plan.",
+        "validateMemberPro": "You can add 10 members with the Pro plan.",
+        "validateMemberBusinessB": "You can add 40 members with the Business B plan.",
+        "validateStorageFree": "The photo capacity that can be saved in the free plan is 100MB.",
+        "validateStorageBasic": "The photo capacity that can be saved with the basic plan is 1 GB.",
+        "validateStoragePro": "The photo storage capacity of the Pro plan is 5GB.",
+        "validateStorageBusinessA": "The photo storage capacity that can be saved with the Business A plan is 10 GB.",
+        "validateStorageBusinessB": "The photo capacity that can be saved with the Business B plan is 20GB."
+      }
+    },
+    "Layer": {
+      "message": {
+        "inputLayerName": "Please enter a layer name.",
+        "inputFieldName": "Please enter a field name.",
+        "referencedDataId": "_ReferencedDataId is not available.",
+        "inputListItem": "Set the items in the list.",
+        "inputRadioItem": "Set the radio button item.",
+        "inputCheckItem": "Set the checkbox item.",
+        "inputTableItem": "Please set the items in the table.",
+        "inputListTableItem": "Set the items in the list table.",
+        "duplicateFieldName": "Duplicate field name.",
+        "duplicateSerial": "I have multiple fields in Serial."
+      }
+    }
+  },
+  "site": {
+    "privacypolicy": "https://ecoris-map.web.app/policy_en.html",
+    "manual": "https://ecoris-map.web.app/manual_en.html",
+    "termsOfUse": "https://ecoris-map.web.app/terms_en.html",
+    "toplogo": "./images/toplogo_en.png",
+    "playlogo": "https://play.google.com/intl/en/badges/static/images/badges/en_badge_web_generic.png",
+    "googleplay": "https://play.google.com/store/apps/details?id=jp.co.ecoris.ecorismap&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1&hl=en-US",
+    "playlogoAlt": "Get it on Google Play",
+    "changelog": "https://github.com/ecorismap/ecorismap/blob/main/CHANGELOG.md"
+  },
+  "Format": {
+    "alert": {
+      "formattedInputs": "Please enter the following values ​​correctly."
+    }
+  },
+  "Licenses": {
+    "navigation": {
+      "title": "Open Source License"
+    }
+  }
+}
