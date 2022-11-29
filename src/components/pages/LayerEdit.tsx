@@ -56,15 +56,13 @@ export default function LayerEditScreen(props: Props) {
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
     [gotoBack]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
-      headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
+      headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
     });
   }, [headerLeftButton, navigation]);
 

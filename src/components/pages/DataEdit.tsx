@@ -98,10 +98,9 @@ export default function DataEditScreen(props: Props) {
   const layers = useSelector((state: AppState) => state.layers);
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row' }}>
-        <HeaderBackButton {...props} onPress={gotoBack} />
+        <HeaderBackButton {...props_} onPress={gotoBack} />
         {recordSet !== undefined && (
           <DataEditRecordSelector
             recordNumber={recordNumber}
