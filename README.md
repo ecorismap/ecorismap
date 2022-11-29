@@ -1,8 +1,8 @@
 EcorisMap
 ===================================
-EcorisMapは、スマホで位置情報を記録、確認できるアプリです。
+EcorisMapは、野外調査で位置情報を記録、確認できるアプリです。
 
-EcorisMap is an application that records locations and information with your smartphone.
+EcorisMap is field survey application that records locations and information on a map
 
 
   

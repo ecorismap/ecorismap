@@ -3,7 +3,7 @@ import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 //export const AppID = 'com.tmizu23.ecorismap2022';
-export const VERSION = 'Version 0.1.9';
+export const VERSION = 'Version 1.0.0';
 export const FUNC_LOGIN = true;
 export const FUNC_PROJECT = true;
 export const FUNC_HISYOUTOOLS = false;
