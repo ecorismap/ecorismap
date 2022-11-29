@@ -2,7 +2,7 @@ require File.join(File.dirname(`node --print "require.resolve('expo/package.json
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 require File.join(File.dirname(`node --print "require.resolve('@react-native-community/cli-platform-ios/package.json')"`), "native_modules")
 
-platform :ios, '13.0'
+platform :ios, '12.0'
 
 require 'json'
 podfile_properties = JSON.parse(File.read('./Podfile.properties.json')) rescue {}
@@ -50,7 +50,15 @@ target 'ecorismap' do
 
   post_install do |installer|
     react_native_post_install(installer)
-
+    # Add these lines for Xcode 14 builds
+    installer.generated_projects.each do |project|
+      project.targets.each do |target|
+          target.build_configurations.each do |config|
+              config.build_settings["DEVELOPMENT_TEAM"] = "V5G4AV2NNZ"
+          end
+      end
+    end
+    # End of added lines
     # Workaround `Cycle inside FBReactNativeSpec` error for react-native 0.64
     # Reference: https://github.com/software-mansion/react-native-screens/issues/842#issuecomment-812543933
     installer.pods_project.targets.each do |target|
@@ -66,6 +74,9 @@ target 'ecorismap' do
         target.build_configurations.each do |config|
           config.build_settings['CLANG_ENABLE_MODULES'] = 'No'
         end
+      end
+      target.build_configurations.each do |config|
+        config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
       end
     end
   end

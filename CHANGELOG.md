@@ -1,8 +1,9 @@
 # Change Log 更新履歴
 
-## [Unreleased]
+## [Unreleased] 次回リリースの修正
 ### Android
 - Support for Android API level 31. Android APIレベル31に対応
+- Change color when selecting features. フィーチャ選択時の色を変更
 ### iOS
 ### Web
 - Eliminated averaging algorithm for line creation. ライン作成の平均化アルゴリズムを廃止

@@ -1,64 +1,74 @@
-diff --git a/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/results.bin b/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/results.bin
+diff --git a/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin
 new file mode 100644
 index 0000000..0d259dd
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/results.bin
++++ b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin
 @@ -0,0 +1 @@
 +o/classes
-diff --git a/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/transformed/classes/classes.dex b/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/transformed/classes/classes.dex
+diff --git a/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/transformed/classes/classes.dex b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..a094c36
-Binary files /dev/null and b/node_modules/expo-location/android/build/.transforms/93aa4812047564abe491be7dfd50820d/transformed/classes/classes.dex differ
-diff --git a/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java b/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java b/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java
 new file mode 100644
-index 0000000..f698a3a
+index 0000000..25bfd26
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java
++++ b/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java
 @@ -0,0 +1,10 @@
 +/**
 + * Automatically generated file. DO NOT MODIFY
 + */
-+package expo.modules.location;
++package expo.modules.taskManager;
 +
 +public final class BuildConfig {
 +  public static final boolean DEBUG = Boolean.parseBoolean("true");
-+  public static final String LIBRARY_PACKAGE_NAME = "expo.modules.location";
++  public static final String LIBRARY_PACKAGE_NAME = "expo.modules.taskManager";
 +  public static final String BUILD_TYPE = "debug";
 +}
-diff --git a/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
 new file mode 100644
-index 0000000..b99a358
+index 0000000..24b3747
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
-@@ -0,0 +1,22 @@
++++ b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+@@ -0,0 +1,33 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.location"
-+    android:versionCode="29"
-+    android:versionName="14.0.2" >
++    package="expo.modules.taskManager"
++    android:versionCode="23"
++    android:versionName="10.1.0" >
 +
 +    <uses-sdk
 +        android:minSdkVersion="29"
 +        android:targetSdkVersion="31" />
 +
-+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-+
 +    <application>
++        <receiver
++            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
++            android:exported="false" >
++            <intent-filter>
++                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
++                <action android:name="android.intent.action.BOOT_COMPLETED" />
++                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
++            </intent-filter>
++        </receiver>
++
 +        <service
-+            android:name="expo.modules.location.services.LocationTaskService"
++            android:name="expo.modules.taskManager.TaskJobService"
++            android:enabled="true"
 +            android:exported="false"
-+            android:foregroundServiceType="location" />
++            android:permission="android.permission.BIND_JOB_SERVICE" />
++
++        <meta-data
++            android:name="expo.modules.taskManager.oneAppId"
++            android:value="true" />
 +    </application>
 +
 +</manifest>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
 new file mode 100644
-index 0000000..477b30e
+index 0000000..ae419cb
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
++++ b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
 @@ -0,0 +1,16 @@
 +{
 +  "version": 2,
@@ -66,7 +76,7 @@ index 0000000..477b30e
 +    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
 +    "kind": "Directory"
 +  },
-+  "applicationId": "expo.modules.location",
++  "applicationId": "expo.modules.taskManager",
 +  "variantName": "debug",
 +  "elements": [
 +    {
@@ -77,36 +87,34 @@ index 0000000..477b30e
 +  ]
 +}
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
 new file mode 100644
 index 0000000..d8560bd
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
++++ b/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
 @@ -0,0 +1,2 @@
 +aarFormatVersion=1.0
 +aarMetadataVersion=1.0
-diff --git a/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
 new file mode 100644
 index 0000000..9e26dfe
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
++++ b/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
 @@ -0,0 +1 @@
 +{}
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/expo-location/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/expo-task-manager/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..04750d0
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
-diff --git a/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/expo-task-manager/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
-index 0000000..bd7ede1
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
-diff --git a/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
-index 0000000..4a48aab
+index 0000000..a8801e1
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt
-@@ -0,0 +1,1894 @@
++++ b/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt
+@@ -0,0 +1,1789 @@
 +int anim abc_fade_in 0x0
 +int anim abc_fade_out 0x0
 +int anim abc_grow_fade_in_from_bottom 0x0
@@ -193,14 +201,12 @@ index 0000000..4a48aab
 +int attr buttonGravity 0x0
 +int attr buttonIconDimen 0x0
 +int attr buttonPanelSideLayout 0x0
-+int attr buttonSize 0x0
 +int attr buttonStyle 0x0
 +int attr buttonStyleSmall 0x0
 +int attr buttonTint 0x0
 +int attr buttonTintMode 0x0
 +int attr checkboxStyle 0x0
 +int attr checkedTextViewStyle 0x0
-+int attr circleCrop 0x0
 +int attr closeIcon 0x0
 +int attr closeItemLayout 0x0
 +int attr collapseContentDescription 0x0
@@ -215,7 +221,6 @@ index 0000000..4a48aab
 +int attr colorError 0x0
 +int attr colorPrimary 0x0
 +int attr colorPrimaryDark 0x0
-+int attr colorScheme 0x0
 +int attr colorSwitchThumbNormal 0x0
 +int attr commitIcon 0x0
 +int attr contentDescription 0x0
@@ -271,8 +276,6 @@ index 0000000..4a48aab
 +int attr iconTint 0x0
 +int attr iconTintMode 0x0
 +int attr iconifiedByDefault 0x0
-+int attr imageAspectRatio 0x0
-+int attr imageAspectRatioAdjust 0x0
 +int attr imageButtonStyle 0x0
 +int attr indeterminateProgressStyle 0x0
 +int attr initialActivityCount 0x0
@@ -351,7 +354,6 @@ index 0000000..4a48aab
 +int attr roundingBorderColor 0x0
 +int attr roundingBorderPadding 0x0
 +int attr roundingBorderWidth 0x0
-+int attr scopeUris 0x0
 +int attr searchHintIcon 0x0
 +int attr searchIcon 0x0
 +int attr searchViewStyle 0x0
@@ -477,17 +479,6 @@ index 0000000..4a48aab
 +int color button_material_light 0x0
 +int color catalyst_logbox_background 0x0
 +int color catalyst_redbox_background 0x0
-+int color common_google_signin_btn_text_dark 0x0
-+int color common_google_signin_btn_text_dark_default 0x0
-+int color common_google_signin_btn_text_dark_disabled 0x0
-+int color common_google_signin_btn_text_dark_focused 0x0
-+int color common_google_signin_btn_text_dark_pressed 0x0
-+int color common_google_signin_btn_text_light 0x0
-+int color common_google_signin_btn_text_light_default 0x0
-+int color common_google_signin_btn_text_light_disabled 0x0
-+int color common_google_signin_btn_text_light_focused 0x0
-+int color common_google_signin_btn_text_light_pressed 0x0
-+int color common_google_signin_btn_tint 0x0
 +int color dim_foreground_disabled_material_dark 0x0
 +int color dim_foreground_disabled_material_light 0x0
 +int color dim_foreground_material_dark 0x0
@@ -512,7 +503,6 @@ index 0000000..4a48aab
 +int color material_grey_900 0x0
 +int color notification_action_color_filter 0x0
 +int color notification_icon_bg_color 0x0
-+int color notification_material_background_media_default_color 0x0
 +int color primary_dark_material_dark 0x0
 +int color primary_dark_material_light 0x0
 +int color primary_material_dark 0x0
@@ -641,10 +631,6 @@ index 0000000..4a48aab
 +int dimen notification_subtext_size 0x0
 +int dimen notification_top_pad 0x0
 +int dimen notification_top_pad_large_text 0x0
-+int dimen subtitle_corner_radius 0x0
-+int dimen subtitle_outline_width 0x0
-+int dimen subtitle_shadow_offset 0x0
-+int dimen subtitle_shadow_radius 0x0
 +int dimen tooltip_corner_radius 0x0
 +int dimen tooltip_horizontal_padding 0x0
 +int dimen tooltip_margin 0x0
@@ -737,35 +723,6 @@ index 0000000..4a48aab
 +int drawable abc_textfield_search_default_mtrl_alpha 0x0
 +int drawable abc_textfield_search_material 0x0
 +int drawable abc_vector_test 0x0
-+int drawable common_full_open_on_phone 0x0
-+int drawable common_google_signin_btn_icon_dark 0x0
-+int drawable common_google_signin_btn_icon_dark_disabled 0x0
-+int drawable common_google_signin_btn_icon_dark_focused 0x0
-+int drawable common_google_signin_btn_icon_dark_normal 0x0
-+int drawable common_google_signin_btn_icon_dark_normal_background 0x0
-+int drawable common_google_signin_btn_icon_dark_pressed 0x0
-+int drawable common_google_signin_btn_icon_disabled 0x0
-+int drawable common_google_signin_btn_icon_light 0x0
-+int drawable common_google_signin_btn_icon_light_disabled 0x0
-+int drawable common_google_signin_btn_icon_light_focused 0x0
-+int drawable common_google_signin_btn_icon_light_normal 0x0
-+int drawable common_google_signin_btn_icon_light_normal_background 0x0
-+int drawable common_google_signin_btn_icon_light_pressed 0x0
-+int drawable common_google_signin_btn_text_dark 0x0
-+int drawable common_google_signin_btn_text_dark_disabled 0x0
-+int drawable common_google_signin_btn_text_dark_focused 0x0
-+int drawable common_google_signin_btn_text_dark_normal 0x0
-+int drawable common_google_signin_btn_text_dark_normal_background 0x0
-+int drawable common_google_signin_btn_text_dark_pressed 0x0
-+int drawable common_google_signin_btn_text_disabled 0x0
-+int drawable common_google_signin_btn_text_light 0x0
-+int drawable common_google_signin_btn_text_light_disabled 0x0
-+int drawable common_google_signin_btn_text_light_focused 0x0
-+int drawable common_google_signin_btn_text_light_normal 0x0
-+int drawable common_google_signin_btn_text_light_normal_background 0x0
-+int drawable common_google_signin_btn_text_light_pressed 0x0
-+int drawable googleg_disabled_color_18 0x0
-+int drawable googleg_standard_color_18 0x0
 +int drawable notification_action_background 0x0
 +int drawable notification_bg 0x0
 +int drawable notification_bg_low 0x0
@@ -787,7 +744,6 @@ index 0000000..4a48aab
 +int id accessibility_role 0x0
 +int id accessibility_state 0x0
 +int id accessibility_value 0x0
-+int id action0 0x0
 +int id action_bar 0x0
 +int id action_bar_activity_content 0x0
 +int id action_bar_container 0x0
@@ -808,15 +764,11 @@ index 0000000..4a48aab
 +int id actions 0x0
 +int id activity_chooser_view_content 0x0
 +int id add 0x0
-+int id adjust_height 0x0
-+int id adjust_width 0x0
 +int id alertTitle 0x0
 +int id async 0x0
-+int id auto 0x0
 +int id blocking 0x0
 +int id bottom 0x0
 +int id buttonPanel 0x0
-+int id cancel_action 0x0
 +int id catalyst_redbox_title 0x0
 +int id center 0x0
 +int id centerCrop 0x0
@@ -827,12 +779,10 @@ index 0000000..4a48aab
 +int id contentPanel 0x0
 +int id custom 0x0
 +int id customPanel 0x0
-+int id dark 0x0
 +int id decor_content_parent 0x0
 +int id default_activity_button 0x0
 +int id edit_query 0x0
 +int id end 0x0
-+int id end_padder 0x0
 +int id expand_activities_button 0x0
 +int id expanded_menu 0x0
 +int id fitBottomStart 0x0
@@ -847,17 +797,14 @@ index 0000000..4a48aab
 +int id home 0x0
 +int id icon 0x0
 +int id icon_group 0x0
-+int id icon_only 0x0
 +int id image 0x0
 +int id info 0x0
 +int id italic 0x0
 +int id left 0x0
-+int id light 0x0
 +int id line1 0x0
 +int id line3 0x0
 +int id listMode 0x0
 +int id list_item 0x0
-+int id media_actions 0x0
 +int id message 0x0
 +int id multiply 0x0
 +int id none 0x0
@@ -903,9 +850,7 @@ index 0000000..4a48aab
 +int id src_atop 0x0
 +int id src_in 0x0
 +int id src_over 0x0
-+int id standard 0x0
 +int id start 0x0
-+int id status_bar_latest_event_content 0x0
 +int id submenuarrow 0x0
 +int id submit_area 0x0
 +int id tabMode 0x0
@@ -926,13 +871,11 @@ index 0000000..4a48aab
 +int id up 0x0
 +int id view_tag_instance_handle 0x0
 +int id view_tag_native_id 0x0
-+int id wide 0x0
 +int id wrap_content 0x0
 +int integer abc_config_activityDefaultDur 0x0
 +int integer abc_config_activityShortDur 0x0
 +int integer cancel_button_image_alpha 0x0
 +int integer config_tooltipAnimTime 0x0
-+int integer google_play_services_version 0x0
 +int integer react_native_dev_server_port 0x0
 +int integer react_native_inspector_proxy_port 0x0
 +int integer status_bar_notification_info_maxnum 0x0
@@ -968,17 +911,8 @@ index 0000000..4a48aab
 +int layout fps_view 0x0
 +int layout notification_action 0x0
 +int layout notification_action_tombstone 0x0
-+int layout notification_media_action 0x0
-+int layout notification_media_cancel_action 0x0
-+int layout notification_template_big_media 0x0
-+int layout notification_template_big_media_custom 0x0
-+int layout notification_template_big_media_narrow 0x0
-+int layout notification_template_big_media_narrow_custom 0x0
 +int layout notification_template_custom_big 0x0
 +int layout notification_template_icon_group 0x0
-+int layout notification_template_lines_media 0x0
-+int layout notification_template_media 0x0
-+int layout notification_template_media_custom 0x0
 +int layout notification_template_part_chronometer 0x0
 +int layout notification_template_part_time 0x0
 +int layout redbox_item_frame 0x0
@@ -1059,24 +993,6 @@ index 0000000..4a48aab
 +int string catalyst_settings 0x0
 +int string catalyst_settings_title 0x0
 +int string combobox_description 0x0
-+int string common_google_play_services_enable_button 0x0
-+int string common_google_play_services_enable_text 0x0
-+int string common_google_play_services_enable_title 0x0
-+int string common_google_play_services_install_button 0x0
-+int string common_google_play_services_install_text 0x0
-+int string common_google_play_services_install_title 0x0
-+int string common_google_play_services_notification_channel_name 0x0
-+int string common_google_play_services_notification_ticker 0x0
-+int string common_google_play_services_unknown_issue 0x0
-+int string common_google_play_services_unsupported_text 0x0
-+int string common_google_play_services_update_button 0x0
-+int string common_google_play_services_update_text 0x0
-+int string common_google_play_services_update_title 0x0
-+int string common_google_play_services_updating_text 0x0
-+int string common_google_play_services_wear_update_text 0x0
-+int string common_open_on_phone 0x0
-+int string common_signin_button_text 0x0
-+int string common_signin_button_text_long 0x0
 +int string header_description 0x0
 +int string image_description 0x0
 +int string imagebutton_description 0x0
@@ -1347,14 +1263,9 @@ index 0000000..4a48aab
 +int style TextAppearance_AppCompat_Widget_TextView_SpinnerItem 0x0
 +int style TextAppearance_Compat_Notification 0x0
 +int style TextAppearance_Compat_Notification_Info 0x0
-+int style TextAppearance_Compat_Notification_Info_Media 0x0
 +int style TextAppearance_Compat_Notification_Line2 0x0
-+int style TextAppearance_Compat_Notification_Line2_Media 0x0
-+int style TextAppearance_Compat_Notification_Media 0x0
 +int style TextAppearance_Compat_Notification_Time 0x0
-+int style TextAppearance_Compat_Notification_Time_Media 0x0
 +int style TextAppearance_Compat_Notification_Title 0x0
-+int style TextAppearance_Compat_Notification_Title_Media 0x0
 +int style TextAppearance_Widget_AppCompat_ExpandedMenu_Item 0x0
 +int style TextAppearance_Widget_AppCompat_Toolbar_Subtitle 0x0
 +int style TextAppearance_Widget_AppCompat_Toolbar_Title 0x0
@@ -1804,10 +1715,6 @@ index 0000000..4a48aab
 +int[] styleable ListPopupWindow { 0x10102ac, 0x10102ad }
 +int styleable ListPopupWindow_android_dropDownHorizontalOffset 0
 +int styleable ListPopupWindow_android_dropDownVerticalOffset 1
-+int[] styleable LoadingImageView { 0x0, 0x0, 0x0 }
-+int styleable LoadingImageView_circleCrop 0
-+int styleable LoadingImageView_imageAspectRatio 1
-+int styleable LoadingImageView_imageAspectRatioAdjust 2
 +int[] styleable MenuGroup { 0x10101e0, 0x101000e, 0x10100d0, 0x10101de, 0x10101df, 0x1010194 }
 +int styleable MenuGroup_android_checkableBehavior 0
 +int styleable MenuGroup_android_enabled 1
@@ -1876,10 +1783,6 @@ index 0000000..4a48aab
 +int styleable SearchView_submitBackground 14
 +int styleable SearchView_suggestionRowLayout 15
 +int styleable SearchView_voiceIcon 16
-+int[] styleable SignInButton { 0x0, 0x0, 0x0 }
-+int styleable SignInButton_buttonSize 0
-+int styleable SignInButton_colorScheme 1
-+int styleable SignInButton_scopeUris 2
 +int[] styleable SimpleDraweeView { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable SimpleDraweeView_actualImageResource 0
 +int styleable SimpleDraweeView_actualImageScaleType 1
@@ -2001,232 +1904,239 @@ index 0000000..4a48aab
 +int styleable ViewStubCompat_android_inflatedId 1
 +int styleable ViewStubCompat_android_layout 2
 +int xml rn_dev_preferences 0x0
-diff --git a/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 new file mode 100644
-index 0000000..2b64671
+index 0000000..e687c45
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
++++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/debug/jniLibs"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/jniLibs"/></dataSet></merger>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..ca7ca10
+index 0000000..979ff5d
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
++++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
-index 0000000..0467c33
+index 0000000..2713486
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml
++++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/debug/assets"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/assets"/></dataSet></merger>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
 new file mode 100644
 index 0000000..09931bb
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
++++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
 +#Sat Nov 19 06:03:16 JST 2022
-diff --git a/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/merger.xml
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml
 new file mode 100644
-index 0000000..3cc2263
+index 0000000..deaadc2
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugResources/merger.xml
++++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/debug/res"/></dataSet><mergedItems/></merger>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/res"/></dataSet><mergedItems/></merger>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/BuildConfig.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/BuildConfig.class
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/BuildConfig.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/BuildConfig.class
 new file mode 100644
-index 0000000..35d1469
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/BuildConfig.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Task.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Task.class
 new file mode 100644
-index 0000000..b5ef5a7
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskBroadcastReceiver.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskBroadcastReceiver.class
 new file mode 100644
-index 0000000..42a03ec
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskJobService.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskJobService.class
 new file mode 100644
-index 0000000..125b1d8
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerInternalModule.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerInternalModule.class
 new file mode 100644
-index 0000000..2d19bbc
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule$1.class
 new file mode 100644
-index 0000000..9b39bb4
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule.class
 new file mode 100644
-index 0000000..acc0bd9
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerPackage.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerPackage.class
 new file mode 100644
-index 0000000..e9bdf65
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils$1.class
 new file mode 100644
-index 0000000..930b5ea
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils.class
 new file mode 100644
-index 0000000..f0a6f75
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$1.class
 new file mode 100644
-index 0000000..9a26476
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$2.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$2.class
 new file mode 100644
-index 0000000..02bf36a
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService.class
 new file mode 100644
-index 0000000..8efa530
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Utils.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Utils.class
 new file mode 100644
-index 0000000..03fc1f7
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/InvalidConsumerClassException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/InvalidConsumerClassException.class
 new file mode 100644
-index 0000000..ddab017
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService$ServiceBinder.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService$ServiceBinder.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskNotFoundException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskNotFoundException.class
 new file mode 100644
-index 0000000..919ca15
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService$ServiceBinder.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskRegisteringFailedException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskRegisteringFailedException.class
 new file mode 100644
-index 0000000..58c1f28
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/services/LocationTaskService.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/BareTasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/BareTasksAndEventsRepository.class
 new file mode 100644
-index 0000000..bf9408f
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.class
 new file mode 100644
-index 0000000..789e763
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository$AppConfig.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository$AppConfig.class
 new file mode 100644
-index 0000000..5ce1e71
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository.class
 new file mode 100644
-index 0000000..730fa36
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksPersistence.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksPersistence.class
 new file mode 100644
-index 0000000..aee9fe6
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/library_java_res/debug/res.jar b/node_modules/expo-task-manager/android/build/intermediates/library_java_res/debug/res.jar
 new file mode 100644
-index 0000000..e2bba00
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class differ
-diff --git a/node_modules/expo-location/android/build/intermediates/library_manifest/debug/AndroidManifest.xml b/node_modules/expo-location/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml b/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
 new file mode 100644
-index 0000000..b99a358
+index 0000000..24b3747
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
-@@ -0,0 +1,22 @@
++++ b/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
+@@ -0,0 +1,33 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.location"
-+    android:versionCode="29"
-+    android:versionName="14.0.2" >
++    package="expo.modules.taskManager"
++    android:versionCode="23"
++    android:versionName="10.1.0" >
 +
 +    <uses-sdk
 +        android:minSdkVersion="29"
 +        android:targetSdkVersion="31" />
 +
-+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-+
 +    <application>
++        <receiver
++            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
++            android:exported="false" >
++            <intent-filter>
++                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
++                <action android:name="android.intent.action.BOOT_COMPLETED" />
++                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
++            </intent-filter>
++        </receiver>
++
 +        <service
-+            android:name="expo.modules.location.services.LocationTaskService"
++            android:name="expo.modules.taskManager.TaskJobService"
++            android:enabled="true"
 +            android:exported="false"
-+            android:foregroundServiceType="location" />
++            android:permission="android.permission.BIND_JOB_SERVICE" />
++
++        <meta-data
++            android:name="expo.modules.taskManager.oneAppId"
++            android:value="true" />
 +    </application>
 +
 +</manifest>
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
 new file mode 100644
 index 0000000..78ac5b8
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
++++ b/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
 @@ -0,0 +1,2 @@
 +R_DEF: Internal format may change without notice
 +local
-diff --git a/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
 new file mode 100644
-index 0000000..38a537b
+index 0000000..c869c61
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
-@@ -0,0 +1,35 @@
++++ b/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+@@ -0,0 +1,54 @@
 +1<?xml version="1.0" encoding="utf-8"?>
 +2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+3    package="expo.modules.location"
-+4    android:versionCode="29"
-+5    android:versionName="14.0.2" >
++3    package="expo.modules.taskManager"
++4    android:versionCode="23"
++5    android:versionName="10.1.0" >
 +6
 +7    <uses-sdk
 +8        android:minSdkVersion="29"
-+8-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++8-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +9        android:targetSdkVersion="31" />
-+9-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++9-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +10
-+11    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-+11-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:3-79
-+11-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:20-76
-+12    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-+12-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:3-77
-+12-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:20-74
-+13    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-+13-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:3-75
-+13-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:20-72
-+14
-+15    <application>
-+15-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:8:3-13:17
-+16        <service
-+16-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:9:5-12:50
-+17            android:name="expo.modules.location.services.LocationTaskService"
-+17-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:10:7-51
-+18            android:exported="false"
-+18-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:11:7-31
-+19            android:foregroundServiceType="location" />
-+19-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:12:7-47
-+20    </application>
++11    <application>
++11-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:4:5-21:19
++12        <receiver
++12-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:5:9-13:20
++13            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
++13-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:6:13-50
++14            android:exported="false" >
++14-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:7:13-37
++15            <intent-filter>
++15-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:8:13-12:29
++16                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
++16-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:17-103
++16-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:25-100
++17                <action android:name="android.intent.action.BOOT_COMPLETED" />
++17-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:17-79
++17-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:25-76
++18                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
++18-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:17-84
++18-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:25-81
++19            </intent-filter>
++20        </receiver>
 +21
-+22</manifest>
-diff --git a/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json
++22        <service
++22-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:14:9-18:72
++23            android:name="expo.modules.taskManager.TaskJobService"
++23-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:15:13-43
++24            android:enabled="true"
++24-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:16:13-35
++25            android:exported="false"
++25-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:17:13-37
++26            android:permission="android.permission.BIND_JOB_SERVICE" />
++26-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:18:13-69
++27
++28        <meta-data
++28-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:7-89
++29            android:name="expo.modules.taskManager.oneAppId"
++29-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:18-66
++30            android:value="true" />
++30-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:67-87
++31    </application>
++32
++33</manifest>
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json
 new file mode 100644
 index 0000000..0637a08
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json
++++ b/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json
 @@ -0,0 +1 @@
 +[]
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json b/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json b/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json
 new file mode 100644
-index 0000000..52491ea
+index 0000000..5a1dabd
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json
++++ b/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json
 @@ -0,0 +1,16 @@
 +{
 +  "version": 2,
@@ -2234,7 +2144,7 @@ index 0000000..52491ea
 +    "type": "PACKAGED_MANIFESTS",
 +    "kind": "Directory"
 +  },
-+  "applicationId": "expo.modules.location",
++  "applicationId": "expo.modules.taskManager",
 +  "variantName": "debug",
 +  "elements": [
 +    {
@@ -2245,17 +2155,16 @@ index 0000000..52491ea
 +  ]
 +}
 \ No newline at end of file
-diff --git a/node_modules/expo-location/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/expo-location/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/expo-task-manager/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..af826e0
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
-diff --git a/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
-index 0000000..6fb917f
+index 0000000..d57fc46
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
-@@ -0,0 +1,1414 @@
-+expo.modules.location
++++ b/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+@@ -0,0 +1,1315 @@
++expo.modules.taskManager
 +anim abc_fade_in
 +anim abc_fade_out
 +anim abc_grow_fade_in_from_bottom
@@ -2342,14 +2251,12 @@ index 0000000..6fb917f
 +attr buttonGravity
 +attr buttonIconDimen
 +attr buttonPanelSideLayout
-+attr buttonSize
 +attr buttonStyle
 +attr buttonStyleSmall
 +attr buttonTint
 +attr buttonTintMode
 +attr checkboxStyle
 +attr checkedTextViewStyle
-+attr circleCrop
 +attr closeIcon
 +attr closeItemLayout
 +attr collapseContentDescription
@@ -2364,7 +2271,6 @@ index 0000000..6fb917f
 +attr colorError
 +attr colorPrimary
 +attr colorPrimaryDark
-+attr colorScheme
 +attr colorSwitchThumbNormal
 +attr commitIcon
 +attr contentDescription
@@ -2420,8 +2326,6 @@ index 0000000..6fb917f
 +attr iconTint
 +attr iconTintMode
 +attr iconifiedByDefault
-+attr imageAspectRatio
-+attr imageAspectRatioAdjust
 +attr imageButtonStyle
 +attr indeterminateProgressStyle
 +attr initialActivityCount
@@ -2500,7 +2404,6 @@ index 0000000..6fb917f
 +attr roundingBorderColor
 +attr roundingBorderPadding
 +attr roundingBorderWidth
-+attr scopeUris
 +attr searchHintIcon
 +attr searchIcon
 +attr searchViewStyle
@@ -2626,17 +2529,6 @@ index 0000000..6fb917f
 +color button_material_light
 +color catalyst_logbox_background
 +color catalyst_redbox_background
-+color common_google_signin_btn_text_dark
-+color common_google_signin_btn_text_dark_default
-+color common_google_signin_btn_text_dark_disabled
-+color common_google_signin_btn_text_dark_focused
-+color common_google_signin_btn_text_dark_pressed
-+color common_google_signin_btn_text_light
-+color common_google_signin_btn_text_light_default
-+color common_google_signin_btn_text_light_disabled
-+color common_google_signin_btn_text_light_focused
-+color common_google_signin_btn_text_light_pressed
-+color common_google_signin_btn_tint
 +color dim_foreground_disabled_material_dark
 +color dim_foreground_disabled_material_light
 +color dim_foreground_material_dark
@@ -2661,7 +2553,6 @@ index 0000000..6fb917f
 +color material_grey_900
 +color notification_action_color_filter
 +color notification_icon_bg_color
-+color notification_material_background_media_default_color
 +color primary_dark_material_dark
 +color primary_dark_material_light
 +color primary_material_dark
@@ -2790,10 +2681,6 @@ index 0000000..6fb917f
 +dimen notification_subtext_size
 +dimen notification_top_pad
 +dimen notification_top_pad_large_text
-+dimen subtitle_corner_radius
-+dimen subtitle_outline_width
-+dimen subtitle_shadow_offset
-+dimen subtitle_shadow_radius
 +dimen tooltip_corner_radius
 +dimen tooltip_horizontal_padding
 +dimen tooltip_margin
@@ -2886,35 +2773,6 @@ index 0000000..6fb917f
 +drawable abc_textfield_search_default_mtrl_alpha
 +drawable abc_textfield_search_material
 +drawable abc_vector_test
-+drawable common_full_open_on_phone
-+drawable common_google_signin_btn_icon_dark
-+drawable common_google_signin_btn_icon_dark_disabled
-+drawable common_google_signin_btn_icon_dark_focused
-+drawable common_google_signin_btn_icon_dark_normal
-+drawable common_google_signin_btn_icon_dark_normal_background
-+drawable common_google_signin_btn_icon_dark_pressed
-+drawable common_google_signin_btn_icon_disabled
-+drawable common_google_signin_btn_icon_light
-+drawable common_google_signin_btn_icon_light_disabled
-+drawable common_google_signin_btn_icon_light_focused
-+drawable common_google_signin_btn_icon_light_normal
-+drawable common_google_signin_btn_icon_light_normal_background
-+drawable common_google_signin_btn_icon_light_pressed
-+drawable common_google_signin_btn_text_dark
-+drawable common_google_signin_btn_text_dark_disabled
-+drawable common_google_signin_btn_text_dark_focused
-+drawable common_google_signin_btn_text_dark_normal
-+drawable common_google_signin_btn_text_dark_normal_background
-+drawable common_google_signin_btn_text_dark_pressed
-+drawable common_google_signin_btn_text_disabled
-+drawable common_google_signin_btn_text_light
-+drawable common_google_signin_btn_text_light_disabled
-+drawable common_google_signin_btn_text_light_focused
-+drawable common_google_signin_btn_text_light_normal
-+drawable common_google_signin_btn_text_light_normal_background
-+drawable common_google_signin_btn_text_light_pressed
-+drawable googleg_disabled_color_18
-+drawable googleg_standard_color_18
 +drawable notification_action_background
 +drawable notification_bg
 +drawable notification_bg_low
@@ -2936,7 +2794,6 @@ index 0000000..6fb917f
 +id accessibility_role
 +id accessibility_state
 +id accessibility_value
-+id action0
 +id action_bar
 +id action_bar_activity_content
 +id action_bar_container
@@ -2957,15 +2814,11 @@ index 0000000..6fb917f
 +id actions
 +id activity_chooser_view_content
 +id add
-+id adjust_height
-+id adjust_width
 +id alertTitle
 +id async
-+id auto
 +id blocking
 +id bottom
 +id buttonPanel
-+id cancel_action
 +id catalyst_redbox_title
 +id center
 +id centerCrop
@@ -2976,12 +2829,10 @@ index 0000000..6fb917f
 +id contentPanel
 +id custom
 +id customPanel
-+id dark
 +id decor_content_parent
 +id default_activity_button
 +id edit_query
 +id end
-+id end_padder
 +id expand_activities_button
 +id expanded_menu
 +id fitBottomStart
@@ -2996,17 +2847,14 @@ index 0000000..6fb917f
 +id home
 +id icon
 +id icon_group
-+id icon_only
 +id image
 +id info
 +id italic
 +id left
-+id light
 +id line1
 +id line3
 +id listMode
 +id list_item
-+id media_actions
 +id message
 +id multiply
 +id none
@@ -3052,9 +2900,7 @@ index 0000000..6fb917f
 +id src_atop
 +id src_in
 +id src_over
-+id standard
 +id start
-+id status_bar_latest_event_content
 +id submenuarrow
 +id submit_area
 +id tabMode
@@ -3075,13 +2921,11 @@ index 0000000..6fb917f
 +id up
 +id view_tag_instance_handle
 +id view_tag_native_id
-+id wide
 +id wrap_content
 +integer abc_config_activityDefaultDur
 +integer abc_config_activityShortDur
 +integer cancel_button_image_alpha
 +integer config_tooltipAnimTime
-+integer google_play_services_version
 +integer react_native_dev_server_port
 +integer react_native_inspector_proxy_port
 +integer status_bar_notification_info_maxnum
@@ -3117,17 +2961,8 @@ index 0000000..6fb917f
 +layout fps_view
 +layout notification_action
 +layout notification_action_tombstone
-+layout notification_media_action
-+layout notification_media_cancel_action
-+layout notification_template_big_media
-+layout notification_template_big_media_custom
-+layout notification_template_big_media_narrow
-+layout notification_template_big_media_narrow_custom
 +layout notification_template_custom_big
 +layout notification_template_icon_group
-+layout notification_template_lines_media
-+layout notification_template_media
-+layout notification_template_media_custom
 +layout notification_template_part_chronometer
 +layout notification_template_part_time
 +layout redbox_item_frame
@@ -3208,24 +3043,6 @@ index 0000000..6fb917f
 +string catalyst_settings
 +string catalyst_settings_title
 +string combobox_description
-+string common_google_play_services_enable_button
-+string common_google_play_services_enable_text
-+string common_google_play_services_enable_title
-+string common_google_play_services_install_button
-+string common_google_play_services_install_text
-+string common_google_play_services_install_title
-+string common_google_play_services_notification_channel_name
-+string common_google_play_services_notification_ticker
-+string common_google_play_services_unknown_issue
-+string common_google_play_services_unsupported_text
-+string common_google_play_services_update_button
-+string common_google_play_services_update_text
-+string common_google_play_services_update_title
-+string common_google_play_services_updating_text
-+string common_google_play_services_wear_update_text
-+string common_open_on_phone
-+string common_signin_button_text
-+string common_signin_button_text_long
 +string header_description
 +string image_description
 +string imagebutton_description
@@ -3496,14 +3313,9 @@ index 0000000..6fb917f
 +style TextAppearance_AppCompat_Widget_TextView_SpinnerItem
 +style TextAppearance_Compat_Notification
 +style TextAppearance_Compat_Notification_Info
-+style TextAppearance_Compat_Notification_Info_Media
 +style TextAppearance_Compat_Notification_Line2
-+style TextAppearance_Compat_Notification_Line2_Media
-+style TextAppearance_Compat_Notification_Media
 +style TextAppearance_Compat_Notification_Time
-+style TextAppearance_Compat_Notification_Time_Media
 +style TextAppearance_Compat_Notification_Title
-+style TextAppearance_Compat_Notification_Title_Media
 +style TextAppearance_Widget_AppCompat_ExpandedMenu_Item
 +style TextAppearance_Widget_AppCompat_Toolbar_Subtitle
 +style TextAppearance_Widget_AppCompat_Toolbar_Title
@@ -3649,7 +3461,6 @@ index 0000000..6fb917f
 +styleable LinearLayoutCompat android_baselineAligned android_baselineAlignedChildIndex android_gravity android_orientation android_weightSum divider dividerPadding measureWithLargestChild showDividers
 +styleable LinearLayoutCompat_Layout android_layout_gravity android_layout_height android_layout_weight android_layout_width
 +styleable ListPopupWindow android_dropDownHorizontalOffset android_dropDownVerticalOffset
-+styleable LoadingImageView circleCrop imageAspectRatio imageAspectRatioAdjust
 +styleable MenuGroup android_checkableBehavior android_enabled android_id android_menuCategory android_orderInCategory android_visible
 +styleable MenuItem actionLayout actionProviderClass actionViewClass alphabeticModifiers android_alphabeticShortcut android_checkable android_checked android_enabled android_icon android_id android_menuCategory android_numericShortcut android_onClick android_orderInCategory android_title android_titleCondensed android_visible contentDescription iconTint iconTintMode numericModifiers showAsAction tooltipText
 +styleable MenuView android_headerBackground android_horizontalDivider android_itemBackground android_itemIconDisabledAlpha android_itemTextAppearance android_verticalDivider android_windowAnimationStyle preserveIconSpacing subMenuArrow
@@ -3657,7 +3468,6 @@ index 0000000..6fb917f
 +styleable PopupWindowBackgroundState state_above_anchor
 +styleable RecycleListView paddingBottomNoButtons paddingTopNoTitle
 +styleable SearchView android_focusable android_imeOptions android_inputType android_maxWidth closeIcon commitIcon defaultQueryHint goIcon iconifiedByDefault layout queryBackground queryHint searchHintIcon searchIcon submitBackground suggestionRowLayout voiceIcon
-+styleable SignInButton buttonSize colorScheme scopeUris
 +styleable SimpleDraweeView actualImageResource actualImageScaleType actualImageUri backgroundImage fadeDuration failureImage failureImageScaleType overlayImage placeholderImage placeholderImageScaleType pressedStateOverlayImage progressBarAutoRotateInterval progressBarImage progressBarImageScaleType retryImage retryImageScaleType roundAsCircle roundBottomEnd roundBottomLeft roundBottomRight roundBottomStart roundTopEnd roundTopLeft roundTopRight roundTopStart roundWithOverlayColor roundedCornerRadius roundingBorderColor roundingBorderPadding roundingBorderWidth viewAspectRatio
 +styleable Spinner android_dropDownWidth android_entries android_popupBackground android_prompt popupTheme
 +styleable StateListDrawable android_constantSize android_dither android_enterFadeDuration android_exitFadeDuration android_variablePadding android_visible
@@ -3669,180 +3479,318 @@ index 0000000..6fb917f
 +styleable ViewBackgroundHelper android_background backgroundTint backgroundTintMode
 +styleable ViewStubCompat android_id android_inflatedId android_layout
 +xml rn_dev_preferences
-diff --git a/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/build-history.bin b/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/build-history.bin
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/build-history.bin b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/build-history.bin
 new file mode 100644
-index 0000000..f86a018
-Binary files /dev/null and b/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/build-history.bin differ
-diff --git a/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/last-build.bin b/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/last-build.bin
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab
 new file mode 100644
-index 0000000..ad0696f
-Binary files /dev/null and b/node_modules/expo-location/android/build/kotlin/compileDebugKotlin/last-build.bin differ
-diff --git a/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream
 new file mode 100644
-index 0000000..5b3bc3b
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.values.at
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i.len
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/last-build.bin b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/last-build.bin
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt
+new file mode 100644
+index 0000000..e38d274
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt
-@@ -0,0 +1,59 @@
++++ b/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,75 @@
 +-- Merging decision tree log ---
 +manifest
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
 +	package
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:2:3-34
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:2:5-39
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +	android:versionName
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +	android:versionCode
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +	xmlns:android
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:11-69
-+uses-permission#android.permission.ACCESS_COARSE_LOCATION
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:3-79
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:20-76
-+uses-permission#android.permission.ACCESS_FINE_LOCATION
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:3-77
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:20-74
-+uses-permission#android.permission.FOREGROUND_SERVICE
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:3-75
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:20-72
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:11-69
 +application
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:8:3-13:17
-+service#expo.modules.location.services.LocationTaskService
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:9:5-12:50
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:4:5-21:19
++receiver#expo.modules.taskManager.TaskBroadcastReceiver
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:5:9-13:20
 +	android:exported
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:11:7-31
-+	android:foregroundServiceType
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:12:7-47
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:7:13-37
 +	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:10:7-51
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:6:13-50
++intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.MY_PACKAGE_REPLACED+action:name:expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:8:13-12:29
++action#expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:17-103
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:25-100
++action#android.intent.action.BOOT_COMPLETED
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:17-79
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:25-76
++action#android.intent.action.MY_PACKAGE_REPLACED
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:17-84
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:25-81
++service#expo.modules.taskManager.TaskJobService
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:14:9-18:72
++	android:enabled
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:16:13-35
++	android:exported
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:17:13-37
++	android:permission
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:18:13-69
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:15:13-43
++meta-data#expo.modules.taskManager.oneAppId
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:7-89
++	android:value
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:67-87
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:18-66
 +uses-sdk
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +	android:targetSdkVersion
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
 +	android:minSdkVersion
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
-diff --git a/node_modules/expo-location/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt b/node_modules/expo-location/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt b/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
 new file mode 100644
-index 0000000..7d2eed5
+index 0000000..fda9b17
 --- /dev/null
-+++ b/node_modules/expo-location/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
-@@ -0,0 +1,37 @@
-+expo/modules/location/taskConsumers/GeofencingTaskConsumer.java
-+ expo.modules.location.taskConsumers.GeofencingTaskConsumer
-+ expo.modules.location.taskConsumers.GeofencingTaskConsumer$1
-+expo/modules/location/BuildConfig.java
-+ expo.modules.location.BuildConfig
-+expo/modules/location/exceptions/LocationRequestRejectedException.java
-+ expo.modules.location.exceptions.LocationRequestRejectedException
-+expo/modules/location/LocationModule.java
-+ expo.modules.location.LocationModule
-+ expo.modules.location.LocationModule$1
-+ expo.modules.location.LocationModule$OnResultListener
-+expo/modules/location/LocationActivityResultListener.java
-+ expo.modules.location.LocationActivityResultListener
-+expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.java
-+ expo.modules.location.exceptions.LocationSettingsUnsatisfiedException
-+expo/modules/location/LocationRequestCallbacks.java
-+ expo.modules.location.LocationRequestCallbacks
-+expo/modules/location/LocationHelpers.java
-+ expo.modules.location.LocationHelpers
-+ expo.modules.location.LocationHelpers$1
-+ expo.modules.location.LocationHelpers$2
-+expo/modules/location/LocationPackage.java
-+ expo.modules.location.LocationPackage
-+expo/modules/location/taskConsumers/LocationTaskConsumer.java
-+ expo.modules.location.taskConsumers.LocationTaskConsumer
-+ expo.modules.location.taskConsumers.LocationTaskConsumer$1
-+ expo.modules.location.taskConsumers.LocationTaskConsumer$2
-+ expo.modules.location.taskConsumers.LocationTaskConsumer$3
-+expo/modules/location/exceptions/LocationUnauthorizedException.java
-+ expo.modules.location.exceptions.LocationUnauthorizedException
-+expo/modules/location/exceptions/LocationUnavailableException.java
-+ expo.modules.location.exceptions.LocationUnavailableException
-+expo/modules/location/services/LocationTaskService.java
-+ expo.modules.location.services.LocationTaskService
-+ expo.modules.location.services.LocationTaskService$ServiceBinder
-+expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.java
-+ expo.modules.location.exceptions.LocationBackgroundUnauthorizedException
-diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
-index 444eb33..fb3ffe6 100644
---- a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
-+++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
-@@ -13,11 +13,18 @@ import android.graphics.Color;
++++ b/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
+@@ -0,0 +1,39 @@
++expo/modules/taskManager/TaskManagerPackage.java
++ expo.modules.taskManager.TaskManagerPackage
++expo/modules/taskManager/exceptions/TaskRegisteringFailedException.java
++ expo.modules.taskManager.exceptions.TaskRegisteringFailedException
++expo/modules/taskManager/TaskManagerInternalModule.java
++ expo.modules.taskManager.TaskManagerInternalModule
++expo/modules/taskManager/BuildConfig.java
++ expo.modules.taskManager.BuildConfig
++expo/modules/taskManager/TaskJobService.java
++ expo.modules.taskManager.TaskJobService
++expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.java
++ expo.modules.taskManager.repository.ManagedTasksAndEventsRepository
++expo/modules/taskManager/repository/TasksPersistence.java
++ expo.modules.taskManager.repository.TasksPersistence
++expo/modules/taskManager/repository/TasksAndEventsRepository.java
++ expo.modules.taskManager.repository.TasksAndEventsRepository
++ expo.modules.taskManager.repository.TasksAndEventsRepository$AppConfig
++expo/modules/taskManager/exceptions/InvalidConsumerClassException.java
++ expo.modules.taskManager.exceptions.InvalidConsumerClassException
++expo/modules/taskManager/Utils.java
++ expo.modules.taskManager.Utils
++expo/modules/taskManager/TaskManagerModule.java
++ expo.modules.taskManager.TaskManagerModule
++ expo.modules.taskManager.TaskManagerModule$1
++expo/modules/taskManager/repository/BareTasksAndEventsRepository.java
++ expo.modules.taskManager.repository.BareTasksAndEventsRepository
++expo/modules/taskManager/TaskBroadcastReceiver.java
++ expo.modules.taskManager.TaskBroadcastReceiver
++expo/modules/taskManager/exceptions/TaskNotFoundException.java
++ expo.modules.taskManager.exceptions.TaskNotFoundException
++expo/modules/taskManager/TaskManagerUtils.java
++ expo.modules.taskManager.TaskManagerUtils
++ expo.modules.taskManager.TaskManagerUtils$1
++expo/modules/taskManager/TaskService.java
++ expo.modules.taskManager.TaskService
++ expo.modules.taskManager.TaskService$1
++ expo.modules.taskManager.TaskService$2
++expo/modules/taskManager/Task.java
++ expo.modules.taskManager.Task
+diff --git a/node_modules/expo-task-manager/android/build/tmp/kotlin-classes/debug/META-INF/expo-task-manager_debug.kotlin_module b/node_modules/expo-task-manager/android/build/tmp/kotlin-classes/debug/META-INF/expo-task-manager_debug.kotlin_module
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
+index 0b46ff6..132523b 100644
+--- a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
++++ b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
+@@ -9,6 +9,7 @@ import android.content.Context;
+ import android.content.Intent;
  import android.net.Uri;
- import android.os.Binder;
  import android.os.Bundle;
 +import android.os.Build;
- import android.os.IBinder;
- import androidx.annotation.Nullable;
+ import android.os.Parcelable;
+ import android.os.PersistableBundle;
  import android.util.Log;
+@@ -43,7 +44,9 @@ public class TaskManagerUtils implements TaskManagerUtilsInterface {
  
-+import android.content.pm.ApplicationInfo;
-+import android.content.pm.PackageManager;
-+import androidx.core.app.NotificationCompat;
-+
- public class LocationTaskService extends Service {
-+  public static final String META_DATA_DEFAULT_ICON_KEY = "expo.modules.notifications.default_notification_icon";
-+
-   private static final String TAG = "LocationTaskService";
-   private static int sServiceId = 481756;
- 
-@@ -101,15 +108,35 @@ public class LocationTaskService extends Service {
- 
-     if (intent != null) {
-       intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
--      PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-+      // We're defaulting to the behaviour prior API 31 (mutable) even though Android recommends immutability
-+      int mutableFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
-+      PendingIntent contentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | mutableFlag);
-       builder.setContentIntent(contentIntent);
-     }
- 
-     return builder.setCategory(Notification.CATEGORY_SERVICE)
--        .setSmallIcon(getApplicationInfo().icon)
-+        .setSmallIcon(getIcon())
-         .build();
+   @Override
+   public PendingIntent createTaskIntent(Context context, TaskInterface task) {
+-    return createTaskIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT);
++    // We're defaulting to the behaviour prior API 31 (mutable) even though Android recommends immutability
++    int mutableFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
++    return createTaskIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT|mutableFlag);
    }
  
-+     /**
-+   * The method first tries to get the icon from the manifest's meta-data {@link #META_DATA_DEFAULT_ICON_KEY}.
-+   * If a custom setting is not found, the method falls back to using app icon.
-+   *
-+   * @return Resource ID for icon that should be used as a notification icon.
-+   */
-+  protected int getIcon() {
-+    try {
-+      ApplicationInfo ai = mParentContext.getPackageManager().getApplicationInfo(mParentContext.getPackageName(), PackageManager.GET_META_DATA);
-+      if (ai.metaData.containsKey(META_DATA_DEFAULT_ICON_KEY)) {
-+        return ai.metaData.getInt(META_DATA_DEFAULT_ICON_KEY);
-+      }
-+    } catch (PackageManager.NameNotFoundException | ClassCastException e) {
-+      Log.e("expo-notifications", "Could not have fetched default notification icon.");
-+    }
-+    return mParentContext.getApplicationInfo().icon;
-+  }
-+
-   @TargetApi(26)
-   private void prepareChannel(String id) {
-     NotificationManager notificationManager = (NotificationManager) getSystemService(Activity.NOTIFICATION_SERVICE);
+   @Override
+@@ -184,7 +187,8 @@ public class TaskManagerUtils implements TaskManagerUtilsInterface {
+       .build();
+ 
+     intent.setData(dataUri);
+-
++    // We're defaulting to the behaviour prior API 31 (mutable) even though Android recommends immutability
++    int mutableFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
+     return PendingIntent.getBroadcast(context, PENDING_INTENT_REQUEST_CODE, intent, flags);
+   }
+ 
