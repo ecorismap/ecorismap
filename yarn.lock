@@ -3882,11 +3882,6 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.0.3.tgz#463fc47f13ec0688a33aec75d078a0541a447199"
   integrity sha512-HzNRZtp4eepNitP+BD6k2L6DROIDG4Q0fm4x+dwfsr6LGmROENnok75VGw40628xf+iR24WeMFcHuuBDUAzzsQ==
 
-"@types/node@^13.1.8":
-  version "13.13.52"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.52.tgz#03c13be70b9031baaed79481c0c0cfb0045e53f7"
-  integrity sha512-s3nugnZumCC//n4moGGe6tkNMyYEdaDBitVjwPxXmR5lnMG5dHePinH2EdxkG3Rh1ghFHHixAG4NJhpJW1rthQ==
-
 "@types/node@^14.14.31":
   version "14.18.21"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-14.18.21.tgz#0155ee46f6be28b2ff0342ca1a9b9fd4468bef41"
@@ -4179,13 +4174,6 @@
   dependencies:
     "@typescript-eslint/types" "5.30.5"
     eslint-visitor-keys "^3.3.0"
-
-"@virgilsecurity/crypto-types@1.1.1":
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/@virgilsecurity/crypto-types/-/crypto-types-1.1.1.tgz#1b9a80aa137734aa627039e70df0b5c1dc1f8f3e"
-  integrity sha512-c/uoOcFIU+YV8w+om1VBergNkBTkqzbAakZCzp4hsYBjZw3EYVKcNBIyNFjPGgbFZdJ/ewE6Qt3wmbL1Yv4a2g==
-  dependencies:
-    "@types/node" "^13.1.8"
 
 "@webassemblyjs/ast@1.9.0":
   version "1.9.0"
@@ -5313,7 +5301,7 @@ buffer@^4.3.0:
     ieee754 "^1.1.4"
     isarray "^1.0.0"
 
-buffer@^5.4.3, buffer@^5.6.0:
+buffer@^5.6.0:
   version "5.7.1"
   resolved "https://registry.yarnpkg.com/buffer/-/buffer-5.7.1.tgz#ba62e7c13133053582197160851a8f648e99eed0"
   integrity sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==
@@ -12688,11 +12676,6 @@ react-native-hsv-color-picker@../react-native-hsv-color-picker:
     chroma-js "^2.1.0"
     expo-linear-gradient "^10.0.1"
 
-react-native-keychain@7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/react-native-keychain/-/react-native-keychain-7.0.0.tgz#11fd559fe86ae89f934b8c75ae228247deed5494"
-  integrity sha512-tH26sgW4OxB/llXmhO+DajFISEUoF1Ip2+WSDMIgCt8SP1xRE81m2qFzgIOc/7StYsUERxHhDPkxvq2H0/Goig==
-
 react-native-maps@0.30.2:
   version "0.30.2"
   resolved "https://registry.yarnpkg.com/react-native-maps/-/react-native-maps-0.30.2.tgz#2f1cf4ab79892a43060774bda8786ce6ab8e3616"
@@ -12757,14 +12740,6 @@ react-native-vector-icons@^9.0.0:
   dependencies:
     prop-types "^15.7.2"
     yargs "^16.1.1"
-
-react-native-virgil-crypto@^0.6.1:
-  version "0.6.1"
-  resolved "https://registry.yarnpkg.com/react-native-virgil-crypto/-/react-native-virgil-crypto-0.6.1.tgz#217c4ba6d8eb8f3379a864d1982c1e2596553e4e"
-  integrity sha512-Ww7osI/NMfFskP6VMhm2YjKg6a1x7+qyZPJUsRdIPBejgubFdsB5Og5ldkYCSy45bGOHWAdD097m3/YSGgGtYA==
-  dependencies:
-    "@virgilsecurity/crypto-types" "1.1.1"
-    buffer "^5.4.3"
 
 react-native-web@0.17.1:
   version "0.17.1"

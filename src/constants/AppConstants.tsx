@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.1.9';
+export const VERSION = 'Version 0.1.10';
 
 export const COLOR = {
   MAIN: '#f2f2f2',
