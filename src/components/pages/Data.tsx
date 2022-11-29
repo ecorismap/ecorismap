@@ -55,8 +55,7 @@ export default function DataScreen(props: Props) {
   const { isDataOpened, expandData, openData, closeData } = useDisplay();
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
     [gotoBack]
   );
 

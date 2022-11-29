@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Platform, Text, PanResponderInstance, useWindowDimensions, StatusBar } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Region, MapEvent, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -250,7 +250,7 @@ export default function HomeScreen({
   selectFeatureButton,
 }: HomeProps) {
   //console.log(Platform.Version);
-
+  const navigation = useNavigation();
   const window = useWindowDimensions();
   const windowHeight = useMemo(() => {
     const navigationHeaderHeight = isDownloadPage ? 56 : 0;
@@ -290,28 +290,34 @@ export default function HomeScreen({
     }
   }, [isDataOpened, windowHeight, windowWidth]);
   //console.log('Home');
-  const navigation = useNavigation();
+  const headerLeftButton = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
+    [gotoMaps]
+  );
+  const headerRightButton = useCallback(
+    () =>
+      isDownloading ? (
+        <View style={styles.headerRight}>
+          <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
+
+          <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
+        </View>
+      ) : (
+        <View style={styles.headerRight}>
+          <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
+        </View>
+      ),
+    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
+  );
+
   useEffect(() => {
     //console.log('#useeffect3');
     if (isDownloadPage) {
       navigation.setOptions({
         title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
-        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-          <HeaderBackButton {...props} onPress={gotoMaps} />
-        ),
-        headerRight: () =>
-          isDownloading ? (
-            <View style={styles.headerRight}>
-              <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-
-              <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
-            </View>
-          ) : (
-            <View style={styles.headerRight}>
-              <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
-            </View>
-          ),
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
+        headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({ headerShown: false });

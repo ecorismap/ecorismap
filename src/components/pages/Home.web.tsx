@@ -169,27 +169,34 @@ export default function HomeScreen({
   // }, [featureButton, lineAndPolygonLayerIds, lineLayerIds, lineTool]);
 
   //console.log('Home');
+  const headerLeftButton = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
+    [gotoMaps]
+  );
+  const headerRightButton = useCallback(
+    () =>
+      isDownloading ? (
+        <View style={styles.headerRight}>
+          <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
+
+          <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
+        </View>
+      ) : (
+        <View style={styles.headerRight}>
+          <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
+        </View>
+      ),
+    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
+  );
+
   useEffect(() => {
     //console.log('#useeffect3');
     if (isDownloadPage) {
       navigation.setOptions({
-        title: t('Home.navigation.download'),
+        title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
-        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-          <HeaderBackButton {...props} onPress={gotoMaps} />
-        ),
-        headerRight: () =>
-          isDownloading ? (
-            <View style={styles.headerRight}>
-              <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-
-              <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
-            </View>
-          ) : (
-            <View style={styles.headerRight}>
-              <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
-            </View>
-          ),
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
+        headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({ headerShown: false });
