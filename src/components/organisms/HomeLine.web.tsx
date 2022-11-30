@@ -66,7 +66,7 @@ export const Line = React.memo((props: Props) => {
           //'text-radial-offset': 0.5,
           'text-size': 14,
           'text-justify': 'auto',
-          'text-font': ['NotoSansCJKjp-Regular'],
+          'text-font': ['Noto Sans Universal Regular'],
           //'icon-image': ['get', 'icon']
         },
         paint: {

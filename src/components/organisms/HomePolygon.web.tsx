@@ -72,7 +72,7 @@ export const Polygon = React.memo((props: Props) => {
           //'text-radial-offset': 0.5,
           'text-size': 8,
           'text-justify': 'auto',
-          'text-font': ['NotoSansCJKjp-Regular'],
+          'text-font': ['Noto Sans Universal Regular'],
           //'icon-image': ['get', 'icon']
         },
         paint: {
