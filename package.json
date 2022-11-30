@@ -2,7 +2,7 @@
   "name": "ecorismap",
   "version": "1.0.0",
   "main": "index.js",
-  "homepage": "/app",
+  "homepage": "/pukiwiki/map/ecorismap",
   "license": "UNLICENSED",
   "private": true,
   "jest": {
