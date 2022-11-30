@@ -151,9 +151,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion]
   );
 
-  const onDragMapView = useCallback(() => {
+  const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
-      toggleGPS('show');
+      await toggleGPS('show');
     }
   }, [gpsState, toggleGPS]);
 
@@ -437,13 +437,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     stopDownloadTiles();
   }, [stopDownloadTiles]);
 
-  const pressCompass = useCallback(() => {
+  const pressCompass = useCallback(async () => {
     if (headingUp === false && gpsState === 'off' && trackingState === 'off') {
       // Alert.alert(t('Home.alert.compass'));
       // return;
-      toggleGPS('show');
+      await toggleGPS('show');
     }
-    toggleHeadingUp(!headingUp);
+    await toggleHeadingUp(!headingUp);
   }, [gpsState, headingUp, toggleGPS, toggleHeadingUp, trackingState]);
 
   const pressTracking = useCallback(async () => {
@@ -458,14 +458,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(message);
         return;
       }
-      toggleTracking('on');
-      toggleGPS('follow');
+      await toggleTracking('on');
+      await toggleGPS('follow');
       setFeatureButton('NONE');
     } else if (trackingState === 'on') {
       const ret = await ConfirmAsync(t('Home.confirm.track'));
       if (ret) {
-        toggleTracking('off');
-        toggleGPS('off');
+        await toggleTracking('off');
+        await toggleGPS('off');
       }
     }
   }, [addTrack, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
@@ -473,15 +473,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
     if (gpsState === 'off') {
-      toggleGPS('follow');
+      await toggleGPS('follow');
     } else if (gpsState === 'follow') {
       if (trackingState === 'on') {
         await AlertAsync(t('Home.alert.gpsWithTrack'));
         return;
       }
-      toggleGPS('off');
+      await toggleGPS('off');
     } else if (gpsState === 'show') {
-      toggleGPS('follow');
+      await toggleGPS('follow');
     }
   }, [gpsState, toggleGPS, trackingState]);
 

@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
 import { LocationHeadingObject, LocationSubscription } from 'expo-location';
-import { Alert } from '../components/atoms/Alert';
 import { STORAGE, TASK } from '../constants/AppConstants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +11,7 @@ import { getSavedLocations, isLocationObject, updateLocations } from '../utils/L
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { t } from '../i18n/config';
+import { AlertAsync } from '../components/molecules/AlertAsync';
 
 const locationEventsEmitter = new EventEmitter();
 const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
@@ -50,7 +50,7 @@ export const useGPS = (): UseGPSReturnType => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('', t('hooks.message.permitAccessGPS'));
+        await AlertAsync(t('hooks.message.permitAccessGPS'));
       }
       return status;
     } catch (e: any) {
