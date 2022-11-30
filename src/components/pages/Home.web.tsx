@@ -383,6 +383,7 @@ export default function HomeScreen({
 
     return {
       version: 8,
+      glyphs: 'https://map.ecoris.info/glyphs/{fontstack}/{range}.pbf',
       sources: { ...sources, rasterdem: rasterdem },
       layers: [...layers_],
       terrain: {
