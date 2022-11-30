@@ -243,15 +243,15 @@ export default function HomeScreen({
       const map = (mapViewRef.current as MapRef).getMap();
       //console.log(hoverFeatureId.current);
       if (hoverFeatureId.current !== undefined) {
-        //console.log('WWW', selectedRecord.record.userId);
+        //console.log('WWW', hoverFeatureId.current);
         map.removeFeatureState(hoverFeatureId.current, 'hover');
       }
       const hoverFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
       //console.log(clickedFeature);
-      if (hoverFeature) {
+      if (hoverFeature && typeof hoverFeature.id === 'number') {
         hoverFeatureId.current = {
           source: hoverFeature.source,
-          id: hoverFeature.id as number,
+          id: hoverFeature.id,
         };
         map.setFeatureState(hoverFeatureId.current, {
           hover: true,
@@ -278,7 +278,7 @@ export default function HomeScreen({
       }
       const clickedFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
       //console.log(clickedFeature);
-      if (clickedFeature) {
+      if (clickedFeature && typeof clickedFeature.id === 'number') {
         map.setFeatureState(
           {
             source: clickedFeature.source,
@@ -293,13 +293,20 @@ export default function HomeScreen({
         const layer = layers.find((n) => n.id === layerId);
         if (layer === undefined) return;
         if (clickedFeature.layer.type === 'line') {
-          const data = lineDataSet.find((d) => d.layerId === layerId && (userId === '' ?? d.userId === userId));
+          const data = lineDataSet.find(
+            (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
+          );
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
           if (feature === undefined) return;
           onPressLine(layer, feature);
         } else if (clickedFeature.layer.type === 'fill') {
-          const data = polygonDataSet.find((d) => d.layerId === layerId && (userId === '' ?? d.userId === userId));
+          //console.log('layer:', layerId, ' user:', userId);
+          const data = polygonDataSet.find(
+            (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
+          );
+          //console.log('data:', data);
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
+          //console.log(feature);
           if (feature === undefined) return;
           onPressPolygon(layer, feature);
         }
