@@ -28,7 +28,7 @@ export type UseLocationReturnType = {
   trackingState: TrackingStateType;
   headingUp: boolean;
   magnetometer: Location.LocationHeadingObject | null;
-  toggleHeadingUp: (headingUp: boolean) => void;
+  toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
   changeMapRegion: (region: Region | ViewState, jumpTo?: boolean) => void;
@@ -115,7 +115,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   }, [mapViewRef]);
 
   const toggleFollowMap = useCallback(
-    (gpsState_: LocationStateType) => {
+    async (gpsState_: LocationStateType) => {
       if (gpsState_ === 'follow') {
         const followMapFunc = (pos: Location.LocationObject) => {
           (mapViewRef as MapView).animateCamera(
@@ -129,12 +129,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           );
           setCurrentLocation(pos.coords);
         };
-        setFollowMapFunction(followMapFunc);
+        await setFollowMapFunction(followMapFunc);
       } else if (gpsState_ === 'show') {
         const followMapFunc = (pos: Location.LocationObject) => {
           setCurrentLocation(pos.coords);
         };
-        setFollowMapFunction(followMapFunc);
+        await setFollowMapFunction(followMapFunc);
       }
     },
     [mapViewRef, setFollowMapFunction]
@@ -143,19 +143,19 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
       if (gpsState_ === 'off') {
-        stopGPS();
+        await stopGPS();
         if (hasLoggedIn(user) && hasOpened(projectId)) {
           projectStore.deleteCurrentPosition(user.uid, projectId);
           setCurrentLocation(null);
         }
       } else {
         if ((await confirmLocationPermittion()) !== 'granted') return;
-        startGPS();
+        await startGPS();
         if (gpsState_ === 'follow') {
-          moveCurrentPosition();
+          await moveCurrentPosition();
         }
       }
-      toggleFollowMap(gpsState_);
+      await toggleFollowMap(gpsState_);
       setGpsState(gpsState_);
     },
     [confirmLocationPermittion, moveCurrentPosition, projectId, startGPS, stopGPS, toggleFollowMap, user]
@@ -167,9 +167,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
-        if ((await confirmLocationPermittion()) === 'granted') {
-          moveCurrentPosition();
-          startTracking();
+        const permission = await confirmLocationPermittion();
+        if (permission === 'granted') {
+          await moveCurrentPosition();
+          await startTracking();
         }
       } else if (trackingState_ === 'off') {
         await stopTracking();
@@ -215,7 +216,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const toggleHeadingUp = useCallback(
-    (headingUp_: boolean) => {
+    async (headingUp_: boolean) => {
       if (headingUp_) {
         const headingFunc = (pos: Location.LocationHeadingObject) => {
           //console.log(pos)
@@ -227,10 +228,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           );
           setMagnetometer(pos);
         };
-        setHeadingUpFunction(headingFunc);
+        await setHeadingUpFunction(headingFunc);
       } else {
         const headingFunc = (pos: Location.LocationHeadingObject) => setMagnetometer(pos);
-        setHeadingUpFunction(headingFunc);
+        await setHeadingUpFunction(headingFunc);
         (mapViewRef as MapView).animateCamera({
           heading: 0,
         });
