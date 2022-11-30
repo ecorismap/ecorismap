@@ -72,8 +72,12 @@ config.ts
 #secret key include
 android/app/google-services.json
 android/app/src/main/AndroidManifest.xml
-GoogleService-Info.plist
 ios/ecorismap/AppDelegate.m
+GoogleService-Info.plist
+GoogleService-Info.plist.development
+GoogleService-Info.plist.production
+google-services.json.development
+google-services.json.production
 
 # mapbox,firebase,recapture key
 .config
