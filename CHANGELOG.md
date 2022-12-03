@@ -1,18 +1,20 @@
 # Change Log 更新履歴
 
-## [Unreleased] 次回リリースの修正
-
-## [0.1.10] - 2022-11-29
+## [0.1.10] - 2022-12-01
 ### Common 共通
 - Remove unnecessary code for development. 
-
-- 開発用の不要なコードを削除 
+- Change color when selecting features.
+- fix stop tracking on startup.
+   
+- 開発用の不要なコードを削除
+- フィーチャ選択時の色を変更
+- アプリ初回開始時にトラックログが終了するバグ修正
+  
 ### Android
 - Support for Android API level 31. 
-- Change color when selecting features.
 
 - Android APIレベル31に対応
-- フィーチャ選択時の色を変更
+
 
 ### iOS
 
@@ -29,6 +31,8 @@
 - App Release.
 
 - アプリ公開
+
+## [Unreleased] 次回リリースの修正
 
 [Unreleased]: https://github.com/ecorismap/ecorismap
 [0.1.19]: https://github.com/ecorismap/ecorismap
