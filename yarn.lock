@@ -12621,10 +12621,10 @@ react-is@^17.0.1, react-is@^17.0.2:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
 
-react-map-gl@^7.0.19:
-  version "7.0.19"
-  resolved "https://registry.yarnpkg.com/react-map-gl/-/react-map-gl-7.0.19.tgz#bcd5e7963cf0209175a5398a3d99f5c3a40f3f0a"
-  integrity sha512-s3E8aU6BursSDVwzQZbzdDzDRUX4kdfRqZODYvkdDbInr3RzaNdlbhJ5tojXKWOonsxV6wt+Acv9JCaOMKaf0A==
+react-map-gl@^7.0.20:
+  version "7.0.20"
+  resolved "https://registry.yarnpkg.com/react-map-gl/-/react-map-gl-7.0.20.tgz#84435319290a61142b558c05c32da91474d585a7"
+  integrity sha512-Q1formrWEdt9vY5DyW2vgdmAPuSMH2TFn8xKMlA+cmBlyS8veQvVTGoq4lAm8p3Hb/90ZpNmMtI4s107r931vQ==
   dependencies:
     "@types/mapbox-gl" "^2.6.0"
 
