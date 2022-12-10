@@ -397,7 +397,7 @@ export const useLayers = (): UseLayersReturnType => {
       }
     } catch (e: any) {
       console.log(e);
-      clearCacheData();
+      await clearCacheData();
       await AlertAsync(t('hooks.message.failGetData'));
     }
   }, [loadFile]);
