@@ -23,6 +23,5 @@ Documentation
 License
 =======
 
- EcorisMap is released under the XXX License. XXX is under consideration.
-
+ This software is released under the MIT License, see LICENSE.
 _Copyright (c) 2022 ECORIS Inc._
