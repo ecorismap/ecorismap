@@ -28,7 +28,10 @@ export const DataEditDatetime = (props: Props) => {
     }
   }, [mode, value]);
 
+  //console.log('$$$', dateValue);
+
   const dateValueString = useMemo(() => {
+    if (value === '') return '';
     if (mode === 'time') {
       return dayjs(dateValue).format('HH:mm');
     } else if (mode === 'date') {
@@ -36,7 +39,7 @@ export const DataEditDatetime = (props: Props) => {
     } else {
       return dayjs(dateValue).format('L HH:mm');
     }
-  }, [dateValue, mode]);
+  }, [dateValue, mode, value]);
 
   const onDateChange = useCallback(
     (dateTime: Date) => {
@@ -47,7 +50,7 @@ export const DataEditDatetime = (props: Props) => {
         dateString = dayjs(dateTime).format('L');
       } else {
         dateString = dayjs(dateTime).format('L HH:mm');
-        console.log(dateString);
+        //console.log(dateString);
       }
       onValueChange(dateString);
     },
@@ -65,6 +68,7 @@ export const DataEditDatetime = (props: Props) => {
             open={open}
             date={dateValue}
             title={null}
+            textColor={COLOR.BLACK}
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen(false);
