@@ -61,5 +61,6 @@ export const getLineLength = (locations: LocationType[]) => {
 };
 
 export const toLocationType = (locationObject: LocationObject): LocationType => {
+  //# Todo altitude to ele by proj4js
   return { ...locationObject.coords, timestamp: locationObject.timestamp };
 };

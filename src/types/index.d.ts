@@ -29,6 +29,7 @@ export interface LocationType {
   heading?: number | null;
   speed?: number | null;
   timestamp?: number;
+  ele?: number;
   zoom?: number;
 }
 

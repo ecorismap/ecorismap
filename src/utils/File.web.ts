@@ -50,3 +50,5 @@ export const exportDataAndPhoto = async (
     return false;
   }
 };
+
+export const clearCacheData = async () => {};

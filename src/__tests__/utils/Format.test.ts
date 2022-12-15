@@ -67,6 +67,11 @@ describe('formattedInput', () => {
     expect(formattedInputs('35.12345', 'latitude-decimal')).toStrictEqual({ isOK: true, result: '35.12345' });
     expect(formattedInputs('-35.5', 'latitude-decimal')).toStrictEqual({ isOK: true, result: '-35.5' });
     expect(formattedInputs('', 'latitude-decimal')).toStrictEqual({ isOK: false, result: '' });
+    expect(formattedInputs(35, 'latitude-decimal')).toStrictEqual({ isOK: false, result: 35 });
+    expect(formattedInputs(135, 'latitude-decimal')).toStrictEqual({ isOK: false, result: 135 });
+    expect(formattedInputs(Number('135.1'), 'latitude-decimal')).toStrictEqual({ isOK: false, result: 135.1 });
+    expect(formattedInputs(Number(''), 'latitude-decimal')).toStrictEqual({ isOK: false, result: 0 });
+    expect(formattedInputs(Number('135.1abc'), 'latitude-decimal')).toStrictEqual({ isOK: false, result: NaN });
   });
   it('check longitude-decimal value', () => {
     expect(formattedInputs('135.12345', 'longitude-decimal')).toStrictEqual({ isOK: true, result: '135.12345' });

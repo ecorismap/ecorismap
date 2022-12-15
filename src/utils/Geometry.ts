@@ -8,6 +8,7 @@ import simplify from '@turf/simplify';
 import { COLOR, FUNC_LOGIN } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
+import { formattedInputs } from './Format';
 
 export const Gpx2Data = (
   gpx: string,
@@ -52,6 +53,10 @@ export const Gpx2Data = (
     case 'POINT':
       const wpts = json[gpxkey].wpt ? (Array.isArray(json[gpxkey].wpt) ? json[gpxkey].wpt : [json[gpxkey].wpt]) : [];
       importedData = wpts.map((d: any) => {
+        const { isOK: latIsOK, result: lat } = formattedInputs(d.lat, 'latitude-decimal', false);
+        const { isOK: lonIsOK, result: lon } = formattedInputs(d.lon, 'longitude-decimal', false);
+        const time = dayjs(d.time);
+        const ele = isNaN(d.ele) || d.ele === '' ? undefined : d.ele;
         const record: RecordType = {
           id: uuidv4(),
           userId: userId,
@@ -59,12 +64,13 @@ export const Gpx2Data = (
           redraw: false,
           visible: true,
           coords: {
-            latitude: parseFloat(d.lat),
-            longitude: parseFloat(d.lon),
+            latitude: latIsOK ? Number(lat as string) : 0,
+            longitude: lonIsOK ? Number(lon as string) : 0,
+            ele: ele,
           },
           field: {
             name: d.name ? d.name : '',
-            time: d.time ? dayjs(d.time).format() : dayjs().format(),
+            time: time.isValid() ? time.format() : '',
             cmt: d.cmt ? d.cmt : '',
           },
         };
@@ -78,15 +84,28 @@ export const Gpx2Data = (
 
       importedData = trks.map((trk: any) => {
         const trksegs = Array.isArray(trk.trkseg) ? trk.trkseg : [trk.trkseg];
-
-        const coords = trksegs
+        //console.log(trksegs[0]);
+        const coords: LocationType[] = trksegs
           .map((trackseg: any) =>
-            trackseg.trkpt.map((trkpt: { lat: string; lon: string }) => ({
-              latitude: parseFloat(trkpt.lat),
-              longitude: parseFloat(trkpt.lon),
-            }))
+            trackseg.trkpt.map((trkpt: any) => {
+              const { isOK: latIsOK, result: lat } = formattedInputs(trkpt.lat, 'latitude-decimal', false);
+              const { isOK: lonIsOK, result: lon } = formattedInputs(trkpt.lon, 'longitude-decimal', false);
+
+              const time = dayjs(trkpt.time);
+              const ele = isNaN(trkpt.ele) || trkpt.ele === '' ? undefined : trkpt.ele;
+              return {
+                latitude: latIsOK ? Number(lat as string) : 0,
+                longitude: lonIsOK ? Number(lon as string) : 0,
+                timestamp: trkpt.time !== undefined && time.isValid() ? time.valueOf() : undefined,
+                ele: ele,
+              };
+            })
           )
           .flat();
+        //console.log(coords[0]);
+        //トラックの最初のポイントの時間をtimeとする。trk.timeは無い場合があるため。
+        const firstTrkptTime = trksegs[0]?.trkpt[0]?.time;
+        const time = trk.time !== undefined ? dayjs(trk.time) : dayjs(firstTrkptTime);
 
         const record: RecordType = {
           id: uuidv4(),
@@ -97,12 +116,12 @@ export const Gpx2Data = (
           coords: coords,
           centroid: coords[coords.length - 1],
           field: {
-            name: trk.name,
-            time: trk.time ? dayjs(trk.time).format() : dayjs().format(),
+            name: trk.name ? trk.name : '',
+            time: firstTrkptTime !== undefined && time.isValid() ? time.format() : '',
             cmt: trk.cmt ? trk.cmt : '',
           },
         };
-
+        //console.log('%%%', trk);
         return record;
       });
       break;
@@ -452,29 +471,34 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   switch (type) {
     case 'POINT':
       data.forEach((point) => {
+        const time =
+          point.field.time === undefined || point.field.time === '' ? undefined : dayjs(point.field.time as string);
         const wpt = gpx
           .ele('wpt')
           .att('lat', (point.coords as LocationType).latitude)
           .att('lon', (point.coords as LocationType).longitude);
 
         wpt.ele('name', point.field.name);
-        wpt.ele('time', dayjs(point.field.time ? (point.field.time as string) : 0).toISOString());
+        wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+        (point.coords as LocationType).ele && wpt.ele('ele', (point.coords as LocationType).ele);
         wpt.ele('cmt', point.field.cmt);
       });
       break;
     case 'LINE':
       data.forEach((line) => {
+        const time =
+          line.field.time === undefined || line.field.time === '' ? undefined : dayjs(line.field.time as string);
         const trk = gpx.ele('trk');
         trk.ele('name', line.field.name);
         //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
-        trk.ele('time', dayjs(line.field.time ? (line.field.time as string) : 0).toISOString());
+        trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
         trk.ele('cmt', line.field.cmt);
         const trkseg = trk.ele('trkseg');
         (line.coords as LocationType[]).forEach((coord) => {
+          //console.log(dayjs.unix(coord.timestamp!).toISOString());
           const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-          //# Todo proj4js convert
-          //trkpt.ele("ele", coord.altitude);
-          trkpt.ele('time', dayjs(coord.timestamp).toISOString());
+          coord.timestamp && trkpt.ele('time', dayjs(coord.timestamp).toISOString());
+          coord.ele && trkpt.ele('ele', coord.ele);
         });
       });
       break;
