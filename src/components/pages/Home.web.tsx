@@ -201,33 +201,36 @@ export default function HomeScreen({
     });
   };
 
-  const onMouseMove = useCallback(
-    (event) => {
-      const map = (mapViewRef.current as MapRef).getMap();
-      //console.log(hoverFeatureId.current);
-      if (hoverFeatureId.current !== undefined) {
-        //console.log('WWW', hoverFeatureId.current);
-        map.removeFeatureState(hoverFeatureId.current, 'hover');
-      }
-      const hoverFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
-      //console.log(clickedFeature);
-      if (hoverFeature && typeof hoverFeature.id === 'number') {
-        hoverFeatureId.current = {
-          source: hoverFeature.source,
-          id: hoverFeature.id,
-        };
-        map.setFeatureState(hoverFeatureId.current, {
-          hover: true,
-        });
-      } else {
-        hoverFeatureId.current = undefined;
-      }
-      if (featureButton === 'NONE') {
-        map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
-      }
-    },
-    [featureButton, mapViewRef]
-  );
+  // const onMouseMove = useCallback(
+  //   (event) => {
+  //     const map = (mapViewRef.current as MapRef).getMap();
+  //     //console.log(hoverFeatureId.current);
+  //     if (hoverFeatureId.current !== undefined) {
+  //       //console.log('WWW', hoverFeatureId.current);
+  //       map.removeFeatureState(hoverFeatureId.current, 'hover');
+  //     }
+  //     const hoverFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
+  //     //console.log(clickedFeature);
+  //     if (hoverFeature && typeof hoverFeature.id === 'number') {
+  //       hoverFeatureId.current = {
+  //         source: hoverFeature.source,
+  //         id: hoverFeature.id,
+  //       };
+  //       map.setFeatureState(hoverFeatureId.current, {
+  //         hover: true,
+  //       });
+  //     } else {
+  //       hoverFeatureId.current = undefined;
+  //     }
+  //     if (featureButton === 'NONE') {
+  //       map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+  //     }
+  //   },
+  //   [featureButton, mapViewRef]
+  // );
+
+  //hoverは使いにくいからやめ
+  const onMouseMove = useCallback(() => {}, []);
 
   const onClick = useCallback(
     (event) => {
