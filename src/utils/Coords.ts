@@ -68,10 +68,9 @@ export const pointsToSvg = (points: Position[]) => {
   const filteredPoints = points;
   //console.log(points);
   if (filteredPoints.length < 1) return 'M 0,0';
-  let path = `M ${filteredPoints[0][0]},${filteredPoints[0][1]}`;
-  for (const point of filteredPoints) {
-    path = `${path} L ${point[0]},${point[1]}`;
-  }
+  const initialValue = `M ${filteredPoints[0][0]},${filteredPoints[0][1]}`;
+  const path = initialValue + ' ' + filteredPoints.map((point) => `L ${point[0]},${point[1]}`).join(' ');
+
   return path;
 };
 
@@ -102,11 +101,12 @@ export const locationToPoints = (
     latitudeDelta: number;
     longitudeDelta: number;
   }
-) =>
-  location.map((d) => [
+) => {
+  return location.map((d) => [
     Math.round(((d.longitude - (param.longitude - param.longitudeDelta / 2)) * param.width) / param.longitudeDelta),
     Math.round(((param.latitude + param.latitudeDelta / 2 - d.latitude) * param.height) / param.latitudeDelta),
   ]);
+};
 
 export const deltaToZoom = (
   screenSize: { width: number; height: number },
