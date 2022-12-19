@@ -586,29 +586,28 @@ export const useFeature = (): UseFeatureReturnType => {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (event: GestureResponderEvent) => {
+        onPanResponderGrant: (event: GestureResponderEvent, gesture) => {
           //console.log(selectedTool);
 
           if (!event.nativeEvent.touches.length) return;
-          if (lineTool === 'MOVE') {
-            //ラインとの距離をチェック。離れていれば地図の移動に切り替える
-            const start: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+          //console.log('#', gesture.numberActiveTouches);
+          const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
+          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
             movingMapCenter.current = {
-              x: start[0],
-              y: start[1],
+              x: point[0],
+              y: point[1],
               longitude: screenParam.longitude,
               latitude: screenParam.latitude,
             };
           } else if (lineTool === 'DRAW') {
             if (drawLine.current[0].coords.length === 0) {
               //新規ラインの場合
-              drawLine.current[0].coords = [[event.nativeEvent.locationX, event.nativeEvent.locationY]];
+              drawLine.current[0].coords = [point];
             } else {
               //ライン修正の場合
               //行動を消す
-              const start: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
               drawLine.current = [drawLine.current[0]];
-              modifiedLine.current = { start: start, coords: [start] };
+              modifiedLine.current = { start: point, coords: [point] };
             }
             isEdited.current = true;
           } else if (isDrawTool(lineTool)) {
@@ -628,12 +627,25 @@ export const useFeature = (): UseFeatureReturnType => {
             drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
           }
         },
-        onPanResponderMove: (event: GestureResponderEvent) => {
+        onPanResponderMove: (event: GestureResponderEvent, gesture) => {
           if (!event.nativeEvent.touches.length) return;
-          if (lineTool === 'MOVE') {
-            if (movingMapCenter.current === undefined) return;
+          //console.log('##', gesture.numberActiveTouches);
+          const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
+          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
+            if (movingMapCenter.current === undefined) {
+              if (lineTool === 'MOVE') {
+                return;
+              } else if (gesture.numberActiveTouches === 2) {
+                movingMapCenter.current = {
+                  x: point[0],
+                  y: point[1],
+                  longitude: screenParam.longitude,
+                  latitude: screenParam.latitude,
+                };
+              }
+            }
             //ライン修正のときにラインから離れてドラッグすると地図の移動
-            const point = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+
             const longitude =
               movingMapCenter.current.longitude -
               (screenParam.longitudeDelta * (point[0] - movingMapCenter.current.x)) / screenParam.width;
@@ -650,23 +662,14 @@ export const useFeature = (): UseFeatureReturnType => {
           } else if (lineTool === 'DRAW') {
             if (modifiedLine.current.coords.length > 0) {
               //ライン修正の場合
-              modifiedLine.current.coords = [
-                ...modifiedLine.current.coords,
-                [event.nativeEvent.locationX, event.nativeEvent.locationY],
-              ];
+              modifiedLine.current.coords = [...modifiedLine.current.coords, point];
             } else {
               //新規ラインの場合
-              drawLine.current[0].coords = [
-                ...drawLine.current[0].coords,
-                [event.nativeEvent.locationX, event.nativeEvent.locationY],
-              ];
+              drawLine.current[0].coords = [...drawLine.current[0].coords, point];
             }
           } else if (isDrawTool(lineTool)) {
             //ドローツールがポイントとライン以外
-            const snapped = getLineSnappedPosition(
-              [event.nativeEvent.locationX, event.nativeEvent.locationY],
-              drawLine.current[0].coords
-            ).position;
+            const snapped = getLineSnappedPosition(point, drawLine.current[0].coords).position;
             const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
             modifiedLine.current.coords = getSnappedLine(
               modifiedLine.current.start,
@@ -676,9 +679,9 @@ export const useFeature = (): UseFeatureReturnType => {
           }
           setRedraw(uuidv4());
         },
-        onPanResponderRelease: () => {
+        onPanResponderRelease: (_, gesture) => {
           //const AVERAGE_UNIT = 8;
-          if (lineTool === 'MOVE') {
+          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
             movingMapCenter.current = undefined;
           } else if (lineTool === 'DRAW') {
             if (modifiedLine.current.coords.length > 0) {
@@ -874,7 +877,6 @@ export const useFeature = (): UseFeatureReturnType => {
             properties: ['DRAW'],
             arrow: 1,
           };
-
           setRedraw(uuidv4());
         }
       }
