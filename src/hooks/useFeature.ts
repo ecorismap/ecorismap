@@ -43,12 +43,10 @@ import { MapRef } from 'react-map-gl';
 import { Position } from '@turf/turf';
 import { isDrawTool } from '../utils/General';
 import { updateLayerAction } from '../modules/layers';
-import { useDisplay } from './useDisplay';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 
 export type UseFeatureReturnType = {
-  mapViewRef: React.MutableRefObject<MapView | MapRef | null>;
   layers: LayerType[];
   projectId: string | undefined;
   pointDataSet: DataType[];
@@ -145,10 +143,9 @@ export type UseFeatureReturnType = {
   };
 };
 
-export const useFeature = (): UseFeatureReturnType => {
+export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
   const [pointTool, setPointTool] = useState<PointToolType>('NONE');
   const [lineTool, setLineTool] = useState<LineToolType>('NONE');
   const [drawLineTool, setDrawLineTool] = useState<DrawLineToolType>('DRAW');
@@ -187,8 +184,6 @@ export const useFeature = (): UseFeatureReturnType => {
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
 
-  const mapViewRef = useRef<MapView | MapRef | null>(null);
-
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
   const activeLineLayer = useMemo(() => layers.find((d) => d.active && d.type === 'LINE'), [layers]);
@@ -198,59 +193,8 @@ export const useFeature = (): UseFeatureReturnType => {
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
-  const { isDataOpened } = useDisplay();
-  const { windowHeight, windowWidth, isLandscape } = useWindow();
 
-  const screenParam = useMemo(() => {
-    if (Platform.OS === 'web' && mapViewRef.current && isDataOpened) {
-      const mapView = (mapViewRef.current as MapRef).getMap();
-      const width = mapView.getContainer().offsetWidth;
-      const height = mapView.getContainer().offsetHeight;
-
-      const param = {
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        latitudeDelta: mapRegion.latitudeDelta,
-        longitudeDelta: mapRegion.longitudeDelta,
-        width,
-        height,
-      };
-      //console.log('##param##', param);
-      return param;
-    } else {
-      const param = {
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        latitudeDelta: mapRegion.latitudeDelta,
-        longitudeDelta: mapRegion.longitudeDelta,
-        height: isLandscape
-          ? windowHeight
-          : isDataOpened === 'expanded'
-          ? 0
-          : isDataOpened === 'opened'
-          ? windowHeight / 2
-          : windowHeight,
-        width: !isLandscape
-          ? windowWidth
-          : isDataOpened === 'expanded'
-          ? 0
-          : isDataOpened === 'opened'
-          ? windowWidth / 2
-          : windowWidth,
-      };
-      //console.log('##param##', param);
-      return param;
-    }
-  }, [
-    isDataOpened,
-    isLandscape,
-    mapRegion.latitude,
-    mapRegion.latitudeDelta,
-    mapRegion.longitude,
-    mapRegion.longitudeDelta,
-    windowHeight,
-    windowWidth,
-  ]);
+  const { screenParam, mapRegion } = useWindow();
 
   const deselectFeature = useCallback(() => {
     dispatch(editSettingsAction({ selectedRecord: undefined }));
@@ -293,7 +237,7 @@ export const useFeature = (): UseFeatureReturnType => {
   const changeEditMapStyle = useCallback(
     (value: FeatureButtonType) => {
       if (Platform.OS !== 'web') return;
-      const mapView = (mapViewRef.current as MapRef).getMap();
+      const mapView = (mapViewRef as MapRef).getMap();
       if (value === 'NONE') {
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       } else {
@@ -500,7 +444,6 @@ export const useFeature = (): UseFeatureReturnType => {
 
     drawLine.current.map((line) => {
       if (line.record !== undefined) {
-        console.log('update');
         const updatedRecord: RecordType = { ...line.record, coords: line.coords };
         dispatch(
           updateRecordsAction({
@@ -510,7 +453,6 @@ export const useFeature = (): UseFeatureReturnType => {
           })
         );
       } else {
-        console.log('new');
         addFeature(editingLayer, editingRecordSet, line.coords);
       }
     });
@@ -536,6 +478,7 @@ export const useFeature = (): UseFeatureReturnType => {
               longitude: screenParam.longitude,
               latitude: screenParam.latitude,
             };
+            drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
           } else if (lineTool === 'SELECT') {
             // //選択解除
             modifiedIndex.current = -1;
@@ -580,7 +523,6 @@ export const useFeature = (): UseFeatureReturnType => {
           const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
           if (lineTool === 'MOVE') {
             if (movingMapCenter.current === undefined) return;
-            //ライン修正のときにラインから離れてドラッグすると地図の移動
 
             const longitude =
               movingMapCenter.current.longitude -
@@ -590,10 +532,10 @@ export const useFeature = (): UseFeatureReturnType => {
               movingMapCenter.current.latitude +
               (screenParam.latitudeDelta * (point[1] - movingMapCenter.current.y)) / screenParam.height;
             if (Platform.OS === 'web') {
-              const mapView = (mapViewRef.current as MapRef).getMap();
+              const mapView = (mapViewRef as MapRef).getMap();
               mapView.flyTo({ center: [longitude, latitude] });
             } else {
-              (mapViewRef.current as MapView).setCamera({ center: { latitude, longitude } });
+              (mapViewRef as MapView).setCamera({ center: { latitude, longitude } });
             }
           } else if (lineTool === 'SELECT') {
             selectLine.current.xy = [...selectLine.current.xy, point];
@@ -672,7 +614,7 @@ export const useFeature = (): UseFeatureReturnType => {
                   index: modifiedIndex.current,
                   coords: drawLine.current[modifiedIndex.current].coords,
                 });
-                console.log('set undo');
+
                 drawLine.current[modifiedIndex.current] = {
                   ...drawLine.current[modifiedIndex.current],
                   xy: modifiedXY,
@@ -697,7 +639,7 @@ export const useFeature = (): UseFeatureReturnType => {
           setRedraw(uuidv4());
         },
       }),
-    [checkEditable, getEditingLayerAndRecordSet, lineTool, screenParam]
+    [checkEditable, getEditingLayerAndRecordSet, lineTool, mapViewRef, screenParam]
   );
 
   // const deleteActions = useCallback(
@@ -757,9 +699,8 @@ export const useFeature = (): UseFeatureReturnType => {
   }, [clearDrawLines, screenParam]);
 
   useEffect(() => {
-    //地図サイズが変更になったときにSVGを再描画
-    if (featureButton === 'LINE') {
-      //新規のライン、修正途中のラインの際にサイズ変更
+    if (featureButton === 'LINE' && movingMapCenter.current === undefined) {
+      // //新規のライン、修正途中のラインの際にサイズ変更
       drawLine.current.forEach(
         (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, screenParam) })
       );
@@ -769,7 +710,6 @@ export const useFeature = (): UseFeatureReturnType => {
   }, [screenParam]);
 
   return {
-    mapViewRef,
     layers,
     projectId,
     pointDataSet,

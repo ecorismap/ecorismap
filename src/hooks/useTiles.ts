@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system';
 import { Alert } from '../components/atoms/Alert';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
+import { useWindow } from './useWindow';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -26,7 +27,7 @@ export type UseTilesReturnType = {
 export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType => {
   //console.log(tileMap);
   const dispatch = useDispatch();
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
+  const { mapRegion } = useWindow();
   const pause = useRef(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setProgress] = useState('0');

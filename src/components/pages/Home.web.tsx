@@ -43,7 +43,6 @@ export default function HomeScreen({
   savedTileSize,
   restored,
   mapViewRef,
-  mapRegion,
   gpsState,
   trackingState,
   currentLocation,
@@ -86,7 +85,7 @@ export default function HomeScreen({
 }: HomeProps) {
   //console.log('render Home');
 
-  const { windowWidth, isLandscape } = useWindow();
+  const { mapRegion, windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
 
