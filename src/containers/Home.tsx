@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppState as RNAppState, AppStateStatus, Platform } from 'react-native';
-import MapView, { Region, MapEvent } from 'react-native-maps';
+import { Region, MapEvent } from 'react-native-maps';
 import { FeatureButtonType, LayerType, LineToolType, PointToolType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -14,24 +14,24 @@ import { Props_Home } from '../routes';
 import { useZoom } from '../hooks/useZoom';
 import { useLocation } from '../hooks/useLocation';
 import { isDrawTool } from '../utils/General';
-import { MapRef, ViewState } from 'react-map-gl';
+import { ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { useLayers } from '../hooks/useLayers';
+import { useWindow } from '../hooks/useWindow';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
+
   const mapType = useSelector((state: AppState) => state.settings.mapType);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
-
   const [restored] = useState(true);
-
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
+  const { mapViewRef, changeMapRegion } = useWindow();
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -46,7 +46,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   //位置データの操作、作成関連
   const {
-    mapViewRef,
     layers,
     pointDataSet,
     lineDataSet,
@@ -77,7 +76,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     deleteLine,
     clearDrawLines,
     undoEditLine,
-  } = useFeature();
+  } = useFeature(mapViewRef.current);
 
   //現在位置、GPS関連
   const {
@@ -89,7 +88,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
-    changeMapRegion,
   } = useLocation(mapViewRef.current);
 
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -118,7 +116,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
-      //console.log('&&&&&&&', region);
+      //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
     },
     [changeMapRegion]
@@ -465,17 +463,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [route.params?.jumpTo]);
 
   useEffect(() => {
-    //Dataを表示させたときにmapRegionを強制的に更新する。mapの見た目は更新されているがmapRegionは更新されていないバグ？のため
-    if (mapViewRef.current === null) return;
-    if (Platform.OS === 'web') {
-      (mapViewRef.current as MapRef).resize();
-    } else {
-      (mapViewRef.current as MapView).render();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDataOpened]);
-
-  useEffect(() => {
     return closeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -512,7 +499,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isDownloadPage,
     memberLocations,
     mapViewRef,
-    mapRegion,
     mapType,
     tileMaps,
     savedTileSize,

@@ -3,8 +3,6 @@ import { useCallback } from 'react';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { Platform } from 'react-native';
-import { useSelector } from 'react-redux';
-import { AppState } from '../modules';
 import { isMapRef, isMapView } from '../utils/Map';
 import { useWindow } from './useWindow';
 
@@ -16,8 +14,7 @@ export type UseZoomReturnType = {
 };
 
 export const useZoom = (mapViewRef: MapView | MapRef | null): UseZoomReturnType => {
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
-  const { windowWidth } = useWindow();
+  const { windowWidth, mapRegion } = useWindow();
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {

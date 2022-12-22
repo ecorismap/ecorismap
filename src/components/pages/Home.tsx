@@ -24,7 +24,6 @@ import {
   LocationType,
   MapType,
   MemberLocationType,
-  RegionType,
   TileMapType,
   TileRegionType,
   PointToolType,
@@ -55,7 +54,6 @@ export interface HomeProps {
   polygonDataSet: DataType[];
   layers: LayerType[];
   memberLocations: MemberLocationType[];
-  mapRegion: RegionType;
   mapType: MapType;
   tileMaps: TileMapType[];
   isOffline: boolean;
@@ -147,7 +145,6 @@ export default function HomeScreen({
   savedTileSize,
   restored,
   mapViewRef,
-  mapRegion,
   mapType,
   gpsState,
   trackingState,
@@ -205,7 +202,7 @@ export default function HomeScreen({
 }: HomeProps) {
   //console.log(Platform.Version);
   const navigation = useNavigation();
-  const { windowHeight, windowWidth, isLandscape } = useWindow();
+  const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
 
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 

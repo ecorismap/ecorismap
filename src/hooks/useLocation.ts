@@ -1,24 +1,21 @@
 import { useEffect, useMemo } from 'react';
 import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
-import MapView, { Region } from 'react-native-maps';
-import { MapRef, ViewState } from 'react-map-gl';
-import { LocationStateType, LocationType, RegionType, TrackingStateType } from '../types';
+import MapView from 'react-native-maps';
+import { MapRef } from 'react-map-gl';
+import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL, STORAGE } from '../constants/AppConstants';
-import { Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { editSettingsAction } from '../modules/settings';
 import { getLineLength } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
-import { deltaToZoom, zoomToDelta } from '../utils/Coords';
 import { useGPS } from './useGPS';
-import { isMapRef, isMapView, isRegion, isRegionType, isViewState } from '../utils/Map';
+import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { useFeature } from './useFeature';
-import { useWindow } from './useWindow';
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -29,7 +26,6 @@ export type UseLocationReturnType = {
   toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
-  changeMapRegion: (region: Region | ViewState, jumpTo?: boolean) => void;
 };
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
@@ -45,8 +41,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
-  const { findRecord } = useFeature();
-  const { windowWidth } = useWindow();
+  const { findRecord } = useFeature(mapViewRef);
 
   const {
     locationEventsEmitter,
@@ -60,41 +55,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     startTracking,
     stopTracking,
   } = useGPS();
-
-  const changeMapRegion = useCallback(
-    (region: Region | ViewState | RegionType, jumpTo = false) => {
-      //console.log('region change');
-      // console.log(region);
-
-      if (Platform.OS === 'web') {
-        if (isRegionType(region)) {
-          dispatch(editSettingsAction({ mapRegion: region }));
-        } else if (isViewState(region)) {
-          if (mapViewRef === null) {
-            dispatch(editSettingsAction({ mapRegion: { ...region, latitudeDelta: 0.001, longitudeDelta: 0.001 } }));
-          } else if (isMapRef(mapViewRef)) {
-            const { latitudeDelta, longitudeDelta } = zoomToDelta(mapViewRef);
-            dispatch(editSettingsAction({ mapRegion: { ...region, latitudeDelta, longitudeDelta } }));
-          }
-        }
-      } else {
-        if (isRegion(region) && !isRegionType(region)) {
-          const delta = { longitudeDelta: region.longitudeDelta, latitudeDelta: region.latitudeDelta };
-          const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
-          dispatch(editSettingsAction({ mapRegion: newRegion }));
-        } else if (jumpTo && isRegionType(region)) {
-          const jumpRegion = {
-            latitude: region.latitude,
-            longitude: region.longitude,
-            latitudeDelta: region.latitudeDelta,
-            longitudeDelta: region.longitudeDelta,
-          };
-          (mapViewRef as MapView).animateToRegion(jumpRegion, 5);
-        }
-      }
-    },
-    [dispatch, mapViewRef, windowWidth]
-  );
 
   const moveCurrentPosition = useCallback(async () => {
     if (mapViewRef === null || !isMapView(mapViewRef)) return;
@@ -279,6 +239,5 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
-    changeMapRegion,
   } as const;
 };
