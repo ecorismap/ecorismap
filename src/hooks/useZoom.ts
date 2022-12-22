@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import { useCallback } from 'react';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform } from 'react-native';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { isMapRef, isMapView } from '../utils/Map';
+import { useWindow } from './useWindow';
 
 export type UseZoomReturnType = {
   zoom: number;
@@ -16,7 +17,7 @@ export type UseZoomReturnType = {
 
 export const useZoom = (mapViewRef: MapView | MapRef | null): UseZoomReturnType => {
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
 
   const zoomDecimal = useMemo(() => {
     if (mapRegion) {
@@ -24,15 +25,15 @@ export const useZoom = (mapViewRef: MapView | MapRef | null): UseZoomReturnType 
         return mapRegion.zoom;
       } else {
         if (mapRegion.longitudeDelta < 0) {
-          return Math.log2(360 * (screenData.width / 256 / (mapRegion.longitudeDelta + 360)));
+          return Math.log2(360 * (windowWidth / 256 / (mapRegion.longitudeDelta + 360)));
         } else {
-          return Math.log2(360 * (screenData.width / 256 / mapRegion.longitudeDelta));
+          return Math.log2(360 * (windowWidth / 256 / mapRegion.longitudeDelta));
         }
       }
     } else {
       return 5;
     }
-  }, [mapRegion, screenData.width]);
+  }, [mapRegion, windowWidth]);
 
   const zoom = useMemo(() => Math.floor(zoomDecimal), [zoomDecimal]);
 

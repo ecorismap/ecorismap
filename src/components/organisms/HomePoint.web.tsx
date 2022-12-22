@@ -12,7 +12,7 @@ interface Props {
   layer: LayerType;
   zoom: number;
   draggable: boolean;
-  selectedRecord: { layerId: string; record: RecordType | undefined };
+  selectedRecord: { layerId: string; record: RecordType } | undefined;
   onDragEndPoint: (e: any, layer: LayerType, feature: RecordType) => void;
   onPressPoint: (layer: LayerType, feature: RecordType) => void;
 }
@@ -37,13 +37,9 @@ export const Point = React.memo((props: Props) => {
 
         const labelColor = getColor(layer, feature);
         const color =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
-            ? COLOR.YELLOW
-            : labelColor;
+          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.YELLOW : labelColor;
         const borderColor =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
-            ? COLOR.BLACK
-            : COLOR.WHITE;
+          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.BLACK : COLOR.WHITE;
 
         return (
           // @ts-ignore */
