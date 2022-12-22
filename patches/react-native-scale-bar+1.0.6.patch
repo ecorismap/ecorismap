@@ -177,15 +177,17 @@ index a9c56ca..8f2d3b0 100644
    }
  }
 diff --git a/node_modules/react-native-scale-bar/src/constants.js b/node_modules/react-native-scale-bar/src/constants.js
-index 675c7df..588f9d1 100644
+index 675c7df..72c1c32 100644
 --- a/node_modules/react-native-scale-bar/src/constants.js
 +++ b/node_modules/react-native-scale-bar/src/constants.js
-@@ -1,6 +1,6 @@
+@@ -1,7 +1,7 @@
  export const LINE_SIZE = 1;
 -export const LINE_COLOR = "rgba(10, 10, 10, 1)";
 -export const LIMIT_SIZE = 5;
+-export const SCALE_SCREEN_RATIO = 0.45;
 +export const LINE_COLOR = "rgba(10, 10, 10, 0.6)";
 +export const LIMIT_SIZE = 7;
- export const SCALE_SCREEN_RATIO = 0.45;
++export const SCALE_SCREEN_RATIO = 0.33;
  
  export const FEET_PER_METER = 3.28084;
+ export const FEET_PER_MILES = 5280;
