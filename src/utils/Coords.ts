@@ -1,6 +1,14 @@
 import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
-import { DMSType, LatLonDMSKey, LatLonDMSType, LocationType } from '../types';
+import {
+  DMSType,
+  DrawLineToolType,
+  LatLonDMSKey,
+  LatLonDMSType,
+  LineRecordType,
+  LocationType,
+  RecordType,
+} from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
 
@@ -108,16 +116,13 @@ export const locationToPoints = (
   ]);
 };
 
-export const deltaToZoom = (
-  screenSize: { width: number; height: number },
-  delta: { longitudeDelta: number; latitudeDelta: number }
-) => {
+export const deltaToZoom = (windowWidth: number, delta: { longitudeDelta: number; latitudeDelta: number }) => {
   //ToDo 常にlongitudeで計算するのか？
   let decimalZoom;
   if (delta.longitudeDelta < 0) {
-    decimalZoom = Math.log2(360 * (screenSize.width / 256 / (delta.longitudeDelta + 360)));
+    decimalZoom = Math.log2(360 * (windowWidth / 256 / (delta.longitudeDelta + 360)));
   } else {
-    decimalZoom = Math.log2(360 * (screenSize.width / 256 / delta.longitudeDelta));
+    decimalZoom = Math.log2(360 * (windowWidth / 256 / delta.longitudeDelta));
   }
   return { decimalZoom, zoom: Math.floor(decimalZoom) };
 };
@@ -167,4 +172,113 @@ export const splitTest = (p: Position) => {
     [1, 1],
   ]);
   return turf.lineSplit(line, point);
+};
+
+export const getLineSnappedPosition = (pos: Position, line: Position[]) => {
+  //turfの仕様？でスクリーン座標のままだと正確にスナップ座標を計算しないために、一旦、小さい値（緯度経度的）にして、最後に戻す
+  const ADJUST_VALUE = 1000.0;
+  const adjustedPt = turf.point([pos[0] / ADJUST_VALUE, pos[1] / ADJUST_VALUE]);
+  const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+  const snapped = turf.nearestPointOnLine(adjustedLine, adjustedPt);
+  return {
+    position: [snapped.geometry.coordinates[0] * ADJUST_VALUE, snapped.geometry.coordinates[1] * ADJUST_VALUE],
+    distance: snapped.properties.dist !== undefined ? snapped.properties.dist * ADJUST_VALUE : 999999,
+    index: snapped.properties.index ?? -1,
+    location: snapped.properties.location ?? -1,
+  };
+};
+
+export const getSnappedLine = (start: Position, end: Position, line: Position[]) => {
+  const ADJUST_VALUE = 1000.0;
+  const adjustedStartPt = turf.point([start[0] / ADJUST_VALUE, start[1] / ADJUST_VALUE]);
+  const adjustedEndPt = turf.point([end[0] / ADJUST_VALUE, end[1] / ADJUST_VALUE]);
+  const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+  const sliced = turf.lineSlice(adjustedStartPt, adjustedEndPt, adjustedLine);
+  const snappedLine = sliced.geometry.coordinates.map((d) => [d[0] * ADJUST_VALUE, d[1] * ADJUST_VALUE]);
+  snappedLine[0] = start;
+  snappedLine[snappedLine.length - 1] = end;
+  return snappedLine;
+};
+
+export const getActionSnappedPosition = (
+  point: Position,
+  actions: { xy: Position[]; coords: LocationType[]; properties: string[]; arrow: number }[]
+) => {
+  for (const action of actions) {
+    const target = turf.point(point);
+    const lineStart = action.xy[0];
+    const distanceStart = turf.distance(target, turf.point(lineStart));
+
+    if (distanceStart < 500) {
+      //console.log('#######distanceStart', distanceStart, action);
+      return lineStart;
+    }
+    const lineEnd = action.xy[action.xy.length - 1];
+    const distanceEnd = turf.distance(target, turf.point(lineEnd));
+    //console.log(distanceEnd);
+    if (distanceEnd < 500) {
+      //console.log('#######distanceEnd', distanceEnd, action, lineEnd);
+      return lineEnd;
+    }
+  }
+  return point;
+};
+
+export const checkDistanceFromLine = (point: Position, xy: Position[]) => {
+  if (xy.length < 2) return { isFar: true, index: -1 };
+  const SNAP_DISTANCE = 800;
+  const snapped = getLineSnappedPosition(point, xy);
+  return { isFar: snapped.distance > SNAP_DISTANCE, index: snapped.index };
+};
+
+export const modifyLine = (
+  original: {
+    record: RecordType | undefined;
+    xy: Position[];
+    coords: LocationType[];
+    properties: (DrawLineToolType | '')[];
+    arrow: number;
+  },
+  modified: {
+    start: turf.helpers.Position;
+    xy: Position[];
+  }
+) => {
+  const startPoint = modified.start;
+  const endPoint = modified.xy[modified.xy.length - 1];
+  const { isFar: startIsFar, index: startIndex } = checkDistanceFromLine(startPoint, original.xy);
+  const { isFar: endIsFar, index: endIndex } = checkDistanceFromLine(endPoint, original.xy);
+
+  if (startIsFar && endIsFar) {
+    //最初も最後も離れている場合（何もしない）
+    return [];
+  } else if (startIsFar) {
+    //最初だけが離れている場合
+    return original.xy.slice(endIndex);
+  } else if (endIsFar) {
+    //終わりだけが離れている場合
+    return [...original.xy.slice(0, startIndex), ...modified.xy];
+  } else if (startIndex >= endIndex) {
+    //最初も最後もスナップ範囲内だが、最後のスナップが最初のスナップより前にある場合
+    return [...original.xy.slice(0, startIndex), ...modified.xy];
+  } else {
+    //最初も最後もスナップ範囲の場合
+    return [...original.xy.slice(0, startIndex), ...modified.xy, ...original.xy.slice(endIndex)];
+  }
+};
+
+export const selectedFeatures = (lineFeatures: LineRecordType[], selectLineCoords: LocationType[]) => {
+  try {
+    const selectPolygon = turf.multiPolygon([[selectLineCoords.map((c) => [c.longitude, c.latitude])]]);
+    return lineFeatures
+      .map((feature) => {
+        const featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featureLine, selectPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is LineRecordType => d !== undefined);
+  } catch (e) {
+    return [];
+  }
 };

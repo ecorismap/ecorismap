@@ -3,9 +3,11 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWLINETOOL, LINETOOL } from '../../constants/AppConstants';
 import { DrawLineToolType, LineToolType } from '../../types';
 
-import { Button, SelectionalButton } from '../atoms';
+import { Button } from '../atoms';
+import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
 
 interface Props {
+  isPositionRight: boolean;
   isEdited: boolean;
   isSelected: boolean;
   lineTool: LineToolType;
@@ -19,6 +21,7 @@ interface Props {
 
 export const HomeLineTools = (props: Props) => {
   const {
+    isPositionRight,
     isEdited,
     isSelected,
     drawLineTool,
@@ -31,9 +34,14 @@ export const HomeLineTools = (props: Props) => {
   } = props;
 
   return (
-    <View style={styles.buttonContainer}>
-      <View style={{ marginTop: 5 }}>
-        <SelectionalButton openDisabled={openDisabled} selectedButton={drawLineTool} directionRow={'row'}>
+    <View style={isPositionRight ? styles.buttonContainerLandscape : styles.buttonContainer}>
+      <View style={{ ...styles.button, width: undefined }}>
+        <SelectionalLongPressButton
+          openDisabled={openDisabled}
+          selectedButton={drawLineTool}
+          directionRow={'row'}
+          isPositionRight
+        >
           <Button
             id={'DRAW'}
             name={DRAWLINETOOL.DRAW}
@@ -41,9 +49,16 @@ export const HomeLineTools = (props: Props) => {
             borderRadius={10}
             onPressCustom={() => selectLineTool('DRAW')}
           />
-        </SelectionalButton>
+          <Button
+            id={'AREA'}
+            name={DRAWLINETOOL.AREA}
+            backgroundColor={lineTool === 'AREA' ? COLOR.ALFARED : COLOR.ALFABLUE}
+            borderRadius={10}
+            onPressCustom={() => selectLineTool('AREA')}
+          />
+        </SelectionalLongPressButton>
       </View>
-      <View style={{ marginTop: 5, width: 36 }}>
+      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.SELECT}
           backgroundColor={lineTool === 'SELECT' ? COLOR.ALFARED : isEdited ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
@@ -52,7 +67,7 @@ export const HomeLineTools = (props: Props) => {
           onPress={() => selectLineTool('SELECT')}
         />
       </View>
-      <View style={{ marginTop: 5, width: 36 }}>
+      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.MOVE}
           backgroundColor={
@@ -63,7 +78,7 @@ export const HomeLineTools = (props: Props) => {
           onPress={() => selectLineTool('MOVE')}
         />
       </View>
-      <View style={{ marginTop: 5, width: 36 }}>
+      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.SAVE}
           backgroundColor={isEdited ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -72,7 +87,7 @@ export const HomeLineTools = (props: Props) => {
           onPress={pressSaveEditLine}
         />
       </View>
-      <View style={{ marginTop: 5, width: 36 }}>
+      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.UNDO}
           backgroundColor={isEdited ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -81,7 +96,7 @@ export const HomeLineTools = (props: Props) => {
           onPress={pressUndoEditLine}
         />
       </View>
-      <View style={{ marginTop: 5, width: 36 }}>
+      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.DELETE}
           backgroundColor={isSelected ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -93,8 +108,12 @@ export const HomeLineTools = (props: Props) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
+  button: {
+    alignSelf: 'flex-start',
+    marginTop: 5,
+    width: 36,
+  },
   buttonContainer: {
     elevation: 101,
     left: 9,
@@ -102,5 +121,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Platform.OS === 'ios' ? 260 : 230,
     zIndex: 101,
+  },
+  buttonContainerLandscape: {
+    elevation: 101,
+    marginHorizontal: 0,
+    position: 'absolute',
+    right: 10,
+    top: Platform.OS === 'ios' ? 40 : 10,
+    zIndex: 101,
+  },
+  buttonLandscape: {
+    alignSelf: 'flex-end',
+    marginTop: 5,
+    width: 36,
   },
 });
