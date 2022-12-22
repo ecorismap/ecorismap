@@ -3,14 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { v4 as uuidv4 } from 'uuid';
 import * as turf from '@turf/turf';
-import {
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderInstance,
-  Platform,
-  StatusBar,
-  useWindowDimensions,
-} from 'react-native';
+import { GestureResponderEvent, PanResponder, PanResponderInstance, Platform } from 'react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   DataType,
@@ -18,6 +11,7 @@ import {
   FeatureButtonType,
   FeatureType,
   LayerType,
+  LineRecordType,
   LineToolType,
   LocationType,
   PointToolType,
@@ -29,7 +23,17 @@ import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../m
 import { editSettingsAction } from '../modules/settings';
 import MapView, { LatLng, MapEvent } from 'react-native-maps';
 import { cloneDeep } from 'lodash';
-import { isPoint, locationToPoints, pointsToLocation } from '../utils/Coords';
+import {
+  checkDistanceFromLine,
+  getActionSnappedPosition,
+  getLineSnappedPosition,
+  getSnappedLine,
+  isPoint,
+  locationToPoints,
+  modifyLine,
+  pointsToLocation,
+  selectedFeatures,
+} from '../utils/Coords';
 import { getLayerSerial } from '../utils/Layer';
 import { getDefaultFieldObject } from '../utils/Data';
 
@@ -41,6 +45,7 @@ import { isDrawTool } from '../utils/General';
 import { updateLayerAction } from '../modules/layers';
 import { useDisplay } from './useDisplay';
 import { t } from '../i18n/config';
+import { useWindow } from './useWindow';
 
 export type UseFeatureReturnType = {
   mapViewRef: React.MutableRefObject<MapView | MapRef | null>;
@@ -52,25 +57,33 @@ export type UseFeatureReturnType = {
   isEdited: React.MutableRefObject<boolean>;
   drawLine: React.MutableRefObject<
     {
-      id: string;
-      coords: Position[];
+      layerId: string;
+      record: RecordType | undefined;
+      xy: Position[];
+      coords: LocationType[];
       properties: (DrawLineToolType | '')[];
       arrow: number;
     }[]
   >;
   modifiedLine: React.MutableRefObject<{
     start: turf.helpers.Position;
-    coords: Position[];
+    xy: Position[];
+  }>;
+  selectLine: React.MutableRefObject<{
+    start: turf.helpers.Position;
+    xy: Position[];
   }>;
   pointTool: PointToolType;
   lineTool: LineToolType;
   drawLineTool: DrawLineToolType;
   polygonTool: PolygonToolType;
   featureButton: FeatureButtonType;
-  selectedRecord: {
-    layerId: string;
-    record: RecordType | undefined;
-  };
+  selectedRecord:
+    | {
+        layerId: string;
+        record: RecordType;
+      }
+    | undefined;
   panResponder: PanResponderInstance;
   drawToolsSettings: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
 
@@ -96,7 +109,7 @@ export type UseFeatureReturnType = {
     recordId: string,
     type: FeatureType
   ) => RecordType | undefined;
-  setSelectedFeatureAndRecord: (data: { layerId: string; record: RecordType | undefined }) => void;
+  deselectFeature: () => void;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
   setDrawLineTool: React.Dispatch<React.SetStateAction<DrawLineToolType>>;
@@ -120,7 +133,6 @@ export type UseFeatureReturnType = {
   };
   deleteLine: () => void;
   clearDrawLines: () => void;
-  convertFeatureToDrawLine: (feature: RecordType) => void;
   undoEditLine: () => void;
   updateDrawToolsSettings: (settings: {
     hisyouzuTool: {
@@ -135,21 +147,28 @@ export type UseFeatureReturnType = {
 
 export const useFeature = (): UseFeatureReturnType => {
   const dispatch = useDispatch();
-  const window = useWindowDimensions();
   const user = useSelector((state: AppState) => state.user);
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
   const [pointTool, setPointTool] = useState<PointToolType>('NONE');
   const [lineTool, setLineTool] = useState<LineToolType>('NONE');
   const [drawLineTool, setDrawLineTool] = useState<DrawLineToolType>('DRAW');
   const [polygonTool, setPolygonTool] = useState<PolygonToolType>('NONE');
-  const [drawLineLatLng, setDrawLineLatLng] = useState<LocationType[]>([]);
   const [, setRedraw] = useState('');
-  const drawLine = useRef<{ id: string; coords: Position[]; properties: (DrawLineToolType | '')[]; arrow: number }[]>([
-    { id: '', coords: [], properties: [], arrow: 0 },
-  ]);
-  const modifiedLine = useRef<{ start: Position; coords: Position[] }>({ start: [], coords: [] });
-  const undoLine = useRef<LocationType[]>([]);
+  const drawLine = useRef<
+    {
+      layerId: string;
+      record: RecordType | undefined;
+      xy: Position[];
+      coords: LocationType[];
+      properties: (DrawLineToolType | '')[];
+      arrow: number;
+    }[]
+  >([]);
+  const modifiedLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
+  const selectLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
+  const undoLine = useRef<{ index: number; coords: LocationType[] }[]>([]);
   const isEdited = useRef(false);
+  const modifiedIndex = useRef(-1);
   const movingMapCenter = useRef<{ x: number; y: number; longitude: number; latitude: number } | undefined>(undefined);
   const role = useSelector((state: AppState) => state.settings.role);
   const layers = useSelector((state: AppState) => state.layers);
@@ -180,6 +199,7 @@ export const useFeature = (): UseFeatureReturnType => {
     [projectId, user]
   );
   const { isDataOpened } = useDisplay();
+  const { windowHeight, windowWidth, isLandscape } = useWindow();
 
   const screenParam = useMemo(() => {
     if (Platform.OS === 'web' && mapViewRef.current && isDataOpened) {
@@ -198,47 +218,43 @@ export const useFeature = (): UseFeatureReturnType => {
       //console.log('##param##', param);
       return param;
     } else {
-      //simulatorのStatus Barの挙動がおかしい？実機ならStatusBarを引かなくても良い。
-      const windowHeight =
-        StatusBar.currentHeight && Platform.OS === 'android' && Platform.Version < 30
-          ? window.height - StatusBar.currentHeight
-          : window.height;
-
-      //const windowHeight = window.height;
       const param = {
         latitude: mapRegion.latitude,
         longitude: mapRegion.longitude,
         latitudeDelta: mapRegion.latitudeDelta,
         longitudeDelta: mapRegion.longitudeDelta,
-        height: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? windowHeight / 2 : windowHeight,
-        //height: screenData.height,
-        width: window.width,
+        height: isLandscape
+          ? windowHeight
+          : isDataOpened === 'expanded'
+          ? 0
+          : isDataOpened === 'opened'
+          ? windowHeight / 2
+          : windowHeight,
+        width: !isLandscape
+          ? windowWidth
+          : isDataOpened === 'expanded'
+          ? 0
+          : isDataOpened === 'opened'
+          ? windowWidth / 2
+          : windowWidth,
       };
       //console.log('##param##', param);
       return param;
     }
   }, [
     isDataOpened,
+    isLandscape,
     mapRegion.latitude,
     mapRegion.latitudeDelta,
     mapRegion.longitude,
     mapRegion.longitudeDelta,
-    window.height,
-    window.width,
+    windowHeight,
+    windowWidth,
   ]);
 
-  const [selectedFeature, setSelectedFeature] = useState<{ layerId: string; record: RecordType | undefined }>({
-    layerId: '',
-    record: undefined,
-  });
-
-  const setSelectedFeatureAndRecord = useCallback(
-    (data: { layerId: string; record: RecordType | undefined }) => {
-      dispatch(editSettingsAction({ selectedRecord: data }));
-      setSelectedFeature(data);
-    },
-    [dispatch]
-  );
+  const deselectFeature = useCallback(() => {
+    dispatch(editSettingsAction({ selectedRecord: undefined }));
+  }, [dispatch]);
 
   const updateDrawToolsSettings = useCallback(
     (settings: { hisyouzuTool: { active: boolean; layerId: string | undefined } }) => {
@@ -471,179 +487,99 @@ export const useFeature = (): UseFeatureReturnType => {
     [checkEditable, getEditingLayerAndRecordSet, resetPointPosition, updatePointPosition]
   );
 
-  const getLineSnappedPosition = useCallback((pos: Position, line: Position[]) => {
-    //turfの仕様？でスクリーン座標のままだと正確にスナップ座標を計算しないために、一旦、小さい値（緯度経度的）にして、最後に戻す
-    const ADJUST_VALUE = 1000.0;
-    const adjustedPt = turf.point([pos[0] / ADJUST_VALUE, pos[1] / ADJUST_VALUE]);
-    const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
-    const snapped = turf.nearestPointOnLine(adjustedLine, adjustedPt);
-    return {
-      position: [snapped.geometry.coordinates[0] * ADJUST_VALUE, snapped.geometry.coordinates[1] * ADJUST_VALUE],
-      distance: snapped.properties.dist !== undefined ? snapped.properties.dist * ADJUST_VALUE : 999999,
-      index: snapped.properties.index ?? -1,
-      location: snapped.properties.location ?? -1,
-    };
-  }, []);
-
-  const getSnappedLine = useCallback((start: Position, end: Position, line: Position[]) => {
-    const ADJUST_VALUE = 1000.0;
-    const adjustedStartPt = turf.point([start[0] / ADJUST_VALUE, start[1] / ADJUST_VALUE]);
-    const adjustedEndPt = turf.point([end[0] / ADJUST_VALUE, end[1] / ADJUST_VALUE]);
-    const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
-    const sliced = turf.lineSlice(adjustedStartPt, adjustedEndPt, adjustedLine);
-    const snappedLine = sliced.geometry.coordinates.map((d) => [d[0] * ADJUST_VALUE, d[1] * ADJUST_VALUE]);
-    snappedLine[0] = start;
-    snappedLine[snappedLine.length - 1] = end;
-    return snappedLine;
-  }, []);
-
-  const getActionSnappedPosition = useCallback(
-    (point: Position, actions: { coords: Position[]; properties: string[]; arrow: number }[]) => {
-      for (const action of actions) {
-        const target = turf.point(point);
-        const lineStart = action.coords[0];
-        const distanceStart = turf.distance(target, turf.point(lineStart));
-
-        if (distanceStart < 500) {
-          //console.log('#######distanceStart', distanceStart, action);
-          return lineStart;
-        }
-        const lineEnd = action.coords[action.coords.length - 1];
-        const distanceEnd = turf.distance(target, turf.point(lineEnd));
-        //console.log(distanceEnd);
-        if (distanceEnd < 500) {
-          //console.log('#######distanceEnd', distanceEnd, action, lineEnd);
-          return lineEnd;
-        }
-      }
-      return point;
-    },
-    []
-  );
-
-  const checkDistanceFromDrawLine = useCallback(
-    (point: Position) => {
-      const SNAP_DISTANCE = 800;
-      const snapped = getLineSnappedPosition(point, drawLine.current[0].coords);
-      return { isFar: snapped.distance > SNAP_DISTANCE, index: snapped.index };
-    },
-    [getLineSnappedPosition]
-  );
-
-  const modifyLine = useCallback(() => {
-    const startPoint = modifiedLine.current.start;
-    const endPoint = modifiedLine.current.coords[modifiedLine.current.coords.length - 1];
-    const { isFar: startIsFar, index: startIndex } = checkDistanceFromDrawLine(startPoint);
-    const { isFar: endIsFar, index: endIndex } = checkDistanceFromDrawLine(endPoint);
-
-    if (startIsFar && endIsFar) {
-      //最初も最後も離れている場合（何もしない）
-    } else if (startIsFar) {
-      //最初だけが離れている場合
-      undoLine.current = drawLineLatLng;
-      drawLine.current[0] = {
-        id: drawLine.current[0].id,
-        coords: [...modifiedLine.current.coords, ...drawLine.current[0].coords.slice(endIndex)],
-        properties: ['DRAW'],
-        arrow: 1,
-      };
-    } else if (endIsFar) {
-      //終わりだけが離れている場合
-      undoLine.current = drawLineLatLng;
-      drawLine.current[0] = {
-        id: drawLine.current[0].id,
-        coords: [...drawLine.current[0].coords.slice(0, startIndex), ...modifiedLine.current.coords],
-        properties: ['DRAW'],
-        arrow: 1,
-      };
-    } else if (startIndex >= endIndex) {
-      //最初も最後もスナップ範囲内だが、最後のスナップが最初のスナップより前にある場合
-      undoLine.current = drawLineLatLng;
-      drawLine.current[0] = {
-        id: drawLine.current[0].id,
-        coords: [...drawLine.current[0].coords.slice(0, startIndex), ...modifiedLine.current.coords],
-        properties: ['DRAW'],
-        arrow: 1,
-      };
-    } else {
-      //最初も最後もスナップ範囲の場合
-      undoLine.current = drawLineLatLng;
-      drawLine.current[0] = {
-        id: drawLine.current[0].id,
-        coords: [
-          ...drawLine.current[0].coords.slice(0, startIndex),
-          ...modifiedLine.current.coords,
-          ...drawLine.current[0].coords.slice(endIndex),
-        ],
-        properties: ['DRAW'],
-        arrow: 1,
-      };
+  const saveLine = useCallback(() => {
+    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
+    if (editingLayer === undefined) {
+      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
     }
-  }, [checkDistanceFromDrawLine, drawLineLatLng]);
+    const { isOK, message } = checkEditable(editingLayer);
+
+    if (!isOK) {
+      return { isOK: false, message, layer: undefined, data: undefined };
+    }
+
+    drawLine.current.map((line) => {
+      if (line.record !== undefined) {
+        console.log('update');
+        const updatedRecord: RecordType = { ...line.record, coords: line.coords };
+        dispatch(
+          updateRecordsAction({
+            layerId: line.layerId,
+            userId: dataUser.uid,
+            data: [updatedRecord],
+          })
+        );
+      } else {
+        console.log('new');
+        addFeature(editingLayer, editingRecordSet, line.coords);
+      }
+    });
+
+    return { isOK: true, message: '', layer: undefined, data: undefined };
+  }, [addFeature, checkEditable, dataUser.uid, dispatch, getEditingLayerAndRecordSet]);
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (event: GestureResponderEvent, gesture) => {
+        onPanResponderGrant: (event: GestureResponderEvent) => {
           //console.log(selectedTool);
 
           if (!event.nativeEvent.touches.length) return;
           //console.log('#', gesture.numberActiveTouches);
-          const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
-          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
+          const point: Position = [event.nativeEvent.pageX, event.nativeEvent.pageY];
+          if (lineTool === 'MOVE') {
             movingMapCenter.current = {
               x: point[0],
               y: point[1],
               longitude: screenParam.longitude,
               latitude: screenParam.latitude,
             };
-          } else if (lineTool === 'DRAW') {
-            if (drawLine.current[0].coords.length === 0) {
+          } else if (lineTool === 'SELECT') {
+            // //選択解除
+            modifiedIndex.current = -1;
+            drawLine.current = [];
+            selectLine.current = { start: point, xy: [point] };
+          } else if (lineTool === 'DRAW' || lineTool === 'AREA') {
+            modifiedIndex.current = drawLine.current.findIndex((line) => {
+              const { isFar } = checkDistanceFromLine(point, line.xy);
+              return !isFar;
+            });
+            if (modifiedIndex.current === -1) {
               //新規ラインの場合
-              drawLine.current[0].coords = [point];
+              drawLine.current.push({
+                layerId: '',
+                record: undefined,
+                xy: [point],
+                coords: [],
+                properties: [],
+                arrow: 0,
+              });
             } else {
               //ライン修正の場合
-              //行動を消す
-              drawLine.current = [drawLine.current[0]];
-              modifiedLine.current = { start: point, coords: [point] };
+              modifiedLine.current = { start: point, xy: [point] };
             }
             isEdited.current = true;
           } else if (isDrawTool(lineTool)) {
             //ドローツールがライン以外の場合
             const snapped = getLineSnappedPosition(
               [event.nativeEvent.locationX, event.nativeEvent.locationY],
-              drawLine.current[0].coords
+              drawLine.current[0].xy
             ).position;
             //console.log('###actions###', drawLine.current.slice(1));
             const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
-            modifiedLine.current = { start: actionSnapped, coords: [actionSnapped] };
+            modifiedLine.current = { start: actionSnapped, xy: [actionSnapped] };
             //console.log('###start###', actionSnapped);
             isEdited.current = true;
-          } else if (lineTool === 'SELECT') {
-            //選択解除
-            setSelectedFeatureAndRecord({ layerId: '', record: undefined });
-            drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
           }
         },
-        onPanResponderMove: (event: GestureResponderEvent, gesture) => {
+        onPanResponderMove: (event: GestureResponderEvent) => {
           if (!event.nativeEvent.touches.length) return;
           //console.log('##', gesture.numberActiveTouches);
           const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
-          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
-            if (movingMapCenter.current === undefined) {
-              if (lineTool === 'MOVE') {
-                return;
-              } else if (gesture.numberActiveTouches === 2) {
-                movingMapCenter.current = {
-                  x: point[0],
-                  y: point[1],
-                  longitude: screenParam.longitude,
-                  latitude: screenParam.latitude,
-                };
-              }
-            }
+          if (lineTool === 'MOVE') {
+            if (movingMapCenter.current === undefined) return;
             //ライン修正のときにラインから離れてドラッグすると地図の移動
 
             const longitude =
@@ -659,204 +595,163 @@ export const useFeature = (): UseFeatureReturnType => {
             } else {
               (mapViewRef.current as MapView).setCamera({ center: { latitude, longitude } });
             }
-          } else if (lineTool === 'DRAW') {
-            if (modifiedLine.current.coords.length > 0) {
-              //ライン修正の場合
-              modifiedLine.current.coords = [...modifiedLine.current.coords, point];
-            } else {
+          } else if (lineTool === 'SELECT') {
+            selectLine.current.xy = [...selectLine.current.xy, point];
+          } else if (lineTool === 'DRAW' || lineTool === 'AREA') {
+            if (modifiedIndex.current === -1) {
               //新規ラインの場合
-              drawLine.current[0].coords = [...drawLine.current[0].coords, point];
+              const index = drawLine.current.length - 1;
+              drawLine.current[index].xy = [...drawLine.current[index].xy, point];
+            } else {
+              //ライン修正の場合
+              modifiedLine.current.xy = [...modifiedLine.current.xy, point];
             }
           } else if (isDrawTool(lineTool)) {
             //ドローツールがポイントとライン以外
-            const snapped = getLineSnappedPosition(point, drawLine.current[0].coords).position;
+            const snapped = getLineSnappedPosition(point, drawLine.current[0].xy).position;
             const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
-            modifiedLine.current.coords = getSnappedLine(
-              modifiedLine.current.start,
-              actionSnapped,
-              drawLine.current[0].coords
-            );
+            modifiedLine.current.xy = getSnappedLine(modifiedLine.current.start, actionSnapped, drawLine.current[0].xy);
           }
           setRedraw(uuidv4());
         },
-        onPanResponderRelease: (_, gesture) => {
+        onPanResponderRelease: () => {
           //const AVERAGE_UNIT = 8;
-          if (lineTool === 'MOVE' || gesture.numberActiveTouches === 2) {
+          if (lineTool === 'MOVE') {
             movingMapCenter.current = undefined;
-          } else if (lineTool === 'DRAW') {
-            if (modifiedLine.current.coords.length > 0) {
-              //ライン修正の場合
-              // modifiedLine.current.coords = computeMovingAverage(modifiedLine.current.coords, AVERAGE_UNIT);
-              // if (modifiedLine.current.coords.length > AVERAGE_UNIT) {
-              //   //移動平均になっていない終端を削除（筆ハネ）
-              //   modifiedLine.current.coords = modifiedLine.current.coords.slice(0, -(AVERAGE_UNIT - 1));
-              // }
-              modifyLine();
-              modifiedLine.current = { start: [], coords: [] };
-            } else {
+          } else if (lineTool === 'SELECT') {
+            //選択処理
+            const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
+            if (editingLayer === undefined) return;
+            const { isOK } = checkEditable(editingLayer);
+            if (!isOK) return;
+            const selectLineCoords = pointsToLocation(selectLine.current.xy, screenParam);
+            const features = selectedFeatures(editingRecordSet as LineRecordType[], selectLineCoords);
+
+            features.forEach((record) =>
+              drawLine.current.push({
+                layerId: editingLayer.id,
+                record: record,
+                xy: locationToPoints(record.coords, screenParam),
+                coords: record.coords,
+                properties: ['DRAW'],
+                arrow: 1,
+              })
+            );
+            if (features.length > 0) undoLine.current.push({ index: -1, coords: [] });
+            selectLine.current = { start: [], xy: [] };
+          } else if (lineTool === 'DRAW' || lineTool === 'AREA') {
+            const index = drawLine.current.length - 1;
+            if (modifiedIndex.current === -1) {
               //新規ラインの場合
-              if (drawLine.current[0].coords.length === 1) {
-                drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
+              if (drawLine.current[index].xy.length === 1) {
+                //1点しかなければ追加しない
+                drawLine.current = [];
                 setRedraw(uuidv4());
                 return;
               }
+              //AREAツールの場合は、エリアを閉じるために始点を追加する。
+              if (lineTool === 'AREA') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
+              drawLine.current[index].properties = ['DRAW'];
+              drawLine.current[index].arrow = 1;
+              drawLine.current[index].coords = pointsToLocation(drawLine.current[index].xy, screenParam);
+              undoLine.current.push({
+                index: index,
+                coords: [],
+              });
+            } else {
+              // //ライン修正の場合
+              // // modifiedLine.current.coords = computeMovingAverage(modifiedLine.current.coords, AVERAGE_UNIT);
+              // // if (modifiedLine.current.coords.length > AVERAGE_UNIT) {
+              // //   //移動平均になっていない終端を削除（筆ハネ）
+              // //   modifiedLine.current.coords = modifiedLine.current.coords.slice(0, -(AVERAGE_UNIT - 1));
+              // // }
 
-              // drawLine.current[0].coords = computeMovingAverage(drawLine.current[0].coords, AVERAGE_UNIT);
-
-              // if (drawLine.current[0].coords.length > AVERAGE_UNIT) {
-              //   //移動平均になっていない終端を削除（筆ハネ）
-              //   drawLine.current[0].coords = drawLine.current[0].coords.slice(0, -(AVERAGE_UNIT - 1));
-              // }
-              drawLine.current[0].properties = ['DRAW'];
-              drawLine.current[0].arrow = 1;
+              const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], modifiedLine.current);
+              if (modifiedXY.length > 0) {
+                undoLine.current.push({
+                  index: modifiedIndex.current,
+                  coords: drawLine.current[modifiedIndex.current].coords,
+                });
+                console.log('set undo');
+                drawLine.current[modifiedIndex.current] = {
+                  ...drawLine.current[modifiedIndex.current],
+                  xy: modifiedXY,
+                  coords: pointsToLocation(modifiedXY, screenParam),
+                };
+                //moveToLastOfArray(drawLine.current, modifiedIndex.current);
+              }
+              modifiedLine.current = { start: [], xy: [] };
             }
-            // const line = turf.lineString(drawLine.current[0].coords);
-            // //const options = { tolerance: 0.8, highQuality: true };
-            // //const simplified = turf.simplify(line, options);
-            // const simplified = line;
-
-            const newDrawLineLatLng = pointsToLocation(drawLine.current[0].coords, screenParam);
-            //console.log(screenParam);
-            setDrawLineLatLng(newDrawLineLatLng);
           } else if (isDrawTool(lineTool)) {
             //ドローツールの場合
-            drawLine.current.push({ id: '', coords: modifiedLine.current.coords, properties: [lineTool], arrow: 0 });
-            modifiedLine.current = { start: [], coords: [] };
-            setRedraw(uuidv4());
+            drawLine.current.push({
+              layerId: '',
+              record: undefined,
+              xy: modifiedLine.current.xy,
+              coords: [],
+              properties: [lineTool],
+              arrow: 0,
+            });
+            modifiedLine.current = { start: [], xy: [] };
           }
+          setRedraw(uuidv4());
         },
       }),
-    [
-      lineTool,
-      screenParam,
-      getLineSnappedPosition,
-      getActionSnappedPosition,
-      setSelectedFeatureAndRecord,
-      getSnappedLine,
-      modifyLine,
-    ]
+    [checkEditable, getEditingLayerAndRecordSet, lineTool, screenParam]
   );
 
-  const deleteActions = useCallback(
-    (layerId: string, featureId: string) => {
-      const targetData = lineDataSet.find((d) => d.layerId === layerId && d.userId === dataUser.uid);
-      if (targetData === undefined) return;
-      const deleteRecords = targetData.data.filter((record) => record.field._ReferenceDataId === featureId);
-      dispatch(
-        deleteRecordsAction({
-          layerId: layerId,
-          userId: dataUser.uid,
-          data: deleteRecords,
-        })
-      );
-    },
-    [dataUser.uid, dispatch, lineDataSet]
-  );
-
-  const saveLine = useCallback(() => {
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-    }
-    const { isOK, message } = checkEditable(editingLayer);
-
-    if (!isOK) {
-      return { isOK: false, message, layer: undefined, data: undefined };
-    }
-
-    // console.log(locations);
-    if (selectedFeature.record === undefined) {
-      const result = addFeature(editingLayer, editingRecordSet, drawLineLatLng);
-
-      return { isOK: true, message: '', layer: result.layer, data: result.data };
-    } else {
-      const updatedRecord: RecordType = { ...selectedFeature.record, coords: drawLineLatLng };
-      dispatch(
-        updateRecordsAction({
-          layerId: selectedFeature.layerId,
-          userId: dataUser.uid,
-          data: [updatedRecord],
-        })
-      );
-
-      return { isOK: true, message: '', layer: editingLayer, data: updatedRecord };
-    }
-  }, [
-    addFeature,
-    checkEditable,
-    dataUser.uid,
-    dispatch,
-    drawLineLatLng,
-    getEditingLayerAndRecordSet,
-    selectedFeature.layerId,
-    selectedFeature.record,
-  ]);
+  // const deleteActions = useCallback(
+  //   (layerId: string, featureId: string) => {
+  //     const targetData = lineDataSet.find((d) => d.layerId === layerId && d.userId === dataUser.uid);
+  //     if (targetData === undefined) return;
+  //     const deleteRecords = targetData.data.filter((record) => record.field._ReferenceDataId === featureId);
+  //     dispatch(
+  //       deleteRecordsAction({
+  //         layerId: layerId,
+  //         userId: dataUser.uid,
+  //         data: deleteRecords,
+  //       })
+  //     );
+  //   },
+  //   [dataUser.uid, dispatch, lineDataSet]
+  // );
 
   const clearDrawLines = useCallback(() => {
-    drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
-    modifiedLine.current = { start: [], coords: [] };
-    setSelectedFeatureAndRecord({ layerId: '', record: undefined });
+    drawLine.current = [];
+    modifiedLine.current = { start: [], xy: [] };
     setLineTool('NONE');
-    setDrawLineLatLng([]);
-    setDrawLineTool('DRAW');
+    //setDrawLineTool('DRAW');
     isEdited.current = false;
-  }, [setSelectedFeatureAndRecord]);
+    modifiedIndex.current = -1;
+    undoLine.current = [];
+  }, []);
 
   const deleteLine = useCallback(() => {
-    if (selectedFeature.record !== undefined) {
-      dispatch(
-        deleteRecordsAction({
-          layerId: selectedFeature.layerId,
-          userId: dataUser.uid,
-          data: [selectedFeature.record],
-        })
-      );
-      if (drawToolsSettings.hisyouzuTool.layerId !== undefined) {
-        deleteActions(drawToolsSettings.hisyouzuTool.layerId, selectedFeature.record.id);
+    if (drawLine.current.length === 0) return;
+    drawLine.current.forEach((line) => {
+      if (line.record !== undefined) {
+        dispatch(
+          deleteRecordsAction({
+            layerId: line.layerId,
+            userId: dataUser.uid,
+            data: [line.record],
+          })
+        );
       }
-      clearDrawLines();
-    }
-  }, [
-    clearDrawLines,
-    dataUser.uid,
-    deleteActions,
-    dispatch,
-    drawToolsSettings.hisyouzuTool.layerId,
-    selectedFeature.layerId,
-    selectedFeature.record,
-  ]);
+    });
 
-  const convertFeatureToDrawLine = useCallback(
-    (feature: RecordType) => {
-      //console.log('www', feature);
-      // console.log(screenParam);
-      if (!Array.isArray(feature.coords)) return;
-      drawLine.current[0] = {
-        id: feature.id,
-        coords: locationToPoints(feature.coords, screenParam),
-        properties: ['DRAW'],
-        arrow: 1,
-      };
-
-      //setRedraw(uuidv4());
-      const newDrawLineLatLng = pointsToLocation(drawLine.current[0].coords, screenParam);
-      setDrawLineLatLng(newDrawLineLatLng);
-    },
-    [screenParam]
-  );
+    clearDrawLines();
+  }, [clearDrawLines, dataUser.uid, dispatch]);
 
   const undoEditLine = useCallback(() => {
-    if (drawLine.current.length > 1) {
-      //行動がある場合
-      drawLine.current.pop();
-    } else if (undoLine.current.length > 0) {
-      //行動がなくてアンドゥーのデータがある場合
-      drawLine.current[0].coords = locationToPoints(undoLine.current, screenParam);
-      undoLine.current = [];
-    } else {
-      //アンドゥーのデータがない場合
-      clearDrawLines();
+    const undo = undoLine.current.pop();
+    //undo.indexが-1の時はリセットする
+    if (undo !== undefined && undo.index !== -1) {
+      //アンドゥーのデータがある場合
+      drawLine.current[undo.index].xy = locationToPoints(undo.coords, screenParam);
+      drawLine.current[undo.index].coords = undo.coords;
     }
+    if (undoLine.current.length === 0) clearDrawLines();
 
     setRedraw(uuidv4());
   }, [clearDrawLines, screenParam]);
@@ -864,22 +759,11 @@ export const useFeature = (): UseFeatureReturnType => {
   useEffect(() => {
     //地図サイズが変更になったときにSVGを再描画
     if (featureButton === 'LINE') {
-      //保存した飛翔を表示する場合（複数行動がある場合）にサイズ変更
-      if (selectedFeature.record !== undefined && !isEdited.current) {
-        drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
-        convertFeatureToDrawLine(selectedFeature.record);
-      } else {
-        //新規のライン、修正途中のラインの際にサイズ変更
-        if (drawLineLatLng.length > 0) {
-          drawLine.current[0] = {
-            id: '',
-            coords: locationToPoints(drawLineLatLng, screenParam),
-            properties: ['DRAW'],
-            arrow: 1,
-          };
-          setRedraw(uuidv4());
-        }
-      }
+      //新規のライン、修正途中のラインの際にサイズ変更
+      drawLine.current.forEach(
+        (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, screenParam) })
+      );
+      setRedraw(uuidv4());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenParam]);
@@ -900,13 +784,14 @@ export const useFeature = (): UseFeatureReturnType => {
     selectedRecord,
     drawLine,
     modifiedLine,
+    selectLine,
     panResponder,
     drawToolsSettings,
     addCurrentPoint,
     addPressPoint,
     addTrack,
     findRecord,
-    setSelectedFeatureAndRecord,
+    deselectFeature,
     setPointTool,
     setLineTool,
     setDrawLineTool,
@@ -917,7 +802,6 @@ export const useFeature = (): UseFeatureReturnType => {
     saveLine,
     deleteLine,
     clearDrawLines,
-    convertFeatureToDrawLine,
     undoEditLine,
     updateDrawToolsSettings,
   } as const;

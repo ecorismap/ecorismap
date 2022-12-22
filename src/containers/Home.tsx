@@ -60,12 +60,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     selectedRecord,
     drawLine,
     modifiedLine,
+    selectLine,
     panResponder,
     drawToolsSettings,
     addCurrentPoint,
     addPressPoint,
     addTrack,
-    setSelectedFeatureAndRecord,
+    deselectFeature,
     setPointTool,
     setLineTool,
     setDrawLineTool,
@@ -75,7 +76,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     saveLine,
     deleteLine,
     clearDrawLines,
-    convertFeatureToDrawLine,
     undoEditLine,
   } = useFeature();
 
@@ -170,8 +170,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             targetLayer: layer,
           });
         }, 1);
-      } else if (pointTool === 'NONE' && lineTool !== 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
+      } else if (pointTool === 'NONE') {
+        deselectFeature();
       }
     },
     [
@@ -179,11 +179,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       addPressPoint,
       expandData,
       gpsState,
-      lineTool,
       navigation,
       pointTool,
       setPointTool,
-      setSelectedFeatureAndRecord,
+      deselectFeature,
       trackingState,
     ]
   );
@@ -208,7 +207,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           AlertAsync(t('Home.alert.discardChanges'));
           return;
         }
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
         openData();
 
         navigation.navigate('DataEdit', {
@@ -218,30 +216,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
       }
     },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool, setSelectedFeatureAndRecord]
+    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool]
   );
 
   const onPressLine = useCallback(
     async (layer: LayerType, feature: RecordType) => {
-      if (lineTool === 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
-        convertFeatureToDrawLine(feature);
-      } else {
-        if (isEditingRecord) {
-          await AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-
-        openData();
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-        });
+      if (isEditingRecord) {
+        await AlertAsync(t('Home.alert.discardChanges'));
+        return;
       }
+      openData();
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: { ...feature },
+        targetLayer: { ...layer },
+      });
     },
-    [lineTool, setSelectedFeatureAndRecord, convertFeatureToDrawLine, openData, navigation, isEditingRecord]
+    [openData, navigation, isEditingRecord]
   );
 
   const onPressPolygon = useCallback(
@@ -252,7 +243,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       if (pointTool === 'NONE' && lineTool === 'NONE' && polygonTool === 'NONE') {
         openData();
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
         setTimeout(function () {
           navigation.navigate('DataEdit', {
             previous: 'Home',
@@ -262,7 +252,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }, 1);
       }
     },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool, setSelectedFeatureAndRecord]
+    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool]
   );
 
   const onDrop = useCallback(
@@ -283,30 +273,26 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /************** select button ************/
   const selectLineTool = useCallback(
     (value: LineToolType) => {
-      if (!isEdited.current && value === 'DRAW' && lineTool === 'DRAW') {
+      if ((!isEdited.current && value === 'DRAW' && lineTool === 'DRAW') || (value === 'AREA' && lineTool === 'AREA')) {
         //ドローツールをオフ
         setLineTool('NONE');
       } else if (isDrawTool(value)) {
         //ドローツールをオン
         setLineTool(value);
         setDrawLineTool(value);
-        if (drawLine.current[0].coords.length > 0) {
+        if (drawLine.current.length > 0) {
           isEdited.current = true;
-        } else {
-          setSelectedFeatureAndRecord({ layerId: '', record: undefined });
         }
       } else if (value === 'SELECT' && lineTool === 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
-        drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
+        drawLine.current = [];
         setLineTool('NONE');
       } else if (value === 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
         setLineTool('SELECT');
       } else if (value === 'MOVE') {
         setLineTool('MOVE');
       }
     },
-    [drawLine, isEdited, lineTool, setDrawLineTool, setLineTool, setSelectedFeatureAndRecord]
+    [drawLine, isEdited, lineTool, setDrawLineTool, setLineTool]
   );
 
   const selectPointTool = useCallback(
@@ -341,19 +327,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressSaveEditLine = useCallback(async () => {
     const { isOK, message, layer, data } = saveLine();
-    if (!isOK || layer === undefined || data === undefined) {
+    if (!isOK) {
       Alert.alert('', message);
       return;
     }
     clearDrawLines();
-    openData();
-    setTimeout(function () {
-      navigation.navigate('DataEdit', {
-        previous: 'Home',
-        targetData: data,
-        targetLayer: layer,
-      });
-    }, 1);
+    if (layer !== undefined && data !== undefined) {
+      openData();
+      setTimeout(function () {
+        navigation.navigate('DataEdit', {
+          previous: 'Home',
+          targetData: data,
+          targetLayer: layer,
+        });
+      }, 1);
+    }
   }, [clearDrawLines, navigation, openData, saveLine]);
 
   const pressDeleteLine = useCallback(() => {
@@ -518,7 +506,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     polygonDataSet,
     isEdited: isEdited.current,
     drawLine: drawLine.current,
-    modifiedLine,
+    modifiedLine: modifiedLine.current,
+    selectLine: selectLine.current,
     layers,
     isDownloadPage,
     memberLocations,
