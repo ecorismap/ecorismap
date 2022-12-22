@@ -18,6 +18,7 @@ export const COLOR = {
   ALFABLUE: '#007AFF55',
   ALFABLUE2: '#007AFF44',
   YELLOW: '#FFF100',
+  ALFAYELLOW: '#FFF10055',
   RED: '#ff0000',
   ALFARED: '#ff000055',
   DARKRED: 'darkred',
@@ -144,6 +145,7 @@ export const POINTTOOL = {
 
 export const DRAWLINETOOL = {
   DRAW: 'lead-pencil',
+  AREA: 'shape-circle-plus',
 } as const;
 
 export const LINETOOL = {
