@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, Text, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -31,6 +31,7 @@ import { mapboxToken, maptilerKey } from '../../../config';
 import 'mapbox-gl/dist/mapbox-gl.css';
 //import mapStyle3D from '../../../style.json';
 import { useDropzone } from 'react-dropzone';
+import { useWindow } from '../../hooks/useWindow';
 
 export default function HomeScreen({
   pointDataSet,
@@ -51,6 +52,7 @@ export default function HomeScreen({
   isEdited,
   drawLine,
   modifiedLine,
+  selectLine,
   tileMaps,
   isDownloading,
   featureButton,
@@ -84,7 +86,7 @@ export default function HomeScreen({
 }: HomeProps) {
   //console.log('render Home');
 
-  const window = useWindowDimensions();
+  const { windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
 
@@ -405,12 +407,12 @@ export default function HomeScreen({
   }, [tileMaps]);
   //console.log(mapRegion);
   return !restored ? null : (
-    <View style={[styles.container, { flexDirection: window.width > window.height ? 'row' : 'column' }]}>
+    <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View
         style={{
           display: isDataOpened === 'closed' ? 'none' : 'flex',
           height: '100%',
-          width: isDataOpened === 'expanded' ? window.width : isDataOpened === 'opened' ? window.width / 2 : '0%',
+          width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
         }}
       >
         <DataRoutes />
@@ -418,21 +420,20 @@ export default function HomeScreen({
       <View
         style={{
           height: '100%',
-          width: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? window.width / 2 : window.width,
+          width: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
           justifyContent: 'flex-end',
           zIndex: 0,
           elevation: 0,
         }}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(lineTool) ||
-          (lineTool === 'SELECT' && selectedRecord.record !== undefined) ||
-          lineTool === 'MOVE') && (
+        {(isDrawTool(lineTool) || lineTool === 'SELECT' || lineTool === 'MOVE') && (
           <SvgLine
             panResponder={panResponder}
             drawLine={drawLine}
-            modifiedLine={modifiedLine.current}
-            selectedRecord={selectedRecord}
+            modifiedLine={modifiedLine}
+            selectLine={selectLine}
+            lineTool={lineTool}
           />
         )}
         <div {...getRootProps({ className: 'dropzone' })}>
@@ -551,9 +552,10 @@ export default function HomeScreen({
           <>
             {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
               <HomeLineTools
+                isPositionRight={false}
                 isEdited={isEdited}
-                isSelected={(lineTool === 'SELECT' || lineTool === 'MOVE') && selectedRecord.record !== undefined}
-                openDisabled={selectedRecord.record === undefined || !isEdited}
+                isSelected={drawLine.length > 0}
+                openDisabled={selectedRecord === undefined || !isEdited}
                 lineTool={lineTool}
                 drawLineTool={drawLineTool}
                 selectLineTool={selectLineTool}

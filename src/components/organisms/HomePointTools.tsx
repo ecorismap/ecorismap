@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, POINTTOOL } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
 import { PointToolType } from '../../types';
 
 import { Button } from '../atoms';
@@ -13,8 +14,11 @@ interface Props {
 export const HomePointTools = (props: Props) => {
   const { pointTool, selectPointTool } = props;
   //console.log('HomeButton');
+
+  const { isLandscape } = useWindow();
+
   return (
-    <View style={styles.buttonContainer}>
+    <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
       <View style={{ marginTop: 5 }}>
         <Button
           name={POINTTOOL.ADD_LOCATION}
@@ -50,6 +54,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 0,
     position: 'absolute',
     top: Platform.OS === 'ios' ? 280 : 250,
+    zIndex: 101,
+  },
+  buttonContainerLandscape: {
+    elevation: 101,
+    marginHorizontal: 0,
+    position: 'absolute',
+    right: 12,
+    top: Platform.OS === 'ios' ? 40 : 10,
     zIndex: 101,
   },
 });
