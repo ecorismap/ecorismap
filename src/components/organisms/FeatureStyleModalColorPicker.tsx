@@ -29,11 +29,11 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
             <Text style={styles.modalTitle}>{t('common.selectColor')} </Text>
             <HsvColorPicker
               huePickerHue={hue}
-              // eslint-disable-next-line no-shadow
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               onHuePickerDragMove={({ hue }: any) => {
                 setHue(hue);
               }}
-              // eslint-disable-next-line no-shadow
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               onHuePickerPress={({ hue }: any) => {
                 setHue(hue);
               }}
