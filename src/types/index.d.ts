@@ -67,14 +67,23 @@ export interface RecordType {
   id: string;
   userId: string | undefined;
   displayName: string | null;
-  //checked: boolean;
   visible: boolean;
   redraw: boolean;
   coords: LocationType | Array<LocationType>;
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
-  //[key: string]: unknown;
+}
+
+export interface LineRecordType {
+  id: string;
+  userId: string | undefined;
+  displayName: string | null;
+  visible: boolean;
+  redraw: boolean;
+  coords: Array<LocationType>;
+  centroid?: LocationType;
+  field: { [key: string]: string | number | PhotoType[] };
 }
 
 export interface TrackingType {
@@ -220,10 +229,12 @@ export interface SettingsType {
   memberLocation: MemberLocationType[];
   tracking: TrackingType | undefined;
   isEditingRecord: boolean;
-  selectedRecord: {
-    layerId: string;
-    record: RecordType | undefined;
-  };
+  selectedRecord:
+    | {
+        layerId: string;
+        record: RecordType;
+      }
+    | undefined;
   drawTools: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
   photosToBeDeleted: {
     projectId: string;

@@ -13,7 +13,7 @@ interface Props {
   layer: LayerType;
   zoom: number;
   zIndex: number;
-  selectedRecord: { layerId: string; record: RecordType | undefined };
+  selectedRecord: { layerId: string; record: RecordType } | undefined;
   onPressLine: (layer: LayerType, feature: RecordType) => void;
 }
 
@@ -36,9 +36,7 @@ export const Line = React.memo((props: Props) => {
             : '';
         const color = getColor(layer, feature);
         const lineColor =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
-            ? COLOR.YELLOW
-            : color;
+          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.YELLOW : color;
         const coords = (feature.coords as LocationType[])[(feature.coords as LocationType[]).length - 1];
         const arrowDeg = getArrowDeg(feature);
         return coords ? (
