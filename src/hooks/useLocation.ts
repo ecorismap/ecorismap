@@ -5,7 +5,7 @@ import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl';
 import { LocationStateType, LocationType, RegionType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL, STORAGE } from '../constants/AppConstants';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { editSettingsAction } from '../modules/settings';
@@ -18,6 +18,7 @@ import { isMapRef, isMapView, isRegion, isRegionType, isViewState } from '../uti
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { useFeature } from './useFeature';
+import { useWindow } from './useWindow';
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -45,7 +46,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
   const { findRecord } = useFeature();
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
 
   const {
     locationEventsEmitter,
@@ -79,7 +80,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       } else {
         if (isRegion(region) && !isRegionType(region)) {
           const delta = { longitudeDelta: region.longitudeDelta, latitudeDelta: region.latitudeDelta };
-          const newRegion = { ...region, zoom: deltaToZoom(screenData, delta).zoom };
+          const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
           dispatch(editSettingsAction({ mapRegion: newRegion }));
         } else if (jumpTo && isRegionType(region)) {
           const jumpRegion = {
@@ -92,7 +93,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         }
       }
     },
-    [dispatch, mapViewRef, screenData]
+    [dispatch, mapViewRef, windowWidth]
   );
 
   const moveCurrentPosition = useCallback(async () => {
