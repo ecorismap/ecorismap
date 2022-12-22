@@ -139,7 +139,7 @@ export default function DataEditScreen(props: Props) {
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });
