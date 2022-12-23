@@ -45,7 +45,6 @@ import { isDrawTool } from '../utils/General';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
-import dayjs from 'dayjs';
 
 export type UseFeatureReturnType = {
   layers: LayerType[];
@@ -237,7 +236,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
 
   const changeEditMapStyle = useCallback(
     (value: FeatureButtonType) => {
-      if (Platform.OS !== 'web') return;
+      if (Platform.OS !== 'web' || mapViewRef === null) return;
       const mapView = (mapViewRef as MapRef).getMap();
       if (value === 'NONE') {
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
@@ -535,7 +534,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
               (mapRegion.latitudeDelta * (point[1] - movingMapCenter.current.y)) / mapSize.height;
             if (Platform.OS === 'web') {
               const mapView = (mapViewRef as MapRef).getMap();
-              mapView.flyTo({ center: [longitude, latitude] });
+              mapView.easeTo({ center: [longitude, latitude], animate: false });
             } else {
               (mapViewRef as MapView).setCamera({ center: { latitude, longitude } });
             }
