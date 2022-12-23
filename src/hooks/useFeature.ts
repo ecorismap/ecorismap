@@ -194,7 +194,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     [projectId, user]
   );
 
-  const { screenParam, mapRegion } = useWindow();
+  const { mapSize, mapRegion } = useWindow();
 
   const deselectFeature = useCallback(() => {
     dispatch(editSettingsAction({ selectedRecord: undefined }));
@@ -470,13 +470,13 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
 
           if (!event.nativeEvent.touches.length) return;
           //console.log('#', gesture.numberActiveTouches);
-          const point: Position = [event.nativeEvent.pageX, event.nativeEvent.pageY];
+          const point: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
           if (lineTool === 'MOVE') {
             movingMapCenter.current = {
               x: point[0],
               y: point[1],
-              longitude: screenParam.longitude,
-              latitude: screenParam.latitude,
+              longitude: mapRegion.longitude,
+              latitude: mapRegion.latitude,
             };
             drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
           } else if (lineTool === 'SELECT') {
@@ -520,17 +520,18 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
         onPanResponderMove: (event: GestureResponderEvent) => {
           if (!event.nativeEvent.touches.length) return;
           //console.log('##', gesture.numberActiveTouches);
-          const point = [event.nativeEvent.pageX, event.nativeEvent.pageY];
+          const point = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+
           if (lineTool === 'MOVE') {
             if (movingMapCenter.current === undefined) return;
 
             const longitude =
               movingMapCenter.current.longitude -
-              (screenParam.longitudeDelta * (point[0] - movingMapCenter.current.x)) / screenParam.width;
+              (mapRegion.longitudeDelta * (point[0] - movingMapCenter.current.x)) / mapSize.width;
 
             const latitude =
               movingMapCenter.current.latitude +
-              (screenParam.latitudeDelta * (point[1] - movingMapCenter.current.y)) / screenParam.height;
+              (mapRegion.latitudeDelta * (point[1] - movingMapCenter.current.y)) / mapSize.height;
             if (Platform.OS === 'web') {
               const mapView = (mapViewRef as MapRef).getMap();
               mapView.flyTo({ center: [longitude, latitude] });
@@ -566,14 +567,14 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
             if (editingLayer === undefined) return;
             const { isOK } = checkEditable(editingLayer);
             if (!isOK) return;
-            const selectLineCoords = pointsToLocation(selectLine.current.xy, screenParam);
+            const selectLineCoords = pointsToLocation(selectLine.current.xy, mapRegion, mapSize);
             const features = selectedFeatures(editingRecordSet as LineRecordType[], selectLineCoords);
 
             features.forEach((record) =>
               drawLine.current.push({
                 layerId: editingLayer.id,
                 record: record,
-                xy: locationToPoints(record.coords, screenParam),
+                xy: locationToPoints(record.coords, mapRegion, mapSize),
                 coords: record.coords,
                 properties: ['DRAW'],
                 arrow: 1,
@@ -595,7 +596,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
               if (lineTool === 'AREA') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
               drawLine.current[index].properties = ['DRAW'];
               drawLine.current[index].arrow = 1;
-              drawLine.current[index].coords = pointsToLocation(drawLine.current[index].xy, screenParam);
+              drawLine.current[index].coords = pointsToLocation(drawLine.current[index].xy, mapRegion, mapSize);
               undoLine.current.push({
                 index: index,
                 coords: [],
@@ -618,7 +619,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
                 drawLine.current[modifiedIndex.current] = {
                   ...drawLine.current[modifiedIndex.current],
                   xy: modifiedXY,
-                  coords: pointsToLocation(modifiedXY, screenParam),
+                  coords: pointsToLocation(modifiedXY, mapRegion, mapSize),
                 };
                 //moveToLastOfArray(drawLine.current, modifiedIndex.current);
               }
@@ -639,7 +640,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
           setRedraw(uuidv4());
         },
       }),
-    [checkEditable, getEditingLayerAndRecordSet, lineTool, mapViewRef, screenParam]
+    [checkEditable, getEditingLayerAndRecordSet, lineTool, mapRegion, mapSize, mapViewRef]
   );
 
   // const deleteActions = useCallback(
@@ -690,24 +691,24 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     //undo.indexが-1の時はリセットする
     if (undo !== undefined && undo.index !== -1) {
       //アンドゥーのデータがある場合
-      drawLine.current[undo.index].xy = locationToPoints(undo.coords, screenParam);
+      drawLine.current[undo.index].xy = locationToPoints(undo.coords, mapRegion, mapSize);
       drawLine.current[undo.index].coords = undo.coords;
     }
     if (undoLine.current.length === 0) clearDrawLines();
 
     setRedraw(uuidv4());
-  }, [clearDrawLines, screenParam]);
+  }, [clearDrawLines, mapRegion, mapSize]);
 
   useEffect(() => {
     if (featureButton === 'LINE' && movingMapCenter.current === undefined) {
       // //新規のライン、修正途中のラインの際にサイズ変更
       drawLine.current.forEach(
-        (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, screenParam) })
+        (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
       );
       setRedraw(uuidv4());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screenParam]);
+  }, [mapRegion, mapSize]);
 
   return {
     layers,

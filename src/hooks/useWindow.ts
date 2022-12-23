@@ -1,6 +1,6 @@
 import { MutableRefObject, useCallback, useEffect, useMemo, useRef } from 'react';
 import { MapRef, ViewState } from 'react-map-gl';
-import { Platform, StatusBar, useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useDisplay } from './useDisplay';
 import { isMapRef, isRegion, isRegionType, isViewState } from '../utils/Map';
 import MapView, { Region } from 'react-native-maps';
@@ -16,11 +16,7 @@ export type UseWindowReturnType = {
   windowHeight: number;
   windowWidth: number;
   isLandscape: boolean;
-  screenParam: {
-    latitude: number;
-    longitude: number;
-    latitudeDelta: number;
-    longitudeDelta: number;
+  mapSize: {
     width: number;
     height: number;
   };
@@ -37,31 +33,15 @@ export const useWindow = (): UseWindowReturnType => {
   const windowWidth = window.width;
   let StatusBarHeight = 0;
   if (Platform.OS === 'android') StatusBarHeight = 24;
-  const windowHeight = isLandscape && StatusBar.currentHeight ? window.height - StatusBarHeight : window.height;
+  const windowHeight = isLandscape ? window.height - StatusBarHeight : window.height;
   //console.log(window.width, window.height, isLandscape, StatusBar.currentHeight);
 
-  const screenParam = useMemo(() => {
+  const mapSize = useMemo(() => {
     if (Platform.OS === 'web' && mapViewRef.current && isDataOpened) {
       const mapView = (mapViewRef.current as MapRef).getMap();
-      const width = mapView.getContainer().offsetWidth;
-      const height = mapView.getContainer().offsetHeight;
-
-      const param = {
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        latitudeDelta: mapRegion.latitudeDelta,
-        longitudeDelta: mapRegion.longitudeDelta,
-        width,
-        height,
-      };
-      //console.log('##param##', param);
-      return param;
+      return { width: mapView.getContainer().offsetWidth, height: mapView.getContainer().offsetHeight };
     } else {
-      const param = {
-        latitude: mapRegion.latitude,
-        longitude: mapRegion.longitude,
-        latitudeDelta: mapRegion.latitudeDelta,
-        longitudeDelta: mapRegion.longitudeDelta,
+      return {
         height: isLandscape
           ? windowHeight
           : isDataOpened === 'expanded'
@@ -77,26 +57,11 @@ export const useWindow = (): UseWindowReturnType => {
           ? windowWidth / 2
           : windowWidth,
       };
-      //console.log('##param##', param);
-      return param;
     }
-  }, [
-    isDataOpened,
-    isLandscape,
-    mapRegion.latitude,
-    mapRegion.latitudeDelta,
-    mapRegion.longitude,
-    mapRegion.longitudeDelta,
-
-    windowHeight,
-    windowWidth,
-  ]);
+  }, [isDataOpened, isLandscape, windowHeight, windowWidth]);
 
   const changeMapRegion = useCallback(
     (region: Region | ViewState | RegionType, jumpTo = false) => {
-      //console.log('region change');
-      // console.log(region);
-
       if (Platform.OS === 'web') {
         if (isRegionType(region)) {
           dispatch(editSettingsAction({ mapRegion: region }));
@@ -142,10 +107,10 @@ export const useWindow = (): UseWindowReturnType => {
   return {
     mapViewRef,
     mapRegion,
+    mapSize,
     windowHeight,
     windowWidth,
     isLandscape,
-    screenParam,
     changeMapRegion,
   } as const;
 };
