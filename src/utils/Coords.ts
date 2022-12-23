@@ -84,35 +84,38 @@ export const pointsToSvg = (points: Position[]) => {
 
 export const pointsToLocation = (
   points: Position[],
-  param: {
-    width: number;
-    height: number;
+  mapRegion: {
     latitude: number;
     longitude: number;
     latitudeDelta: number;
     longitudeDelta: number;
-  }
+  },
+  mapSize: { width: number; height: number }
 ) => {
-  return points.map((d) => ({
-    longitude: param.longitude + param.longitudeDelta * (d[0] / param.width - 0.5),
-    latitude: param.latitude - param.latitudeDelta * (d[1] / param.height - 0.5),
+  return points.map((xy) => ({
+    longitude: mapRegion.longitude + mapRegion.longitudeDelta * (xy[0] / mapSize.width - 0.5),
+    latitude: mapRegion.latitude - mapRegion.latitudeDelta * (xy[1] / mapSize.height - 0.5),
   }));
 };
 
 export const locationToPoints = (
   location: { longitude: number; latitude: number }[],
-  param: {
-    width: number;
-    height: number;
+  mapRegion: {
     latitude: number;
     longitude: number;
     latitudeDelta: number;
     longitudeDelta: number;
-  }
+  },
+  mapSize: { width: number; height: number }
 ) => {
-  return location.map((d) => [
-    Math.round(((d.longitude - (param.longitude - param.longitudeDelta / 2)) * param.width) / param.longitudeDelta),
-    Math.round(((param.latitude + param.latitudeDelta / 2 - d.latitude) * param.height) / param.latitudeDelta),
+  return location.map((latlon) => [
+    Math.round(
+      ((latlon.longitude - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) * mapSize.width) /
+        mapRegion.longitudeDelta
+    ),
+    Math.round(
+      ((mapRegion.latitude + mapRegion.latitudeDelta / 2 - latlon.latitude) * mapSize.height) / mapRegion.latitudeDelta
+    ),
   ]);
 };
 
