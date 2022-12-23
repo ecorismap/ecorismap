@@ -37,13 +37,13 @@ export const Polygon = React.memo((props: Props) => {
         const transparency = layer.colorStyle.transparency;
         const color = getColor(layer, feature);
         const pointColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.YELLOW : color;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
         const polygonColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id
             ? COLOR.YELLOW
             : hex2rgba(color, 1 - transparency);
         const borderColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.BLACK : COLOR.WHITE;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
 
         if (zoom >= 11) {
           return (

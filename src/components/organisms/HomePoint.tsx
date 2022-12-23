@@ -37,11 +37,11 @@ export const Point = React.memo((props: Props) => {
             : '';
         const color = getColor(layer, feature);
         const pointColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id
             ? COLOR.YELLOW
             : getColor(layer, feature);
         const borderColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.BLACK : COLOR.WHITE;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}

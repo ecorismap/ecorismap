@@ -237,7 +237,7 @@ export default function HomeScreen({
     (event) => {
       const map = (mapViewRef.current as MapRef).getMap();
       //console.log(event);
-      if (selectedRecord && selectedRecord.record !== undefined) {
+      if (selectedRecord !== undefined && selectedRecord.record !== undefined) {
         //console.log('WWW', selectedRecord.record.userId);
         map.removeFeatureState({
           source: `${selectedRecord.layerId}_${selectedRecord.record.userId ?? ''}`,
