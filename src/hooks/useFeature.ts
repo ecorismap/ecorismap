@@ -45,6 +45,7 @@ import { isDrawTool } from '../utils/General';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
+import dayjs from 'dayjs';
 
 export type UseFeatureReturnType = {
   layers: LayerType[];
@@ -52,7 +53,7 @@ export type UseFeatureReturnType = {
   pointDataSet: DataType[];
   lineDataSet: DataType[];
   polygonDataSet: DataType[];
-  isEdited: React.MutableRefObject<boolean>;
+  isEditingLine: boolean;
   drawLine: React.MutableRefObject<
     {
       layerId: string;
@@ -164,7 +165,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
   const modifiedLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
   const selectLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
   const undoLine = useRef<{ index: number; coords: LocationType[] }[]>([]);
-  const isEdited = useRef(false);
+  const isEditingLine = useRef(false);
   const modifiedIndex = useRef(-1);
   const movingMapCenter = useRef<{ x: number; y: number; longitude: number; latitude: number } | undefined>(undefined);
   const role = useSelector((state: AppState) => state.settings.role);
@@ -503,7 +504,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
               //ライン修正の場合
               modifiedLine.current = { start: point, xy: [point] };
             }
-            isEdited.current = true;
+            isEditingLine.current = true;
           } else if (isDrawTool(lineTool)) {
             //ドローツールがライン以外の場合
             const snapped = getLineSnappedPosition(
@@ -514,7 +515,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
             const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
             modifiedLine.current = { start: actionSnapped, xy: [actionSnapped] };
             //console.log('###start###', actionSnapped);
-            isEdited.current = true;
+            isEditingLine.current = true;
           }
         },
         onPanResponderMove: (event: GestureResponderEvent) => {
@@ -561,6 +562,10 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
           //const AVERAGE_UNIT = 8;
           if (lineTool === 'MOVE') {
             movingMapCenter.current = undefined;
+            drawLine.current.forEach(
+              (line, idx) =>
+                (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
+            );
           } else if (lineTool === 'SELECT') {
             //選択処理
             const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
@@ -580,7 +585,10 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
                 arrow: 1,
               })
             );
-            if (features.length > 0) undoLine.current.push({ index: -1, coords: [] });
+            if (features.length > 0) {
+              undoLine.current.push({ index: -1, coords: [] });
+              isEditingLine.current = true;
+            }
             selectLine.current = { start: [], xy: [] };
           } else if (lineTool === 'DRAW' || lineTool === 'AREA') {
             const index = drawLine.current.length - 1;
@@ -664,7 +672,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     modifiedLine.current = { start: [], xy: [] };
     setLineTool('NONE');
     //setDrawLineTool('DRAW');
-    isEdited.current = false;
+    isEditingLine.current = false;
     modifiedIndex.current = -1;
     undoLine.current = [];
   }, []);
@@ -700,14 +708,14 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
   }, [clearDrawLines, mapRegion, mapSize]);
 
   useEffect(() => {
-    if (featureButton === 'LINE' && movingMapCenter.current === undefined) {
-      // //新規のライン、修正途中のラインの際にサイズ変更
+    //ライン編集中にサイズ変更。移動中は更新しない。
+    if (isEditingLine.current && movingMapCenter.current === undefined) {
+      //console.log('redraw', dayjs());
       drawLine.current.forEach(
         (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
       );
       setRedraw(uuidv4());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapRegion, mapSize]);
 
   return {
@@ -716,7 +724,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isEdited,
+    isEditingLine: isEditingLine.current,
     pointTool,
     lineTool,
     drawLineTool,

@@ -69,7 +69,7 @@ export interface HomeProps {
   headingUp: boolean;
   zoom: number;
   zoomDecimal: number;
-  isEdited: boolean;
+  isEditingLine: boolean;
   drawLine: {
     record: RecordType | undefined;
     xy: Position[];
@@ -153,7 +153,7 @@ export default function HomeScreen({
   headingUp,
   zoom,
   zoomDecimal,
-  isEdited,
+  isEditingLine,
   drawLine,
   modifiedLine,
   selectLine,
@@ -458,7 +458,7 @@ export default function HomeScreen({
             {isDataOpened !== 'expanded' && !isDownloadPage && featureButton === 'LINE' && (
               <HomeLineTools
                 isPositionRight={isDataOpened === 'opened' || isLandscape}
-                isEdited={isEdited}
+                isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
                 openDisabled={false}
                 lineTool={lineTool}

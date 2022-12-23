@@ -50,7 +50,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isEdited,
+    isEditingLine,
     pointTool,
     lineTool,
     drawLineTool,
@@ -271,16 +271,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /************** select button ************/
   const selectLineTool = useCallback(
     (value: LineToolType) => {
-      if ((!isEdited.current && value === 'DRAW' && lineTool === 'DRAW') || (value === 'AREA' && lineTool === 'AREA')) {
+      if ((!isEditingLine && value === 'DRAW' && lineTool === 'DRAW') || (value === 'AREA' && lineTool === 'AREA')) {
         //ドローツールをオフ
         setLineTool('NONE');
       } else if (isDrawTool(value)) {
         //ドローツールをオン
         setLineTool(value);
         setDrawLineTool(value);
-        if (drawLine.current.length > 0) {
-          isEdited.current = true;
-        }
       } else if (value === 'SELECT' && lineTool === 'SELECT') {
         drawLine.current = [];
         setLineTool('NONE');
@@ -290,7 +287,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setLineTool('MOVE');
       }
     },
-    [drawLine, isEdited, lineTool, setDrawLineTool, setLineTool]
+    [drawLine, isEditingLine, lineTool, setDrawLineTool, setLineTool]
   );
 
   const selectPointTool = useCallback(
@@ -491,7 +488,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isEdited: isEdited.current,
+    isEditingLine,
     drawLine: drawLine.current,
     modifiedLine: modifiedLine.current,
     selectLine: selectLine.current,
