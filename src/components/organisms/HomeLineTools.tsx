@@ -40,7 +40,7 @@ export const HomeLineTools = (props: Props) => {
           openDisabled={openDisabled}
           selectedButton={drawLineTool}
           directionRow={'row'}
-          isPositionRight
+          isPositionRight={isPositionRight}
         >
           <Button
             id={'DRAW'}
