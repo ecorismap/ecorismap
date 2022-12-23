@@ -9,7 +9,7 @@ interface Props {
   isPositionRight?: boolean;
 }
 
-const SelectionalButton = React.memo((props: Props) => {
+const SelectionalLongPressButton = React.memo((props: Props) => {
   const [isButtonOpen, setButtonOpen] = useState(false);
   const { openDisabled, selectedButton, directionRow, isPositionRight } = props;
 
@@ -69,4 +69,4 @@ const SelectionalButton = React.memo((props: Props) => {
   );
 });
 
-export default SelectionalButton;
+export default SelectionalLongPressButton;
