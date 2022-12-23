@@ -99,7 +99,7 @@ export const useWindow = (): UseWindowReturnType => {
     if (Platform.OS === 'web') {
       (mapViewRef.current as MapRef).resize();
     } else {
-      (mapViewRef.current as MapView).animateToRegion(mapRegion, 1);
+      setTimeout(() => (mapViewRef.current as MapView).animateToRegion(mapRegion, 1), 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDataOpened, isLandscape]);
