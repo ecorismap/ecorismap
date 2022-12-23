@@ -8,7 +8,7 @@ import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
 
 interface Props {
   isPositionRight: boolean;
-  isEdited: boolean;
+  isEditing: boolean;
   isSelected: boolean;
   lineTool: LineToolType;
   drawLineTool: DrawLineToolType;
@@ -22,7 +22,7 @@ interface Props {
 export const HomeLineTools = (props: Props) => {
   const {
     isPositionRight,
-    isEdited,
+    isEditing,
     isSelected,
     drawLineTool,
     lineTool,
@@ -61,9 +61,9 @@ export const HomeLineTools = (props: Props) => {
       <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.SELECT}
-          backgroundColor={lineTool === 'SELECT' ? COLOR.ALFARED : isEdited ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+          backgroundColor={lineTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={isEdited}
+          disabled={isEditing}
           onPress={() => selectLineTool('SELECT')}
         />
       </View>
@@ -71,28 +71,28 @@ export const HomeLineTools = (props: Props) => {
         <Button
           name={LINETOOL.MOVE}
           backgroundColor={
-            !isSelected && !isEdited ? COLOR.ALFAGRAY : lineTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE
+            !isSelected && !isEditing ? COLOR.ALFAGRAY : lineTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE
           }
           borderRadius={10}
-          disabled={!isSelected && !isEdited}
+          disabled={!isSelected && !isEditing}
           onPress={() => selectLineTool('MOVE')}
         />
       </View>
       <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.SAVE}
-          backgroundColor={isEdited ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!isEdited}
+          disabled={!isEditing}
           onPress={pressSaveEditLine}
         />
       </View>
       <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.UNDO}
-          backgroundColor={isEdited ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!isEdited}
+          disabled={!isEditing}
           onPress={pressUndoEditLine}
         />
       </View>

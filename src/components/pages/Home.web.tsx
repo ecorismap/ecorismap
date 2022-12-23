@@ -48,7 +48,7 @@ export default function HomeScreen({
   currentLocation,
   zoom,
   zoomDecimal,
-  isEdited,
+  isEditingLine,
   drawLine,
   modifiedLine,
   selectLine,
@@ -552,9 +552,9 @@ export default function HomeScreen({
             {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
               <HomeLineTools
                 isPositionRight={false}
-                isEdited={isEdited}
+                isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
-                openDisabled={selectedRecord === undefined || !isEdited}
+                openDisabled={false}
                 lineTool={lineTool}
                 drawLineTool={drawLineTool}
                 selectLineTool={selectLineTool}
