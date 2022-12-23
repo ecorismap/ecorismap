@@ -36,7 +36,7 @@ export const Line = React.memo((props: Props) => {
             : '';
         const color = getColor(layer, feature);
         const lineColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record.id ? COLOR.YELLOW : color;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
         const coords = (feature.coords as LocationType[])[(feature.coords as LocationType[]).length - 1];
         const arrowDeg = getArrowDeg(feature);
         return coords ? (
