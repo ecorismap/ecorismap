@@ -27,7 +27,7 @@ interface Props {
   lineTool: LineToolType;
 }
 //React.Memoすると描画が更新されない
-export const SvgLine = (props: Props) => {
+export const SvgView = (props: Props) => {
   const { panResponder, drawLine, modifiedLine, selectLine, lineTool } = props;
 
   return (

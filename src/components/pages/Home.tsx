@@ -39,7 +39,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
 import { Position } from '@turf/turf';
-import { SvgLine } from '../organisms/HomeSvgLine';
+import { SvgView } from '../organisms/HomeSvgView';
 import { isDrawTool, nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
@@ -297,7 +297,7 @@ export default function HomeScreen({
       >
         <Loading visible={isLoading} text="" />
         {(isDrawTool(lineTool) || lineTool === 'SELECT' || lineTool === 'MOVE') && (
-          <SvgLine
+          <SvgView
             panResponder={panResponder}
             drawLine={drawLine}
             modifiedLine={modifiedLine}

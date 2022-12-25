@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
 import { isDrawTool } from '../../utils/General';
-import { SvgLine } from '../organisms/HomeSvgLine';
+import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
@@ -427,7 +427,7 @@ export default function HomeScreen({
       >
         <Loading visible={isLoading} text="" />
         {(isDrawTool(lineTool) || lineTool === 'SELECT' || lineTool === 'MOVE') && (
-          <SvgLine
+          <SvgView
             panResponder={panResponder}
             drawLine={drawLine}
             modifiedLine={modifiedLine}
