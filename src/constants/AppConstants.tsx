@@ -148,9 +148,14 @@ export const DRAWLINETOOL = {
   AREA: 'shape-circle-plus',
 } as const;
 
+export const SELECTIONTOOL = {
+  SELECT: 'select',
+  INFO: 'cursor-default-click',
+} as const;
+
 export const LINETOOL = {
   ...DRAWLINETOOL,
-  SELECT: 'cursor-default-click',
+  ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
   SAVE: 'content-save',

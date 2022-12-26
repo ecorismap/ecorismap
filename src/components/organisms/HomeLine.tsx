@@ -42,7 +42,7 @@ export const Line = React.memo((props: Props) => {
         return coords ? (
           <View key={feature.id}>
             <Polyline
-              tappable={true}
+              tappable={false}
               coordinates={feature.coords as LatLng[]}
               strokeColor={lineColor}
               strokeWidth={2}

@@ -11,6 +11,7 @@ import {
   POINTTOOL,
   LINETOOL,
   DRAWLINETOOL,
+  SELECTIONTOOL,
   HOME_FEATURE_BTN,
   HOME_ACCOUNT_BTN,
   HOME_BTN,
@@ -295,6 +296,7 @@ export interface PositionFS {
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
 export type DrawLineToolType = keyof typeof DRAWLINETOOL;
+export type SelectionToolType = keyof typeof SELECTIONTOOL;
 export type PolygonToolType = 'NONE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
