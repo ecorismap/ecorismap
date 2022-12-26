@@ -216,9 +216,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetData: { ...feature },
           targetLayer: { ...layer },
         });
+        const region = isLandscape
+          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
+          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
+        setTimeout(() => changeMapRegion(region, true), 300);
       }
     },
-    [currentLineTool, isEditingRecord, navigation, openData, pointTool, polygonTool]
+    [
+      changeMapRegion,
+      currentLineTool,
+      isEditingRecord,
+      isLandscape,
+      mapRegion,
+      navigation,
+      openData,
+      pointTool,
+      polygonTool,
+    ]
   );
 
   const onDrop = useCallback(
