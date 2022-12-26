@@ -108,8 +108,6 @@ export interface HomeProps {
   onDragMapView: () => void;
   onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: RecordType) => void;
   onPressPoint: (layer: LayerType, feature: RecordType) => void;
-  onPressLine: (layer: LayerType, feature: RecordType) => void;
-  onPressPolygon: (layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
   onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
@@ -179,8 +177,6 @@ export default function HomeScreen({
   onDragMapView,
   onDragEndPoint,
   onPressPoint,
-  onPressLine,
-  onPressPolygon,
   onPressSvgView,
   onMoveSvgView,
   onReleaseSvgView,
@@ -380,7 +376,7 @@ export default function HomeScreen({
                   data={d.data}
                   layer={layer!}
                   zoom={zoom}
-                  onPressLine={(layer_, feature) => onPressLine(layer_, feature)}
+                  onPressLine={() => null}
                   zIndex={101}
                   selectedRecord={selectedRecord}
                 />
@@ -397,7 +393,7 @@ export default function HomeScreen({
                   data={d.data}
                   layer={layer!}
                   zoom={zoom}
-                  onPressPolygon={(layer_, feature) => onPressPolygon(layer_, feature)}
+                  onPressPolygon={() => null}
                   zIndex={100}
                   selectedRecord={selectedRecord}
                 />

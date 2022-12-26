@@ -221,42 +221,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [currentLineTool, isEditingRecord, navigation, openData, pointTool, polygonTool]
   );
 
-  const onPressLine = useCallback(
-    async (layer: LayerType, feature: RecordType) => {
-      if (isEditingRecord) {
-        await AlertAsync(t('Home.alert.discardChanges'));
-        return;
-      }
-      openData();
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: { ...feature },
-        targetLayer: { ...layer },
-      });
-    },
-    [openData, navigation, isEditingRecord]
-  );
-
-  const onPressPolygon = useCallback(
-    async (layer: LayerType, feature: RecordType) => {
-      if (isEditingRecord) {
-        await AlertAsync(t('Home.alert.discardChanges'));
-        return;
-      }
-      if (pointTool === 'NONE' && currentLineTool === 'NONE' && polygonTool === 'NONE') {
-        openData();
-        setTimeout(function () {
-          navigation.navigate('DataEdit', {
-            previous: 'Home',
-            targetData: { ...feature },
-            targetLayer: { ...layer },
-          });
-        }, 1);
-      }
-    },
-    [currentLineTool, isEditingRecord, navigation, openData, pointTool, polygonTool]
-  );
-
   const onDrop = useCallback(
     async (acceptedFiles) => {
       if (!editable) {
@@ -571,8 +535,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     onDragMapView,
     onDragEndPoint,
     onPressPoint,
-    onPressLine,
-    onPressPolygon,
     onDrop,
     onPressSvgView,
     onMoveSvgView,
