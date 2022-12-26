@@ -1,6 +1,12 @@
 import { Position } from '@turf/turf';
-import React from 'react';
-import { PanResponderInstance, View } from 'react-native';
+import React, { useMemo } from 'react';
+import {
+  GestureResponderEvent,
+  PanResponder,
+  PanResponderGestureState,
+  PanResponderInstance,
+  View,
+} from 'react-native';
 import Svg, { G, Path } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
@@ -8,7 +14,6 @@ import { DrawLineToolType, LineToolType, LocationType, RecordType } from '../../
 import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
-  panResponder: PanResponderInstance;
   drawLine: {
     record: RecordType | undefined;
     xy: Position[];
@@ -20,15 +25,33 @@ interface Props {
     start: Position;
     xy: Position[];
   };
-  selectLine: {
-    start: Position;
-    xy: Position[];
-  };
-  lineTool: LineToolType;
+  selectLine: Position[];
+  currentLineTool: LineToolType;
+  onPress: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
 }
 //React.Memoすると描画が更新されない
 export const SvgView = (props: Props) => {
-  const { panResponder, drawLine, modifiedLine, selectLine, lineTool } = props;
+  const { drawLine, modifiedLine, selectLine, currentLineTool, onPress, onMove, onRelease } = props;
+
+  const panResponder: PanResponderInstance = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+          onPress(e, gestureState);
+        },
+        onPanResponderMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+          onMove(e, gestureState);
+        },
+        onPanResponderRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+          onRelease(e, gestureState);
+        },
+      }),
+    [onMove, onPress, onRelease]
+  );
 
   return (
     <View
@@ -53,7 +76,7 @@ export const SvgView = (props: Props) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeDasharray={properties[0] === 'DRAW' || properties.length === 0 ? '4,6' : '1'}
-                fill={lineTool === 'AREA' ? COLOR.ALFABLUE2 : 'none'}
+                fill={currentLineTool === 'AREA' ? COLOR.ALFABLUE2 : 'none'}
               />
             </G>
           );
@@ -72,7 +95,7 @@ export const SvgView = (props: Props) => {
         </G>
         <G>
           <Path
-            d={pointsToSvg(selectLine.xy)}
+            d={pointsToSvg(selectLine)}
             stroke={`${COLOR.YELLOW}`}
             strokeWidth="2"
             strokeLinecap="round"

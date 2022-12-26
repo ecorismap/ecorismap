@@ -20,7 +20,7 @@ import { HomeProps } from './Home';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
-import { isDrawTool } from '../../utils/General';
+import { isDrawTool, isSelectionTool } from '../../utils/General';
 import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import DataRoutes from '../../routes/DataRoutes';
@@ -56,10 +56,10 @@ export default function HomeScreen({
   isDownloading,
   featureButton,
   pointTool,
-  lineTool,
-  drawLineTool,
+  currentLineTool,
+  currentDrawLineTool,
+  currentSelectionTool,
   selectedRecord,
-  panResponder,
   draggablePoint,
   isDataOpened,
   isLoading,
@@ -70,6 +70,9 @@ export default function HomeScreen({
   onPressLine,
   onPressPolygon,
   onDrop,
+  onPressSvgView,
+  onMoveSvgView,
+  onReleaseSvgView,
   pressStopDownloadTiles,
   pressDeleteTiles,
   pressTracking,
@@ -426,13 +429,15 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(lineTool) || lineTool === 'SELECT' || lineTool === 'MOVE') && (
+        {(isDrawTool(currentLineTool) || isSelectionTool(currentLineTool) || currentLineTool === 'MOVE') && (
           <SvgView
-            panResponder={panResponder}
             drawLine={drawLine}
             modifiedLine={modifiedLine}
             selectLine={selectLine}
-            lineTool={lineTool}
+            currentLineTool={currentLineTool}
+            onPress={onPressSvgView}
+            onMove={onMoveSvgView}
+            onRelease={onReleaseSvgView}
           />
         )}
         <div {...getRootProps({ className: 'dropzone' })}>
@@ -551,12 +556,13 @@ export default function HomeScreen({
           <>
             {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
               <HomeLineTools
-                isPositionRight={false}
+                isPositionRight={isDataOpened === 'opened' || isLandscape}
                 isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
                 openDisabled={false}
-                lineTool={lineTool}
-                drawLineTool={drawLineTool}
+                currentLineTool={currentLineTool}
+                currentDrawLineTool={currentDrawLineTool}
+                currentSelectionTool={currentSelectionTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}

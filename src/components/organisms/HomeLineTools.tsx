@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWLINETOOL, LINETOOL } from '../../constants/AppConstants';
-import { DrawLineToolType, LineToolType } from '../../types';
+import { DrawLineToolType, LineToolType, SelectionToolType } from '../../types';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -10,8 +10,9 @@ interface Props {
   isPositionRight: boolean;
   isEditing: boolean;
   isSelected: boolean;
-  lineTool: LineToolType;
-  drawLineTool: DrawLineToolType;
+  currentLineTool: LineToolType;
+  currentDrawLineTool: DrawLineToolType;
+  currentSelectionTool: SelectionToolType;
   openDisabled: boolean;
   selectLineTool: (value: LineToolType) => void;
   pressUndoEditLine: () => void;
@@ -24,8 +25,9 @@ export const HomeLineTools = (props: Props) => {
     isPositionRight,
     isEditing,
     isSelected,
-    drawLineTool,
-    lineTool,
+    currentDrawLineTool,
+    currentSelectionTool,
+    currentLineTool,
     openDisabled,
     selectLineTool,
     pressUndoEditLine,
@@ -38,43 +40,58 @@ export const HomeLineTools = (props: Props) => {
       <View style={{ ...styles.button, width: undefined }}>
         <SelectionalLongPressButton
           openDisabled={openDisabled}
-          selectedButton={drawLineTool}
+          selectedButton={currentDrawLineTool}
           directionRow={'row'}
           isPositionRight={isPositionRight}
         >
           <Button
             id={'DRAW'}
             name={DRAWLINETOOL.DRAW}
-            backgroundColor={lineTool === 'DRAW' ? COLOR.ALFARED : COLOR.ALFABLUE}
+            backgroundColor={currentLineTool === 'DRAW' ? COLOR.ALFARED : COLOR.ALFABLUE}
             borderRadius={10}
             onPressCustom={() => selectLineTool('DRAW')}
           />
           <Button
             id={'AREA'}
             name={DRAWLINETOOL.AREA}
-            backgroundColor={lineTool === 'AREA' ? COLOR.ALFARED : COLOR.ALFABLUE}
+            backgroundColor={currentLineTool === 'AREA' ? COLOR.ALFARED : COLOR.ALFABLUE}
             borderRadius={10}
             onPressCustom={() => selectLineTool('AREA')}
           />
         </SelectionalLongPressButton>
       </View>
-      <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
-        <Button
-          name={LINETOOL.SELECT}
-          backgroundColor={lineTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={isEditing}
-          onPress={() => selectLineTool('SELECT')}
-        />
+
+      <View style={{ ...styles.button, width: undefined }}>
+        <SelectionalLongPressButton
+          openDisabled={openDisabled}
+          selectedButton={currentSelectionTool}
+          directionRow={'row'}
+          isPositionRight={isPositionRight}
+        >
+          <Button
+            id={'INFO'}
+            name={LINETOOL.INFO}
+            backgroundColor={currentLineTool === 'INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            borderRadius={10}
+            disabled={isEditing}
+            onPressCustom={() => selectLineTool('INFO')}
+          />
+          <Button
+            id={'SELECT'}
+            name={LINETOOL.SELECT}
+            backgroundColor={currentLineTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            borderRadius={10}
+            disabled={isEditing}
+            onPressCustom={() => selectLineTool('SELECT')}
+          />
+        </SelectionalLongPressButton>
       </View>
       <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.MOVE}
-          backgroundColor={
-            !isSelected && !isEditing ? COLOR.ALFAGRAY : lineTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE
-          }
+          backgroundColor={currentLineTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!isSelected && !isEditing}
+          disabled={false}
           onPress={() => selectLineTool('MOVE')}
         />
       </View>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, PanResponderInstance } from 'react-native';
+import { StyleSheet, View, Platform, Text, GestureResponderEvent, PanResponderGestureState } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Region, MapEvent, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 // @ts-ignore
@@ -31,6 +31,7 @@ import {
   FeatureButtonType,
   DrawLineToolType,
   TrackingStateType,
+  SelectionToolType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
 
@@ -40,7 +41,7 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { HomePointTools } from '../organisms/HomePointTools';
 import { Position } from '@turf/turf';
 import { SvgView } from '../organisms/HomeSvgView';
-import { isDrawTool, nearDegree } from '../../utils/General';
+import { isDrawTool, isSelectionTool, nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { Loading } from '../molecules/Loading';
@@ -81,25 +82,22 @@ export interface HomeProps {
     start: Position;
     xy: Position[];
   };
-  selectLine: {
-    start: Position;
-    xy: Position[];
-  };
+  selectLine: Position[];
   isDownloading: boolean;
   downloadArea: TileRegionType;
   savedArea: TileRegionType[];
   attribution: string;
   featureButton: FeatureButtonType;
   pointTool: PointToolType;
-  lineTool: LineToolType;
-  drawLineTool: DrawLineToolType;
+  currentLineTool: LineToolType;
+  currentDrawLineTool: DrawLineToolType;
+  currentSelectionTool: SelectionToolType;
   selectedRecord:
     | {
         layerId: string;
         record: RecordType;
       }
     | undefined;
-  panResponder: PanResponderInstance;
   draggablePoint: boolean;
   isTermsOfUseOpen: boolean;
   drawToolsSettings: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
@@ -113,6 +111,9 @@ export interface HomeProps {
   onPressLine: (layer: LayerType, feature: RecordType) => void;
   onPressPolygon: (layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
+  onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onReleaseSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   pressZoomIn: () => void;
   pressZoomOut: () => void;
   pressCompass: () => void;
@@ -165,10 +166,10 @@ export default function HomeScreen({
   attribution,
   featureButton,
   pointTool,
-  lineTool,
-  drawLineTool,
+  currentLineTool,
+  currentDrawLineTool,
+  currentSelectionTool,
   selectedRecord,
-  panResponder,
   draggablePoint,
   isTermsOfUseOpen,
   isDataOpened,
@@ -180,6 +181,9 @@ export default function HomeScreen({
   onPressPoint,
   onPressLine,
   onPressPolygon,
+  onPressSvgView,
+  onMoveSvgView,
+  onReleaseSvgView,
   pressDownloadTiles,
   pressStopDownloadTiles,
   pressZoomIn,
@@ -296,13 +300,15 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(lineTool) || lineTool === 'SELECT' || lineTool === 'MOVE') && (
+        {(isDrawTool(currentLineTool) || isSelectionTool(currentLineTool) || currentLineTool === 'MOVE') && (
           <SvgView
-            panResponder={panResponder}
             drawLine={drawLine}
             modifiedLine={modifiedLine}
             selectLine={selectLine}
-            lineTool={lineTool}
+            currentLineTool={currentLineTool}
+            onPress={onPressSvgView}
+            onMove={onMoveSvgView}
+            onRelease={onReleaseSvgView}
           />
         )}
 
@@ -461,8 +467,9 @@ export default function HomeScreen({
                 isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
                 openDisabled={false}
-                lineTool={lineTool}
-                drawLineTool={drawLineTool}
+                currentLineTool={currentLineTool}
+                currentDrawLineTool={currentDrawLineTool}
+                currentSelectionTool={currentSelectionTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { AppState as RNAppState, AppStateStatus, Platform } from 'react-native';
+import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
 import { Region, MapEvent } from 'react-native-maps';
 import { FeatureButtonType, LayerType, LineToolType, PointToolType, RecordType } from '../types';
 import Home from '../components/pages/Home';
@@ -13,7 +13,7 @@ import { useFeature } from '../hooks/useFeature';
 import { Props_Home } from '../routes';
 import { useZoom } from '../hooks/useZoom';
 import { useLocation } from '../hooks/useLocation';
-import { isDrawTool } from '../utils/General';
+import { isDrawTool, isSelectionTool } from '../utils/General';
 import { ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
@@ -52,15 +52,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     polygonDataSet,
     isEditingLine,
     pointTool,
-    lineTool,
-    drawLineTool,
+    currentLineTool,
+    currentDrawLineTool,
+    currentSelectionTool,
     polygonTool,
     featureButton,
     selectedRecord,
     drawLine,
     modifiedLine,
     selectLine,
-    panResponder,
     drawToolsSettings,
     addCurrentPoint,
     addPressPoint,
@@ -69,13 +69,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setPointTool,
     setLineTool,
     setDrawLineTool,
+    setSelectionTool,
     setFeatureButton,
     dragEndPoint,
-    changeEditMapStyle,
+    toggleTerrainForWeb,
     saveLine,
     deleteLine,
-    clearDrawLines,
     undoEditLine,
+    pressSvgView,
+    onMoveSvgView,
+    onReleaseSvgView,
+    selectSingleFeature,
   } = useFeature(mapViewRef.current);
 
   //現在位置、GPS関連
@@ -200,7 +204,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressPoint = useCallback(
     (layer: LayerType, feature: RecordType) => {
-      if (pointTool === 'NONE' && lineTool === 'NONE' && polygonTool === 'NONE') {
+      if (pointTool === 'NONE' && currentLineTool === 'NONE' && polygonTool === 'NONE') {
         if (isEditingRecord) {
           AlertAsync(t('Home.alert.discardChanges'));
           return;
@@ -214,7 +218,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
       }
     },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool]
+    [currentLineTool, isEditingRecord, navigation, openData, pointTool, polygonTool]
   );
 
   const onPressLine = useCallback(
@@ -239,7 +243,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.discardChanges'));
         return;
       }
-      if (pointTool === 'NONE' && lineTool === 'NONE' && polygonTool === 'NONE') {
+      if (pointTool === 'NONE' && currentLineTool === 'NONE' && polygonTool === 'NONE') {
         openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
@@ -250,7 +254,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }, 1);
       }
     },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool]
+    [currentLineTool, isEditingRecord, navigation, openData, pointTool, polygonTool]
   );
 
   const onDrop = useCallback(
@@ -268,26 +272,64 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [editable, importDropedFile]
   );
 
+  const onPressSvgView = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (currentLineTool === 'INFO') {
+        const { layer, feature } = selectSingleFeature(event);
+        if (layer === undefined || feature === undefined) {
+          deselectFeature();
+          return;
+        }
+        if (isEditingRecord) {
+          await AlertAsync(t('Home.alert.discardChanges'));
+          return;
+        }
+        await AlertAsync('a');
+        // openData();
+        // navigation.navigate('DataEdit', {
+        //   previous: 'Data',
+        //   targetData: { ...feature },
+        //   targetLayer: { ...layer },
+        // });
+      } else {
+        pressSvgView(event);
+      }
+    },
+    [currentLineTool, deselectFeature, isEditingRecord, pressSvgView, selectSingleFeature]
+  );
+
   /************** select button ************/
   const selectLineTool = useCallback(
     (value: LineToolType) => {
-      if ((!isEditingLine && value === 'DRAW' && lineTool === 'DRAW') || (value === 'AREA' && lineTool === 'AREA')) {
-        //ドローツールをオフ
-        setLineTool('NONE');
-      } else if (isDrawTool(value)) {
-        //ドローツールをオン
-        setLineTool(value);
-        setDrawLineTool(value);
-      } else if (value === 'SELECT' && lineTool === 'SELECT') {
-        drawLine.current = [];
-        setLineTool('NONE');
-      } else if (value === 'SELECT') {
-        setLineTool('SELECT');
-      } else if (value === 'MOVE') {
-        setLineTool('MOVE');
+      if (isDrawTool(value)) {
+        if (currentLineTool === value) {
+          if (isEditingLine) return;
+          //ドローツールをオフ
+          setLineTool('NONE');
+        } else {
+          //ドローツールをオン
+          setLineTool(value);
+          setDrawLineTool(value);
+        }
+      } else if (isSelectionTool(value)) {
+        if (currentLineTool === value) {
+          drawLine.current = [];
+          setLineTool('NONE');
+        } else {
+          setLineTool(value);
+          setSelectionTool(value);
+        }
+      } else {
+        if (value === 'MOVE') {
+          if (currentLineTool === value) {
+            setLineTool('NONE');
+          } else {
+            setLineTool(value);
+          }
+        }
       }
     },
-    [drawLine, isEditingLine, lineTool, setDrawLineTool, setLineTool]
+    [currentLineTool, drawLine, isEditingLine, setDrawLineTool, setLineTool, setSelectionTool]
   );
 
   const selectPointTool = useCallback(
@@ -304,14 +346,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
-      changeEditMapStyle(value);
       setPointTool('NONE');
       setLineTool('NONE');
       setDrawLineTool('DRAW');
+      setSelectionTool('INFO');
+      toggleTerrainForWeb(value);
       setFeatureButton(value);
-      clearDrawLines();
     },
-    [changeEditMapStyle, clearDrawLines, setDrawLineTool, setFeatureButton, setLineTool, setPointTool]
+    [setDrawLineTool, setFeatureButton, setLineTool, setPointTool, setSelectionTool, toggleTerrainForWeb]
   );
 
   /**************** press ******************/
@@ -326,7 +368,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       Alert.alert('', message);
       return;
     }
-    clearDrawLines();
+    setLineTool('NONE');
     if (layer !== undefined && data !== undefined) {
       openData();
       setTimeout(function () {
@@ -337,7 +379,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
       }, 1);
     }
-  }, [clearDrawLines, navigation, openData, saveLine]);
+  }, [navigation, openData, saveLine, setLineTool]);
 
   const pressDeleteLine = useCallback(() => {
     deleteLine();
@@ -515,10 +557,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     zoomDecimal,
     featureButton,
     pointTool,
-    lineTool,
-    drawLineTool,
+    currentLineTool,
+    currentDrawLineTool,
+    currentSelectionTool,
     selectedRecord,
-    panResponder,
     draggablePoint,
     drawToolsSettings,
     isTermsOfUseOpen,
@@ -532,6 +574,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     onPressLine,
     onPressPolygon,
     onDrop,
+    onPressSvgView,
+    onMoveSvgView,
+    onReleaseSvgView,
     selectFeatureButton,
     selectPointTool,
     selectLineTool,

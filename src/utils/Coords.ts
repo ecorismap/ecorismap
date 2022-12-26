@@ -82,6 +82,35 @@ export const pointsToSvg = (points: Position[]) => {
   return path;
 };
 
+export const pointToLatLon = (
+  point: Position,
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+) => {
+  return [
+    mapRegion.longitude + mapRegion.longitudeDelta * (point[0] / mapSize.width - 0.5),
+    mapRegion.latitude - mapRegion.latitudeDelta * (point[1] / mapSize.height - 0.5),
+  ];
+};
+
+export const pointsToLatLon = (
+  points: Position[],
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+) => {
+  return points.map((xy) => pointToLatLon(xy, mapRegion, mapSize));
+};
+
 export const pointsToLocation = (
   points: Position[],
   mapRegion: {
@@ -92,12 +121,29 @@ export const pointsToLocation = (
   },
   mapSize: { width: number; height: number }
 ) => {
-  return points.map((xy) => ({
-    longitude: mapRegion.longitude + mapRegion.longitudeDelta * (xy[0] / mapSize.width - 0.5),
-    latitude: mapRegion.latitude - mapRegion.latitudeDelta * (xy[1] / mapSize.height - 0.5),
-  }));
+  return points.map((xy) => {
+    const latlon = pointToLatLon(xy, mapRegion, mapSize);
+    return { longitude: latlon[0], latitude: latlon[1] };
+  });
 };
 
+export const latLonToPoint = (
+  latlon: number[],
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+) => [
+  Math.round(
+    ((latlon[0] - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) * mapSize.width) / mapRegion.longitudeDelta
+  ),
+  Math.round(
+    ((mapRegion.latitude + mapRegion.latitudeDelta / 2 - latlon[1]) * mapSize.height) / mapRegion.latitudeDelta
+  ),
+];
 export const locationToPoints = (
   location: { longitude: number; latitude: number }[],
   mapRegion: {
@@ -108,15 +154,7 @@ export const locationToPoints = (
   },
   mapSize: { width: number; height: number }
 ) => {
-  return location.map((latlon) => [
-    Math.round(
-      ((latlon.longitude - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) * mapSize.width) /
-        mapRegion.longitudeDelta
-    ),
-    Math.round(
-      ((mapRegion.latitude + mapRegion.latitudeDelta / 2 - latlon.latitude) * mapSize.height) / mapRegion.latitudeDelta
-    ),
-  ]);
+  return location.map((latlon) => latLonToPoint([latlon.longitude, latlon.latitude], mapRegion, mapSize));
 };
 
 export const deltaToZoom = (windowWidth: number, delta: { longitudeDelta: number; latitudeDelta: number }) => {
@@ -270,14 +308,14 @@ export const modifyLine = (
   }
 };
 
-export const selectedFeatures = (lineFeatures: LineRecordType[], selectLineCoords: LocationType[]) => {
+export const selecteFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
   try {
-    const selectPolygon = turf.multiPolygon([[selectLineCoords.map((c) => [c.longitude, c.latitude])]]);
+    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return lineFeatures
       .map((feature) => {
         const featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
         //@ts-ignore
-        const intersects = turf.booleanIntersects(featureLine, selectPolygon);
+        const intersects = turf.booleanIntersects(featureLine, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is LineRecordType => d !== undefined);
@@ -285,3 +323,33 @@ export const selectedFeatures = (lineFeatures: LineRecordType[], selectLineCoord
     return [];
   }
 };
+
+export const selecteFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoords: Position, radius: number) => {
+  try {
+    const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
+    const features = lineFeatures
+      .map((feature) => {
+        const featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featureLine, bufferPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is LineRecordType => d !== undefined);
+
+    if (features.length === 0) return undefined;
+    return features[0];
+  } catch (e) {
+    return undefined;
+  }
+};
+
+export const calcDegreeRadius = (
+  size: number,
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+) => Math.min(mapRegion.longitudeDelta / mapSize.width, mapRegion.latitudeDelta / mapSize.height) * size;
