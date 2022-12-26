@@ -529,7 +529,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
         modifiedIndex.current = -1;
         drawLine.current = [];
         selectLine.current = [point];
-      } else if (currentLineTool === 'DRAW' || currentLineTool === 'AREA') {
+      } else if (isDrawTool(currentLineTool)) {
         modifiedIndex.current = drawLine.current.findIndex((line) => {
           const { isFar } = checkDistanceFromLine(point, line.xy);
           return !isFar;
@@ -589,7 +589,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
         }
       } else if (currentLineTool === 'SELECT') {
         selectLine.current = [...selectLine.current, point];
-      } else if (currentLineTool === 'DRAW' || currentLineTool === 'AREA') {
+      } else if (isDrawTool(currentLineTool)) {
         if (modifiedIndex.current === -1) {
           //新規ラインの場合
           const index = drawLine.current.length - 1;
@@ -598,7 +598,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
           //ライン修正の場合
           modifiedLine.current.xy = [...modifiedLine.current.xy, point];
         }
-      } else if (isDrawTool(currentLineTool)) {
+      } else if (isHisyouTool(currentLineTool)) {
         //ドローツールがポイントとライン以外
         const snapped = getLineSnappedPosition(point, drawLine.current[0].xy).position;
         const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
@@ -653,7 +653,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
       }
       undoLine.current.push({ index: -1, coords: [] });
       selectLine.current = [];
-    } else if (currentLineTool === 'DRAW' || currentLineTool === 'AREA') {
+    } else if (isDrawTool(currentLineTool)) {
       const index = drawLine.current.length - 1;
       if (modifiedIndex.current === -1) {
         //新規ラインの場合
@@ -696,7 +696,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
         }
         modifiedLine.current = { start: [], xy: [] };
       }
-    } else if (isDrawTool(currentLineTool)) {
+    } else if (isHisyouTool(currentLineTool)) {
       //ドローツールの場合
       drawLine.current.push({
         layerId: '',
@@ -747,7 +747,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
 
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
-    if (isEditingLine.current && movingMapCenter.current === undefined) {
+    if (drawLine.current.length > 0 && movingMapCenter.current === undefined) {
       //console.log('redraw', dayjs());
       drawLine.current.forEach(
         (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
