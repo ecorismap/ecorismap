@@ -67,8 +67,6 @@ export default function HomeScreen({
   onPressMapView,
   onDragEndPoint,
   onPressPoint,
-  onPressLine,
-  onPressPolygon,
   onDrop,
   onPressSvgView,
   onMoveSvgView,
@@ -268,7 +266,7 @@ export default function HomeScreen({
           );
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
           if (feature === undefined) return;
-          onPressLine(layer, feature);
+          //onPressLine(layer, feature);
         } else if (clickedFeature.layer.type === 'fill') {
           //console.log('layer:', layerId, ' user:', userId);
           const data = polygonDataSet.find(
@@ -278,7 +276,7 @@ export default function HomeScreen({
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
           //console.log(feature);
           if (feature === undefined) return;
-          onPressPolygon(layer, feature);
+          //onPressPolygon(layer, feature);
         }
       } else {
         //@ts-ignore
@@ -289,17 +287,7 @@ export default function HomeScreen({
         map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       }
     },
-    [
-      featureButton,
-      layers,
-      lineDataSet,
-      mapViewRef,
-      onPressLine,
-      onPressMapView,
-      onPressPolygon,
-      polygonDataSet,
-      selectedRecord,
-    ]
+    [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
   );
 
   const mapStyle: string | mapboxgl.Style = useMemo(() => {
@@ -508,7 +496,7 @@ export default function HomeScreen({
                       data={d.data}
                       layer={layer!}
                       zoom={zoom}
-                      onPressLine={(layer_, feature) => onPressLine(layer_, feature)}
+                      onPressLine={() => null}
                       zIndex={101}
                       selectedRecord={selectedRecord}
                     />
@@ -525,7 +513,7 @@ export default function HomeScreen({
                       data={d.data}
                       layer={layer!}
                       zoom={zoom}
-                      onPressPolygon={(layer_, feature) => onPressPolygon(layer_, feature)}
+                      onPressPolygon={() => null}
                       zIndex={100}
                     />
                   )
