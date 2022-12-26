@@ -31,7 +31,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
-  const { mapViewRef, changeMapRegion } = useWindow();
+  const { mapViewRef, mapRegion, isLandscape, changeMapRegion } = useWindow();
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -248,18 +248,33 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           await AlertAsync(t('Home.alert.discardChanges'));
           return;
         }
-        await AlertAsync('a');
-        // openData();
-        // navigation.navigate('DataEdit', {
-        //   previous: 'Data',
-        //   targetData: { ...feature },
-        //   targetLayer: { ...layer },
-        // });
+
+        openData();
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetData: { ...feature },
+          targetLayer: { ...layer },
+        });
+        const region = isLandscape
+          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
+          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
+        setTimeout(() => changeMapRegion(region, true), 300);
       } else {
         pressSvgView(event);
       }
     },
-    [currentLineTool, deselectFeature, isEditingRecord, pressSvgView, selectSingleFeature]
+    [
+      changeMapRegion,
+      currentLineTool,
+      deselectFeature,
+      isEditingRecord,
+      isLandscape,
+      mapRegion,
+      navigation,
+      openData,
+      pressSvgView,
+      selectSingleFeature,
+    ]
   );
 
   /************** select button ************/
