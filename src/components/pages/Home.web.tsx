@@ -57,8 +57,6 @@ export default function HomeScreen({
   featureButton,
   pointTool,
   currentLineTool,
-  currentDrawLineTool,
-  currentSelectionTool,
   selectedRecord,
   draggablePoint,
   isDataOpened,
@@ -547,10 +545,7 @@ export default function HomeScreen({
                 isPositionRight={isDataOpened === 'opened' || isLandscape}
                 isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
-                openDisabled={false}
                 currentLineTool={currentLineTool}
-                currentDrawLineTool={currentDrawLineTool}
-                currentSelectionTool={currentSelectionTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}

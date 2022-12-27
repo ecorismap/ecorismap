@@ -1,9 +1,13 @@
 import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
+import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.1.10';
 
+export const PLUGIN = {
+  HISYOUTOOL: true,
+};
 export const COLOR = {
   MAIN: '#f2f2f2',
   GRAY0: '#f9f9f9',
@@ -162,6 +166,7 @@ export const LINETOOL = {
   DELETE: 'delete',
   SETTING: 'cog',
   NONE: 'none',
+  ...HISYOUTOOL,
 } as const;
 
 export const HOME_FEATURE_BTN = {

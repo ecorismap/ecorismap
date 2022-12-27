@@ -1,19 +1,18 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWLINETOOL, LINETOOL } from '../../constants/AppConstants';
-import { DrawLineToolType, LineToolType, SelectionToolType } from '../../types';
+import { COLOR, LINETOOL, PLUGIN } from '../../constants/AppConstants';
+import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
+import { LineToolType } from '../../types';
 
 import { Button } from '../atoms';
-import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
+import { DrawLineToolButton } from '../molecules/DrawLineToolButton';
+import { SelectionToolButton } from '../molecules/SelectionToolButton';
 
 interface Props {
   isPositionRight: boolean;
   isEditing: boolean;
   isSelected: boolean;
   currentLineTool: LineToolType;
-  currentDrawLineTool: DrawLineToolType;
-  currentSelectionTool: SelectionToolType;
-  openDisabled: boolean;
   selectLineTool: (value: LineToolType) => void;
   pressUndoEditLine: () => void;
   pressSaveEditLine: () => void;
@@ -25,10 +24,7 @@ export const HomeLineTools = (props: Props) => {
     isPositionRight,
     isEditing,
     isSelected,
-    currentDrawLineTool,
-    currentSelectionTool,
     currentLineTool,
-    openDisabled,
     selectLineTool,
     pressUndoEditLine,
     pressSaveEditLine,
@@ -37,55 +33,24 @@ export const HomeLineTools = (props: Props) => {
 
   return (
     <View style={isPositionRight ? styles.buttonContainerLandscape : styles.buttonContainer}>
-      <View style={{ ...styles.button, width: undefined }}>
-        <SelectionalLongPressButton
-          openDisabled={openDisabled}
-          selectedButton={currentDrawLineTool}
-          directionRow={'row'}
+      <DrawLineToolButton
+        isPositionRight={isPositionRight}
+        currentLineTool={currentLineTool}
+        selectLineTool={selectLineTool}
+      />
+      {PLUGIN.HISYOUTOOL && (
+        <HisyouToolButton
           isPositionRight={isPositionRight}
-        >
-          <Button
-            id={'DRAW'}
-            name={DRAWLINETOOL.DRAW}
-            backgroundColor={currentLineTool === 'DRAW' ? COLOR.ALFARED : COLOR.ALFABLUE}
-            borderRadius={10}
-            onPressCustom={() => selectLineTool('DRAW')}
-          />
-          <Button
-            id={'AREA'}
-            name={DRAWLINETOOL.AREA}
-            backgroundColor={currentLineTool === 'AREA' ? COLOR.ALFARED : COLOR.ALFABLUE}
-            borderRadius={10}
-            onPressCustom={() => selectLineTool('AREA')}
-          />
-        </SelectionalLongPressButton>
-      </View>
-
-      <View style={{ ...styles.button, width: undefined }}>
-        <SelectionalLongPressButton
-          openDisabled={openDisabled}
-          selectedButton={currentSelectionTool}
-          directionRow={'row'}
-          isPositionRight={isPositionRight}
-        >
-          <Button
-            id={'INFO'}
-            name={LINETOOL.INFO}
-            backgroundColor={currentLineTool === 'INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-            borderRadius={10}
-            disabled={isEditing}
-            onPressCustom={() => selectLineTool('INFO')}
-          />
-          <Button
-            id={'SELECT'}
-            name={LINETOOL.SELECT}
-            backgroundColor={currentLineTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-            borderRadius={10}
-            disabled={isEditing}
-            onPressCustom={() => selectLineTool('SELECT')}
-          />
-        </SelectionalLongPressButton>
-      </View>
+          currentLineTool={currentLineTool}
+          selectLineTool={selectLineTool}
+        />
+      )}
+      <SelectionToolButton
+        disabled={isEditing}
+        isPositionRight={isPositionRight}
+        currentLineTool={currentLineTool}
+        selectLineTool={selectLineTool}
+      />
       <View style={isPositionRight ? styles.buttonLandscape : styles.button}>
         <Button
           name={LINETOOL.MOVE}
