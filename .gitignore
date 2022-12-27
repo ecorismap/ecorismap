@@ -67,7 +67,7 @@ firebase-debug.log
 firestore-debug.log
 emulatorExport/
 *.cache
-config.ts
+/config.ts
 
 #secret key include
 android/app/google-services.json

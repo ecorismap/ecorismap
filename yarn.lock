@@ -7503,7 +7503,7 @@ expo-updates-interface@~0.5.0:
   resolved "https://registry.yarnpkg.com/expo-updates-interface/-/expo-updates-interface-0.5.2.tgz#5bb1e9be05db8013d5904fa8ed636c8c40604290"
   integrity sha512-8BTaTl5pE5DYvqbJubnSH3rL55ay+wonPZe53f8CGj4PN3bV4UAQXbG9wFTDBtOaT982oyUUWdjUh/a1P3EVDw==
 
-expo-updates@~0.11.7:
+expo-updates@~0.11.6:
   version "0.11.7"
   resolved "https://registry.yarnpkg.com/expo-updates/-/expo-updates-0.11.7.tgz#c267ce8818d42a997d49a1e24b11b4887a2fb17b"
   integrity sha512-zmteCFOBj2OtDOZO5eGgFHR4EXZvFUv5DM56aMkZ6+PE/fo+8ZjNZLxkQWD33GXmXs/9jLCLKXPj2+6kCJvyhg==
@@ -12670,8 +12670,9 @@ react-native-get-random-values@^1.8.0:
   dependencies:
     fast-base64-decode "^1.0.0"
 
-react-native-hsv-color-picker@../react-native-hsv-color-picker:
+"react-native-hsv-color-picker@https://github.com/ecorismap/react-native-hsv-color-picker#update_package":
   version "1.0.2"
+  resolved "https://github.com/ecorismap/react-native-hsv-color-picker#cba23971d3b47efb5b86e014124adb56c04bacf9"
   dependencies:
     chroma-js "^2.1.0"
     expo-linear-gradient "^10.0.1"
