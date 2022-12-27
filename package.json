@@ -94,7 +94,7 @@
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.5.0",
     "react-native-get-random-values": "^1.8.0",
-    "react-native-hsv-color-picker": "../react-native-hsv-color-picker",
+    "react-native-hsv-color-picker": "https://github.com/ecorismap/react-native-hsv-color-picker#update_package",
     "react-native-maps": "0.30.2",
     "react-native-reanimated": "2.3.3",
     "react-native-safe-area-context": "3.3.2",
