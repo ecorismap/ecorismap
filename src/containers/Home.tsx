@@ -20,6 +20,7 @@ import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { useLayers } from '../hooks/useLayers';
 import { useWindow } from '../hooks/useWindow';
+import { isHisyouTool } from '../plugins/hisyoutool/utils';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
@@ -53,8 +54,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isEditingLine,
     pointTool,
     currentLineTool,
-    currentDrawLineTool,
-    currentSelectionTool,
     polygonTool,
     featureButton,
     selectedRecord,
@@ -68,8 +67,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     deselectFeature,
     setPointTool,
     setLineTool,
-    setDrawLineTool,
-    setSelectionTool,
     setFeatureButton,
     dragEndPoint,
     toggleTerrainForWeb,
@@ -302,7 +299,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         } else {
           //ドローツールをオン
           setLineTool(value);
-          setDrawLineTool(value);
         }
       } else if (isSelectionTool(value)) {
         if (currentLineTool === value) {
@@ -310,7 +306,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setLineTool('NONE');
         } else {
           setLineTool(value);
-          setSelectionTool(value);
+        }
+      } else if (isHisyouTool(value)) {
+        if (currentLineTool === value) {
+          setLineTool('NONE');
+        } else {
+          setLineTool(value);
         }
       } else {
         if (value === 'MOVE') {
@@ -322,7 +323,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentLineTool, drawLine, isEditingLine, setDrawLineTool, setLineTool, setSelectionTool]
+    [currentLineTool, drawLine, isEditingLine, setLineTool]
   );
 
   const selectPointTool = useCallback(
@@ -341,12 +342,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (value: FeatureButtonType) => {
       setPointTool('NONE');
       setLineTool('NONE');
-      setDrawLineTool('DRAW');
-      setSelectionTool('INFO');
       toggleTerrainForWeb(value);
       setFeatureButton(value);
     },
-    [setDrawLineTool, setFeatureButton, setLineTool, setPointTool, setSelectionTool, toggleTerrainForWeb]
+    [setFeatureButton, setLineTool, setPointTool, toggleTerrainForWeb]
   );
 
   /**************** press ******************/
@@ -551,8 +550,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     featureButton,
     pointTool,
     currentLineTool,
-    currentDrawLineTool,
-    currentSelectionTool,
     selectedRecord,
     draggablePoint,
     drawToolsSettings,

@@ -31,7 +31,6 @@ import {
   FeatureButtonType,
   DrawLineToolType,
   TrackingStateType,
-  SelectionToolType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
 
@@ -90,8 +89,6 @@ export interface HomeProps {
   featureButton: FeatureButtonType;
   pointTool: PointToolType;
   currentLineTool: LineToolType;
-  currentDrawLineTool: DrawLineToolType;
-  currentSelectionTool: SelectionToolType;
   selectedRecord:
     | {
         layerId: string;
@@ -165,8 +162,6 @@ export default function HomeScreen({
   featureButton,
   pointTool,
   currentLineTool,
-  currentDrawLineTool,
-  currentSelectionTool,
   selectedRecord,
   draggablePoint,
   isTermsOfUseOpen,
@@ -462,10 +457,7 @@ export default function HomeScreen({
                 isPositionRight={isDataOpened === 'opened' || isLandscape}
                 isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
-                openDisabled={false}
                 currentLineTool={currentLineTool}
-                currentDrawLineTool={currentDrawLineTool}
-                currentSelectionTool={currentSelectionTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}

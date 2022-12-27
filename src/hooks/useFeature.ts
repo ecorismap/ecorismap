@@ -17,7 +17,6 @@ import {
   PointToolType,
   PolygonToolType,
   RecordType,
-  SelectionToolType,
 } from '../types';
 
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
@@ -50,6 +49,7 @@ import { isDrawTool } from '../utils/General';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
+import { isHisyouTool } from '../plugins/hisyoutool/utils';
 
 export type UseFeatureReturnType = {
   layers: LayerType[];
@@ -75,8 +75,6 @@ export type UseFeatureReturnType = {
   selectLine: React.MutableRefObject<Position[]>;
   pointTool: PointToolType;
   currentLineTool: LineToolType;
-  currentDrawLineTool: DrawLineToolType;
-  currentSelectionTool: SelectionToolType;
   polygonTool: PolygonToolType;
   featureButton: FeatureButtonType;
   selectedRecord:
@@ -112,8 +110,6 @@ export type UseFeatureReturnType = {
   deselectFeature: () => void;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
-  setDrawLineTool: React.Dispatch<React.SetStateAction<DrawLineToolType>>;
-  setSelectionTool: React.Dispatch<React.SetStateAction<SelectionToolType>>;
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   dragEndPoint: (
     layer: LayerType,
@@ -162,8 +158,6 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
   const user = useSelector((state: AppState) => state.user);
   const [pointTool, setPointTool] = useState<PointToolType>('NONE');
   const [currentLineTool, setLineTool] = useState<LineToolType>('NONE');
-  const [currentDrawLineTool, setDrawLineTool] = useState<DrawLineToolType>('DRAW');
-  const [currentSelectionTool, setSelectionTool] = useState<SelectionToolType>('INFO');
   const [polygonTool, setPolygonTool] = useState<PolygonToolType>('NONE');
   const [, setRedraw] = useState('');
   const drawLine = useRef<
@@ -765,8 +759,6 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     isEditingLine: isEditingLine.current,
     pointTool,
     currentLineTool,
-    currentDrawLineTool,
-    currentSelectionTool,
     polygonTool,
     featureButton,
     selectedRecord,
@@ -781,8 +773,6 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     deselectFeature,
     setPointTool,
     setLineTool,
-    setDrawLineTool,
-    setSelectionTool,
     setPolygonTool,
     setFeatureButton,
     dragEndPoint,
