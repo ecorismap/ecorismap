@@ -11,7 +11,6 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		51D79AE92876BD4B00B70431 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51D79AE82876BD4B00B70431 /* GoogleService-Info.plist */; };
 		51F919A9295C1C92001CB4A4 /* Maps.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51F919A8295C1C92001CB4A4 /* Maps.plist */; };
 		8D502F13CD32B6B631D83BEC /* Pods_ecorismap.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C997FAD9771EBF28208B94BE /* Pods_ecorismap.framework */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
@@ -26,7 +25,6 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ecorismap/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ecorismap/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ecorismap/main.m; sourceTree = "<group>"; };
-		51D79AE82876BD4B00B70431 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		51F919A8295C1C92001CB4A4 /* Maps.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Maps.plist; sourceTree = "<group>"; };
 		51FCDE3B290690B8004D37E1 /* ecorismap.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = ecorismap.entitlements; path = ecorismap/ecorismap.entitlements; sourceTree = "<group>"; };
 		6C2E3173556A471DD304B334 /* Pods-ecorismap.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ecorismap.debug.xcconfig"; path = "Target Support Files/Pods-ecorismap/Pods-ecorismap.debug.xcconfig"; sourceTree = "<group>"; };
@@ -54,7 +52,6 @@
 			isa = PBXGroup;
 			children = (
 				51FCDE3B290690B8004D37E1 /* ecorismap.entitlements */,
-				51D79AE82876BD4B00B70431 /* GoogleService-Info.plist */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				008F07F21AC5B25A0029DE68 /* main.jsbundle */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
@@ -204,7 +201,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
-				51D79AE92876BD4B00B70431 /* GoogleService-Info.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				51F919A9295C1C92001CB4A4 /* Maps.plist in Resources */,
