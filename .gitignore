@@ -27,7 +27,6 @@ project.xcworkspace
 build/
 .idea
 .gradle
-local.properties
 *.iml
 *.hprof
 *.aab
@@ -70,8 +69,8 @@ emulatorExport/
 /config.ts
 
 #secret key include
+local.properties
 android/app/google-services.json
-android/app/src/main/AndroidManifest.xml
 ios/ecorismap/AppDelegate.m
 GoogleService-Info.plist
 GoogleService-Info.plist.development
