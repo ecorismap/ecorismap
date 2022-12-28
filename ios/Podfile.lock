@@ -389,7 +389,7 @@ PODS:
     - React-jsi (= 0.64.3)
     - React-perflogger (= 0.64.3)
   - React-jsinspector (0.64.3)
-  - react-native-date-picker (4.2.5):
+  - react-native-date-picker (4.2.6):
     - React-Core
   - react-native-get-random-values (1.8.0):
     - React-Core
@@ -816,7 +816,7 @@ SPEC CHECKSUMS:
   React-jsi: a8b09c29521c798f1783348b37b511ba7b3dbeb3
   React-jsiexecutor: df6abc9fafbecb8e5b7a5fbc5e6d4bd017d594d5
   React-jsinspector: 34e23860273a23695342f58eed3ffd3ba10c31e0
-  react-native-date-picker: 55193347d8d0f40948f441ffd4e5db6f0a8fbe13
+  react-native-date-picker: 93e43b3084cea595b4d68b1405d6d99849663bd6
   react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
   react-native-google-maps: 4fa56492c7f4323edfa4574a2e5ca3eaa71dc62f
   react-native-maps: df7b9fca1b1c8d356fadbf5b8a63a5f8cf32fc73

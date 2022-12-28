@@ -71,12 +71,11 @@ emulatorExport/
 #secret key include
 local.properties
 android/app/google-services.json
-ios/ecorismap/AppDelegate.m
 GoogleService-Info.plist
 GoogleService-Info.plist.development
 GoogleService-Info.plist.production
 google-services.json.development
 google-services.json.production
-
+Maps.plist
 # mapbox,firebase,recapture key
 .config
