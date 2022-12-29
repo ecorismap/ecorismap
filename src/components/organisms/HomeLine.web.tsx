@@ -111,8 +111,6 @@ export const Line = React.memo((props: Props) => {
       {zoom >= 11 && (
         //@ts-ignore
         <Source type="geojson" data={geojsonLabel}>
-          {/* https://github.com/visgl/react-map-gl/pull/2047
-          修正したreact-map-glのdistをpostinstallでコピー */}
           {/*// @ts-ignore*/}
           <Layer {...labelStyle(layer)} />
         </Source>

@@ -27,7 +27,7 @@ import DataRoutes from '../../routes/DataRoutes';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
-import { mapboxToken, maptilerKey } from '../../../config';
+import { maptilerKey } from '../../constants/APIKeys';
 import 'mapbox-gl/dist/mapbox-gl.css';
 //import mapStyle3D from '../../../style.json';
 import { useDropzone } from 'react-dropzone';
@@ -438,7 +438,7 @@ export default function HomeScreen({
               mapStyle={mapStyle}
               maxPitch={85}
               onMove={(e) => onRegionChangeMapView(e.viewState)}
-              mapboxAccessToken={mapboxToken}
+              //mapboxAccessToken={mapboxToken}
               onLoad={onMapLoad}
               cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
               //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合

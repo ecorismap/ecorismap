@@ -20,6 +20,31 @@ Documentation
   [日本語のドキュメント](https://ecoris-map.web.app/manual_ja.html)
 
 
+Build and Run
+-------------
+This app is developed with React Native + Expo (Bare Workflow). First, please install the development environment for it.
+
+0. Install development tools. Xcode, Android Studio, node.js, yarn and expo-cli.
+1. git clone https://github.com/ecorismap/ecorismap.git
+2. cd ecorismap
+3. yarn install
+4. Obtain the Maps API KEY. Just the ones you want to run.
+   - [API key for the Android SDK](https://developers.google.com/maps/documentation/android-sdk/get-api-key)
+   - [API key for the iOS SDK](https://developers.google.com/maps/documentation/ios-sdk/get-api-key)
+   - [API key for the MapTiler](https://cloud.maptiler.com/maps/)
+5. Set API Key to the file in the template folder
+   - **local.properties** for Android
+   - **Maps.plist** for iOS
+   - **APIKeys.ts** for MapTiler. 'Requires quotation marks'
+6. Copy the file to the following location
+   - cp template/local.properties android/
+   - cp template/Maps.plist ios/ecorismap/Supporting/
+   - cp template/APIKeys.ts src/constants/
+7. Build and Run on emulator
+   - yarn android
+   - yarn ios
+   - yarn web
+
 License
 =======
 

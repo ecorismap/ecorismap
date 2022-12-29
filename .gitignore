@@ -27,7 +27,6 @@ project.xcworkspace
 build/
 .idea
 .gradle
-local.properties
 *.iml
 *.hprof
 *.aab
@@ -67,17 +66,18 @@ firebase-debug.log
 firestore-debug.log
 emulatorExport/
 *.cache
-/config.ts
+firebase.json
 
 #secret key include
+local.properties
 android/app/google-services.json
-android/app/src/main/AndroidManifest.xml
-ios/ecorismap/AppDelegate.m
 GoogleService-Info.plist
 GoogleService-Info.plist.development
 GoogleService-Info.plist.production
 google-services.json.development
 google-services.json.production
+Maps.plist
+APIKeys.ts
 
-# mapbox,firebase,recapture key
-.config
+#exclude template from ignore
+!/template/*

@@ -25,8 +25,8 @@
     ]
   },
   "scripts": {
-    "android": "emulator @Pixel_5_API_31 -no-snapshot-load & expo run:android",
-    "android:device": "expo run:android",
+    "android": "expo run:android",
+    "android:device": "emulator @Pixel_5_API_31 -no-snapshot-load & expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "build:web": "expo build:web",
@@ -36,7 +36,7 @@
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
     "cy:open": "expo start --web & npx cypress open",
     "cy:run": "npx cypress run --spec=./cypress/integration/test.spec.ts",
-    "postinstall": "patch-package;cp -r ../react-map-gl/dist ./node_modules/react-map-gl/"
+    "postinstall": "patch-package;"
   },
   "dependencies": {
     "@date-io/date-fns": "^2.13.1",
