@@ -46,7 +46,6 @@ target 'ecorismap' do
   pod 'react-native-google-maps', :path => rn_maps_path
   pod 'GoogleMaps'
   pod 'Google-Maps-iOS-Utils'
-  pod 'Firebase/Analytics'
 
   post_install do |installer|
     react_native_post_install(installer)
