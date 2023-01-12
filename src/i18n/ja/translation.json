@@ -394,7 +394,7 @@
       "message": {
         "inputLayerName": "レイヤ名を入力してください。",
         "inputFieldName": "フィールド名を入力してください。",
-        "referencedDataId": "_ReferencedDataIdは使用できません。",
+        "_id": "_idは使用できません。",
         "inputListItem": "リストのアイテムを設定してください。",
         "inputRadioItem": "ラジオボタンのアイテムを設定してください。",
         "inputCheckItem": "チェックボックスのアイテムを設定してください。",

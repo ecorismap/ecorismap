@@ -1,4 +1,6 @@
 export const HISYOUTOOL = {
+  SETTING: 'cog-outline',
+  HISYOU: 'arrow-top-right',
   SENKAI: 'circle-outline',
   SENJYOU: 'circle-double',
   KOUGEKI: 'flag-triangle',

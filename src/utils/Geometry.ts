@@ -412,7 +412,7 @@ export const GeoJson2Data = (
 
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
   const header = field.map((f) => f.name).join(',') + ',' + 'geometry';
-  //console.log(header);
+
   const properties = dataSet.map((record) => {
     const fieldCSV = field
       .map(({ name, format }) => {
@@ -426,6 +426,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         }
       })
       .join(',');
+
     return fieldCSV;
   });
 

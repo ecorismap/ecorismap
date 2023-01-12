@@ -20,7 +20,6 @@ import { HomeProps } from './Home';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
-import { isDrawTool, isSelectionTool } from '../../utils/General';
 import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import DataRoutes from '../../routes/DataRoutes';
@@ -50,7 +49,7 @@ export default function HomeScreen({
   zoomDecimal,
   isEditingLine,
   drawLine,
-  modifiedLine,
+  editingLine,
   selectLine,
   tileMaps,
   isDownloading,
@@ -415,10 +414,10 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(currentLineTool) || isSelectionTool(currentLineTool) || currentLineTool === 'MOVE') && (
+        {currentLineTool !== 'NONE' && (
           <SvgView
             drawLine={drawLine}
-            modifiedLine={modifiedLine}
+            editingLine={editingLine}
             selectLine={selectLine}
             currentLineTool={currentLineTool}
             onPress={onPressSvgView}

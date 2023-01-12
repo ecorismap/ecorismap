@@ -9,20 +9,21 @@ import { Alert } from '../atoms/Alert';
 
 interface Props {
   name: string;
-  layer: LayerType;
-  dataId: string;
+  primaryKey: string | number | PhotoType[];
+  refLayer: LayerType;
+  refField: string;
   isEditingRecord: boolean;
   onPress: (referenceData: RecordType, referenceLayer: LayerType) => void;
   pressAddReferenceData: (referenceData: RecordType | undefined, referenceLayer: LayerType, message: string) => void;
 }
 
 export const DataEditReference = (props: Props) => {
-  const { name, layer, dataId, isEditingRecord, onPress, pressAddReferenceData } = props;
-  const { allUserRecordSet, addRecord } = useData(layer);
+  const { name, primaryKey, refLayer, refField, isEditingRecord, onPress, pressAddReferenceData } = props;
+  const { allUserRecordSet, addRecord } = useData(refLayer);
 
   const data = useMemo(
-    () => allUserRecordSet.filter((d) => d.field._ReferenceDataId === dataId),
-    [allUserRecordSet, dataId]
+    () => allUserRecordSet.filter((d) => d.field[refField] === primaryKey),
+    [allUserRecordSet, primaryKey, refField]
   );
 
   const addReferenceData = useCallback(
@@ -31,10 +32,10 @@ export const DataEditReference = (props: Props) => {
         Alert.alert('', '一旦変更を保存してください。');
         return;
       }
-      const { message, data: referenceData } = await addRecord(dataId);
+      const { message, data: referenceData } = await addRecord();
       pressAddReferenceData(referenceData, referenceLayer, message);
     },
-    [addRecord, dataId, isEditingRecord, pressAddReferenceData]
+    [addRecord, isEditingRecord, pressAddReferenceData]
   );
 
   return (
@@ -50,12 +51,12 @@ export const DataEditReference = (props: Props) => {
               padding: 0,
             }}
             name="plus"
-            onPress={() => addReferenceData(layer)}
+            onPress={() => addReferenceData(refLayer)}
           />
         </View>
       </View>
-      <DataTitle layer={layer} />
-      <DataItems data={data} layer={layer} onPress={(index: number) => onPress(data[index], layer)} />
+      <DataTitle layer={refLayer} />
+      <DataItems data={data} layer={refLayer} onPress={(index: number) => onPress(data[index], refLayer)} />
     </View>
   );
 };

@@ -94,7 +94,7 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
                 }
                 itemLabelArray={formatTypeLabels}
                 itemValueArray={formatTypeValues}
-                maxIndex={formatTypeValues.length - 2}
+                maxIndex={formatTypeValues.length - 1}
               />
             </View>
             <View style={[styles.td, { flex: 2 }]}>

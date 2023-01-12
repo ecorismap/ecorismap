@@ -5,8 +5,7 @@ import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
 import { AppState } from '../modules';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
-import { getDefaultFieldObject, sortData, SortOrderType } from '../utils/Data';
-import { getLayerSerial } from '../utils/Layer';
+import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import { exportDataAndPhoto } from '../utils/File';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
@@ -199,41 +198,33 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     return { isOK: true, message: '' };
   }, [allUserRecordSet, checkList, targetLayer]);
 
-  const addRecord = useCallback(
-    async (referenceDataId?: string) => {
-      if (!targetLayer.active) {
-        return { isOK: false, message: t('hooks.message.noEditMode'), data: undefined };
-      }
+  const addRecord = useCallback(async () => {
+    if (!targetLayer.active) {
+      return { isOK: false, message: t('hooks.message.noEditMode'), data: undefined };
+    }
 
-      if (targetLayer.type !== 'NONE' && targetLayer.type !== 'POINT') {
-        //ボタンをdisableにした方が良いかも？
-        return { isOK: false, message: t('hooks.message.cannotThisLayer'), data: undefined };
-      }
+    if (targetLayer.type !== 'NONE' && targetLayer.type !== 'POINT') {
+      //ボタンをdisableにした方が良いかも？
+      return { isOK: false, message: t('hooks.message.cannotThisLayer'), data: undefined };
+    }
 
-      const serial = getLayerSerial(targetLayer, ownRecordSet);
+    const id = uuidv4();
+    const field = getDefaultField(targetLayer, ownRecordSet, id);
 
-      let newData: RecordType = {
-        id: uuidv4(),
-        userId: dataUser.uid,
-        displayName: dataUser.displayName,
-        visible: true,
-        redraw: false,
-        coords: { latitude: 0, longitude: 0 },
-        field: {},
-      };
+    const newData: RecordType = {
+      id: id,
+      userId: dataUser.uid,
+      displayName: dataUser.displayName,
+      visible: true,
+      redraw: false,
+      coords: { latitude: 0, longitude: 0 },
+      field: field,
+    };
 
-      let field = targetLayer.field
-        .map(({ name, format, list, defaultValue }) => getDefaultFieldObject(name, format, list, defaultValue, serial))
-        /* @ts-ignore */
-        .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-      field = referenceDataId !== undefined ? { ...field, _ReferenceDataId: referenceDataId } : field;
-      newData = { ...newData, field: field } as RecordType;
-      //console.log("###", newData);
-      dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-      return { isOK: true, message: '', data: newData };
-    },
-    [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]
-  );
+    //console.log("###", newData);
+    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
+    return { isOK: true, message: '', data: newData };
+  }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
 
   useEffect(() => {
     const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();

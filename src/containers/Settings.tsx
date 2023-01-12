@@ -18,18 +18,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
 
-  const pressFileNew = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
-    if (ret) {
-      const { isOK, message } = await createNewEcorisMap();
-      if (!isOK) {
-        await AlertAsync(message);
-      } else {
-        navigation.navigate('Home');
-      }
-    }
-  }, [createNewEcorisMap, navigation]);
-
   const pressFileSave = useCallback(async () => {
     setIsFileSaveOpen(true);
   }, []);
@@ -60,6 +48,18 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       }
     }
   }, [loadEcorisMapFile]);
+
+  const pressClearData = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
+    if (ret) {
+      const { isOK, message } = await createNewEcorisMap();
+      if (!isOK) {
+        await AlertAsync(message);
+      } else {
+        navigation.navigate('Home');
+      }
+    }
+  }, [createNewEcorisMap, navigation]);
 
   const pressResetAll = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -128,11 +128,11 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       pressMapListURLOK={pressMapListURLOK}
       pressMapListURLCancel={pressMapListURLCancel}
       pressMapListURLReset={pressMapListURLReset}
-      pressFileNew={pressFileNew}
       pressFileOpen={pressFileOpen}
       pressFileSave={pressFileSave}
       pressFileSaveOK={pressFileSaveOK}
       pressFileSaveCancel={pressFileSaveCancel}
+      pressClearData={pressClearData}
       pressClearTileCache={pressClearTileCache}
       pressResetAll={pressResetAll}
       pressGotoManual={pressGotoManual}

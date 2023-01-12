@@ -4,52 +4,44 @@ import { AppState } from '../modules';
 import { v4 as uuidv4 } from 'uuid';
 import * as turf from '@turf/turf';
 import { GestureResponderEvent, Platform } from 'react-native';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   DataType,
-  DrawLineToolType,
   FeatureButtonType,
   FeatureType,
   LayerType,
   LineRecordType,
   LineToolType,
-  LocationType,
   PointToolType,
   PolygonToolType,
   RecordType,
 } from '../types';
 
-import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { editSettingsAction } from '../modules/settings';
 import MapView, { LatLng, MapEvent } from 'react-native-maps';
-import { cloneDeep } from 'lodash';
 import {
   calcDegreeRadius,
-  checkDistanceFromLine,
-  getActionSnappedPosition,
-  getLineSnappedPosition,
-  getSnappedLine,
-  isPoint,
-  locationToPoints,
-  modifyLine,
-  pointsToLatLon,
-  pointsToLocation,
-  pointToLatLon,
-  selecteFeatureByLatLon,
-  selecteFeaturesByArea,
+  latlonArrayToLatLonObjects,
+  latLonArrayToXYArray,
+  selectFeatureByLatLon,
+  selectFeaturesByArea,
+  xyArrayToLatLonArray,
+  xyToLatLon,
 } from '../utils/Coords';
-import { getLayerSerial } from '../utils/Layer';
-import { getDefaultFieldObject } from '../utils/Data';
 
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
 import { MapRef } from 'react-map-gl';
 import { Position } from '@turf/turf';
-import { isDrawTool } from '../utils/General';
-import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
+import { useHisyouTool } from '../plugins/hisyoutool/useHisyouTool';
+import { useDrawTool } from './useDrawTool';
+import { useFeatureEdit } from './useFeatureEdit';
+import { isDrawTool } from '../utils/General';
+import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 
 export type UseFeatureReturnType = {
   layers: LayerType[];
@@ -60,15 +52,14 @@ export type UseFeatureReturnType = {
   isEditingLine: boolean;
   drawLine: React.MutableRefObject<
     {
-      layerId: string;
+      id: string;
       record: RecordType | undefined;
       xy: Position[];
-      coords: LocationType[];
-      properties: (DrawLineToolType | '')[];
-      arrow: number;
+      latlon: Position[];
+      properties: string[];
     }[]
   >;
-  modifiedLine: React.MutableRefObject<{
+  editingLine: React.MutableRefObject<{
     start: turf.helpers.Position;
     xy: Position[];
   }>;
@@ -83,8 +74,6 @@ export type UseFeatureReturnType = {
         record: RecordType;
       }
     | undefined;
-  drawToolsSettings: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
-
   addTrack: () => {
     isOK: boolean;
     message: string;
@@ -114,8 +103,7 @@ export type UseFeatureReturnType = {
   dragEndPoint: (
     layer: LayerType,
     feature: RecordType,
-    coordinate: LatLng,
-    shouldUpdate: boolean
+    coordinate: LatLng
   ) => {
     isOK: boolean;
     message: string;
@@ -128,20 +116,14 @@ export type UseFeatureReturnType = {
     layer: LayerType | undefined;
     data: RecordType | undefined;
   };
-  deleteLine: () => void;
-  undoEditLine: () => void;
-  updateDrawToolsSettings: (settings: {
-    hisyouzuTool: {
-      active: boolean;
-      layerId: string | undefined;
-    };
-  }) => {
+  deleteLine: () => {
     isOK: boolean;
     message: string;
   };
+  undoEditLine: () => void;
   pressSvgView: (event: GestureResponderEvent) => void;
-  onMoveSvgView: (event: GestureResponderEvent) => void;
-  onReleaseSvgView: () => void;
+  moveSvgView: (event: GestureResponderEvent) => void;
+  releaseSvgView: () => void;
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -151,35 +133,37 @@ export type UseFeatureReturnType = {
         layer: LayerType;
         feature: LineRecordType;
       };
+  resetLineTools: () => void;
+  resetPointPosition: (editingLayer: LayerType, feature: RecordType) => void;
+  hideDrawLine: () => void;
+  showDrawLine: () => void;
 };
 
 export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureReturnType => {
   const dispatch = useDispatch();
-  const user = useSelector((state: AppState) => state.user);
   const [pointTool, setPointTool] = useState<PointToolType>('NONE');
   const [currentLineTool, setLineTool] = useState<LineToolType>('NONE');
   const [polygonTool, setPolygonTool] = useState<PolygonToolType>('NONE');
   const [, setRedraw] = useState('');
   const drawLine = useRef<
     {
-      layerId: string;
+      id: string;
       record: RecordType | undefined;
       xy: Position[];
-      coords: LocationType[];
-      properties: (DrawLineToolType | '')[];
-      arrow: number;
+      latlon: Position[];
+      properties: string[];
     }[]
   >([]);
-  const modifiedLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
+  const editingLine = useRef<{ start: Position; xy: Position[] }>({ start: [], xy: [] });
   const selectLine = useRef<Position[]>([]);
-  const undoLine = useRef<{ index: number; coords: LocationType[] }[]>([]);
+  const undoLine = useRef<{ index: number; latlon: Position[] }[]>([]);
   const isEditingLine = useRef(false);
   const modifiedIndex = useRef(-1);
+  const offset = useRef([0, 0]);
   const movingMapCenter = useRef<{ x: number; y: number; longitude: number; latitude: number } | undefined>(undefined);
-  const role = useSelector((state: AppState) => state.settings.role);
+
   const layers = useSelector((state: AppState) => state.layers);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const drawToolsSettings = useSelector((state: AppState) => state.settings.drawTools);
 
   const pointDataSet = useSelector((state: AppState) =>
     layers.map((layer) => (layer.type === 'POINT' ? state.dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
@@ -193,55 +177,30 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
 
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
-  const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
-  const activeLineLayer = useMemo(() => layers.find((d) => d.active && d.type === 'LINE'), [layers]);
-  const activePolygonLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POLYGON'), [layers]);
-
-  const dataUser = useMemo(
-    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
-    [projectId, user]
-  );
-
   const { mapSize, mapRegion } = useWindow();
-
+  const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool, convertFeatureToDrawLine, deleteDrawLine } =
+    useDrawTool(currentLineTool, modifiedIndex, drawLine, editingLine, undoLine);
+  const {
+    pressSvgHisyouTool,
+    moveSvgHisyouTool,
+    releaseSvgHisyouTool,
+    saveHisyou,
+    convertFeatureToHisyouLine,
+    deleteHisyouLine,
+  } = useHisyouTool(currentLineTool, modifiedIndex, drawLine, editingLine, undoLine);
+  const { isHisyouToolActive } = useHisyouToolSetting();
+  const {
+    dataUser,
+    addFeature,
+    checkEditable,
+    getEditingLayerAndRecordSet,
+    resetPointPosition,
+    updatePointPosition,
+    generateLineRecord,
+  } = useFeatureEdit();
   const deselectFeature = useCallback(() => {
     dispatch(editSettingsAction({ selectedRecord: undefined }));
   }, [dispatch]);
-
-  const updateDrawToolsSettings = useCallback(
-    (settings: { hisyouzuTool: { active: boolean; layerId: string | undefined } }) => {
-      dispatch(editSettingsAction({ drawTools: settings }));
-      const hisyouzuLayer = layers.find((layer) => layer.id === settings.hisyouzuTool.layerId);
-      if (hisyouzuLayer !== undefined) {
-        dispatch(updateLayerAction({ ...hisyouzuLayer, visible: false }));
-      }
-      return { isOK: true, message: '' };
-    },
-    [dispatch, layers]
-  );
-
-  const getEditingLayerAndRecordSet = useCallback(
-    (type: FeatureType) => {
-      let editingLayer: LayerType | undefined;
-      let dataSet: DataType[] = [];
-      if (type === 'POINT') {
-        editingLayer = activePointLayer;
-        dataSet = pointDataSet;
-      } else if (type === 'LINE') {
-        editingLayer = activeLineLayer;
-        dataSet = lineDataSet;
-      } else if (type === 'POLYGON') {
-        editingLayer = activePolygonLayer;
-        dataSet = polygonDataSet;
-      }
-      const editingData = dataSet.find((d) => d.layerId === editingLayer?.id && d.userId === dataUser.uid);
-      const editingRecordSet = editingData !== undefined ? editingData.data : [];
-
-      return { editingLayer, editingRecordSet };
-    },
-    [activeLineLayer, activePointLayer, activePolygonLayer, dataUser.uid, lineDataSet, pointDataSet, polygonDataSet]
-  );
 
   const toggleTerrainForWeb = useCallback(
     (value: FeatureButtonType) => {
@@ -256,22 +215,6 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
       }
     },
     [dispatch, mapRegion, mapViewRef]
-  );
-
-  const checkEditable = useCallback(
-    (editingLayer: LayerType, feature?: RecordType) => {
-      //データのチェックもする場合
-      if (feature !== undefined) {
-        //パブリック、パーソナルデータでオーナー＆管理者だが自分以外のデータで調査モード
-        //ToDo 調査モード
-        const workInProgress = true;
-        if (editingLayer.permission !== 'COMMON' && isOwnerAdmin && workInProgress && dataUser.uid !== feature.userId) {
-          return { isOK: false, message: t('hooks.message.cannotEditOthersInWork') };
-        }
-      }
-      return { isOK: true, message: '' };
-    },
-    [dataUser.uid, isOwnerAdmin]
   );
 
   const findRecord = useCallback(
@@ -297,132 +240,33 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     [lineDataSet, pointDataSet, polygonDataSet]
   );
 
-  const addFeature = useCallback(
-    (
-      editingLayer: LayerType,
-      editingRecordSet: RecordType[],
-      locations: LocationType | LocationType[],
-      isTrack = false
-    ) => {
-      const serial = getLayerSerial(editingLayer, editingRecordSet);
-
-      let newData: RecordType = {
-        id: uuidv4(),
-        userId: dataUser.uid,
-        displayName: dataUser.displayName,
-        visible: true,
-        redraw: false,
-        coords: locations,
-        field: {},
-      };
-      if (editingLayer.type === 'LINE' && Array.isArray(locations)) {
-        newData.centroid = locations[0];
-      }
-
-      const field = editingLayer.field
-        .map(({ name, format, list, defaultValue }) => getDefaultFieldObject(name, format, list, defaultValue, serial))
-        /* @ts-ignore */
-        .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-      //field['飛翔凡例'] = '飛翔';
-      //field['消失'] = 1;
-      newData = { ...newData, field: field } as RecordType;
-
-      dispatch(addRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [newData] }));
-      if (isTrack) {
-        dispatch(editSettingsAction({ tracking: { layerId: editingLayer.id, dataId: newData.id } }));
-      }
-      return { isOK: true, data: newData, layer: editingLayer, user: dataUser };
-    },
-    [dataUser, dispatch]
-  );
-
   const addCurrentPoint = useCallback(async () => {
     const location = await Location.getLastKnownPositionAsync();
     if (location === null) {
       return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, data: undefined };
     }
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('POINT');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-    }
-    const { isOK, message } = checkEditable(editingLayer);
-    if (!isOK) {
-      return { isOK: false, message, layer: undefined, data: undefined };
-    }
-    const result = addFeature(editingLayer, editingRecordSet, toLocationType(location)!);
-    return { isOK: true, message: '', layer: result.layer, data: result.data };
-  }, [addFeature, checkEditable, getEditingLayerAndRecordSet]);
+    return addFeature('POINT', toLocationType(location)!);
+  }, [addFeature]);
 
   const addPressPoint = useCallback(
     (e: MapEvent<{}>) => {
-      const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('POINT');
-      if (editingLayer === undefined) {
-        return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-      }
-
-      const { isOK, message } = checkEditable(editingLayer);
-
-      if (!isOK) {
-        return { isOK: false, message, layer: undefined, data: undefined };
-      }
-      const result = addFeature(editingLayer, editingRecordSet, {
+      const location = {
         //@ts-ignore
         latitude: e.nativeEvent ? e.nativeEvent.coordinate.latitude : e.latLng.lat(),
         //@ts-ignore
         longitude: e.nativeEvent ? e.nativeEvent.coordinate.longitude : e.latLng.lng(),
-      });
-      return { isOK: true, message: '', layer: result.layer, data: result.data };
+      };
+      return addFeature('POINT', location);
     },
-    [addFeature, checkEditable, getEditingLayerAndRecordSet]
+    [addFeature]
   );
 
   const addTrack = useCallback(() => {
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit') };
-    }
-    const { isOK, message } = checkEditable(editingLayer);
-    if (!isOK) {
-      return { isOK: false, message };
-    }
-    addFeature(editingLayer, editingRecordSet, [], true);
-    return { isOK: true, message: '' };
-  }, [addFeature, checkEditable, getEditingLayerAndRecordSet]);
-
-  const updatePointPosition = useCallback(
-    (editingLayer: LayerType, feature: RecordType, coordinate: LatLng) => {
-      const data = cloneDeep(feature);
-      if (!isPoint(data.coords)) return;
-
-      data.coords.latitude = coordinate.latitude;
-      data.coords.longitude = coordinate.longitude;
-      if (data.coords.ele !== undefined) data.coords.ele = undefined;
-      dispatch(updateRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [data] }));
-    },
-    [dataUser.uid, dispatch]
-  );
-
-  const resetPointPosition = useCallback(
-    (editingLayer: LayerType, feature: RecordType) => {
-      const data = cloneDeep(feature);
-      data.redraw = !data.redraw;
-      dispatch(
-        updateRecordsAction({
-          layerId: editingLayer.id,
-          userId: feature.userId,
-          data: [data],
-        })
-      );
-    },
-    [dispatch]
-  );
+    return addFeature('LINE', [], true);
+  }, [addFeature]);
 
   const dragEndPoint = useCallback(
-    (layer: LayerType, feature: RecordType, coordinate: LatLng, shouldUpdate: boolean) => {
-      if (!shouldUpdate) {
-        resetPointPosition(layer, feature);
-        return { isOK: true, message: '' };
-      }
+    (layer: LayerType, feature: RecordType, coordinate: LatLng) => {
       const { editingLayer } = getEditingLayerAndRecordSet('POINT');
       if (editingLayer === undefined) {
         resetPointPosition(layer, feature);
@@ -442,12 +286,38 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
 
   const resetLineTools = useCallback(() => {
     drawLine.current = [];
-    modifiedLine.current = { start: [], xy: [] };
+    editingLine.current = { start: [], xy: [] };
     isEditingLine.current = false;
     modifiedIndex.current = -1;
     selectLine.current = [];
     undoLine.current = [];
   }, []);
+
+  const saveDraw = useCallback(
+    (editingLayer: LayerType, editingRecordSet: RecordType[]) => {
+      drawLine.current.forEach((line) => {
+        if (line.record !== undefined) {
+          //修正
+          const updatedRecord: RecordType = {
+            ...line.record,
+            coords: latlonArrayToLatLonObjects(line.latlon),
+          };
+          dispatch(
+            updateRecordsAction({
+              layerId: editingLayer.id,
+              userId: dataUser.uid,
+              data: [updatedRecord],
+            })
+          );
+        } else {
+          //新規
+          const newRecord = generateLineRecord(editingLayer, editingRecordSet, latlonArrayToLatLonObjects(line.latlon));
+          dispatch(addRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [newRecord] }));
+        }
+      });
+    },
+    [dataUser.uid, dispatch, generateLineRecord]
+  );
 
   const saveLine = useCallback(() => {
     const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
@@ -460,28 +330,20 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
       return { isOK: false, message, layer: undefined, data: undefined };
     }
 
-    drawLine.current.map((line) => {
-      if (line.record !== undefined) {
-        const updatedRecord: RecordType = { ...line.record, coords: line.coords };
-        dispatch(
-          updateRecordsAction({
-            layerId: line.layerId,
-            userId: dataUser.uid,
-            data: [updatedRecord],
-          })
-        );
-      } else {
-        addFeature(editingLayer, editingRecordSet, line.coords);
-      }
-    });
+    if (isHisyouToolActive) {
+      const { isOK: isOKsaveHisyou, message: messageSaveHisyou } = saveHisyou(editingLayer, editingRecordSet);
+      if (!isOKsaveHisyou) return { isOK: false, message: messageSaveHisyou, layer: undefined, data: undefined };
+    } else {
+      saveDraw(editingLayer, editingRecordSet);
+    }
     resetLineTools();
     return { isOK: true, message: '', layer: undefined, data: undefined };
-  }, [addFeature, checkEditable, dataUser.uid, dispatch, getEditingLayerAndRecordSet, resetLineTools]);
+  }, [checkEditable, getEditingLayerAndRecordSet, isHisyouToolActive, resetLineTools, saveDraw, saveHisyou]);
 
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {
       //選択処理
-      const point: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+      const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
       const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
       if (editingLayer === undefined) return { layer: undefined, feature: undefined };
       const radius = calcDegreeRadius(500, mapRegion, mapSize);
@@ -490,18 +352,40 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
       //   .buffer(turf.point(pointToLatLon(point, mapRegion, mapSize)), radius)
       //   .geometry.coordinates[0].map((d) => latLonToPoint(d, mapRegion, mapSize));
       // setRedraw(uuidv4());
-      const feature = selecteFeatureByLatLon(
+      const feature = selectFeatureByLatLon(
         editingRecordSet as LineRecordType[],
-        pointToLatLon(point, mapRegion, mapSize),
+        xyToLatLon(pXY, mapRegion, mapSize),
         radius
       );
 
-      if (feature === undefined) return { layer: undefined, feature: undefined };
+      if (isHisyouToolActive) {
+        if (feature === undefined) {
+          resetLineTools();
+          setRedraw(uuidv4());
+        } else {
+          convertFeatureToHisyouLine([feature]);
+        }
+      }
+      if (feature === undefined) {
+        return { layer: undefined, feature: undefined };
+      }
 
       return { layer: editingLayer, feature: feature };
     },
-    [getEditingLayerAndRecordSet, mapRegion, mapSize]
+    [convertFeatureToHisyouLine, getEditingLayerAndRecordSet, isHisyouToolActive, mapRegion, mapSize, resetLineTools]
   );
+
+  const hideDrawLine = useCallback(() => {
+    drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
+    setRedraw(uuidv4());
+  }, []);
+
+  const showDrawLine = useCallback(() => {
+    drawLine.current.forEach(
+      (line, idx) => (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize) })
+    );
+    setRedraw(uuidv4());
+  }, [mapRegion, mapSize]);
 
   const pressSvgView = useCallback(
     (event: GestureResponderEvent) => {
@@ -509,72 +393,53 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
 
       if (!event.nativeEvent.touches.length) return;
       //console.log('#', gesture.numberActiveTouches);
-      const point: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+      //locationXを使用するとボタンと重なったときにボタンの座標になってしまうのでpageXを使用。
+      //pageとmapのlocationとのズレをoffsetで修正
+      offset.current = [
+        event.nativeEvent.locationX - event.nativeEvent.pageX,
+        event.nativeEvent.locationY - event.nativeEvent.pageY,
+      ];
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+
       if (currentLineTool === 'MOVE') {
         movingMapCenter.current = {
-          x: point[0],
-          y: point[1],
+          x: pXY[0],
+          y: pXY[1],
           longitude: mapRegion.longitude,
           latitude: mapRegion.latitude,
         };
-        drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
+        //xyを消してsvgの描画を止める。表示のタイムラグがでるため
+        hideDrawLine();
       } else if (currentLineTool === 'SELECT') {
         // //選択解除
         modifiedIndex.current = -1;
         drawLine.current = [];
-        selectLine.current = [point];
+        selectLine.current = [pXY];
       } else if (isDrawTool(currentLineTool)) {
-        modifiedIndex.current = drawLine.current.findIndex((line) => {
-          const { isFar } = checkDistanceFromLine(point, line.xy);
-          return !isFar;
-        });
-        if (modifiedIndex.current === -1) {
-          //新規ラインの場合
-          drawLine.current.push({
-            layerId: '',
-            record: undefined,
-            xy: [point],
-            coords: [],
-            properties: [],
-            arrow: 0,
-          });
-        } else {
-          //ライン修正の場合
-          modifiedLine.current = { start: point, xy: [point] };
-        }
-        isEditingLine.current = true;
-      } else if (isDrawTool(currentLineTool)) {
-        //ドローツールがライン以外の場合
-        const snapped = getLineSnappedPosition(
-          [event.nativeEvent.locationX, event.nativeEvent.locationY],
-          drawLine.current[0].xy
-        ).position;
-        //console.log('###actions###', drawLine.current.slice(1));
-        const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
-        modifiedLine.current = { start: actionSnapped, xy: [actionSnapped] };
-        //console.log('###start###', actionSnapped);
-        isEditingLine.current = true;
+        pressSvgDrawTool(pXY);
+      } else if (isHisyouTool(currentLineTool)) {
+        pressSvgHisyouTool(pXY);
       }
     },
-    [currentLineTool, mapRegion.latitude, mapRegion.longitude]
+    [currentLineTool, hideDrawLine, mapRegion.latitude, mapRegion.longitude, pressSvgDrawTool, pressSvgHisyouTool]
   );
 
-  const onMoveSvgView = useCallback(
+  const moveSvgView = useCallback(
     (event: GestureResponderEvent) => {
       if (!event.nativeEvent.touches.length) return;
       //console.log('##', gesture.numberActiveTouches);
-      const point = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
       if (currentLineTool === 'MOVE') {
         if (movingMapCenter.current === undefined) return;
 
         const longitude =
           movingMapCenter.current.longitude -
-          (mapRegion.longitudeDelta * (point[0] - movingMapCenter.current.x)) / mapSize.width;
+          (mapRegion.longitudeDelta * (pXY[0] - movingMapCenter.current.x)) / mapSize.width;
 
         const latitude =
           movingMapCenter.current.latitude +
-          (mapRegion.latitudeDelta * (point[1] - movingMapCenter.current.y)) / mapSize.height;
+          (mapRegion.latitudeDelta * (pXY[1] - movingMapCenter.current.y)) / mapSize.height;
         if (Platform.OS === 'web') {
           const mapView = (mapViewRef as MapRef).getMap();
           mapView.easeTo({ center: [longitude, latitude], animate: false });
@@ -582,154 +447,126 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
           (mapViewRef as MapView).setCamera({ center: { latitude, longitude } });
         }
       } else if (currentLineTool === 'SELECT') {
-        selectLine.current = [...selectLine.current, point];
+        selectLine.current = [...selectLine.current, pXY];
       } else if (isDrawTool(currentLineTool)) {
-        if (modifiedIndex.current === -1) {
-          //新規ラインの場合
-          const index = drawLine.current.length - 1;
-          drawLine.current[index].xy = [...drawLine.current[index].xy, point];
-        } else {
-          //ライン修正の場合
-          modifiedLine.current.xy = [...modifiedLine.current.xy, point];
-        }
+        moveSvgDrawTool(pXY);
       } else if (isHisyouTool(currentLineTool)) {
-        //ドローツールがポイントとライン以外
-        const snapped = getLineSnappedPosition(point, drawLine.current[0].xy).position;
-        const actionSnapped = getActionSnappedPosition(snapped, drawLine.current.slice(1));
-        modifiedLine.current.xy = getSnappedLine(modifiedLine.current.start, actionSnapped, drawLine.current[0].xy);
+        moveSvgHisyouTool(pXY);
       }
       setRedraw(uuidv4());
     },
-    [currentLineTool, mapRegion.latitudeDelta, mapRegion.longitudeDelta, mapSize.height, mapSize.width, mapViewRef]
+    [
+      currentLineTool,
+      mapRegion.latitudeDelta,
+      mapRegion.longitudeDelta,
+      mapSize.height,
+      mapSize.width,
+      mapViewRef,
+      moveSvgDrawTool,
+      moveSvgHisyouTool,
+    ]
   );
 
-  const onReleaseSvgView = useCallback(() => {
+  const releaseSVGSelectionTool = useCallback(() => {
+    //選択処理
+    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
+    if (editingLayer === undefined) return;
+    const { isOK } = checkEditable(editingLayer);
+    if (!isOK) return;
+    const selectLineCoords = xyArrayToLatLonArray(selectLine.current, mapRegion, mapSize);
+    let features: LineRecordType[] = [];
+    if (selectLineCoords.length === 1) {
+      const radius = calcDegreeRadius(500, mapRegion, mapSize);
+      const feature = selectFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
+      if (feature === undefined) {
+        features = [];
+      } else {
+        features = [feature];
+      }
+    } else {
+      features = selectFeaturesByArea(editingRecordSet as LineRecordType[], selectLineCoords);
+    }
+
+    if (isHisyouToolActive) {
+      convertFeatureToHisyouLine(features);
+    } else {
+      convertFeatureToDrawLine(features);
+    }
+    if (features.length === 0) {
+      resetLineTools();
+      setRedraw(uuidv4());
+      return;
+    }
+    undoLine.current.push({ index: -1, latlon: [] });
+    selectLine.current = [];
+  }, [
+    checkEditable,
+    convertFeatureToDrawLine,
+    convertFeatureToHisyouLine,
+    getEditingLayerAndRecordSet,
+    isHisyouToolActive,
+    mapRegion,
+    mapSize,
+    resetLineTools,
+  ]);
+
+  const releaseSvgView = useCallback(() => {
     //const AVERAGE_UNIT = 8;
     if (currentLineTool === 'MOVE') {
       movingMapCenter.current = undefined;
-      drawLine.current.forEach(
-        (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
-      );
+      //xy座標を更新してsvgを表示
+      showDrawLine();
     } else if (currentLineTool === 'SELECT') {
-      //選択処理
-      const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
-      if (editingLayer === undefined) return;
-      const { isOK } = checkEditable(editingLayer);
-      if (!isOK) return;
-      const selectLineCoords = pointsToLatLon(selectLine.current, mapRegion, mapSize);
-      let features: LineRecordType[] = [];
-      if (selectLineCoords.length === 1) {
-        const radius = calcDegreeRadius(500, mapRegion, mapSize);
-        const feature = selecteFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
-        if (feature === undefined) {
-          features = [];
-        } else {
-          features = [feature];
-        }
-      } else {
-        features = selecteFeaturesByArea(editingRecordSet as LineRecordType[], selectLineCoords);
-      }
-
-      features.forEach((record) =>
-        drawLine.current.push({
-          layerId: editingLayer.id,
-          record: record,
-          xy: locationToPoints(record.coords, mapRegion, mapSize),
-          coords: record.coords,
-          properties: ['DRAW'],
-          arrow: 1,
-        })
-      );
-      if (features.length === 0) {
-        resetLineTools();
-        setRedraw(uuidv4());
-        return;
-      }
-      undoLine.current.push({ index: -1, coords: [] });
-      selectLine.current = [];
+      releaseSVGSelectionTool();
     } else if (isDrawTool(currentLineTool)) {
-      const index = drawLine.current.length - 1;
-      if (modifiedIndex.current === -1) {
-        //新規ラインの場合
-        if (drawLine.current[index].xy.length === 1) {
-          //1点しかなければ追加しない
-          drawLine.current = [];
-          setRedraw(uuidv4());
-          return;
-        }
-        //AREAツールの場合は、エリアを閉じるために始点を追加する。
-        if (currentLineTool === 'AREA') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
-        drawLine.current[index].properties = ['DRAW'];
-        drawLine.current[index].arrow = 1;
-        drawLine.current[index].coords = pointsToLocation(drawLine.current[index].xy, mapRegion, mapSize);
-        undoLine.current.push({
-          index: index,
-          coords: [],
-        });
-      } else {
-        // //ライン修正の場合
-        // // modifiedLine.current.coords = computeMovingAverage(modifiedLine.current.coords, AVERAGE_UNIT);
-        // // if (modifiedLine.current.coords.length > AVERAGE_UNIT) {
-        // //   //移動平均になっていない終端を削除（筆ハネ）
-        // //   modifiedLine.current.coords = modifiedLine.current.coords.slice(0, -(AVERAGE_UNIT - 1));
-        // // }
-
-        const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], modifiedLine.current);
-        if (modifiedXY.length > 0) {
-          undoLine.current.push({
-            index: modifiedIndex.current,
-            coords: drawLine.current[modifiedIndex.current].coords,
-          });
-
-          drawLine.current[modifiedIndex.current] = {
-            ...drawLine.current[modifiedIndex.current],
-            xy: modifiedXY,
-            coords: pointsToLocation(modifiedXY, mapRegion, mapSize),
-          };
-          //moveToLastOfArray(drawLine.current, modifiedIndex.current);
-        }
-        modifiedLine.current = { start: [], xy: [] };
-      }
+      releaseSvgDrawTool();
+      if (drawLine.current.length > 0) isEditingLine.current = true;
     } else if (isHisyouTool(currentLineTool)) {
-      //ドローツールの場合
-      drawLine.current.push({
-        layerId: '',
-        record: undefined,
-        xy: modifiedLine.current.xy,
-        coords: [],
-        properties: [currentLineTool],
-        arrow: 0,
-      });
-      modifiedLine.current = { start: [], xy: [] };
+      releaseSvgHisyouTool();
+      if (drawLine.current.length > 0) isEditingLine.current = true;
     }
+
     setRedraw(uuidv4());
-  }, [currentLineTool, mapRegion, mapSize, getEditingLayerAndRecordSet, checkEditable, resetLineTools]);
+  }, [currentLineTool, releaseSVGSelectionTool, releaseSvgDrawTool, releaseSvgHisyouTool, showDrawLine]);
 
   const deleteLine = useCallback(() => {
-    if (drawLine.current.length === 0) return;
-    drawLine.current.forEach((line) => {
-      if (line.record !== undefined) {
-        dispatch(
-          deleteRecordsAction({
-            layerId: line.layerId,
-            userId: dataUser.uid,
-            data: [line.record],
-          })
-        );
-      }
-    });
+    const { editingLayer } = getEditingLayerAndRecordSet('LINE');
+    if (editingLayer === undefined) {
+      return { isOK: false, message: t('hooks.message.noLayerToEdit') };
+    }
+    const { isOK, message } = checkEditable(editingLayer);
 
+    if (!isOK) {
+      return { isOK: false, message };
+    }
+    deleteDrawLine(editingLayer.id);
+    if (isHisyouToolActive) {
+      deleteHisyouLine();
+    }
     resetLineTools();
     setLineTool('NONE');
-  }, [resetLineTools, dataUser.uid, dispatch]);
+    return { isOK: true, message: '' };
+  }, [
+    checkEditable,
+    deleteDrawLine,
+    deleteHisyouLine,
+    getEditingLayerAndRecordSet,
+    isHisyouToolActive,
+    resetLineTools,
+  ]);
 
   const undoEditLine = useCallback(() => {
     const undo = undoLine.current.pop();
-    //undo.indexが-1の時はリセットする
-    if (undo !== undefined && undo.index !== -1) {
-      //アンドゥーのデータがある場合
-      drawLine.current[undo.index].xy = locationToPoints(undo.coords, mapRegion, mapSize);
-      drawLine.current[undo.index].coords = undo.coords;
+
+    //undo.indexが-1の時(選択時)はリセットする
+    if (undo === undefined) return;
+    if (undo.index === -1) {
+      //追加の場合
+      drawLine.current.pop();
+    } else {
+      //修正の場合
+      drawLine.current[undo.index].xy = latLonArrayToXYArray(undo.latlon, mapRegion, mapSize);
+      drawLine.current[undo.index].latlon = undo.latlon;
     }
     if (undoLine.current.length === 0) {
       resetLineTools();
@@ -744,7 +581,7 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     if (drawLine.current.length > 0 && movingMapCenter.current === undefined) {
       //console.log('redraw', dayjs());
       drawLine.current.forEach(
-        (line, idx) => (drawLine.current[idx] = { ...line, xy: locationToPoints(line.coords, mapRegion, mapSize) })
+        (line, idx) => (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize) })
       );
       setRedraw(uuidv4());
     }
@@ -763,12 +600,14 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     featureButton,
     selectedRecord,
     drawLine,
-    modifiedLine,
+    editingLine,
     selectLine,
-    drawToolsSettings,
     addCurrentPoint,
     addPressPoint,
     addTrack,
+    saveLine,
+    deleteLine,
+    undoEditLine,
     findRecord,
     deselectFeature,
     setPointTool,
@@ -777,13 +616,13 @@ export const useFeature = (mapViewRef: MapView | MapRef | null): UseFeatureRetur
     setFeatureButton,
     dragEndPoint,
     toggleTerrainForWeb,
-    saveLine,
-    deleteLine,
-    undoEditLine,
-    updateDrawToolsSettings,
     pressSvgView,
-    onMoveSvgView,
-    onReleaseSvgView,
+    moveSvgView,
+    releaseSvgView,
     selectSingleFeature,
+    resetLineTools,
+    resetPointPosition,
+    hideDrawLine,
+    showDrawLine,
   } as const;
 };

@@ -35,7 +35,7 @@ export function createSettingsInitialState(): SettingsType {
     memberLocation: [] as MemberLocationType[],
     tracking: undefined as TrackingType | undefined,
     selectedRecord: undefined,
-    drawTools: { hisyouzuTool: { active: false, layerId: undefined } },
+    plugins: {},
     photosToBeDeleted: [],
     mapListURL: DEFAULT_MAP_LIST_URL,
     mapList: [],
