@@ -21,7 +21,7 @@ import { cloneDeep } from 'lodash';
 import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
-import { checkCoordsInput, checkFieldInput, updateRecordCoords } from '../utils/Data';
+import { checkCoordsInput, checkFieldInput, updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { editSettingsAction } from '../modules/settings';
 import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
@@ -75,7 +75,6 @@ export const useDataEdit = (
   );
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const drawTools = useSelector((state: AppState) => state.settings.drawTools);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
 
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
@@ -302,7 +301,7 @@ export const useDataEdit = (
       return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
     }
 
-    if (!targetLayer.active && !drawTools.hisyouzuTool.active) {
+    if (!targetLayer.active) {
       return { isOK: false, message: t('hooks.message.noEditMode') };
     }
 
@@ -317,11 +316,14 @@ export const useDataEdit = (
     temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
-    const updatedRecord = updateRecordCoords(targetRecord, latlon, isDecimal);
+    const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
+    const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
+    const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
+
     dispatch(
       updateRecordsAction({
         layerId: targetLayer.id,
-        userId: targetRecord.userId,
+        userId: updatedRecord.userId,
         data: [updatedRecord],
       })
     );
@@ -336,7 +338,6 @@ export const useDataEdit = (
     tracking,
     targetRecord,
     targetLayer,
-    drawTools.hisyouzuTool.active,
     latlon,
     isDecimal,
     temporaryDeletePhotoList,

@@ -26,19 +26,19 @@ export const HomeButtons = React.memo((props: Props) => {
   return (
     <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.MAPS} onPress={showMap} backgroundColor={COLOR.ALFABLUE} />
+        <Button name={HOME_BTN.MAPS} onPress={showMap} backgroundColor={COLOR.BLUE} />
       </View>
       {Platform.OS !== 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={HOME_BTN.TRACK}
-            backgroundColor={trackingState === 'on' ? 'red' : COLOR.ALFABLUE}
+            backgroundColor={trackingState === 'on' ? 'red' : COLOR.BLUE}
             onPress={onPressTracking}
           />
         </View>
       )}
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.LAYERS} backgroundColor={COLOR.ALFABLUE} onPress={showLayer} borderRadius={50} />
+        <Button name={HOME_BTN.LAYERS} backgroundColor={COLOR.BLUE} onPress={showLayer} borderRadius={50} />
       </View>
       <View style={{ marginHorizontal: 9 }}>
         <SelectionalButton selectedButton={featureButton} directionRow="column">
@@ -46,24 +46,24 @@ export const HomeButtons = React.memo((props: Props) => {
             id="POINT"
             name={HOME_FEATURE_BTN.POINT}
             onPressCustom={() => selectFeatureButton('POINT')}
-            backgroundColor={COLOR.ALFABLUE}
+            backgroundColor={COLOR.BLUE}
           />
           <Button
             id="LINE"
             name={HOME_FEATURE_BTN.LINE}
             onPressCustom={() => selectFeatureButton('LINE')}
-            backgroundColor={COLOR.ALFABLUE}
+            backgroundColor={COLOR.BLUE}
           />
           <Button
             id="NONE"
             name={HOME_FEATURE_BTN.NONE}
             onPressCustom={() => selectFeatureButton('NONE')}
-            backgroundColor={COLOR.ALFABLUE}
+            backgroundColor={COLOR.BLUE}
           />
         </SelectionalButton>
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.SETTINGS} backgroundColor={COLOR.ALFABLUE} onPress={showSettings} />
+        <Button name={HOME_BTN.SETTINGS} backgroundColor={COLOR.BLUE} onPress={showSettings} />
       </View>
     </View>
   );

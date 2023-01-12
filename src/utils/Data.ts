@@ -1,6 +1,7 @@
 import {
   DataType,
   DMSKey,
+  FieldType,
   FormatType,
   LatLonDMSKey,
   LatLonDMSType,
@@ -84,47 +85,67 @@ export const getInitialFieldValue = (
   }
 };
 
-export const getDefaultFieldObject = (
-  name: string,
-  format: string,
-  list: { value: string; isOther: boolean }[] | undefined,
-  defaultValue: string | number | undefined,
-  serial: number
-) => {
-  switch (format) {
+export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): number => {
+  const serials = dataSet.map((data) => data.field[serialFieldName]).filter((v) => v) as number[];
+  return serials.length === 0 ? 1 : Math.max(...serials) + 1;
+};
+
+export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[]) => {
+  switch (field.format) {
     case 'STRING':
-      return { [name]: defaultValue ?? '' };
+      return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL':
-      return { [name]: serial };
+      const serial = getDataSerial(dataSet, field.name);
+      return { [field.name]: serial };
     case 'INTEGER':
-      return { [name]: defaultValue ?? 0 };
+      return { [field.name]: field.defaultValue ?? 0 };
     case 'DECIMAL':
-      return { [name]: defaultValue ?? 0 };
+      return { [field.name]: field.defaultValue ?? 0 };
     case 'NUMBERRANGE':
-      return { [name]: `${t('common.ndash')}` };
+      return { [field.name]: `${t('common.ndash')}` };
     case 'LIST':
-      return { [name]: list![0].value };
+      return { [field.name]: field.list![0].value };
     case 'RADIO':
-      return { [name]: list![0].value };
+      return { [field.name]: field.list![0].value };
     case 'CHECK':
-      return { [name]: list![0].value };
+      return { [field.name]: field.list![0].value };
     case 'DATETIME':
-      return { [name]: dayjs().format() };
+      return { [field.name]: dayjs().format() };
     case 'DATESTRING':
-      return { [name]: defaultValue ?? dayjs().format('L') };
+      return { [field.name]: field.defaultValue ?? dayjs().format('L') };
     case 'TIMESTRING':
-      return { [name]: defaultValue ?? dayjs().format('HH:mm') };
+      return { [field.name]: field.defaultValue ?? dayjs().format('HH:mm') };
     case 'TIMERANGE':
-      return { [name]: `${dayjs().format('HH:mm')}${t('common.ndash')}${dayjs().format('HH:mm')}` };
+      return { [field.name]: `${dayjs().format('HH:mm')}${t('common.ndash')}${dayjs().format('HH:mm')}` };
     case 'PHOTO':
-      return { [name]: [] };
+      return { [field.name]: [] as PhotoType[] };
     case 'TABLE':
-      return { [name]: '' };
+      return { [field.name]: '' };
     case 'LISTTABLE':
-      return { [name]: '' };
+      return { [field.name]: '' };
+    case 'REFERENCE':
+      return { [field.name]: '' };
     default:
-      return null;
+      return { [field.name]: '' };
   }
+};
+
+export const updateReferenceFieldValue = (layer: LayerType, field: RecordType['field'], id: string) => {
+  const referenceField = layer.field.find(({ format }) => format === 'REFERENCE');
+  if (referenceField === undefined) return field;
+  const primaryField = referenceField.list && referenceField.list[2] && referenceField.list[2].value;
+  const primaryKey = primaryField === '_id' ? id : primaryField && field[primaryField];
+  if (primaryKey === undefined) return field;
+  const updatedField = cloneDeep(field);
+  updatedField[referenceField.name] = primaryKey;
+  return updatedField;
+};
+
+export const getDefaultField = (layer: LayerType, dataSet: RecordType[], id: string) => {
+  const defaultField = layer.field
+    .map((fieldObject) => getDefaultFieldValue(fieldObject, dataSet))
+    .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+  return updateReferenceFieldValue(layer, defaultField, id);
 };
 
 export const checkFieldInput = (layer: LayerType, record: RecordType) => {

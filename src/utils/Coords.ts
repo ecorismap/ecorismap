@@ -1,16 +1,9 @@
 import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
-import {
-  DMSType,
-  DrawLineToolType,
-  LatLonDMSKey,
-  LatLonDMSType,
-  LineRecordType,
-  LocationType,
-  RecordType,
-} from '../types';
+import { DMSType, LatLonDMSKey, LatLonDMSType, LineRecordType, LocationType, RecordType } from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
+import { LatLng } from 'react-native-maps';
 
 export const isPoint = (coords: any): coords is LocationType => {
   return 'latitude' in coords && 'longitude' in coords;
@@ -82,8 +75,8 @@ export const pointsToSvg = (points: Position[]) => {
   return path;
 };
 
-export const pointToLatLon = (
-  point: Position,
+export const xyToLatLon = (
+  xy: Position,
   mapRegion: {
     latitude: number;
     longitude: number;
@@ -91,15 +84,15 @@ export const pointToLatLon = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-) => {
+): Position => {
   return [
-    mapRegion.longitude + mapRegion.longitudeDelta * (point[0] / mapSize.width - 0.5),
-    mapRegion.latitude - mapRegion.latitudeDelta * (point[1] / mapSize.height - 0.5),
+    mapRegion.longitude + mapRegion.longitudeDelta * (xy[0] / mapSize.width - 0.5),
+    mapRegion.latitude - mapRegion.latitudeDelta * (xy[1] / mapSize.height - 0.5),
   ];
 };
 
-export const pointsToLatLon = (
-  points: Position[],
+export const xyArrayToLatLonArray = (
+  xyArray: Position[],
   mapRegion: {
     latitude: number;
     longitude: number;
@@ -107,12 +100,12 @@ export const pointsToLatLon = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-) => {
-  return points.map((xy) => pointToLatLon(xy, mapRegion, mapSize));
+): Position[] => {
+  return xyArray.map((xy) => xyToLatLon(xy, mapRegion, mapSize));
 };
 
-export const pointsToLocation = (
-  points: Position[],
+export const xyArrayToLatLonObjects = (
+  xyArray: Position[],
   mapRegion: {
     latitude: number;
     longitude: number;
@@ -120,14 +113,14 @@ export const pointsToLocation = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-) => {
-  return points.map((xy) => {
-    const latlon = pointToLatLon(xy, mapRegion, mapSize);
+): LatLng[] => {
+  return xyArray.map((xy) => {
+    const latlon = xyToLatLon(xy, mapRegion, mapSize);
     return { longitude: latlon[0], latitude: latlon[1] };
   });
 };
 
-export const latLonToPoint = (
+export const latLonToXY = (
   latlon: number[],
   mapRegion: {
     latitude: number;
@@ -136,7 +129,7 @@ export const latLonToPoint = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-) => [
+): Position => [
   Math.round(
     ((latlon[0] - (mapRegion.longitude - mapRegion.longitudeDelta / 2)) * mapSize.width) / mapRegion.longitudeDelta
   ),
@@ -144,8 +137,9 @@ export const latLonToPoint = (
     ((mapRegion.latitude + mapRegion.latitudeDelta / 2 - latlon[1]) * mapSize.height) / mapRegion.latitudeDelta
   ),
 ];
-export const locationToPoints = (
-  location: { longitude: number; latitude: number }[],
+
+export const latLonArrayToXYArray = (
+  latLonArray: Position[],
   mapRegion: {
     latitude: number;
     longitude: number;
@@ -153,8 +147,29 @@ export const locationToPoints = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-) => {
-  return location.map((latlon) => latLonToPoint([latlon.longitude, latlon.latitude], mapRegion, mapSize));
+): Position[] => {
+  return latLonArray.map((latlon) => latLonToXY(latlon, mapRegion, mapSize));
+};
+
+export const latLonObjectsToXYArray = (
+  latLonObjects: LatLng[],
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+): Position[] => {
+  return latLonObjects.map((latlon) => latLonToXY([latlon.longitude, latlon.latitude], mapRegion, mapSize));
+};
+
+export const latLonObjectsToLatLonArray = (latLonObjects: { longitude: number; latitude: number }[]): Position[] => {
+  return latLonObjects.map((latlon) => [latlon.longitude, latlon.latitude]);
+};
+
+export const latlonArrayToLatLonObjects = (latLonArray: Position[]): LatLng[] => {
+  return latLonArray.map((latlon) => ({ longitude: latlon[0], latitude: latlon[1] }));
 };
 
 export const deltaToZoom = (windowWidth: number, delta: { longitudeDelta: number; latitudeDelta: number }) => {
@@ -215,70 +230,47 @@ export const splitTest = (p: Position) => {
   return turf.lineSplit(line, point);
 };
 
-export const getLineSnappedPosition = (pos: Position, line: Position[]) => {
-  //turfの仕様？でスクリーン座標のままだと正確にスナップ座標を計算しないために、一旦、小さい値（緯度経度的）にして、最後に戻す
+export const getLineSnappedPosition = (point: Position, line: Position[], options?: { isXY: boolean }) => {
+  //turfの仕様？でスクリーン座標XYのままだと正確にスナップ座標を計算しないために、一旦、小さい値（緯度経度的）にして、最後に戻す
+  let turfPoint;
+  let turfLine;
   const ADJUST_VALUE = 1000.0;
-  const adjustedPt = turf.point([pos[0] / ADJUST_VALUE, pos[1] / ADJUST_VALUE]);
-  const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
-  const snapped = turf.nearestPointOnLine(adjustedLine, adjustedPt);
+  if (options?.isXY) {
+    turfPoint = turf.point([point[0] / ADJUST_VALUE, point[1] / ADJUST_VALUE]);
+    turfLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+  } else {
+    turfPoint = turf.point(point);
+    turfLine = turf.lineString(line);
+  }
+  const snapped = turf.nearestPointOnLine(turfLine, turfPoint);
+  let position;
+  if (options?.isXY) {
+    position = [snapped.geometry.coordinates[0] * ADJUST_VALUE, snapped.geometry.coordinates[1] * ADJUST_VALUE];
+  } else {
+    position = snapped.geometry.coordinates;
+  }
   return {
-    position: [snapped.geometry.coordinates[0] * ADJUST_VALUE, snapped.geometry.coordinates[1] * ADJUST_VALUE],
+    position: position,
     distance: snapped.properties.dist !== undefined ? snapped.properties.dist * ADJUST_VALUE : 999999,
     index: snapped.properties.index ?? -1,
     location: snapped.properties.location ?? -1,
   };
 };
 
-export const getSnappedLine = (start: Position, end: Position, line: Position[]) => {
-  const ADJUST_VALUE = 1000.0;
-  const adjustedStartPt = turf.point([start[0] / ADJUST_VALUE, start[1] / ADJUST_VALUE]);
-  const adjustedEndPt = turf.point([end[0] / ADJUST_VALUE, end[1] / ADJUST_VALUE]);
-  const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
-  const sliced = turf.lineSlice(adjustedStartPt, adjustedEndPt, adjustedLine);
-  const snappedLine = sliced.geometry.coordinates.map((d) => [d[0] * ADJUST_VALUE, d[1] * ADJUST_VALUE]);
-  snappedLine[0] = start;
-  snappedLine[snappedLine.length - 1] = end;
-  return snappedLine;
-};
-
-export const getActionSnappedPosition = (
-  point: Position,
-  actions: { xy: Position[]; coords: LocationType[]; properties: string[]; arrow: number }[]
-) => {
-  for (const action of actions) {
-    const target = turf.point(point);
-    const lineStart = action.xy[0];
-    const distanceStart = turf.distance(target, turf.point(lineStart));
-
-    if (distanceStart < 500) {
-      //console.log('#######distanceStart', distanceStart, action);
-      return lineStart;
-    }
-    const lineEnd = action.xy[action.xy.length - 1];
-    const distanceEnd = turf.distance(target, turf.point(lineEnd));
-    //console.log(distanceEnd);
-    if (distanceEnd < 500) {
-      //console.log('#######distanceEnd', distanceEnd, action, lineEnd);
-      return lineEnd;
-    }
-  }
-  return point;
-};
-
-export const checkDistanceFromLine = (point: Position, xy: Position[]) => {
-  if (xy.length < 2) return { isFar: true, index: -1 };
-  const SNAP_DISTANCE = 800;
-  const snapped = getLineSnappedPosition(point, xy);
+export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[]) => {
+  if (xyLine.length < 2) return { isFar: true, index: -1 };
+  const SNAP_DISTANCE = 500;
+  const snapped = getLineSnappedPosition(xyPoint, xyLine, { isXY: true });
   return { isFar: snapped.distance > SNAP_DISTANCE, index: snapped.index };
 };
 
 export const modifyLine = (
   original: {
+    id: string;
     record: RecordType | undefined;
     xy: Position[];
-    coords: LocationType[];
-    properties: (DrawLineToolType | '')[];
-    arrow: number;
+    latlon: Position[];
+    properties: string[];
   },
   modified: {
     start: turf.helpers.Position;
@@ -308,7 +300,7 @@ export const modifyLine = (
   }
 };
 
-export const selecteFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
+export const selectFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
   try {
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return lineFeatures
@@ -324,7 +316,7 @@ export const selecteFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCo
   }
 };
 
-export const selecteFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoords: Position, radius: number) => {
+export const selectFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoords: Position, radius: number) => {
   try {
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = lineFeatures
@@ -353,3 +345,7 @@ export const calcDegreeRadius = (
   },
   mapSize: { width: number; height: number }
 ) => Math.min(mapRegion.longitudeDelta / mapSize.width, mapRegion.latitudeDelta / mapSize.height) * size;
+
+export const booleanNearEqual = (p1: Position, p2: Position) => {
+  return Math.abs(p2[0] - p1[0]) <= 0.001 && Math.abs(p2[1] - p1[1]) <= 0.001;
+};

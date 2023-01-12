@@ -29,7 +29,6 @@ import {
   PointToolType,
   LineToolType,
   FeatureButtonType,
-  DrawLineToolType,
   TrackingStateType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
@@ -40,12 +39,11 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { HomePointTools } from '../organisms/HomePointTools';
 import { Position } from '@turf/turf';
 import { SvgView } from '../organisms/HomeSvgView';
-import { isDrawTool, isSelectionTool, nearDegree } from '../../utils/General';
+import { nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
-import { HomeModalTermsOfUse } from '../organisms/HomeModalTermsOfUse';
 import { useWindow } from '../../hooks/useWindow';
 
 export interface HomeProps {
@@ -71,13 +69,13 @@ export interface HomeProps {
   zoomDecimal: number;
   isEditingLine: boolean;
   drawLine: {
+    id: string;
     record: RecordType | undefined;
     xy: Position[];
-    coords: LocationType[];
-    properties: (DrawLineToolType | '')[];
-    arrow: number;
+    latlon: Position[];
+    properties: string[];
   }[];
-  modifiedLine: {
+  editingLine: {
     start: Position;
     xy: Position[];
   };
@@ -96,8 +94,6 @@ export interface HomeProps {
       }
     | undefined;
   draggablePoint: boolean;
-  isTermsOfUseOpen: boolean;
-  drawToolsSettings: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
   isDataOpened: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
@@ -120,8 +116,6 @@ export interface HomeProps {
   pressUndoEditLine: () => void;
   pressSaveEditLine: () => void;
   pressDeleteLine: () => void;
-  pressTermsOfUseOK: () => void;
-  pressTermsOfUseCancel: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
@@ -151,7 +145,7 @@ export default function HomeScreen({
   zoomDecimal,
   isEditingLine,
   drawLine,
-  modifiedLine,
+  editingLine,
   selectLine,
   tileMaps,
   isOffline,
@@ -164,7 +158,6 @@ export default function HomeScreen({
   currentLineTool,
   selectedRecord,
   draggablePoint,
-  isTermsOfUseOpen,
   isDataOpened,
   isLoading,
   onRegionChangeMapView,
@@ -186,8 +179,6 @@ export default function HomeScreen({
   pressUndoEditLine,
   pressSaveEditLine,
   pressDeleteLine,
-  pressTermsOfUseOK,
-  pressTermsOfUseCancel,
   gotoMaps,
   gotoSettings,
   gotoLayers,
@@ -291,10 +282,10 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(currentLineTool) || isSelectionTool(currentLineTool) || currentLineTool === 'MOVE') && (
+        {currentLineTool !== 'NONE' && (
           <SvgView
             drawLine={drawLine}
-            modifiedLine={modifiedLine}
+            editingLine={editingLine}
             selectLine={selectLine}
             currentLineTool={currentLineTool}
             onPress={onPressSvgView}
@@ -456,7 +447,7 @@ export default function HomeScreen({
               <HomeLineTools
                 isPositionRight={isDataOpened === 'opened' || isLandscape}
                 isEditing={isEditingLine}
-                isSelected={drawLine.length > 0}
+                isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
                 currentLineTool={currentLineTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
@@ -481,12 +472,6 @@ export default function HomeScreen({
             )}
           </>
         )}
-
-        <HomeModalTermsOfUse
-          visible={isTermsOfUseOpen}
-          pressOK={pressTermsOfUseOK}
-          pressCancel={pressTermsOfUseCancel}
-        />
       </View>
     </View>
   );

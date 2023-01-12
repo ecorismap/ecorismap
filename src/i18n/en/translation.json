@@ -599,7 +599,7 @@
       "message": {
         "inputLayerName": "Please enter a layer name.",
         "inputFieldName": "Please enter a field name.",
-        "referencedDataId": "_ReferencedDataId is not available.",
+        "_id": "_id is not available.",
         "inputListItem": "Set the items in the list.",
         "inputRadioItem": "Set the radio button item.",
         "inputCheckItem": "Set the checkbox item.",

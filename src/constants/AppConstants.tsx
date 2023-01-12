@@ -147,7 +147,7 @@ export const POINTTOOL = {
   NONE: 'none',
 } as const;
 
-export const DRAWLINETOOL = {
+export const DRAWTOOL = {
   DRAW: 'lead-pencil',
   AREA: 'shape-circle-plus',
 } as const;
@@ -158,13 +158,12 @@ export const SELECTIONTOOL = {
 } as const;
 
 export const LINETOOL = {
-  ...DRAWLINETOOL,
+  ...DRAWTOOL,
   ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',
-  SETTING: 'cog',
   NONE: 'none',
   ...HISYOUTOOL,
 } as const;
