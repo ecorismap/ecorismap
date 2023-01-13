@@ -465,6 +465,7 @@ export const useFeature = (): UseFeatureReturnType => {
 
       data.coords.latitude = coordinate.latitude;
       data.coords.longitude = coordinate.longitude;
+      if (data.coords.ele !== undefined) data.coords.ele = undefined;
       dispatch(updateRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [data] }));
     },
     [dataUser.uid, dispatch]

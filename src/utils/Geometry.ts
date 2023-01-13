@@ -17,120 +17,124 @@ export const Gpx2Data = (
   userId: string | undefined,
   displayName: string | null
 ) => {
-  //console.log(type);
-  const newLayer: LayerType = {
-    id: uuidv4(),
-    name: sanitize(fileName),
-    type: type,
-    permission: 'PRIVATE',
-    colorStyle: {
-      colorType: 'SINGLE',
-      transparency: 0.8,
-      color: COLOR.RED,
-      fieldName: '',
-      colorRamp: 'RANDOM',
-      colorList: [],
-    },
-    label: 'name',
-    visible: true,
-    active: false,
-    field: [
-      { id: uuidv4(), name: 'name', format: 'STRING' },
-      { id: uuidv4(), name: 'time', format: 'DATETIME' },
-      { id: uuidv4(), name: 'cmt', format: 'STRING' },
-    ],
-  };
+  try {
+    //console.log(type);
+    const newLayer: LayerType = {
+      id: uuidv4(),
+      name: sanitize(fileName),
+      type: type,
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        transparency: 0.8,
+        color: COLOR.RED,
+        fieldName: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+      },
+      label: 'name',
+      visible: true,
+      active: false,
+      field: [
+        { id: uuidv4(), name: 'name', format: 'STRING' },
+        { id: uuidv4(), name: 'time', format: 'DATETIME' },
+        { id: uuidv4(), name: 'cmt', format: 'STRING' },
+      ],
+    };
 
-  const json = parse(gpx, {
-    ignoreAttributes: false,
-    attributeNamePrefix: '',
-  });
-  const gpxkey = Object.keys(json)[0];
-  //console.log(json[gpxkey]);
-  let importedData: RecordType[] = [];
+    const json = parse(gpx, {
+      ignoreAttributes: false,
+      attributeNamePrefix: '',
+    });
+    const gpxkey = Object.keys(json)[0];
+    //console.log(json[gpxkey]);
+    let importedData: RecordType[] = [];
 
-  switch (type) {
-    case 'POINT':
-      const wpts = json[gpxkey].wpt ? (Array.isArray(json[gpxkey].wpt) ? json[gpxkey].wpt : [json[gpxkey].wpt]) : [];
-      importedData = wpts.map((d: any) => {
-        const { isOK: latIsOK, result: lat } = formattedInputs(d.lat, 'latitude-decimal', false);
-        const { isOK: lonIsOK, result: lon } = formattedInputs(d.lon, 'longitude-decimal', false);
-        const time = dayjs(d.time);
-        const ele = isNaN(d.ele) || d.ele === '' ? undefined : d.ele;
-        const record: RecordType = {
-          id: uuidv4(),
-          userId: userId,
-          displayName: displayName,
-          redraw: false,
-          visible: true,
-          coords: {
-            latitude: latIsOK ? Number(lat as string) : 0,
-            longitude: lonIsOK ? Number(lon as string) : 0,
-            ele: ele,
-          },
-          field: {
-            name: d.name ? d.name : '',
-            time: time.isValid() ? time.format() : '',
-            cmt: d.cmt ? d.cmt : '',
-          },
-        };
-        return record;
-      });
+    switch (type) {
+      case 'POINT':
+        const wpts = json[gpxkey].wpt ? (Array.isArray(json[gpxkey].wpt) ? json[gpxkey].wpt : [json[gpxkey].wpt]) : [];
+        importedData = wpts.map((d: any) => {
+          const { isOK: latIsOK, result: lat } = formattedInputs(d.lat, 'latitude-decimal', false);
+          const { isOK: lonIsOK, result: lon } = formattedInputs(d.lon, 'longitude-decimal', false);
+          const time = dayjs(d.time);
+          const ele = isNaN(d.ele) || d.ele === '' ? undefined : d.ele;
+          const record: RecordType = {
+            id: uuidv4(),
+            userId: userId,
+            displayName: displayName,
+            redraw: false,
+            visible: true,
+            coords: {
+              latitude: latIsOK ? Number(lat as string) : 0,
+              longitude: lonIsOK ? Number(lon as string) : 0,
+              ele: ele,
+            },
+            field: {
+              name: d.name ? d.name : '',
+              time: time.isValid() ? time.format() : '',
+              cmt: d.cmt ? d.cmt : '',
+            },
+          };
+          return record;
+        });
 
-      //console.log(importedData);
-      break;
-    case 'LINE': {
-      const trks = json[gpxkey].trk ? (Array.isArray(json[gpxkey].trk) ? json[gpxkey].trk : [json[gpxkey].trk]) : [];
+        //console.log(importedData);
+        break;
+      case 'LINE': {
+        const trks = json[gpxkey].trk ? (Array.isArray(json[gpxkey].trk) ? json[gpxkey].trk : [json[gpxkey].trk]) : [];
 
-      importedData = trks.map((trk: any) => {
-        const trksegs = Array.isArray(trk.trkseg) ? trk.trkseg : [trk.trkseg];
-        //console.log(trksegs[0]);
-        const coords: LocationType[] = trksegs
-          .map((trackseg: any) =>
-            trackseg.trkpt.map((trkpt: any) => {
-              const { isOK: latIsOK, result: lat } = formattedInputs(trkpt.lat, 'latitude-decimal', false);
-              const { isOK: lonIsOK, result: lon } = formattedInputs(trkpt.lon, 'longitude-decimal', false);
+        importedData = trks.map((trk: any) => {
+          const trksegs = Array.isArray(trk.trkseg) ? trk.trkseg : [trk.trkseg];
+          //console.log(trksegs[0]);
+          const coords: LocationType[] = trksegs
+            .map((trackseg: any) =>
+              trackseg.trkpt.map((trkpt: any) => {
+                const { isOK: latIsOK, result: lat } = formattedInputs(trkpt.lat, 'latitude-decimal', false);
+                const { isOK: lonIsOK, result: lon } = formattedInputs(trkpt.lon, 'longitude-decimal', false);
 
-              const time = dayjs(trkpt.time);
-              const ele = isNaN(trkpt.ele) || trkpt.ele === '' ? undefined : trkpt.ele;
-              return {
-                latitude: latIsOK ? Number(lat as string) : 0,
-                longitude: lonIsOK ? Number(lon as string) : 0,
-                timestamp: trkpt.time !== undefined && time.isValid() ? time.valueOf() : undefined,
-                ele: ele,
-              };
-            })
-          )
-          .flat();
-        //console.log(coords[0]);
-        //トラックの最初のポイントの時間をtimeとする。trk.timeは無い場合があるため。
-        const firstTrkptTime = trksegs[0]?.trkpt[0]?.time;
-        const time = trk.time !== undefined ? dayjs(trk.time) : dayjs(firstTrkptTime);
+                const time = dayjs(trkpt.time);
+                const ele = isNaN(trkpt.ele) || trkpt.ele === '' ? undefined : trkpt.ele;
+                return {
+                  latitude: latIsOK ? Number(lat as string) : 0,
+                  longitude: lonIsOK ? Number(lon as string) : 0,
+                  timestamp: trkpt.time !== undefined && time.isValid() ? time.valueOf() : undefined,
+                  ele: ele,
+                };
+              })
+            )
+            .flat();
+          //console.log(coords[0]);
+          //トラックの最初のポイントの時間をtimeとする。trk.timeは無い場合があるため。
+          const firstTrkptTime = trksegs[0]?.trkpt[0]?.time;
+          const time = trk.time !== undefined ? dayjs(trk.time) : dayjs(firstTrkptTime);
 
-        const record: RecordType = {
-          id: uuidv4(),
-          userId: userId,
-          displayName: displayName,
-          redraw: false,
-          visible: true,
-          coords: coords,
-          centroid: coords[coords.length - 1],
-          field: {
-            name: trk.name ? trk.name : '',
-            time: firstTrkptTime !== undefined && time.isValid() ? time.format() : '',
-            cmt: trk.cmt ? trk.cmt : '',
-          },
-        };
-        //console.log('%%%', trk);
-        return record;
-      });
-      break;
+          const record: RecordType = {
+            id: uuidv4(),
+            userId: userId,
+            displayName: displayName,
+            redraw: false,
+            visible: true,
+            coords: coords,
+            centroid: coords[coords.length - 1],
+            field: {
+              name: trk.name ? trk.name : '',
+              time: firstTrkptTime !== undefined && time.isValid() ? time.format() : '',
+              cmt: trk.cmt ? trk.cmt : '',
+            },
+          };
+          //console.log('%%%', trk);
+          return record;
+        });
+        break;
+      }
+      case 'POLYGON':
+        break;
     }
-    case 'POLYGON':
-      break;
+    //console.log(importedData.map((n) => n.name));
+    return { layer: newLayer, recordSet: importedData };
+  } catch (e) {
+    return undefined;
   }
-  //console.log(importedData.map((n) => n.name));
-  return { layer: newLayer, recordSet: importedData };
 };
 
 export const GeoJson2Data = (
@@ -140,49 +144,23 @@ export const GeoJson2Data = (
   userId: string | undefined,
   displayName: string | null
 ) => {
-  const json = JSON.parse(geojson);
-  const fields = Object.keys(json.features[0].properties).map((fieldName) => ({
-    id: uuidv4(),
-    name: fieldName,
-    format: 'STRING' as FormatType,
-  }));
+  try {
+    const json = JSON.parse(geojson);
+    if (json.features === undefined || json.features.length === 0) return undefined;
+    const fields = Object.keys(json.features[0].properties).map((fieldName) => ({
+      id: uuidv4(),
+      name: fieldName,
+      format: 'STRING' as FormatType,
+    }));
 
-  let featureType: FeatureType = 'NONE';
-  let importedData: RecordType[] = [];
-  switch (type) {
-    case 'POINT':
-      featureType = 'POINT';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'Point')
-        .map((feature: any) => {
-          const baseData = {
-            id: uuidv4(),
-            userId: userId,
-            displayName: displayName,
-            redraw: false,
-            visible: true,
-          };
-          const coordsData = {
-            coords: {
-              longitude: feature.geometry.coordinates[0],
-              latitude: feature.geometry.coordinates[1],
-            },
-          };
-          const fieldsData = fields
-            .map((field) => ({
-              [field.name]: feature.properties[field.name] || '',
-            }))
-            .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-          const record = { ...baseData, ...coordsData, field: fieldsData };
-          return record;
-        });
-      break;
-    case 'MULTIPOINT':
-      featureType = 'POINT';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'MultiPoint')
-        .map((feature: any) => {
-          return feature.geometry.coordinates.map((partCoords: any) => {
+    let featureType: FeatureType = 'NONE';
+    let importedData: RecordType[] = [];
+    switch (type) {
+      case 'POINT':
+        featureType = 'POINT';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'Point')
+          .map((feature: any) => {
             const baseData = {
               id: uuidv4(),
               userId: userId,
@@ -192,60 +170,56 @@ export const GeoJson2Data = (
             };
             const coordsData = {
               coords: {
-                longitude: partCoords[0],
-                latitude: partCoords[1],
+                longitude: feature.geometry.coordinates[0],
+                latitude: feature.geometry.coordinates[1],
               },
             };
-
             const fieldsData = fields
               .map((field) => ({
                 [field.name]: feature.properties[field.name] || '',
               }))
               .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-            const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
+            const record = { ...baseData, ...coordsData, field: fieldsData };
             return record;
           });
-        })
-        .flat();
+        break;
+      case 'MULTIPOINT':
+        featureType = 'POINT';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'MultiPoint')
+          .map((feature: any) => {
+            return feature.geometry.coordinates.map((partCoords: any) => {
+              const baseData = {
+                id: uuidv4(),
+                userId: userId,
+                displayName: displayName,
+                redraw: false,
+                visible: true,
+              };
+              const coordsData = {
+                coords: {
+                  longitude: partCoords[0],
+                  latitude: partCoords[1],
+                },
+              };
 
-      break;
-    case 'LINE':
-      featureType = 'LINE';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'LineString')
-        .map((feature: any) => {
-          const baseData = {
-            id: uuidv4(),
-            userId: userId,
-            displayName: displayName,
-            redraw: false,
-            visible: true,
-          };
-          const coordsData = {
-            coords: feature.geometry.coordinates.map((coords: any) => ({
-              longitude: coords[0],
-              latitude: coords[1],
-            })),
-            centroid: {
-              longitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][0],
-              latitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][1],
-            },
-          };
-          const fieldsData = fields
-            .map((field) => ({
-              [field.name]: feature.properties[field.name] || '',
-            }))
-            .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-          const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-          return record;
-        });
-      break;
-    case 'MULTILINE':
-      featureType = 'LINE';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'MultiLineString')
-        .map((feature: any) => {
-          return feature.geometry.coordinates.map((partCoords: any) => {
+              const fieldsData = fields
+                .map((field) => ({
+                  [field.name]: feature.properties[field.name] || '',
+                }))
+                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
+              return record;
+            });
+          })
+          .flat();
+
+        break;
+      case 'LINE':
+        featureType = 'LINE';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'LineString')
+          .map((feature: any) => {
             const baseData = {
               id: uuidv4(),
               userId: userId,
@@ -254,16 +228,15 @@ export const GeoJson2Data = (
               visible: true,
             };
             const coordsData = {
-              coords: partCoords.map((coords: any) => ({
+              coords: feature.geometry.coordinates.map((coords: any) => ({
                 longitude: coords[0],
                 latitude: coords[1],
               })),
               centroid: {
-                longitude: partCoords[partCoords.length - 1][0],
-                latitude: partCoords[partCoords.length - 1][1],
+                longitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][0],
+                latitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][1],
               },
             };
-
             const fieldsData = fields
               .map((field) => ({
                 [field.name]: feature.properties[field.name] || '',
@@ -272,67 +245,49 @@ export const GeoJson2Data = (
             const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
             return record;
           });
-        })
-        .flat();
+        break;
+      case 'MULTILINE':
+        featureType = 'LINE';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'MultiLineString')
+          .map((feature: any) => {
+            return feature.geometry.coordinates.map((partCoords: any) => {
+              const baseData = {
+                id: uuidv4(),
+                userId: userId,
+                displayName: displayName,
+                redraw: false,
+                visible: true,
+              };
+              const coordsData = {
+                coords: partCoords.map((coords: any) => ({
+                  longitude: coords[0],
+                  latitude: coords[1],
+                })),
+                centroid: {
+                  longitude: partCoords[partCoords.length - 1][0],
+                  latitude: partCoords[partCoords.length - 1][1],
+                },
+              };
 
-      break;
+              const fieldsData = fields
+                .map((field) => ({
+                  [field.name]: feature.properties[field.name] || '',
+                }))
+                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
+              return record;
+            });
+          })
+          .flat();
 
-    case 'POLYGON':
-      featureType = 'POLYGON';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'Polygon')
-        .map((feature: any) => {
-          const baseData = {
-            id: uuidv4(),
-            userId: userId,
-            displayName: displayName,
-            redraw: false,
-            visible: true,
-          };
-          const polygon = turf.polygon(feature.geometry.coordinates);
-          const simplified = simplify(polygon, {
-            tolerance: 0.00001,
-            highQuality: true,
-          });
-          //console.log(simplified);
-          const coordsData = {
-            coords: simplified.geometry.coordinates[0].map((coords: any) => ({
-              longitude: coords[0],
-              latitude: coords[1],
-            })),
-            holes: simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
-              const holeArray = hole.map((coords: any) => ({
-                longitude: coords[0],
-                latitude: coords[1],
-              }));
-              return { ...result, [`hole${index}`]: holeArray };
-            }, {}),
-            centroid: {
-              longitude:
-                feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[0], 0) /
-                feature.geometry.coordinates[0].length,
-              latitude:
-                feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[1], 0) /
-                feature.geometry.coordinates[0].length,
-            },
-          };
+        break;
 
-          const fieldsData = fields
-            .map((field) => ({
-              [field.name]: feature.properties[field.name] || '',
-            }))
-            .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-          //console.log({ ...baseData, ...fieldsData });
-          const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-          return record;
-        });
-      break;
-    case 'MULTIPOLYGON':
-      featureType = 'POLYGON';
-      importedData = json.features
-        .filter((feature: any) => feature.geometry.type === 'MultiPolygon')
-        .map((feature: any) => {
-          return feature.geometry.coordinates.map((partCoords: any) => {
+      case 'POLYGON':
+        featureType = 'POLYGON';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'Polygon')
+          .map((feature: any) => {
             const baseData = {
               id: uuidv4(),
               userId: userId,
@@ -340,14 +295,13 @@ export const GeoJson2Data = (
               redraw: false,
               visible: true,
             };
-
-            const polygon = turf.polygon(partCoords);
+            const polygon = turf.polygon(feature.geometry.coordinates);
             const simplified = simplify(polygon, {
               tolerance: 0.00001,
               highQuality: true,
             });
+            //console.log(simplified);
             const coordsData = {
-              //MultiPolygon
               coords: simplified.geometry.coordinates[0].map((coords: any) => ({
                 longitude: coords[0],
                 latitude: coords[1],
@@ -359,46 +313,101 @@ export const GeoJson2Data = (
                 }));
                 return { ...result, [`hole${index}`]: holeArray };
               }, {}),
-
               centroid: {
-                longitude: partCoords[0].reduce((p: any, c: any) => p + c[0], 0) / partCoords[0].length,
-                latitude: partCoords[0].reduce((p: any, c: any) => p + c[1], 0) / partCoords[0].length,
+                longitude:
+                  feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[0], 0) /
+                  feature.geometry.coordinates[0].length,
+                latitude:
+                  feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[1], 0) /
+                  feature.geometry.coordinates[0].length,
               },
             };
+
             const fieldsData = fields
               .map((field) => ({
                 [field.name]: feature.properties[field.name] || '',
               }))
               .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-            //console.log(feature.properties.name);
+            //console.log({ ...baseData, ...fieldsData });
             const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
             return record;
           });
-        })
-        .flat();
-      break;
+        break;
+      case 'MULTIPOLYGON':
+        featureType = 'POLYGON';
+        importedData = json.features
+          .filter((feature: any) => feature.geometry.type === 'MultiPolygon')
+          .map((feature: any) => {
+            return feature.geometry.coordinates.map((partCoords: any) => {
+              const baseData = {
+                id: uuidv4(),
+                userId: userId,
+                displayName: displayName,
+                redraw: false,
+                visible: true,
+              };
+
+              const polygon = turf.polygon(partCoords);
+              const simplified = simplify(polygon, {
+                tolerance: 0.00001,
+                highQuality: true,
+              });
+              const coordsData = {
+                //MultiPolygon
+                coords: simplified.geometry.coordinates[0].map((coords: any) => ({
+                  longitude: coords[0],
+                  latitude: coords[1],
+                })),
+                holes: simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
+                  const holeArray = hole.map((coords: any) => ({
+                    longitude: coords[0],
+                    latitude: coords[1],
+                  }));
+                  return { ...result, [`hole${index}`]: holeArray };
+                }, {}),
+
+                centroid: {
+                  longitude: partCoords[0].reduce((p: any, c: any) => p + c[0], 0) / partCoords[0].length,
+                  latitude: partCoords[0].reduce((p: any, c: any) => p + c[1], 0) / partCoords[0].length,
+                },
+              };
+              const fieldsData = fields
+                .map((field) => ({
+                  [field.name]: feature.properties[field.name] || '',
+                }))
+                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+              //console.log(feature.properties.name);
+              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
+              return record;
+            });
+          })
+          .flat();
+        break;
+    }
+
+    const newLayer: LayerType = {
+      id: uuidv4(),
+      name: sanitize(fileName),
+      type: featureType,
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        transparency: 0.8,
+        color: COLOR.RED,
+        fieldName: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+      },
+      label: '',
+      visible: true,
+      active: false,
+      field: fields,
+    };
+
+    return { layer: newLayer, recordSet: importedData };
+  } catch (e) {
+    return undefined;
   }
-
-  const newLayer: LayerType = {
-    id: uuidv4(),
-    name: sanitize(fileName),
-    type: featureType,
-    permission: 'PRIVATE',
-    colorStyle: {
-      colorType: 'SINGLE',
-      transparency: 0.8,
-      color: COLOR.RED,
-      fieldName: '',
-      colorRamp: 'RANDOM',
-      colorList: [],
-    },
-    label: '',
-    visible: true,
-    active: false,
-    field: fields,
-  };
-
-  return { layer: newLayer, recordSet: importedData };
 };
 
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {

@@ -142,11 +142,12 @@ export const useLayers = (): UseLayersReturnType => {
 
   const importGPX = useCallback(
     (gpx: string, featureType: FeatureType, importFileName: string) => {
-      const { layer, recordSet } = Gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
+      const data = Gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
+      if (data === undefined) return;
       //console.log(recordSet[0].field);
-      if (recordSet.length > 0) {
-        dispatch(addLayerAction(layer));
-        dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));
+      if (data.recordSet.length > 0) {
+        dispatch(addLayerAction(data.layer));
+        dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
     },
     [dispatch, dataUser.displayName, dataUser.uid]
@@ -154,17 +155,15 @@ export const useLayers = (): UseLayersReturnType => {
 
   const importGeoJson = useCallback(
     (geojson: string, featureType: GeoJsonFeatureType, importFileName: string) => {
-      const { layer, recordSet } = GeoJson2Data(
-        geojson,
-        featureType,
-        importFileName,
-        dataUser.uid,
-        dataUser.displayName
-      );
+      const data = GeoJson2Data(geojson, featureType, importFileName, dataUser.uid, dataUser.displayName);
+      if (data === undefined) {
+        return;
+      }
+
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
-      if (recordSet.length > 0) {
-        dispatch(addLayerAction(layer));
-        dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));
+      if (data.recordSet.length > 0) {
+        dispatch(addLayerAction(data.layer));
+        dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
     },
     [dispatch, dataUser.displayName, dataUser.uid]
