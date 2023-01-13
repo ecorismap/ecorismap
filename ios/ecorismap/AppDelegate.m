@@ -5,6 +5,7 @@
 #import <React/RCTRootView.h>
 #import <React/RCTLinkingManager.h>
 #import <React/RCTConvert.h>
+#import <Firebase.h>
 #import <GoogleMaps/GoogleMaps.h>
 
 #if defined(FB_SONARKIT_ENABLED) && __has_include(<FlipperKit/FlipperClient.h>)
@@ -15,8 +16,6 @@
 #import <SKIOSNetworkPlugin/SKIOSNetworkAdapter.h>
 #import <FlipperKitReactPlugin/FlipperKitReactPlugin.h>
 
-#import <Firebase.h>
-[FIRApp configure];
 
 static void InitializeFlipper(UIApplication *application) {
   FlipperClient *client = [FlipperClient sharedClient];
@@ -33,6 +32,7 @@ static void InitializeFlipper(UIApplication *application) {
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  [FIRApp configure];
   NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps" ofType:@"plist"];
   NSDictionary *plistDictionary = [NSDictionary dictionaryWithContentsOfFile:filePath];
   NSString *mapsAPIKey = [plistDictionary objectForKey:@"APIKey"];
