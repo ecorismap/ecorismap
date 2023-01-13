@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Image, Modal, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Modal, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 import { SelectedPhotoType } from '../../types';
@@ -15,21 +16,21 @@ interface Props {
 }
 
 export const DataEditModalPhotoView = (props: Props) => {
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
   const { visible, photo, pressClose, pressRemove, pressDownloadPhoto } = props;
 
   const photoSize = useMemo(() => {
     return {
-      width: photo.width > photo.height ? screenData.width * 1 : screenData.width * 1 * 0.75,
-      height: photo.width < photo.height ? screenData.width * 1 : screenData.width * 1 * 0.75,
+      width: photo.width > photo.height ? windowWidth * 1 : windowWidth * 1 * 0.75,
+      height: photo.width < photo.height ? windowWidth * 1 : windowWidth * 1 * 0.75,
     };
-  }, [photo, screenData]);
+  }, [photo.height, photo.width, windowWidth]);
 
   //console.log(photo);
   return (
     <Modal animationType="none" transparent={false} visible={visible}>
       <View style={styles.modalCenteredView}>
-        <View style={[styles.modalContents, { width: screenData.width * 1 }]}>
+        <View style={[styles.modalContents, { width: windowWidth * 1 }]}>
           {photo.hasLocal && photo.uri ? (
             <View style={{ flex: 10 }}>
               <Image
@@ -51,7 +52,7 @@ export const DataEditModalPhotoView = (props: Props) => {
               </View>
             </View>
           )}
-          <View style={[styles.modalButtonContainer, { width: screenData.width * 0.6 }]}>
+          <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
             <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressClose}>
               <Text>{t('common.close')}</Text>
             </TouchableOpacity>
