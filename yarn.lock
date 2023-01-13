@@ -12670,8 +12670,9 @@ react-native-get-random-values@^1.8.0:
   dependencies:
     fast-base64-decode "^1.0.0"
 
-react-native-hsv-color-picker@../react-native-hsv-color-picker:
+"react-native-hsv-color-picker@https://github.com/ecorismap/react-native-hsv-color-picker#update_package":
   version "1.0.2"
+  resolved "https://github.com/ecorismap/react-native-hsv-color-picker#cba23971d3b47efb5b86e014124adb56c04bacf9"
   dependencies:
     chroma-js "^2.1.0"
     expo-linear-gradient "^10.0.1"

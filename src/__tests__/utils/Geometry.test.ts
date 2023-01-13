@@ -57,10 +57,14 @@ describe('Gpx2Data', () => {
     });
   });
 
+  it('return undefined from invalid gpx', () => {
+    expect(Gpx2Data('invalid gpx', 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual(undefined);
+  });
+
   it('return track from valid gpx', () => {
     jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
-    const checkValue = data.recordSet.map(({ coords, field }) => ({ coords, field }));
+    const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
         coords: [
@@ -75,7 +79,7 @@ describe('Gpx2Data', () => {
   it('return track from invalid gpx', () => {
     jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
-    const checkValue = data.recordSet.map(({ coords, field }) => ({ coords, field }));
+    const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
         coords: [
@@ -90,7 +94,7 @@ describe('Gpx2Data', () => {
   it('return point from valid gpx', () => {
     jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
-    const checkValue = data.recordSet.map(({ coords, field }) => ({ coords, field }));
+    const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
         coords: { ele: 376.451477, latitude: 38.196045763864404, longitude: 140.88482022285461 },
@@ -107,7 +111,7 @@ describe('Gpx2Data', () => {
 it('return  point from invalid gpx', () => {
   jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
   const data = Gpx2Data(invalid_point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
-  const checkValue = data.recordSet.map(({ coords, field }) => ({ coords, field }));
+  const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
   expect(checkValue).toStrictEqual([
     {
       coords: { ele: undefined, latitude: 38.196045763864404, longitude: 140.88482022285461 },
@@ -166,6 +170,10 @@ describe('GeoJson2Data', () => {
         visible: true,
       },
     });
+  });
+
+  it('return undefine from invalid geojson', () => {
+    expect(GeoJson2Data('invalid geojson', 'POINT', 'test.geojson', '34-56', 'user1')).toStrictEqual(undefined);
   });
 });
 

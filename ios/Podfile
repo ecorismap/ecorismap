@@ -47,7 +47,7 @@ target 'ecorismap' do
   pod 'GoogleMaps'
   pod 'Google-Maps-iOS-Utils'
   pod 'Firebase/Analytics'
-
+  
   post_install do |installer|
     react_native_post_install(installer)
     # Add these lines for Xcode 14 builds
