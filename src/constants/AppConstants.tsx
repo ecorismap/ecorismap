@@ -1,9 +1,13 @@
 import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
+import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.1.10';
 
+export const PLUGIN = {
+  HISYOUTOOL: true,
+};
 export const COLOR = {
   MAIN: '#f2f2f2',
   GRAY0: '#f9f9f9',
@@ -18,6 +22,7 @@ export const COLOR = {
   ALFABLUE: '#007AFF55',
   ALFABLUE2: '#007AFF44',
   YELLOW: '#FFF100',
+  ALFAYELLOW: '#FFF10055',
   RED: '#ff0000',
   ALFARED: '#ff000055',
   DARKRED: 'darkred',
@@ -142,19 +147,25 @@ export const POINTTOOL = {
   NONE: 'none',
 } as const;
 
-export const DRAWLINETOOL = {
+export const DRAWTOOL = {
   DRAW: 'lead-pencil',
+  AREA: 'shape-circle-plus',
+} as const;
+
+export const SELECTIONTOOL = {
+  SELECT: 'select',
+  INFO: 'cursor-default-click',
 } as const;
 
 export const LINETOOL = {
-  ...DRAWLINETOOL,
-  SELECT: 'cursor-default-click',
+  ...DRAWTOOL,
+  ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',
-  SETTING: 'cog',
   NONE: 'none',
+  ...HISYOUTOOL,
 } as const;
 
 export const HOME_FEATURE_BTN = {

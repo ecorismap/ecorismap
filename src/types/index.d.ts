@@ -10,7 +10,8 @@ import {
   ROLETYPE,
   POINTTOOL,
   LINETOOL,
-  DRAWLINETOOL,
+  DRAWTOOL,
+  SELECTIONTOOL,
   HOME_FEATURE_BTN,
   HOME_ACCOUNT_BTN,
   HOME_BTN,
@@ -67,14 +68,23 @@ export interface RecordType {
   id: string;
   userId: string | undefined;
   displayName: string | null;
-  //checked: boolean;
   visible: boolean;
   redraw: boolean;
   coords: LocationType | Array<LocationType>;
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
-  //[key: string]: unknown;
+}
+
+export interface LineRecordType {
+  id: string;
+  userId: string | undefined;
+  displayName: string | null;
+  visible: boolean;
+  redraw: boolean;
+  coords: Array<LocationType>;
+  centroid?: LocationType;
+  field: { [key: string]: string | number | PhotoType[] };
 }
 
 export interface TrackingType {
@@ -94,6 +104,14 @@ export interface ColorStyle {
   }[];
 }
 
+export interface FieldType {
+  id: string;
+  name: string;
+  format: FormatType;
+  list?: { value: string; isOther: boolean }[];
+  defaultValue?: string | number;
+}
+
 export interface LayerType {
   id: string;
   name: string;
@@ -103,13 +121,7 @@ export interface LayerType {
   label: string;
   visible: boolean;
   active: boolean;
-  field: {
-    id: string;
-    name: string;
-    format: FormatType;
-    list?: { value: string; isOther: boolean }[];
-    defaultValue?: string | number;
-  }[];
+  field: FieldType[];
 }
 
 export type LatLonDMSKey = 'latitude' | 'longitude';
@@ -200,7 +212,6 @@ export interface ProjectSettingsType {
   mapRegion: RegionType;
   layers: LayerType[];
   tileMaps: TileMapType[];
-  drawTools: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
 }
 
 export interface SettingsType {
@@ -220,11 +231,13 @@ export interface SettingsType {
   memberLocation: MemberLocationType[];
   tracking: TrackingType | undefined;
   isEditingRecord: boolean;
-  selectedRecord: {
-    layerId: string;
-    record: RecordType | undefined;
-  };
-  drawTools: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
+  selectedRecord:
+    | {
+        layerId: string;
+        record: RecordType;
+      }
+    | undefined;
+  plugins: any;
   photosToBeDeleted: {
     projectId: string;
     layerId: string;
@@ -283,7 +296,8 @@ export interface PositionFS {
 
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
-export type DrawLineToolType = keyof typeof DRAWLINETOOL;
+export type DrawToolType = keyof typeof DRAWTOOL;
+export type SelectionToolType = keyof typeof SELECTIONTOOL;
 export type PolygonToolType = 'NONE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;

@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 
 interface Props {
+  openDisabled?: boolean;
   selectedButton: string;
   directionRow: 'column' | 'row';
   children: any;
   isPositionRight?: boolean;
 }
 
-const SelectionalButton = React.memo((props: Props) => {
+const SelectionalLongPressButton = React.memo((props: Props) => {
   const [isButtonOpen, setButtonOpen] = useState(false);
-  const { selectedButton, directionRow, isPositionRight } = props;
+  const { openDisabled, selectedButton, directionRow, isPositionRight } = props;
 
   const styles = StyleSheet.create({
     button: {
@@ -35,6 +36,7 @@ const SelectionalButton = React.memo((props: Props) => {
                 setButtonOpen(false);
                 item.props.onPressCustom();
               },
+              onLongPress: () => {},
             });
 
             return (
@@ -46,8 +48,15 @@ const SelectionalButton = React.memo((props: Props) => {
         : React.Children.map(props.children, (item, index) => {
             if (item === null) return null;
             const newitem = React.cloneElement(item, {
+              onLongPress: () => {
+                if (openDisabled) {
+                  item.props.onPressCustom();
+                } else {
+                  setButtonOpen(true);
+                }
+              },
               onPress: () => {
-                setButtonOpen(true);
+                item.props.onPressCustom();
               },
             });
             return item.props.id === selectedButton ? (
@@ -60,4 +69,4 @@ const SelectionalButton = React.memo((props: Props) => {
   );
 });
 
-export default SelectionalButton;
+export default SelectionalLongPressButton;

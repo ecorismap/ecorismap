@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, Text, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -20,8 +20,7 @@ import { HomeProps } from './Home';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
-import { isDrawTool } from '../../utils/General';
-import { SvgLine } from '../organisms/HomeSvgLine';
+import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
@@ -31,6 +30,7 @@ import { maptilerKey } from '../../constants/APIKeys';
 import 'mapbox-gl/dist/mapbox-gl.css';
 //import mapStyle3D from '../../../style.json';
 import { useDropzone } from 'react-dropzone';
+import { useWindow } from '../../hooks/useWindow';
 
 export default function HomeScreen({
   pointDataSet,
@@ -42,23 +42,21 @@ export default function HomeScreen({
   savedTileSize,
   restored,
   mapViewRef,
-  mapRegion,
   gpsState,
   trackingState,
   currentLocation,
   zoom,
   zoomDecimal,
-  isEdited,
+  isEditingLine,
   drawLine,
-  modifiedLine,
+  editingLine,
+  selectLine,
   tileMaps,
   isDownloading,
   featureButton,
-  pointTool,
-  lineTool,
-  drawLineTool,
+  currentPointTool,
+  currentLineTool,
   selectedRecord,
-  panResponder,
   draggablePoint,
   isDataOpened,
   isLoading,
@@ -66,9 +64,10 @@ export default function HomeScreen({
   onPressMapView,
   onDragEndPoint,
   onPressPoint,
-  onPressLine,
-  onPressPolygon,
   onDrop,
+  onPressSvgView,
+  onMoveSvgView,
+  onReleaseSvgView,
   pressStopDownloadTiles,
   pressDeleteTiles,
   pressTracking,
@@ -84,7 +83,7 @@ export default function HomeScreen({
 }: HomeProps) {
   //console.log('render Home');
 
-  const window = useWindowDimensions();
+  const { mapRegion, windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
 
@@ -236,7 +235,7 @@ export default function HomeScreen({
     (event) => {
       const map = (mapViewRef.current as MapRef).getMap();
       //console.log(event);
-      if (selectedRecord && selectedRecord.record !== undefined) {
+      if (selectedRecord !== undefined && selectedRecord.record !== undefined) {
         //console.log('WWW', selectedRecord.record.userId);
         map.removeFeatureState({
           source: `${selectedRecord.layerId}_${selectedRecord.record.userId ?? ''}`,
@@ -264,7 +263,7 @@ export default function HomeScreen({
           );
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
           if (feature === undefined) return;
-          onPressLine(layer, feature);
+          //onPressLine(layer, feature);
         } else if (clickedFeature.layer.type === 'fill') {
           //console.log('layer:', layerId, ' user:', userId);
           const data = polygonDataSet.find(
@@ -274,7 +273,7 @@ export default function HomeScreen({
           const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
           //console.log(feature);
           if (feature === undefined) return;
-          onPressPolygon(layer, feature);
+          //onPressPolygon(layer, feature);
         }
       } else {
         //@ts-ignore
@@ -285,17 +284,7 @@ export default function HomeScreen({
         map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       }
     },
-    [
-      featureButton,
-      layers,
-      lineDataSet,
-      mapViewRef,
-      onPressLine,
-      onPressMapView,
-      onPressPolygon,
-      polygonDataSet,
-      selectedRecord,
-    ]
+    [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
   );
 
   const mapStyle: string | mapboxgl.Style = useMemo(() => {
@@ -405,12 +394,12 @@ export default function HomeScreen({
   }, [tileMaps]);
   //console.log(mapRegion);
   return !restored ? null : (
-    <View style={[styles.container, { flexDirection: window.width > window.height ? 'row' : 'column' }]}>
+    <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View
         style={{
           display: isDataOpened === 'closed' ? 'none' : 'flex',
           height: '100%',
-          width: isDataOpened === 'expanded' ? window.width : isDataOpened === 'opened' ? window.width / 2 : '0%',
+          width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
         }}
       >
         <DataRoutes />
@@ -418,21 +407,22 @@ export default function HomeScreen({
       <View
         style={{
           height: '100%',
-          width: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? window.width / 2 : window.width,
+          width: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
           justifyContent: 'flex-end',
           zIndex: 0,
           elevation: 0,
         }}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(lineTool) ||
-          (lineTool === 'SELECT' && selectedRecord.record !== undefined) ||
-          lineTool === 'MOVE') && (
-          <SvgLine
-            panResponder={panResponder}
+        {currentLineTool !== 'NONE' && (
+          <SvgView
             drawLine={drawLine}
-            modifiedLine={modifiedLine.current}
-            selectedRecord={selectedRecord}
+            editingLine={editingLine}
+            selectLine={selectLine}
+            currentLineTool={currentLineTool}
+            onPress={onPressSvgView}
+            onMove={onMoveSvgView}
+            onRelease={onReleaseSvgView}
           />
         )}
         <div {...getRootProps({ className: 'dropzone' })}>
@@ -503,7 +493,7 @@ export default function HomeScreen({
                       data={d.data}
                       layer={layer!}
                       zoom={zoom}
-                      onPressLine={(layer_, feature) => onPressLine(layer_, feature)}
+                      onPressLine={() => null}
                       zIndex={101}
                       selectedRecord={selectedRecord}
                     />
@@ -520,7 +510,7 @@ export default function HomeScreen({
                       data={d.data}
                       layer={layer!}
                       zoom={zoom}
-                      onPressPolygon={(layer_, feature) => onPressPolygon(layer_, feature)}
+                      onPressPolygon={() => null}
                       zIndex={100}
                     />
                   )
@@ -551,11 +541,10 @@ export default function HomeScreen({
           <>
             {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
               <HomeLineTools
-                isEdited={isEdited}
-                isSelected={(lineTool === 'SELECT' || lineTool === 'MOVE') && selectedRecord.record !== undefined}
-                openDisabled={selectedRecord.record === undefined || !isEdited}
-                lineTool={lineTool}
-                drawLineTool={drawLineTool}
+                isPositionRight={isDataOpened === 'opened' || isLandscape}
+                isEditing={isEditingLine}
+                isSelected={drawLine.length > 0}
+                currentLineTool={currentLineTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}
@@ -563,7 +552,7 @@ export default function HomeScreen({
               />
             )}
             {!isDownloadPage && featureButton === 'POINT' && isDataOpened !== 'expanded' && (
-              <HomePointTools pointTool={pointTool} selectPointTool={selectPointTool} />
+              <HomePointTools pointTool={currentPointTool} selectPointTool={selectPointTool} />
             )}
 
             {isDataOpened !== 'expanded' && (

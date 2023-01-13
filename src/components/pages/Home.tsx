@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, PanResponderInstance, useWindowDimensions, StatusBar } from 'react-native';
+import { StyleSheet, View, Platform, Text, GestureResponderEvent, PanResponderGestureState } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Region, MapEvent, UrlTile } from 'react-native-maps';
 import * as Location from 'expo-location';
 // @ts-ignore
@@ -24,13 +24,11 @@ import {
   LocationType,
   MapType,
   MemberLocationType,
-  RegionType,
   TileMapType,
   TileRegionType,
   PointToolType,
   LineToolType,
   FeatureButtonType,
-  DrawLineToolType,
   TrackingStateType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
@@ -40,13 +38,13 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { HomePointTools } from '../organisms/HomePointTools';
 import { Position } from '@turf/turf';
-import { SvgLine } from '../organisms/HomeSvgLine';
-import { isDrawTool, nearDegree } from '../../utils/General';
+import { SvgView } from '../organisms/HomeSvgView';
+import { nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
-import { HomeModalTermsOfUse } from '../organisms/HomeModalTermsOfUse';
+import { useWindow } from '../../hooks/useWindow';
 
 export interface HomeProps {
   pointDataSet: DataType[];
@@ -54,7 +52,6 @@ export interface HomeProps {
   polygonDataSet: DataType[];
   layers: LayerType[];
   memberLocations: MemberLocationType[];
-  mapRegion: RegionType;
   mapType: MapType;
   tileMaps: TileMapType[];
   isOffline: boolean;
@@ -70,33 +67,33 @@ export interface HomeProps {
   headingUp: boolean;
   zoom: number;
   zoomDecimal: number;
-  isEdited: boolean;
+  isEditingLine: boolean;
   drawLine: {
     id: string;
-    coords: Position[];
-    properties: (DrawLineToolType | '')[];
-    arrow: number;
+    record: RecordType | undefined;
+    xy: Position[];
+    latlon: Position[];
+    properties: string[];
   }[];
-  modifiedLine: React.MutableRefObject<{
+  editingLine: {
     start: Position;
-    coords: Position[];
-  }>;
+    xy: Position[];
+  };
+  selectLine: Position[];
   isDownloading: boolean;
   downloadArea: TileRegionType;
   savedArea: TileRegionType[];
   attribution: string;
   featureButton: FeatureButtonType;
-  pointTool: PointToolType;
-  lineTool: LineToolType;
-  drawLineTool: DrawLineToolType;
-  selectedRecord: {
-    layerId: string;
-    record: RecordType | undefined;
-  };
-  panResponder: PanResponderInstance;
+  currentPointTool: PointToolType;
+  currentLineTool: LineToolType;
+  selectedRecord:
+    | {
+        layerId: string;
+        record: RecordType;
+      }
+    | undefined;
   draggablePoint: boolean;
-  isTermsOfUseOpen: boolean;
-  drawToolsSettings: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
   isDataOpened: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
@@ -104,9 +101,10 @@ export interface HomeProps {
   onDragMapView: () => void;
   onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: RecordType) => void;
   onPressPoint: (layer: LayerType, feature: RecordType) => void;
-  onPressLine: (layer: LayerType, feature: RecordType) => void;
-  onPressPolygon: (layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
+  onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
+  onReleaseSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   pressZoomIn: () => void;
   pressZoomOut: () => void;
   pressCompass: () => void;
@@ -118,8 +116,6 @@ export interface HomeProps {
   pressUndoEditLine: () => void;
   pressSaveEditLine: () => void;
   pressDeleteLine: () => void;
-  pressTermsOfUseOK: () => void;
-  pressTermsOfUseCancel: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
@@ -139,7 +135,6 @@ export default function HomeScreen({
   savedTileSize,
   restored,
   mapViewRef,
-  mapRegion,
   mapType,
   gpsState,
   trackingState,
@@ -148,9 +143,10 @@ export default function HomeScreen({
   headingUp,
   zoom,
   zoomDecimal,
-  isEdited,
+  isEditingLine,
   drawLine,
-  modifiedLine,
+  editingLine,
+  selectLine,
   tileMaps,
   isOffline,
   isDownloading,
@@ -158,13 +154,10 @@ export default function HomeScreen({
   savedArea,
   attribution,
   featureButton,
-  pointTool,
-  lineTool,
-  drawLineTool,
+  currentPointTool,
+  currentLineTool,
   selectedRecord,
-  panResponder,
   draggablePoint,
-  isTermsOfUseOpen,
   isDataOpened,
   isLoading,
   onRegionChangeMapView,
@@ -172,8 +165,9 @@ export default function HomeScreen({
   onDragMapView,
   onDragEndPoint,
   onPressPoint,
-  onPressLine,
-  onPressPolygon,
+  onPressSvgView,
+  onMoveSvgView,
+  onReleaseSvgView,
   pressDownloadTiles,
   pressStopDownloadTiles,
   pressZoomIn,
@@ -185,8 +179,6 @@ export default function HomeScreen({
   pressUndoEditLine,
   pressSaveEditLine,
   pressDeleteLine,
-  pressTermsOfUseOK,
-  pressTermsOfUseCancel,
   gotoMaps,
   gotoSettings,
   gotoLayers,
@@ -196,44 +188,48 @@ export default function HomeScreen({
 }: HomeProps) {
   //console.log(Platform.Version);
   const navigation = useNavigation();
-  const window = useWindowDimensions();
-  const windowHeight = useMemo(() => {
-    const navigationHeaderHeight = isDownloadPage ? 56 : 0;
-    return StatusBar.currentHeight &&
-      ((Platform.OS === 'android' && Platform.Version < 30) || window.height < window.width)
-      ? window.height - StatusBar.currentHeight - navigationHeaderHeight
-      : window.height - navigationHeaderHeight;
-  }, [isDownloadPage, window.height, window.width]);
-  //const windowHeight = useMemo(() => window.height, [window.height]);
-  const windowWidth = useMemo(() => window.width, [window.width]);
+  const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
 
-  const dataStyle = useMemo(() => {
-    if (windowWidth > windowHeight) {
-      return {
-        height: windowHeight,
-        width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
-      };
-    } else {
-      return {
-        width: windowWidth,
-        height: isDataOpened === 'expanded' ? windowHeight : isDataOpened === 'opened' ? windowHeight / 2 : '0%',
-      };
-    }
-  }, [isDataOpened, windowHeight, windowWidth]);
+  const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
-  const mapStyle = useMemo(() => {
-    if (windowWidth > windowHeight) {
-      return {
-        height: windowHeight,
-        width: isDataOpened === 'expanded' ? '0%' : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
-      };
-    } else {
-      return {
-        width: windowWidth,
-        height: isDataOpened === 'expanded' ? '0%' : isDataOpened === 'opened' ? windowHeight / 2 : windowHeight,
-      };
-    }
-  }, [isDataOpened, windowHeight, windowWidth]);
+  const dataStyle = useMemo(
+    () =>
+      isLandscape
+        ? {
+            height: windowHeight - navigationHeaderHeight,
+            width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
+          }
+        : {
+            width: windowWidth - navigationHeaderHeight,
+            height:
+              isDataOpened === 'expanded'
+                ? windowHeight - navigationHeaderHeight
+                : isDataOpened === 'opened'
+                ? windowHeight / 2
+                : '0%',
+          },
+    [isDataOpened, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
+  );
+
+  const mapStyle = useMemo(
+    () =>
+      isLandscape
+        ? {
+            height: windowHeight - navigationHeaderHeight,
+            width: isDataOpened === 'expanded' ? '0%' : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
+          }
+        : {
+            width: windowWidth,
+            height:
+              isDataOpened === 'expanded'
+                ? '0%'
+                : isDataOpened === 'opened'
+                ? windowHeight / 2
+                : windowHeight - navigationHeaderHeight,
+          },
+    [isDataOpened, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
+  );
+
   //console.log('Home');
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
@@ -271,7 +267,7 @@ export default function HomeScreen({
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
   return !restored ? null : (
-    <View style={[styles.container, { flexDirection: windowWidth > windowHeight ? 'row' : 'column' }]}>
+    <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
         <DataRoutes />
       </View>
@@ -286,14 +282,15 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {(isDrawTool(lineTool) ||
-          (lineTool === 'SELECT' && selectedRecord.record !== undefined) ||
-          lineTool === 'MOVE') && (
-          <SvgLine
-            panResponder={panResponder}
+        {currentLineTool !== 'NONE' && (
+          <SvgView
             drawLine={drawLine}
-            modifiedLine={modifiedLine.current}
-            selectedRecord={selectedRecord}
+            editingLine={editingLine}
+            selectLine={selectLine}
+            currentLineTool={currentLineTool}
+            onPress={onPressSvgView}
+            onMove={onMoveSvgView}
+            onRelease={onReleaseSvgView}
           />
         )}
 
@@ -365,7 +362,7 @@ export default function HomeScreen({
                   data={d.data}
                   layer={layer!}
                   zoom={zoom}
-                  onPressLine={(layer_, feature) => onPressLine(layer_, feature)}
+                  onPressLine={() => null}
                   zIndex={101}
                   selectedRecord={selectedRecord}
                 />
@@ -382,7 +379,7 @@ export default function HomeScreen({
                   data={d.data}
                   layer={layer!}
                   zoom={zoom}
-                  onPressPolygon={(layer_, feature) => onPressPolygon(layer_, feature)}
+                  onPressPolygon={() => null}
                   zIndex={100}
                   selectedRecord={selectedRecord}
                 />
@@ -424,13 +421,7 @@ export default function HomeScreen({
           )}
         </MapView>
         {mapRegion && isDataOpened !== 'expanded' && (
-          <View
-            style={{
-              left: 50,
-              position: 'absolute',
-              bottom: 85,
-            }}
-          >
+          <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
         )}
@@ -452,13 +443,12 @@ export default function HomeScreen({
           <HomeDownloadButton onPress={pressDeleteTiles} />
         ) : (
           <>
-            {!isDownloadPage && featureButton === 'LINE' && (
+            {isDataOpened !== 'expanded' && !isDownloadPage && featureButton === 'LINE' && (
               <HomeLineTools
-                isEdited={isEdited}
-                isSelected={(lineTool === 'SELECT' || lineTool === 'MOVE') && selectedRecord.record !== undefined}
-                openDisabled={selectedRecord.record === undefined || !isEdited}
-                lineTool={lineTool}
-                drawLineTool={drawLineTool}
+                isPositionRight={isDataOpened === 'opened' || isLandscape}
+                isEditing={isEditingLine}
+                isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
+                currentLineTool={currentLineTool}
                 selectLineTool={selectLineTool}
                 pressUndoEditLine={pressUndoEditLine}
                 pressSaveEditLine={pressSaveEditLine}
@@ -466,7 +456,7 @@ export default function HomeScreen({
               />
             )}
             {!isDownloadPage && featureButton === 'POINT' && (
-              <HomePointTools pointTool={pointTool} selectPointTool={selectPointTool} />
+              <HomePointTools pointTool={currentPointTool} selectPointTool={selectPointTool} />
             )}
 
             {isDataOpened !== 'expanded' && (
@@ -482,12 +472,6 @@ export default function HomeScreen({
             )}
           </>
         )}
-
-        <HomeModalTermsOfUse
-          visible={isTermsOfUseOpen}
-          pressOK={pressTermsOfUseOK}
-          pressCancel={pressTermsOfUseCancel}
-        />
       </View>
     </View>
   );
@@ -510,5 +494,15 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     minHeight: 1,
     minWidth: 1,
+  },
+  scaleBar: {
+    bottom: 80,
+    left: 50,
+    position: 'absolute',
+  },
+  scaleBarLandscape: {
+    bottom: 43,
+    left: 10,
+    position: 'absolute',
   },
 });

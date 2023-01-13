@@ -13,7 +13,7 @@ interface Props {
   layer: LayerType;
   zoom: number;
   zIndex: number;
-  selectedRecord: { layerId: string; record: RecordType | undefined };
+  selectedRecord: { layerId: string; record: RecordType } | undefined;
   onPressPolygon: (layer: LayerType, feature: RecordType) => void;
 }
 
@@ -37,17 +37,13 @@ export const Polygon = React.memo((props: Props) => {
         const transparency = layer.colorStyle.transparency;
         const color = getColor(layer, feature);
         const pointColor =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
-            ? COLOR.YELLOW
-            : color;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
         const polygonColor =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id
             ? COLOR.YELLOW
             : hex2rgba(color, 1 - transparency);
         const borderColor =
-          selectedRecord && selectedRecord.record !== undefined && feature.id === selectedRecord.record.id
-            ? COLOR.BLACK
-            : COLOR.WHITE;
+          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
 
         if (zoom >= 11) {
           return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
 
@@ -16,7 +17,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
   //console.log('render ModalTileMap');
   const { mapListURL, visible, pressOK, pressCancel, pressReset } = props;
   const [value, setValue] = useState('');
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
 
   useEffect(() => {
@@ -31,13 +32,13 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
       fontSize: 16,
       height: 40,
       paddingHorizontal: 12,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalButtonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
       marginTop: 10,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -46,7 +47,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
     },
     modalContents: {
       alignItems: 'center',
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -85,7 +86,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
       height: 40,
       marginBottom: 10,
       paddingHorizontal: 5,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalTitle: {
       fontSize: 20,

@@ -139,7 +139,7 @@ export default function DataEditScreen(props: Props) {
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });
@@ -305,15 +305,22 @@ export default function DataEditScreen(props: Props) {
                 />
               );
             case 'REFERENCE':
-              const layerId = list !== undefined && list.length > 0 && list[0].value;
-              const targetLayer = layers.find((l) => l.id === layerId);
+              const refLayerId = list && list[0] && list[0].value;
+              const refLayer = layers.find((l) => l.id === refLayerId);
+              const refField = list && list[1] && list[1].value;
+              const primaryField = list && list[2] && list[2].value;
+              const primaryKey = primaryField === '_id' ? data.id : primaryField && data.field[primaryField];
+              //console.log(refLayerId, refField, primaryField, primaryKey);
               return (
-                targetLayer !== undefined && (
+                refLayer !== undefined &&
+                refField !== undefined &&
+                primaryKey !== undefined && (
                   <DataEditReference
                     key={index}
                     name={name}
-                    layer={targetLayer}
-                    dataId={data.id}
+                    primaryKey={primaryKey}
+                    refLayer={refLayer}
+                    refField={refField}
                     isEditingRecord={isEditingRecord}
                     onPress={gotoReferenceData}
                     pressAddReferenceData={pressAddReferenceData}

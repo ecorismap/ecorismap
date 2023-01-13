@@ -17,12 +17,7 @@ export const DataButton = (props: Props) => {
     <>
       <View style={styles.button}>
         <Button name={DATA_BTN.ADD} onPress={addData} backgroundColor={COLOR.BLUE} />
-        <Button
-          name={DATA_BTN.DELETE}
-          onPress={deleteData}
-          backgroundColor={isChecked ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!isChecked}
-        />
+
         {!exportDisabled && (
           <Button
             name={DATA_BTN.EXPORT}
@@ -31,6 +26,12 @@ export const DataButton = (props: Props) => {
             disabled={!isChecked}
           />
         )}
+        <Button
+          name={DATA_BTN.DELETE}
+          onPress={deleteData}
+          backgroundColor={isChecked ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!isChecked}
+        />
       </View>
     </>
   );

@@ -16,15 +16,6 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   }
   return color;
 };
-export const getLayerSerial = (layer: LayerType, dataSet: RecordType[]): number => {
-  const serialField = layer.field.find(({ format }) => format === 'SERIAL');
-  if (serialField) {
-    const serials = dataSet.map((data) => data.field[serialField.name]).filter((v) => v) as number[];
-    return serials.length === 0 ? 1 : Math.max(...serials) + 1;
-  } else {
-    return 0;
-  }
-};
 
 export const getPhotoFields = (layer: LayerType) => {
   return layer.field.filter((f) => f.format === 'PHOTO');
@@ -37,8 +28,8 @@ export const checkLayerInputs = (layer: LayerType) => {
   if (layer.field.find(({ name }) => name === '')) {
     return { isOK: false, message: t('utils.Layer.message.inputFieldName') };
   }
-  if (layer.field.find(({ name }) => name === '_ReferencedDataId')) {
-    return { isOK: false, message: t('utils.Layer.message.referencedDataId') };
+  if (layer.field.find(({ name }) => name === '_id')) {
+    return { isOK: false, message: t('utils.Layer.message._id') };
   }
   if (layer.field.find((f) => f.format === 'LIST' && f.list === undefined)) {
     //console.log(layer);
