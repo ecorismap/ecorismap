@@ -39,6 +39,17 @@ export const HisyouToolButton = (props: Props) => {
   ) : (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
       <Button
+        id={'SETTING'}
+        name={HISYOUTOOL.SETTING}
+        disabled={isSelected}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+        borderRadius={10}
+        onPressCustom={() => {
+          setCurrentTool('SETTING');
+          selectLineTool('SETTING');
+        }}
+      />
+      <Button
         id={'HISYOU'}
         name={HISYOUTOOL.HISYOU}
         disabled={isSelected}
@@ -135,17 +146,6 @@ export const HisyouToolButton = (props: Props) => {
         onPressCustom={() => {
           setCurrentTool('TOMARI');
           selectLineTool('TOMARI');
-        }}
-      />
-      <Button
-        id={'SETTING'}
-        name={HISYOUTOOL.SETTING}
-        disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-        borderRadius={10}
-        onPressCustom={() => {
-          setCurrentTool('SETTING');
-          selectLineTool('SETTING');
         }}
       />
     </SelectionalLongPressButton>

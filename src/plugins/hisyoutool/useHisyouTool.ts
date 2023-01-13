@@ -10,7 +10,6 @@ import {
   xyArrayToLatLonArray,
 } from '../../utils/Coords';
 import * as turf from '@turf/turf';
-import { useDrawTool } from '../../hooks/useDrawTool';
 import { useWindow } from '../../hooks/useWindow';
 import {
   getActionSnappedPosition,
@@ -23,9 +22,10 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { useDispatch, useSelector } from 'react-redux';
 import { addRecordsAction, deleteRecordsAction } from '../../modules/dataSet';
-import { useFeatureEdit } from '../../hooks/useFeatureEdit';
 import { AppState } from '../../modules';
 import { LatLng } from 'react-native-maps';
+import { useLineTool } from '../../hooks/useLineTool';
+import { useFeature } from '../../hooks/useFeature';
 
 export type UseHisyouToolReturnType = {
   pressSvgHisyouTool: (point: Position) => void;
@@ -67,13 +67,13 @@ export const useHisyouTool = (
 ): UseHisyouToolReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
-  const { dataUser, generateLineRecord } = useFeatureEdit();
-  const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useDrawTool(
-    currentLineTool,
-    modifiedIndex,
+  const { dataUser, generateLineRecord } = useFeature();
+  const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
     drawLine,
     editingLine,
-    undoLine
+    undoLine,
+    modifiedIndex,
+    currentLineTool
   );
   const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
   const hisyouData = useSelector((state: AppState) => state.dataSet.find((v) => v.layerId === hisyouLayerId));

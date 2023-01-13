@@ -41,7 +41,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
-  const { findRecord } = useFeature(mapViewRef);
+  const { findRecord } = useFeature();
 
   const {
     locationEventsEmitter,
