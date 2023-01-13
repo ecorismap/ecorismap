@@ -85,7 +85,7 @@ export interface HomeProps {
   savedArea: TileRegionType[];
   attribution: string;
   featureButton: FeatureButtonType;
-  pointTool: PointToolType;
+  currentPointTool: PointToolType;
   currentLineTool: LineToolType;
   selectedRecord:
     | {
@@ -154,7 +154,7 @@ export default function HomeScreen({
   savedArea,
   attribution,
   featureButton,
-  pointTool,
+  currentPointTool,
   currentLineTool,
   selectedRecord,
   draggablePoint,
@@ -456,7 +456,7 @@ export default function HomeScreen({
               />
             )}
             {!isDownloadPage && featureButton === 'POINT' && (
-              <HomePointTools pointTool={pointTool} selectPointTool={selectPointTool} />
+              <HomePointTools pointTool={currentPointTool} selectPointTool={selectPointTool} />
             )}
 
             {isDataOpened !== 'expanded' && (

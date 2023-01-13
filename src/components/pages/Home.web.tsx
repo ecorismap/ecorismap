@@ -54,7 +54,7 @@ export default function HomeScreen({
   tileMaps,
   isDownloading,
   featureButton,
-  pointTool,
+  currentPointTool,
   currentLineTool,
   selectedRecord,
   draggablePoint,
@@ -552,7 +552,7 @@ export default function HomeScreen({
               />
             )}
             {!isDownloadPage && featureButton === 'POINT' && isDataOpened !== 'expanded' && (
-              <HomePointTools pointTool={pointTool} selectPointTool={selectPointTool} />
+              <HomePointTools pointTool={currentPointTool} selectPointTool={selectPointTool} />
             )}
 
             {isDataOpened !== 'expanded' && (
