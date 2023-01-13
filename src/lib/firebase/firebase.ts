@@ -4,7 +4,7 @@ import authRN from '@react-native-firebase/auth';
 import firestoreRN, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { FirebaseFunctionsTypes } from '@react-native-firebase/functions';
 import storageRN, { FirebaseStorageTypes } from '@react-native-firebase/storage';
-import { firebaseConfig, reCaptureSiteKey } from '../../../config';
+
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
@@ -14,6 +14,7 @@ import 'firebase/compat/app-check';
 
 import { Platform } from 'react-native';
 import { FUNC_LOGIN } from '../../constants/AppConstants';
+import { firebaseConfig, reCaptureSiteKey } from '../../constants/APIKeys';
 
 export default firebase;
 export let firestore: FirebaseFirestoreTypes.Module | firebase.firestore.Firestore;
