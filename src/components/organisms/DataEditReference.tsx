@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, StyleSheet, Text, FlatList, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useData } from '../../hooks/useData';
 import { LayerType, PhotoType, RecordType } from '../../types';
@@ -78,32 +78,6 @@ const DataTitle = React.memo((props: Props_DataTitle) => {
   );
 });
 
-interface Props_DataTableComponent {
-  item: RecordType;
-  index: number;
-  layer: LayerType;
-  onPress: (index: number) => void;
-}
-
-const DataTableComponent = React.memo(({ item, index, layer, onPress }: Props_DataTableComponent) => {
-  //console.log('render renderItems');
-  return (
-    <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
-      {layer.field.map(({ name, format }, field_index) => (
-        <TouchableOpacity key={field_index} style={[styles.td, { flex: 2, width: 120 }]} onPress={() => onPress(index)}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-            {format === 'DATETIME' && item.field[name] !== ''
-              ? dayjs(item.field[name] as string).format('L HH:mm')
-              : format === 'PHOTO'
-              ? `${(item.field[name] as PhotoType[]).length} pic`
-              : item.field[name]}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-});
-
 interface Props_DataItems {
   data: RecordType[];
   layer: LayerType;
@@ -112,13 +86,32 @@ interface Props_DataItems {
 
 const DataItems = React.memo((props: Props_DataItems) => {
   const { data, layer, onPress } = props;
-  //@ts-ignore
-  const renderItem = useCallback(
-    ({ item, index }) => <DataTableComponent {...{ item, index, layer, onPress }} />,
-    [layer, onPress]
+
+  return (
+    <View style={{ flex: 1, flexDirection: 'column' }}>
+      {data.map((item, index) => {
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={{ flex: 1, height: 45, flexDirection: 'row' }}
+            onPress={() => onPress(index)}
+          >
+            {layer.field.map(({ name, format }, field_index) => (
+              <View key={field_index} style={[styles.td, { flex: 1, width: 120 }]}>
+                <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                  {format === 'DATETIME' && item.field[name] !== ''
+                    ? dayjs(item.field[name] as string).format('L HH:mm')
+                    : format === 'PHOTO'
+                    ? `${(item.field[name] as PhotoType[]).length} pic`
+                    : item.field[name]}
+                </Text>
+              </View>
+            ))}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
-  const keyExtractor = useCallback((item) => item.id, []);
-  return <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />;
 });
 
 const styles = StyleSheet.create({
