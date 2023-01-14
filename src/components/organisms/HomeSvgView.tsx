@@ -81,10 +81,10 @@ export const SvgView = (props: Props) => {
                 id={`path${idx}`}
                 d={pointsToSvg(xy)}
                 stroke={'blue'}
-                strokeWidth="2"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeDasharray={properties.includes('DRAW') || properties.length === 0 ? '4,6' : '4,6'}
+                strokeDasharray={'1,3'}
                 fill={currentLineTool === 'AREA' ? COLOR.ALFABLUE2 : 'none'}
                 markerStart={startStyle}
                 markerEnd={endStyle}
@@ -97,8 +97,8 @@ export const SvgView = (props: Props) => {
         <G>
           <Path
             d={pointsToSvg(editingLine.xy)}
-            stroke="pink"
-            strokeWidth="2"
+            stroke="blue"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeDasharray="1"
@@ -113,7 +113,7 @@ export const SvgView = (props: Props) => {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeDasharray="4,6"
+            strokeDasharray="1"
             fill={`${COLOR.ALFAYELLOW}`}
           />
         </G>
