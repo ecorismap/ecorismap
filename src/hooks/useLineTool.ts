@@ -1,7 +1,7 @@
 import { MutableRefObject, useCallback, useState } from 'react';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import { checkDistanceFromLine, modifyLine, xyArrayToLatLonArray } from '../utils/Coords';
+import { checkDistanceFromLine, modifyLine, smoothingByBoyle, xyArrayToLatLonArray } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { LineToolType, RecordType } from '../types';
 
@@ -77,6 +77,7 @@ export const useLineTool = (
           setRedraw(uuidv4());
           return;
         }
+        smoothingByBoyle(drawLine.current[index].xy, 8);
         //AREAツールの場合は、エリアを閉じるために始点を追加する。
         if (currentLineTool === 'AREA') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
         drawLine.current[index].properties = properties ?? [currentLineTool];
@@ -87,13 +88,9 @@ export const useLineTool = (
         });
       } else {
         // //ライン修正の場合
-        // // editingLine.current.coords = computeMovingAverage(editingLine.current.coords, AVERAGE_UNIT);
-        // // if (editingLine.current.coords.length > AVERAGE_UNIT) {
-        // //   //移動平均になっていない終端を削除（筆ハネ）
-        // //   editingLine.current.coords = editingLine.current.coords.slice(0, -(AVERAGE_UNIT - 1));
-        // // }
+        smoothingByBoyle(editingLine.current.xy, 8);
+        const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current, currentLineTool);
 
-        const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current);
         if (modifiedXY.length > 0) {
           undoLine.current.push({
             index: modifiedIndex.current,
@@ -105,7 +102,6 @@ export const useLineTool = (
             xy: modifiedXY,
             latlon: xyArrayToLatLonArray(modifiedXY, mapRegion, mapSize),
           };
-          //moveToLastOfArray(drawLine.current, modifiedIndex.current);
         }
         modifiedIndex.current = -1;
         editingLine.current = { start: [], xy: [] };

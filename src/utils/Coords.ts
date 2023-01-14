@@ -1,6 +1,6 @@
 import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
-import { DMSType, LatLonDMSKey, LatLonDMSType, LineRecordType, LocationType, RecordType } from '../types';
+import { DMSType, LatLonDMSKey, LatLonDMSType, LineRecordType, LineToolType, LocationType, RecordType } from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
 import { LatLng } from 'react-native-maps';
@@ -39,38 +39,10 @@ export const dms2decimal = (deg: number, min: number, sec: number): number => {
   return Math.sign(deg) * (Math.abs(deg) + min / 60.0 + sec / 3600.0);
 };
 
-export const computeMovingAverage = (data: Position[], period: number) => {
-  const getAverage = (d: Position[]) =>
-    d.reduce((acc, val) => [acc[0] + val[0] / d.length, acc[1] + val[1] / d.length], [0, 0]);
-  const movingAverages = [];
-
-  if (period > data.length) return data;
-
-  for (let x = 0; x + period - 1 < data.length; x += 1) {
-    //console.log('sortedData.slice(x, x + period)', data.slice(x, x + period));
-    movingAverages.push(getAverage(data.slice(x, x + period)));
-  }
-  const padding = data.slice(movingAverages.length);
-  //console.log(movingAverages);
-  return [...movingAverages, ...padding];
-};
-
 export const pointsToSvg = (points: Position[]) => {
-  // // 筆跳ね防止のための閾値
-  // const distanceThreshold = 40;
-
-  // const filteredPoints = points.filter((point, index) => {
-  //   if (!points[index - 1]) return true;
-  //   const distance = Math.sqrt(
-  //     Math.pow(points[index - 1][0] - point[0], 2) + Math.pow(points[index - 1][1] - point[1], 2)
-  //   );
-  //   return distance < distanceThreshold;
-  // });
-  const filteredPoints = points;
-  //console.log(points);
-  if (filteredPoints.length < 1) return 'M 0,0';
-  const initialValue = `M ${filteredPoints[0][0]},${filteredPoints[0][1]}`;
-  const path = initialValue + ' ' + filteredPoints.map((point) => `L ${point[0]},${point[1]}`).join(' ');
+  if (points.length < 1) return 'M 0,0';
+  const initialValue = `M ${points[0][0]},${points[0][1]}`;
+  const path = initialValue + ' ' + points.map((point) => `L ${point[0]},${point[1]}`).join(' ');
 
   return path;
 };
@@ -264,6 +236,13 @@ export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[]) => 
   return { isFar: snapped.distance > SNAP_DISTANCE, index: snapped.index };
 };
 
+export const dot = (a: Position, b: Position) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
+export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
+  const vecA = [pA[1][0] - pA[0][0], pA[1][1] - pA[0][1]];
+  const vecB = [pB[1][0] - pB[0][0], pB[1][1] - pB[0][1]];
+  return dot(vecA, vecB);
+};
+
 export const modifyLine = (
   original: {
     id: string;
@@ -275,28 +254,67 @@ export const modifyLine = (
   modified: {
     start: turf.helpers.Position;
     xy: Position[];
-  }
+  },
+  currentLineTool: LineToolType
 ) => {
   const startPoint = modified.start;
   const endPoint = modified.xy[modified.xy.length - 1];
   const { isFar: startIsFar, index: startIndex } = checkDistanceFromLine(startPoint, original.xy);
   const { isFar: endIsFar, index: endIndex } = checkDistanceFromLine(endPoint, original.xy);
 
-  if (startIsFar && endIsFar) {
-    //最初も最後も離れている場合（何もしない）
+  if (startIsFar) {
+    //最初が離れている場合（修正にはならないのでありえない）
     return [];
-  } else if (startIsFar) {
-    //最初だけが離れている場合
-    return original.xy.slice(endIndex);
   } else if (endIsFar) {
-    //終わりだけが離れている場合
-    return [...original.xy.slice(0, startIndex), ...modified.xy];
-  } else if (startIndex >= endIndex) {
-    //最初も最後もスナップ範囲内だが、最後のスナップが最初のスナップより前にある場合
-    return [...original.xy.slice(0, startIndex), ...modified.xy];
+    //終わりが離れている場合
+    //交わる向きを内積で計算して、繋ぎ方を変える
+    const pA = original.xy.slice(startIndex, startIndex + 2);
+    const pB = modified.xy.slice(0, 2);
+    if (pA.length !== 2 || pB.length !== 2) return [];
+    const innerProduct = calcInnerProduct(pA, pB);
+    let updatedLine;
+    if (innerProduct > 0) {
+      updatedLine = [...original.xy.slice(0, startIndex), ...modified.xy];
+    } else {
+      updatedLine = [...modified.xy.reverse(), ...original.xy.slice(startIndex + 1)];
+    }
+    if (currentLineTool === 'AREA') {
+      updatedLine.push(updatedLine[0]);
+    }
+    return updatedLine;
   } else {
-    //最初も最後もスナップ範囲の場合
-    return [...original.xy.slice(0, startIndex), ...modified.xy, ...original.xy.slice(endIndex)];
+    //最初も最後も元のラインに近い場合
+
+    const pA = original.xy.slice(startIndex, startIndex + 2);
+    const pB = modified.xy.slice(0, 2);
+    if (pA.length !== 2 || pB.length !== 2) return [];
+    const innerProduct = calcInnerProduct(pA, pB);
+    let originalXY = original.xy;
+    let startIdx = startIndex;
+    let endIdx = endIndex;
+    if (innerProduct < 0) {
+      //修正のラインが逆向きなら一旦、元のラインを逆向きにしてから考える。その後、向きを戻す。
+      originalXY = originalXY.reverse();
+      const start = checkDistanceFromLine(startPoint, originalXY);
+      const end = checkDistanceFromLine(endPoint, originalXY);
+      startIdx = start.index;
+      endIdx = end.index;
+    }
+    let updatedLine;
+    if (startIdx > endIdx) {
+      //終点が始点より前に戻る。ぐるっと円を書いた場合。
+      if (currentLineTool === 'AREA') {
+        //ポリゴンの場合はポリゴンにする
+        updatedLine = [...originalXY.slice(endIdx + 1, startIdx), ...modified.xy];
+      } else {
+        //ラインの場合は終点のスナップは無いものとして処理
+        updatedLine = [...originalXY.slice(0, startIdx), ...modified.xy];
+      }
+    } else {
+      updatedLine = [...originalXY.slice(0, startIdx), ...modified.xy, ...originalXY.slice(endIdx + 1)];
+    }
+
+    return innerProduct < 0 ? updatedLine.reverse() : updatedLine;
   }
 };
 
@@ -348,4 +366,51 @@ export const calcDegreeRadius = (
 
 export const booleanNearEqual = (p1: Position, p2: Position) => {
   return Math.abs(p2[0] - p1[0]) <= 0.001 && Math.abs(p2[1] - p1[1]) <= 0.001;
+};
+
+export const smoothingByBoyle = (points: Position[], lookAhead: number): number => {
+  //ref.
+  //https://github.com/giscan/Generalizer
+
+  let ppoint: Position;
+  let npoint: Position;
+  let last: Position;
+  let next = 1;
+  let i = 0;
+  let p = 0;
+  let c1 = 0;
+  let c2 = 0;
+
+  const n = points.length;
+
+  if (lookAhead < 2 || lookAhead > n) {
+    return n;
+  }
+  last = points[0];
+
+  c1 = 1 / (lookAhead - 1);
+  c2 = 1 - c1;
+
+  while (i < n - 2) {
+    p = i + lookAhead;
+    if (p >= n) {
+      p = n - 1;
+    }
+    ppoint = points[p];
+    ppoint = [ppoint[0] * c1, ppoint[1] * c1];
+    last = [last[0] * c2, last[1] * c2];
+    npoint = [last[0] + ppoint[0], last[1] + ppoint[1]];
+
+    points[next] = npoint;
+
+    next++;
+    i++;
+
+    last = npoint;
+  }
+
+  const idx = points.length - 1;
+  points[next] = [points[idx][0], points[idx][1]];
+
+  return points.length;
 };
