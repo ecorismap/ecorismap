@@ -7,7 +7,6 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
-import { HomeLineTools } from '../organisms/HomeLineTools';
 import Map, { GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -31,12 +30,14 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 //import mapStyle3D from '../../../style.json';
 import { useDropzone } from 'react-dropzone';
 import { useWindow } from '../../hooks/useWindow';
+import { HomeDrawTools } from '../organisms/HomeDrawTools';
+import { useSelector } from 'react-redux';
+import { AppState } from '../../modules';
 
 export default function HomeScreen({
   pointDataSet,
   lineDataSet,
   polygonDataSet,
-  layers,
   isDownloadPage,
   downloadProgress,
   savedTileSize,
@@ -55,7 +56,7 @@ export default function HomeScreen({
   isDownloading,
   featureButton,
   currentPointTool,
-  currentLineTool,
+  currentDrawTool,
   selectedRecord,
   draggablePoint,
   isDataOpened,
@@ -71,18 +72,18 @@ export default function HomeScreen({
   pressStopDownloadTiles,
   pressDeleteTiles,
   pressTracking,
-  pressUndoEditLine,
-  pressSaveEditLine,
-  pressDeleteLine,
+  pressUndoDraw,
+  pressSaveDraw,
+  pressDeleteDraw,
   gotoMaps,
   gotoSettings,
   gotoLayers,
   selectPointTool,
-  selectLineTool,
+  selectDrawTool,
   selectFeatureButton,
 }: HomeProps) {
   //console.log('render Home');
-
+  const layers = useSelector((state: AppState) => state.layers);
   const { mapRegion, windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
@@ -414,12 +415,12 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {currentLineTool !== 'NONE' && (
+        {currentDrawTool !== 'NONE' && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
             selectLine={selectLine}
-            currentLineTool={currentLineTool}
+            currentDrawTool={currentDrawTool}
             onPress={onPressSvgView}
             onMove={onMoveSvgView}
             onRelease={onReleaseSvgView}
@@ -540,15 +541,16 @@ export default function HomeScreen({
         ) : (
           <>
             {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
-              <HomeLineTools
+              <HomeDrawTools
                 isPositionRight={isDataOpened === 'opened' || isLandscape}
                 isEditing={isEditingLine}
                 isSelected={drawLine.length > 0}
-                currentLineTool={currentLineTool}
-                selectLineTool={selectLineTool}
-                pressUndoEditLine={pressUndoEditLine}
-                pressSaveEditLine={pressSaveEditLine}
-                pressDeleteLine={pressDeleteLine}
+                featureButton={featureButton}
+                currentDrawTool={currentDrawTool}
+                selectDrawTool={selectDrawTool}
+                pressUndoDraw={pressUndoDraw}
+                pressSaveDraw={pressSaveDraw}
+                pressDeleteDraw={pressDeleteDraw}
               />
             )}
             {!isDownloadPage && featureButton === 'POINT' && isDataOpened !== 'expanded' && (

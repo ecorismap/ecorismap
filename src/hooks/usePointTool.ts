@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { LayerType, PointToolType, RecordType } from '../types';
+import { LayerType, PointRecordType, PointToolType, RecordType } from '../types';
 import { useDispatch } from 'react-redux';
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
@@ -7,7 +7,7 @@ import { LatLng, MapEvent } from 'react-native-maps';
 import { t } from '../i18n/config';
 import { cloneDeep } from 'lodash';
 import { updateRecordsAction } from '../modules/dataSet';
-import { useFeature } from './useFeature';
+import { useRecord } from './useRecord';
 
 export type UsePointToolReturnType = {
   currentPointTool: PointToolType;
@@ -25,7 +25,7 @@ export type UsePointToolReturnType = {
   };
   dragEndPoint: (
     layer: LayerType,
-    feature: RecordType,
+    feature: PointRecordType,
     coordinate: LatLng
   ) => {
     isOK: boolean;
@@ -37,7 +37,7 @@ export type UsePointToolReturnType = {
 
 export const usePointTool = (): UsePointToolReturnType => {
   const dispatch = useDispatch();
-  const { addFeature, checkEditable, getEditingLayerAndRecordSet, updatePointPosition } = useFeature();
+  const { dataUser, addRecord, checkRecordEditable, getEditingLayerAndRecordSet } = useRecord();
   const [currentPointTool, setPointTool] = useState<PointToolType>('NONE');
 
   const addCurrentPoint = useCallback(async () => {
@@ -45,8 +45,8 @@ export const usePointTool = (): UsePointToolReturnType => {
     if (location === null) {
       return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, data: undefined };
     }
-    return addFeature('POINT', toLocationType(location)!);
-  }, [addFeature]);
+    return addRecord('POINT', toLocationType(location)!);
+  }, [addRecord]);
 
   const addPressPoint = useCallback(
     (e: MapEvent<{}>) => {
@@ -56,9 +56,9 @@ export const usePointTool = (): UsePointToolReturnType => {
         //@ts-ignore
         longitude: e.nativeEvent ? e.nativeEvent.coordinate.longitude : e.latLng.lng(),
       };
-      return addFeature('POINT', location);
+      return addRecord('POINT', location);
     },
-    [addFeature]
+    [addRecord]
   );
 
   const resetPointPosition = useCallback(
@@ -77,22 +77,27 @@ export const usePointTool = (): UsePointToolReturnType => {
   );
 
   const dragEndPoint = useCallback(
-    (layer: LayerType, feature: RecordType, coordinate: LatLng) => {
+    (layer: LayerType, feature: PointRecordType, coordinate: LatLng) => {
       const { editingLayer } = getEditingLayerAndRecordSet('POINT');
       if (editingLayer === undefined) {
         resetPointPosition(layer, feature);
         return { isOK: false, message: t('hooks.message.noEditingLayer') };
       }
-      const { isOK, message } = checkEditable(editingLayer, feature);
+      const { isOK, message } = checkRecordEditable(editingLayer, feature);
       if (isOK) {
-        updatePointPosition(editingLayer, feature, coordinate);
+        const data = cloneDeep(feature);
+        data.coords.latitude = coordinate.latitude;
+        data.coords.longitude = coordinate.longitude;
+        if (data.coords.ele !== undefined) data.coords.ele = undefined;
+        dispatch(updateRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [data] }));
+
         return { isOK: true, message: '' };
       } else {
         resetPointPosition(layer, feature);
         return { isOK: false, message };
       }
     },
-    [checkEditable, getEditingLayerAndRecordSet, resetPointPosition, updatePointPosition]
+    [checkRecordEditable, dataUser.uid, dispatch, getEditingLayerAndRecordSet, resetPointPosition]
   );
 
   return {

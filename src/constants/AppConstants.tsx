@@ -3,10 +3,10 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.1.10';
+export const VERSION = 'Version 0.1.11';
 
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
@@ -147,9 +147,13 @@ export const POINTTOOL = {
   NONE: 'none',
 } as const;
 
-export const DRAWTOOL = {
-  DRAW: 'lead-pencil',
-  AREA: 'shape-circle-plus',
+export const LINETOOL = {
+  FREEHAND_LINE: 'draw',
+} as const;
+
+export const POLYGONTOOL = {
+  PLOT_POLYGON: 'vector-rectangle',
+  FREEHAND_POLYGON: 'draw',
 } as const;
 
 export const SELECTIONTOOL = {
@@ -157,8 +161,9 @@ export const SELECTIONTOOL = {
   INFO: 'cursor-default-click',
 } as const;
 
-export const LINETOOL = {
-  ...DRAWTOOL,
+export const DRAWTOOL = {
+  ...LINETOOL,
+  ...POLYGONTOOL,
   ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
@@ -170,7 +175,8 @@ export const LINETOOL = {
 
 export const HOME_FEATURE_BTN = {
   POINT: 'map-marker',
-  LINE: 'draw',
+  LINE: 'chart-timeline-variant',
+  POLYGON: 'pentagon-outline',
   NONE: 'flower-tulip',
 } as const;
 

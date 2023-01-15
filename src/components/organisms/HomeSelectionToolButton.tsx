@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { COLOR, LINETOOL } from '../../constants/AppConstants';
-import { LineToolType, SelectionToolType } from '../../types';
+import { COLOR, DRAWTOOL } from '../../constants/AppConstants';
+import { DrawToolType, SelectionToolType } from '../../types';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -8,20 +8,20 @@ import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
 interface Props {
   isEditing: boolean;
   isPositionRight: boolean;
-  currentLineTool: LineToolType;
-  selectLineTool: (value: LineToolType) => void;
+  currentDrawTool: DrawToolType;
+  selectLineTool: (value: DrawToolType) => void;
 }
 
-export const SelectionToolButton = (props: Props) => {
-  const { isEditing, isPositionRight, currentLineTool, selectLineTool } = props;
+export const HomeSelectionToolButton = (props: Props) => {
+  const { isEditing, isPositionRight, currentDrawTool, selectLineTool } = props;
   const [currentTool, setCurrentTool] = useState<SelectionToolType>('INFO');
 
   return (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
       <Button
         id={'INFO'}
-        name={LINETOOL.INFO}
-        backgroundColor={currentLineTool === 'INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+        name={DRAWTOOL.INFO}
+        backgroundColor={currentDrawTool === 'INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
         borderRadius={10}
         disabled={isEditing}
         onPressCustom={() => {
@@ -31,8 +31,8 @@ export const SelectionToolButton = (props: Props) => {
       />
       <Button
         id={'SELECT'}
-        name={LINETOOL.SELECT}
-        backgroundColor={currentLineTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+        name={DRAWTOOL.SELECT}
+        backgroundColor={currentDrawTool === 'SELECT' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
         borderRadius={10}
         disabled={isEditing}
         onPressCustom={() => {

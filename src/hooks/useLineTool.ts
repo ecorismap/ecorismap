@@ -3,7 +3,7 @@ import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
 import { checkDistanceFromLine, modifyLine, smoothingByBoyle, xyArrayToLatLonArray } from '../utils/Coords';
 import { useWindow } from './useWindow';
-import { LineToolType, RecordType } from '../types';
+import { DrawToolType, RecordType } from '../types';
 
 export type UseLineToolReturnType = {
   pressSvgDrawTool: (point: Position) => void;
@@ -24,7 +24,7 @@ export const useLineTool = (
   editingLine: MutableRefObject<{ start: Position; xy: Position[] }>,
   undoLine: MutableRefObject<{ index: number; latlon: Position[] }[]>,
   modifiedIndex: MutableRefObject<number>,
-  currentLineTool: LineToolType
+  currentDrawTool: DrawToolType
 ): UseLineToolReturnType => {
   const { mapSize, mapRegion } = useWindow();
   const [, setRedraw] = useState('');
@@ -78,9 +78,9 @@ export const useLineTool = (
           return;
         }
         smoothingByBoyle(drawLine.current[index].xy, 8);
-        //AREAツールの場合は、エリアを閉じるために始点を追加する。
-        if (currentLineTool === 'AREA') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
-        drawLine.current[index].properties = properties ?? [currentLineTool];
+        //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
+        if (currentDrawTool === 'FREEHAND_POLYGON') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
+        drawLine.current[index].properties = properties ?? [currentDrawTool];
         drawLine.current[index].latlon = xyArrayToLatLonArray(drawLine.current[index].xy, mapRegion, mapSize);
         undoLine.current.push({
           index: -1,
@@ -89,7 +89,7 @@ export const useLineTool = (
       } else {
         // //ライン修正の場合
         smoothingByBoyle(editingLine.current.xy, 8);
-        const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current, currentLineTool);
+        const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current, currentDrawTool);
 
         if (modifiedXY.length > 0) {
           undoLine.current.push({
@@ -107,7 +107,7 @@ export const useLineTool = (
         editingLine.current = { start: [], xy: [] };
       }
     },
-    [currentLineTool, drawLine, mapRegion, mapSize, modifiedIndex, editingLine, undoLine]
+    [currentDrawTool, drawLine, mapRegion, mapSize, modifiedIndex, editingLine, undoLine]
   );
 
   return {

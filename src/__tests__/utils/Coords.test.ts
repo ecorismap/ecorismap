@@ -7,6 +7,7 @@ import {
   computeMovingAverage,
   pointsToLocation,
   locationToPoints,
+  calcCentroid,
 } from '../../utils/Coords';
 
 describe('decimal2dms', () => {
@@ -129,5 +130,18 @@ describe('locationToPoints', () => {
       [0, 200],
       [60, 80],
     ]);
+  });
+});
+
+describe('calcCentroid', () => {
+  it('return centroid', () => {
+    expect(
+      calcCentroid([
+        { latitude: 35, longitude: 135 },
+        { latitude: 35.05, longitude: 135.05 },
+        { latitude: 34.95, longitude: 134.95 },
+        { latitude: 35.01, longitude: 135.01 },
+      ])
+    ).toStrictEqual({ latitude: 35.0025, longitude: 135.0025 });
   });
 });

@@ -1,46 +1,59 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, LINETOOL, PLUGIN } from '../../constants/AppConstants';
+import { COLOR, DRAWTOOL, PLUGIN } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
-import { LineToolType } from '../../types';
+import { DrawToolType, FeatureButtonType } from '../../types';
 
 import { Button } from '../atoms';
-import { DrawToolButton } from '../molecules/DrawToolButton';
-import { SelectionToolButton } from '../molecules/SelectionToolButton';
+import { HomeLineToolButton } from './HomeLineToolButton';
+import { HomeSelectionToolButton } from './HomeSelectionToolButton';
+import { HomePolygonToolButton } from './HomePolygonToolButton';
 
 interface Props {
   isPositionRight: boolean;
   isEditing: boolean;
   isSelected: boolean;
-  currentLineTool: LineToolType;
-  selectLineTool: (value: LineToolType) => void;
-  pressUndoEditLine: () => void;
-  pressSaveEditLine: () => void;
-  pressDeleteLine: () => void;
+  currentDrawTool: DrawToolType;
+  featureButton: FeatureButtonType;
+  selectDrawTool: (value: DrawToolType) => void;
+  pressUndoDraw: () => void;
+  pressSaveDraw: () => void;
+  pressDeleteDraw: () => void;
 }
 
-export const HomeLineTools = (props: Props) => {
+export const HomeDrawTools = (props: Props) => {
   const {
     isPositionRight,
     isSelected,
     isEditing,
-    currentLineTool,
-    selectLineTool,
-    pressUndoEditLine,
-    pressSaveEditLine,
-    pressDeleteLine,
+    currentDrawTool,
+    featureButton,
+    selectDrawTool,
+    pressUndoDraw,
+    pressSaveDraw,
+    pressDeleteDraw,
   } = props;
   const { isHisyouToolActive } = useHisyouToolSetting();
   return (
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <DrawToolButton
-          disabled={isHisyouToolActive}
-          isPositionRight={isPositionRight}
-          currentLineTool={currentLineTool}
-          selectLineTool={selectLineTool}
-        />
+        {featureButton === 'LINE' && (
+          <HomeLineToolButton
+            disabled={isHisyouToolActive}
+            isPositionRight={isPositionRight}
+            currentDrawTool={currentDrawTool}
+            selectDrawTool={selectDrawTool}
+          />
+        )}
+        {featureButton === 'POLYGON' && (
+          <HomePolygonToolButton
+            disabled={isHisyouToolActive}
+            isPositionRight={isPositionRight}
+            currentDrawTool={currentDrawTool}
+            selectDrawTool={selectDrawTool}
+          />
+        )}
       </View>
       {PLUGIN.HISYOUTOOL && (
         <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
@@ -48,53 +61,53 @@ export const HomeLineTools = (props: Props) => {
             isEditing={isEditing}
             isSelected={isSelected}
             isPositionRight={isPositionRight}
-            currentLineTool={currentLineTool}
-            selectLineTool={selectLineTool}
+            currentDrawTool={currentDrawTool}
+            selectDrawTool={selectDrawTool}
           />
         </View>
       )}
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <SelectionToolButton
+        <HomeSelectionToolButton
           isEditing={isEditing}
           isPositionRight={isPositionRight}
-          currentLineTool={currentLineTool}
-          selectLineTool={selectLineTool}
+          currentDrawTool={currentDrawTool}
+          selectLineTool={selectDrawTool}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={LINETOOL.MOVE}
-          backgroundColor={currentLineTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+          name={DRAWTOOL.MOVE}
+          backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
           disabled={false}
-          onPress={() => selectLineTool('MOVE')}
+          onPress={() => selectDrawTool('MOVE')}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={LINETOOL.SAVE}
+          name={DRAWTOOL.SAVE}
           backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
           disabled={!isEditing}
-          onPress={pressSaveEditLine}
+          onPress={pressSaveDraw}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={LINETOOL.UNDO}
+          name={DRAWTOOL.UNDO}
           backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
           disabled={!isEditing}
-          onPress={pressUndoEditLine}
+          onPress={pressUndoDraw}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={LINETOOL.DELETE}
+          name={DRAWTOOL.DELETE}
           backgroundColor={isEditing || isSelected ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
           disabled={!(isEditing || isSelected)}
-          onPress={pressDeleteLine}
+          onPress={pressDeleteDraw}
         />
       </View>
     </View>
