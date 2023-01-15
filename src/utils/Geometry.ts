@@ -2,7 +2,6 @@ import { parse } from 'fast-xml-parser';
 import { v4 as uuidv4 } from 'uuid';
 import xmlBuilder from 'xmlbuilder';
 import { RecordType, FeatureType, LayerType, LocationType, GeoJsonFeatureType, PhotoType, FormatType } from '../types';
-import { LatLng } from 'react-native-maps';
 import * as turf from '@turf/helpers';
 import simplify from '@turf/simplify';
 import { COLOR } from '../constants/AppConstants';
@@ -664,17 +663,4 @@ export const generateGeoJson = (
       break;
   }
   return { ...geojson, features: features };
-};
-
-export const getArrowDeg = (feature: RecordType) => {
-  let arrowDeg = 0;
-  const coords = feature.coords as LatLng[];
-  if (coords.length > 2) {
-    const v2 = coords[coords.length - 1];
-    const v1 = coords[coords.length - 3];
-    const v = [v2.longitude - v1.longitude, v2.latitude - v1.latitude];
-    arrowDeg = 90 - Math.atan2(v[1], v[0]) * (180 / Math.PI);
-    //console.log("####", arrowDeg);
-  }
-  return arrowDeg;
 };

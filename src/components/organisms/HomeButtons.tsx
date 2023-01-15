@@ -55,6 +55,12 @@ export const HomeButtons = React.memo((props: Props) => {
             backgroundColor={COLOR.BLUE}
           />
           <Button
+            id="POLYGON"
+            name={HOME_FEATURE_BTN.POLYGON}
+            onPressCustom={() => selectFeatureButton('POLYGON')}
+            backgroundColor={COLOR.BLUE}
+          />
+          <Button
             id="NONE"
             name={HOME_FEATURE_BTN.NONE}
             onPressCustom={() => selectFeatureButton('NONE')}

@@ -1,6 +1,6 @@
 import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
-import { DMSType, LatLonDMSKey, LatLonDMSType, LineRecordType, LineToolType, LocationType, RecordType } from '../types';
+import { DMSType, DrawToolType, LatLonDMSKey, LatLonDMSType, LineRecordType, LocationType, RecordType } from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
 import { LatLng } from 'react-native-maps';
@@ -255,7 +255,7 @@ export const modifyLine = (
     start: turf.helpers.Position;
     xy: Position[];
   },
-  currentLineTool: LineToolType
+  currentDrawTool: DrawToolType
 ) => {
   const startPoint = modified.start;
   const endPoint = modified.xy[modified.xy.length - 1];
@@ -278,7 +278,7 @@ export const modifyLine = (
     } else {
       updatedLine = [...modified.xy.reverse(), ...original.xy.slice(startIndex + 1)];
     }
-    if (currentLineTool === 'AREA') {
+    if (currentDrawTool === 'FREEHAND_POLYGON') {
       updatedLine.push(updatedLine[0]);
     }
     return updatedLine;
@@ -303,7 +303,7 @@ export const modifyLine = (
     let updatedLine;
     if (startIdx > endIdx) {
       //終点が始点より前に戻る。ぐるっと円を書いた場合。
-      if (currentLineTool === 'AREA') {
+      if (currentDrawTool === 'FREEHAND_POLYGON') {
         //ポリゴンの場合はポリゴンにする
         updatedLine = [...originalXY.slice(endIdx + 1, startIdx), ...modified.xy];
       } else {
@@ -413,4 +413,11 @@ export const smoothingByBoyle = (points: Position[], lookAhead: number): number 
   points[next] = [points[idx][0], points[idx][1]];
 
   return points.length;
+};
+
+export const calcCentroid = (coords: LatLng[]) => {
+  return {
+    longitude: coords.reduce((p, c) => p + c.longitude, 0) / coords.length,
+    latitude: coords.reduce((p, c) => p + c.latitude, 0) / coords.length,
+  };
 };

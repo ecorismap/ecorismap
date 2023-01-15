@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
 import { Region, MapEvent } from 'react-native-maps';
-import { FeatureButtonType, LayerType, LineToolType, PointToolType, RecordType } from '../types';
+import { DrawToolType, FeatureButtonType, LayerType, PointRecordType, PointToolType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -9,11 +9,11 @@ import { useSelector } from 'react-redux';
 import { HomeProps } from '../components/pages/Home';
 import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
-import { useFeature } from '../hooks/useFeature';
+import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useZoom } from '../hooks/useZoom';
 import { useLocation } from '../hooks/useLocation';
-import { isDrawTool, isSelectionTool } from '../utils/General';
+import { isLineTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
@@ -54,35 +54,28 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useTiles(route.params?.tileMap);
 
   //位置データの操作、作成関連
-  const {
-    layers,
-    pointDataSet,
-    lineDataSet,
-    polygonDataSet,
-    selectedRecord,
-    featureButton,
-    deselectFeature,
-    setFeatureButton,
-    addFeature,
-  } = useFeature();
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, unselectRecord, addRecord } = useRecord();
 
   const {
     drawLine,
     editingLine,
     selectLine,
     isEditingLine,
-    currentLineTool,
-    setLineTool,
+    currentDrawTool,
+    featureButton,
+    setDrawTool,
+    setFeatureButton,
     pressSvgView,
     moveSvgView,
     releaseSvgView,
     saveLine,
+    savePolygon,
     deleteLine,
-    undoEditLine,
+    undoDraw,
     selectSingleFeature,
     showDrawLine,
     hideDrawLine,
-    resetLineTools,
+    resetDrawTools,
     toggleTerrainForWeb,
   } = useDrawTool(mapViewRef.current);
 
@@ -180,7 +173,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           });
         }, 1);
       } else if (currentPointTool === 'NONE') {
-        deselectFeature();
+        unselectRecord();
       }
     },
     [
@@ -192,12 +185,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       expandData,
       navigation,
       addPressPoint,
-      deselectFeature,
+      unselectRecord,
     ]
   );
 
   const onDragEndPoint = useCallback(
-    async (e: MapEvent<{}>, layer: LayerType, feature: RecordType) => {
+    async (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => {
       const coordinate = e.nativeEvent.coordinate;
       const ret = await ConfirmAsync(t('Home.confirm.drag'));
       if (!ret) {
@@ -212,8 +205,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const onPressPoint = useCallback(
-    (layer: LayerType, feature: RecordType) => {
-      if (currentPointTool === 'NONE' && currentLineTool === 'NONE') {
+    (layer: LayerType, feature: PointRecordType) => {
+      if (currentPointTool === 'NONE' && currentDrawTool === 'NONE') {
         if (isEditingRecord) {
           AlertAsync(t('Home.alert.discardChanges'));
           return;
@@ -231,7 +224,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setTimeout(() => changeMapRegion(region, true), 300);
       }
     },
-    [changeMapRegion, currentLineTool, currentPointTool, isEditingRecord, isLandscape, mapRegion, navigation, openData]
+    [changeMapRegion, currentDrawTool, currentPointTool, isEditingRecord, isLandscape, mapRegion, navigation, openData]
   );
 
   const onDrop = useCallback(
@@ -251,10 +244,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressSvgView = useCallback(
     async (event: GestureResponderEvent) => {
-      if (currentLineTool === 'INFO') {
+      if (currentDrawTool === 'INFO') {
         const { layer, feature } = selectSingleFeature(event);
         if (layer === undefined || feature === undefined) {
-          deselectFeature();
+          unselectRecord();
           return;
         }
         if (isEditingRecord) {
@@ -278,8 +271,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     },
     [
       changeMapRegion,
-      currentLineTool,
-      deselectFeature,
+      currentDrawTool,
+      unselectRecord,
       isEditingRecord,
       isLandscape,
       mapRegion,
@@ -291,44 +284,44 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   /************** select button ************/
-  const selectLineTool = useCallback(
-    (value: LineToolType) => {
-      if (isDrawTool(value)) {
-        if (currentLineTool === value) {
+  const selectDrawTool = useCallback(
+    (value: DrawToolType) => {
+      if (isLineTool(value) || isPolygonTool(value)) {
+        if (currentDrawTool === value) {
           if (isEditingLine) return;
           //ドローツールをオフ
-          setLineTool('NONE');
+          setDrawTool('NONE');
         } else {
           //ドローツールをオン
-          setLineTool(value);
+          setDrawTool(value);
         }
       } else if (isSelectionTool(value)) {
-        if (currentLineTool === value) {
-          resetLineTools();
-          setLineTool('NONE');
+        if (currentDrawTool === value) {
+          resetDrawTools();
+          setDrawTool('NONE');
         } else {
-          setLineTool(value);
+          setDrawTool(value);
         }
       } else if (isHisyouTool(value)) {
         if (value === 'SETTING') {
           showHisyouToolSetting();
-        } else if (currentLineTool === value) {
+        } else if (currentDrawTool === value) {
           if (isEditingLine) return;
-          setLineTool('NONE');
+          setDrawTool('NONE');
         } else {
-          setLineTool(value);
+          setDrawTool(value);
         }
       } else {
         if (value === 'MOVE') {
-          if (currentLineTool === value) {
-            setLineTool('NONE');
+          if (currentDrawTool === value) {
+            setDrawTool('NONE');
           } else {
-            setLineTool(value);
+            setDrawTool(value);
           }
         }
       }
     },
-    [currentLineTool, isEditingLine, resetLineTools, setLineTool, showHisyouToolSetting]
+    [currentDrawTool, isEditingLine, resetDrawTools, setDrawTool, showHisyouToolSetting]
   );
 
   const selectPointTool = useCallback(
@@ -346,27 +339,33 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
       setPointTool('NONE');
-      setLineTool('NONE');
+      setDrawTool('NONE');
       toggleTerrainForWeb(value);
       setFeatureButton(value);
-      resetLineTools();
+      resetDrawTools();
     },
-    [resetLineTools, setFeatureButton, setLineTool, setPointTool, toggleTerrainForWeb]
+    [resetDrawTools, setFeatureButton, setDrawTool, setPointTool, toggleTerrainForWeb]
   );
 
   /**************** press ******************/
 
-  const pressUndoEditLine = useCallback(async () => {
-    undoEditLine();
-  }, [undoEditLine]);
+  const pressUndoDraw = useCallback(async () => {
+    undoDraw();
+  }, [undoDraw]);
 
-  const pressSaveEditLine = useCallback(async () => {
-    const { isOK, message, layer, data } = saveLine();
+  const pressSaveDraw = useCallback(async () => {
+    let result;
+    if (currentDrawTool === 'FREEHAND_POLYGON') {
+      result = savePolygon();
+    } else {
+      result = saveLine();
+    }
+    const { isOK, message, layer, data } = result;
     if (!isOK) {
       Alert.alert('', message);
       return;
     }
-    setLineTool('NONE');
+    setDrawTool('NONE');
     if (layer !== undefined && data !== undefined) {
       openData();
       setTimeout(function () {
@@ -377,9 +376,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
       }, 1);
     }
-  }, [navigation, openData, saveLine, setLineTool]);
+  }, [currentDrawTool, navigation, openData, saveLine, savePolygon, setDrawTool]);
 
-  const pressDeleteLine = useCallback(() => {
+  const pressDeleteDraw = useCallback(() => {
     const { isOK, message } = deleteLine();
     if (!isOK) {
       Alert.alert('', message);
@@ -410,7 +409,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
-      const { isOK, message } = addFeature('LINE', [], true);
+      const { isOK, message } = addRecord('LINE', [], true);
       if (!isOK) {
         await AlertAsync(message);
         return;
@@ -425,7 +424,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await toggleGPS('off');
       }
     }
-  }, [addFeature, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [addRecord, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
@@ -540,7 +539,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     drawLine: drawLine.current,
     editingLine: editingLine.current,
     selectLine: selectLine.current,
-    layers,
     isDownloadPage,
     memberLocations,
     mapViewRef,
@@ -563,7 +561,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     zoomDecimal,
     featureButton,
     currentPointTool,
-    currentLineTool,
+    currentDrawTool,
     selectedRecord,
     draggablePoint,
     isDataOpened,
@@ -579,7 +577,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     onReleaseSvgView: releaseSvgView,
     selectFeatureButton,
     selectPointTool,
-    selectLineTool,
+    selectDrawTool,
     pressZoomIn,
     pressZoomOut,
     pressCompass,
@@ -588,9 +586,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressDeleteTiles,
-    pressUndoEditLine,
-    pressSaveEditLine,
-    pressDeleteLine,
+    pressUndoDraw,
+    pressSaveDraw,
+    pressDeleteDraw,
     gotoMaps,
     gotoSettings,
     gotoLayers,

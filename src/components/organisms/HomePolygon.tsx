@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
-import { RecordType, LayerType } from '../../types';
+import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { getColor } from '../../utils/Layer';
@@ -9,12 +9,12 @@ import { hex2rgba } from '../../utils/Color';
 import dayjs from '../../i18n/dayjs';
 
 interface Props {
-  data: RecordType[];
+  data: PolygonRecordType[];
   layer: LayerType;
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onPressPolygon: (layer: LayerType, feature: RecordType) => void;
+  onPressPolygon: (layer: LayerType, feature: PolygonRecordType) => void;
 }
 
 export const Polygon = React.memo((props: Props) => {
@@ -90,7 +90,7 @@ const PolygonComponent = (props: any) => {
         zIndex={zIndex}
         onPress={() => onPressPolygon(layer, feature)}
       />
-      <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid!} label={label} size={15} color={color} />
+      <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid} label={label} size={15} color={color} />
     </>
   );
 };

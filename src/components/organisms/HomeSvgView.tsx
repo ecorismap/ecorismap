@@ -11,7 +11,7 @@ import {
 import Svg, { G, Defs, Marker, Path, Circle } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
-import { LineToolType, RecordType } from '../../types';
+import { DrawToolType, RecordType } from '../../types';
 import { COLOR, PLUGIN } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 
@@ -28,14 +28,14 @@ interface Props {
     xy: Position[];
   };
   selectLine: Position[];
-  currentLineTool: LineToolType;
+  currentDrawTool: DrawToolType;
   onPress: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
 }
 //React.Memoすると描画が更新されない
 export const SvgView = (props: Props) => {
-  const { drawLine, editingLine, selectLine, currentLineTool, onPress, onMove, onRelease } = props;
+  const { drawLine, editingLine, selectLine, currentDrawTool, onPress, onMove, onRelease } = props;
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
@@ -85,7 +85,7 @@ export const SvgView = (props: Props) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeDasharray={'1,3'}
-                fill={currentLineTool === 'AREA' ? COLOR.ALFABLUE2 : 'none'}
+                fill={currentDrawTool === 'FREEHAND_POLYGON' ? COLOR.ALFABLUE2 : 'none'}
                 markerStart={startStyle}
                 markerEnd={endStyle}
               />

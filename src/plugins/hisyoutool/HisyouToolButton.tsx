@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { COLOR } from '../../constants/AppConstants';
 import { HISYOUTOOL } from './Constants';
-import { LineToolType } from '../../types';
+import { DrawToolType } from '../../types';
 import { HisyouToolType } from './hisyoutool';
 
 import { Button } from '../../components/atoms';
@@ -13,12 +13,12 @@ interface Props {
   isEditing: boolean;
   isSelected: boolean;
   isPositionRight: boolean;
-  currentLineTool: LineToolType;
-  selectLineTool: (value: LineToolType) => void;
+  currentDrawTool: DrawToolType;
+  selectDrawTool: (value: DrawToolType) => void;
 }
 
 export const HisyouToolButton = (props: Props) => {
-  const { isEditing, isSelected, isPositionRight, currentLineTool, selectLineTool } = props;
+  const { isEditing, isSelected, isPositionRight, currentDrawTool, selectDrawTool } = props;
   const { isHisyouToolActive } = useHisyouToolSetting();
   const [currentTool, setCurrentTool] = useState<HisyouToolType>(isHisyouToolActive ? 'HISYOU' : 'SETTING');
 
@@ -32,7 +32,7 @@ export const HisyouToolButton = (props: Props) => {
         borderRadius={10}
         onPress={() => {
           setCurrentTool('SETTING');
-          selectLineTool('SETTING');
+          selectDrawTool('SETTING');
         }}
       />
     </View>
@@ -46,106 +46,106 @@ export const HisyouToolButton = (props: Props) => {
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('SETTING');
-          selectLineTool('SETTING');
+          selectDrawTool('SETTING');
         }}
       />
       <Button
         id={'HISYOU'}
         name={HISYOUTOOL.HISYOU}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'HISYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'HISYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('HISYOU');
-          selectLineTool('HISYOU');
+          selectDrawTool('HISYOU');
         }}
       />
       <Button
         id={'SENKAI'}
         name={HISYOUTOOL.SENKAI}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'SENKAI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'SENKAI' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('SENKAI');
-          selectLineTool('SENKAI');
+          selectDrawTool('SENKAI');
         }}
       />
       <Button
         id={'SENJYOU'}
         name={HISYOUTOOL.SENJYOU}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'SENJYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'SENJYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('SENJYOU');
-          selectLineTool('SENJYOU');
+          selectDrawTool('SENJYOU');
         }}
       />
       <Button
         id={'KOUGEKI'}
         name={HISYOUTOOL.KOUGEKI}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'KOUGEKI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'KOUGEKI' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('KOUGEKI');
-          selectLineTool('KOUGEKI');
+          selectDrawTool('KOUGEKI');
         }}
       />
       <Button
         id={'DISPLAY'}
         name={HISYOUTOOL.DISPLAY}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'DISPLAY' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'DISPLAY' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('DISPLAY');
-          selectLineTool('DISPLAY');
+          selectDrawTool('DISPLAY');
         }}
       />
       <Button
         id={'HOVERING'}
         name={HISYOUTOOL.HOVERING}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'HOVERING' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'HOVERING' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('HOVERING');
-          selectLineTool('HOVERING');
+          selectDrawTool('HOVERING');
         }}
       />
       <Button
         id={'KYUKOKA'}
         name={HISYOUTOOL.KYUKOKA}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'KYUKOKA' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'KYUKOKA' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('KYUKOKA');
-          selectLineTool('KYUKOKA');
+          selectDrawTool('KYUKOKA');
         }}
       />
       <Button
         id={'KARI'}
         name={HISYOUTOOL.KARI}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'KARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'KARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('KARI');
-          selectLineTool('KARI');
+          selectDrawTool('KARI');
         }}
       />
       <Button
         id={'TOMARI'}
         name={HISYOUTOOL.TOMARI}
         disabled={isSelected}
-        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentLineTool === 'TOMARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={isSelected ? COLOR.ALFAGRAY : currentDrawTool === 'TOMARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setCurrentTool('TOMARI');
-          selectLineTool('TOMARI');
+          selectDrawTool('TOMARI');
         }}
       />
     </SelectionalLongPressButton>

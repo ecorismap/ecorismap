@@ -34,7 +34,7 @@ export type UseFeatureStyleReturnType = {
   saveColorStyle: () => void;
 };
 
-export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
+export const useRecordStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
   const dispatch = useDispatch();
   const allUserData = useSelector((state: AppState) =>
     state.dataSet

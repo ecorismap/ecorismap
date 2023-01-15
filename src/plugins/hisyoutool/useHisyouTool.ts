@@ -1,6 +1,6 @@
 import { Position } from '@turf/turf';
 import { useCallback, useRef } from 'react';
-import { LayerType, LineRecordType, LineToolType, RecordType } from '../../types';
+import { DrawToolType, LayerType, LineRecordType, RecordType } from '../../types';
 import {
   checkDistanceFromLine,
   getLineSnappedPosition,
@@ -25,7 +25,7 @@ import { addRecordsAction, deleteRecordsAction } from '../../modules/dataSet';
 import { AppState } from '../../modules';
 import { LatLng } from 'react-native-maps';
 import { useLineTool } from '../../hooks/useLineTool';
-import { useFeature } from '../../hooks/useFeature';
+import { useRecord } from '../../hooks/useRecord';
 
 export type UseHisyouToolReturnType = {
   pressSvgHisyouTool: (point: Position) => void;
@@ -43,7 +43,7 @@ export type UseHisyouToolReturnType = {
 };
 
 export const useHisyouTool = (
-  currentLineTool: LineToolType,
+  currentDrawTool: DrawToolType,
   modifiedIndex: React.MutableRefObject<number>,
   drawLine: React.MutableRefObject<
     {
@@ -67,13 +67,13 @@ export const useHisyouTool = (
 ): UseHisyouToolReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
-  const { dataUser, generateLineRecord } = useFeature();
+  const { dataUser, generateLineRecord } = useRecord();
   const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
     drawLine,
     editingLine,
     undoLine,
     modifiedIndex,
-    currentLineTool
+    currentDrawTool
   );
   const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
   const hisyouData = useSelector((state: AppState) => state.dataSet.find((v) => v.layerId === hisyouLayerId));
@@ -104,7 +104,7 @@ export const useHisyouTool = (
 
   const pressSvgHisyouTool = useCallback(
     (pXY: Position) => {
-      if (currentLineTool === 'HISYOU') {
+      if (currentDrawTool === 'HISYOU') {
         pressSvgDrawTool(pXY);
       } else {
         const hisyouLine = drawLine.current.find((line) => {
@@ -125,14 +125,14 @@ export const useHisyouTool = (
         editingLine.current = { start: actionSnapped, xy: [actionSnapped] };
       }
     },
-    [currentLineTool, drawLine, editingLine, pressSvgDrawTool]
+    [currentDrawTool, drawLine, editingLine, pressSvgDrawTool]
   );
 
   const moveSvgHisyouTool = useCallback(
     (pXY: Position) => {
-      if (currentLineTool === 'HISYOU') {
+      if (currentDrawTool === 'HISYOU') {
         moveSvgDrawTool(pXY);
-      } else if (currentLineTool === 'TOMARI') {
+      } else if (currentDrawTool === 'TOMARI') {
         //ドローツールがポイントの場合
         if (actionLine.current.hisyouLine === undefined) return;
         const lineSnapped = getLineSnappedPosition(pXY, actionLine.current.hisyouLine.xy, { isXY: true }).position;
@@ -150,11 +150,11 @@ export const useHisyouTool = (
         );
       }
     },
-    [currentLineTool, editingLine, moveSvgDrawTool]
+    [currentDrawTool, editingLine, moveSvgDrawTool]
   );
 
   const releaseSvgHisyouTool = useCallback(() => {
-    if (currentLineTool === 'HISYOU') {
+    if (currentDrawTool === 'HISYOU') {
       releaseSvgDrawTool(['HISYOU', 'arrow']);
     } else {
       if (actionLine.current.hisyouLine === undefined) return;
@@ -164,7 +164,7 @@ export const useHisyouTool = (
         record: undefined,
         xy: editingLine.current.xy,
         latlon: xyArrayToLatLonArray(editingLine.current.xy, mapRegion, mapSize),
-        properties: [currentLineTool],
+        properties: [currentDrawTool],
       });
       undoLine.current.push({
         index: -1,
@@ -173,7 +173,7 @@ export const useHisyouTool = (
       actionLine.current = { hisyouLine: undefined, actions: undefined };
       editingLine.current = { start: [], xy: [] };
     }
-  }, [currentLineTool, drawLine, editingLine, mapRegion, mapSize, releaseSvgDrawTool, undoLine]);
+  }, [currentDrawTool, drawLine, editingLine, mapRegion, mapSize, releaseSvgDrawTool, undoLine]);
 
   // const deleteActions = useCallback(
   //   (layerId: string, featureId: string) => {

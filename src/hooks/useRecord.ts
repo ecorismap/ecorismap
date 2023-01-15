@@ -1,13 +1,17 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import {
   DataType,
-  FeatureButtonType,
   FeatureType,
   LayerType,
+  LineDataType,
   LineRecordType,
   LocationType,
+  PointDataType,
+  PointRecordType,
+  PolygonDataType,
+  PolygonRecordType,
   RecordType,
   UserType,
 } from '../types';
@@ -15,26 +19,23 @@ import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField } from '../utils/Data';
-import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
-import { cloneDeep } from 'lodash';
-import { LatLng } from 'react-native-maps';
-import { isPoint } from '../utils/Coords';
+import { addRecordsAction } from '../modules/dataSet';
+
+import { calcCentroid } from '../utils/Coords';
 
 export type UseFeatureReturnType = {
   dataUser: UserType;
-  layers: LayerType[];
   projectId: string | undefined;
-  pointDataSet: DataType[];
-  lineDataSet: DataType[];
-  polygonDataSet: DataType[];
-  featureButton: FeatureButtonType;
+  pointDataSet: PointDataType[];
+  lineDataSet: LineDataType[];
+  polygonDataSet: PolygonDataType[];
   selectedRecord:
     | {
         layerId: string;
         record: RecordType;
       }
     | undefined;
-  addFeature: (
+  addRecord: (
     featureType: FeatureType,
     locations: LocationType | LocationType[],
     isTrack?: any
@@ -48,7 +49,7 @@ export type UseFeatureReturnType = {
     editingLayer: LayerType | undefined;
     editingRecordSet: RecordType[];
   };
-  checkEditable: (
+  checkRecordEditable: (
     editingLayer: LayerType,
     feature?: RecordType
   ) => {
@@ -60,10 +61,8 @@ export type UseFeatureReturnType = {
     userId: string | undefined,
     recordId: string,
     type: FeatureType
-  ) => RecordType | undefined;
-  deselectFeature: () => void;
-  setFeatureButton: React.Dispatch<React.SetStateAction<FeatureButtonType>>;
-  updatePointPosition: (editingLayer: LayerType, feature: RecordType, coordinate: LatLng) => void;
+  ) => PointRecordType | LineRecordType | PolygonRecordType | undefined;
+  unselectRecord: () => void;
   generateRecord: (
     featureType: FeatureType,
     editingLayer: LayerType,
@@ -77,22 +76,31 @@ export type UseFeatureReturnType = {
   ) => LineRecordType;
 };
 
-export const useFeature = (): UseFeatureReturnType => {
+export const useRecord = (): UseFeatureReturnType => {
   const dispatch = useDispatch();
 
   const layers = useSelector((state: AppState) => state.layers);
   const user = useSelector((state: AppState) => state.user);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const pointDataSet = useSelector((state: AppState) =>
-    layers.map((layer) => (layer.type === 'POINT' ? state.dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
+  const pointDataSet = useSelector(
+    (state: AppState) =>
+      layers
+        .map((layer) => (layer.type === 'POINT' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
+        .flat() as PointDataType[]
   );
-  const lineDataSet = useSelector((state: AppState) =>
-    layers.map((layer) => (layer.type === 'LINE' ? state.dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
+  const lineDataSet = useSelector(
+    (state: AppState) =>
+      layers
+        .map((layer) => (layer.type === 'LINE' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
+        .flat() as LineDataType[]
   );
-  const polygonDataSet = useSelector((state: AppState) =>
-    layers.map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
+  const polygonDataSet = useSelector(
+    (state: AppState) =>
+      layers
+        .map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
+        .flat() as PolygonDataType[]
   );
-  const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
+
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
   const role = useSelector((state: AppState) => state.settings.role);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
@@ -106,29 +114,22 @@ export const useFeature = (): UseFeatureReturnType => {
     [projectId, user]
   );
 
-  const deselectFeature = useCallback(() => {
+  const unselectRecord = useCallback(() => {
     dispatch(editSettingsAction({ selectedRecord: undefined }));
   }, [dispatch]);
 
   const findRecord = useCallback(
     (layerId: string, userId: string | undefined, recordId: string, type: FeatureType) => {
-      const dataSet =
-        type === 'POINT'
-          ? pointDataSet
-          : type === 'LINE'
-          ? lineDataSet
-          : type === 'POLYGON'
-          ? polygonDataSet
-          : undefined;
-      if (dataSet === undefined) return undefined;
-      const dataIndex = dataSet.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      if (dataIndex !== -1) {
-        const record = dataSet[dataIndex].data.find((n) => n.id === recordId);
-        if (record !== undefined) {
-          return record;
-        }
+      if (type === 'POINT') {
+        const pointData = pointDataSet.find((d) => d.layerId === layerId && d.userId === userId);
+        return pointData?.data.find(({ id }) => id === recordId);
+      } else if (type === 'LINE') {
+        const lineData = lineDataSet.find((d) => d.layerId === layerId && d.userId === userId);
+        return lineData?.data.find(({ id }) => id === recordId);
+      } else if (type === 'POLYGON') {
+        const polygonData = polygonDataSet.find((d) => d.layerId === layerId && d.userId === userId);
+        return polygonData?.data.find(({ id }) => id === recordId);
       }
-      return undefined;
     },
     [lineDataSet, pointDataSet, polygonDataSet]
   );
@@ -155,7 +156,7 @@ export const useFeature = (): UseFeatureReturnType => {
     [activeLineLayer, activePointLayer, activePolygonLayer, dataUser.uid, lineDataSet, pointDataSet, polygonDataSet]
   );
 
-  const checkEditable = useCallback(
+  const checkRecordEditable = useCallback(
     (editingLayer: LayerType, feature?: RecordType) => {
       //データのチェックもする場合
       if (feature !== undefined) {
@@ -180,7 +181,7 @@ export const useFeature = (): UseFeatureReturnType => {
     ) => {
       const id = uuidv4();
       const field = getDefaultField(editingLayer, editingRecordSet, id);
-      const centroid = Array.isArray(coords) ? (featureType === 'LINE' ? coords[0] : coords[0]) : coords;
+      const centroid = Array.isArray(coords) ? calcCentroid(coords) : coords;
 
       const record: RecordType = {
         id: id,
@@ -204,7 +205,7 @@ export const useFeature = (): UseFeatureReturnType => {
     [generateRecord]
   );
 
-  const addFeature = useCallback(
+  const addRecord = useCallback(
     (featureType: FeatureType, locations: LocationType | LocationType[], isTrack = false) => {
       const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureType);
       if (editingLayer === undefined) {
@@ -215,7 +216,7 @@ export const useFeature = (): UseFeatureReturnType => {
           data: undefined,
         };
       }
-      const { isOK, message } = checkEditable(editingLayer);
+      const { isOK, message } = checkRecordEditable(editingLayer);
       if (!isOK) {
         return { isOK: false, message, layer: undefined, data: undefined };
       }
@@ -227,38 +228,21 @@ export const useFeature = (): UseFeatureReturnType => {
       }
       return { isOK: true, message: '', data: newRecord, layer: editingLayer };
     },
-    [checkEditable, dataUser.uid, dispatch, generateRecord, getEditingLayerAndRecordSet]
-  );
-
-  const updatePointPosition = useCallback(
-    (editingLayer: LayerType, feature: RecordType, coordinate: LatLng) => {
-      const data = cloneDeep(feature);
-      if (!isPoint(data.coords)) return;
-
-      data.coords.latitude = coordinate.latitude;
-      data.coords.longitude = coordinate.longitude;
-      if (data.coords.ele !== undefined) data.coords.ele = undefined;
-      dispatch(updateRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [data] }));
-    },
-    [dataUser.uid, dispatch]
+    [checkRecordEditable, dataUser.uid, dispatch, generateRecord, getEditingLayerAndRecordSet]
   );
 
   return {
     dataUser,
-    layers,
     projectId,
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    featureButton,
     selectedRecord,
     findRecord,
-    deselectFeature,
-    setFeatureButton,
-    addFeature,
+    unselectRecord,
+    addRecord,
     getEditingLayerAndRecordSet,
-    checkEditable,
-    updatePointPosition,
+    checkRecordEditable,
     generateRecord,
     generateLineRecord,
   } as const;

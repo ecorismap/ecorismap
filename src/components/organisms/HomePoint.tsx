@@ -2,19 +2,19 @@ import React from 'react';
 import { View } from 'react-native';
 import { MapEvent, Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
-import { RecordType, LayerType, LocationType } from '../../types';
+import { LayerType, PointRecordType, RecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { getColor } from '../../utils/Layer';
 import dayjs from '../../i18n/dayjs';
 
 interface Props {
-  data: RecordType[];
+  data: PointRecordType[];
   layer: LayerType;
   zoom: number;
   draggable: boolean;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: RecordType) => void;
-  onPressPoint: (layer: LayerType, feature: RecordType) => void;
+  onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => void;
+  onPressPoint: (layer: LayerType, feature: PointRecordType) => void;
 }
 
 export const Point = React.memo((props: Props) => {
@@ -47,7 +47,7 @@ export const Point = React.memo((props: Props) => {
             key={`${feature.id}-${feature.redraw}`}
             draggable={draggable}
             tracksViewChanges={true} //iosでラベル変更を表示に反映するため
-            coordinate={feature.coords as LocationType}
+            coordinate={feature.coords}
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.75 }}
             onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
