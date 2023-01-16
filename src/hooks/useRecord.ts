@@ -62,6 +62,7 @@ export type UseFeatureReturnType = {
     recordId: string,
     type: FeatureType
   ) => PointRecordType | LineRecordType | PolygonRecordType | undefined;
+  selectRecord: (layerId: string, record: RecordType) => void;
   unselectRecord: () => void;
   generateRecord: (
     featureType: FeatureType,
@@ -112,6 +113,13 @@ export const useRecord = (): UseFeatureReturnType => {
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
+  );
+
+  const selectRecord = useCallback(
+    (layerId: string, record: RecordType) => {
+      dispatch(editSettingsAction({ selectedRecord: { layerId, record } }));
+    },
+    [dispatch]
   );
 
   const unselectRecord = useCallback(() => {
@@ -238,9 +246,10 @@ export const useRecord = (): UseFeatureReturnType => {
     lineDataSet,
     polygonDataSet,
     selectedRecord,
-    findRecord,
-    unselectRecord,
     addRecord,
+    findRecord,
+    selectRecord,
+    unselectRecord,
     getEditingLayerAndRecordSet,
     checkRecordEditable,
     generateRecord,
