@@ -77,7 +77,9 @@ export const useLineTool = (
           setRedraw(uuidv4());
           return;
         }
-        smoothingByBoyle(drawLine.current[index].xy, 8);
+
+        const lookAhed = Math.min(8, Math.floor(drawLine.current[index].xy.length / 20));
+        smoothingByBoyle(drawLine.current[index].xy, lookAhed);
         //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
         if (currentDrawTool === 'FREEHAND_POLYGON') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
         drawLine.current[index].properties = properties ?? [currentDrawTool];
@@ -88,7 +90,8 @@ export const useLineTool = (
         });
       } else {
         // //ライン修正の場合
-        smoothingByBoyle(editingLine.current.xy, 8);
+        const lookAhed = Math.min(8, Math.floor(drawLine.current[index].xy.length / 20));
+        smoothingByBoyle(editingLine.current.xy, lookAhed);
         const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current, currentDrawTool);
 
         if (modifiedXY.length > 0) {
