@@ -6,18 +6,29 @@ import { Position } from '@turf/turf';
 import * as turf from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n/config';
-import { DrawToolType, FeatureButtonType, LayerType, LineRecordType, PolygonRecordType, RecordType } from '../types';
+import {
+  DrawToolType,
+  FeatureButtonType,
+  LayerType,
+  LineRecordType,
+  PointRecordType,
+  PolygonRecordType,
+  RecordType,
+} from '../types';
 import {
   latLonObjectsToLatLonArray,
   latLonObjectsToXYArray,
   calcDegreeRadius,
   latlonArrayToLatLonObjects,
   latLonArrayToXYArray,
-  selectFeaturesByArea,
   xyArrayToLatLonArray,
   xyToLatLon,
   selectLineFeatureByLatLon,
   selectPolygonFeatureByLatLon,
+  selectPointFeatureByLatLon,
+  selectPointFeaturesByArea,
+  selectLineFeaturesByArea,
+  selectPolygonFeaturesByArea,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { addRecordsAction, updateRecordsAction, deleteRecordsAction } from '../modules/dataSet';
@@ -32,6 +43,7 @@ import { isLineTool, isPolygonTool } from '../utils/General';
 
 export type UseDrawToolReturnType = {
   isEditingLine: boolean;
+  isDrag: boolean;
   drawLine: React.MutableRefObject<
     {
       id: string;
@@ -57,6 +69,7 @@ export type UseDrawToolReturnType = {
     data: undefined;
   };
   convertFeatureToDrawLine: (features: LineRecordType[]) => void;
+  convertPointFeatureToDrawLine: (features: PointRecordType[]) => void;
   deleteDrawLine: (layerId: string) => void;
   saveLine: () => {
     isOK: boolean;
@@ -79,7 +92,7 @@ export type UseDrawToolReturnType = {
       }
     | {
         layer: LayerType;
-        feature: LineRecordType;
+        feature: PointRecordType | LineRecordType | PolygonRecordType;
       };
   resetDrawTools: () => void;
 
@@ -108,6 +121,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const modifiedIndex = useRef(-1);
   const selectLine = useRef<Position[]>([]);
   const isEditingLine = useRef(false);
+  const isDrag = useRef(false);
   const offset = useRef([0, 0]);
   const movingMapCenter = useRef<{ x: number; y: number; longitude: number; latitude: number } | undefined>(undefined);
 
@@ -115,6 +129,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const {
     dataUser,
+    pointDataSet,
     lineDataSet,
     polygonDataSet,
     checkRecordEditable,
@@ -148,6 +163,21 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray(record.coords),
           properties: ['DRAW'],
+        })
+      );
+    },
+    [drawLine, mapRegion, mapSize]
+  );
+
+  const convertPointFeatureToDrawLine = useCallback(
+    (features: PointRecordType[]) => {
+      features.forEach((record) =>
+        drawLine.current.push({
+          id: record.id,
+          record: record,
+          xy: latLonObjectsToXYArray([record.coords], mapRegion, mapSize),
+          latlon: latLonObjectsToLatLonArray([record.coords]),
+          properties: ['POINT'],
         })
       );
     },
@@ -250,7 +280,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setRedraw(uuidv4());
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
-      const radius = calcDegreeRadius(500, mapRegion, mapSize);
 
       // For DeBug
       // selectLine.current = turf
@@ -259,15 +288,27 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       // setRedraw(uuidv4());
       let feature;
       let layer;
-      if (featureButton === 'LINE') {
-        for (const { layerId, data } of lineDataSet) {
-          feature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+      if (featureButton === 'POINT') {
+        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+        for (const { layerId, data } of pointDataSet) {
+          feature = selectPointFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
           if (feature !== undefined) {
             layer = findLayer(layerId);
             break;
           }
         }
+      } else if (featureButton === 'LINE') {
+        const radius = calcDegreeRadius(500, mapRegion, mapSize);
+        for (const { layerId, data } of lineDataSet) {
+          feature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (feature !== undefined) {
+            layer = findLayer(layerId);
+            if (isHisyouToolActive) convertFeatureToHisyouLine([feature]);
+            break;
+          }
+        }
       } else if (featureButton === 'POLYGON') {
+        const radius = calcDegreeRadius(500, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
           feature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
           if (feature !== undefined) {
@@ -280,7 +321,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined || layer === undefined) {
         return { layer: undefined, feature: undefined };
       }
-      if (isHisyouToolActive) convertFeatureToHisyouLine([feature]);
 
       return { layer, feature };
     },
@@ -292,6 +332,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       lineDataSet,
       mapRegion,
       mapSize,
+      pointDataSet,
       polygonDataSet,
       resetDrawTools,
     ]
@@ -323,7 +364,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       ];
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE') {
+      if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
         movingMapCenter.current = {
           x: pXY[0],
           y: pXY[1],
@@ -352,9 +393,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //console.log('##', gesture.numberActiveTouches);
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE') {
+      if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
         if (movingMapCenter.current === undefined) return;
-
+        isDrag.current = true;
         const longitude =
           movingMapCenter.current.longitude -
           (mapRegion.longitudeDelta * (pXY[0] - movingMapCenter.current.x)) / mapSize.width;
@@ -396,40 +437,70 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const { isOK } = checkRecordEditable(editingLayer);
     if (!isOK) return;
     const selectLineCoords = xyArrayToLatLonArray(selectLine.current, mapRegion, mapSize);
-    let features: LineRecordType[] = [];
-    if (selectLineCoords.length === 1) {
-      const radius = calcDegreeRadius(500, mapRegion, mapSize);
-      let feature;
-      if (featureButton === 'LINE') {
-        feature = selectLineFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
-      } else if (featureButton === 'POLYGON') {
-        feature = selectPolygonFeatureByLatLon(editingRecordSet as PolygonRecordType[], selectLineCoords[0], radius);
-      }
-      if (feature === undefined) {
-        features = [];
+    // let features: PointRecordType[] | LineRecordType[] | PolygonRecordType[] = [];
+    // let feature: PointRecordType | LineRecordType | PolygonRecordType | undefined;
+    if (featureButton === 'POINT') {
+      let features;
+      if (selectLineCoords.length > 1) {
+        features = selectPointFeaturesByArea(editingRecordSet as PointRecordType[], selectLineCoords);
       } else {
-        features = [feature];
+        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+        const feature = selectPointFeatureByLatLon(editingRecordSet as PointRecordType[], selectLineCoords[0], radius);
+        features = feature !== undefined ? [feature] : [];
       }
-    } else {
-      features = selectFeaturesByArea(editingRecordSet as LineRecordType[], selectLineCoords);
-    }
-
-    if (isHisyouToolActive) {
-      convertFeatureToHisyouLine(features);
-    } else {
+      if (features.length === 0) {
+        resetDrawTools();
+        setRedraw(uuidv4());
+        return;
+      }
+      convertPointFeatureToDrawLine(features);
+    } else if (featureButton === 'LINE') {
+      let features;
+      if (selectLineCoords.length > 1) {
+        features = selectLineFeaturesByArea(editingRecordSet as LineRecordType[], selectLineCoords);
+      } else {
+        const radius = calcDegreeRadius(500, mapRegion, mapSize);
+        const feature = selectLineFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
+        features = feature !== undefined ? [feature] : [];
+      }
+      if (features.length === 0) {
+        resetDrawTools();
+        setRedraw(uuidv4());
+        return;
+      }
+      if (isHisyouToolActive) {
+        convertFeatureToHisyouLine(features);
+      } else {
+        convertFeatureToDrawLine(features);
+      }
+    } else if (featureButton === 'POLYGON') {
+      let features;
+      if (selectLineCoords.length > 1) {
+        features = selectPolygonFeaturesByArea(editingRecordSet as PolygonRecordType[], selectLineCoords);
+      } else {
+        const radius = calcDegreeRadius(500, mapRegion, mapSize);
+        const feature = selectPolygonFeatureByLatLon(
+          editingRecordSet as PolygonRecordType[],
+          selectLineCoords[0],
+          radius
+        );
+        features = feature !== undefined ? [feature] : [];
+      }
+      if (features.length === 0) {
+        resetDrawTools();
+        setRedraw(uuidv4());
+        return;
+      }
       convertFeatureToDrawLine(features);
     }
-    if (features.length === 0) {
-      resetDrawTools();
-      setRedraw(uuidv4());
-      return;
-    }
+
     undoLine.current.push({ index: -1, latlon: [] });
     selectLine.current = [];
   }, [
     checkRecordEditable,
     convertFeatureToDrawLine,
     convertFeatureToHisyouLine,
+    convertPointFeatureToDrawLine,
     featureButton,
     getEditingLayerAndRecordSet,
     isHisyouToolActive,
@@ -440,10 +511,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const releaseSvgView = useCallback(() => {
     //const AVERAGE_UNIT = 8;
-    if (currentDrawTool === 'MOVE') {
+    if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
       movingMapCenter.current = undefined;
       //xy座標を更新してsvgを表示
       showDrawLine();
+      isDrag.current = false;
     } else if (currentDrawTool === 'SELECT') {
       releaseSVGSelectionTool();
     } else if (isLineTool(currentDrawTool) || isPolygonTool(currentDrawTool)) {
@@ -533,6 +605,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   return {
     isEditingLine: isEditingLine.current,
+    isDrag: isDrag.current,
     currentDrawTool,
     drawLine,
     editingLine,
@@ -545,6 +618,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setDrawTool,
     setFeatureButton,
     convertFeatureToDrawLine,
+    convertPointFeatureToDrawLine,
     deleteDrawLine,
     pressSvgView,
     moveSvgView,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLOR, LINETOOL } from '../../constants/AppConstants';
 import { DrawToolType, LineToolType } from '../../types';
+import { isLineTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -14,7 +15,9 @@ interface Props {
 
 export const HomeLineToolButton = (props: Props) => {
   const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<LineToolType>('FREEHAND_LINE');
+  const [currentTool, setCurrentTool] = useState<LineToolType>(
+    isLineTool(currentDrawTool) ? currentDrawTool : 'FREEHAND_LINE'
+  );
 
   return (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>

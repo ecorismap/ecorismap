@@ -7,6 +7,7 @@ import {
   LatLonDMSType,
   LineRecordType,
   LocationType,
+  PointRecordType,
   PolygonRecordType,
   RecordType,
 } from '../types';
@@ -327,7 +328,23 @@ export const modifyLine = (
   }
 };
 
-export const selectFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
+export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], areaLineCoords: Position[]) => {
+  try {
+    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
+    return pointFeatures
+      .map((feature) => {
+        const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featurePoint, areaPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is PointRecordType => d !== undefined);
+  } catch (e) {
+    return [];
+  }
+};
+
+export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoords: Position[]) => {
   try {
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return lineFeatures
@@ -340,6 +357,41 @@ export const selectFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoo
       .filter((d): d is LineRecordType => d !== undefined);
   } catch (e) {
     return [];
+  }
+};
+
+export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[], areaLineCoords: Position[]) => {
+  try {
+    const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
+    return polygonFeatures
+      .map((feature) => {
+        const featurePolygon = turf.polygon([feature.coords.map((c) => [c.longitude, c.latitude])]);
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featurePolygon, areaPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is PolygonRecordType => d !== undefined);
+  } catch (e) {
+    return [];
+  }
+};
+
+export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], pointCoords: Position, radius: number) => {
+  try {
+    const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
+    const features = pointFeatures
+      .map((feature) => {
+        const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featurePoint, bufferPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is PointRecordType => d !== undefined);
+
+    if (features.length === 0) return undefined;
+    return features[0];
+  } catch (e) {
+    return undefined;
   }
 };
 

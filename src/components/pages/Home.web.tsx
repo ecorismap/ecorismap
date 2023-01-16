@@ -18,7 +18,6 @@ import { TileMapType } from '../../types';
 import { HomeProps } from './Home';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { HomePointTools } from '../organisms/HomePointTools';
 import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import DataRoutes from '../../routes/DataRoutes';
@@ -33,6 +32,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
+import { isPointTool } from '../../utils/General';
 
 export default function HomeScreen({
   pointDataSet,
@@ -55,7 +55,6 @@ export default function HomeScreen({
   tileMaps,
   isDownloading,
   featureButton,
-  currentPointTool,
   currentDrawTool,
   selectedRecord,
   draggablePoint,
@@ -64,7 +63,6 @@ export default function HomeScreen({
   onRegionChangeMapView,
   onPressMapView,
   onDragEndPoint,
-  onPressPoint,
   onDrop,
   onPressSvgView,
   onMoveSvgView,
@@ -78,7 +76,6 @@ export default function HomeScreen({
   gotoMaps,
   gotoSettings,
   gotoLayers,
-  selectPointTool,
   selectDrawTool,
   selectFeatureButton,
 }: HomeProps) {
@@ -415,7 +412,7 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && (
+        {currentDrawTool !== 'NONE' && !isPointTool(currentDrawTool) && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
@@ -480,7 +477,6 @@ export default function HomeScreen({
                       draggable={draggablePoint}
                       selectedRecord={selectedRecord}
                       onDragEndPoint={onDragEndPoint}
-                      onPressPoint={(layer_, feature) => onPressPoint(layer_, feature)}
                     />
                   )
                 );
@@ -540,26 +536,21 @@ export default function HomeScreen({
           <HomeDownloadButton onPress={pressDeleteTiles} />
         ) : (
           <>
-            {!isDownloadPage && featureButton === 'LINE' && isDataOpened !== 'expanded' && (
-              <HomeDrawTools
-                isPositionRight={isDataOpened === 'opened' || isLandscape}
-                isEditing={isEditingLine}
-                isSelected={drawLine.length > 0}
-                featureButton={featureButton}
-                currentDrawTool={currentDrawTool}
-                selectDrawTool={selectDrawTool}
-                pressUndoDraw={pressUndoDraw}
-                pressSaveDraw={pressSaveDraw}
-                pressDeleteDraw={pressDeleteDraw}
-              />
-            )}
-            {!isDownloadPage && featureButton === 'POINT' && isDataOpened !== 'expanded' && (
-              <HomePointTools
-                isPositionRight={isDataOpened === 'opened' || isLandscape}
-                pointTool={currentPointTool}
-                selectPointTool={selectPointTool}
-              />
-            )}
+            {!isDownloadPage &&
+              (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') &&
+              isDataOpened !== 'expanded' && (
+                <HomeDrawTools
+                  isPositionRight={isDataOpened === 'opened' || isLandscape}
+                  isEditing={isEditingLine}
+                  isSelected={drawLine.length > 0}
+                  featureButton={featureButton}
+                  currentDrawTool={currentDrawTool}
+                  selectDrawTool={selectDrawTool}
+                  pressUndoDraw={pressUndoDraw}
+                  pressSaveDraw={pressSaveDraw}
+                  pressDeleteDraw={pressDeleteDraw}
+                />
+              )}
 
             {isDataOpened !== 'expanded' && (
               <HomeButtons

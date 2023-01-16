@@ -9,11 +9,11 @@ interface Props {
   isEditing: boolean;
   isPositionRight: boolean;
   currentDrawTool: DrawToolType;
-  selectLineTool: (value: DrawToolType) => void;
+  selectDrawTool: (value: DrawToolType) => void;
 }
 
 export const HomeSelectionToolButton = (props: Props) => {
-  const { isEditing, isPositionRight, currentDrawTool, selectLineTool } = props;
+  const { isEditing, isPositionRight, currentDrawTool, selectDrawTool } = props;
   const [currentTool, setCurrentTool] = useState<SelectionToolType>('INFO');
 
   return (
@@ -26,7 +26,7 @@ export const HomeSelectionToolButton = (props: Props) => {
         disabled={isEditing}
         onPressCustom={() => {
           setCurrentTool('INFO');
-          selectLineTool('INFO');
+          selectDrawTool('INFO');
         }}
       />
       <Button
@@ -37,7 +37,7 @@ export const HomeSelectionToolButton = (props: Props) => {
         disabled={isEditing}
         onPressCustom={() => {
           setCurrentTool('SELECT');
-          selectLineTool('SELECT');
+          selectDrawTool('SELECT');
         }}
       />
     </SelectionalLongPressButton>

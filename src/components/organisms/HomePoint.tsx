@@ -14,12 +14,11 @@ interface Props {
   draggable: boolean;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => void;
-  onPressPoint: (layer: LayerType, feature: PointRecordType) => void;
 }
 
 export const Point = React.memo((props: Props) => {
   //console.log('render Point');
-  const { data, layer, zoom, draggable, selectedRecord, onDragEndPoint, onPressPoint } = props;
+  const { data, layer, zoom, draggable, selectedRecord, onDragEndPoint } = props;
   if (data === undefined) return null;
   //console.log('#', data);
   return (
@@ -51,7 +50,6 @@ export const Point = React.memo((props: Props) => {
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.75 }}
             onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
-            onPress={() => onPressPoint(layer, feature)}
             style={{ zIndex: -1 }}
           >
             {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}

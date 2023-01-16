@@ -14,12 +14,11 @@ interface Props {
   draggable: boolean;
   selectedRecord: { layerId: string; record: RecordType | undefined } | undefined;
   onDragEndPoint: (e: any, layer: LayerType, feature: RecordType) => void;
-  onPressPoint: (layer: LayerType, feature: RecordType) => void;
 }
 
 export const Point = React.memo((props: Props) => {
   //console.log('render Point');
-  const { data, layer, zoom, draggable, selectedRecord, onDragEndPoint, onPressPoint } = props;
+  const { data, layer, zoom, draggable, selectedRecord, onDragEndPoint } = props;
   if (data === undefined) return null;
 
   return (
@@ -57,7 +56,7 @@ export const Point = React.memo((props: Props) => {
               )
             }
           >
-            <div onClick={() => onPressPoint(layer, feature)}>
+            <div>
               <View style={{ alignItems: 'flex-start' }}>
                 <PointView size={15} color={color} borderColor={borderColor} />
                 <PointLabel label={zoom > 8 ? label : ''} size={15} color={labelColor} borderColor={COLOR.WHITE} />

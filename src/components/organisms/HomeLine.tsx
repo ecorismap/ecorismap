@@ -43,7 +43,7 @@ export const Line = React.memo((props: Props) => {
               tappable={false}
               coordinates={feature.coords as LatLng[]}
               strokeColor={lineColor}
-              strokeWidth={2}
+              strokeWidth={1.5}
               zIndex={zIndex}
               onPress={() => onPressLine(layer, feature)}
             />
