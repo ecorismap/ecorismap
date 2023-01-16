@@ -64,7 +64,7 @@ export const Polygon = React.memo((props: Props) => {
               <View style={{ alignItems: 'center' }}>
                 {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
                 <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
-                <PointView size={15} color={pointColor} borderColor={borderColor} />
+                <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
               </View>
             </Marker>
           );

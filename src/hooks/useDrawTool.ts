@@ -367,7 +367,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const releaseSVGSelectionTool = useCallback(() => {
     //選択処理
-    console.log(featureButton);
     const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureButton);
     if (editingLayer === undefined) return;
     const { isOK } = checkRecordEditable(editingLayer);
