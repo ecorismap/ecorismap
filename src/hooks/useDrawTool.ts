@@ -6,17 +6,18 @@ import { Position } from '@turf/turf';
 import * as turf from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n/config';
-import { DrawToolType, FeatureButtonType, LayerType, LineRecordType, RecordType } from '../types';
+import { DrawToolType, FeatureButtonType, LayerType, LineRecordType, PolygonRecordType, RecordType } from '../types';
 import {
   latLonObjectsToLatLonArray,
   latLonObjectsToXYArray,
   calcDegreeRadius,
   latlonArrayToLatLonObjects,
   latLonArrayToXYArray,
-  selectFeatureByLatLon,
   selectFeaturesByArea,
   xyArrayToLatLonArray,
   xyToLatLon,
+  selectLineFeatureByLatLon,
+  selectPolygonFeatureByLatLon,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { addRecordsAction, updateRecordsAction, deleteRecordsAction } from '../modules/dataSet';
@@ -112,7 +113,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const { mapSize, mapRegion } = useWindow();
 
-  const { dataUser, checkRecordEditable, getEditingLayerAndRecordSet, generateLineRecord } = useRecord();
+  const {
+    dataUser,
+    lineDataSet,
+    polygonDataSet,
+    checkRecordEditable,
+    getEditingLayerAndRecordSet,
+    generateLineRecord,
+    findLayer,
+  } = useRecord();
   const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
     drawLine,
     editingLine,
@@ -241,34 +250,49 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setRedraw(uuidv4());
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
-      const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureButton);
-      if (editingLayer === undefined) return { layer: undefined, feature: undefined };
       const radius = calcDegreeRadius(500, mapRegion, mapSize);
+
       // For DeBug
       // selectLine.current = turf
       //   .buffer(turf.point(pointToLatLon(point, mapRegion, mapSize)), radius)
       //   .geometry.coordinates[0].map((d) => latLonToPoint(d, mapRegion, mapSize));
       // setRedraw(uuidv4());
-      const feature = selectFeatureByLatLon(
-        editingRecordSet as LineRecordType[],
-        xyToLatLon(pXY, mapRegion, mapSize),
-        radius
-      );
+      let feature;
+      let layer;
+      if (featureButton === 'LINE') {
+        for (const { layerId, data } of lineDataSet) {
+          feature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (feature !== undefined) {
+            layer = findLayer(layerId);
+            break;
+          }
+        }
+      } else if (featureButton === 'POLYGON') {
+        for (const { layerId, data } of polygonDataSet) {
+          feature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (feature !== undefined) {
+            layer = findLayer(layerId);
+            break;
+          }
+        }
+      }
 
-      if (feature === undefined) {
+      if (feature === undefined || layer === undefined) {
         return { layer: undefined, feature: undefined };
       }
       if (isHisyouToolActive) convertFeatureToHisyouLine([feature]);
 
-      return { layer: editingLayer, feature: feature };
+      return { layer, feature };
     },
     [
       convertFeatureToHisyouLine,
       featureButton,
-      getEditingLayerAndRecordSet,
+      findLayer,
       isHisyouToolActive,
+      lineDataSet,
       mapRegion,
       mapSize,
+      polygonDataSet,
       resetDrawTools,
     ]
   );
@@ -375,7 +399,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     let features: LineRecordType[] = [];
     if (selectLineCoords.length === 1) {
       const radius = calcDegreeRadius(500, mapRegion, mapSize);
-      const feature = selectFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
+      let feature;
+      if (featureButton === 'LINE') {
+        feature = selectLineFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
+      } else if (featureButton === 'POLYGON') {
+        feature = selectPolygonFeatureByLatLon(editingRecordSet as PolygonRecordType[], selectLineCoords[0], radius);
+      }
       if (feature === undefined) {
         features = [];
       } else {

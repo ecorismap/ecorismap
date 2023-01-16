@@ -246,6 +246,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     async (event: GestureResponderEvent) => {
       if (currentDrawTool === 'INFO') {
         const { layer, feature } = selectSingleFeature(event);
+        console.log(feature);
         if (layer === undefined || feature === undefined) {
           unselectRecord();
           return;

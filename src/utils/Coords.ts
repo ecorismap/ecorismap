@@ -1,6 +1,15 @@
 import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
-import { DMSType, DrawToolType, LatLonDMSKey, LatLonDMSType, LineRecordType, LocationType, RecordType } from '../types';
+import {
+  DMSType,
+  DrawToolType,
+  LatLonDMSKey,
+  LatLonDMSType,
+  LineRecordType,
+  LocationType,
+  PolygonRecordType,
+  RecordType,
+} from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
 import { LatLng } from 'react-native-maps';
@@ -334,7 +343,7 @@ export const selectFeaturesByArea = (lineFeatures: LineRecordType[], areaLineCoo
   }
 };
 
-export const selectFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoords: Position, radius: number) => {
+export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoords: Position, radius: number) => {
   try {
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = lineFeatures
@@ -345,6 +354,29 @@ export const selectFeatureByLatLon = (lineFeatures: LineRecordType[], pointCoord
         if (intersects) return feature;
       })
       .filter((d): d is LineRecordType => d !== undefined);
+
+    if (features.length === 0) return undefined;
+    return features[0];
+  } catch (e) {
+    return undefined;
+  }
+};
+
+export const selectPolygonFeatureByLatLon = (
+  polygonFeatures: PolygonRecordType[],
+  pointCoords: Position,
+  radius: number
+) => {
+  try {
+    const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
+    const features = polygonFeatures
+      .map((feature) => {
+        const featurePolygon = turf.polygon([feature.coords.map((c) => [c.longitude, c.latitude])]);
+        //@ts-ignore
+        const intersects = turf.booleanIntersects(featurePolygon, bufferPolygon);
+        if (intersects) return feature;
+      })
+      .filter((d): d is PolygonRecordType => d !== undefined);
 
     if (features.length === 0) return undefined;
     return features[0];
