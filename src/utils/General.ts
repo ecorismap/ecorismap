@@ -1,5 +1,5 @@
-import { LINETOOL, POLYGONTOOL, SELECTIONTOOL } from '../constants/AppConstants';
-import { DrawToolType, LineToolType, PolygonToolType, SelectionToolType } from '../types';
+import { LINETOOL, POINTTOOL, POLYGONTOOL, SELECTIONTOOL } from '../constants/AppConstants';
+import { DrawToolType, LineToolType, PointToolType, PolygonToolType, SelectionToolType } from '../types';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
   const chunks = [];
@@ -9,6 +9,10 @@ export function splitStringsIntoChunksOfLen(str: string, len: number) {
     chunks.push(str.slice(i, (i += len)));
   }
   return chunks;
+}
+
+export function isPointTool(tool: string): tool is PointToolType {
+  return Object.keys(POINTTOOL).includes(tool);
 }
 
 export function isLineTool(tool: string): tool is LineToolType {

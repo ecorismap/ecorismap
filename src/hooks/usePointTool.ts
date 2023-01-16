@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { LayerType, PointRecordType, PointToolType, RecordType } from '../types';
+import { useCallback } from 'react';
+import { LayerType, PointRecordType, RecordType } from '../types';
 import { useDispatch } from 'react-redux';
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
@@ -10,7 +10,6 @@ import { updateRecordsAction } from '../modules/dataSet';
 import { useRecord } from './useRecord';
 
 export type UsePointToolReturnType = {
-  currentPointTool: PointToolType;
   addCurrentPoint: () => Promise<{
     isOK: boolean;
     message: string;
@@ -32,13 +31,11 @@ export type UsePointToolReturnType = {
     message: string;
   };
   resetPointPosition: (editingLayer: LayerType, feature: RecordType) => void;
-  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
 };
 
 export const usePointTool = (): UsePointToolReturnType => {
   const dispatch = useDispatch();
   const { dataUser, addRecord, checkRecordEditable, getEditingLayerAndRecordSet } = useRecord();
-  const [currentPointTool, setPointTool] = useState<PointToolType>('NONE');
 
   const addCurrentPoint = useCallback(async () => {
     const location = await Location.getLastKnownPositionAsync();
@@ -65,6 +62,7 @@ export const usePointTool = (): UsePointToolReturnType => {
     (editingLayer: LayerType, feature: RecordType) => {
       const data = cloneDeep(feature);
       data.redraw = !data.redraw;
+
       dispatch(
         updateRecordsAction({
           layerId: editingLayer.id,
@@ -101,8 +99,6 @@ export const usePointTool = (): UsePointToolReturnType => {
   );
 
   return {
-    currentPointTool,
-    setPointTool,
     addCurrentPoint,
     addPressPoint,
     dragEndPoint,

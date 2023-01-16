@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
 import { Region, MapEvent } from 'react-native-maps';
-import { DrawToolType, FeatureButtonType, LayerType, PointRecordType, PointToolType } from '../types';
+import { DrawToolType, FeatureButtonType, LayerType, PointRecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -13,7 +13,7 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useZoom } from '../hooks/useZoom';
 import { useLocation } from '../hooks/useLocation';
-import { isLineTool, isPolygonTool, isSelectionTool } from '../utils/General';
+import { isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
@@ -61,6 +61,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     editingLine,
     selectLine,
     isEditingLine,
+    isDrag,
     currentDrawTool,
     featureButton,
     setDrawTool,
@@ -79,8 +80,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleTerrainForWeb,
   } = useDrawTool(mapViewRef.current);
 
-  const { currentPointTool, setPointTool, addCurrentPoint, addPressPoint, dragEndPoint, resetPointPosition } =
-    usePointTool();
+  const { addCurrentPoint, addPressPoint, dragEndPoint, resetPointPosition } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -114,7 +114,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const isDownloadPage = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
-  const draggablePoint = useMemo(() => currentPointTool === 'MOVE', [currentPointTool]);
+  const draggablePoint = useMemo(() => currentDrawTool === 'MOVE_POINT', [currentDrawTool]);
 
   /*************** onXXXXMapView *********************/
 
@@ -132,162 +132,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
   }, [gpsState, toggleGPS]);
 
-  const onPressMapView = useCallback(
-    async (e: MapEvent<{}>) => {
-      if (currentPointTool === 'ADD_LOCATION') {
-        if (Platform.OS === 'web') {
-          Alert.alert('', t('Home.alert.gpsWeb'));
-          return;
-        }
-        if (gpsState === 'off' && trackingState === 'off') {
-          Alert.alert('', t('Home.alert.gps'));
-          return;
-        }
-        setPointTool('NONE');
-        const { isOK, message, layer, data } = await addCurrentPoint();
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-        } else {
-          expandData();
-          setTimeout(function () {
-            navigation.navigate('DataEdit', {
-              previous: 'Home',
-              targetData: data,
-              targetLayer: layer,
-            });
-          }, 1);
-        }
-      } else if (currentPointTool === 'ADD') {
-        setPointTool('NONE');
-        const { isOK, message, layer, data } = addPressPoint(e);
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-          return;
-        }
-        expandData();
-        setTimeout(function () {
-          navigation.navigate('DataEdit', {
-            previous: 'Home',
-            targetData: data,
-            targetLayer: layer,
-          });
-        }, 1);
-      } else if (currentPointTool === 'NONE') {
-        unselectRecord();
-      }
-    },
-    [
-      currentPointTool,
-      gpsState,
-      trackingState,
-      setPointTool,
-      addCurrentPoint,
-      expandData,
-      navigation,
-      addPressPoint,
-      unselectRecord,
-    ]
-  );
-
-  const onDragEndPoint = useCallback(
-    async (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => {
-      const coordinate = e.nativeEvent.coordinate;
-      const ret = await ConfirmAsync(t('Home.confirm.drag'));
-      if (!ret) {
-        resetPointPosition(layer, feature);
-      }
-      const { isOK, message } = dragEndPoint(layer, feature, coordinate);
-      if (!isOK) {
-        Alert.alert('', message);
-      }
-    },
-    [dragEndPoint, resetPointPosition]
-  );
-
-  const onPressPoint = useCallback(
-    (layer: LayerType, feature: PointRecordType) => {
-      if (currentPointTool === 'NONE' && currentDrawTool === 'NONE') {
-        if (isEditingRecord) {
-          AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-        openData();
-
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-        });
-        const region = isLandscape
-          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-        setTimeout(() => changeMapRegion(region, true), 300);
-      }
-    },
-    [changeMapRegion, currentDrawTool, currentPointTool, isEditingRecord, isLandscape, mapRegion, navigation, openData]
-  );
-
-  const onDrop = useCallback(
-    async (acceptedFiles) => {
-      if (!editable) {
-        await AlertAsync(t('hooks.message.lockProject'));
-        return;
-      }
-      const ret = await importDropedFile(acceptedFiles);
-      if (ret.length > 0) {
-        await AlertAsync(t('hooks.message.receiveFile'));
-      }
-      //console.log(ret);
-    },
-    [editable, importDropedFile]
-  );
-
-  const onPressSvgView = useCallback(
-    async (event: GestureResponderEvent) => {
-      if (currentDrawTool === 'INFO') {
-        const { layer, feature } = selectSingleFeature(event);
-        console.log(feature);
-        if (layer === undefined || feature === undefined) {
-          unselectRecord();
-          return;
-        }
-        if (isEditingRecord) {
-          await AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-
-        openData();
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-        });
-        const region = isLandscape
-          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-        setTimeout(() => changeMapRegion(region, true), 300);
-      } else {
-        pressSvgView(event);
-      }
-    },
-    [
-      changeMapRegion,
-      currentDrawTool,
-      unselectRecord,
-      isEditingRecord,
-      isLandscape,
-      mapRegion,
-      navigation,
-      openData,
-      pressSvgView,
-      selectSingleFeature,
-    ]
-  );
-
-  /************** select button ************/
   const selectDrawTool = useCallback(
-    (value: DrawToolType) => {
-      if (isLineTool(value) || isPolygonTool(value)) {
+    async (value: DrawToolType) => {
+      if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
         if (currentDrawTool === value) {
           if (isEditingLine) return;
           //ドローツールをオフ
@@ -295,6 +142,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         } else {
           //ドローツールをオン
           setDrawTool(value);
+          if (isPointTool(value)) await runTutrial(`POINTTOOL_${value}`);
         }
       } else if (isSelectionTool(value)) {
         if (currentDrawTool === value) {
@@ -322,30 +170,157 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentDrawTool, isEditingLine, resetDrawTools, setDrawTool, showHisyouToolSetting]
+    [currentDrawTool, isEditingLine, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
   );
 
-  const selectPointTool = useCallback(
-    async (value: PointToolType) => {
-      if (value === currentPointTool) {
-        setPointTool('NONE');
+  const onPressMapView = useCallback(
+    async (e: MapEvent<{}>) => {
+      if (currentDrawTool === 'ADD_LOCATION_POINT') {
+        if (Platform.OS === 'web') {
+          Alert.alert('', t('Home.alert.gpsWeb'));
+          return;
+        }
+        if (gpsState === 'off' && trackingState === 'off') {
+          Alert.alert('', t('Home.alert.gps'));
+          return;
+        }
+
+        const { isOK, message, layer, data } = await addCurrentPoint();
+        if (!isOK || layer === undefined || data === undefined) {
+          Alert.alert('', message);
+        } else {
+          isDataOpened === 'closed' ? expandData() : openData();
+          setTimeout(function () {
+            navigation.navigate('DataEdit', {
+              previous: 'Home',
+              targetData: data,
+              targetLayer: layer,
+            });
+          }, 1);
+        }
+        selectDrawTool(currentDrawTool);
+      } else if (currentDrawTool === 'ADD_POINT') {
+        const { isOK, message, layer, data } = addPressPoint(e);
+        if (!isOK || layer === undefined || data === undefined) {
+          Alert.alert('', message);
+          return;
+        }
+        isDataOpened === 'closed' ? expandData() : openData();
+        setTimeout(function () {
+          navigation.navigate('DataEdit', {
+            previous: 'Home',
+            targetData: data,
+            targetLayer: layer,
+          });
+        }, 1);
       } else {
-        await runTutrial(`POINTTOOL_${value}`);
-        setPointTool(value);
+        unselectRecord();
       }
     },
-    [currentPointTool, runTutrial, setPointTool]
+    [
+      currentDrawTool,
+      gpsState,
+      trackingState,
+      addCurrentPoint,
+      selectDrawTool,
+      isDataOpened,
+      expandData,
+      openData,
+      navigation,
+      addPressPoint,
+      unselectRecord,
+    ]
   );
+
+  const onDragEndPoint = useCallback(
+    async (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => {
+      const coordinate = e.nativeEvent.coordinate;
+      const ret = await ConfirmAsync(t('Home.confirm.drag'));
+      if (!ret) {
+        resetPointPosition(layer, feature);
+        return;
+      }
+      const { isOK, message } = dragEndPoint(layer, feature, coordinate);
+      if (!isOK) {
+        Alert.alert('', message);
+      }
+    },
+    [dragEndPoint, resetPointPosition]
+  );
+
+  const onDrop = useCallback(
+    async (acceptedFiles) => {
+      if (!editable) {
+        await AlertAsync(t('hooks.message.lockProject'));
+        return;
+      }
+      const ret = await importDropedFile(acceptedFiles);
+      if (ret.length > 0) {
+        await AlertAsync(t('hooks.message.receiveFile'));
+      }
+      //console.log(ret);
+    },
+    [editable, importDropedFile]
+  );
+
+  const onReleaseSvgView = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (currentDrawTool === 'INFO') {
+        if (isDrag) {
+          //INFOでドラッグした場合は移動のみ実行
+          releaseSvgView();
+          return;
+        }
+        if (isEditingRecord) {
+          await AlertAsync(t('Home.alert.discardChanges'));
+          return;
+        }
+        const { layer, feature } = selectSingleFeature(event);
+
+        if (layer === undefined || feature === undefined) {
+          unselectRecord();
+
+          return;
+        }
+
+        openData();
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetData: { ...feature },
+          targetLayer: { ...layer },
+        });
+        const region = isLandscape
+          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
+          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
+        setTimeout(() => changeMapRegion(region, true), 300);
+      } else {
+        releaseSvgView();
+      }
+    },
+    [
+      currentDrawTool,
+      isDrag,
+      isEditingRecord,
+      selectSingleFeature,
+      openData,
+      navigation,
+      isLandscape,
+      mapRegion,
+      releaseSvgView,
+      unselectRecord,
+      changeMapRegion,
+    ]
+  );
+  /************** select button ************/
 
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
-      setPointTool('NONE');
       setDrawTool('NONE');
       toggleTerrainForWeb(value);
       setFeatureButton(value);
       resetDrawTools();
     },
-    [resetDrawTools, setFeatureButton, setDrawTool, setPointTool, toggleTerrainForWeb]
+    [resetDrawTools, setFeatureButton, setDrawTool, toggleTerrainForWeb]
   );
 
   /**************** press ******************/
@@ -561,7 +536,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     zoom,
     zoomDecimal,
     featureButton,
-    currentPointTool,
     currentDrawTool,
     selectedRecord,
     draggablePoint,
@@ -571,13 +545,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     onPressMapView,
     onDragMapView,
     onDragEndPoint,
-    onPressPoint,
     onDrop,
-    onPressSvgView,
+    onPressSvgView: pressSvgView,
     onMoveSvgView: moveSvgView,
-    onReleaseSvgView: releaseSvgView,
+    onReleaseSvgView,
     selectFeatureButton,
-    selectPointTool,
     selectDrawTool,
     pressZoomIn,
     pressZoomOut,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLOR, POLYGONTOOL } from '../../constants/AppConstants';
 import { DrawToolType, PolygonToolType } from '../../types';
+import { isPolygonTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -14,7 +15,9 @@ interface Props {
 
 export const HomePolygonToolButton = (props: Props) => {
   const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<PolygonToolType>('PLOT_POLYGON');
+  const [currentTool, setCurrentTool] = useState<PolygonToolType>(
+    isPolygonTool(currentDrawTool) ? currentDrawTool : 'PLOT_POLYGON'
+  );
 
   return (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>

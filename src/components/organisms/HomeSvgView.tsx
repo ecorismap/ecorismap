@@ -69,7 +69,7 @@ export const SvgView = (props: Props) => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle = '';
+          let startStyle = properties.includes('POINT') ? `url(#point)` : '';
           let endStyle = '';
           if (PLUGIN.HISYOUTOOL) {
             startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
@@ -150,6 +150,19 @@ const LineDefs = () => {
         orient="auto"
       >
         <Circle cx="5" cy="5" r="5" fill="blue" stroke="white" />
+      </Marker>
+      <Marker
+        id="point"
+        viewBox="0 0 10 10"
+        refX="5"
+        refY="7"
+        //@ts-ignore
+        markerUnits="strokeWidth"
+        markerWidth="4"
+        markerHeight="4"
+        orient="auto"
+      >
+        <Circle cx="5" cy="5" r="10" fill="yellow" stroke="black" />
       </Marker>
     </Defs>
   );

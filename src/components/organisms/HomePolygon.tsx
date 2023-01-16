@@ -86,7 +86,7 @@ const PolygonComponent = (props: any) => {
         holes={feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined}
         strokeColor={color}
         fillColor={featureColor}
-        strokeWidth={2}
+        strokeWidth={1.5}
         zIndex={zIndex}
         onPress={() => onPressPolygon(layer, feature)}
       />

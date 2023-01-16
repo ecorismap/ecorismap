@@ -141,10 +141,9 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  ADD: 'map-marker-plus',
-  ADD_LOCATION: 'map-marker-radius',
-  MOVE: 'map-marker-right',
-  NONE: 'none',
+  ADD_POINT: 'map-marker-plus',
+  ADD_LOCATION_POINT: 'map-marker-radius',
+  MOVE_POINT: 'map-marker-right',
 } as const;
 
 export const LINETOOL = {
@@ -162,6 +161,7 @@ export const SELECTIONTOOL = {
 } as const;
 
 export const DRAWTOOL = {
+  ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
   ...SELECTIONTOOL,

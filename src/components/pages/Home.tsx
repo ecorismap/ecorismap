@@ -25,7 +25,6 @@ import {
   MemberLocationType,
   TileMapType,
   TileRegionType,
-  PointToolType,
   FeatureButtonType,
   TrackingStateType,
   PointDataType,
@@ -39,10 +38,9 @@ import { HomeCompassButton } from '../organisms/HomeCompassButton';
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { HomePointTools } from '../organisms/HomePointTools';
 import { Position } from '@turf/turf';
 import { SvgView } from '../organisms/HomeSvgView';
-import { nearDegree } from '../../utils/General';
+import { isPointTool, nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { Loading } from '../molecules/Loading';
@@ -89,7 +87,6 @@ export interface HomeProps {
   savedArea: TileRegionType[];
   attribution: string;
   featureButton: FeatureButtonType;
-  currentPointTool: PointToolType;
   currentDrawTool: DrawToolType;
   selectedRecord:
     | {
@@ -104,7 +101,6 @@ export interface HomeProps {
   onPressMapView: (e: MapEvent<{}>) => void;
   onDragMapView: () => void;
   onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => void;
-  onPressPoint: (layer: LayerType, feature: PointRecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
   onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
@@ -125,7 +121,6 @@ export interface HomeProps {
   gotoLayers: () => void;
   gotoBack: () => void;
   selectFeatureButton: (value: FeatureButtonType) => void;
-  selectPointTool: (value: PointToolType) => void;
   selectDrawTool: (value: DrawToolType) => void;
 }
 
@@ -157,7 +152,6 @@ export default function HomeScreen({
   savedArea,
   attribution,
   featureButton,
-  currentPointTool,
   currentDrawTool,
   selectedRecord,
   draggablePoint,
@@ -167,7 +161,6 @@ export default function HomeScreen({
   onPressMapView,
   onDragMapView,
   onDragEndPoint,
-  onPressPoint,
   onPressSvgView,
   onMoveSvgView,
   onReleaseSvgView,
@@ -185,7 +178,6 @@ export default function HomeScreen({
   gotoMaps,
   gotoSettings,
   gotoLayers,
-  selectPointTool,
   selectDrawTool,
   selectFeatureButton,
 }: HomeProps) {
@@ -286,7 +278,7 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && (
+        {currentDrawTool !== 'NONE' && !isPointTool(currentDrawTool) && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
@@ -352,7 +344,6 @@ export default function HomeScreen({
                   draggable={draggablePoint}
                   selectedRecord={selectedRecord}
                   onDragEndPoint={onDragEndPoint}
-                  onPressPoint={(layer_, feature) => onPressPoint(layer_, feature)}
                 />
               )
             );
@@ -449,7 +440,7 @@ export default function HomeScreen({
           <>
             {isDataOpened !== 'expanded' &&
               !isDownloadPage &&
-              (featureButton === 'LINE' || featureButton === 'POLYGON') && (
+              (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') && (
                 <HomeDrawTools
                   isPositionRight={isDataOpened === 'opened' || isLandscape}
                   isEditing={isEditingLine}
@@ -462,13 +453,6 @@ export default function HomeScreen({
                   pressDeleteDraw={pressDeleteDraw}
                 />
               )}
-            {!isDownloadPage && featureButton === 'POINT' && (
-              <HomePointTools
-                isPositionRight={isDataOpened === 'opened' || isLandscape}
-                pointTool={currentPointTool}
-                selectPointTool={selectPointTool}
-              />
-            )}
 
             {isDataOpened !== 'expanded' && (
               <HomeButtons
