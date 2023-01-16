@@ -10,6 +10,7 @@ import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { HomePointToolButton } from './HomePointToolButton';
+import { HomeInfoToolButton } from './HomeInfoToolButton';
 
 interface Props {
   isPositionRight: boolean;
@@ -75,6 +76,14 @@ export const HomeDrawTools = (props: Props) => {
           />
         </View>
       )}
+      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
+        <HomeInfoToolButton
+          isEditing={isEditing}
+          isPositionRight={isPositionRight}
+          currentDrawTool={currentDrawTool}
+          selectDrawTool={selectDrawTool}
+        />
+      </View>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeSelectionToolButton
           isEditing={isEditing}

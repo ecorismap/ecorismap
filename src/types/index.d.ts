@@ -17,6 +17,7 @@ import {
   LAYERS_BTN,
   POLYGONTOOL,
   DRAWTOOL,
+  INFOTOOL,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -338,6 +339,7 @@ export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
 export type PolygonToolType = keyof typeof POLYGONTOOL;
 export type DrawToolType = keyof typeof DRAWTOOL;
+export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
 
 export type HomeButtonType = keyof typeof HOME_BTN;
