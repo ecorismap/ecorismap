@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import LayerEditFeatureStyle from '../components/pages/LayerEditFeatureStyle';
-import { useRecordStyle } from '../hooks/useRecordStyle';
+import { useFeatureStyle } from '../hooks/useFeatureStyle';
 import { Props_LayerEditFeatureStyle } from '../routes';
 
 export default function LayerEditFeatureStyleContainer({ navigation, route }: Props_LayerEditFeatureStyle) {
@@ -27,7 +27,7 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
     deleteValue,
     reloadValue,
     saveColorStyle,
-  } = useRecordStyle(route.params.targetLayer, route.params.isEdited);
+  } = useFeatureStyle(route.params.targetLayer, route.params.isEdited);
 
   const gotoBack = useCallback(() => {
     if (route.params.previous === 'Layers') {

@@ -64,7 +64,8 @@ export type UseDataEditReturnType = {
 export const useDataEdit = (
   record: RecordType,
   layer: LayerType,
-  recordSet: RecordType[] | undefined
+  recordSet: RecordType[] | undefined,
+  recordIndex: number | undefined
 ): UseDataEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -103,8 +104,8 @@ export const useDataEdit = (
     setTargetRecord(record);
     setTargetLayer(layer);
     setTargetRecordSet(recordSet);
-    setRecordNumber(1);
-  }, [dispatch, layer, record, recordSet]);
+    setRecordNumber(recordIndex !== undefined ? recordIndex + 1 : 1);
+  }, [dispatch, layer, record, recordIndex, recordSet]);
 
   const setIsEditingRecord = useCallback(
     (value: boolean) => {

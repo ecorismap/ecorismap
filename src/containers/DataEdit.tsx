@@ -36,7 +36,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-  } = useDataEdit(route.params.targetData, route.params.targetLayer, route.params.targetRecordSet);
+  } = useDataEdit(
+    route.params.targetData,
+    route.params.targetLayer,
+    route.params.targetRecordSet,
+    route.params.targetIndex
+  );
 
   const pressSaveData = useCallback(() => {
     const { isOK, message } = saveData();
