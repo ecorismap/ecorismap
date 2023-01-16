@@ -26,6 +26,7 @@ import { editSettingsAction } from '../modules/settings';
 import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
+import { useRecord } from './useRecord';
 // let fs: any;
 // if (Platform.OS === 'web') {
 //   fs = require('fs');
@@ -91,6 +92,7 @@ export const useDataEdit = (
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
+  const { selectRecord } = useRecord();
 
   useEffect(() => {
     if (targetLayer.type === 'POINT') {
@@ -100,12 +102,12 @@ export const useDataEdit = (
   }, [targetLayer.type, targetRecord.coords]);
 
   useEffect(() => {
-    dispatch(editSettingsAction({ selectedRecord: { layerId: layer.id, record: record } }));
+    selectRecord(layer.id, record);
     setTargetRecord(record);
     setTargetLayer(layer);
     setTargetRecordSet(recordSet);
     setRecordNumber(recordIndex !== undefined ? recordIndex + 1 : 1);
-  }, [dispatch, layer, record, recordIndex, recordSet]);
+  }, [dispatch, layer, record, recordIndex, recordSet, selectRecord]);
 
   const setIsEditingRecord = useCallback(
     (value: boolean) => {
