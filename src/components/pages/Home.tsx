@@ -463,7 +463,11 @@ export default function HomeScreen({
                 />
               )}
             {!isDownloadPage && featureButton === 'POINT' && (
-              <HomePointTools pointTool={currentPointTool} selectPointTool={selectPointTool} />
+              <HomePointTools
+                isPositionRight={isDataOpened === 'opened' || isLandscape}
+                pointTool={currentPointTool}
+                selectPointTool={selectPointTool}
+              />
             )}
 
             {isDataOpened !== 'expanded' && (

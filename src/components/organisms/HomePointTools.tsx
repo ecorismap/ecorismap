@@ -7,18 +7,17 @@ import { PointToolType } from '../../types';
 import { Button } from '../atoms';
 
 interface Props {
+  isPositionRight: boolean;
   pointTool: PointToolType;
   selectPointTool: (value: PointToolType) => void;
 }
 
 export const HomePointTools = (props: Props) => {
-  const { pointTool, selectPointTool } = props;
+  const { isPositionRight, pointTool, selectPointTool } = props;
   //console.log('HomeButton');
 
-  const { isLandscape } = useWindow();
-
   return (
-    <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
+    <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={{ marginTop: 5 }}>
         <Button
           name={POINTTOOL.ADD_LOCATION}
@@ -56,11 +55,11 @@ const styles = StyleSheet.create({
     top: Platform.OS === 'ios' ? 280 : 250,
     zIndex: 101,
   },
-  buttonContainerLandscape: {
+  buttonContainerRight: {
     elevation: 101,
     marginHorizontal: 0,
     position: 'absolute',
-    right: 12,
+    right: 10,
     top: Platform.OS === 'ios' ? 40 : 10,
     zIndex: 101,
   },
