@@ -1,5 +1,5 @@
-import { LINETOOL, POINTTOOL, POLYGONTOOL, SELECTIONTOOL } from '../constants/AppConstants';
-import { DrawToolType, LineToolType, PointToolType, PolygonToolType, SelectionToolType } from '../types';
+import { INFOTOOL, LINETOOL, POINTTOOL, POLYGONTOOL, SELECTIONTOOL } from '../constants/AppConstants';
+import { InfoToolType, LineToolType, PointToolType, PolygonToolType, SelectionToolType } from '../types';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
   const chunks = [];
@@ -23,8 +23,12 @@ export function isPolygonTool(tool: string): tool is PolygonToolType {
   return Object.keys(POLYGONTOOL).includes(tool);
 }
 
-export function isSelectionTool(tool: DrawToolType): tool is SelectionToolType {
+export function isSelectionTool(tool: string): tool is SelectionToolType {
   return Object.keys(SELECTIONTOOL).includes(tool);
+}
+
+export function isInfoTool(tool: string): tool is InfoToolType {
+  return Object.keys(INFOTOOL).includes(tool);
 }
 
 export function getExt(filename: string) {

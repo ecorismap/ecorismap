@@ -13,7 +13,7 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useZoom } from '../hooks/useZoom';
 import { useLocation } from '../hooks/useLocation';
-import { isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
+import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
@@ -144,7 +144,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool(value);
           if (isPointTool(value)) await runTutrial(`POINTTOOL_${value}`);
         }
-      } else if (isSelectionTool(value)) {
+      } else if (isSelectionTool(value) || isInfoTool(value)) {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
@@ -265,7 +265,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onReleaseSvgView = useCallback(
     async (event: GestureResponderEvent) => {
-      if (currentDrawTool === 'INFO') {
+      if (isInfoTool(currentDrawTool)) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
           releaseSvgView();

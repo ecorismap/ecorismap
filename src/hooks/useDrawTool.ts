@@ -39,7 +39,7 @@ import { MapRef } from 'react-map-gl';
 import { useLineTool } from './useLineTool';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isLineTool, isPolygonTool } from '../utils/General';
+import { isInfoTool, isLineTool, isPolygonTool } from '../utils/General';
 
 export type UseDrawToolReturnType = {
   isEditingLine: boolean;
@@ -288,7 +288,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       // setRedraw(uuidv4());
       let feature;
       let layer;
-      if (featureButton === 'POINT') {
+
+      if (feature === undefined && (featureButton === 'POINT' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
           feature = selectPointFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
@@ -297,7 +298,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             break;
           }
         }
-      } else if (featureButton === 'LINE') {
+      }
+      if (feature === undefined && (featureButton === 'LINE' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
         for (const { layerId, data } of lineDataSet) {
           feature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
@@ -307,7 +309,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             break;
           }
         }
-      } else if (featureButton === 'POLYGON') {
+      }
+      if (feature === undefined && (featureButton === 'POLYGON' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
           feature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
@@ -326,6 +329,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     },
     [
       convertFeatureToHisyouLine,
+      currentDrawTool,
       featureButton,
       findLayer,
       isHisyouToolActive,
@@ -364,7 +368,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       ];
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
+      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
         movingMapCenter.current = {
           x: pXY[0],
           y: pXY[1],
@@ -393,7 +397,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //console.log('##', gesture.numberActiveTouches);
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
+      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
         if (movingMapCenter.current === undefined) return;
         isDrag.current = true;
         const longitude =
@@ -511,7 +515,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const releaseSvgView = useCallback(() => {
     //const AVERAGE_UNIT = 8;
-    if (currentDrawTool === 'MOVE' || currentDrawTool === 'INFO') {
+    if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
       movingMapCenter.current = undefined;
       //xy座標を更新してsvgを表示
       showDrawLine();

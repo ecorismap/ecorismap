@@ -155,15 +155,20 @@ export const POLYGONTOOL = {
   FREEHAND_POLYGON: 'draw',
 } as const;
 
+export const INFOTOOL = {
+  ALL_INFO: 'cursor-default-click',
+  FEATURETYPE_INFO: 'cursor-default-click-outline',
+} as const;
+
 export const SELECTIONTOOL = {
   SELECT: 'select',
-  INFO: 'cursor-default-click',
 } as const;
 
 export const DRAWTOOL = {
   ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
+  ...INFOTOOL,
   ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',

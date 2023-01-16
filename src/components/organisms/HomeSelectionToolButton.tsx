@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLOR, DRAWTOOL } from '../../constants/AppConstants';
 import { DrawToolType, SelectionToolType } from '../../types';
+import { isSelectionTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -14,21 +15,12 @@ interface Props {
 
 export const HomeSelectionToolButton = (props: Props) => {
   const { isEditing, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<SelectionToolType>('INFO');
+  const [currentTool, setCurrentTool] = useState<SelectionToolType>(
+    isSelectionTool(currentDrawTool) ? currentDrawTool : 'SELECT'
+  );
 
   return (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
-      <Button
-        id={'INFO'}
-        name={DRAWTOOL.INFO}
-        backgroundColor={currentDrawTool === 'INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-        borderRadius={10}
-        disabled={isEditing}
-        onPressCustom={() => {
-          setCurrentTool('INFO');
-          selectDrawTool('INFO');
-        }}
-      />
       <Button
         id={'SELECT'}
         name={DRAWTOOL.SELECT}
