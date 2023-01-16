@@ -353,6 +353,14 @@ export type RoleType = keyof typeof ROLETYPE;
 
 export type FeatureType = keyof typeof FEATURETYPE;
 
+export type ReturnFeatureRecordType<T> = T extends 'POINT'
+  ? { editingLayer: LayerType | undefined; editingRecordSet: PointRecordType[] }
+  : T extends 'LINE'
+  ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
+  : T extends 'POLYGON'
+  ? { editingLayer: LayerTyp | undefined; editingRecordSet: PolygonRecordType[] }
+  : { editingLayer: undefined; editingRecordSet: undefined };
+
 export type GeoJsonFeatureType =
   | 'POINT'
   | 'LINE'

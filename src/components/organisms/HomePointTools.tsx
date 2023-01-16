@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, POINTTOOL } from '../../constants/AppConstants';
-import { useWindow } from '../../hooks/useWindow';
 import { PointToolType } from '../../types';
 
 import { Button } from '../atoms';
