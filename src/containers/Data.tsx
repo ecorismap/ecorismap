@@ -69,6 +69,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         previous: 'Data',
         targetData: allUserRecordSet[index],
         targetLayer: { ...targetLayer },
+        targetRecordSet: allUserRecordSet,
+        targetIndex: index,
       });
     },
     [allUserRecordSet, navigation, targetLayer]
