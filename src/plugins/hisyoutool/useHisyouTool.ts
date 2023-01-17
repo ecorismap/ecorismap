@@ -68,7 +68,7 @@ export const useHisyouTool = (
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
   const { dataUser, generateLineRecord } = useRecord();
-  const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
+  const { pressSvgFreehandTool, moveSvgFreehandTool, releaseSvgFreehandTool } = useLineTool(
     drawLine,
     editingLine,
     undoLine,
@@ -105,7 +105,7 @@ export const useHisyouTool = (
   const pressSvgHisyouTool = useCallback(
     (pXY: Position) => {
       if (currentDrawTool === 'HISYOU') {
-        pressSvgDrawTool(pXY);
+        pressSvgFreehandTool(pXY);
       } else {
         const hisyouLine = drawLine.current.find((line) => {
           //ポイントに近いHISYOUを取得
@@ -125,13 +125,13 @@ export const useHisyouTool = (
         editingLine.current = { start: actionSnapped, xy: [actionSnapped] };
       }
     },
-    [currentDrawTool, drawLine, editingLine, pressSvgDrawTool]
+    [currentDrawTool, drawLine, editingLine, pressSvgFreehandTool]
   );
 
   const moveSvgHisyouTool = useCallback(
     (pXY: Position) => {
       if (currentDrawTool === 'HISYOU') {
-        moveSvgDrawTool(pXY);
+        moveSvgFreehandTool(pXY);
       } else if (currentDrawTool === 'TOMARI') {
         //ドローツールがポイントの場合
         if (actionLine.current.hisyouLine === undefined) return;
@@ -150,12 +150,12 @@ export const useHisyouTool = (
         );
       }
     },
-    [currentDrawTool, editingLine, moveSvgDrawTool]
+    [currentDrawTool, editingLine, moveSvgFreehandTool]
   );
 
   const releaseSvgHisyouTool = useCallback(() => {
     if (currentDrawTool === 'HISYOU') {
-      releaseSvgDrawTool(['HISYOU', 'arrow']);
+      releaseSvgFreehandTool(['HISYOU', 'arrow']);
     } else {
       if (actionLine.current.hisyouLine === undefined) return;
       //console.log('action id', actionLine.current.hisyouLine.id);
@@ -173,7 +173,7 @@ export const useHisyouTool = (
       actionLine.current = { hisyouLine: undefined, actions: undefined };
       editingLine.current = { start: [], xy: [] };
     }
-  }, [currentDrawTool, drawLine, editingLine, mapRegion, mapSize, releaseSvgDrawTool, undoLine]);
+  }, [currentDrawTool, drawLine, editingLine, mapRegion, mapSize, releaseSvgFreehandTool, undoLine]);
 
   // const deleteActions = useCallback(
   //   (layerId: string, featureId: string) => {
