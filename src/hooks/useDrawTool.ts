@@ -40,7 +40,7 @@ import { MapRef } from 'react-map-gl';
 import { useLineTool } from './useLineTool';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isInfoTool, isLineTool, isPolygonTool } from '../utils/General';
+import { isInfoTool, isLineTool } from '../utils/General';
 
 export type UseDrawToolReturnType = {
   isEditingLine: boolean;
@@ -84,7 +84,7 @@ export type UseDrawToolReturnType = {
   undoDraw: () => void;
   pressSvgView: (event: GestureResponderEvent) => void;
   moveSvgView: (event: GestureResponderEvent) => void;
-  releaseSvgView: () => void;
+  releaseSvgView: (event: GestureResponderEvent) => void;
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -149,13 +149,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findLayer,
     unselectRecord,
   } = useRecord();
-  const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
-    drawLine,
-    editingLine,
-    undoLine,
-    modifiedIndex,
-    currentDrawTool
-  );
+  const {
+    isPlotting,
+    pressSvgFreehandTool,
+    moveSvgFreehandTool,
+    releaseSvgFreehandTool,
+    pressSvgPlotTool,
+    releaseSvgPlotTool,
+  } = useLineTool(drawLine, editingLine, undoLine, modifiedIndex, currentDrawTool);
   const {
     pressSvgHisyouTool,
     moveSvgHisyouTool,
@@ -220,7 +221,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     modifiedIndex.current = -1;
     selectLine.current = [];
     undoLine.current = [];
-  }, []);
+    isPlotting.current = false;
+    isDrag.current = false;
+  }, [isPlotting]);
 
   const saveDraw = useCallback(
     (editingLayer: LayerType, editingRecordSet: RecordType[]) => {
@@ -414,13 +417,23 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         modifiedIndex.current = -1;
         drawLine.current = [];
         selectLine.current = [pXY];
-      } else if (isLineTool(currentDrawTool) || isPolygonTool(currentDrawTool)) {
-        pressSvgDrawTool(pXY);
+      } else if (currentDrawTool === 'PLOT_POLYGON') {
+        pressSvgPlotTool();
+      } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {
+        pressSvgFreehandTool(pXY);
       } else if (isHisyouTool(currentDrawTool)) {
         pressSvgHisyouTool(pXY);
       }
     },
-    [currentDrawTool, hideDrawLine, mapRegion.latitude, mapRegion.longitude, pressSvgDrawTool, pressSvgHisyouTool]
+    [
+      currentDrawTool,
+      hideDrawLine,
+      mapRegion.latitude,
+      mapRegion.longitude,
+      pressSvgFreehandTool,
+      pressSvgHisyouTool,
+      pressSvgPlotTool,
+    ]
   );
 
   const moveSvgView = useCallback(
@@ -447,8 +460,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       } else if (currentDrawTool === 'SELECT') {
         selectLine.current = [...selectLine.current, pXY];
-      } else if (isLineTool(currentDrawTool) || isPolygonTool(currentDrawTool)) {
-        moveSvgDrawTool(pXY);
+      } else if (currentDrawTool === 'PLOT_POLYGON') {
+      } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {
+        moveSvgFreehandTool(pXY);
       } else if (isHisyouTool(currentDrawTool)) {
         moveSvgHisyouTool(pXY);
       }
@@ -461,7 +475,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       mapSize.height,
       mapSize.width,
       mapViewRef,
-      moveSvgDrawTool,
+      moveSvgFreehandTool,
       moveSvgHisyouTool,
     ]
   );
@@ -547,24 +561,40 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     unselectRecord,
   ]);
 
-  const releaseSvgView = useCallback(() => {
-    if (currentDrawTool === 'MOVE' || currentDrawTool === 'ADD_POINT' || isInfoTool(currentDrawTool)) {
-      movingMapCenter.current = undefined;
-      //xy座標を更新してsvgを表示
-      showDrawLine();
-      isDrag.current = false;
-    } else if (currentDrawTool === 'SELECT') {
-      releaseSVGSelectionTool();
-    } else if (isLineTool(currentDrawTool) || isPolygonTool(currentDrawTool)) {
-      releaseSvgDrawTool();
-      if (drawLine.current.length > 0) isEditingLine.current = true;
-    } else if (isHisyouTool(currentDrawTool)) {
-      releaseSvgHisyouTool();
-      if (drawLine.current.length > 0) isEditingLine.current = true;
-    }
+  const releaseSvgView = useCallback(
+    (event: GestureResponderEvent) => {
+      //console.log('##', gesture.numberActiveTouches);
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-    setRedraw(uuidv4());
-  }, [currentDrawTool, releaseSVGSelectionTool, releaseSvgDrawTool, releaseSvgHisyouTool, showDrawLine]);
+      if (currentDrawTool === 'MOVE' || currentDrawTool === 'ADD_POINT' || isInfoTool(currentDrawTool)) {
+        movingMapCenter.current = undefined;
+        //xy座標を更新してsvgを表示
+        showDrawLine();
+        isDrag.current = false;
+      } else if (currentDrawTool === 'SELECT') {
+        releaseSVGSelectionTool();
+      } else if (currentDrawTool === 'PLOT_POLYGON') {
+        releaseSvgPlotTool(pXY);
+        if (drawLine.current.length > 0) isEditingLine.current = true;
+      } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {
+        releaseSvgFreehandTool();
+        if (drawLine.current.length > 0) isEditingLine.current = true;
+      } else if (isHisyouTool(currentDrawTool)) {
+        releaseSvgHisyouTool();
+        if (drawLine.current.length > 0) isEditingLine.current = true;
+      }
+
+      setRedraw(uuidv4());
+    },
+    [
+      currentDrawTool,
+      releaseSVGSelectionTool,
+      releaseSvgFreehandTool,
+      releaseSvgHisyouTool,
+      releaseSvgPlotTool,
+      showDrawLine,
+    ]
+  );
 
   const deleteDraw = useCallback(() => {
     const { editingLayer } = getEditingLayerAndRecordSet(featureButton);

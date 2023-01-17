@@ -1,20 +1,17 @@
-import { MutableRefObject, useCallback, useState } from 'react';
+import { MutableRefObject, useCallback, useRef, useState } from 'react';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  calcLookAhed,
-  checkDistanceFromLine,
-  modifyLine,
-  smoothingByBoyle,
-  xyArrayToLatLonArray,
-} from '../utils/Coords';
+import { checkDistanceFromLine, modifyLine, smoothingByBoyle, xyArrayToLatLonArray } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { DrawToolType, RecordType } from '../types';
 
 export type UseLineToolReturnType = {
-  pressSvgDrawTool: (point: Position) => void;
-  moveSvgDrawTool: (point: Position) => void;
-  releaseSvgDrawTool: (properties?: string[]) => void;
+  isPlotting: MutableRefObject<boolean>;
+  pressSvgFreehandTool: (point: Position) => void;
+  moveSvgFreehandTool: (point: Position) => void;
+  releaseSvgFreehandTool: (properties?: string[]) => void;
+  pressSvgPlotTool: () => void;
+  releaseSvgPlotTool: (pXY: Position) => void;
 };
 
 export const useLineTool = (
@@ -34,8 +31,50 @@ export const useLineTool = (
 ): UseLineToolReturnType => {
   const { mapSize, mapRegion } = useWindow();
   const [, setRedraw] = useState('');
+  const isPlotting = useRef(false);
 
-  const pressSvgDrawTool = useCallback(
+  const pressSvgPlotTool = useCallback(() => {
+    //新規ラインの場合
+    if (isPlotting.current) {
+    } else {
+      drawLine.current.push({
+        id: uuidv4(),
+        record: undefined,
+        xy: [],
+        latlon: [],
+        properties: ['PLOT'],
+      });
+      undoLine.current.push({
+        index: -1,
+        latlon: [],
+      });
+      isPlotting.current = true;
+    }
+  }, [drawLine, undoLine]);
+
+  const releaseSvgPlotTool = useCallback(
+    (pXY: Position) => {
+      const index = drawLine.current.length - 1;
+      if (drawLine.current[index].xy.length > 0) {
+        undoLine.current.push({
+          index: index,
+          latlon: drawLine.current[index].latlon,
+        });
+      }
+      if (currentDrawTool === 'PLOT_POLYGON' && drawLine.current[index].xy.length > 3) {
+        drawLine.current[index].xy.pop();
+      }
+      drawLine.current[index].xy = [...drawLine.current[index].xy, pXY];
+
+      if (currentDrawTool === 'PLOT_POLYGON' && drawLine.current[index].xy.length > 2) {
+        drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
+      }
+      drawLine.current[index].latlon = xyArrayToLatLonArray(drawLine.current[index].xy, mapRegion, mapSize);
+    },
+    [currentDrawTool, drawLine, mapRegion, mapSize, undoLine]
+  );
+
+  const pressSvgFreehandTool = useCallback(
     (pXY: Position) => {
       modifiedIndex.current = drawLine.current.findIndex((line) => {
         const { isFar } = checkDistanceFromLine(pXY, line.xy);
@@ -58,7 +97,7 @@ export const useLineTool = (
     [drawLine, modifiedIndex, editingLine]
   );
 
-  const moveSvgDrawTool = useCallback(
+  const moveSvgFreehandTool = useCallback(
     (pXY: Position) => {
       if (modifiedIndex.current === -1) {
         //新規ラインの場合
@@ -72,7 +111,7 @@ export const useLineTool = (
     [drawLine, modifiedIndex, editingLine]
   );
 
-  const releaseSvgDrawTool = useCallback(
+  const releaseSvgFreehandTool = useCallback(
     (properties?: string[]) => {
       const index = drawLine.current.length - 1;
       if (modifiedIndex.current === -1) {
@@ -118,8 +157,11 @@ export const useLineTool = (
   );
 
   return {
-    pressSvgDrawTool,
-    moveSvgDrawTool,
-    releaseSvgDrawTool,
+    isPlotting,
+    pressSvgFreehandTool,
+    moveSvgFreehandTool,
+    releaseSvgFreehandTool,
+    pressSvgPlotTool,
+    releaseSvgPlotTool,
   } as const;
 };

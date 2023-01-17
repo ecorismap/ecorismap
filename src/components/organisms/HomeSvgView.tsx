@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { DrawToolType, RecordType } from '../../types';
 import { COLOR, PLUGIN } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
+import { isPolygonTool } from '../../utils/General';
 
 interface Props {
   drawLine: {
@@ -70,6 +71,7 @@ export const SvgView = (props: Props) => {
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
           let startStyle = properties.includes('POINT') ? `url(#point)` : '';
+          const midStyle = properties.includes('PLOT') ? `url(#point)` : '';
           let endStyle = '';
           if (PLUGIN.HISYOUTOOL) {
             startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
@@ -85,8 +87,9 @@ export const SvgView = (props: Props) => {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeDasharray={'1,3'}
-                fill={currentDrawTool === 'FREEHAND_POLYGON' ? COLOR.ALFABLUE2 : 'none'}
+                fill={isPolygonTool(currentDrawTool) ? COLOR.ALFABLUE2 : 'none'}
                 markerStart={startStyle}
+                markerMid={midStyle}
                 markerEnd={endStyle}
               />
               {PLUGIN.HISYOUTOOL && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}

@@ -250,7 +250,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (currentDrawTool === 'ADD_POINT') {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
-          releaseSvgView();
+          releaseSvgView(event);
           return;
         }
         const { isOK, message, layer, data } = addPressPoint(event);
@@ -271,7 +271,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else if (isInfoTool(currentDrawTool)) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
-          releaseSvgView();
+          releaseSvgView(event);
           return;
         }
         if (isEditingRecord) {
@@ -299,7 +299,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
         setTimeout(() => changeMapRegion(region, true), 300);
       } else {
-        releaseSvgView();
+        releaseSvgView(event);
       }
     },
     [
@@ -339,7 +339,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressSaveDraw = useCallback(async () => {
     let result;
-    if (currentDrawTool === 'FREEHAND_POLYGON') {
+    if (isPolygonTool(currentDrawTool)) {
       result = savePolygon();
     } else {
       result = saveLine();
