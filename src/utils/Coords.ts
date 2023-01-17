@@ -86,6 +86,20 @@ export const xyArrayToLatLonArray = (
   return xyArray.map((xy) => xyToLatLon(xy, mapRegion, mapSize));
 };
 
+export const xyToLatLonObject = (
+  xy: Position,
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+): LatLng => ({
+  longitude: mapRegion.longitude + mapRegion.longitudeDelta * (xy[0] / mapSize.width - 0.5),
+  latitude: mapRegion.latitude - mapRegion.latitudeDelta * (xy[1] / mapSize.height - 0.5),
+});
+
 export const xyArrayToLatLonObjects = (
   xyArray: Position[],
   mapRegion: {
@@ -95,12 +109,7 @@ export const xyArrayToLatLonObjects = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-): LatLng[] => {
-  return xyArray.map((xy) => {
-    const latlon = xyToLatLon(xy, mapRegion, mapSize);
-    return { longitude: latlon[0], latitude: latlon[1] };
-  });
-};
+): LatLng[] => xyArray.map((xy) => xyToLatLonObject(xy, mapRegion, mapSize));
 
 export const latLonToXY = (
   latlon: number[],
@@ -129,9 +138,7 @@ export const latLonArrayToXYArray = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-): Position[] => {
-  return latLonArray.map((latlon) => latLonToXY(latlon, mapRegion, mapSize));
-};
+): Position[] => latLonArray.map((latlon) => latLonToXY(latlon, mapRegion, mapSize));
 
 export const latLonObjectsToXYArray = (
   latLonObjects: LatLng[],
@@ -142,17 +149,13 @@ export const latLonObjectsToXYArray = (
     longitudeDelta: number;
   },
   mapSize: { width: number; height: number }
-): Position[] => {
-  return latLonObjects.map((latlon) => latLonToXY([latlon.longitude, latlon.latitude], mapRegion, mapSize));
-};
+): Position[] => latLonObjects.map((latlon) => latLonToXY([latlon.longitude, latlon.latitude], mapRegion, mapSize));
 
-export const latLonObjectsToLatLonArray = (latLonObjects: { longitude: number; latitude: number }[]): Position[] => {
-  return latLonObjects.map((latlon) => [latlon.longitude, latlon.latitude]);
-};
+export const latLonObjectsToLatLonArray = (latLonObjects: { longitude: number; latitude: number }[]): Position[] =>
+  latLonObjects.map((latlon) => [latlon.longitude, latlon.latitude]);
 
-export const latlonArrayToLatLonObjects = (latLonArray: Position[]): LatLng[] => {
-  return latLonArray.map((latlon) => ({ longitude: latlon[0], latitude: latlon[1] }));
-};
+export const latlonArrayToLatLonObjects = (latLonArray: Position[]): LatLng[] =>
+  latLonArray.map((latlon) => ({ longitude: latlon[0], latitude: latlon[1] }));
 
 export const deltaToZoom = (windowWidth: number, delta: { longitudeDelta: number; latitudeDelta: number }) => {
   //ToDo 常にlongitudeで計算するのか？

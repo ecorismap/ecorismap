@@ -29,6 +29,7 @@ import {
   selectPointFeaturesByArea,
   selectLineFeaturesByArea,
   selectPolygonFeaturesByArea,
+  xyToLatLonObject,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { addRecordsAction, updateRecordsAction, deleteRecordsAction } from '../modules/dataSet';
@@ -102,6 +103,12 @@ export type UseDrawToolReturnType = {
   hideDrawLine: () => void;
   showDrawLine: () => void;
   toggleTerrainForWeb: (value: FeatureButtonType) => void;
+  addPressPoint: (event: GestureResponderEvent) => {
+    isOK: boolean;
+    message: string;
+    data: RecordType | undefined;
+    layer: LayerType | undefined;
+  };
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -135,10 +142,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     pointDataSet,
     lineDataSet,
     polygonDataSet,
+    addRecord,
     checkRecordEditable,
     getEditingLayerAndRecordSet,
     generateLineRecord,
     findLayer,
+    unselectRecord,
   } = useRecord();
   const { pressSvgDrawTool, moveSvgDrawTool, releaseSvgDrawTool } = useLineTool(
     drawLine,
@@ -277,6 +286,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return { isOK: true, message: '', layer: undefined, data: undefined };
   }, [checkRecordEditable, getEditingLayerAndRecordSet, resetDrawTools, saveDraw]);
 
+  const addPressPoint = useCallback(
+    (event: GestureResponderEvent) => {
+      const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
+      const location = xyToLatLonObject(pXY, mapRegion, mapSize);
+
+      return addRecord('POINT', location);
+    },
+    [addRecord, mapRegion, mapSize]
+  );
+
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {
       resetDrawTools();
@@ -381,7 +400,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       ];
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'MOVE' || currentDrawTool === 'ADD_POINT' || isInfoTool(currentDrawTool)) {
         movingMapCenter.current = {
           x: pXY[0],
           y: pXY[1],
@@ -410,7 +429,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //console.log('##', gesture.numberActiveTouches);
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'MOVE' || currentDrawTool === 'ADD_POINT' || isInfoTool(currentDrawTool)) {
         if (movingMapCenter.current === undefined) return;
         isDrag.current = true;
         const longitude =
@@ -449,6 +468,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const releaseSVGSelectionTool = useCallback(() => {
     //選択処理
+
     const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureButton);
     if (editingLayer === undefined) return;
     const { isOK } = checkRecordEditable(editingLayer);
@@ -510,7 +530,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       convertFeatureToDrawLine(features);
     }
-
+    unselectRecord();
     undoLine.current.push({ index: -1, latlon: [] });
     selectLine.current = [];
   }, [
@@ -524,11 +544,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     mapRegion,
     mapSize,
     resetDrawTools,
+    unselectRecord,
   ]);
 
   const releaseSvgView = useCallback(() => {
-    //const AVERAGE_UNIT = 8;
-    if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+    if (currentDrawTool === 'MOVE' || currentDrawTool === 'ADD_POINT' || isInfoTool(currentDrawTool)) {
       movingMapCenter.current = undefined;
       //xy座標を更新してsvgを表示
       showDrawLine();
@@ -644,5 +664,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     hideDrawLine,
     showDrawLine,
     toggleTerrainForWeb,
+    addPressPoint,
   } as const;
 };

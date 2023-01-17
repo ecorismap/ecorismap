@@ -78,9 +78,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     hideDrawLine,
     resetDrawTools,
     toggleTerrainForWeb,
+    addPressPoint,
   } = useDrawTool(mapViewRef.current);
 
-  const { addCurrentPoint, addPressPoint, dragEndPoint, resetPointPosition } = usePointTool();
+  const { addCurrentPoint, dragEndPoint, resetPointPosition } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -173,40 +174,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [currentDrawTool, isEditingLine, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
   );
 
-  const onPressMapView = useCallback(
-    async (e: MapEvent<{}>) => {
-      if (currentDrawTool === 'ADD_LOCATION_POINT') {
-        if (Platform.OS === 'web') {
-          Alert.alert('', t('Home.alert.gpsWeb'));
-          return;
-        }
-        if (gpsState === 'off' && trackingState === 'off') {
-          Alert.alert('', t('Home.alert.gps'));
-          return;
-        }
+  const onPressMapView = useCallback(async () => {
+    if (currentDrawTool === 'ADD_LOCATION_POINT') {
+      if (Platform.OS === 'web') {
+        Alert.alert('', t('Home.alert.gpsWeb'));
+        return;
+      }
+      if (gpsState === 'off' && trackingState === 'off') {
+        Alert.alert('', t('Home.alert.gps'));
+        return;
+      }
 
-        const { isOK, message, layer, data } = await addCurrentPoint();
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-        } else {
-          isDataOpened === 'closed' ? expandData() : openData();
-          setTimeout(function () {
-            navigation.navigate('DataEdit', {
-              previous: 'Home',
-              targetData: data,
-              targetLayer: layer,
-              targetRecordSet: [],
-              targetIndex: 0,
-            });
-          }, 1);
-        }
-        selectDrawTool(currentDrawTool);
-      } else if (currentDrawTool === 'ADD_POINT') {
-        const { isOK, message, layer, data } = addPressPoint(e);
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-          return;
-        }
+      const { isOK, message, layer, data } = await addCurrentPoint();
+      if (!isOK || layer === undefined || data === undefined) {
+        Alert.alert('', message);
+      } else {
         isDataOpened === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
@@ -217,24 +199,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             targetIndex: 0,
           });
         }, 1);
-      } else {
-        unselectRecord();
       }
-    },
-    [
-      currentDrawTool,
-      gpsState,
-      trackingState,
-      addCurrentPoint,
-      selectDrawTool,
-      isDataOpened,
-      expandData,
-      openData,
-      navigation,
-      addPressPoint,
-      unselectRecord,
-    ]
-  );
+      selectDrawTool(currentDrawTool);
+    }
+  }, [
+    currentDrawTool,
+    gpsState,
+    trackingState,
+    addCurrentPoint,
+    selectDrawTool,
+    isDataOpened,
+    expandData,
+    openData,
+    navigation,
+  ]);
 
   const onDragEndPoint = useCallback(
     async (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => {
@@ -269,7 +247,28 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onReleaseSvgView = useCallback(
     async (event: GestureResponderEvent) => {
-      if (isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'ADD_POINT') {
+        if (isDrag) {
+          //INFOでドラッグした場合は移動のみ実行
+          releaseSvgView();
+          return;
+        }
+        const { isOK, message, layer, data } = addPressPoint(event);
+        if (!isOK || layer === undefined || data === undefined) {
+          Alert.alert('', message);
+          return;
+        }
+        isDataOpened === 'closed' ? expandData() : openData();
+        setTimeout(function () {
+          navigation.navigate('DataEdit', {
+            previous: 'Home',
+            targetData: data,
+            targetLayer: layer,
+            targetRecordSet: [],
+            targetIndex: 0,
+          });
+        }, 1);
+      } else if (isInfoTool(currentDrawTool)) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
           releaseSvgView();
@@ -306,13 +305,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       currentDrawTool,
       isDrag,
+      addPressPoint,
+      isDataOpened,
+      expandData,
+      openData,
+      releaseSvgView,
+      navigation,
       isEditingRecord,
       selectSingleFeature,
-      openData,
-      navigation,
       isLandscape,
       mapRegion,
-      releaseSvgView,
       unselectRecord,
       changeMapRegion,
     ]

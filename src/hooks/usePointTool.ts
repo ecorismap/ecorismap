@@ -3,7 +3,7 @@ import { LayerType, PointRecordType, RecordType } from '../types';
 import { useDispatch } from 'react-redux';
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
-import { LatLng, MapEvent } from 'react-native-maps';
+import { LatLng } from 'react-native-maps';
 import { t } from '../i18n/config';
 import { cloneDeep } from 'lodash';
 import { updateRecordsAction } from '../modules/dataSet';
@@ -16,12 +16,7 @@ export type UsePointToolReturnType = {
     layer: LayerType | undefined;
     data: RecordType | undefined;
   }>;
-  addPressPoint: (e: MapEvent<{}>) => {
-    isOK: boolean;
-    message: string;
-    data: RecordType | undefined;
-    layer: LayerType | undefined;
-  };
+
   dragEndPoint: (
     layer: LayerType,
     feature: PointRecordType,
@@ -44,19 +39,6 @@ export const usePointTool = (): UsePointToolReturnType => {
     }
     return addRecord('POINT', toLocationType(location)!);
   }, [addRecord]);
-
-  const addPressPoint = useCallback(
-    (e: MapEvent<{}>) => {
-      const location = {
-        //@ts-ignore
-        latitude: e.nativeEvent ? e.nativeEvent.coordinate.latitude : e.latLng.lat(),
-        //@ts-ignore
-        longitude: e.nativeEvent ? e.nativeEvent.coordinate.longitude : e.latLng.lng(),
-      };
-      return addRecord('POINT', location);
-    },
-    [addRecord]
-  );
 
   const resetPointPosition = useCallback(
     (editingLayer: LayerType, feature: RecordType) => {
@@ -100,7 +82,6 @@ export const usePointTool = (): UsePointToolReturnType => {
 
   return {
     addCurrentPoint,
-    addPressPoint,
     dragEndPoint,
     resetPointPosition,
   } as const;
