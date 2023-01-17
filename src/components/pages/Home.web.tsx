@@ -32,7 +32,6 @@ import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { isPointTool } from '../../utils/General';
 
 export default function HomeScreen({
   pointDataSet,
@@ -412,7 +411,7 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && !isPointTool(currentDrawTool) && (
+        {currentDrawTool !== 'NONE' && currentDrawTool !== 'MOVE_POINT' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}

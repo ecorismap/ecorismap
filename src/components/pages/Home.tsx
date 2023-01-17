@@ -40,7 +40,6 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { Position } from '@turf/turf';
 import { SvgView } from '../organisms/HomeSvgView';
-import { isPointTool, nearDegree } from '../../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import DataRoutes from '../../routes/DataRoutes';
 import { Loading } from '../molecules/Loading';
@@ -48,6 +47,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
+import { nearDegree } from '../../utils/General';
 
 export interface HomeProps {
   pointDataSet: PointDataType[];
@@ -278,7 +278,7 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && !isPointTool(currentDrawTool) && (
+        {currentDrawTool !== 'NONE' && currentDrawTool !== 'MOVE_POINT' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
