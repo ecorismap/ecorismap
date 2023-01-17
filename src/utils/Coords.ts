@@ -455,9 +455,19 @@ export const booleanNearEqual = (p1: Position, p2: Position) => {
   return Math.abs(p2[0] - p1[0]) <= 0.001 && Math.abs(p2[1] - p1[1]) <= 0.001;
 };
 
-export const smoothingByBoyle = (points: Position[], lookAhead: number): number => {
+export const calcLookAhed = (points: Position[]) => {
+  //距離と点数の比で適当に決める。1000倍したらちょうど良さそう？デバイスによるかも？
+  const lineLength = turf.length(turf.lineString(points));
+  //console.log(lineLength, points.length, (1000 * points.length) / lineLength);
+  const lookAhed = Math.floor((1000 * points.length) / lineLength);
+  return lookAhed;
+};
+
+export const smoothingByBoyle = (points: Position[]): number => {
   //ref.
   //https://github.com/giscan/Generalizer
+
+  const lookAhead = calcLookAhed(points);
 
   let ppoint: Position;
   let npoint: Position;
