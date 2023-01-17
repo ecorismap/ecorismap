@@ -1,7 +1,13 @@
 import { MutableRefObject, useCallback, useState } from 'react';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import { checkDistanceFromLine, modifyLine, smoothingByBoyle, xyArrayToLatLonArray } from '../utils/Coords';
+import {
+  calcLookAhed,
+  checkDistanceFromLine,
+  modifyLine,
+  smoothingByBoyle,
+  xyArrayToLatLonArray,
+} from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { DrawToolType, RecordType } from '../types';
 
@@ -78,8 +84,7 @@ export const useLineTool = (
           return;
         }
 
-        const lookAhed = Math.min(8, Math.floor(drawLine.current[index].xy.length / 20));
-        smoothingByBoyle(drawLine.current[index].xy, lookAhed);
+        smoothingByBoyle(drawLine.current[index].xy);
         //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
         if (currentDrawTool === 'FREEHAND_POLYGON') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
         drawLine.current[index].properties = properties ?? [currentDrawTool];
@@ -90,8 +95,7 @@ export const useLineTool = (
         });
       } else {
         // //ライン修正の場合
-        const lookAhed = Math.min(8, Math.floor(drawLine.current[index].xy.length / 20));
-        smoothingByBoyle(editingLine.current.xy, lookAhed);
+        smoothingByBoyle(editingLine.current.xy);
         const modifiedXY = modifyLine(drawLine.current[modifiedIndex.current], editingLine.current, currentDrawTool);
 
         if (modifiedXY.length > 0) {
