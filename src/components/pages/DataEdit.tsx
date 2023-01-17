@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
@@ -36,14 +36,13 @@ interface Props {
   latlon: LatLonDMSType;
   isEditingRecord: boolean;
   isDecimal: boolean;
-  recordSet: RecordType[] | undefined;
   recordNumber: number;
-  setRecordNumber: Dispatch<SetStateAction<number>>;
+  maxRecordNumber: number;
   changeLatLonType: () => void;
   changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
   changeField: (name: string, value: string) => void;
   submitField: (name: string, format: string) => void;
-  onChangeRecord: (record: RecordType) => void;
+  onChangeRecord: (value: number) => void;
   pressSaveData: () => void;
   pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   pressTakePhoto: (name: string) => void;
@@ -70,9 +69,8 @@ export default function DataEditScreen(props: Props) {
     isPhotoViewOpen,
     isEditingRecord,
     isDecimal,
-    recordSet,
     recordNumber,
-    setRecordNumber,
+    maxRecordNumber,
     pressSaveData,
     changeLatLonType,
     changeLatLon,
@@ -101,17 +99,16 @@ export default function DataEditScreen(props: Props) {
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row' }}>
         <HeaderBackButton {...props_} onPress={gotoBack} />
-        {recordSet !== undefined && (
+        {maxRecordNumber > 0 && (
           <DataEditRecordSelector
             recordNumber={recordNumber}
-            recordSet={recordSet}
-            setRecordNumber={setRecordNumber}
-            onChange={onChangeRecord}
+            maxRecordNumber={maxRecordNumber}
+            onChangeRecord={onChangeRecord}
           />
         )}
       </View>
     ),
-    [gotoBack, onChangeRecord, recordNumber, recordSet, setRecordNumber]
+    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
   );
 
   const headerRightButton = useCallback(() => {
@@ -144,7 +141,7 @@ export default function DataEditScreen(props: Props) {
       headerRight: () => headerRightButton(),
     });
   }, [headerLeftButton, headerRightButton, navigation]);
-
+  //console.log(layer.name);
   return (
     <KeyboardAvoidingView
       style={styles.container}

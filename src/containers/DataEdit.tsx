@@ -17,13 +17,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const {
     targetRecord,
     targetLayer,
-    targetRecordSet,
     latlon,
     selectedPhoto,
     isEditingRecord,
     isDecimal,
     recordNumber,
-    setRecordNumber,
+    maxRecordNumber,
     changeRecord,
     saveData,
     pickImage,
@@ -42,6 +41,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
+  //console.log('####', targetLayer);
+  //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
     const { isOK, message } = saveData();
@@ -109,15 +110,15 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressDownloadPhoto = useCallback(async () => {}, []);
 
   const onChangeRecord = useCallback(
-    async (record: RecordType) => {
+    async (value: number) => {
       if (isEditingRecord) {
         const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
         if (ret) {
-          changeRecord(record);
+          changeRecord(value);
           cancelUpdate();
         }
       } else {
-        changeRecord(record);
+        changeRecord(value);
       }
     },
     [cancelUpdate, changeRecord, isEditingRecord]
@@ -211,6 +212,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'Data',
           targetLayer: route.params.mainLayer,
           targetData: route.params.mainData,
+          targetRecordSet: [],
+          targetIndex: 0,
         });
       } else {
         closeData();
@@ -246,6 +249,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
+        targetRecordSet: [],
+        targetIndex: 0,
         mainData: targetRecord,
         mainLayer: targetLayer,
       });
@@ -262,6 +267,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'DataEdit',
           targetData: referenceData,
           targetLayer: referenceLayer,
+          targetRecordSet: [],
+          targetIndex: 0,
           mainData: targetRecord,
           mainLayer: targetLayer,
         });
@@ -295,9 +302,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       changeLatLon={changeLatLon}
       changeField={changeField}
       submitField={submitField}
-      recordSet={targetRecordSet}
       recordNumber={recordNumber}
-      setRecordNumber={setRecordNumber}
+      maxRecordNumber={maxRecordNumber}
       onChangeRecord={onChangeRecord}
       pressSaveData={pressSaveData}
       pressDeleteData={pressDeleteData}
