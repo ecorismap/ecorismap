@@ -71,7 +71,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     releaseSvgView,
     saveLine,
     savePolygon,
-    deleteLine,
+    deleteDraw,
     undoDraw,
     selectSingleFeature,
     showDrawLine,
@@ -195,6 +195,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               previous: 'Home',
               targetData: data,
               targetLayer: layer,
+              targetRecordSet: [],
+              targetIndex: 0,
             });
           }, 1);
         }
@@ -211,6 +213,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             previous: 'Home',
             targetData: data,
             targetLayer: layer,
+            targetRecordSet: [],
+            targetIndex: 0,
           });
         }, 1);
       } else {
@@ -275,9 +279,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           await AlertAsync(t('Home.alert.discardChanges'));
           return;
         }
-        const { layer, feature } = selectSingleFeature(event);
+        const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
-        if (layer === undefined || feature === undefined) {
+        if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
           unselectRecord();
 
           return;
@@ -288,6 +292,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           previous: 'Data',
           targetData: { ...feature },
           targetLayer: { ...layer },
+          targetRecordSet: recordSet,
+          targetIndex: recordIndex,
         });
         const region = isLandscape
           ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
@@ -349,18 +355,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           previous: 'Home',
           targetData: data,
           targetLayer: layer,
+          targetRecordSet: [],
+          targetIndex: 0,
         });
       }, 1);
     }
   }, [currentDrawTool, navigation, openData, saveLine, savePolygon, setDrawTool]);
 
   const pressDeleteDraw = useCallback(() => {
-    const { isOK, message } = deleteLine();
+    const { isOK, message } = deleteDraw();
+
     if (!isOK) {
       Alert.alert('', message);
       return;
     }
-  }, [deleteLine]);
+    closeData();
+  }, [closeData, deleteDraw]);
 
   const pressDownloadTiles = useCallback(async () => {
     downloadTiles();

@@ -12,7 +12,7 @@ import {
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
@@ -27,6 +27,7 @@ import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
+
 // let fs: any;
 // if (Platform.OS === 'web') {
 //   fs = require('fs');
@@ -34,14 +35,13 @@ import { useRecord } from './useRecord';
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
   targetLayer: LayerType;
-  targetRecordSet: RecordType[] | undefined;
   latlon: LatLonDMSType;
   selectedPhoto: SelectedPhotoType;
   isEditingRecord: boolean;
   isDecimal: boolean;
   recordNumber: number;
-  setRecordNumber: Dispatch<SetStateAction<number>>;
-  changeRecord: (newRecord: RecordType) => void;
+  maxRecordNumber: number;
+  changeRecord: (value: number) => void;
   saveData: () => {
     isOK: boolean;
     message: string;
@@ -65,8 +65,8 @@ export type UseDataEditReturnType = {
 export const useDataEdit = (
   record: RecordType,
   layer: LayerType,
-  recordSet: RecordType[] | undefined,
-  recordIndex: number | undefined
+  recordSet: RecordType[],
+  recordIndex: number
 ): UseDataEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -78,10 +78,8 @@ export const useDataEdit = (
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
-
-  const [targetRecord, setTargetRecord] = useState<RecordType>(record);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
-  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[] | undefined>(recordSet);
+  const [targetRecord, setTargetRecord] = useState<RecordType>(record);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
   const [recordNumber, setRecordNumber] = useState(1);
@@ -94,20 +92,19 @@ export const useDataEdit = (
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
 
-  useEffect(() => {
-    if (targetLayer.type === 'POINT') {
-      const newLatLon = toLatLonDMS(targetRecord.coords as LocationType);
-      setLatLon(newLatLon);
-    }
-  }, [targetLayer.type, targetRecord.coords]);
+  const maxRecordNumber = recordSet.length;
 
   useEffect(() => {
+    //データの初期化。以降はchangeRecordで行う。
     selectRecord(layer.id, record);
     setTargetRecord(record);
     setTargetLayer(layer);
-    setTargetRecordSet(recordSet);
-    setRecordNumber(recordIndex !== undefined ? recordIndex + 1 : 1);
-  }, [dispatch, layer, record, recordIndex, recordSet, selectRecord]);
+    setRecordNumber(recordIndex + 1);
+    if (layer.type === 'POINT') {
+      const newLatLon = toLatLonDMS(record.coords as LocationType);
+      setLatLon(newLatLon);
+    }
+  }, [layer, layer.id, layer.type, record, recordIndex, selectRecord]);
 
   const setIsEditingRecord = useCallback(
     (value: boolean) => {
@@ -117,11 +114,18 @@ export const useDataEdit = (
   );
 
   const changeRecord = useCallback(
-    (newRecord: RecordType) => {
-      dispatch(editSettingsAction({ selectedRecord: { layerId: layer.id, record: newRecord } }));
+    (value: number) => {
+      if (recordSet.length === 0) return;
+      const newRecord = recordSet[value - 1];
+      selectRecord(targetLayer.id, newRecord);
       setTargetRecord(newRecord);
+      setRecordNumber(value);
+      if (targetLayer.type === 'POINT') {
+        const newLatLon = toLatLonDMS(newRecord.coords as LocationType);
+        setLatLon(newLatLon);
+      }
     },
-    [dispatch, layer.id]
+    [recordSet, selectRecord, targetLayer.id, targetLayer.type]
   );
 
   const saveToStorage = useCallback(
@@ -309,6 +313,7 @@ export const useDataEdit = (
     }
 
     const { isOK, message } = checkFieldInput(targetLayer, targetRecord);
+
     if (!isOK) {
       return { isOK: false, message: message };
     }
@@ -331,10 +336,10 @@ export const useDataEdit = (
       })
     );
     setTargetRecord(updatedRecord);
-    if (targetRecordSet !== undefined) {
-      const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
-      setTargetRecordSet(updatedRecordSet);
-    }
+    // if (targetRecordSet !== undefined) {
+    //   const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
+    //   setTargetRecordSet(updatedRecordSet);
+    // }
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
   }, [
@@ -345,7 +350,6 @@ export const useDataEdit = (
     isDecimal,
     temporaryDeletePhotoList,
     dispatch,
-    targetRecordSet,
     setIsEditingRecord,
     deleteLocalPhoto,
   ]);
@@ -374,7 +378,7 @@ export const useDataEdit = (
       })
     );
     return { isOK: true, message: '' };
-  }, [tracking, targetRecord, projectId, targetLayer, isEditingRecord, deleteRecordPhotos, dispatch, saveData]);
+  }, [tracking, targetRecord, targetLayer, isEditingRecord, deleteRecordPhotos, projectId, dispatch, saveData]);
 
   const changeField = useCallback(
     (name: string, value: string) => {
@@ -428,13 +432,12 @@ export const useDataEdit = (
   return {
     targetRecord,
     targetLayer,
-    targetRecordSet,
     latlon,
     selectedPhoto,
     isEditingRecord,
     isDecimal,
     recordNumber,
-    setRecordNumber,
+    maxRecordNumber,
     changeRecord,
     saveData,
     pickImage,

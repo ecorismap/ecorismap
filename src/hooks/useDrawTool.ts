@@ -70,14 +70,13 @@ export type UseDrawToolReturnType = {
   };
   convertFeatureToDrawLine: (features: LineRecordType[]) => void;
   convertPointFeatureToDrawLine: (features: PointRecordType[]) => void;
-  deleteDrawLine: (layerId: string) => void;
   saveLine: () => {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
     data: RecordType | undefined;
   };
-  deleteLine: () => {
+  deleteDraw: () => {
     isOK: boolean;
     message: string;
   };
@@ -89,10 +88,14 @@ export type UseDrawToolReturnType = {
     | {
         layer: undefined;
         feature: undefined;
+        recordSet: undefined;
+        recordIndex: undefined;
       }
     | {
         layer: LayerType;
         feature: PointRecordType | LineRecordType | PolygonRecordType;
+        recordSet: PointRecordType[] | LineRecordType[] | PolygonRecordType[] | undefined;
+        recordIndex: number | undefined;
       };
   resetDrawTools: () => void;
 
@@ -184,7 +187,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [drawLine, mapRegion, mapSize]
   );
 
-  const deleteDrawLine = useCallback(
+  const deleteDrawRecord = useCallback(
     (layerId: string) => {
       drawLine.current.forEach((line) => {
         if (line.record !== undefined) {
@@ -288,13 +291,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       // setRedraw(uuidv4());
       let feature;
       let layer;
-
+      let recordSet;
+      let recordIndex;
       if (feature === undefined && (featureButton === 'POINT' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
-          feature = selectPointFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
-          if (feature !== undefined) {
+          const selectedFeature = selectPointFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
+            recordSet = data;
+            recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
+            feature = selectedFeature;
             break;
           }
         }
@@ -302,10 +309,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined && (featureButton === 'LINE' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
         for (const { layerId, data } of lineDataSet) {
-          feature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
-          if (feature !== undefined) {
+          const selectedFeature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
-            if (isHisyouToolActive) convertFeatureToHisyouLine([feature]);
+            if (isHisyouToolActive) convertFeatureToHisyouLine([selectedFeature]);
+            recordSet = data;
+            recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
+            feature = selectedFeature;
             break;
           }
         }
@@ -313,19 +323,22 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (feature === undefined && (featureButton === 'POLYGON' || currentDrawTool === 'ALL_INFO')) {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
-          feature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
-          if (feature !== undefined) {
+          const selectedFeature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
+            recordSet = data;
+            recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
+            feature = selectedFeature;
             break;
           }
         }
       }
 
       if (feature === undefined || layer === undefined) {
-        return { layer: undefined, feature: undefined };
+        return { layer: undefined, feature: undefined, recordSet: undefined, recordIndex: undefined };
       }
 
-      return { layer, feature };
+      return { layer, feature, recordSet, recordIndex };
     },
     [
       convertFeatureToHisyouLine,
@@ -533,7 +546,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(uuidv4());
   }, [currentDrawTool, releaseSVGSelectionTool, releaseSvgDrawTool, releaseSvgHisyouTool, showDrawLine]);
 
-  const deleteLine = useCallback(() => {
+  const deleteDraw = useCallback(() => {
     const { editingLayer } = getEditingLayerAndRecordSet(featureButton);
     if (editingLayer === undefined) {
       return { isOK: false, message: t('hooks.message.noLayerToEdit') };
@@ -543,7 +556,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (!isOK) {
       return { isOK: false, message };
     }
-    deleteDrawLine(editingLayer.id);
+    deleteDrawRecord(editingLayer.id);
     if (isHisyouToolActive) {
       deleteHisyouLine();
     }
@@ -552,7 +565,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     return { isOK: true, message: '' };
   }, [
     checkRecordEditable,
-    deleteDrawLine,
+    deleteDrawRecord,
     deleteHisyouLine,
     featureButton,
     getEditingLayerAndRecordSet,
@@ -615,7 +628,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingLine,
     selectLine,
     featureButton,
-    deleteLine,
+    deleteDraw,
     undoDraw,
     saveLine,
     savePolygon,
@@ -623,7 +636,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setFeatureButton,
     convertFeatureToDrawLine,
     convertPointFeatureToDrawLine,
-    deleteDrawLine,
     pressSvgView,
     moveSvgView,
     releaseSvgView,
