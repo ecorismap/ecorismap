@@ -5,6 +5,7 @@ import {
   checkDistanceFromLine,
   findNearNodeIndex,
   getLineSnappedPosition,
+  isNearWithPlot,
   modifyLine,
   smoothingByBoyle,
   xyArrayToLatLonArray,
@@ -26,6 +27,7 @@ export const useLineTool = (
   drawLine: MutableRefObject<
     {
       id: string;
+      layerId: string | undefined;
       record: RecordType | undefined;
       xy: Position[];
       latlon: Position[];
@@ -44,32 +46,55 @@ export const useLineTool = (
 
   const pressSvgPlotTool = useCallback(
     (pXY: Position) => {
+      /*
+        A.プロット中でないなら、
+          a.既存のプロットに近いか?
+          - 近いものが無い場合は、新規プロットの作成
+          - 近いものがある場合は、既存プロットの修正
+        B.プロット中なら
+        　b.編集中のプロット（ノードもしくはライン）に近いか
+          -　近くなければ、最後尾にプロットを追加
+          - 近ければ、ノードの修正もしくは途中にプロットを追加
+      */
       if (!isPlotting.current) {
-        modifiedIndex.current = drawLine.current.findIndex((line) => !checkDistanceFromLine(pXY, line.xy).isFar);
+        //プロット中でないなら、
+
+        modifiedIndex.current = drawLine.current.findIndex((line) => {
+          if (currentDrawTool === 'PLOT_POINT') {
+            return isNearWithPlot(pXY, line.xy[0]);
+          } else {
+            return !checkDistanceFromLine(pXY, line.xy).isFar;
+          }
+        });
+
         //新規ラインの作成
         if (modifiedIndex.current === -1) {
           //console.log('New Line');
           drawLine.current.push({
             id: uuidv4(),
+            layerId: undefined,
             record: undefined,
             xy: [pXY],
             latlon: [],
             properties: ['PLOT'],
           });
-          undoLine.current.push({
-            index: -1,
-            latlon: [],
-          });
+
           isPlotting.current = true;
           plotIndex.current = 0;
           modifiedIndex.current = drawLine.current.length - 1;
         } else {
           //console.log('Fix Line');
-          //既存ラインの修正
+          //既存ポイントの修正
           isPlotting.current = true;
+          if (currentDrawTool === 'PLOT_POINT') {
+            plotIndex.current = 0;
+            return;
+          }
+          //既存ラインの修正
           const index = modifiedIndex.current;
           const lineXY = drawLine.current[index].xy;
-          lineXY.pop(); //閉じたポイントを一旦削除
+          if (currentDrawTool === 'PLOT_POLYGON') lineXY.pop(); //閉じたポイントを一旦削除
+
           const nodeIndex = findNearNodeIndex(pXY, lineXY);
           if (nodeIndex >= 0) {
             //閉じたあとの最初の修正では始点も動かせる
@@ -85,9 +110,11 @@ export const useLineTool = (
           }
         }
       } else {
+        //プロット中なら、
         //console.log('Fix Plot');
         const index = modifiedIndex.current;
         const lineXY = drawLine.current[index].xy;
+
         const { isFar } = checkDistanceFromLine(pXY, lineXY);
         if (isFar) {
           //plotを最後尾に追加
@@ -97,11 +124,15 @@ export const useLineTool = (
           //plotの修正
           const nodeIndex = findNearNodeIndex(pXY, lineXY);
           if (nodeIndex === 0) {
-            if (lineXY.length >= 3) {
-              //始点で離したら、閉じる
-              lineXY.push(lineXY[0]);
-              drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
-              isPlotting.current = false;
+            if (currentDrawTool === 'PLOT_POLYGON') {
+              //ポリゴンは始点で離したら、閉じる
+              if (lineXY.length >= 3) {
+                lineXY.push(lineXY[0]);
+                drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
+                isPlotting.current = false;
+              }
+            } else {
+              plotIndex.current = nodeIndex;
             }
           } else if (nodeIndex > 0) {
             //nodeを動かす
@@ -117,7 +148,7 @@ export const useLineTool = (
         }
       }
     },
-    [drawLine, mapRegion, mapSize, modifiedIndex, undoLine]
+    [currentDrawTool, drawLine, mapRegion, mapSize, modifiedIndex]
   );
 
   const moveSvgPlotTool = useCallback(
@@ -144,8 +175,9 @@ export const useLineTool = (
       }
 
       drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
+      if (currentDrawTool === 'PLOT_POINT') isPlotting.current = false;
     },
-    [drawLine, mapRegion, mapSize, modifiedIndex, undoLine]
+    [currentDrawTool, drawLine, mapRegion, mapSize, modifiedIndex, undoLine]
   );
 
   const pressSvgFreehandTool = useCallback(
@@ -158,6 +190,7 @@ export const useLineTool = (
         //新規ラインの場合
         drawLine.current.push({
           id: uuidv4(),
+          layerId: undefined,
           record: undefined,
           xy: [pXY],
           latlon: [],

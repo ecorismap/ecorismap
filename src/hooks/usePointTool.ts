@@ -14,7 +14,7 @@ export type UsePointToolReturnType = {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
-    data: RecordType | undefined;
+    record: RecordType | undefined;
   }>;
 
   dragEndPoint: (
@@ -30,15 +30,15 @@ export type UsePointToolReturnType = {
 
 export const usePointTool = (): UsePointToolReturnType => {
   const dispatch = useDispatch();
-  const { dataUser, addRecord, checkRecordEditable, getEditingLayerAndRecordSet } = useRecord();
+  const { dataUser, addRecordWithCheck, isLayerEditable } = useRecord();
 
   const addCurrentPoint = useCallback(async () => {
     const location = await Location.getLastKnownPositionAsync();
     if (location === null) {
-      return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, data: undefined };
+      return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, record: undefined };
     }
-    return addRecord('POINT', toLocationType(location)!);
-  }, [addRecord]);
+    return addRecordWithCheck('POINT', toLocationType(location)!);
+  }, [addRecordWithCheck]);
 
   const resetPointPosition = useCallback(
     (editingLayer: LayerType, feature: RecordType) => {
@@ -58,26 +58,21 @@ export const usePointTool = (): UsePointToolReturnType => {
 
   const dragEndPoint = useCallback(
     (layer: LayerType, feature: PointRecordType, coordinate: LatLng) => {
-      const { editingLayer } = getEditingLayerAndRecordSet('POINT');
-      if (editingLayer === undefined) {
-        resetPointPosition(layer, feature);
-        return { isOK: false, message: t('hooks.message.noEditingLayer') };
-      }
-      const { isOK, message } = checkRecordEditable(editingLayer, feature);
-      if (isOK) {
+      const editable = isLayerEditable('POINT', layer);
+      if (editable) {
         const data = cloneDeep(feature);
         data.coords.latitude = coordinate.latitude;
         data.coords.longitude = coordinate.longitude;
         if (data.coords.ele !== undefined) data.coords.ele = undefined;
-        dispatch(updateRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [data] }));
+        dispatch(updateRecordsAction({ layerId: layer.id, userId: dataUser.uid, data: [data] }));
 
         return { isOK: true, message: '' };
       } else {
         resetPointPosition(layer, feature);
-        return { isOK: false, message };
+        return { isOK: false, message: '' };
       }
     },
-    [checkRecordEditable, dataUser.uid, dispatch, getEditingLayerAndRecordSet, resetPointPosition]
+    [dataUser.uid, dispatch, isLayerEditable, resetPointPosition]
   );
 
   return {

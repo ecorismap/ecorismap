@@ -54,7 +54,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useTiles(route.params?.tileMap);
 
   //位置データの操作、作成関連
-  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, unselectRecord, addRecord } = useRecord();
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, unselectRecord, addRecordWithCheck } = useRecord();
 
   const {
     drawLine,
@@ -185,15 +185,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
 
-      const { isOK, message, layer, data } = await addCurrentPoint();
-      if (!isOK || layer === undefined || data === undefined) {
+      const { isOK, message, layer, record } = await addCurrentPoint();
+      if (!isOK || layer === undefined || record === undefined) {
         Alert.alert('', message);
       } else {
         isDataOpened === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
             previous: 'Home',
-            targetData: data,
+            targetData: record,
             targetLayer: layer,
             targetRecordSet: [],
             targetIndex: 0,
@@ -323,20 +323,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       result = savePolygon();
     }
     if (result === undefined) return;
-    const { isOK, message, layer, data } = result;
+    const { isOK, message, layer, recordSet } = result;
     if (!isOK) {
       Alert.alert('', message);
       return;
     }
+    //console.log(isOK, message, layer, recordSet);
     setDrawTool('NONE');
-    if (layer !== undefined && data !== undefined) {
+    if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
       openData();
       setTimeout(function () {
         navigation.navigate('DataEdit', {
           previous: 'Home',
-          targetData: data,
+          targetData: recordSet[0],
           targetLayer: layer,
-          targetRecordSet: [],
+          targetRecordSet: recordSet,
           targetIndex: 0,
         });
       }, 1);
@@ -376,7 +377,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
-      const { isOK, message } = addRecord('LINE', [], true);
+      const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
       if (!isOK) {
         await AlertAsync(message);
         return;
@@ -391,7 +392,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await toggleGPS('off');
       }
     }
-  }, [addRecord, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [addRecordWithCheck, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
