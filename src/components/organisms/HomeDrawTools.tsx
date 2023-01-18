@@ -101,28 +101,27 @@ export const HomeDrawTools = (props: Props) => {
           onPress={() => selectDrawTool('MOVE')}
         />
       </View>
-      {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
-          <Button
-            name={DRAWTOOL.SAVE}
-            backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
-            borderRadius={10}
-            disabled={!isEditing}
-            onPress={pressSaveDraw}
-          />
-        </View>
-      )}
-      {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
-          <Button
-            name={DRAWTOOL.UNDO}
-            backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
-            borderRadius={10}
-            disabled={!isEditing}
-            onPress={pressUndoDraw}
-          />
-        </View>
-      )}
+
+      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <Button
+          name={DRAWTOOL.SAVE}
+          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          borderRadius={10}
+          disabled={!isEditing}
+          onPress={pressSaveDraw}
+        />
+      </View>
+
+      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <Button
+          name={DRAWTOOL.UNDO}
+          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          borderRadius={10}
+          disabled={!isEditing}
+          onPress={pressUndoDraw}
+        />
+      </View>
+
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.DELETE}

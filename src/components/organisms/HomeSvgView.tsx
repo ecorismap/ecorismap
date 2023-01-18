@@ -72,11 +72,12 @@ export const SvgView = (props: Props) => {
         {drawLine.map(({ xy, properties }, idx: number) => {
           let startStyle = properties.includes('POINT') ? `url(#point)` : '';
           const midStyle = properties.includes('PLOT') ? `url(#point)` : '';
-          let endStyle = '';
+          let endStyle = properties.includes('PLOT') ? `url(#point)` : '';
           if (PLUGIN.HISYOUTOOL) {
             startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
             endStyle = properties.includes('arrow') ? 'url(#arrow)' : '';
           }
+
           return (
             <G key={uuidv4()}>
               <Path

@@ -2710,6 +2710,22 @@
     "@turf/helpers" "^6.5.0"
     "@turf/invariant" "^6.5.0"
 
+"@turf/boolean-valid@^6.5.0":
+  version "6.5.0"
+  resolved "https://registry.yarnpkg.com/@turf/boolean-valid/-/boolean-valid-6.5.0.tgz#20feee0a1187ba8944dd7b1e38fbf6594a20e59e"
+  integrity sha512-v1ineelL5l/S/9D38dL55oThyrLf49a4hnjnoKx2Udp0NbJ5JxCleVFVMSkdq7ArVkPHwW6WkNGdOm2IYyBBMw==
+  dependencies:
+    "@turf/bbox" "^6.5.0"
+    "@turf/boolean-crosses" "^6.5.0"
+    "@turf/boolean-disjoint" "^6.5.0"
+    "@turf/boolean-overlap" "^6.5.0"
+    "@turf/boolean-point-in-polygon" "^6.5.0"
+    "@turf/boolean-point-on-line" "^6.5.0"
+    "@turf/helpers" "^6.5.0"
+    "@turf/invariant" "^6.5.0"
+    "@turf/line-intersect" "^6.5.0"
+    geojson-polygon-self-intersections "1.2.x"
+
 "@turf/boolean-within@^6.5.0":
   version "6.5.0"
   resolved "https://registry.yarnpkg.com/@turf/boolean-within/-/boolean-within-6.5.0.tgz#31a749d3be51065da8c470a1e5613f4d2efdee06"
@@ -8141,6 +8157,13 @@ geojson-equality@0.1.6:
   integrity sha512-TqG8YbqizP3EfwP5Uw4aLu6pKkg6JQK9uq/XZ1lXQntvTHD1BBKJWhNpJ2M0ax6TuWMP3oyx6Oq7FCIfznrgpQ==
   dependencies:
     deep-equal "^1.0.0"
+
+geojson-polygon-self-intersections@1.2.x:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/geojson-polygon-self-intersections/-/geojson-polygon-self-intersections-1.2.1.tgz#7018edabe58e9262f20821a7334953708c78bbb7"
+  integrity sha512-/QM1b5u2d172qQVO//9CGRa49jEmclKEsYOQmWP9ooEjj63tBM51m2805xsbxkzlEELQ2REgTf700gUhhlegxA==
+  dependencies:
+    rbush "^2.0.1"
 
 geojson-rbush@3.x:
   version "3.2.0"

@@ -12,6 +12,7 @@ import {
   RecordType,
 } from '../types';
 import * as turf from '@turf/turf';
+import booleanValid from '@turf/boolean-valid';
 import { MapRef } from 'react-map-gl';
 import { LatLng } from 'react-native-maps';
 
@@ -249,6 +250,25 @@ export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[]) => 
   return { isFar: snapped.distance > SNAP_DISTANCE, index: snapped.index };
 };
 
+export const findNearNodeIndex = (xyPoint: Position, xyLine: Position[]) => {
+  const ADJUST_VALUE = 1000.0;
+  if (xyLine.length < 1) return -1;
+  const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
+  const turfLine = turf.lineString(xyLine.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+
+  try {
+    const bufferPolygon = turf.buffer(turfPoint, 500 / ADJUST_VALUE);
+    const nodeIndex = turfLine.geometry.coordinates.findIndex((xy) => {
+      const node = turf.point(xy);
+      //@ts-ignore
+      return turf.booleanIntersects(node, bufferPolygon);
+    });
+    return nodeIndex;
+  } catch (e) {
+    return -1;
+  }
+};
+
 export const dot = (a: Position, b: Position) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
 export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
   const vecA = [pA[1][0] - pA[0][0], pA[1][1] - pA[0][1]];
@@ -368,13 +388,14 @@ export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[]
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return polygonFeatures
       .map((feature) => {
-        const featurePolygon = turf.polygon([feature.coords.map((c) => [c.longitude, c.latitude])]);
+        const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePolygon, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);
   } catch (e) {
+    console.log(e);
     return [];
   }
 };
@@ -394,6 +415,7 @@ export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], poi
     if (features.length === 0) return undefined;
     return features[0];
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 };
@@ -413,6 +435,7 @@ export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointC
     if (features.length === 0) return undefined;
     return features[0];
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 };
@@ -426,7 +449,7 @@ export const selectPolygonFeatureByLatLon = (
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = polygonFeatures
       .map((feature) => {
-        const featurePolygon = turf.polygon([feature.coords.map((c) => [c.longitude, c.latitude])]);
+        const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePolygon, bufferPolygon);
         if (intersects) return feature;
@@ -436,6 +459,7 @@ export const selectPolygonFeatureByLatLon = (
     if (features.length === 0) return undefined;
     return features[0];
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 };
@@ -517,4 +541,16 @@ export const calcCentroid = (coords: LatLng[]) => {
     longitude: coords.reduce((p, c) => p + c.longitude, 0) / coords.length,
     latitude: coords.reduce((p, c) => p + c.latitude, 0) / coords.length,
   };
+};
+
+export const isValidPoint = (xyLine: Position[]) => {
+  return xyLine.length === 1;
+};
+
+export const isValidLine = (xyLine: Position[]) => {
+  return xyLine.length >= 2;
+};
+
+export const isValidPolygon = (xyLine: Position[]) => {
+  return booleanValid(turf.multiPolygon([[xyLine]]));
 };

@@ -69,6 +69,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressSvgView,
     moveSvgView,
     releaseSvgView,
+    savePoint,
     saveLine,
     savePolygon,
     deleteDraw,
@@ -78,7 +79,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     hideDrawLine,
     resetDrawTools,
     toggleTerrainForWeb,
-    addPressPoint,
   } = useDrawTool(mapViewRef.current);
 
   const { addCurrentPoint, dragEndPoint, resetPointPosition } = usePointTool();
@@ -247,28 +247,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onReleaseSvgView = useCallback(
     async (event: GestureResponderEvent) => {
-      if (currentDrawTool === 'ADD_POINT') {
-        if (isDrag) {
-          //INFOでドラッグした場合は移動のみ実行
-          releaseSvgView(event);
-          return;
-        }
-        const { isOK, message, layer, data } = addPressPoint(event);
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-          return;
-        }
-        isDataOpened === 'closed' ? expandData() : openData();
-        setTimeout(function () {
-          navigation.navigate('DataEdit', {
-            previous: 'Home',
-            targetData: data,
-            targetLayer: layer,
-            targetRecordSet: [],
-            targetIndex: 0,
-          });
-        }, 1);
-      } else if (isInfoTool(currentDrawTool)) {
+      if (isInfoTool(currentDrawTool)) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
           releaseSvgView(event);
@@ -305,9 +284,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       currentDrawTool,
       isDrag,
-      addPressPoint,
-      isDataOpened,
-      expandData,
       openData,
       releaseSvgView,
       navigation,
@@ -339,11 +315,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressSaveDraw = useCallback(async () => {
     let result;
-    if (isPolygonTool(currentDrawTool)) {
-      result = savePolygon();
-    } else {
+    if (featureButton === 'POINT') {
+      result = savePoint();
+    } else if (featureButton === 'LINE') {
       result = saveLine();
+    } else if (featureButton === 'POLYGON') {
+      result = savePolygon();
     }
+    if (result === undefined) return;
     const { isOK, message, layer, data } = result;
     if (!isOK) {
       Alert.alert('', message);
@@ -362,7 +341,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
       }, 1);
     }
-  }, [currentDrawTool, navigation, openData, saveLine, savePolygon, setDrawTool]);
+  }, [featureButton, navigation, openData, saveLine, savePoint, savePolygon, setDrawTool]);
 
   const pressDeleteDraw = useCallback(() => {
     const { isOK, message } = deleteDraw();

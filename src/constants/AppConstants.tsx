@@ -141,7 +141,7 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  ADD_POINT: 'map-marker-plus',
+  PLOT_POINT: 'map-marker-plus',
   ADD_LOCATION_POINT: 'map-marker-radius',
   MOVE_POINT: 'map-marker-right',
 } as const;
