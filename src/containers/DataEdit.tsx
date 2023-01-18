@@ -8,6 +8,7 @@ import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
+import { useRecord } from '../hooks/useRecord';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -41,6 +42,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
+  const { unselectRecord } = useRecord();
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
@@ -287,6 +289,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     } else {
       closeData();
     }
+    unselectRecord();
   }, [cancelUpdate, closeData, isEditingRecord]);
 
   return (

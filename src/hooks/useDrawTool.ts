@@ -34,7 +34,7 @@ import {
   isValidLine,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
-import { addRecordsAction, updateRecordsAction, deleteRecordsAction } from '../modules/dataSet';
+import { deleteRecordsAction } from '../modules/dataSet';
 import { useHisyouTool } from '../plugins/hisyoutool/useHisyouTool';
 import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
@@ -68,20 +68,20 @@ export type UseDrawToolReturnType = {
   savePoint: () => {
     isOK: boolean;
     message: string;
-    layer: undefined;
-    data: undefined;
+    layer: LayerType | undefined;
+    recordSet: RecordType[] | undefined;
   };
   saveLine: () => {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
-    data: RecordType | undefined;
+    recordSet: RecordType[] | undefined;
   };
   savePolygon: () => {
     isOK: boolean;
     message: string;
-    layer: undefined;
-    data: undefined;
+    layer: LayerType | undefined;
+    recordSet: RecordType[] | undefined;
   };
 
   deleteDraw: () => {
@@ -121,6 +121,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const drawLine = useRef<
     {
       id: string;
+      layerId: string | undefined;
       record: RecordType | undefined;
       xy: Position[];
       latlon: Position[];
@@ -143,9 +144,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    checkRecordEditable,
-    getEditingLayerAndRecordSet,
-    generateLineRecord,
+    addRecord,
+    updateRecord,
+    getEditableLayerAndRecordSetWithCheck,
+    generateRecord,
     findLayer,
     unselectRecord,
   } = useRecord();
@@ -169,10 +171,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   const convertPointFeatureToDrawLine = useCallback(
-    (features: PointRecordType[]) => {
+    (layerId: string, features: PointRecordType[]) => {
       features.forEach((record) =>
         drawLine.current.push({
           id: record.id,
+          layerId: layerId,
           record: record,
           xy: latLonObjectsToXYArray([record.coords], mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray([record.coords]),
@@ -184,10 +187,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const convertLineFeatureToDrawLine = useCallback(
-    (features: LineRecordType[]) => {
+    (layerId: string, features: LineRecordType[]) => {
       features.forEach((record) =>
         drawLine.current.push({
           id: record.id,
+          layerId: layerId,
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray(record.coords),
@@ -198,10 +202,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [drawLine, mapRegion, mapSize]
   );
   const convertPolygonFeatureToDrawLine = useCallback(
-    (features: PolygonRecordType[]) => {
+    (layerId: string, features: PolygonRecordType[]) => {
       features.forEach((record) =>
         drawLine.current.push({
           id: record.id,
+          layerId: layerId,
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray(record.coords),
@@ -240,105 +245,128 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isDrag.current = false;
   }, [isPlotting]);
 
-  const saveDraw = useCallback(
-    (editingLayer: LayerType, editingRecordSet: RecordType[]) => {
-      drawLine.current.forEach((line) => {
-        if (line.record !== undefined) {
-          //修正
-          const updatedRecord: RecordType = {
-            ...line.record,
-            coords: latlonArrayToLatLonObjects(line.latlon),
-          };
-          dispatch(
-            updateRecordsAction({
-              layerId: editingLayer.id,
-              userId: dataUser.uid,
-              data: [updatedRecord],
-            })
-          );
-        } else {
-          //新規
-          const newRecord = generateLineRecord(editingLayer, editingRecordSet, latlonArrayToLatLonObjects(line.latlon));
-          dispatch(addRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [newRecord] }));
-        }
-      });
-    },
-    [dataUser.uid, dispatch, generateLineRecord]
-  );
-
   const savePoint = useCallback(() => {
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('POINT');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-    }
-    const { isOK, message } = checkRecordEditable(editingLayer);
-
-    if (!isOK) {
-      return { isOK: false, message, layer: undefined, data: undefined };
-    }
-
     //有効なポイントかチェック(ポイントの数)
     const isValid = drawLine.current.every((line) => isValidPoint(line.xy));
 
     if (!isValid) {
-      return { isOK: false, message: "Can't save for invalid point", layer: undefined, data: undefined };
+      return { isOK: false, message: t('hooks.message.invalidPoint'), layer: undefined, recordSet: undefined };
     }
-    saveDraw(editingLayer, editingRecordSet);
+    const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck('POINT');
+    if (!isOK || layer === undefined || recordSet === undefined) {
+      return { isOK: false, message, layer: undefined, recordSet: undefined };
+    }
+
+    const savedRecordSet = [];
+    for (const line of drawLine.current) {
+      if (line.record !== undefined && line.layerId !== undefined) {
+        const updatedRecord: RecordType = {
+          ...line.record,
+          coords: latlonArrayToLatLonObjects(line.latlon)[0],
+        };
+        const recordLayer = findLayer(line.layerId);
+        if (recordLayer === undefined) continue;
+        updateRecord(recordLayer, updatedRecord);
+        savedRecordSet.push(updatedRecord);
+      } else {
+        const record = generateRecord('POINT', layer, recordSet, latlonArrayToLatLonObjects(line.latlon)[0]);
+        addRecord(layer, record);
+        savedRecordSet.push(record);
+      }
+    }
+
     resetDrawTools();
-    return { isOK: true, message: '', layer: undefined, data: undefined };
-  }, [checkRecordEditable, getEditingLayerAndRecordSet, resetDrawTools, saveDraw]);
+    return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
+  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
 
   const saveLine = useCallback(() => {
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('LINE');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-    }
-    const { isOK, message } = checkRecordEditable(editingLayer);
-
-    if (!isOK) {
-      return { isOK: false, message, layer: undefined, data: undefined };
-    }
-
     //有効なラインかチェック(ポイントの数)
     const isValid = drawLine.current.every((line) => isValidLine(line.xy));
 
     if (!isValid) {
-      return { isOK: false, message: "Can't save for invalid line", layer: undefined, data: undefined };
+      return { isOK: false, message: t('hooks.message.invalidLine'), layer: undefined, recordSet: undefined };
+    }
+    const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck('LINE');
+    if (!isOK || layer === undefined || recordSet === undefined) {
+      return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
 
+    const savedRecordSet = [];
     if (isHisyouToolActive) {
-      const { isOK: isOKsaveHisyou, message: messageSaveHisyou } = saveHisyou(editingLayer, editingRecordSet);
-      if (!isOKsaveHisyou) return { isOK: false, message: messageSaveHisyou, layer: undefined, data: undefined };
+      const {
+        isOK: isOKsaveHisyou,
+        message: messageSaveHisyou,
+        layer: hisyouLayer,
+        recordSet: hisyouRecordSet,
+      } = saveHisyou(layer, recordSet);
+      if (!isOKsaveHisyou || hisyouLayer === undefined || hisyouRecordSet === undefined)
+        return { isOK: false, message: messageSaveHisyou, layer: undefined, recordSet: undefined };
+      savedRecordSet.push(...hisyouRecordSet);
     } else {
-      saveDraw(editingLayer, editingRecordSet);
+      for (const line of drawLine.current) {
+        if (line.record !== undefined && line.layerId !== undefined) {
+          const updatedRecord: RecordType = {
+            ...line.record,
+            coords: latlonArrayToLatLonObjects(line.latlon),
+          };
+          const recordLayer = findLayer(line.layerId);
+          if (recordLayer === undefined) continue;
+          updateRecord(recordLayer, updatedRecord);
+          savedRecordSet.push(updatedRecord);
+        } else {
+          const record = generateRecord('LINE', layer, recordSet, latlonArrayToLatLonObjects(line.latlon));
+          addRecord(layer, record);
+          savedRecordSet.push(record);
+        }
+      }
     }
+
     resetDrawTools();
-    return { isOK: true, message: '', layer: undefined, data: undefined };
-  }, [checkRecordEditable, getEditingLayerAndRecordSet, isHisyouToolActive, resetDrawTools, saveDraw, saveHisyou]);
+    return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
+  }, [
+    addRecord,
+    findLayer,
+    generateRecord,
+    getEditableLayerAndRecordSetWithCheck,
+    isHisyouToolActive,
+    resetDrawTools,
+    saveHisyou,
+    updateRecord,
+  ]);
 
   const savePolygon = useCallback(() => {
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet('POLYGON');
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit'), layer: undefined, data: undefined };
-    }
-    const { isOK, message } = checkRecordEditable(editingLayer);
-
-    if (!isOK) {
-      return { isOK: false, message, layer: undefined, data: undefined };
-    }
-
-    //console.log(drawLine.current[0]);
-    //有効なポリゴンかチェック(ポイントの数、一直線、自己交差)
+    //有効なポリゴンかチェック(閉じていない。自己交差は不正でない)
     const isValid = drawLine.current.every((line) => isValidPolygon(line.xy));
 
     if (!isValid) {
-      return { isOK: false, message: "Can't save for invalid polygon", layer: undefined, data: undefined };
+      return { isOK: false, message: t('hooks.message.invalidPolygon'), layer: undefined, recordSet: undefined };
     }
-    saveDraw(editingLayer, editingRecordSet);
+    const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck('POLYGON');
+    if (!isOK || layer === undefined || recordSet === undefined) {
+      return { isOK: false, message, layer: undefined, recordSet: undefined };
+    }
+
+    const savedRecordSet = [];
+    for (const line of drawLine.current) {
+      if (line.record !== undefined && line.layerId !== undefined) {
+        const updatedRecord: RecordType = {
+          ...line.record,
+          coords: latlonArrayToLatLonObjects(line.latlon),
+        };
+        const recordLayer = findLayer(line.layerId);
+        if (recordLayer === undefined) continue;
+        updateRecord(recordLayer, updatedRecord);
+        savedRecordSet.push(updatedRecord);
+      } else {
+        const record = generateRecord('POLYGON', layer, recordSet, latlonArrayToLatLonObjects(line.latlon));
+        addRecord(layer, record);
+        savedRecordSet.push(record);
+      }
+    }
 
     resetDrawTools();
-    return { isOK: true, message: '', layer: undefined, data: undefined };
-  }, [checkRecordEditable, getEditingLayerAndRecordSet, resetDrawTools, saveDraw]);
+    return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
+  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
 
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {
@@ -375,7 +403,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           const selectedFeature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
           if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
-            if (isHisyouToolActive) convertFeatureToHisyouLine([selectedFeature]);
+            if (isHisyouToolActive) convertFeatureToHisyouLine(layerId, [selectedFeature]);
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
             feature = selectedFeature;
@@ -526,20 +554,24 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const releaseSVGSelectionTool = useCallback(() => {
     //選択処理
 
-    const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureButton);
-    if (editingLayer === undefined) return;
-    const { isOK } = checkRecordEditable(editingLayer);
-    if (!isOK) return;
+    const { isOK, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureButton);
+
+    if (!isOK || layer === undefined || recordSet === undefined) {
+      unselectRecord();
+      undoLine.current.push({ index: -1, latlon: [] });
+      selectLine.current = [];
+      return;
+    }
     const selectLineCoords = xyArrayToLatLonArray(selectLine.current, mapRegion, mapSize);
     // let features: PointRecordType[] | LineRecordType[] | PolygonRecordType[] = [];
     // let feature: PointRecordType | LineRecordType | PolygonRecordType | undefined;
     if (featureButton === 'POINT') {
       let features;
       if (selectLineCoords.length > 1) {
-        features = selectPointFeaturesByArea(editingRecordSet as PointRecordType[], selectLineCoords);
+        features = selectPointFeaturesByArea(recordSet as PointRecordType[], selectLineCoords);
       } else {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
-        const feature = selectPointFeatureByLatLon(editingRecordSet as PointRecordType[], selectLineCoords[0], radius);
+        const feature = selectPointFeatureByLatLon(recordSet as PointRecordType[], selectLineCoords[0], radius);
         features = feature !== undefined ? [feature] : [];
       }
       if (features.length === 0) {
@@ -547,14 +579,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(uuidv4());
         return;
       }
-      convertPointFeatureToDrawLine(features);
+      convertPointFeatureToDrawLine(layer.id, features);
     } else if (featureButton === 'LINE') {
       let features;
       if (selectLineCoords.length > 1) {
-        features = selectLineFeaturesByArea(editingRecordSet as LineRecordType[], selectLineCoords);
+        features = selectLineFeaturesByArea(recordSet as LineRecordType[], selectLineCoords);
       } else {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
-        const feature = selectLineFeatureByLatLon(editingRecordSet as LineRecordType[], selectLineCoords[0], radius);
+        const feature = selectLineFeatureByLatLon(recordSet as LineRecordType[], selectLineCoords[0], radius);
         features = feature !== undefined ? [feature] : [];
       }
       if (features.length === 0) {
@@ -563,21 +595,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return;
       }
       if (isHisyouToolActive) {
-        convertFeatureToHisyouLine(features);
+        convertFeatureToHisyouLine(layer.id, features);
       } else {
-        convertLineFeatureToDrawLine(features);
+        convertLineFeatureToDrawLine(layer.id, features);
       }
     } else if (featureButton === 'POLYGON') {
       let features;
       if (selectLineCoords.length > 1) {
-        features = selectPolygonFeaturesByArea(editingRecordSet as PolygonRecordType[], selectLineCoords);
+        features = selectPolygonFeaturesByArea(recordSet as PolygonRecordType[], selectLineCoords);
       } else {
         const radius = calcDegreeRadius(500, mapRegion, mapSize);
-        const feature = selectPolygonFeatureByLatLon(
-          editingRecordSet as PolygonRecordType[],
-          selectLineCoords[0],
-          radius
-        );
+        const feature = selectPolygonFeatureByLatLon(recordSet as PolygonRecordType[], selectLineCoords[0], radius);
         features = feature !== undefined ? [feature] : [];
       }
 
@@ -586,19 +614,18 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(uuidv4());
         return;
       }
-      convertPolygonFeatureToDrawLine(features);
+      convertPolygonFeatureToDrawLine(layer.id, features);
     }
     unselectRecord();
     undoLine.current.push({ index: -1, latlon: [] });
     selectLine.current = [];
   }, [
-    checkRecordEditable,
     convertFeatureToHisyouLine,
     convertLineFeatureToDrawLine,
     convertPointFeatureToDrawLine,
     convertPolygonFeatureToDrawLine,
     featureButton,
-    getEditingLayerAndRecordSet,
+    getEditableLayerAndRecordSetWithCheck,
     isHisyouToolActive,
     mapRegion,
     mapSize,
@@ -642,16 +669,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const deleteDraw = useCallback(() => {
-    const { editingLayer } = getEditingLayerAndRecordSet(featureButton);
-    if (editingLayer === undefined) {
-      return { isOK: false, message: t('hooks.message.noLayerToEdit') };
-    }
-    const { isOK, message } = checkRecordEditable(editingLayer);
+    const { isOK, message, layer } = getEditableLayerAndRecordSetWithCheck(featureButton);
 
-    if (!isOK) {
+    if (!isOK || layer === undefined) {
       return { isOK: false, message };
     }
-    deleteDrawRecord(editingLayer.id);
+    deleteDrawRecord(layer.id);
     if (isHisyouToolActive) {
       deleteHisyouLine();
     }
@@ -659,11 +682,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setDrawTool('NONE');
     return { isOK: true, message: '' };
   }, [
-    checkRecordEditable,
     deleteDrawRecord,
     deleteHisyouLine,
     featureButton,
-    getEditingLayerAndRecordSet,
+    getEditableLayerAndRecordSetWithCheck,
     isHisyouToolActive,
     resetDrawTools,
   ]);

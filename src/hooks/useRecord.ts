@@ -13,14 +13,13 @@ import {
   PolygonDataType,
   PolygonRecordType,
   RecordType,
-  ReturnFeatureRecordType,
   UserType,
 } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField } from '../utils/Data';
-import { addRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid } from '../utils/Coords';
 
@@ -37,22 +36,34 @@ export type UseFeatureReturnType = {
       }
     | undefined;
   addRecord: (
+    layer: LayerType,
+    record: RecordType,
+    options?: {
+      isTrack?: boolean;
+    }
+  ) => void;
+  addRecordWithCheck: (
     featureType: FeatureType,
     locations: LocationType | LocationType[],
-    isTrack?: any
+    options?: {
+      isTrack?: boolean;
+    }
   ) => {
     isOK: boolean;
     message: string;
-    data: RecordType | undefined;
     layer: LayerType | undefined;
+    record: RecordType | undefined;
   };
-  getEditingLayerAndRecordSet: <T extends 'NONE' | 'POINT' | 'LINE' | 'POLYGON'>(type: T) => ReturnFeatureRecordType<T>;
-  checkRecordEditable: (
-    editingLayer: LayerType,
-    feature?: RecordType
-  ) => {
+  updateRecord: (layer: LayerType, record: RecordType) => void;
+  getEditableLayerAndRecordSetWithCheck: (featureType: FeatureType) => {
     isOK: boolean;
     message: string;
+    layer: LayerType | undefined;
+    recordSet: RecordType[] | undefined;
+  };
+  getEditableLayerAndRecordSet: (type: FeatureType) => {
+    editingLayer: LayerType | undefined;
+    editingRecordSet: RecordType[];
   };
   findLayer: (layerId: string) => LayerType | undefined;
   findRecord: (
@@ -69,11 +80,7 @@ export type UseFeatureReturnType = {
     editingRecordSet: RecordType[],
     coords: LocationType | LocationType[]
   ) => RecordType;
-  generateLineRecord: (
-    editingLayer: LayerType,
-    editingRecordSet: RecordType[],
-    coords: LocationType[]
-  ) => LineRecordType;
+  isLayerEditable: (type: FeatureType, layer: LayerType) => boolean | undefined;
 };
 
 export const useRecord = (): UseFeatureReturnType => {
@@ -143,8 +150,8 @@ export const useRecord = (): UseFeatureReturnType => {
 
   const findLayer = useCallback((layerId: string) => layers.find((l) => l.id === layerId), [layers]);
 
-  const getEditingLayerAndRecordSet = useCallback(
-    <T extends FeatureType>(type: T): ReturnFeatureRecordType<T> => {
+  const getEditableLayerAndRecordSet = useCallback(
+    (type: FeatureType) => {
       let editingLayer: LayerType | undefined;
       let dataSet: DataType[] = [];
       if (type === 'POINT') {
@@ -160,7 +167,7 @@ export const useRecord = (): UseFeatureReturnType => {
       const editingData = dataSet.find((d) => d.layerId === editingLayer?.id && d.userId === dataUser.uid);
       const editingRecordSet = editingData !== undefined ? editingData.data : [];
 
-      return { editingLayer, editingRecordSet } as ReturnFeatureRecordType<T>;
+      return { editingLayer, editingRecordSet };
     },
     [activeLineLayer, activePointLayer, activePolygonLayer, dataUser.uid, lineDataSet, pointDataSet, polygonDataSet]
   );
@@ -179,6 +186,19 @@ export const useRecord = (): UseFeatureReturnType => {
       return { isOK: true, message: '' };
     },
     [dataUser.uid, isOwnerAdmin]
+  );
+
+  const isLayerEditable = useCallback(
+    (type: FeatureType, layer: LayerType) => {
+      if (type === 'POINT') {
+        return activePointLayer?.id === layer.id;
+      } else if (type === 'LINE') {
+        return activeLineLayer?.id === layer.id;
+      } else if (type === 'POLYGON') {
+        return activePolygonLayer?.id === layer.id;
+      }
+    },
+    [activeLineLayer?.id, activePointLayer?.id, activePolygonLayer?.id]
   );
 
   const generateRecord = useCallback(
@@ -207,37 +227,62 @@ export const useRecord = (): UseFeatureReturnType => {
     [dataUser.displayName, dataUser.uid]
   );
 
-  const generateLineRecord = useCallback(
-    (editingLayer: LayerType, editingRecordSet: RecordType[], coords: LocationType[]) => {
-      return generateRecord('LINE', editingLayer, editingRecordSet, coords) as LineRecordType;
-    },
-    [generateRecord]
-  );
-
-  const addRecord = useCallback(
-    (featureType: FeatureType, locations: LocationType | LocationType[], isTrack = false) => {
-      const { editingLayer, editingRecordSet } = getEditingLayerAndRecordSet(featureType);
+  const getEditableLayerAndRecordSetWithCheck = useCallback(
+    (featureType: FeatureType) => {
+      const { editingLayer, editingRecordSet } = getEditableLayerAndRecordSet(featureType);
       if (editingLayer === undefined || editingRecordSet === undefined) {
         return {
           isOK: false,
           message: t('hooks.message.noLayerToEdit'),
           layer: undefined,
-          data: undefined,
+          recordSet: undefined,
         };
       }
       const { isOK, message } = checkRecordEditable(editingLayer);
       if (!isOK) {
-        return { isOK: false, message, layer: undefined, data: undefined };
+        return { isOK: false, message, layer: undefined, recordSet: undefined };
       }
-      const newRecord = generateRecord(featureType, editingLayer, editingRecordSet, locations);
 
-      dispatch(addRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [newRecord] }));
-      if (isTrack) {
-        dispatch(editSettingsAction({ tracking: { layerId: editingLayer.id, dataId: newRecord.id } }));
-      }
-      return { isOK: true, message: '', data: newRecord, layer: editingLayer };
+      return { isOK: true, message: '', layer: editingLayer, recordSet: editingRecordSet };
     },
-    [checkRecordEditable, dataUser.uid, dispatch, generateRecord, getEditingLayerAndRecordSet]
+    [checkRecordEditable, getEditableLayerAndRecordSet]
+  );
+
+  const addRecord = useCallback(
+    (layer: LayerType, record: RecordType, options?: { isTrack?: boolean }) => {
+      dispatch(addRecordsAction({ layerId: layer.id, userId: dataUser.uid, data: [record] }));
+      if (options?.isTrack) {
+        dispatch(editSettingsAction({ tracking: { layerId: layer.id, dataId: record.id } }));
+      }
+    },
+    [dataUser.uid, dispatch]
+  );
+
+  const updateRecord = useCallback(
+    (layer: LayerType, record: RecordType) => {
+      dispatch(
+        updateRecordsAction({
+          layerId: layer.id,
+          userId: dataUser.uid,
+          data: [record],
+        })
+      );
+    },
+    [dataUser.uid, dispatch]
+  );
+
+  const addRecordWithCheck = useCallback(
+    (featureType: FeatureType, locations: LocationType | LocationType[], options?: { isTrack?: boolean }) => {
+      const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureType);
+      if (!isOK || layer === undefined || recordSet === undefined) {
+        return { isOK: false, message, layer: undefined, record: undefined };
+      }
+      const record = generateRecord(featureType, layer, recordSet, locations);
+      addRecord(layer, record, options);
+
+      return { isOK, message, layer, record };
+    },
+    [addRecord, generateRecord, getEditableLayerAndRecordSetWithCheck]
   );
 
   return {
@@ -247,14 +292,16 @@ export const useRecord = (): UseFeatureReturnType => {
     lineDataSet,
     polygonDataSet,
     selectedRecord,
-    addRecord,
+    addRecordWithCheck,
     findRecord,
     selectRecord,
     unselectRecord,
-    getEditingLayerAndRecordSet,
-    checkRecordEditable,
+    getEditableLayerAndRecordSet,
+    getEditableLayerAndRecordSetWithCheck,
+    addRecord,
+    updateRecord,
     generateRecord,
-    generateLineRecord,
     findLayer,
+    isLayerEditable,
   } as const;
 };

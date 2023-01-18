@@ -517,7 +517,10 @@
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
       "disableEditProject": "Cannot be edited while the project is open.",
       "inputCorrectFilename": "Please enter a valid file name.",
-      "failSaveFile": "Failed to save file."
+      "failSaveFile": "Failed to save file.",
+      "invalidPolygon": "Can't save for invalid line.",
+      "invalidLine": "Can't save for invalid line",
+      "invalidPoint": "Can't save for invalid point."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

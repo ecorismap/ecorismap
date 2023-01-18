@@ -37,8 +37,10 @@ export type UseHisyouToolReturnType = {
   ) => {
     isOK: boolean;
     message: string;
+    layer: LayerType | undefined;
+    recordSet: RecordType[] | undefined;
   };
-  convertFeatureToHisyouLine: (features: LineRecordType[]) => void;
+  convertFeatureToHisyouLine: (layerId: string, features: LineRecordType[]) => void;
   deleteHisyouLine: () => void;
 };
 
@@ -48,6 +50,7 @@ export const useHisyouTool = (
   drawLine: React.MutableRefObject<
     {
       id: string;
+      layerId: string | undefined;
       record: RecordType | undefined;
       xy: Position[];
       latlon: Position[];
@@ -67,7 +70,7 @@ export const useHisyouTool = (
 ): UseHisyouToolReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
-  const { dataUser, generateLineRecord } = useRecord();
+  const { dataUser, generateRecord, addRecord } = useRecord();
   const { pressSvgFreehandTool, moveSvgFreehandTool, releaseSvgFreehandTool } = useLineTool(
     drawLine,
     editingLine,
@@ -161,6 +164,7 @@ export const useHisyouTool = (
       //console.log('action id', actionLine.current.hisyouLine.id);
       drawLine.current.push({
         id: actionLine.current.hisyouLine.id,
+        layerId: undefined,
         record: undefined,
         xy: editingLine.current.xy,
         latlon: xyArrayToLatLonArray(editingLine.current.xy, mapRegion, mapSize),
@@ -192,11 +196,12 @@ export const useHisyouTool = (
   // );
 
   const convertFeatureToHisyouLine = useCallback(
-    (features: LineRecordType[]) => {
+    (layerId: string, features: LineRecordType[]) => {
       features.forEach((record) => {
         //飛翔線も削除用にdrawLineにpush。表示しないために座標は入れない。
         drawLine.current.push({
           id: record.id,
+          layerId: layerId,
           record: record,
           xy: [],
           latlon: [],
@@ -210,6 +215,7 @@ export const useHisyouTool = (
           //console.log(action.field._ref, action.field['飛翔凡例']);
           drawLine.current.push({
             id: action.id,
+            layerId: hisyouLayerId,
             record: action,
             xy: latLonObjectsToXYArray(action.coords as LatLng[], mapRegion, mapSize),
             latlon: latLonObjectsToLatLonArray(action.coords as LatLng[]),
@@ -218,7 +224,7 @@ export const useHisyouTool = (
         });
       });
     },
-    [drawLine, hisyouData?.data, mapRegion, mapSize]
+    [drawLine, hisyouData?.data, hisyouLayerId, mapRegion, mapSize]
   );
 
   const saveActions = useCallback(
@@ -274,22 +280,29 @@ export const useHisyouTool = (
   const saveHisyou = useCallback(
     (editingLayer: LayerType, editingRecordSet: RecordType[]) => {
       if (editingLayer.id === hisyouLayerId) {
-        return { isOK: false, message: '飛翔レイヤが編集モードになっています' };
+        return { isOK: false, message: '飛翔レイヤが編集モードになっています', layer: undefined, recordSet: undefined };
       }
       // console.log(line);
-      drawLine.current.forEach((line) => {
+      const savedRecordSet = [];
+      for (const line of drawLine.current) {
         //console.log(line.properties.includes('HISYOU'));
-        if (!line.properties.includes('HISYOU')) return;
+        if (!line.properties.includes('HISYOU')) continue;
         //ラインレイヤに追加
-        const newRecord = generateLineRecord(editingLayer, editingRecordSet, latlonArrayToLatLonObjects(line.latlon));
-        dispatch(addRecordsAction({ layerId: editingLayer.id, userId: dataUser.uid, data: [newRecord] }));
+        const newRecord = generateRecord(
+          'LINE',
+          editingLayer,
+          editingRecordSet,
+          latlonArrayToLatLonObjects(line.latlon)
+        );
+        addRecord(editingLayer, newRecord);
+        savedRecordSet.push(newRecord);
 
         //アクションレイヤに追加
         saveActions(newRecord.id, line);
-      });
-      return { isOK: true, message: '' };
+      }
+      return { isOK: true, message: '', layer: editingLayer, recordSet: savedRecordSet };
     },
-    [dataUser.uid, dispatch, drawLine, generateLineRecord, hisyouLayerId, saveActions]
+    [addRecord, drawLine, generateRecord, hisyouLayerId, saveActions]
   );
 
   const deleteHisyouLine = useCallback(() => {

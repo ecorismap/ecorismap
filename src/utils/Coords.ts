@@ -252,7 +252,7 @@ export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[]) => 
 
 export const findNearNodeIndex = (xyPoint: Position, xyLine: Position[]) => {
   const ADJUST_VALUE = 1000.0;
-  if (xyLine.length < 1) return -1;
+  if (xyLine.length < 2) return -1;
   const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
   const turfLine = turf.lineString(xyLine.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
 
@@ -269,6 +269,21 @@ export const findNearNodeIndex = (xyPoint: Position, xyLine: Position[]) => {
   }
 };
 
+export const isNearWithPlot = (xyPoint: Position, xyPlot: Position) => {
+  const ADJUST_VALUE = 1000.0;
+  const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
+  const turfPlot = turf.point([xyPlot[0] / ADJUST_VALUE, xyPlot[1] / ADJUST_VALUE]);
+
+  try {
+    const bufferPolygon = turf.buffer(turfPoint, 500 / ADJUST_VALUE);
+    //@ts-ignore
+    return turf.booleanIntersects(turfPlot, bufferPolygon);
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
+};
+
 export const dot = (a: Position, b: Position) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
 export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
   const vecA = [pA[1][0] - pA[0][0], pA[1][1] - pA[0][1]];
@@ -278,7 +293,7 @@ export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
 
 export const modifyLine = (
   original: {
-    id: string;
+    layerId: string | undefined;
     record: RecordType | undefined;
     xy: Position[];
     latlon: Position[];

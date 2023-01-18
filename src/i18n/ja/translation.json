@@ -602,7 +602,10 @@
       "failedUpdatePassword": "暗号化パスワードの変更に失敗しました。変更前のパスワードは正しいですか？忘れた場合は暗号化キーをリセットしてください。",
       "disableEditProject": "プロジェクトを開いている時は編集できません。",
       "inputCorrectFilename": "有効なファイル名を入力してください。",
-      "failSaveFile": "ファイルの保存に失敗しました。"
+      "failSaveFile": "ファイルの保存に失敗しました。",
+      "invalidPolygon": "ポリゴンが不正なため保存できません。",
+      "invalidLine": "ラインが不正なため保存できません。",
+      "invalidPoint": "ポイントが不正なため保存できません。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"
