@@ -1,7 +1,14 @@
 import { MutableRefObject, useCallback, useRef, useState } from 'react';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import { checkDistanceFromLine, modifyLine, smoothingByBoyle, xyArrayToLatLonArray } from '../utils/Coords';
+import {
+  checkDistanceFromLine,
+  findNearNodeIndex,
+  getLineSnappedPosition,
+  modifyLine,
+  smoothingByBoyle,
+  xyArrayToLatLonArray,
+} from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { DrawToolType, RecordType } from '../types';
 
@@ -10,7 +17,8 @@ export type UseLineToolReturnType = {
   pressSvgFreehandTool: (point: Position) => void;
   moveSvgFreehandTool: (point: Position) => void;
   releaseSvgFreehandTool: (properties?: string[]) => void;
-  pressSvgPlotTool: () => void;
+  pressSvgPlotTool: (pXY: Position) => void;
+  moveSvgPlotTool: (pXY: Position) => void;
   releaseSvgPlotTool: (pXY: Position) => void;
 };
 
@@ -32,46 +40,112 @@ export const useLineTool = (
   const { mapSize, mapRegion } = useWindow();
   const [, setRedraw] = useState('');
   const isPlotting = useRef(false);
+  const plotIndex = useRef(0);
 
-  const pressSvgPlotTool = useCallback(() => {
-    //新規ラインの場合
-    if (isPlotting.current) {
-    } else {
-      drawLine.current.push({
-        id: uuidv4(),
-        record: undefined,
-        xy: [],
-        latlon: [],
-        properties: ['PLOT'],
-      });
-      undoLine.current.push({
-        index: -1,
-        latlon: [],
-      });
-      isPlotting.current = true;
-    }
-  }, [drawLine, undoLine]);
+  const pressSvgPlotTool = useCallback(
+    (pXY: Position) => {
+      if (!isPlotting.current) {
+        modifiedIndex.current = drawLine.current.findIndex((line) => !checkDistanceFromLine(pXY, line.xy).isFar);
+        //新規ラインの作成
+        if (modifiedIndex.current === -1) {
+          //console.log('New Line');
+          drawLine.current.push({
+            id: uuidv4(),
+            record: undefined,
+            xy: [pXY],
+            latlon: [],
+            properties: ['PLOT'],
+          });
+          undoLine.current.push({
+            index: -1,
+            latlon: [],
+          });
+          isPlotting.current = true;
+          plotIndex.current = 0;
+          modifiedIndex.current = drawLine.current.length - 1;
+        } else {
+          //console.log('Fix Line');
+          //既存ラインの修正
+          isPlotting.current = true;
+          const index = modifiedIndex.current;
+          const lineXY = drawLine.current[index].xy;
+          lineXY.pop(); //閉じたポイントを一旦削除
+          const nodeIndex = findNearNodeIndex(pXY, lineXY);
+          if (nodeIndex >= 0) {
+            //閉じたあとの最初の修正では始点も動かせる
+            //nodeを動かす
+            plotIndex.current = nodeIndex;
+          } else {
+            //中間nodeを作成
+            const { index: idx } = getLineSnappedPosition(pXY, lineXY, {
+              isXY: true,
+            });
+            lineXY.splice(idx + 1, 0, pXY);
+            plotIndex.current = idx + 1;
+          }
+        }
+      } else {
+        //console.log('Fix Plot');
+        const index = modifiedIndex.current;
+        const lineXY = drawLine.current[index].xy;
+        const { isFar } = checkDistanceFromLine(pXY, lineXY);
+        if (isFar) {
+          //plotを最後尾に追加
+          lineXY.push(pXY);
+          plotIndex.current = lineXY.length - 1;
+        } else {
+          //plotの修正
+          const nodeIndex = findNearNodeIndex(pXY, lineXY);
+          if (nodeIndex === 0) {
+            if (lineXY.length >= 3) {
+              //始点で離したら、閉じる
+              lineXY.push(lineXY[0]);
+              drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
+              isPlotting.current = false;
+            }
+          } else if (nodeIndex > 0) {
+            //nodeを動かす
+            plotIndex.current = nodeIndex;
+          } else {
+            //中間nodeを作成
+            const { index: idx } = getLineSnappedPosition(pXY, lineXY, {
+              isXY: true,
+            });
+            lineXY.splice(idx + 1, 0, pXY);
+            plotIndex.current = idx + 1;
+          }
+        }
+      }
+    },
+    [drawLine, mapRegion, mapSize, modifiedIndex, undoLine]
+  );
+
+  const moveSvgPlotTool = useCallback(
+    (pXY: Position) => {
+      if (!isPlotting.current) return;
+      const index = modifiedIndex.current;
+      drawLine.current[index].xy.splice(plotIndex.current, 1, pXY);
+    },
+    [drawLine, modifiedIndex]
+  );
 
   const releaseSvgPlotTool = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (pXY: Position) => {
-      const index = drawLine.current.length - 1;
-      if (drawLine.current[index].xy.length > 0) {
+      if (!isPlotting.current) return;
+      const index = modifiedIndex.current;
+      const lineXY = drawLine.current[index].xy;
+
+      if (lineXY.length > 0) {
         undoLine.current.push({
           index: index,
           latlon: drawLine.current[index].latlon,
         });
       }
-      if (currentDrawTool === 'PLOT_POLYGON' && drawLine.current[index].xy.length > 3) {
-        drawLine.current[index].xy.pop();
-      }
-      drawLine.current[index].xy = [...drawLine.current[index].xy, pXY];
 
-      if (currentDrawTool === 'PLOT_POLYGON' && drawLine.current[index].xy.length > 2) {
-        drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
-      }
-      drawLine.current[index].latlon = xyArrayToLatLonArray(drawLine.current[index].xy, mapRegion, mapSize);
+      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
     },
-    [currentDrawTool, drawLine, mapRegion, mapSize, undoLine]
+    [drawLine, mapRegion, mapSize, modifiedIndex, undoLine]
   );
 
   const pressSvgFreehandTool = useCallback(
@@ -162,6 +236,7 @@ export const useLineTool = (
     moveSvgFreehandTool,
     releaseSvgFreehandTool,
     pressSvgPlotTool,
+    moveSvgPlotTool,
     releaseSvgPlotTool,
   } as const;
 };

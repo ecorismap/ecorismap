@@ -35,14 +35,14 @@ export const HomePointToolButton = (props: Props) => {
         }}
       />
       <Button
-        id={'ADD_POINT'}
-        name={POINTTOOL.ADD_POINT}
+        id={'PLOT_POINT'}
+        name={POINTTOOL.PLOT_POINT}
         disabled={disabled}
-        backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'ADD_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('ADD_POINT');
-          selectDrawTool('ADD_POINT');
+          setCurrentTool('PLOT_POINT');
+          selectDrawTool('PLOT_POINT');
         }}
       />
       <Button

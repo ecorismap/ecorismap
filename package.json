@@ -53,6 +53,7 @@
     "@react-navigation/native-stack": "^6.6.1",
     "@react-navigation/stack": "^6.2.1",
     "@tmcw/togeojson": "^5.2.2",
+    "@turf/boolean-valid": "^6.5.0",
     "@turf/line-distance": "^4.7.3",
     "@turf/turf": "^6.5.0",
     "Base64": "^1.1.0",

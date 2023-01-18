@@ -2,7 +2,7 @@ import { t } from '../i18n/config';
 
 export const TUTRIALS = {
   TERMS_OF_USE: true,
-  POINTTOOL_ADD_POINT: true,
+  POINTTOOL_PLOT_POINT: true,
   POINTTOOL_ADD_LOCATION_POINT: true,
   POINTTOOL_MOVE_POINT: true,
   LAYERS_BTN_IMPORT: true,
@@ -14,7 +14,7 @@ export const TUTRIALS = {
 
 export const TUTRIALS_MESSAGE = {
   TERMS_OF_USE: t('tutrials.termsOfUse'),
-  POINTTOOL_ADD_POINT: t('tutrials.pointtool.add'),
+  POINTTOOL_PLOT_POINT: t('tutrials.pointtool.add'),
   POINTTOOL_ADD_LOCATION_POINT: t('tutrials.pointtool.add_location'),
   POINTTOOL_MOVE_POINT: t('tutrials.pointtool.move'),
   LAYERS_BTN_IMPORT: t('tutrials.layers_btn.import'),
