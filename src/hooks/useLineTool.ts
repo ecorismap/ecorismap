@@ -131,6 +131,11 @@ export const useLineTool = (
                 drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
                 isPlotting.current = false;
               }
+            } else if (currentDrawTool === 'PLOT_LINE') {
+              //ラインは始点で離したら、閉じる
+              if (lineXY.length >= 2) {
+                isPlotting.current = false;
+              }
             } else {
               plotIndex.current = nodeIndex;
             }

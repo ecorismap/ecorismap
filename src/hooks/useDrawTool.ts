@@ -486,7 +486,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         modifiedIndex.current = -1;
         drawLine.current = [];
         selectLine.current = [pXY];
-      } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'PLOT_POLYGON') {
+      } else if (
+        currentDrawTool === 'PLOT_POINT' ||
+        currentDrawTool === 'PLOT_LINE' ||
+        currentDrawTool === 'PLOT_POLYGON'
+      ) {
         pressSvgPlotTool(pXY);
       } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {
         pressSvgFreehandTool(pXY);
@@ -529,7 +533,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       } else if (currentDrawTool === 'SELECT') {
         selectLine.current = [...selectLine.current, pXY];
-      } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'PLOT_POLYGON') {
+      } else if (
+        currentDrawTool === 'PLOT_POINT' ||
+        currentDrawTool === 'PLOT_LINE' ||
+        currentDrawTool === 'PLOT_POLYGON'
+      ) {
         moveSvgPlotTool(pXY);
       } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {
         moveSvgFreehandTool(pXY);
@@ -645,7 +653,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         isDrag.current = false;
       } else if (currentDrawTool === 'SELECT') {
         releaseSVGSelectionTool();
-      } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'PLOT_POLYGON') {
+      } else if (
+        currentDrawTool === 'PLOT_POINT' ||
+        currentDrawTool === 'PLOT_LINE' ||
+        currentDrawTool === 'PLOT_POLYGON'
+      ) {
         releaseSvgPlotTool(pXY);
         if (drawLine.current.length > 0) isEditingLine.current = true;
       } else if (isLineTool(currentDrawTool) || currentDrawTool === 'FREEHAND_POLYGON') {

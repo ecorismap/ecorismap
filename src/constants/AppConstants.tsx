@@ -147,6 +147,7 @@ export const POINTTOOL = {
 } as const;
 
 export const LINETOOL = {
+  PLOT_LINE: 'vector-line',
   FREEHAND_LINE: 'draw',
 } as const;
 

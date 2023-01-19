@@ -290,7 +290,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       closeData();
     }
     unselectRecord();
-  }, [cancelUpdate, closeData, isEditingRecord]);
+  }, [cancelUpdate, closeData, isEditingRecord, unselectRecord]);
 
   return (
     <DataEdit
