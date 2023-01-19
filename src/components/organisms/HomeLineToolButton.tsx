@@ -16,11 +16,22 @@ interface Props {
 export const HomeLineToolButton = (props: Props) => {
   const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
   const [currentTool, setCurrentTool] = useState<LineToolType>(
-    isLineTool(currentDrawTool) ? currentDrawTool : 'FREEHAND_LINE'
+    isLineTool(currentDrawTool) ? currentDrawTool : 'PLOT_LINE'
   );
 
   return (
     <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
+      <Button
+        id={'PLOT_LINE'}
+        name={LINETOOL.PLOT_LINE}
+        disabled={disabled}
+        backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'PLOT_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        borderRadius={10}
+        onPressCustom={() => {
+          setCurrentTool('PLOT_LINE');
+          selectDrawTool('PLOT_LINE');
+        }}
+      />
       <Button
         id={'FREEHAND_LINE'}
         name={LINETOOL.FREEHAND_LINE}
