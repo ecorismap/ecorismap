@@ -48,12 +48,13 @@ export const Point = React.memo((props: Props) => {
             tracksViewChanges={true} //iosでラベル変更を表示に反映するため
             coordinate={feature.coords}
             opacity={0.8}
-            anchor={{ x: 0.5, y: 0.75 }}
+            anchor={{ x: 0.5, y: 0.8 }}
             onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
             style={{ zIndex: -1 }}
           >
             {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
             {/*labelの表示非表示でanchorがずれないようにzoom<=8でラベルを空白にする*/}
+            {/*label表示で縦位置ずれるため、anchorで調整。sizeを変更すると調整必要 */}
             <View style={{ alignItems: 'center' }}>
               <PointLabel label={zoom > 8 ? label : ''} size={15} color={color} borderColor={COLOR.WHITE} />
               <PointView size={15} color={pointColor} borderColor={borderColor} />

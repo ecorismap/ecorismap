@@ -11,8 +11,11 @@ import {
   FeatureButtonType,
   LayerType,
   LineRecordType,
+  LineToolType,
   PointRecordType,
+  PointToolType,
   PolygonRecordType,
+  PolygonToolType,
   RecordType,
 } from '../types';
 import {
@@ -62,8 +65,14 @@ export type UseDrawToolReturnType = {
   }>;
   selectLine: React.MutableRefObject<Position[]>;
   currentDrawTool: DrawToolType;
+  currentPointTool: PointToolType;
+  currentLineTool: LineToolType;
+  currentPolygonTool: PolygonToolType;
   featureButton: FeatureButtonType;
   setDrawTool: React.Dispatch<React.SetStateAction<DrawToolType>>;
+  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
+  setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
+  setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   setFeatureButton: React.Dispatch<React.SetStateAction<FeatureButtonType>>;
   savePoint: () => {
     isOK: boolean;
@@ -115,6 +124,9 @@ export type UseDrawToolReturnType = {
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
   const dispatch = useDispatch();
   const [currentDrawTool, setDrawTool] = useState<DrawToolType>('NONE');
+  const [currentPointTool, setPointTool] = useState<PointToolType>('ADD_LOCATION_POINT');
+  const [currentLineTool, setLineTool] = useState<LineToolType>('PLOT_LINE');
+  const [currentPolygonTool, setPolygonTool] = useState<PolygonToolType>('PLOT_POLYGON');
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
 
@@ -195,11 +207,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray(record.coords),
-          properties: ['DRAW'],
+          properties: [],
         })
       );
     },
-    [drawLine, mapRegion, mapSize]
+    [mapRegion, mapSize]
   );
   const convertPolygonFeatureToDrawLine = useCallback(
     (layerId: string, features: PolygonRecordType[]) => {
@@ -210,11 +222,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize),
           latlon: latLonObjectsToLatLonArray(record.coords),
-          properties: ['PLOT'],
+          properties: [],
         })
       );
     },
-    [drawLine, mapRegion, mapSize]
+    [mapRegion, mapSize]
   );
 
   const deleteDrawRecord = useCallback(
@@ -710,6 +722,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (undo.index === -1) {
       //追加の場合
       drawLine.current.pop();
+      isPlotting.current = false;
     } else {
       //修正の場合
       drawLine.current[undo.index].xy = latLonArrayToXYArray(undo.latlon, mapRegion, mapSize);
@@ -721,7 +734,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     }
 
     setRedraw(uuidv4());
-  }, [resetDrawTools, mapRegion, mapSize]);
+  }, [isPlotting, mapRegion, mapSize, resetDrawTools]);
 
   const toggleTerrainForWeb = useCallback(
     (value: FeatureButtonType) => {
@@ -753,6 +766,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isEditingLine: isEditingLine.current,
     isDrag: isDrag.current,
     currentDrawTool,
+    currentPointTool,
+    currentLineTool,
+    currentPolygonTool,
     drawLine,
     editingLine,
     selectLine,
@@ -763,6 +779,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     saveLine,
     savePolygon,
     setDrawTool,
+    setPointTool,
+    setLineTool,
+    setPolygonTool,
     setFeatureButton,
     pressSvgView,
     moveSvgView,

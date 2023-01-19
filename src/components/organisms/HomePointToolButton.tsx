@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { COLOR, POINTTOOL } from '../../constants/AppConstants';
 import { DrawToolType, PointToolType } from '../../types';
-import { isPointTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -10,17 +9,20 @@ interface Props {
   disabled?: boolean;
   isPositionRight: boolean;
   currentDrawTool: DrawToolType;
+  currentPointTool: PointToolType;
   selectDrawTool: (value: DrawToolType) => void;
+  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
 }
 
 export const HomePointToolButton = (props: Props) => {
-  const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<PointToolType>(
-    isPointTool(currentDrawTool) ? currentDrawTool : 'ADD_LOCATION_POINT'
-  );
+  const { disabled, isPositionRight, currentDrawTool, currentPointTool, selectDrawTool, setPointTool } = props;
 
   return (
-    <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
+    <SelectionalLongPressButton
+      selectedButton={currentPointTool}
+      directionRow={'row'}
+      isPositionRight={isPositionRight}
+    >
       <Button
         id={'ADD_LOCATION_POINT'}
         name={POINTTOOL.ADD_LOCATION_POINT}
@@ -30,7 +32,7 @@ export const HomePointToolButton = (props: Props) => {
         }
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('ADD_LOCATION_POINT');
+          setPointTool('ADD_LOCATION_POINT');
           selectDrawTool('ADD_LOCATION_POINT');
         }}
       />
@@ -41,7 +43,7 @@ export const HomePointToolButton = (props: Props) => {
         backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('PLOT_POINT');
+          setPointTool('PLOT_POINT');
           selectDrawTool('PLOT_POINT');
         }}
       />
@@ -52,7 +54,7 @@ export const HomePointToolButton = (props: Props) => {
         backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'MOVE_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('MOVE_POINT');
+          setPointTool('MOVE_POINT');
           selectDrawTool('MOVE_POINT');
         }}
       />

@@ -53,7 +53,13 @@ export const dms2decimal = (deg: number, min: number, sec: number): number => {
 export const pointsToSvg = (points: Position[]) => {
   if (points.length < 1) return 'M 0,0';
   const initialValue = `M ${points[0][0]},${points[0][1]}`;
-  const path = initialValue + ' ' + points.map((point) => `L ${point[0]},${point[1]}`).join(' ');
+  const path =
+    initialValue +
+    ' ' +
+    points
+      .slice(1)
+      .map((point) => `L ${point[0]},${point[1]}`)
+      .join(' ');
 
   return path;
 };
@@ -322,7 +328,7 @@ export const modifyLine = (
     const innerProduct = calcInnerProduct(pA, pB);
     let updatedLine;
     if (innerProduct > 0) {
-      updatedLine = [...original.xy.slice(0, startIndex), ...modified.xy];
+      updatedLine = [...original.xy.slice(0, startIndex + 1), ...modified.xy];
     } else {
       updatedLine = [...modified.xy.reverse(), ...original.xy.slice(startIndex + 1)];
     }
@@ -353,13 +359,13 @@ export const modifyLine = (
       //終点が始点より前に戻る。ぐるっと円を書いた場合。
       if (currentDrawTool === 'FREEHAND_POLYGON') {
         //ポリゴンの場合はポリゴンにする
-        updatedLine = [...originalXY.slice(endIdx + 1, startIdx), ...modified.xy];
+        updatedLine = [...modified.xy, ...originalXY.slice(endIdx + 1, startIdx + 1), modified.xy[0]];
       } else {
         //ラインの場合は終点のスナップは無いものとして処理
-        updatedLine = [...originalXY.slice(0, startIdx), ...modified.xy];
+        updatedLine = [...originalXY.slice(0, startIdx + 1), ...modified.xy];
       }
     } else {
-      updatedLine = [...originalXY.slice(0, startIdx), ...modified.xy, ...originalXY.slice(endIdx + 1)];
+      updatedLine = [...originalXY.slice(0, startIdx + 1), ...modified.xy, ...originalXY.slice(endIdx + 1)];
     }
 
     return innerProduct < 0 ? updatedLine.reverse() : updatedLine;

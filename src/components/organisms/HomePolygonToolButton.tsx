@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { COLOR, POLYGONTOOL } from '../../constants/AppConstants';
 import { DrawToolType, PolygonToolType } from '../../types';
-import { isPolygonTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
@@ -10,17 +9,20 @@ interface Props {
   disabled?: boolean;
   isPositionRight: boolean;
   currentDrawTool: DrawToolType;
+  currentPolygonTool: PolygonToolType;
   selectDrawTool: (value: DrawToolType) => void;
+  setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
 }
 
 export const HomePolygonToolButton = (props: Props) => {
-  const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<PolygonToolType>(
-    isPolygonTool(currentDrawTool) ? currentDrawTool : 'PLOT_POLYGON'
-  );
+  const { disabled, isPositionRight, currentDrawTool, currentPolygonTool, selectDrawTool, setPolygonTool } = props;
 
   return (
-    <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
+    <SelectionalLongPressButton
+      selectedButton={currentPolygonTool}
+      directionRow={'row'}
+      isPositionRight={isPositionRight}
+    >
       <Button
         id={'PLOT_POLYGON'}
         name={POLYGONTOOL.PLOT_POLYGON}
@@ -30,7 +32,7 @@ export const HomePolygonToolButton = (props: Props) => {
         }
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('PLOT_POLYGON');
+          setPolygonTool('PLOT_POLYGON');
           selectDrawTool('PLOT_POLYGON');
         }}
       />
@@ -43,7 +45,7 @@ export const HomePolygonToolButton = (props: Props) => {
         }
         borderRadius={10}
         onPressCustom={() => {
-          setCurrentTool('FREEHAND_POLYGON');
+          setPolygonTool('FREEHAND_POLYGON');
           selectDrawTool('FREEHAND_POLYGON');
         }}
       />

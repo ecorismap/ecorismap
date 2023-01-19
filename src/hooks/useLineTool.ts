@@ -55,6 +55,9 @@ export const useLineTool = (
         　b.編集中のプロット（ノードもしくはライン）に近いか
           -　近くなければ、最後尾にプロットを追加
           - 近ければ、ノードの修正もしくは途中にプロットを追加
+
+        ポリゴンは始点をクリックで閉じて次のポリゴンを作成
+        ラインは始点をクリックで次のラインを作成
       */
       if (!isPlotting.current) {
         //プロット中でないなら、
@@ -76,7 +79,7 @@ export const useLineTool = (
             record: undefined,
             xy: [pXY],
             latlon: [],
-            properties: ['PLOT'],
+            properties: [currentDrawTool === 'PLOT_POINT' ? 'POINT' : 'PLOT'],
           });
 
           isPlotting.current = true;
@@ -93,6 +96,7 @@ export const useLineTool = (
           //既存ラインの修正
           const index = modifiedIndex.current;
           const lineXY = drawLine.current[index].xy;
+          drawLine.current[index].properties = ['PLOT'];
           if (currentDrawTool === 'PLOT_POLYGON') lineXY.pop(); //閉じたポイントを一旦削除
 
           const nodeIndex = findNearNodeIndex(pXY, lineXY);
@@ -129,11 +133,13 @@ export const useLineTool = (
               if (lineXY.length >= 3) {
                 lineXY.push(lineXY[0]);
                 drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
+                drawLine.current[index].properties = [''];
                 isPlotting.current = false;
               }
             } else if (currentDrawTool === 'PLOT_LINE') {
               //ラインは始点で離したら、閉じる
               if (lineXY.length >= 2) {
+                drawLine.current[index].properties = [''];
                 isPlotting.current = false;
               }
             } else {
@@ -172,7 +178,12 @@ export const useLineTool = (
       const index = modifiedIndex.current;
       const lineXY = drawLine.current[index].xy;
 
-      if (lineXY.length > 0) {
+      if (lineXY.length === 1 && currentDrawTool !== 'PLOT_POINT') {
+        undoLine.current.push({
+          index: -1,
+          latlon: [],
+        });
+      } else {
         undoLine.current.push({
           index: index,
           latlon: drawLine.current[index].latlon,
@@ -199,7 +210,7 @@ export const useLineTool = (
           record: undefined,
           xy: [pXY],
           latlon: [],
-          properties: [],
+          properties: ['FREEHAND'],
         });
       } else {
         //ライン修正の場合
@@ -238,7 +249,7 @@ export const useLineTool = (
         smoothingByBoyle(drawLine.current[index].xy);
         //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
         if (currentDrawTool === 'FREEHAND_POLYGON') drawLine.current[index].xy.push(drawLine.current[index].xy[0]);
-        drawLine.current[index].properties = properties ?? [currentDrawTool];
+        drawLine.current[index].properties = properties ?? ['FREEHAND'];
         drawLine.current[index].latlon = xyArrayToLatLonArray(drawLine.current[index].xy, mapRegion, mapSize);
         undoLine.current.push({
           index: -1,
