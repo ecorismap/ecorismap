@@ -156,7 +156,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
             zoom: 15,
           },
         }),
-      1
+      500
     );
   }, [closeData, isDataOpened, navigation, targetLayer.type, targetRecord.coords]);
 

@@ -32,6 +32,9 @@ import {
   PolygonDataType,
   DrawToolType,
   PointRecordType,
+  PointToolType,
+  LineToolType,
+  PolygonToolType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
 
@@ -88,6 +91,9 @@ export interface HomeProps {
   attribution: string;
   featureButton: FeatureButtonType;
   currentDrawTool: DrawToolType;
+  currentPointTool: PointToolType;
+  currentLineTool: LineToolType;
+  currentPolygonTool: PolygonToolType;
   selectedRecord:
     | {
         layerId: string;
@@ -122,6 +128,9 @@ export interface HomeProps {
   gotoBack: () => void;
   selectFeatureButton: (value: FeatureButtonType) => void;
   selectDrawTool: (value: DrawToolType) => void;
+  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
+  setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
+  setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
 }
 
 export default function HomeScreen({
@@ -153,6 +162,9 @@ export default function HomeScreen({
   attribution,
   featureButton,
   currentDrawTool,
+  currentPointTool,
+  currentLineTool,
+  currentPolygonTool,
   selectedRecord,
   draggablePoint,
   isDataOpened,
@@ -180,6 +192,9 @@ export default function HomeScreen({
   gotoLayers,
   selectDrawTool,
   selectFeatureButton,
+  setPointTool,
+  setLineTool,
+  setPolygonTool,
 }: HomeProps) {
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -447,10 +462,16 @@ export default function HomeScreen({
                   isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
                   featureButton={featureButton}
                   currentDrawTool={currentDrawTool}
+                  currentPointTool={currentPointTool}
+                  currentLineTool={currentLineTool}
+                  currentPolygonTool={currentPolygonTool}
                   selectDrawTool={selectDrawTool}
                   pressUndoDraw={pressUndoDraw}
                   pressSaveDraw={pressSaveDraw}
                   pressDeleteDraw={pressDeleteDraw}
+                  setPointTool={setPointTool}
+                  setLineTool={setLineTool}
+                  setPolygonTool={setPolygonTool}
                 />
               )}
 

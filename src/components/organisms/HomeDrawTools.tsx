@@ -3,7 +3,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWTOOL, PLUGIN } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
-import { DrawToolType, FeatureButtonType } from '../../types';
+import { DrawToolType, FeatureButtonType, LineToolType, PointToolType, PolygonToolType } from '../../types';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -17,8 +17,14 @@ interface Props {
   isEditing: boolean;
   isSelected: boolean;
   currentDrawTool: DrawToolType;
+  currentPointTool: PointToolType;
+  currentLineTool: LineToolType;
+  currentPolygonTool: PolygonToolType;
   featureButton: FeatureButtonType;
   selectDrawTool: (value: DrawToolType) => void;
+  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
+  setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
+  setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;
@@ -30,8 +36,14 @@ export const HomeDrawTools = (props: Props) => {
     isSelected,
     isEditing,
     currentDrawTool,
+    currentPointTool,
+    currentLineTool,
+    currentPolygonTool,
     featureButton,
     selectDrawTool,
+    setPointTool,
+    setLineTool,
+    setPolygonTool,
     pressUndoDraw,
     pressSaveDraw,
     pressDeleteDraw,
@@ -44,8 +56,10 @@ export const HomeDrawTools = (props: Props) => {
         {featureButton === 'POINT' && (
           <HomePointToolButton
             isPositionRight={isPositionRight}
+            currentPointTool={currentPointTool}
             currentDrawTool={currentDrawTool}
             selectDrawTool={selectDrawTool}
+            setPointTool={setPointTool}
           />
         )}
         {featureButton === 'LINE' && (
@@ -53,14 +67,18 @@ export const HomeDrawTools = (props: Props) => {
             disabled={isHisyouToolActive}
             isPositionRight={isPositionRight}
             currentDrawTool={currentDrawTool}
+            currentLineTool={currentLineTool}
             selectDrawTool={selectDrawTool}
+            setLineTool={setLineTool}
           />
         )}
         {featureButton === 'POLYGON' && (
           <HomePolygonToolButton
             isPositionRight={isPositionRight}
             currentDrawTool={currentDrawTool}
+            currentPolygonTool={currentPolygonTool}
             selectDrawTool={selectDrawTool}
+            setPolygonTool={setPolygonTool}
           />
         )}
       </View>

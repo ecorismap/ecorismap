@@ -55,6 +55,9 @@ export default function HomeScreen({
   isDownloading,
   featureButton,
   currentDrawTool,
+  currentPointTool,
+  currentLineTool,
+  currentPolygonTool,
   selectedRecord,
   draggablePoint,
   isDataOpened,
@@ -77,6 +80,9 @@ export default function HomeScreen({
   gotoLayers,
   selectDrawTool,
   selectFeatureButton,
+  setPointTool,
+  setLineTool,
+  setPolygonTool,
 }: HomeProps) {
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -541,13 +547,19 @@ export default function HomeScreen({
                 <HomeDrawTools
                   isPositionRight={isDataOpened === 'opened' || isLandscape}
                   isEditing={isEditingLine}
-                  isSelected={drawLine.length > 0}
+                  isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
                   featureButton={featureButton}
                   currentDrawTool={currentDrawTool}
+                  currentPointTool={currentPointTool}
+                  currentLineTool={currentLineTool}
+                  currentPolygonTool={currentPolygonTool}
                   selectDrawTool={selectDrawTool}
                   pressUndoDraw={pressUndoDraw}
                   pressSaveDraw={pressSaveDraw}
                   pressDeleteDraw={pressDeleteDraw}
+                  setPointTool={setPointTool}
+                  setLineTool={setLineTool}
+                  setPolygonTool={setPolygonTool}
                 />
               )}
 

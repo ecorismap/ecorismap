@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import Svg, { G, Defs, Marker, Path, Circle } from 'react-native-svg';
+import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
 import { DrawToolType, RecordType } from '../../types';
@@ -70,13 +70,20 @@ export const SvgView = (props: Props) => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle = properties.includes('POINT') ? `url(#point)` : '';
-          const midStyle = properties.includes('PLOT') ? `url(#point)` : '';
-          let endStyle = properties.includes('PLOT') ? `url(#point)` : '';
+          let startStyle =
+            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#startplot)` : '';
+          let midStyle = currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#plot)` : '';
+          let endStyle = properties.includes('POINT')
+            ? `url(#point)`
+            : currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
+            ? `url(#endplot)`
+            : '';
           if (PLUGIN.HISYOUTOOL) {
             startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
+            midStyle = '';
             endStyle = properties.includes('arrow') ? 'url(#arrow)' : '';
           }
+          //console.log(properties, xy, pointsToSvg(xy));
 
           return (
             <G key={uuidv4()}>
@@ -85,9 +92,7 @@ export const SvgView = (props: Props) => {
                 d={pointsToSvg(xy)}
                 stroke={'blue'}
                 strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={'1,3'}
+                strokeDasharray={properties.includes('PLOT') ? '1,3' : 'none'}
                 fill={isPolygonTool(currentDrawTool) ? COLOR.ALFABLUE2 : 'none'}
                 markerStart={startStyle}
                 markerMid={midStyle}
@@ -99,15 +104,7 @@ export const SvgView = (props: Props) => {
         })}
         {/* 修正のライン */}
         <G>
-          <Path
-            d={pointsToSvg(editingLine.xy)}
-            stroke="blue"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="1"
-            fill="none"
-          />
+          <Path d={pointsToSvg(editingLine.xy)} stroke="blue" strokeWidth="1.5" strokeDasharray="1" fill="none" />
         </G>
         {/* 選択範囲のライン */}
         <G>
@@ -115,8 +112,6 @@ export const SvgView = (props: Props) => {
             d={pointsToSvg(selectLine)}
             stroke={`${COLOR.YELLOW}`}
             strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
             strokeDasharray="1"
             fill={`${COLOR.ALFAYELLOW}`}
           />
@@ -146,7 +141,7 @@ const LineDefs = () => {
         id="dot"
         viewBox="0 0 10 10"
         refX="5"
-        refY="5"
+        refY="7"
         //@ts-ignore
         markerUnits="strokeWidth"
         markerWidth="4"
@@ -159,14 +154,54 @@ const LineDefs = () => {
         id="point"
         viewBox="0 0 10 10"
         refX="5"
-        refY="7"
+        refY="5"
         //@ts-ignore
         markerUnits="strokeWidth"
         markerWidth="4"
         markerHeight="4"
-        orient="auto"
+        orient="0"
       >
         <Circle cx="5" cy="5" r="10" fill="yellow" stroke="black" />
+      </Marker>
+
+      <Marker
+        id="plot"
+        viewBox="0 0 10 10"
+        refX="5"
+        refY="5"
+        //@ts-ignore
+        markerUnits="strokeWidth"
+        markerWidth="5"
+        markerHeight="5"
+        orient="0"
+      >
+        <Rect width="10" height="10" stroke="blue" />
+      </Marker>
+      <Marker
+        id="startplot"
+        viewBox="0 0 10 10"
+        refX="5"
+        refY="5"
+        //@ts-ignore
+        markerUnits="strokeWidth"
+        markerWidth="6"
+        markerHeight="6"
+        orient="0"
+      >
+        <Rect width="10" height="10" fill="darkorange" stroke="white" />
+      </Marker>
+      <Marker
+        id="endplot"
+        viewBox="0 0 10 10"
+        refX="5"
+        refY="5"
+        //@ts-ignore
+        markerUnits="strokeWidth"
+        markerWidth="6"
+        markerHeight="6"
+        orient="0"
+      >
+        <Rect width="10" height="10" fill="blue" stroke="white" />
       </Marker>
     </Defs>
   );
