@@ -350,14 +350,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
   }, [featureButton, navigation, openData, saveLine, savePoint, savePolygon, setDrawTool]);
 
-  const pressDeleteDraw = useCallback(() => {
-    const { isOK, message } = deleteDraw();
+  const pressDeleteDraw = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+    if (ret) {
+      const { isOK, message } = deleteDraw();
 
-    if (!isOK) {
-      Alert.alert('', message);
-      return;
+      if (!isOK) {
+        Alert.alert('', message);
+        return;
+      }
+      closeData();
     }
-    closeData();
   }, [closeData, deleteDraw]);
 
   const pressDownloadTiles = useCallback(async () => {

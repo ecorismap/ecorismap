@@ -43,6 +43,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetIndex
   );
   const { unselectRecord } = useRecord();
+
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
@@ -53,23 +54,22 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [saveData]);
 
-  const pressDeleteData = useCallback(() => {
-    ConfirmAsync(t('DataEdit.confirm.deleteData')).then((ret) => {
-      if (ret) {
-        const { isOK, message } = deleteRecord();
-        if (!isOK) {
-          Alert.alert('', message);
-        } else {
-          if (route.params.previous === 'Home') {
-            closeData();
-          } else if (route.params.previous === 'Data') {
-            navigation.navigate('Data', {
-              targetLayer: { ...targetLayer },
-            });
-          }
+  const pressDeleteData = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+    if (ret) {
+      const { isOK, message } = deleteRecord();
+      if (!isOK) {
+        Alert.alert('', message);
+      } else {
+        if (route.params.previous === 'Home') {
+          closeData();
+        } else if (route.params.previous === 'Data') {
+          navigation.navigate('Data', {
+            targetLayer: { ...targetLayer },
+          });
         }
       }
-    });
+    }
   }, [closeData, deleteRecord, navigation, route.params.previous, targetLayer]);
 
   const pressPickPhoto = useCallback(

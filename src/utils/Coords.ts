@@ -569,7 +569,8 @@ export const isValidPoint = (xyLine: Position[]) => {
 };
 
 export const isValidLine = (xyLine: Position[]) => {
-  return xyLine.length >= 2;
+  //1点のラインも認める。HISYOUTOOLのTOMARIがあるため
+  return xyLine.length >= 1;
 };
 
 export const isValidPolygon = (xyLine: Position[]) => {
