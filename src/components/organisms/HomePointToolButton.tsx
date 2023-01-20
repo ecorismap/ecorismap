@@ -7,6 +7,7 @@ import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
 
 interface Props {
   disabled?: boolean;
+  isEditing: boolean;
   isPositionRight: boolean;
   currentDrawTool: DrawToolType;
   currentPointTool: PointToolType;
@@ -15,7 +16,8 @@ interface Props {
 }
 
 export const HomePointToolButton = (props: Props) => {
-  const { disabled, isPositionRight, currentDrawTool, currentPointTool, selectDrawTool, setPointTool } = props;
+  const { disabled, isEditing, isPositionRight, currentDrawTool, currentPointTool, selectDrawTool, setPointTool } =
+    props;
 
   return (
     <SelectionalLongPressButton
@@ -39,23 +41,12 @@ export const HomePointToolButton = (props: Props) => {
       <Button
         id={'PLOT_POINT'}
         name={POINTTOOL.PLOT_POINT}
-        disabled={disabled}
+        disabled={disabled || isEditing}
         backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {
           setPointTool('PLOT_POINT');
           selectDrawTool('PLOT_POINT');
-        }}
-      />
-      <Button
-        id={'MOVE_POINT'}
-        name={POINTTOOL.MOVE_POINT}
-        disabled={disabled}
-        backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'MOVE_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
-        borderRadius={10}
-        onPressCustom={() => {
-          setPointTool('MOVE_POINT');
-          selectDrawTool('MOVE_POINT');
         }}
       />
     </SelectionalLongPressButton>

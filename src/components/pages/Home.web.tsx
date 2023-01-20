@@ -59,12 +59,10 @@ export default function HomeScreen({
   currentLineTool,
   currentPolygonTool,
   selectedRecord,
-  draggablePoint,
   isDataOpened,
   isLoading,
   onRegionChangeMapView,
   onPressMapView,
-  onDragEndPoint,
   onDrop,
   onPressSvgView,
   onMoveSvgView,
@@ -417,7 +415,7 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && currentDrawTool !== 'MOVE_POINT' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
+        {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
@@ -479,9 +477,7 @@ export default function HomeScreen({
                       data={d.data}
                       layer={layer!}
                       zoom={zoom}
-                      draggable={draggablePoint}
                       selectedRecord={selectedRecord}
-                      onDragEndPoint={onDragEndPoint}
                     />
                   )
                 );

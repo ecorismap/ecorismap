@@ -141,9 +141,8 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  PLOT_POINT: 'map-marker-plus',
+  PLOT_POINT: 'map-marker-multiple',
   ADD_LOCATION_POINT: 'map-marker-radius',
-  MOVE_POINT: 'map-marker-right',
 } as const;
 
 export const LINETOOL = {
@@ -180,7 +179,7 @@ export const DRAWTOOL = {
 } as const;
 
 export const HOME_FEATURE_BTN = {
-  POINT: 'map-marker',
+  POINT: 'scatter-plot',
   LINE: 'chart-timeline-variant',
   POLYGON: 'pentagon-outline',
   NONE: 'flower-tulip',

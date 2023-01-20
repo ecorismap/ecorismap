@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { MapEvent, Marker } from 'react-native-maps';
+import { Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
@@ -11,14 +11,12 @@ interface Props {
   data: PointRecordType[];
   layer: LayerType;
   zoom: number;
-  draggable: boolean;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => void;
 }
 
 export const Point = React.memo((props: Props) => {
   //console.log('render Point');
-  const { data, layer, zoom, draggable, selectedRecord, onDragEndPoint } = props;
+  const { data, layer, zoom, selectedRecord } = props;
   if (data === undefined) return null;
   //console.log('#', data);
   return (
@@ -44,12 +42,10 @@ export const Point = React.memo((props: Props) => {
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}
-            draggable={draggable}
             tracksViewChanges={true} //iosでラベル変更を表示に反映するため
             coordinate={feature.coords}
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.8 }}
-            onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
             style={{ zIndex: -1 }}
           >
             {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}

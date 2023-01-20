@@ -19,7 +19,6 @@ import { HomeDrawTools } from '../organisms/HomeDrawTools';
 
 import {
   RecordType,
-  LayerType,
   LocationType,
   MapType,
   MemberLocationType,
@@ -31,7 +30,6 @@ import {
   LineDataType,
   PolygonDataType,
   DrawToolType,
-  PointRecordType,
   PointToolType,
   LineToolType,
   PolygonToolType,
@@ -100,13 +98,11 @@ export interface HomeProps {
         record: RecordType;
       }
     | undefined;
-  draggablePoint: boolean;
   isDataOpened: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapEvent<{}>) => void;
   onDragMapView: () => void;
-  onDragEndPoint: (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
   onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
@@ -166,13 +162,11 @@ export default function HomeScreen({
   currentLineTool,
   currentPolygonTool,
   selectedRecord,
-  draggablePoint,
   isDataOpened,
   isLoading,
   onRegionChangeMapView,
   onPressMapView,
   onDragMapView,
-  onDragEndPoint,
   onPressSvgView,
   onMoveSvgView,
   onReleaseSvgView,
@@ -293,7 +287,7 @@ export default function HomeScreen({
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && currentDrawTool !== 'MOVE_POINT' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
+        {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
           <SvgView
             drawLine={drawLine}
             editingLine={editingLine}
@@ -356,9 +350,7 @@ export default function HomeScreen({
                   data={d.data}
                   layer={layer!}
                   zoom={zoom}
-                  draggable={draggablePoint}
                   selectedRecord={selectedRecord}
-                  onDragEndPoint={onDragEndPoint}
                 />
               )
             );

@@ -55,6 +55,7 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         {featureButton === 'POINT' && (
           <HomePointToolButton
+            isEditing={isEditing}
             isPositionRight={isPositionRight}
             currentPointTool={currentPointTool}
             currentDrawTool={currentDrawTool}
