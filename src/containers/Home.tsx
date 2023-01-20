@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
-import { Region, MapEvent } from 'react-native-maps';
-import { DrawToolType, FeatureButtonType, LayerType, PointRecordType } from '../types';
+import { Region } from 'react-native-maps';
+import { DrawToolType, FeatureButtonType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -87,7 +87,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleTerrainForWeb,
   } = useDrawTool(mapViewRef.current);
 
-  const { addCurrentPoint, dragEndPoint, resetPointPosition } = usePointTool();
+  const { addCurrentPoint } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -121,7 +121,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const isDownloadPage = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
-  const draggablePoint = useMemo(() => currentDrawTool === 'MOVE_POINT', [currentDrawTool]);
 
   /*************** onXXXXMapView *********************/
 
@@ -219,22 +218,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     openData,
     navigation,
   ]);
-
-  const onDragEndPoint = useCallback(
-    async (e: MapEvent<{}>, layer: LayerType, feature: PointRecordType) => {
-      const coordinate = e.nativeEvent.coordinate;
-      const ret = await ConfirmAsync(t('Home.confirm.drag'));
-      if (!ret) {
-        resetPointPosition(layer, feature);
-        return;
-      }
-      const { isOK, message } = dragEndPoint(layer, feature, coordinate);
-      if (!isOK) {
-        Alert.alert('', message);
-      }
-    },
-    [dragEndPoint, resetPointPosition]
-  );
 
   const onDrop = useCallback(
     async (acceptedFiles) => {
@@ -542,13 +525,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     currentLineTool,
     currentPolygonTool,
     selectedRecord,
-    draggablePoint,
     isDataOpened,
     isLoading,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
-    onDragEndPoint,
     onDrop,
     onPressSvgView: pressSvgView,
     onMoveSvgView: moveSvgView,
