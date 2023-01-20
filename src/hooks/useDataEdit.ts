@@ -27,6 +27,7 @@ import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
+import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 
 // let fs: any;
 // if (Platform.OS === 'web') {
@@ -80,6 +81,7 @@ export const useDataEdit = (
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
+  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>(recordSet);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
   const [recordNumber, setRecordNumber] = useState(1);
@@ -91,20 +93,22 @@ export const useDataEdit = (
 
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
-
-  const maxRecordNumber = recordSet.length;
+  const { hisyouLayerId } = useHisyouToolSetting();
+  const isHisyouLayer = targetLayer.id === hisyouLayerId;
+  const maxRecordNumber = targetRecordSet.length;
 
   useEffect(() => {
     //データの初期化。以降はchangeRecordで行う。
     selectRecord(layer.id, record);
     setTargetRecord(record);
+    setTargetRecordSet(recordSet);
     setTargetLayer(layer);
     setRecordNumber(recordIndex + 1);
     if (layer.type === 'POINT') {
       const newLatLon = toLatLonDMS(record.coords as LocationType);
       setLatLon(newLatLon);
     }
-  }, [layer, layer.id, layer.type, record, recordIndex, selectRecord]);
+  }, [layer, layer.id, layer.type, record, recordIndex, recordSet, selectRecord]);
 
   const setIsEditingRecord = useCallback(
     (value: boolean) => {
@@ -115,8 +119,8 @@ export const useDataEdit = (
 
   const changeRecord = useCallback(
     (value: number) => {
-      if (recordSet.length === 0) return;
-      const newRecord = recordSet[value - 1];
+      if (targetRecordSet.length === 0) return;
+      const newRecord = targetRecordSet[value - 1];
       selectRecord(targetLayer.id, newRecord);
       setTargetRecord(newRecord);
       setRecordNumber(value);
@@ -125,7 +129,7 @@ export const useDataEdit = (
         setLatLon(newLatLon);
       }
     },
-    [recordSet, selectRecord, targetLayer.id, targetLayer.type]
+    [selectRecord, targetLayer.id, targetLayer.type, targetRecordSet]
   );
 
   const saveToStorage = useCallback(
@@ -308,7 +312,7 @@ export const useDataEdit = (
       return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
     }
 
-    if (!targetLayer.active) {
+    if (!targetLayer.active && !isHisyouLayer) {
       return { isOK: false, message: t('hooks.message.noEditMode') };
     }
 
@@ -336,20 +340,21 @@ export const useDataEdit = (
       })
     );
     setTargetRecord(updatedRecord);
-    // if (targetRecordSet !== undefined) {
-    //   const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
-    //   setTargetRecordSet(updatedRecordSet);
-    // }
+    const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
+    setTargetRecordSet(updatedRecordSet);
+
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
   }, [
     tracking,
     targetRecord,
     targetLayer,
+    isHisyouLayer,
     latlon,
     isDecimal,
     temporaryDeletePhotoList,
     dispatch,
+    targetRecordSet,
     setIsEditingRecord,
     deleteLocalPhoto,
   ]);

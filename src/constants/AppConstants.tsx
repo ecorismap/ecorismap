@@ -6,7 +6,7 @@ export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.1.11';
 
 export const PLUGIN = {
-  HISYOUTOOL: false,
+  HISYOUTOOL: true,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',

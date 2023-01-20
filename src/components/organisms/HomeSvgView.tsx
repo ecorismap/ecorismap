@@ -12,9 +12,10 @@ import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
 import { DrawToolType, RecordType } from '../../types';
-import { COLOR, PLUGIN } from '../../constants/AppConstants';
+import { COLOR } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 import { isPolygonTool } from '../../utils/General';
+import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 
 interface Props {
   drawLine: {
@@ -37,6 +38,7 @@ interface Props {
 //React.Memoすると描画が更新されない
 export const SvgView = (props: Props) => {
   const { drawLine, editingLine, selectLine, currentDrawTool, onPress, onMove, onRelease } = props;
+  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
@@ -56,6 +58,14 @@ export const SvgView = (props: Props) => {
     [onMove, onPress, onRelease]
   );
 
+  let startStyle = currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#startplot)` : '';
+  let midStyle = currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#plot)` : '';
+  let endStyle = currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#endplot)` : '';
+
+  const editingStartStyle = '';
+  const editingMidStyle = '';
+  const editingEndStyle = '';
+
   return (
     <View
       style={{
@@ -70,18 +80,12 @@ export const SvgView = (props: Props) => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle =
-            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#startplot)` : '';
-          let midStyle = currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' ? `url(#plot)` : '';
-          let endStyle = properties.includes('POINT')
-            ? `url(#point)`
-            : currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
-            ? `url(#endplot)`
-            : '';
-          if (PLUGIN.HISYOUTOOL) {
-            startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
+          if (properties.includes('POINT')) endStyle = `url(#point)`;
+
+          if (isHisyouToolActive) {
+            startStyle = '';
             midStyle = '';
-            endStyle = properties.includes('arrow') ? 'url(#arrow)' : '';
+            endStyle = properties.includes('arrow') ? 'url(#arrow)' : properties.includes('TOMARI') ? `url(#dot)` : '';
           }
           //console.log(properties, xy, pointsToSvg(xy));
 
@@ -98,13 +102,22 @@ export const SvgView = (props: Props) => {
                 markerMid={midStyle}
                 markerEnd={endStyle}
               />
-              {PLUGIN.HISYOUTOOL && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}
+              {isHisyouToolActive && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}
             </G>
           );
         })}
         {/* 修正のライン */}
         <G>
-          <Path d={pointsToSvg(editingLine.xy)} stroke="blue" strokeWidth="1.5" strokeDasharray="1" fill="none" />
+          <Path
+            d={pointsToSvg(editingLine.xy)}
+            stroke="pink"
+            strokeWidth="1.5"
+            strokeDasharray="none"
+            fill="none"
+            markerStart={editingStartStyle}
+            markerMid={editingMidStyle}
+            markerEnd={editingEndStyle}
+          />
         </G>
         {/* 選択範囲のライン */}
         <G>
