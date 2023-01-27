@@ -1,5 +1,6 @@
 import { RenderResult, renderHook, act } from '@testing-library/react-hooks';
-import { useZoom, UseZoomReturnType } from '../../hooks/useZoom';
+import { useMapView, UseMapViewReturnType } from '../../hooks/useMapView';
+
 import { RegionType } from '../../types';
 
 const mapRegion: RegionType = {
@@ -25,7 +26,7 @@ jest.mock('react-native', () => ({
   useWindowDimensions: () => mockWindowDimensions(),
 }));
 
-describe('useZoom', () => {
+describe('useMapView', () => {
   beforeEach(() => {
     mockSelector = jest.fn().mockReturnValue(mapRegion);
     mockWindowDimensions = jest.fn().mockReturnValue({ width: 411, height: 852 });
@@ -35,10 +36,10 @@ describe('useZoom', () => {
     jest.resetAllMocks();
   });
 
-  let result: RenderResult<UseZoomReturnType>;
+  let result: RenderResult<UseMapViewReturnType>;
 
   test('zoomInを呼ぶと、deltaが1/2倍でanimateToRegionが呼ばれる', () => {
-    result = renderHook(() => useZoom(mapViewRef)).result;
+    result = renderHook(() => useMapView(mapViewRef)).result;
 
     expect(result.current.zoom).toBe(11);
     act(() => {
@@ -53,7 +54,7 @@ describe('useZoom', () => {
   });
 
   test('zoomOutを呼ぶと、deltaが2倍でanimateToRegionが呼ばれる', () => {
-    result = renderHook(() => useZoom(mapViewRef)).result;
+    result = renderHook(() => useMapView(mapViewRef)).result;
 
     expect(result.current.zoom).toBe(11);
     act(() => {
