@@ -48,6 +48,7 @@ export default function HomeScreen({
   zoom,
   zoomDecimal,
   isEditingLine,
+  isEditingObject,
   drawLine,
   editingLine,
   selectLine,
@@ -421,6 +422,7 @@ export default function HomeScreen({
             editingLine={editingLine}
             selectLine={selectLine}
             currentDrawTool={currentDrawTool}
+            isEditingObject={isEditingObject}
             onPress={onPressSvgView}
             onMove={onMoveSvgView}
             onRelease={onReleaseSvgView}
@@ -543,6 +545,7 @@ export default function HomeScreen({
                 <HomeDrawTools
                   isPositionRight={isDataOpened === 'opened' || isLandscape}
                   isEditing={isEditingLine}
+                  isEditingObject={isEditingObject}
                   isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
                   featureButton={featureButton}
                   currentDrawTool={currentDrawTool}

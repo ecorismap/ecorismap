@@ -33,6 +33,7 @@ import {
   PointToolType,
   LineToolType,
   PolygonToolType,
+  DrawLineType,
 } from '../../types';
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
 
@@ -71,17 +72,9 @@ export interface HomeProps {
   zoom: number;
   zoomDecimal: number;
   isEditingLine: boolean;
-  drawLine: {
-    id: string;
-    record: RecordType | undefined;
-    xy: Position[];
-    latlon: Position[];
-    properties: string[];
-  }[];
-  editingLine: {
-    start: Position;
-    xy: Position[];
-  };
+  isEditingObject: boolean;
+  drawLine: DrawLineType[];
+  editingLine: Position[];
   selectLine: Position[];
   isDownloading: boolean;
   downloadArea: TileRegionType;
@@ -147,6 +140,7 @@ export default function HomeScreen({
   zoom,
   zoomDecimal,
   isEditingLine,
+  isEditingObject,
   drawLine,
   editingLine,
   selectLine,
@@ -293,6 +287,7 @@ export default function HomeScreen({
             editingLine={editingLine}
             selectLine={selectLine}
             currentDrawTool={currentDrawTool}
+            isEditingObject={isEditingObject}
             onPress={onPressSvgView}
             onMove={onMoveSvgView}
             onRelease={onReleaseSvgView}
@@ -451,6 +446,7 @@ export default function HomeScreen({
                 <HomeDrawTools
                   isPositionRight={isDataOpened === 'opened' || isLandscape}
                   isEditing={isEditingLine}
+                  isEditingObject={isEditingObject}
                   isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
                   featureButton={featureButton}
                   currentDrawTool={currentDrawTool}

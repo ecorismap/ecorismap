@@ -1,8 +1,10 @@
 {
-  "extends": "expo/tsconfig.base.json",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "module": "esnext",
     "strict": true
   },
-  "exclude": ["cypress"]
+  "exclude": [
+    "cypress"
+  ]
 }
