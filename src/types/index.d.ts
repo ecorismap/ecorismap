@@ -335,12 +335,24 @@ export interface PositionFS {
   encryptedAt: firebase.firestore.Timestamp;
 }
 
+export type DrawLineType = {
+  id: string;
+  layerId: string | undefined;
+  record: RecordType | undefined;
+  xy: Position[];
+  latlon: Position[];
+  properties: string[];
+};
+export type UndoLineType = { index: number; latlon: Position[]; action: UndoActionType };
+
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
 export type PolygonToolType = keyof typeof POLYGONTOOL;
 export type DrawToolType = keyof typeof DRAWTOOL;
 export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
+
+export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
 export type LayersButtonType = keyof typeof LAYERS_BTN;

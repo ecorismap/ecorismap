@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
-import { Region } from 'react-native-maps';
+import MapView, { Region } from 'react-native-maps';
 import { DrawToolType, FeatureButtonType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -11,10 +11,10 @@ import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
-import { useZoom } from '../hooks/useZoom';
+import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
-import { ViewState } from 'react-map-gl';
+import { MapRef, ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
@@ -29,18 +29,19 @@ import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
+  const [restored] = useState(true);
+  const mapViewRef = useRef<MapView | MapRef | null>(null);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-
   const mapType = useSelector((state: AppState) => state.settings.mapType);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
-  const [restored] = useState(true);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
-  const { mapViewRef, mapRegion, isLandscape, changeMapRegion } = useWindow();
+  const { mapRegion, isLandscape } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
-  const { zoom, zoomDecimal, zoomIn, zoomOut } = useZoom(mapViewRef.current);
+  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -58,9 +59,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const {
     drawLine,
-    editingLine,
+    editingLineXY,
     selectLine,
     isEditingLine,
+    isEditingObject,
     isDrag,
     currentDrawTool,
     currentPointTool,
@@ -149,13 +151,24 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           //ドローツールをオン
           setDrawTool(value);
           if (isPointTool(value)) await runTutrial(`POINTTOOL_${value}`);
+          if (isLineTool(value)) await runTutrial(`LINETOOL_${value}`);
+          if (isPolygonTool(value)) await runTutrial(`POLYGONTOOL_${value}`);
         }
-      } else if (isSelectionTool(value) || isInfoTool(value)) {
+      } else if (isInfoTool(value)) {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
           setDrawTool(value);
+          await runTutrial('INFOTOOL');
+        }
+      } else if (isSelectionTool(value)) {
+        if (currentDrawTool === value) {
+          resetDrawTools();
+          setDrawTool('NONE');
+        } else {
+          setDrawTool(value);
+          await runTutrial('SELECTIONTOOL');
         }
       } else if (isHisyouTool(value)) {
         if (value === 'SETTING') {
@@ -240,7 +253,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
           releaseSvgView(event);
-          return;
         }
         if (isEditingRecord) {
           await AlertAsync(t('Home.alert.discardChanges'));
@@ -496,8 +508,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     lineDataSet,
     polygonDataSet,
     isEditingLine,
+    isEditingObject,
     drawLine: drawLine.current,
-    editingLine: editingLine.current,
+    editingLine: editingLineXY.current,
     selectLine: selectLine.current,
     isDownloadPage,
     memberLocations,

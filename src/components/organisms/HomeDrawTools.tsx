@@ -15,6 +15,7 @@ import { HomeInfoToolButton } from './HomeInfoToolButton';
 interface Props {
   isPositionRight: boolean;
   isEditing: boolean;
+  isEditingObject: boolean;
   isSelected: boolean;
   currentDrawTool: DrawToolType;
   currentPointTool: PointToolType;
@@ -35,6 +36,7 @@ export const HomeDrawTools = (props: Props) => {
     isPositionRight,
     isSelected,
     isEditing,
+    isEditingObject,
     currentDrawTool,
     currentPointTool,
     currentLineTool,
@@ -123,9 +125,9 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.SAVE}
-          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={!isEditing || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!isEditing}
+          disabled={!isEditing || isEditingObject}
           onPress={pressSaveDraw}
         />
       </View>

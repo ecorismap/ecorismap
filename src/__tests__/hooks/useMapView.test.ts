@@ -13,10 +13,17 @@ const mapRegion: RegionType = {
 
 const mapViewRef: any = {
   animateToRegion: jest.fn(),
+  animateCamera: jest.fn(),
+  // getMap: () => {
+  //   return { getBounds: undefined };
+  // },
 };
 
+const mockDispatch = jest.fn();
 let mockSelector = jest.fn();
+
 jest.mock('react-redux', () => ({
+  useDispatch: () => mockDispatch,
   useSelector: () => mockSelector(),
 }));
 
@@ -45,12 +52,15 @@ describe('useMapView', () => {
     act(() => {
       result.current.zoomIn();
     });
-    expect(mapViewRef.animateToRegion).toHaveBeenCalledWith({
-      latitude: 35,
-      latitudeDelta: 0.1,
-      longitude: 135,
-      longitudeDelta: 0.1,
-    });
+    expect(mapViewRef.animateToRegion).toHaveBeenCalledWith(
+      {
+        latitude: 35,
+        latitudeDelta: 0.1,
+        longitude: 135,
+        longitudeDelta: 0.1,
+      },
+      200
+    );
   });
 
   test('zoomOutを呼ぶと、deltaが2倍でanimateToRegionが呼ばれる', () => {
@@ -60,11 +70,14 @@ describe('useMapView', () => {
     act(() => {
       result.current.zoomOut();
     });
-    expect(mapViewRef.animateToRegion).toHaveBeenCalledWith({
-      latitude: 35,
-      latitudeDelta: 0.4,
-      longitude: 135,
-      longitudeDelta: 0.4,
-    });
+    expect(mapViewRef.animateToRegion).toHaveBeenCalledWith(
+      {
+        latitude: 35,
+        latitudeDelta: 0.4,
+        longitude: 135,
+        longitudeDelta: 0.4,
+      },
+      200
+    );
   });
 });

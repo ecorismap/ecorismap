@@ -48,7 +48,21 @@ describe('getSplitPoints', () => {
 });
 
 describe('getSplittedLinesByLine', () => {
-  let hisyouLatLon: Position[] = [];
+  const hisyouLine = {
+    id: '1',
+    record: undefined,
+    xy: [
+      [0, 0],
+      [100, 100],
+      [200, 200],
+    ],
+    latlon: [
+      [0, 0],
+      [130, 35],
+      [135, 40],
+    ],
+    properties: ['HISYOU'],
+  };
   let lineActions: {
     id: string;
     record: RecordType | undefined;
@@ -57,11 +71,7 @@ describe('getSplittedLinesByLine', () => {
     properties: string[];
   }[] = [];
 
-  it('return no splitLines', () => {
-    hisyouLatLon = [
-      [0, 0],
-      [130, 35],
-    ];
+  it('return splitLines', () => {
     lineActions = [
       {
         id: '1',
@@ -77,7 +87,7 @@ describe('getSplittedLinesByLine', () => {
         properties: ['SENKAI'],
       },
     ];
-    const splittedLinesByLine = getSplittedLinesByLine(hisyouLatLon, lineActions);
+    const splittedLinesByLine = getSplittedLinesByLine(hisyouLine, lineActions);
 
     expect(splittedLinesByLine).toStrictEqual([
       {
@@ -87,30 +97,26 @@ describe('getSplittedLinesByLine', () => {
         ],
         properties: ['HISYOU', 'SENKAI'],
       },
+      {
+        latlon: [
+          [130, 35],
+          [135, 40],
+        ],
+        properties: ['HISYOU'],
+      },
     ]);
   });
 
-  it('return splitedLines', () => {
-    hisyouLatLon = [];
+  it('return no splitedLines', () => {
     lineActions = [];
-    const splittedLinesByLine = getSplittedLinesByLine(hisyouLatLon, lineActions);
-
-    expect(splittedLinesByLine).toStrictEqual([{ latlon: [], properties: ['HISYOU'] }]);
-  });
-
-  it('return just hisyouLine', () => {
-    hisyouLatLon = [
-      [0, 0],
-      [130, 35],
-    ];
-    lineActions = [];
-    const splittedLinesByLine = getSplittedLinesByLine(hisyouLatLon, lineActions);
+    const splittedLinesByLine = getSplittedLinesByLine(hisyouLine, lineActions);
 
     expect(splittedLinesByLine).toStrictEqual([
       {
         latlon: [
           [0, 0],
           [130, 35],
+          [135, 40],
         ],
         properties: ['HISYOU'],
       },

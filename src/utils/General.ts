@@ -11,6 +11,14 @@ export function splitStringsIntoChunksOfLen(str: string, len: number) {
   return chunks;
 }
 
+export function isPlotTool(tool: string) {
+  return ['PLOT_POINT', 'PLOT_LINE', 'PLOT_POLYGON'].includes(tool);
+}
+
+export function isFreehandTool(tool: string) {
+  return ['FREEHAND_LINE', 'FREEHAND_POLYGON'].includes(tool);
+}
+
 export function isPointTool(tool: string): tool is PointToolType {
   return Object.keys(POINTTOOL).includes(tool);
 }
