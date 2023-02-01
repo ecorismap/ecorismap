@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
-import { RecordType, LayerType } from '../../types';
+import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { getColor } from '../../utils/Layer';
@@ -9,12 +9,12 @@ import { hex2rgba } from '../../utils/Color';
 import dayjs from '../../i18n/dayjs';
 
 interface Props {
-  data: RecordType[];
+  data: PolygonRecordType[];
   layer: LayerType;
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onPressPolygon: (layer: LayerType, feature: RecordType) => void;
+  onPressPolygon: (layer: LayerType, feature: PolygonRecordType) => void;
 }
 
 export const Polygon = React.memo((props: Props) => {
@@ -64,7 +64,7 @@ export const Polygon = React.memo((props: Props) => {
               <View style={{ alignItems: 'center' }}>
                 {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
                 <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
-                <PointView size={15} color={pointColor} borderColor={borderColor} />
+                <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
               </View>
             </Marker>
           );
@@ -86,11 +86,11 @@ const PolygonComponent = (props: any) => {
         holes={feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined}
         strokeColor={color}
         fillColor={featureColor}
-        strokeWidth={2}
+        strokeWidth={1.5}
         zIndex={zIndex}
         onPress={() => onPressPolygon(layer, feature)}
       />
-      <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid!} label={label} size={15} color={color} />
+      <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid} label={label} size={15} color={color} />
     </>
   );
 };

@@ -59,6 +59,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         previous: 'Data',
         targetData: data,
         targetLayer: targetLayer,
+        targetRecordSet: [],
+        targetIndex: 0,
       });
     }
   }, [addRecord, navigation, targetLayer]);
@@ -69,6 +71,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         previous: 'Data',
         targetData: allUserRecordSet[index],
         targetLayer: { ...targetLayer },
+        targetRecordSet: allUserRecordSet,
+        targetIndex: index,
       });
     },
     [allUserRecordSet, navigation, targetLayer]

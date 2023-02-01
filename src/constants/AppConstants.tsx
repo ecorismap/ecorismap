@@ -3,10 +3,10 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.1.10';
+export const VERSION = 'Version 0.1.11';
 
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
@@ -141,24 +141,34 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  ADD: 'map-marker-plus',
-  ADD_LOCATION: 'map-marker-radius',
-  MOVE: 'map-marker-right',
-  NONE: 'none',
+  PLOT_POINT: 'map-marker-multiple',
+  ADD_LOCATION_POINT: 'map-marker-radius',
 } as const;
 
-export const DRAWTOOL = {
-  DRAW: 'lead-pencil',
-  AREA: 'shape-circle-plus',
+export const LINETOOL = {
+  PLOT_LINE: 'vector-line',
+  FREEHAND_LINE: 'draw',
+} as const;
+
+export const POLYGONTOOL = {
+  PLOT_POLYGON: 'vector-rectangle',
+  FREEHAND_POLYGON: 'draw',
+} as const;
+
+export const INFOTOOL = {
+  ALL_INFO: 'cursor-default-click',
+  FEATURETYPE_INFO: 'cursor-default-click-outline',
 } as const;
 
 export const SELECTIONTOOL = {
   SELECT: 'select',
-  INFO: 'cursor-default-click',
 } as const;
 
-export const LINETOOL = {
-  ...DRAWTOOL,
+export const DRAWTOOL = {
+  ...POINTTOOL,
+  ...LINETOOL,
+  ...POLYGONTOOL,
+  ...INFOTOOL,
   ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
@@ -169,8 +179,9 @@ export const LINETOOL = {
 } as const;
 
 export const HOME_FEATURE_BTN = {
-  POINT: 'map-marker',
-  LINE: 'draw',
+  POINT: 'scatter-plot',
+  LINE: 'chart-timeline-variant',
+  POLYGON: 'pentagon-outline',
   NONE: 'flower-tulip',
 } as const;
 

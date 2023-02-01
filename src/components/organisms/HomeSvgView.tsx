@@ -8,34 +8,29 @@ import {
   View,
 } from 'react-native';
 
-import Svg, { G, Defs, Marker, Path, Circle } from 'react-native-svg';
+import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
-import { LineToolType, RecordType } from '../../types';
-import { COLOR, PLUGIN } from '../../constants/AppConstants';
+import { DrawLineType, DrawToolType } from '../../types';
+import { COLOR } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
+import { isPlotTool, isPolygonTool } from '../../utils/General';
+import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 
 interface Props {
-  drawLine: {
-    id: string;
-    record: RecordType | undefined;
-    xy: Position[];
-    latlon: Position[];
-    properties: string[];
-  }[];
-  editingLine: {
-    start: Position;
-    xy: Position[];
-  };
+  drawLine: DrawLineType[];
+  editingLine: Position[];
   selectLine: Position[];
-  currentLineTool: LineToolType;
+  currentDrawTool: DrawToolType;
+  isEditingObject: boolean;
   onPress: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
 }
 //React.Memoすると描画が更新されない
 export const SvgView = (props: Props) => {
-  const { drawLine, editingLine, selectLine, currentLineTool, onPress, onMove, onRelease } = props;
+  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject, onPress, onMove, onRelease } = props;
+  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
@@ -55,6 +50,10 @@ export const SvgView = (props: Props) => {
     [onMove, onPress, onRelease]
   );
 
+  const editingStartStyle = '';
+  const editingMidStyle = '';
+  const editingEndStyle = '';
+
   return (
     <View
       style={{
@@ -69,50 +68,81 @@ export const SvgView = (props: Props) => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle = '';
-          let endStyle = '';
-          if (PLUGIN.HISYOUTOOL) {
-            startStyle = properties.includes('TOMARI') ? `url(#dot)` : '';
-            endStyle = properties.includes('arrow') ? 'url(#arrow)' : '';
+          let startStyle =
+            currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
+              ? ''
+              : properties.includes('EDIT')
+              ? `url(#add)`
+              : isEditingObject
+              ? ''
+              : `url(#delete)`;
+          let midStyle =
+            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
+              ? properties.includes('EDIT')
+                ? `url(#plot)`
+                : ''
+              : '';
+          let endStyle = properties.includes('POINT') ? `url(#point)` : properties.includes('EDIT') ? `url(#last)` : '';
+          if (isHisyouToolActive) {
+            startStyle = !properties.includes('HISYOU')
+              ? ''
+              : properties.includes('EDIT')
+              ? `url(#add)`
+              : isEditingObject
+              ? ''
+              : `url(#delete)`;
+            midStyle = '';
+            endStyle = properties.includes('arrow') ? 'url(#arrow)' : properties.includes('TOMARI') ? `url(#dot)` : '';
           }
+
           return (
             <G key={uuidv4()}>
+              {properties.includes('EDIT') && (
+                <Path id={`path${idx}`} d={pointsToSvg(xy)} stroke={'blue'} strokeWidth="4" />
+              )}
               <Path
                 id={`path${idx}`}
                 d={pointsToSvg(xy)}
-                stroke={'blue'}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={'1,3'}
-                fill={currentLineTool === 'AREA' ? COLOR.ALFABLUE2 : 'none'}
+                stroke={properties.includes('EDIT') ? 'lightblue' : 'blue'}
+                strokeWidth="2"
+                strokeDasharray={'none'}
+                fill={
+                  isPolygonTool(currentDrawTool)
+                    ? properties.includes('EDIT')
+                      ? COLOR.ALFAYELLOW
+                      : COLOR.ALFABLUE2
+                    : 'none'
+                }
                 markerStart={startStyle}
+                markerMid={midStyle}
                 markerEnd={endStyle}
               />
-              {PLUGIN.HISYOUTOOL && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}
+
+              {isHisyouToolActive && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}
             </G>
           );
         })}
         {/* 修正のライン */}
-        <G>
-          <Path
-            d={pointsToSvg(editingLine.xy)}
-            stroke="blue"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="1"
-            fill="none"
-          />
-        </G>
+        {!isPlotTool(currentDrawTool) && (
+          <G>
+            <Path
+              d={pointsToSvg(editingLine)}
+              stroke="blue"
+              strokeWidth="2.5"
+              strokeDasharray="2,3"
+              fill="none"
+              markerStart={editingStartStyle}
+              markerMid={editingMidStyle}
+              markerEnd={editingEndStyle}
+            />
+          </G>
+        )}
         {/* 選択範囲のライン */}
         <G>
           <Path
             d={pointsToSvg(selectLine)}
             stroke={`${COLOR.YELLOW}`}
             strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
             strokeDasharray="1"
             fill={`${COLOR.ALFAYELLOW}`}
           />
@@ -125,32 +155,105 @@ export const SvgView = (props: Props) => {
 const LineDefs = () => {
   return (
     <Defs>
-      <Marker
-        id="arrow"
-        viewBox="0 0 10 10"
-        refX="8"
-        refY="5"
-        //@ts-ignore
-        markerUnits="strokeWidth"
-        markerWidth="5"
-        markerHeight="4"
-        orient="auto"
-      >
-        <Path stroke="blue" strokeWidth="1" fill="blue" d="M 0 0 L 10 5 L 0 10 z" />
-      </Marker>
-      <Marker
-        id="dot"
-        viewBox="0 0 10 10"
-        refX="5"
-        refY="5"
-        //@ts-ignore
-        markerUnits="strokeWidth"
-        markerWidth="4"
-        markerHeight="4"
-        orient="auto"
-      >
-        <Circle cx="5" cy="5" r="5" fill="blue" stroke="white" />
-      </Marker>
+      <G id="markers">
+        <Marker
+          id="arrow"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="5"
+          markerHeight="4"
+          orient="auto"
+        >
+          <Path stroke="blue" strokeWidth="1" fill="blue" d="M 0 0 L 10 5 L 0 10 z" />
+        </Marker>
+        <Marker
+          id="dot"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="7"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="4"
+          markerHeight="4"
+          orient="auto"
+        >
+          <Circle cx="5" cy="5" r="5" fill="blue" stroke="white" />
+        </Marker>
+        <Marker
+          id="point"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="4"
+          markerHeight="4"
+          orient="0"
+        >
+          <Circle cx="5" cy="5" r="10" fill="yellow" stroke="black" />
+        </Marker>
+
+        <Marker
+          id="add"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="5"
+          markerHeight="5"
+          orient="0"
+        >
+          <Circle cx="5" cy="5" r="10" fill={COLOR.ALFABLUE} stroke={COLOR.WHITE} />
+          <Rect x="0.25" y="3.75" width="10" height="3" fill={COLOR.WHITE} stroke={COLOR.WHITE} />
+          <Rect x="3.75" y="0.25" width="3" height="10" fill={COLOR.WHITE} stroke={COLOR.WHITE} />
+        </Marker>
+        <Marker
+          id="delete"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="4"
+          markerHeight="4"
+          orient="0"
+        >
+          <Circle cx="5" cy="5" r="10" fill={COLOR.ALFAGRAY} stroke={COLOR.ALFAWHITE} />
+          <Path stroke={COLOR.ALFAWHITE} strokeWidth="3" d="M 0 0 L 10 10 z" />
+          <Path stroke={COLOR.ALFAWHITE} strokeWidth="3" d="M 0 10 L 10 0 z" />
+        </Marker>
+
+        <Marker
+          id="plot"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="6"
+          markerHeight="6"
+          orient="0"
+        >
+          <Circle cx="5" cy="5" r="3.5" fill="white" stroke="blue" strokeWidth="2" />
+        </Marker>
+        <Marker
+          id="last"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth="3"
+          markerHeight="3"
+          orient="0"
+        >
+          <Rect width="10" height="10" fill="white" stroke="blue" strokeWidth="1" />
+        </Marker>
+      </G>
     </Defs>
   );
 };

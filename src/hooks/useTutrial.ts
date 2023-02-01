@@ -23,7 +23,7 @@ export const useTutrial = (): UseTutrialReturnType => {
   const runTutrial = useCallback(
     async (key: keyof Tutrials) => {
       const tutrial = tutrials[key];
-      if (tutrial && Platform.OS !== 'web') {
+      if ((tutrial === undefined || tutrial === true) && Platform.OS !== 'web') {
         await AlertAsync(TUTRIALS_MESSAGE[key]);
         const updatedTutrials = {
           ...tutrials,

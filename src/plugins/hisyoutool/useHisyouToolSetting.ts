@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRecord } from '../../hooks/useRecord';
 import { AppState } from '../../modules';
+import { updateLayerAction } from '../../modules/layers';
 import { editSettingsAction } from '../../modules/settings';
 
 export type UseHisyouToolSettingReturnType = {
@@ -17,13 +19,18 @@ export const useHisyouToolSetting = (): UseHisyouToolSettingReturnType => {
   const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
   const isHisyouToolActive = useMemo(() => hisyouLayerId !== '', [hisyouLayerId]);
   const [visibleHisyouToolSetting, setVisibleHisyouToolSetting] = useState(false);
+  const { findLayer } = useRecord();
 
   const pressHisyouToolSettingOK = useCallback(
     (value: string) => {
       dispatch(editSettingsAction({ plugins: { hisyouTool: { hisyouLayerId: value } } }));
+      const hisyouzuLayer = findLayer(value);
+      if (hisyouzuLayer !== undefined) {
+        dispatch(updateLayerAction({ ...hisyouzuLayer, visible: false }));
+      }
       setVisibleHisyouToolSetting(false);
     },
-    [dispatch]
+    [dispatch, findLayer]
   );
 
   const pressHisyouToolSettingCancel = useCallback(() => {

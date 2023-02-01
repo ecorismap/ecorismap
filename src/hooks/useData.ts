@@ -203,11 +203,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       return { isOK: false, message: t('hooks.message.noEditMode'), data: undefined };
     }
 
-    if (targetLayer.type !== 'NONE' && targetLayer.type !== 'POINT') {
-      //ボタンをdisableにした方が良いかも？
-      return { isOK: false, message: t('hooks.message.cannotThisLayer'), data: undefined };
-    }
-
     const id = uuidv4();
     const field = getDefaultField(targetLayer, ownRecordSet, id);
 
