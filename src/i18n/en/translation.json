@@ -51,7 +51,7 @@
   "tutrials": {
     "pointtool": {
       "add": "Add points anywhere. \nPlease touch the place you want to add.",
-      "add_location": "Add a point at the current position. \nTurn on GPS and touch the screen.",
+      "add_location": "Add a point to your current location. \nTurn on GPS and touch the screen. \nPress and hold the button to switch tools.",
       "move": "Move point. \nPlease press and hold the point."
     },
     "home_btn": {
@@ -65,6 +65,16 @@
     "maps_btn": {
       "online": "Switch to offline mode. \nMaps are loaded from cache.",
       "offline": "Switch to online mode. \nMaps are loaded from the net."
+    },
+    "selectiontool": "Drag to select features. \nSelected features can be edited with tools.",
+    "infotool": "Display feature information. \nPlease touch the feature.",
+    "linetool": {
+      "plot": "Create a line in your plot. \nA node is added where you touched. \nTouch the start point to finish editing the line. \nTouch the line to resume editing.",
+      "freehand": "Create lines freehand."
+    },
+    "polygontool": {
+      "plot": "Create a polygon in your plot. \nA node is added where you touched. \nTouch the start point to finish editing the polygon. \nTouch the polygon to resume editing.",
+      "freehand": "Create polygons freehand."
     }
   },
   "Project": {
@@ -517,7 +527,10 @@
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
       "disableEditProject": "Cannot be edited while the project is open.",
       "inputCorrectFilename": "Please enter a valid file name.",
-      "failSaveFile": "Failed to save file."
+      "failSaveFile": "Failed to save file.",
+      "invalidPolygon": "Can't save for invalid line.",
+      "invalidLine": "Can't save for invalid line",
+      "invalidPoint": "Can't save for invalid point."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

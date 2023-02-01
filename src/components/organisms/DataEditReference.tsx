@@ -45,14 +45,17 @@ export const DataEditReference = (props: Props) => {
           <Text style={styles.title}>{name}</Text>
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
-          <Button
-            style={{
-              backgroundColor: COLOR.GRAY3,
-              padding: 0,
-            }}
-            name="plus"
-            onPress={() => addReferenceData(refLayer)}
-          />
+          {refLayer.type === 'NONE' ||
+            (refLayer.type === 'POINT' && (
+              <Button
+                style={{
+                  backgroundColor: COLOR.GRAY3,
+                  padding: 0,
+                }}
+                name="plus"
+                onPress={() => addReferenceData(refLayer)}
+              />
+            ))}
         </View>
       </View>
       <DataTitle layer={refLayer} />

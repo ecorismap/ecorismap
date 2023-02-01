@@ -15,7 +15,7 @@ import { useGPS } from './useGPS';
 import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
-import { useFeature } from './useFeature';
+import { useRecord } from './useRecord';
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -41,7 +41,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
-  const { findRecord } = useFeature();
+  const { findRecord } = useRecord();
 
   const {
     locationEventsEmitter,

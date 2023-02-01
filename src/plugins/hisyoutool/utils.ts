@@ -4,7 +4,7 @@ import { HISYOUTOOL } from './Constants';
 import { RecordType } from '../../types';
 import { Position } from '@turf/turf';
 import * as turf from '@turf/turf';
-import { booleanNearEqual, getLineSnappedPosition } from '../../utils/Coords';
+import { booleanNearEqual, getSnappedPositionWithLine } from '../../utils/Coords';
 import { cloneDeep } from 'lodash';
 
 export function isHisyouTool(tool: string): tool is HisyouToolType {
@@ -15,7 +15,7 @@ export const legendsToProperties = (legends: string): string[] => {
   return legends.split(',').map((legend) => {
     switch (legend) {
       case '飛翔':
-        return 'HISYOU';
+        return 'HISYOU_NOEDIT';
       case '旋回':
         return 'SENKAI';
       case '旋回上昇':
@@ -86,8 +86,8 @@ export const getSplitPoints = (
     .flatMap((action) => {
       const start = action.latlon[0];
       const end = action.latlon[action.latlon.length - 1];
-      const startPt = getLineSnappedPosition(start, lineLatLon);
-      const endPt = getLineSnappedPosition(end, lineLatLon);
+      const startPt = getSnappedPositionWithLine(start, lineLatLon);
+      const endPt = getSnappedPositionWithLine(end, lineLatLon);
       return [
         { ...startPt, properties: action.properties, type: 'start' },
         { ...endPt, properties: action.properties, type: 'end' },
@@ -262,7 +262,7 @@ export const getSplittedLinesByPoint = (
   return targetLines;
 };
 
-export const getActionSnappedPosition = (
+export const getSnappedPositionWithActions = (
   pXY: Position,
   actions: {
     id: string;
@@ -273,6 +273,7 @@ export const getActionSnappedPosition = (
   }[]
 ) => {
   for (const action of actions) {
+    if (action.xy.length === 0) return pXY;
     const target = turf.point(pXY);
     const lineStart = action.xy[0];
     const distanceStart = turf.distance(target, turf.point(lineStart));

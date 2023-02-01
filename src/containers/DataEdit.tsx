@@ -8,6 +8,7 @@ import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
+import { useRecord } from '../hooks/useRecord';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -17,13 +18,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const {
     targetRecord,
     targetLayer,
-    targetRecordSet,
     latlon,
     selectedPhoto,
     isEditingRecord,
     isDecimal,
     recordNumber,
-    setRecordNumber,
+    maxRecordNumber,
     changeRecord,
     saveData,
     pickImage,
@@ -36,7 +36,16 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-  } = useDataEdit(route.params.targetData, route.params.targetLayer, route.params.targetRecordSet);
+  } = useDataEdit(
+    route.params.targetData,
+    route.params.targetLayer,
+    route.params.targetRecordSet,
+    route.params.targetIndex
+  );
+  const { unselectRecord } = useRecord();
+
+  //console.log('####', targetLayer);
+  //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
     const { isOK, message } = saveData();
@@ -45,23 +54,22 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [saveData]);
 
-  const pressDeleteData = useCallback(() => {
-    ConfirmAsync(t('DataEdit.confirm.deleteData')).then((ret) => {
-      if (ret) {
-        const { isOK, message } = deleteRecord();
-        if (!isOK) {
-          Alert.alert('', message);
-        } else {
-          if (route.params.previous === 'Home') {
-            closeData();
-          } else if (route.params.previous === 'Data') {
-            navigation.navigate('Data', {
-              targetLayer: { ...targetLayer },
-            });
-          }
+  const pressDeleteData = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+    if (ret) {
+      const { isOK, message } = deleteRecord();
+      if (!isOK) {
+        Alert.alert('', message);
+      } else {
+        if (route.params.previous === 'Home') {
+          closeData();
+        } else if (route.params.previous === 'Data') {
+          navigation.navigate('Data', {
+            targetLayer: { ...targetLayer },
+          });
         }
       }
-    });
+    }
   }, [closeData, deleteRecord, navigation, route.params.previous, targetLayer]);
 
   const pressPickPhoto = useCallback(
@@ -104,15 +112,15 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressDownloadPhoto = useCallback(async () => {}, []);
 
   const onChangeRecord = useCallback(
-    async (record: RecordType) => {
+    async (value: number) => {
       if (isEditingRecord) {
         const ret = await ConfirmAsync(t('DataEdit.confirm.changeRecord'));
         if (ret) {
-          changeRecord(record);
+          changeRecord(value);
           cancelUpdate();
         }
       } else {
-        changeRecord(record);
+        changeRecord(value);
       }
     },
     [cancelUpdate, changeRecord, isEditingRecord]
@@ -148,7 +156,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
             zoom: 15,
           },
         }),
-      1
+      500
     );
   }, [closeData, isDataOpened, navigation, targetLayer.type, targetRecord.coords]);
 
@@ -206,6 +214,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'Data',
           targetLayer: route.params.mainLayer,
           targetData: route.params.mainData,
+          targetRecordSet: [],
+          targetIndex: 0,
         });
       } else {
         closeData();
@@ -241,6 +251,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
+        targetRecordSet: [],
+        targetIndex: 0,
         mainData: targetRecord,
         mainLayer: targetLayer,
       });
@@ -257,6 +269,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'DataEdit',
           targetData: referenceData,
           targetLayer: referenceLayer,
+          targetRecordSet: [],
+          targetIndex: 0,
           mainData: targetRecord,
           mainLayer: targetLayer,
         });
@@ -275,7 +289,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     } else {
       closeData();
     }
-  }, [cancelUpdate, closeData, isEditingRecord]);
+    unselectRecord();
+  }, [cancelUpdate, closeData, isEditingRecord, unselectRecord]);
 
   return (
     <DataEdit
@@ -290,9 +305,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       changeLatLon={changeLatLon}
       changeField={changeField}
       submitField={submitField}
-      recordSet={targetRecordSet}
       recordNumber={recordNumber}
-      setRecordNumber={setRecordNumber}
+      maxRecordNumber={maxRecordNumber}
       onChangeRecord={onChangeRecord}
       pressSaveData={pressSaveData}
       pressDeleteData={pressDeleteData}
