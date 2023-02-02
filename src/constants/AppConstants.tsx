@@ -3,11 +3,9 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-//export const AppID = 'com.tmizu23.ecorismap2022';
-export const VERSION = 'Version 1.0.1';
+export const VERSION = 'Version 0.2.0 Pro';
 export const FUNC_LOGIN = true;
 export const FUNC_PROJECT = true;
-//export const FUNC_HISYOUTOOLS = false;
 export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
 export const FUNC_ENCRYPTION = true;
