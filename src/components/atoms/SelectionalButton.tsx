@@ -1,16 +1,29 @@
 import React, { useState } from 'react';
-import { View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 interface Props {
-  openDisabled?: boolean;
   selectedButton: string;
   directionRow: 'column' | 'row';
   children: any;
+  isPositionRight?: boolean;
 }
 
 const SelectionalButton = React.memo((props: Props) => {
   const [isButtonOpen, setButtonOpen] = useState(false);
-  const { openDisabled, selectedButton, directionRow } = props;
+  const { selectedButton, directionRow, isPositionRight } = props;
+
+  const styles = StyleSheet.create({
+    button: {
+      alignItems: 'flex-end',
+      marginRight: directionRow === 'row' ? 5 : 0,
+      marginTop: directionRow === 'column' ? 5 : 0,
+    },
+    buttonLandscape: {
+      alignItems: 'flex-end',
+      marginLeft: directionRow === 'row' ? 5 : 0,
+      marginTop: directionRow === 'column' ? 5 : 0,
+    },
+  });
 
   return (
     <View style={{ flexDirection: directionRow }}>
@@ -25,14 +38,7 @@ const SelectionalButton = React.memo((props: Props) => {
             });
 
             return (
-              <View
-                key={index}
-                style={{
-                  marginTop: directionRow === 'column' ? 5 : 0,
-                  marginRight: directionRow === 'row' ? 5 : 0,
-                  alignItems: 'flex-end',
-                }}
-              >
+              <View key={index} style={isPositionRight ? styles.buttonLandscape : styles.button}>
                 {newitem}
               </View>
             );
@@ -41,11 +47,7 @@ const SelectionalButton = React.memo((props: Props) => {
             if (item === null) return null;
             const newitem = React.cloneElement(item, {
               onPress: () => {
-                if (openDisabled) {
-                  item.props.onPressCustom();
-                } else {
-                  setButtonOpen(true);
-                }
+                setButtonOpen(true);
               },
             });
             return item.props.id === selectedButton ? (

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput } from 'react-native';
 
-import { COLOR, DATAFORMAT, FUNC_HISYOUTOOLS } from '../../constants/AppConstants';
+import { COLOR, DATAFORMAT } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { FormatType, LayerType } from '../../types';
 import { Button, Picker, RectButton2 } from '../atoms';
@@ -94,7 +94,7 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
                 }
                 itemLabelArray={formatTypeLabels}
                 itemValueArray={formatTypeValues}
-                maxIndex={FUNC_HISYOUTOOLS ? formatTypeValues.length - 1 : formatTypeValues.length - 2}
+                maxIndex={formatTypeValues.length - 1}
               />
             </View>
             <View style={[styles.td, { flex: 2 }]}>

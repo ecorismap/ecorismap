@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { AppState as RNAppState, AppStateStatus, Platform } from 'react-native';
-import MapView, { Region, MapEvent } from 'react-native-maps';
-import { FeatureButtonType, LayerType, LineToolType, PointToolType, RecordType } from '../types';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
+import MapView, { Region } from 'react-native-maps';
+import { DrawToolType, FeatureButtonType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -9,13 +9,13 @@ import { useSelector } from 'react-redux';
 import { HomeProps } from '../components/pages/Home';
 import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
-import { useFeature } from '../hooks/useFeature';
+import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
-import { useZoom } from '../hooks/useZoom';
+import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
-import { isDrawTool } from '../utils/General';
+import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import { useDisplay } from '../hooks/useDisplay';
 import { useProject } from '../hooks/useProject';
@@ -23,22 +23,32 @@ import { validateStorageLicense } from '../utils/Project';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { useLayers } from '../hooks/useLayers';
+import { useWindow } from '../hooks/useWindow';
+import { isHisyouTool } from '../plugins/hisyoutool/utils';
+import { ModalHisyouToolSetting } from '../plugins/hisyoutool/ModalHisyouToolSetting';
+import { PLUGIN } from '../constants/AppConstants';
+import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
+import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
+import { usePointTool } from '../hooks/usePointTool';
+import { useDrawTool } from '../hooks/useDrawTool';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
+  const [restored] = useState(true);
+  const mapViewRef = useRef<MapView | MapRef | null>(null);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
   const mapType = useSelector((state: AppState) => state.settings.mapType);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const projectName = useSelector((state: AppState) => state.settings.projectName);
   const user = useSelector((state: AppState) => state.user);
-
-  const [restored] = useState(true);
-  const [isDrawToolsSettingsOpen, setIsDrawToolsSettingsOpen] = useState(false);
-
+  const projectId = useSelector((state: AppState) => state.settings.projectId);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
+  const { mapRegion, isLandscape } = useWindow();
+  const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
+  const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -52,43 +62,41 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useTiles(route.params?.tileMap);
 
   //位置データの操作、作成関連
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, unselectRecord, addRecordWithCheck } = useRecord();
+
   const {
-    mapViewRef,
-    layers,
-    projectId,
-    pointDataSet,
-    lineDataSet,
-    polygonDataSet,
-    isEdited,
-    pointTool,
-    lineTool,
-    drawLineTool,
-    polygonTool,
-    featureButton,
-    selectedRecord,
     drawLine,
-    modifiedLine,
-    panResponder,
-    drawToolsSettings,
-    hisyouzuToolEnabled,
-    addCurrentPoint,
-    addPressPoint,
-    addTrack,
-    setSelectedFeatureAndRecord,
+    editingLineXY,
+    selectLine,
+    isEditingLine,
+    isEditingObject,
+    isDrag,
+    currentDrawTool,
+    currentPointTool,
+    currentLineTool,
+    currentPolygonTool,
+    featureButton,
+    setDrawTool,
     setPointTool,
     setLineTool,
-    setDrawLineTool,
+    setPolygonTool,
     setFeatureButton,
-    dragEndPoint,
-    changeEditMapStyle,
+    pressSvgView,
+    moveSvgView,
+    releaseSvgView,
+    savePoint,
     saveLine,
-    deleteLine,
-    clearDrawLines,
-    convertFeatureToDrawLine,
-    undoEditLine,
-    updateDrawToolsSettings,
-  } = useFeature();
+    savePolygon,
+    deleteDraw,
+    undoDraw,
+    selectSingleFeature,
+    showDrawLine,
+    hideDrawLine,
+    resetDrawTools,
+    toggleTerrainForWeb,
+  } = useDrawTool(mapViewRef.current);
 
+  const { addCurrentPoint } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -99,16 +107,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
-    changeMapRegion,
   } = useLocation(mapViewRef.current);
-
-  const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
-
-  //Zoom関連
-  const { zoom, zoomDecimal, zoomIn, zoomOut } = useZoom(mapViewRef.current);
-
   //現在位置の共有関連
   const { uploadLocation } = useSyncLocation(projectId);
+  const {
+    visibleHisyouToolSetting,
+    hisyouLayerId,
+    pressHisyouToolSettingOK,
+    pressHisyouToolSettingCancel,
+    showHisyouToolSetting,
+  } = useHisyouToolSetting();
 
   //Account関連
   const { logout } = useAccount();
@@ -139,13 +147,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const isDownloadPage = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
-  const draggablePoint = useMemo(() => pointTool === 'MOVE', [pointTool]);
 
   /*************** onXXXXMapView *********************/
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
-      //console.log('&&&&&&&', region);
+      //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
     },
     [changeMapRegion]
@@ -157,169 +164,97 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
   }, [gpsState, toggleGPS]);
 
-  const onPressMapView = useCallback(
-    async (e: MapEvent<{}>) => {
-      if (pointTool === 'ADD_LOCATION') {
-        if (Platform.OS === 'web') {
-          Alert.alert('', t('Home.alert.gpsWeb'));
-          return;
-        }
-        if (gpsState === 'off' && trackingState === 'off') {
-          Alert.alert('', t('Home.alert.gps'));
-          return;
-        }
-        setPointTool('NONE');
-        const { isOK, message, layer, data } = await addCurrentPoint();
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
+  const selectDrawTool = useCallback(
+    async (value: DrawToolType) => {
+      if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
+        if (currentDrawTool === value) {
+          if (isEditingLine) return;
+          //ドローツールをオフ
+          setDrawTool('NONE');
         } else {
-          expandData();
-          setTimeout(function () {
-            navigation.navigate('DataEdit', {
-              previous: 'Home',
-              targetData: data,
-              targetLayer: layer,
-            });
-          }, 1);
+          //ドローツールをオン
+          setDrawTool(value);
+          if (isPointTool(value)) await runTutrial(`POINTTOOL_${value}`);
+          if (isLineTool(value)) await runTutrial(`LINETOOL_${value}`);
+          if (isPolygonTool(value)) await runTutrial(`POLYGONTOOL_${value}`);
         }
-      } else if (pointTool === 'ADD') {
-        setPointTool('NONE');
-        const { isOK, message, layer, data } = addPressPoint(e);
-        if (!isOK || layer === undefined || data === undefined) {
-          Alert.alert('', message);
-          return;
+      } else if (isInfoTool(value)) {
+        if (currentDrawTool === value) {
+          resetDrawTools();
+          setDrawTool('NONE');
+        } else {
+          setDrawTool(value);
+          await runTutrial('INFOTOOL');
         }
-        expandData();
-        setTimeout(function () {
-          navigation.navigate('DataEdit', {
-            previous: 'Home',
-            targetData: data,
-            targetLayer: layer,
-          });
-        }, 1);
-      } else if (pointTool === 'NONE' && lineTool !== 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
-      }
-    },
-    [
-      addCurrentPoint,
-      addPressPoint,
-      expandData,
-      gpsState,
-      lineTool,
-      navigation,
-      pointTool,
-      setPointTool,
-      setSelectedFeatureAndRecord,
-      trackingState,
-    ]
-  );
-
-  const onDragEndPoint = useCallback(
-    (e: MapEvent<{}>, layer: LayerType, feature: RecordType) => {
-      const coordinate = e.nativeEvent.coordinate;
-      ConfirmAsync(t('Home.confirm.drag')).then((shouldUpdate) => {
-        const { isOK, message } = dragEndPoint(layer, feature, coordinate, shouldUpdate);
-        if (!isOK) {
-          Alert.alert('', message);
+      } else if (isSelectionTool(value)) {
+        if (currentDrawTool === value) {
+          resetDrawTools();
+          setDrawTool('NONE');
+        } else {
+          setDrawTool(value);
+          await runTutrial('SELECTIONTOOL');
         }
-      });
-    },
-    [dragEndPoint]
-  );
-
-  const onPressPoint = useCallback(
-    (layer: LayerType, feature: RecordType) => {
-      if (pointTool === 'NONE' && lineTool === 'NONE' && polygonTool === 'NONE') {
-        if (isEditingRecord) {
-          AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
-        openData();
-
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-        });
-      }
-    },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool, setSelectedFeatureAndRecord]
-  );
-
-  const onPressLine = useCallback(
-    async (layer: LayerType, feature: RecordType) => {
-      if (lineTool === 'SELECT') {
-        //飛翔図ツールのレイヤが表示されていた場合に反応しないように
-        if (hisyouzuToolEnabled && drawToolsSettings.hisyouzuTool.layerId === layer.id) return;
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
-        convertFeatureToDrawLine(feature);
-        if (hisyouzuToolEnabled) {
-          const actionLayerId = drawToolsSettings.hisyouzuTool.layerId;
-          const actionLayer = layers.find((l) => l.id === actionLayerId);
-          const actionData = lineDataSet.find((d) => d.layerId === actionLayerId && d.userId === feature.userId);
-          if (actionLayer === undefined || actionData === undefined) return;
-          const features = actionData.data.filter((record) => record.field._ReferenceDataId === feature.id);
-          if (features.length > 0) {
-            openData();
-            navigation.navigate('DataEdit', {
-              previous: 'Data',
-              targetRecordSet: features,
-              targetData: { ...features[0] },
-              targetLayer: { ...actionLayer },
-            });
-          }
+      } else if (isHisyouTool(value)) {
+        if (value === 'SETTING') {
+          showHisyouToolSetting();
+        } else if (currentDrawTool === value) {
+          if (isEditingLine) return;
+          setDrawTool('NONE');
+        } else {
+          setDrawTool(value);
         }
       } else {
-        if (isEditingRecord) {
-          await AlertAsync(t('Home.alert.discardChanges'));
-          return;
+        if (value === 'MOVE') {
+          if (currentDrawTool === value) {
+            setDrawTool('NONE');
+          } else {
+            setDrawTool(value);
+          }
         }
-
-        openData();
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-        });
       }
     },
-    [
-      lineTool,
-      hisyouzuToolEnabled,
-      drawToolsSettings.hisyouzuTool.layerId,
-      setSelectedFeatureAndRecord,
-      convertFeatureToDrawLine,
-      layers,
-      lineDataSet,
-      openData,
-      navigation,
-      isEditingRecord,
-    ]
+    [currentDrawTool, isEditingLine, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
   );
 
-  const onPressPolygon = useCallback(
-    async (layer: LayerType, feature: RecordType) => {
-      if (isEditingRecord) {
-        await AlertAsync(t('Home.alert.discardChanges'));
+  const onPressMapView = useCallback(async () => {
+    if (currentDrawTool === 'ADD_LOCATION_POINT') {
+      if (Platform.OS === 'web') {
+        Alert.alert('', t('Home.alert.gpsWeb'));
         return;
       }
-      if (pointTool === 'NONE' && lineTool === 'NONE' && polygonTool === 'NONE') {
-        openData();
-        setSelectedFeatureAndRecord({ layerId: layer.id, record: feature });
+      if (gpsState === 'off' && trackingState === 'off') {
+        Alert.alert('', t('Home.alert.gps'));
+        return;
+      }
+
+      const { isOK, message, layer, record } = await addCurrentPoint();
+      if (!isOK || layer === undefined || record === undefined) {
+        Alert.alert('', message);
+      } else {
+        isDataOpened === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
             previous: 'Home',
-            targetData: { ...feature },
-            targetLayer: { ...layer },
+            targetData: record,
+            targetLayer: layer,
+            targetRecordSet: [],
+            targetIndex: 0,
           });
         }, 1);
       }
-    },
-    [isEditingRecord, lineTool, navigation, openData, pointTool, polygonTool, setSelectedFeatureAndRecord]
-  );
+      selectDrawTool(currentDrawTool);
+    }
+  }, [
+    currentDrawTool,
+    gpsState,
+    trackingState,
+    addCurrentPoint,
+    selectDrawTool,
+    isDataOpened,
+    expandData,
+    openData,
+    navigation,
+  ]);
 
   const onDrop = useCallback(
     async (acceptedFiles) => {
@@ -336,99 +271,116 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [editable, importDropedFile]
   );
 
-  /************** select button ************/
-  const selectLineTool = useCallback(
-    (value: LineToolType) => {
-      if (!isEdited.current && value === 'DRAW' && lineTool === 'DRAW') {
-        //ドローツールをオフ
-        setLineTool('NONE');
-      } else if (isDrawTool(value)) {
-        //ドローツールをオン
-        setLineTool(value);
-        setDrawLineTool(value);
-        if (drawLine.current[0].coords.length > 0) {
-          isEdited.current = true;
-        } else {
-          setSelectedFeatureAndRecord({ layerId: '', record: undefined });
+  const onReleaseSvgView = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (isInfoTool(currentDrawTool)) {
+        if (isDrag) {
+          //INFOでドラッグした場合は移動のみ実行
+          releaseSvgView(event);
         }
-      } else if (value === 'SELECT' && lineTool === 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
-        drawLine.current = [{ id: '', coords: [], properties: [], arrow: 0 }];
-        setLineTool('NONE');
-      } else if (value === 'SELECT') {
-        setSelectedFeatureAndRecord({ layerId: '', record: undefined });
-        setLineTool('SELECT');
-      } else if (value === 'MOVE') {
-        setLineTool('MOVE');
-      }
-    },
-    [drawLine, isEdited, lineTool, setDrawLineTool, setLineTool, setSelectedFeatureAndRecord]
-  );
+        if (isEditingRecord) {
+          await AlertAsync(t('Home.alert.discardChanges'));
+          return;
+        }
+        const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
-  const selectPointTool = useCallback(
-    async (value: PointToolType) => {
-      if (value === pointTool) {
-        setPointTool('NONE');
+        if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
+          unselectRecord();
+
+          return;
+        }
+
+        openData();
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetData: { ...feature },
+          targetLayer: { ...layer },
+          targetRecordSet: recordSet,
+          targetIndex: recordIndex,
+        });
+        const region = isLandscape
+          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
+          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
+        setTimeout(() => changeMapRegion(region, true), 300);
       } else {
-        await runTutrial(`POINTTOOL_${value}`);
-        setPointTool(value);
+        releaseSvgView(event);
       }
     },
-    [pointTool, runTutrial, setPointTool]
+    [
+      currentDrawTool,
+      isDrag,
+      openData,
+      releaseSvgView,
+      navigation,
+      isEditingRecord,
+      selectSingleFeature,
+      isLandscape,
+      mapRegion,
+      unselectRecord,
+      changeMapRegion,
+    ]
   );
+  /************** select button ************/
 
   const selectFeatureButton = useCallback(
     (value: FeatureButtonType) => {
-      changeEditMapStyle(value);
-      setPointTool('NONE');
-      setLineTool('NONE');
-      setDrawLineTool('DRAW');
+      setDrawTool('NONE');
+      toggleTerrainForWeb(value);
       setFeatureButton(value);
-      clearDrawLines();
+      resetDrawTools();
     },
-    [changeEditMapStyle, clearDrawLines, setDrawLineTool, setFeatureButton, setLineTool, setPointTool]
+    [resetDrawTools, setFeatureButton, setDrawTool, toggleTerrainForWeb]
   );
 
   /**************** press ******************/
-  const pressDrawToolsSettings = useCallback(() => {
-    setIsDrawToolsSettingsOpen(true);
-  }, []);
-  const pressDrawToolsSettingsCancel = useCallback(() => {
-    setIsDrawToolsSettingsOpen(false);
-  }, []);
-  const pressDrawToolsSettingsOK = useCallback(
-    (settings: { hisyouzuTool: { active: boolean; layerId: string | undefined } }) => {
-      const { isOK, message } = updateDrawToolsSettings(settings);
-      if (!isOK) Alert.alert('', message);
-      setIsDrawToolsSettingsOpen(false);
-    },
-    [updateDrawToolsSettings]
-  );
 
-  const pressUndoEditLine = useCallback(async () => {
-    undoEditLine();
-  }, [undoEditLine]);
+  const pressUndoDraw = useCallback(async () => {
+    undoDraw();
+  }, [undoDraw]);
 
-  const pressSaveEditLine = useCallback(async () => {
-    const { isOK, message, layer, data } = saveLine();
-    if (!isOK || layer === undefined || data === undefined) {
+  const pressSaveDraw = useCallback(async () => {
+    let result;
+    if (featureButton === 'POINT') {
+      result = savePoint();
+    } else if (featureButton === 'LINE') {
+      result = saveLine();
+    } else if (featureButton === 'POLYGON') {
+      result = savePolygon();
+    }
+    if (result === undefined) return;
+    const { isOK, message, layer, recordSet } = result;
+    if (!isOK) {
       Alert.alert('', message);
       return;
     }
-    clearDrawLines();
-    openData();
-    setTimeout(function () {
-      navigation.navigate('DataEdit', {
-        previous: 'Home',
-        targetData: data,
-        targetLayer: layer,
-      });
-    }, 1);
-  }, [clearDrawLines, navigation, openData, saveLine]);
+    //console.log(isOK, message, layer, recordSet);
+    setDrawTool('NONE');
+    if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+      openData();
+      setTimeout(function () {
+        navigation.navigate('DataEdit', {
+          previous: 'Home',
+          targetData: recordSet[0],
+          targetLayer: layer,
+          targetRecordSet: recordSet,
+          targetIndex: 0,
+        });
+      }, 1);
+    }
+  }, [featureButton, navigation, openData, saveLine, savePoint, savePolygon, setDrawTool]);
 
-  const pressDeleteLine = useCallback(() => {
-    deleteLine();
-  }, [deleteLine]);
+  const pressDeleteDraw = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+    if (ret) {
+      const { isOK, message } = deleteDraw();
+
+      if (!isOK) {
+        Alert.alert('', message);
+        return;
+      }
+      closeData();
+    }
+  }, [closeData, deleteDraw]);
 
   const pressDownloadTiles = useCallback(async () => {
     downloadTiles();
@@ -453,7 +405,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
-      const { isOK, message } = addTrack();
+      const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
       if (!isOK) {
         await AlertAsync(message);
         return;
@@ -468,7 +420,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await toggleGPS('off');
       }
     }
-  }, [addTrack, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [addRecordWithCheck, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
@@ -523,12 +475,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [isSettingProject, logout, navigation]);
 
   const pressZoomIn = useCallback(() => {
+    hideDrawLine();
     zoomIn();
-  }, [zoomIn]);
+    showDrawLine;
+  }, [hideDrawLine, showDrawLine, zoomIn]);
 
   const pressZoomOut = useCallback(() => {
+    hideDrawLine();
     zoomOut();
-  }, [zoomOut]);
+    showDrawLine;
+  }, [hideDrawLine, showDrawLine, zoomOut]);
 
   /******************* project buttons ************************** */
 
@@ -706,17 +662,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [currentLocation, uploadLocation]);
 
   useEffect(() => {
-    //Dataを表示させたときにmapRegionを強制的に更新する。mapの見た目は更新されているがmapRegionは更新されていないバグ？のため
-    if (mapViewRef.current === null) return;
-    if (Platform.OS === 'web') {
-      (mapViewRef.current as MapRef).resize();
-    } else {
-      (mapViewRef.current as MapView).render();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDataOpened]);
-
-  useEffect(() => {
     return closeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -745,17 +690,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isEdited: isEdited.current,
+    isEditingLine,
+    isEditingObject,
     drawLine: drawLine.current,
-    modifiedLine,
+    editingLine: editingLineXY.current,
+    selectLine: selectLine.current,
     user,
-    layers,
     isDownloadPage,
     isSynced,
     memberLocations,
     projectName,
     mapViewRef,
-    mapRegion,
     mapType,
     tileMaps,
     savedTileSize,
@@ -776,16 +721,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     zoomDecimal,
 
     featureButton,
-    pointTool,
-    lineTool,
-    drawLineTool,
+    currentDrawTool,
+    currentPointTool,
+    currentLineTool,
+    currentPolygonTool,
     selectedRecord,
-    hisyouzuToolEnabled,
-    panResponder,
-    draggablePoint,
-    isDrawToolsSettingsOpen,
-    drawToolsSettings,
-    isTermsOfUseOpen,
     isDataOpened,
     isShowingProjectButtons,
     isLoading,
@@ -793,15 +733,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
-    onDragEndPoint,
-    onPressPoint,
-    onPressLine,
-    onPressPolygon,
     onDrop,
+    onPressSvgView: pressSvgView,
+    onMoveSvgView: moveSvgView,
+    onReleaseSvgView,
     selectFeatureButton,
-    selectPointTool,
-    selectLineTool,
-
+    selectDrawTool,
+    setPointTool,
+    setLineTool,
+    setPolygonTool,
     pressZoomIn,
     pressZoomOut,
     pressCompass,
@@ -811,14 +751,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressDeleteTiles,
-    pressUndoEditLine,
-    pressSaveEditLine,
-    pressDeleteLine,
-    pressDrawToolsSettings,
-    pressDrawToolsSettingsOK,
-    pressDrawToolsSettingsCancel,
-    pressTermsOfUseOK: termsOfUseOK,
-    pressTermsOfUseCancel: termsOfUseCancel,
+    pressUndoDraw,
+    pressSaveDraw,
+    pressDeleteDraw,
     pressJumpProject,
     pressDownloadData,
     pressUploadData,
@@ -836,5 +771,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     gotoBack,
   };
 
-  return <Home {...props} />;
+  return (
+    <>
+      <Home {...props} />
+      {Platform.OS !== 'web' && (
+        <HomeModalTermsOfUse visible={isTermsOfUseOpen} pressOK={termsOfUseOK} pressCancel={termsOfUseCancel} />
+      )}
+      {PLUGIN.HISYOUTOOL && (
+        <ModalHisyouToolSetting
+          visible={visibleHisyouToolSetting}
+          hisyouLayerId={hisyouLayerId}
+          pressOK={pressHisyouToolSettingOK}
+          pressCancel={pressHisyouToolSettingCancel}
+        />
+      )}
+    </>
+  );
 }

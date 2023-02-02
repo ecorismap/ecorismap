@@ -85,7 +85,8 @@ export default function DataScreen(props: Props) {
   useEffect(() => {
     navigation.setOptions({
       title: layer.name,
-      // eslint-disable-next-line no-shadow
+
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });

@@ -141,12 +141,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     if (isEdited) {
       const ret = await ConfirmAsync(t('ProjectEdit.confirm.gotoBack'));
       if (ret) {
-        navigation.navigate(route.params.previous);
+        navigation.navigate('Projects');
       }
     } else {
-      navigation.navigate(route.params.previous);
+      navigation.navigate('Projects');
     }
-  }, [isEdited, navigation, route.params.previous]);
+  }, [isEdited, navigation]);
 
   return (
     <ProjectEdit

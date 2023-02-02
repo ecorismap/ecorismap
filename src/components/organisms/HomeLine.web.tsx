@@ -10,7 +10,7 @@ interface Props {
   layer: LayerType;
   zoom: number;
   zIndex: number;
-  selectedRecord: { layerId: string; record: RecordType | undefined };
+  selectedRecord: { layerId: string; record: RecordType } | undefined;
 }
 
 export const Line = React.memo((props: Props) => {

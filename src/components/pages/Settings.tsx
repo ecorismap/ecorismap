@@ -14,11 +14,11 @@ interface Props {
   pressMapListURLOK: (mapListURL: string) => void;
   pressMapListURLCancel: () => void;
   pressMapListURLReset: () => void;
-  pressFileNew: () => void;
   pressFileOpen: () => void;
   pressFileSave: () => void;
   pressFileSaveOK: (mapListURL: string, includePhoto: boolean) => void;
   pressFileSaveCancel: () => void;
+  pressClearData: () => void;
   pressClearTileCache: () => void;
   pressClearPhotoCache: () => void;
   pressResetAll: () => void;
@@ -36,11 +36,11 @@ export default function Settings(props: Props) {
     pressMapListURLOK,
     pressMapListURLCancel,
     pressMapListURLReset,
-    pressFileNew,
     pressFileOpen,
     pressFileSave,
     pressFileSaveOK,
     pressFileSaveCancel,
+    pressClearData,
     pressClearTileCache,
     pressClearPhotoCache,
     pressResetAll,
@@ -74,7 +74,7 @@ export default function Settings(props: Props) {
           name={SETTINGS_BTN.FILE_NEW}
           text={t('Settings.file_new.text')}
           info={t('Settings.file_new.info')}
-          onPress={pressFileNew}
+          onPress={pressClearData}
         />
         <TextButton
           name={SETTINGS_BTN.MAP_LIST_URL}

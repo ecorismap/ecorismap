@@ -10,11 +10,14 @@ import {
   ROLETYPE,
   POINTTOOL,
   LINETOOL,
-  DRAWLINETOOL,
+  SELECTIONTOOL,
   HOME_FEATURE_BTN,
   HOME_ACCOUNT_BTN,
   HOME_BTN,
   LAYERS_BTN,
+  POLYGONTOOL,
+  DRAWTOOL,
+  INFOTOOL,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -58,23 +61,71 @@ export interface DataType {
   userId: string | undefined;
   data: RecordType[];
 }
+
 export interface ProjectDataType extends DataType {
   userId: string;
   permission: PermissionType;
 }
 
+export interface PointDataType {
+  layerId: string;
+  userId: string | undefined;
+  data: PointRecordType[];
+}
+export interface LineDataType {
+  layerId: string;
+  userId: string | undefined;
+  data: LineRecordType[];
+}
+export interface PolygonDataType {
+  layerId: string;
+  userId: string | undefined;
+  data: PolygonRecordType[];
+}
 export interface RecordType {
   id: string;
   userId: string | undefined;
   displayName: string | null;
-  //checked: boolean;
   visible: boolean;
   redraw: boolean;
   coords: LocationType | Array<LocationType>;
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
-  //[key: string]: unknown;
+}
+
+export interface PointRecordType {
+  id: string;
+  userId: string | undefined;
+  displayName: string | null;
+  visible: boolean;
+  redraw: boolean;
+  coords: LocationType;
+  centroid?: LocationType;
+  field: { [key: string]: string | number | PhotoType[] };
+}
+
+export interface LineRecordType {
+  id: string;
+  userId: string | undefined;
+  displayName: string | null;
+  visible: boolean;
+  redraw: boolean;
+  coords: Array<LocationType>;
+  centroid?: LocationType;
+  field: { [key: string]: string | number | PhotoType[] };
+}
+
+export interface PolygonRecordType {
+  id: string;
+  userId: string | undefined;
+  displayName: string | null;
+  visible: boolean;
+  redraw: boolean;
+  coords: Array<LocationType>;
+  holes?: { [key: string]: Array<LocationType> };
+  centroid: LocationType;
+  field: { [key: string]: string | number | PhotoType[] };
 }
 
 export interface TrackingType {
@@ -94,6 +145,14 @@ export interface ColorStyle {
   }[];
 }
 
+export interface FieldType {
+  id: string;
+  name: string;
+  format: FormatType;
+  list?: { value: string; isOther: boolean }[];
+  defaultValue?: string | number;
+}
+
 export interface LayerType {
   id: string;
   name: string;
@@ -103,13 +162,7 @@ export interface LayerType {
   label: string;
   visible: boolean;
   active: boolean;
-  field: {
-    id: string;
-    name: string;
-    format: FormatType;
-    list?: { value: string; isOther: boolean }[];
-    defaultValue?: string | number;
-  }[];
+  field: FieldType[];
 }
 
 export type LatLonDMSKey = 'latitude' | 'longitude';
@@ -200,7 +253,7 @@ export interface ProjectSettingsType {
   mapRegion: RegionType;
   layers: LayerType[];
   tileMaps: TileMapType[];
-  drawTools: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
+  plugins: any;
 }
 
 export interface SettingsType {
@@ -220,11 +273,13 @@ export interface SettingsType {
   memberLocation: MemberLocationType[];
   tracking: TrackingType | undefined;
   isEditingRecord: boolean;
-  selectedRecord: {
-    layerId: string;
-    record: RecordType | undefined;
-  };
-  drawTools: { hisyouzuTool: { active: boolean; layerId: string | undefined } };
+  selectedRecord:
+    | {
+        layerId: string;
+        record: RecordType;
+      }
+    | undefined;
+  plugins: any;
   photosToBeDeleted: {
     projectId: string;
     layerId: string;
@@ -281,10 +336,24 @@ export interface PositionFS {
   encryptedAt: firebase.firestore.Timestamp;
 }
 
+export type DrawLineType = {
+  id: string;
+  layerId: string | undefined;
+  record: RecordType | undefined;
+  xy: Position[];
+  latlon: Position[];
+  properties: string[];
+};
+export type UndoLineType = { index: number; latlon: Position[]; action: UndoActionType };
+
 export type PointToolType = keyof typeof POINTTOOL;
 export type LineToolType = keyof typeof LINETOOL;
-export type DrawLineToolType = keyof typeof DRAWLINETOOL;
-export type PolygonToolType = 'NONE';
+export type PolygonToolType = keyof typeof POLYGONTOOL;
+export type DrawToolType = keyof typeof DRAWTOOL;
+export type InfoToolType = keyof typeof INFOTOOL;
+export type SelectionToolType = keyof typeof SELECTIONTOOL;
+
+export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
 export type LayersButtonType = keyof typeof LAYERS_BTN;
@@ -298,6 +367,14 @@ export type VerifiedType = 'OK' | 'HOLD' | 'NO_ACCOUNT';
 export type RoleType = keyof typeof ROLETYPE;
 
 export type FeatureType = keyof typeof FEATURETYPE;
+
+export type ReturnFeatureRecordType<T> = T extends 'POINT'
+  ? { editingLayer: LayerType | undefined; editingRecordSet: PointRecordType[] }
+  : T extends 'LINE'
+  ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
+  : T extends 'POLYGON'
+  ? { editingLayer: LayerTyp | undefined; editingRecordSet: PolygonRecordType[] }
+  : { editingLayer: undefined; editingRecordSet: undefined };
 
 export type GeoJsonFeatureType =
   | 'POINT'

@@ -53,9 +53,10 @@ export type RootStackParamList = {
   };
   DataEdit: {
     previous: keyof RootStackParamList;
-    targetRecordSet?: RecordType[];
     targetData: RecordType;
     targetLayer: LayerType;
+    targetRecordSet: RecordType[];
+    targetIndex: number;
     mainData?: RecordType;
     mainLayer?: LayerType;
   };

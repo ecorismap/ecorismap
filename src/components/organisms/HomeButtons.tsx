@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { HOME_BTN, COLOR, HOME_FEATURE_BTN } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
 import { FeatureButtonType, TrackingStateType } from '../../types';
 import { Button, SelectionalButton } from '../atoms';
 
@@ -19,10 +20,13 @@ export const HomeButtons = React.memo((props: Props) => {
   const { featureButton, trackingState, showMap, showSettings, onPressTracking, showLayer, selectFeatureButton } =
     props;
   //console.log('HomeButton');
+
+  const { isLandscape } = useWindow();
+
   return (
-    <View style={styles.buttonContainer}>
+    <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.MAPS} onPress={showMap} />
+        <Button name={HOME_BTN.MAPS} onPress={showMap} backgroundColor={COLOR.BLUE} />
       </View>
       {Platform.OS !== 'web' && (
         <View style={{ marginHorizontal: 9 }}>
@@ -38,9 +42,30 @@ export const HomeButtons = React.memo((props: Props) => {
       </View>
       <View style={{ marginHorizontal: 9 }}>
         <SelectionalButton selectedButton={featureButton} directionRow="column">
-          <Button id="POINT" name={HOME_FEATURE_BTN.POINT} onPressCustom={() => selectFeatureButton('POINT')} />
-          <Button id="LINE" name={HOME_FEATURE_BTN.LINE} onPressCustom={() => selectFeatureButton('LINE')} />
-          <Button id="NONE" name={HOME_FEATURE_BTN.NONE} onPressCustom={() => selectFeatureButton('NONE')} />
+          <Button
+            id="POINT"
+            name={HOME_FEATURE_BTN.POINT}
+            onPressCustom={() => selectFeatureButton('POINT')}
+            backgroundColor={COLOR.BLUE}
+          />
+          <Button
+            id="LINE"
+            name={HOME_FEATURE_BTN.LINE}
+            onPressCustom={() => selectFeatureButton('LINE')}
+            backgroundColor={COLOR.BLUE}
+          />
+          <Button
+            id="POLYGON"
+            name={HOME_FEATURE_BTN.POLYGON}
+            onPressCustom={() => selectFeatureButton('POLYGON')}
+            backgroundColor={COLOR.BLUE}
+          />
+          <Button
+            id="NONE"
+            name={HOME_FEATURE_BTN.NONE}
+            onPressCustom={() => selectFeatureButton('NONE')}
+            backgroundColor={COLOR.BLUE}
+          />
         </SelectionalButton>
       </View>
       <View style={{ marginHorizontal: 9 }}>
@@ -56,6 +81,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 35,
+    zIndex: 100,
+  },
+  buttonContainerLandscape: {
+    alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: 5,
     zIndex: 100,
   },
 });
