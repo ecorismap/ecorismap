@@ -314,6 +314,7 @@ export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
 };
 
 export const modifyLine = (original: DrawLineType, modified: Position[], currentDrawTool: DrawToolType) => {
+  if (modified.length < 2) return original.xy;
   const startPoint = modified[0];
   const endPoint = modified[modified.length - 1];
   const firstPlot = original.xy[0];
@@ -511,16 +512,16 @@ export const simplify = (points: Position[]) => {
   }
 };
 
-// export const calcDegreeRadius = (
-//   size: number,
-//   mapRegion: {
-//     latitude: number;
-//     longitude: number;
-//     latitudeDelta: number;
-//     longitudeDelta: number;
-//   },
-//   mapSize: { width: number; height: number }
-// ) => Math.min(mapRegion.longitudeDelta / mapSize.width, mapRegion.latitudeDelta / mapSize.height) * size;
+export const calcDegreeRadius = (
+  size: number,
+  mapRegion: {
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+  },
+  mapSize: { width: number; height: number }
+) => Math.min(mapRegion.longitudeDelta / mapSize.width, mapRegion.latitudeDelta / mapSize.height) * size;
 
 // export const calcLookAhed = (points: Position[], STRENGTH = 2200) => {
 //   //距離と点数の比で適当に決める。1000倍したらちょうど良さそう？デバイスによるかも？
