@@ -314,6 +314,7 @@ export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
 };
 
 export const modifyLine = (original: DrawLineType, modified: Position[], currentDrawTool: DrawToolType) => {
+  if (modified.length < 2) return original.xy;
   const startPoint = modified[0];
   const endPoint = modified[modified.length - 1];
   const firstPlot = original.xy[0];
