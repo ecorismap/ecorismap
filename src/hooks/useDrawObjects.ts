@@ -510,6 +510,7 @@ export const useDrawObjects = (
       const index = drawLine.current.length - 1;
       const lineXY = drawLine.current[index].xy;
       lineXY.splice(-2);
+      if (lineXY.length < 2) return;
       //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
       if (currentDrawTool === 'FREEHAND_POLYGON') tryClosePolygon(lineXY);
       const smoothedXY = smoothingByBezier(lineXY);
@@ -528,25 +529,24 @@ export const useDrawObjects = (
     const index = editingObjectIndex.current;
     const lineXY = editingLineXY.current;
     lineXY.splice(-2);
-
+    if (lineXY.length < 2) return;
     const smoothedXY = smoothingByBezier(lineXY);
     const simplifiedXY = simplify(smoothedXY);
     const modifiedXY = modifyLine(drawLine.current[index], simplifiedXY, currentDrawTool);
-
-    if (modifiedXY.length > 0) {
-      undoLine.current.push({
-        index: index,
-        latlon: drawLine.current[index].latlon,
-        action: 'EDIT',
-      });
-
-      drawLine.current[index] = {
-        ...drawLine.current[index],
-        xy: modifiedXY,
-        latlon: xyArrayToLatLonArray(modifiedXY, mapRegion, mapSize),
-      };
-    }
     editingLineXY.current = [];
+    if (modifiedXY.length <= 0) return;
+
+    undoLine.current.push({
+      index: index,
+      latlon: drawLine.current[index].latlon,
+      action: 'EDIT',
+    });
+
+    drawLine.current[index] = {
+      ...drawLine.current[index],
+      xy: modifiedXY,
+      latlon: xyArrayToLatLonArray(modifiedXY, mapRegion, mapSize),
+    };
   }, [currentDrawTool, drawLine, editingLineXY, editingObjectIndex, mapRegion, mapSize, undoLine]);
 
   const releaseSvgFreehandTool = useCallback(
