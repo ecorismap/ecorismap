@@ -130,7 +130,8 @@ export const useRepository = (): UseRepositoryReturnType => {
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const mapType = useSelector((state: AppState) => state.settings.mapType);
-  const drawTools = useSelector((state: AppState) => state.settings.drawTools);
+  //const drawTools = useSelector((state: AppState) => state.settings.drawTools);
+  const plugins = useSelector((state: AppState) => state.settings.plugins);
   const updatedAt = useSelector((state: AppState) => state.settings.updatedAt);
   const { photosToBeDeleted } = usePhoto();
 
@@ -308,7 +309,7 @@ export const useRepository = (): UseRepositoryReturnType => {
         tileMaps,
         mapType,
         mapRegion,
-        drawTools,
+        plugins,
         updatedAt,
       });
       if (!isOK) {
@@ -317,7 +318,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       dispatch(editSettingsAction({ updatedAt: timestamp }));
       return { isOK: true, message: '' };
     },
-    [dispatch, drawTools, layers, mapRegion, mapType, tileMaps, updatedAt, user]
+    [dispatch, layers, mapRegion, mapType, plugins, tileMaps, updatedAt, user]
   );
 
   const uploadDefaultProjectSettings = useCallback(
@@ -336,7 +337,7 @@ export const useRepository = (): UseRepositoryReturnType => {
           longitudeDelta: 0.00922,
           zoom: 15,
         },
-        drawTools: { hisyouzuTool: { active: true, layerId: undefined } },
+        plugins: {},
         updatedAt,
       });
       if (!isOK) {
@@ -360,7 +361,7 @@ export const useRepository = (): UseRepositoryReturnType => {
           tileMaps,
           mapType,
           mapRegion,
-          drawTools,
+          plugins,
           updatedAt,
         }
       );
@@ -373,7 +374,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       }
       return { isOK: true, message: '' };
     },
-    [drawTools, layers, mapRegion, mapType, tileMaps, updatedAt, uploadData, user]
+    [layers, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadData, user]
   );
 
   const copyProjectSettingsAndCommonData = useCallback(

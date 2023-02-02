@@ -7,14 +7,14 @@ import { hasOpened } from '../utils/Project';
 import { t } from '../i18n/config';
 
 export type UseFieldListReturnType = {
-  itemValues: { value: string; isOther: boolean }[];
   isEdited: boolean;
-  layerIds: string[];
-  layerNames: string[];
-  editable: {
-    state: boolean;
-    message: string;
-  };
+  itemValues: { value: string; isOther: boolean }[];
+  pickerValues: string[];
+  refLayerIds: string[];
+  refLayerNames: string[];
+  refFieldNames: string[];
+  primaryFieldNames: string[];
+  editable: boolean;
   changeValue: (index: number, value: string) => void;
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
@@ -30,31 +30,40 @@ export const useFieldList = (
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const layers = useSelector((state: AppState) => state.layers);
+  const [pickerValues, setPickerValues] = useState(['', '', '']);
   const [itemValues, setItemValues] = useState<{ value: string; isOther: boolean }[]>([]);
   const [isEdited, setIsEdited] = useState(isEdited_);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const format = useMemo(() => targetLayer.field[fieldIndex].format, [fieldIndex, targetLayer.field]);
 
-  const layerIds = useMemo(
+  const refLayerIds = useMemo(
     () => ['', ...layers.filter((layer) => layer.id !== targetLayer.id).map((layer) => layer.id)],
     [layers, targetLayer.id]
   );
-  const layerNames = useMemo(
+  const refLayerNames = useMemo(
     () => ['', ...layers.filter((layer) => layer.id !== targetLayer.id).map((layer) => layer.name)],
     [layers, targetLayer.id]
   );
 
+  const refFieldNames = useMemo(() => {
+    const layerId = pickerValues[0];
+    const refLayer = layers.find((layer) => layer.id === layerId);
+    return refLayer?.field.map((l) => l.name) ?? [];
+  }, [layers, pickerValues]);
+
+  const primaryFieldNames = useMemo(() => ['', '_id', ...targetLayer.field.map((f) => f.name)], [targetLayer.field]);
+
   const editable = useMemo(() => {
     if (tracking !== undefined && tracking.layerId === targetLayer.id) {
-      return { state: false, message: t('hooks.message.cannotChangeInTracking') };
+      return false;
     }
     if (hasOpened(projectId) && !isOwnerAdmin) {
-      return { state: false, message: t('hooks.message.onlyAdminCanEdit') };
+      return false;
     }
     if (hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-      return { state: false, message: t('hooks.message.lockProject') };
+      return false;
     }
-    return { state: true, message: '' };
+    return true;
   }, [isSettingProject, isOwnerAdmin, projectId, targetLayer.id, tracking]);
 
   useEffect(() => {
@@ -68,6 +77,11 @@ export const useFieldList = (
         targetLayer.field[fieldIndex].defaultValue !== undefined
           ? [{ value: String(targetLayer.field[fieldIndex].defaultValue), isOther: false }]
           : undefined;
+    } else if (format === 'REFERENCE') {
+      listItems = targetLayer.field[fieldIndex].list;
+      if (listItems !== undefined && listItems.length === 3) {
+        setPickerValues([listItems[0].value, listItems[1].value, listItems[2].value]);
+      }
     } else {
       listItems = targetLayer.field[fieldIndex].list;
     }
@@ -76,25 +90,26 @@ export const useFieldList = (
 
   const changeValue = useCallback(
     (index: number, value: string) => {
-      const newItemValues = cloneDeep(itemValues);
-      if (!itemValues[index].isOther) {
-        newItemValues[index] = { value, isOther: false };
+      if (format === 'REFERENCE') {
+        const newValues = cloneDeep(pickerValues);
+        newValues[index] = value;
+        setPickerValues(newValues);
+        const newItemValues = newValues.map((v) => ({ value: v, isOther: false }));
+        setItemValues(newItemValues);
+      } else {
+        const newItemValues = cloneDeep(itemValues);
+        if (!itemValues[index].isOther) {
+          newItemValues[index] = { value, isOther: false };
+        }
+        setItemValues(newItemValues);
       }
-      setItemValues(newItemValues);
       setIsEdited(true);
     },
-    [itemValues]
+    [format, itemValues, pickerValues]
   );
 
   const addValue = useCallback(
     (isOther?: boolean) => {
-      if (
-        //以下のフォーマットはデフォルト値の設定なので1つ以上の値は追加しない
-        (format === 'STRING' || format === 'INTEGER' || format === 'DECIMAL' || format === 'REFERENCE') &&
-        itemValues.length > 0
-      )
-        return;
-
       const newItemValues = cloneDeep(itemValues);
       if (isOther === undefined || isOther === false) {
         newItemValues.push({ value: '', isOther: false });
@@ -104,7 +119,7 @@ export const useFieldList = (
       setItemValues(newItemValues);
       setIsEdited(true);
     },
-    [format, itemValues]
+    [itemValues]
   );
 
   const deleteValue = useCallback(
@@ -116,5 +131,17 @@ export const useFieldList = (
     },
     [itemValues]
   );
-  return { itemValues, isEdited, layerIds, layerNames, editable, changeValue, addValue, deleteValue };
+  return {
+    isEdited,
+    itemValues,
+    pickerValues,
+    refLayerIds,
+    refLayerNames,
+    refFieldNames,
+    primaryFieldNames,
+    editable,
+    changeValue,
+    addValue,
+    deleteValue,
+  };
 };

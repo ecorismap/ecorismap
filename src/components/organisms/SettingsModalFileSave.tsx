@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, useWindowDimensions, TextInput } from 'react-native';
+import { View, TouchableOpacity, Modal, Text, StyleSheet, TextInput } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 import { CheckBox } from '../molecules/CheckBox';
@@ -16,7 +17,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
   const { visible, pressOK, pressCancel } = props;
   const [value, setValue] = useState('');
   const [includePhoto, setIncludePhoto] = useState(true);
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
 
   const onChangeText = useCallback((input) => {
@@ -39,7 +40,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
       marginTop: 10,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -49,11 +50,11 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
     modalCheckbox: {
       alignItems: 'flex-end',
       height: 40,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalContents: {
       alignItems: 'center',
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -87,7 +88,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
       height: 40,
       marginBottom: 10,
       paddingHorizontal: 5,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalTitle: {
       fontSize: 20,
@@ -115,7 +116,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
             <View
               style={{
                 flexDirection: 'row',
-                width: screenData.width * modalWidthScale,
+                width: windowWidth * modalWidthScale,
                 alignItems: 'center',
               }}
             >

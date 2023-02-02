@@ -12,7 +12,7 @@ import {
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
@@ -23,11 +23,20 @@ import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
 import * as projectStorage from '../lib/firebase/storage';
 import { hasOpened } from '../utils/Project';
-import { checkCoordsInput, checkFieldInput, updateRecordCoords, updateRecordPhoto } from '../utils/Data';
+import {
+  checkCoordsInput,
+  checkFieldInput,
+  updateRecordCoords,
+  updateReferenceFieldValue,
+  updateRecordPhoto,
+} from '../utils/Data';
 import { editSettingsAction } from '../modules/settings';
 import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
+import { useRecord } from './useRecord';
+import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
+
 // let fs: any;
 // if (Platform.OS === 'web') {
 //   fs = require('fs');
@@ -35,14 +44,13 @@ import { t } from '../i18n/config';
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
   targetLayer: LayerType;
-  targetRecordSet: RecordType[] | undefined;
   latlon: LatLonDMSType;
   selectedPhoto: SelectedPhotoType;
   isEditingRecord: boolean;
   isDecimal: boolean;
   recordNumber: number;
-  setRecordNumber: Dispatch<SetStateAction<number>>;
-  changeRecord: (newRecord: RecordType) => void;
+  maxRecordNumber: number;
+  changeRecord: (value: number) => void;
   saveData: () => {
     isOK: boolean;
     message: string;
@@ -69,7 +77,8 @@ export type UseDataEditReturnType = {
 export const useDataEdit = (
   record: RecordType,
   layer: LayerType,
-  recordSet: RecordType[] | undefined
+  recordSet: RecordType[],
+  recordIndex: number
 ): UseDataEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -81,12 +90,10 @@ export const useDataEdit = (
   const role = useSelector((state: AppState) => state.settings.role);
   const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const drawTools = useSelector((state: AppState) => state.settings.drawTools);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
-
-  const [targetRecord, setTargetRecord] = useState<RecordType>(record);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
-  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[] | undefined>(recordSet);
+  const [targetRecord, setTargetRecord] = useState<RecordType>(record);
+  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>(recordSet);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
   const [recordNumber, setRecordNumber] = useState(1);
@@ -97,23 +104,25 @@ export const useDataEdit = (
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
+  const { selectRecord } = useRecord();
+  const { hisyouLayerId } = useHisyouToolSetting();
+  const isHisyouLayer = targetLayer.id === hisyouLayerId;
+  const maxRecordNumber = targetRecordSet.length;
 
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
   useEffect(() => {
-    if (targetLayer.type === 'POINT') {
-      const newLatLon = toLatLonDMS(targetRecord.coords as LocationType);
+    //データの初期化。以降はchangeRecordで行う。
+    selectRecord(layer.id, record);
+    setTargetRecord(record);
+    setTargetRecordSet(recordSet);
+    setTargetLayer(layer);
+    setRecordNumber(recordIndex + 1);
+    if (layer.type === 'POINT') {
+      const newLatLon = toLatLonDMS(record.coords as LocationType);
       setLatLon(newLatLon);
     }
-  }, [targetLayer.type, targetRecord.coords]);
-
-  useEffect(() => {
-    dispatch(editSettingsAction({ selectedRecord: { layerId: layer.id, record: record } }));
-    setTargetRecord(record);
-    setTargetLayer(layer);
-    setTargetRecordSet(recordSet);
-    setRecordNumber(1);
-  }, [dispatch, layer, record, recordSet]);
+  }, [layer, layer.id, layer.type, record, recordIndex, recordSet, selectRecord]);
 
   const setIsEditingRecord = useCallback(
     (value: boolean) => {
@@ -123,11 +132,18 @@ export const useDataEdit = (
   );
 
   const changeRecord = useCallback(
-    (newRecord: RecordType) => {
-      dispatch(editSettingsAction({ selectedRecord: { layerId: layer.id, record: newRecord } }));
+    (value: number) => {
+      if (targetRecordSet.length === 0) return;
+      const newRecord = targetRecordSet[value - 1];
+      selectRecord(targetLayer.id, newRecord);
       setTargetRecord(newRecord);
+      setRecordNumber(value);
+      if (targetLayer.type === 'POINT') {
+        const newLatLon = toLatLonDMS(newRecord.coords as LocationType);
+        setLatLon(newLatLon);
+      }
     },
-    [dispatch, layer.id]
+    [selectRecord, targetLayer.id, targetLayer.type, targetRecordSet]
   );
 
   const saveToStorage = useCallback(
@@ -336,7 +352,7 @@ export const useDataEdit = (
     if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid) {
       return { isOK: false, message: t('hooks.message.cannotEditOthers') };
     }
-    if (!targetLayer.active && !drawTools.hisyouzuTool.active) {
+    if (!targetLayer.active && !isHisyouLayer) {
       return { isOK: false, message: t('hooks.message.noEditMode') };
     }
     if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
@@ -346,6 +362,7 @@ export const useDataEdit = (
       return { isOK: false, message: t('hooks.message.noPermissionToCommon') };
     }
     const { isOK, message } = checkFieldInput(targetLayer, targetRecord);
+
     if (!isOK) {
       return { isOK: false, message: message };
     }
@@ -356,19 +373,21 @@ export const useDataEdit = (
     temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
-    const updatedRecord = updateRecordCoords(targetRecord, latlon, isDecimal);
+    const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
+    const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
+    const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
+
     dispatch(
       updateRecordsAction({
         layerId: targetLayer.id,
-        userId: targetRecord.userId,
+        userId: updatedRecord.userId,
         data: [updatedRecord],
       })
     );
     setTargetRecord(updatedRecord);
-    if (targetRecordSet !== undefined) {
-      const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
-      setTargetRecordSet(updatedRecordSet);
-    }
+    const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
+    setTargetRecordSet(updatedRecordSet);
+
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
   }, [
@@ -377,7 +396,7 @@ export const useDataEdit = (
     projectId,
     dataUser.uid,
     targetLayer,
-    drawTools.hisyouzuTool.active,
+    isHisyouLayer,
     isOwnerAdmin,
     isSettingProject,
     latlon,
@@ -422,17 +441,17 @@ export const useDataEdit = (
     );
     return { isOK: true, message: '' };
   }, [
-    tracking,
-    targetRecord,
-    projectId,
     dataUser.uid,
-    targetLayer,
-    isOwnerAdmin,
-    isSettingProject,
-    isEditingRecord,
     deleteRecordPhotos,
     dispatch,
+    isEditingRecord,
+    isOwnerAdmin,
+    isSettingProject,
+    projectId,
     saveData,
+    targetLayer,
+    targetRecord,
+    tracking,
   ]);
 
   const changeField = useCallback(
@@ -487,13 +506,12 @@ export const useDataEdit = (
   return {
     targetRecord,
     targetLayer,
-    targetRecordSet,
     latlon,
     selectedPhoto,
     isEditingRecord,
     isDecimal,
     recordNumber,
-    setRecordNumber,
+    maxRecordNumber,
     changeRecord,
     saveData,
     pickImage,

@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, useWindowDimensions, Linking } from 'react-native';
+import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { TUTRIALS_MESSAGE } from '../../constants/Tutrials';
+import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 interface Props {
@@ -14,7 +15,7 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
   //console.log('render ModalTileMap');
   const { visible, pressOK, pressCancel } = props;
 
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
 
   const pressTermsOfUse = useCallback(() => {
@@ -30,13 +31,13 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
       fontSize: 16,
       height: 40,
       paddingHorizontal: 12,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalButtonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
       marginTop: 10,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -45,7 +46,7 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
     },
     modalContents: {
       alignItems: 'center',
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -84,7 +85,7 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
       height: 40,
       marginBottom: 10,
       paddingHorizontal: 5,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalTitle: {
       fontSize: 20,

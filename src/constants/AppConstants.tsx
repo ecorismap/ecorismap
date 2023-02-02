@@ -1,18 +1,22 @@
 import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
+import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 //export const AppID = 'com.tmizu23.ecorismap2022';
-export const VERSION = 'Version 1.0.0';
+export const VERSION = 'Version 1.0.1';
 export const FUNC_LOGIN = true;
 export const FUNC_PROJECT = true;
-export const FUNC_HISYOUTOOLS = false;
+//export const FUNC_HISYOUTOOLS = false;
 export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
 export const FUNC_ENCRYPTION = true;
 export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
 export const FUNC_MAPBOX = false;
 
+export const PLUGIN = {
+  HISYOUTOOL: false,
+};
 export const COLOR = {
   MAIN: '#f2f2f2',
   GRAY0: '#f9f9f9',
@@ -27,6 +31,7 @@ export const COLOR = {
   ALFABLUE: '#007AFF55',
   ALFABLUE2: '#007AFF44',
   YELLOW: '#FFF100',
+  ALFAYELLOW: '#FFF10055',
   RED: '#ff0000',
   ALFARED: '#ff000055',
   DARKRED: 'darkred',
@@ -146,38 +151,47 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  ADD: 'map-marker-plus',
-  ADD_LOCATION: 'map-marker-radius',
-  MOVE: 'map-marker-right',
-  NONE: 'none',
-} as const;
-
-export const DRAWLINETOOL = {
-  DRAW: 'lead-pencil',
-  SENKAI: 'circle-outline',
-  SENJYOU: 'circle-double',
-  KOUGEKI: 'flag-triangle',
-  DISPLAY: 'stairs',
-  HOVERING: 'alpha-h-circle-outline',
-  KYUKOKA: 'chevron-triple-down',
-  KARI: 'close-thick',
-  TOMARI: 'circle-medium',
+  PLOT_POINT: 'map-marker-multiple',
+  ADD_LOCATION_POINT: 'map-marker-radius',
 } as const;
 
 export const LINETOOL = {
-  ...DRAWLINETOOL,
-  SELECT: 'cursor-default-click',
+  PLOT_LINE: 'vector-line',
+  FREEHAND_LINE: 'draw',
+} as const;
+
+export const POLYGONTOOL = {
+  PLOT_POLYGON: 'vector-rectangle',
+  FREEHAND_POLYGON: 'draw',
+} as const;
+
+export const INFOTOOL = {
+  ALL_INFO: 'cursor-default-click',
+  FEATURETYPE_INFO: 'cursor-default-click-outline',
+} as const;
+
+export const SELECTIONTOOL = {
+  SELECT: 'select',
+} as const;
+
+export const DRAWTOOL = {
+  ...POINTTOOL,
+  ...LINETOOL,
+  ...POLYGONTOOL,
+  ...INFOTOOL,
+  ...SELECTIONTOOL,
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',
-  SETTING: 'cog',
   NONE: 'none',
+  ...HISYOUTOOL,
 } as const;
 
 export const HOME_FEATURE_BTN = {
-  POINT: 'map-marker',
-  LINE: 'draw',
+  POINT: 'scatter-plot',
+  LINE: 'chart-timeline-variant',
+  POLYGON: 'pentagon-outline',
   NONE: 'flower-tulip',
 } as const;
 

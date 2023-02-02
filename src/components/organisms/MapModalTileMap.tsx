@@ -1,14 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  Modal,
-  Text,
-  StyleSheet,
-  useWindowDimensions,
-  ScrollView,
-} from 'react-native';
+import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet, ScrollView } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { TileMapType } from '../../types';
@@ -17,6 +8,7 @@ import { CheckBox } from '../molecules/CheckBox';
 import { formattedInputs } from '../../utils/Format';
 import { SmallButton } from '../atoms';
 import { t } from '../../i18n/config';
+import { useWindow } from '../../hooks/useWindow';
 
 interface Props {
   visible: boolean;
@@ -40,7 +32,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
   const [highResolutionEnabled, setHighResolutionEnabled] = useState(true);
   const [flipY, setFlipY] = useState(false);
 
-  const screenData = useWindowDimensions();
+  const { windowWidth, windowHeight } = useWindow();
   const modalWidthScale = 0.7;
 
   useEffect(() => {
@@ -61,7 +53,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
 
       justifyContent: 'space-evenly',
       marginTop: 10,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -70,8 +62,8 @@ export const MapModalTileMap = React.memo((props: Props) => {
     },
     modalContents: {
       alignItems: 'center',
-      height: screenData.height * 0.6,
-      width: screenData.width * modalWidthScale,
+      height: windowHeight * 0.6,
+      width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -110,7 +102,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
       height: 40,
       marginBottom: 10,
       paddingHorizontal: 5,
-      width: screenData.width * modalWidthScale,
+      width: windowWidth * modalWidthScale,
     },
     modalTitle: {
       fontSize: 20,
@@ -177,7 +169,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
               />
               <Slider
                 label={t('common.transparency')}
-                width={screenData.width * modalWidthScale}
+                width={windowWidth * modalWidthScale}
                 initialValue={transparency}
                 step={0.1}
                 minimumValue={0}
@@ -187,7 +179,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
 
               <Slider
                 label={t('common.minZoom')}
-                width={screenData.width * modalWidthScale}
+                width={windowWidth * modalWidthScale}
                 initialValue={minimumZ}
                 step={1}
                 minimumValue={0}
@@ -196,7 +188,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
               />
               <Slider
                 label={t('common.maxZoom')}
-                width={screenData.width * modalWidthScale}
+                width={windowWidth * modalWidthScale}
                 initialValue={maximumZ}
                 step={1}
                 minimumValue={0}
@@ -205,7 +197,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
               />
               <Slider
                 label={t('common.fixZoom')}
-                width={screenData.width * modalWidthScale}
+                width={windowWidth * modalWidthScale}
                 initialValue={overzoomThreshold!}
                 step={1}
                 minimumValue={0}
@@ -217,14 +209,14 @@ export const MapModalTileMap = React.memo((props: Props) => {
                 <CheckBox
                   style={{ backgroundColor: COLOR.WHITE }}
                   label={t('common.highResolution')}
-                  width={screenData.width * modalWidthScale * 0.5}
+                  width={windowWidth * modalWidthScale * 0.5}
                   checked={highResolutionEnabled!}
                   onCheck={(checked) => setHighResolutionEnabled(checked)}
                 />
                 <CheckBox
                   style={{ backgroundColor: COLOR.WHITE }}
                   label={t('common.Yaxis')}
-                  width={screenData.width * modalWidthScale * 0.5}
+                  width={windowWidth * modalWidthScale * 0.5}
                   checked={flipY!}
                   onCheck={(checked) => setFlipY(checked)}
                 />

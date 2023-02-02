@@ -1,12 +1,15 @@
+import { Position } from '@turf/turf';
 import {
   decimal2dms,
   dms2decimal,
   isPoint,
   toLatLonDMS,
   pointsToSvg,
-  computeMovingAverage,
-  pointsToLocation,
-  locationToPoints,
+  calcCentroid,
+  isNearWithPlot,
+  tryClosePolygon,
+  latLonToXY,
+  xyToLatLon,
 } from '../../utils/Coords';
 
 describe('decimal2dms', () => {
@@ -129,5 +132,125 @@ describe('locationToPoints', () => {
       [0, 200],
       [60, 80],
     ]);
+  });
+});
+
+describe('calcCentroid', () => {
+  it('return centroid', () => {
+    expect(
+      calcCentroid([
+        { latitude: 35, longitude: 135 },
+        { latitude: 35.05, longitude: 135.05 },
+        { latitude: 34.95, longitude: 134.95 },
+        { latitude: 35.01, longitude: 135.01 },
+      ])
+    ).toStrictEqual({ latitude: 35.0025, longitude: 135.0025 });
+  });
+});
+
+describe('isNearWithPlot', () => {
+  const xyPoint = [10, 5];
+  const xyPlot1 = [11, 6]; // Should be true
+  const xyPlot2 = [9, 4]; // Should be true
+  const xyPlot3 = [1000, 1000]; // Should be false
+
+  it('returns true when two points are near each other given a buffer of 500', () => {
+    const result1 = isNearWithPlot(xyPoint, xyPlot1);
+    const result2 = isNearWithPlot(xyPoint, xyPlot2);
+    const result3 = isNearWithPlot(xyPoint, xyPlot3);
+    expect(result1).toBe(true);
+    expect(result2).toBe(true);
+    expect(result3).toBe(false);
+  });
+});
+
+describe('tryClosePolygon', () => {
+  it('returns closed Polygon when positions are near start point', () => {
+    const lineXY: Position[] = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1, 0],
+    ];
+
+    const expected: Position[] = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
+    tryClosePolygon(lineXY);
+    expect(lineXY).toStrictEqual(expected);
+  });
+  it("doesn't close polygon when  start point and end point is far", () => {
+    const lineXY: Position[] = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+      [-1000, 0],
+    ];
+
+    tryClosePolygon(lineXY);
+    expect(lineXY).toStrictEqual(lineXY);
+  });
+
+  it("doesn't close polygon for invalid input", () => {
+    const lineXY: Position[] = [
+      [0, 1],
+      [1, 0],
+      [0, -1],
+    ];
+    tryClosePolygon(lineXY);
+    expect(lineXY).toStrictEqual(lineXY);
+  });
+});
+
+describe('latlonToXY', () => {
+  const latlon = [135, 35];
+
+  const mapSize = {
+    height: 838.4761904761905,
+    width: 411.42857142857144,
+  };
+  const mapRegion1 = {
+    latitude: 35.000419391525774,
+    latitudeDelta: 0.015393886741037477,
+    longitude: 134.999854657799,
+    longitudeDelta: 0.009221099317073822,
+    zoom: 15,
+  };
+  const mapRegion2 = {
+    latitude: 35.00041222149842,
+    latitudeDelta: 31.52679086414226,
+    longitude: 134.99985583126545,
+    longitudeDelta: 19.380509108304977,
+    zoom: 4,
+  };
+
+  it('returns xy on region1', () => {
+    const result = latLonToXY(latlon, mapRegion1, mapSize);
+    expect(result).toStrictEqual([212.19918865993841, 442.0815664656632]);
+  });
+  it('returns latlon on region1', () => {
+    const result = xyToLatLon([212.19918865993841, 442.0815664656632], mapRegion1, mapSize);
+    expect(result).toStrictEqual([135, 35]);
+  });
+
+  it('returns xy on region2', () => {
+    const result = latLonToXY(latlon, mapRegion2, mapSize);
+    expect(result).toStrictEqual([205.71734627044393, 419.2490585458774]);
+  });
+  it('returns latlon on region2', () => {
+    const result = xyToLatLon([205.71734627044393, 419.2490585458774], mapRegion2, mapSize);
+    expect(result).toStrictEqual([135, 35]);
+  });
+
+  it('returns latlon on region2', () => {
+    const result = xyToLatLon([mapSize.width / 2, mapSize.height / 2], mapRegion2, mapSize);
+    expect(result).toStrictEqual([mapRegion2.longitude, mapRegion2.latitude]);
+  });
+  it('returns xy on region2', () => {
+    const result = latLonToXY([mapRegion2.longitude, mapRegion2.latitude], mapRegion2, mapSize);
+    expect(result).toStrictEqual([mapSize.width / 2, mapSize.height / 2]);
   });
 });

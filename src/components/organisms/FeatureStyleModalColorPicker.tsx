@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import HsvColorPicker from 'react-native-hsv-color-picker';
 import { t } from '../../i18n/config';
+import { useWindow } from '../../hooks/useWindow';
 
 interface Props {
   visible: boolean;
@@ -13,7 +14,7 @@ interface Props {
 }
 
 export const FeatureStyleModalColorPicker = (props: Props) => {
-  const screenData = useWindowDimensions();
+  const { windowWidth } = useWindow();
   const [hue, setHue] = useState(0.5);
   const [sat, setSat] = useState(0.5);
   const [val, setVal] = useState(1);
@@ -24,15 +25,15 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
     <Modal animationType="none" transparent={true} visible={visible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: screenData.width * 0.6 }]}>
+          <View style={[styles.modalContents, { width: windowWidth * 0.6 }]}>
             <Text style={styles.modalTitle}>{t('common.selectColor')} </Text>
             <HsvColorPicker
               huePickerHue={hue}
-              // eslint-disable-next-line no-shadow
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               onHuePickerDragMove={({ hue }: any) => {
                 setHue(hue);
               }}
-              // eslint-disable-next-line no-shadow
+              // eslint-disable-next-line @typescript-eslint/no-shadow
               onHuePickerPress={({ hue }: any) => {
                 setHue(hue);
               }}
@@ -48,7 +49,7 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
                 setVal(value);
               }}
             />
-            <View style={[styles.modalButtonContainer, { width: screenData.width * 0.6 }]}>
+            <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
               <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK(hue, sat, val)}>
                 <Text>OK</Text>
               </TouchableOpacity>
