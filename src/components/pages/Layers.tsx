@@ -4,39 +4,12 @@ import { LayersTable } from '../organisms/LayersTable';
 import { LayerButtons } from '../organisms/LayerButtons';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 
-import { LayerType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
 import { useDisplay } from '../../hooks/useDisplay';
 
-interface Props {
-  layers: LayerType[];
-  changeVisible: (index: number, layer: LayerType) => void;
-  changeLabel: (index: number, labelValue: string) => void;
-  changeActiveLayer: (index: number) => void;
-  changeLayerOrder: (index: number) => void;
-  gotoLayerEdit: (layer: LayerType) => void;
-  gotoColorStyle: (layer: LayerType) => void;
-  gotoData: (layer: LayerType) => void;
-  pressAddLayer: () => void;
-  pressImportLayerAndData: () => Promise<void>;
-}
-
-export default function LayerScreen(props: Props) {
+export default function LayerScreen() {
   //console.log('render Layer');
-
-  const {
-    layers,
-    changeVisible,
-    changeLabel,
-    changeActiveLayer,
-    changeLayerOrder,
-    pressAddLayer,
-    pressImportLayerAndData,
-    gotoData,
-    gotoLayerEdit,
-    gotoColorStyle,
-  } = props;
 
   const { isDataOpened, closeData, expandData, openData } = useDisplay();
   const navigation = useNavigation();
@@ -76,18 +49,9 @@ export default function LayerScreen(props: Props) {
   return (
     <View style={styles.container}>
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        <LayersTable
-          layers={layers}
-          changeVisible={changeVisible}
-          gotoData={gotoData}
-          gotoColorStyle={gotoColorStyle}
-          changeLabel={changeLabel}
-          changeActiveLayer={changeActiveLayer}
-          changeLayerOrder={changeLayerOrder}
-          gotoLayerEdit={gotoLayerEdit}
-        />
+        <LayersTable />
       </ScrollView>
-      <LayerButtons addLayer={pressAddLayer} pressImportLayerAndData={pressImportLayerAndData} />
+      <LayerButtons />
     </View>
   );
 }

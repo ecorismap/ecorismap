@@ -1,12 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLOR, FEATURETYPE } from '../../constants/AppConstants';
 import { Picker, PointView, LineView, PolygonView } from '../atoms';
 import { t } from '../../i18n/config';
+import { LayerEditContext } from '../../contexts/LayerEdit';
+import { FeatureType } from '../../types';
 
-export const LayerStyle = (props: any) => {
-  const { editable, layer, isNewLayer, editFeatureStyle, changeFeatureType } = props;
+export const LayerStyle = () => {
+  const { layer, isNewLayer, editable, onChangeFeatureType, gotoLayerEditFeatureStyle } = useContext(LayerEditContext);
 
   const featureValueList = useMemo(() => Object.keys(FEATURETYPE), []);
   const featureValueLabels = useMemo(() => Object.values(FEATURETYPE), []);
@@ -16,7 +18,7 @@ export const LayerStyle = (props: any) => {
         <View style={styles.tr2}>
           <Text style={styles.title}>{t('common.style')}</Text>
           {layer.type !== 'NONE' && (
-            <TouchableOpacity style={styles.td2} onPress={() => (editable ? editFeatureStyle() : null)}>
+            <TouchableOpacity style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
               {layer.type === 'POINT' && (
                 <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />
               )}
@@ -32,7 +34,7 @@ export const LayerStyle = (props: any) => {
           label={t('common.type')}
           enabled={isNewLayer && editable}
           selectedValue={layer.type}
-          onValueChange={(itemValue) => (isNewLayer && editable ? changeFeatureType(itemValue) : null)}
+          onValueChange={(itemValue) => (isNewLayer && editable ? onChangeFeatureType(itemValue as FeatureType) : null)}
           itemLabelArray={featureValueLabels}
           itemValueArray={featureValueList}
           maxIndex={featureValueList.length - 1}

@@ -1,35 +1,17 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
-import { LayerType } from '../../types';
 import { t } from '../../i18n/config';
+import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-interface Props_ColorList {
-  data: LayerType['colorStyle']['colorList'];
-  changeColorValue: (index: number, value: string) => void;
-  selectValueColor: (index: number) => void;
-  deleteValueColor: (index: number) => void;
-}
-interface Props_ColorListButtons {
-  addColor: () => void;
-  reloadFieldValue: () => void;
-}
-
-export const ColorTable = (props: any) => {
-  const { data, changeColorValue, selectValueColor, deleteValueColor, addColor, reloadFieldValue } = props;
-
+export const ColorTable = () => {
   return (
     <View style={{ marginTop: 0 }}>
       <ColorListTitle />
-      <ColorList
-        data={data}
-        changeColorValue={changeColorValue}
-        selectValueColor={selectValueColor}
-        deleteValueColor={deleteValueColor}
-      />
-      <ColorListButtons addColor={addColor} reloadFieldValue={reloadFieldValue} />
+      <ColorList />
+      <ColorListButtons />
     </View>
   );
 };
@@ -48,24 +30,24 @@ const ColorListTitle = () => {
   );
 };
 
-const ColorList = (props: Props_ColorList) => {
-  const { data, changeColorValue, selectValueColor, deleteValueColor } = props;
+const ColorList = () => {
+  const { colorStyle, changeValue, pressDeleteValue, pressSelectValueColor } = useContext(LayerEditFeatureStyleContext);
 
   return (
     <>
-      {data.map((item, index: number) => (
+      {colorStyle.colorList.map((item, index: number) => (
         <View key={index} style={styles.tr}>
           <View style={[styles.td, { flex: 5, borderRightWidth: 1 }]}>
             <TextInput
               style={styles.input}
               value={item.value?.toString()}
-              onChangeText={(value) => changeColorValue(index, value)}
+              onChangeText={(value) => changeValue(index, value)}
             />
           </View>
 
           <TouchableOpacity
-            style={[styles.td, { flex: 3, backgroundColor: data[index].color }]}
-            onPress={() => selectValueColor(index)}
+            style={[styles.td, { flex: 3, backgroundColor: colorStyle.colorList[index].color }]}
+            onPress={() => pressSelectValueColor(index)}
           >
             <Text>{item.color}</Text>
           </TouchableOpacity>
@@ -77,7 +59,7 @@ const ColorList = (props: Props_ColorList) => {
                 padding: 0,
               }}
               name="minus"
-              onPress={() => deleteValueColor(index)}
+              onPress={() => pressDeleteValue(index)}
             />
           </View>
         </View>
@@ -86,13 +68,13 @@ const ColorList = (props: Props_ColorList) => {
   );
 };
 
-const ColorListButtons = (props: Props_ColorListButtons) => {
-  const { addColor, reloadFieldValue } = props;
+const ColorListButtons = () => {
+  const { pressAddValue, pressReloadValue } = useContext(LayerEditFeatureStyleContext);
 
   return (
     <View style={styles.button}>
-      <Button backgroundColor={COLOR.GRAY2} name="autorenew" onPress={reloadFieldValue} />
-      <Button backgroundColor={COLOR.GRAY2} name="plus" onPress={addColor} />
+      <Button backgroundColor={COLOR.GRAY2} name="autorenew" onPress={pressReloadValue} />
+      <Button backgroundColor={COLOR.GRAY2} name="plus" onPress={pressAddValue} />
     </View>
   );
 };

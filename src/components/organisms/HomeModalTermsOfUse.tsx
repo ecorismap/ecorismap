@@ -1,19 +1,14 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { TUTRIALS_MESSAGE } from '../../constants/Tutrials';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
+import { HomeContext } from '../../contexts/Home';
 
-interface Props {
-  visible: boolean;
-  pressOK: () => void;
-  pressCancel: () => void;
-}
-
-export const HomeModalTermsOfUse = React.memo((props: Props) => {
+export const HomeModalTermsOfUse = React.memo(() => {
   //console.log('render ModalTileMap');
-  const { visible, pressOK, pressCancel } = props;
+  const { isTermsOfUseOpen, termsOfUseOK, termsOfUseCancel } = useContext(HomeContext);
 
   const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
@@ -100,7 +95,7 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
   });
 
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={isTermsOfUseOpen}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
@@ -116,12 +111,12 @@ export const HomeModalTermsOfUse = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressOK}>
+              <TouchableOpacity style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
                 <Text>OK</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
+                onPress={termsOfUseCancel}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>

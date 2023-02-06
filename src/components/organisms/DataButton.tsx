@@ -1,22 +1,18 @@
-import React from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLOR, DATA_BTN } from '../../constants/AppConstants';
+import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
 
-interface Props {
-  exportDisabled: boolean;
-  isChecked: boolean;
-  addData: () => void;
-  deleteData: () => void;
-  pressExportData: () => void;
-}
-export const DataButton = (props: Props) => {
-  const { exportDisabled, isChecked, addData, deleteData, pressExportData } = props;
+export const DataButton = () => {
+  const { projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
+
+  const exportDisabled = useMemo(() => projectId !== undefined, [projectId]);
 
   return (
     <>
       <View style={styles.button}>
-        <Button name={DATA_BTN.ADD} onPress={addData} backgroundColor={COLOR.BLUE} />
+        <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
 
         {!exportDisabled && (
           <Button
@@ -28,7 +24,7 @@ export const DataButton = (props: Props) => {
         )}
         <Button
           name={DATA_BTN.DELETE}
-          onPress={deleteData}
+          onPress={pressDeleteData}
           backgroundColor={isChecked ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!isChecked}
         />

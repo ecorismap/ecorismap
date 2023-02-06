@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWTOOL, PLUGIN } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
-import { DrawToolType, FeatureButtonType, LineToolType, PointToolType, PolygonToolType } from '../../types';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -11,37 +10,20 @@ import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { HomePointToolButton } from './HomePointToolButton';
 import { HomeInfoToolButton } from './HomeInfoToolButton';
+import { useWindow } from '../../hooks/useWindow';
+import { HomeContext } from '../../contexts/Home';
 
-interface Props {
-  isPositionRight: boolean;
-  isEditing: boolean;
-  isEditingObject: boolean;
-  isSelected: boolean;
-  currentDrawTool: DrawToolType;
-  currentPointTool: PointToolType;
-  currentLineTool: LineToolType;
-  currentPolygonTool: PolygonToolType;
-  featureButton: FeatureButtonType;
-  selectDrawTool: (value: DrawToolType) => void;
-  setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
-  setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
-  setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
-  pressUndoDraw: () => void;
-  pressSaveDraw: () => void;
-  pressDeleteDraw: () => void;
-}
-
-export const HomeDrawTools = (props: Props) => {
+export const HomeDrawTools = () => {
   const {
-    isPositionRight,
-    isSelected,
-    isEditing,
+    isDataOpened,
+    isEditingLine,
     isEditingObject,
     currentDrawTool,
     currentPointTool,
     currentLineTool,
     currentPolygonTool,
     featureButton,
+    drawLine,
     selectDrawTool,
     setPointTool,
     setLineTool,
@@ -49,7 +31,10 @@ export const HomeDrawTools = (props: Props) => {
     pressUndoDraw,
     pressSaveDraw,
     pressDeleteDraw,
-  } = props;
+  } = useContext(HomeContext);
+  const { isLandscape } = useWindow();
+  const isPositionRight = useMemo(() => isDataOpened === 'opened' || isLandscape, [isDataOpened, isLandscape]);
+  const isSelected = useMemo(() => drawLine.length > 0 && drawLine[0].record !== undefined, [drawLine]);
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   return (
@@ -57,7 +42,7 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         {featureButton === 'POINT' && (
           <HomePointToolButton
-            isEditing={isEditing}
+            isEditing={isEditingLine}
             isPositionRight={isPositionRight}
             currentPointTool={currentPointTool}
             currentDrawTool={currentDrawTool}
@@ -88,7 +73,7 @@ export const HomeDrawTools = (props: Props) => {
       {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
         <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
           <HisyouToolButton
-            isEditing={isEditing}
+            isEditing={isEditingLine}
             isSelected={isSelected}
             isPositionRight={isPositionRight}
             currentDrawTool={currentDrawTool}
@@ -98,7 +83,7 @@ export const HomeDrawTools = (props: Props) => {
       )}
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeInfoToolButton
-          isEditing={isEditing}
+          isEditing={isEditingLine}
           isPositionRight={isPositionRight}
           currentDrawTool={currentDrawTool}
           selectDrawTool={selectDrawTool}
@@ -106,7 +91,7 @@ export const HomeDrawTools = (props: Props) => {
       </View>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeSelectionToolButton
-          isEditing={isEditing}
+          isEditing={isEditingLine}
           isPositionRight={isPositionRight}
           currentDrawTool={currentDrawTool}
           selectDrawTool={selectDrawTool}
@@ -125,9 +110,9 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.SAVE}
-          backgroundColor={!isEditing || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+          backgroundColor={!isEditingLine || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!isEditing || isEditingObject}
+          disabled={!isEditingLine || isEditingObject}
           onPress={pressSaveDraw}
         />
       </View>
@@ -135,9 +120,9 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.UNDO}
-          backgroundColor={isEditing ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditingLine ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!isEditing}
+          disabled={!isEditingLine}
           onPress={pressUndoDraw}
         />
       </View>
@@ -145,9 +130,9 @@ export const HomeDrawTools = (props: Props) => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.DELETE}
-          backgroundColor={isEditing || isSelected ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditingLine || isSelected ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!(isEditing || isSelected)}
+          disabled={!(isEditingLine || isSelected)}
           onPress={pressDeleteDraw}
         />
       </View>

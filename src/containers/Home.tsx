@@ -1,12 +1,11 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
-import { DrawToolType, FeatureButtonType } from '../types';
+import { FeatureButtonType, DrawToolType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useSelector } from 'react-redux';
-import { HomeProps } from '../components/pages/Home';
 import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -27,6 +26,7 @@ import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
+import { HomeContext } from '../contexts/Home';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -503,78 +503,79 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const props: HomeProps = {
-    pointDataSet,
-    lineDataSet,
-    polygonDataSet,
-    isEditingLine,
-    isEditingObject,
-    drawLine: drawLine.current,
-    editingLine: editingLineXY.current,
-    selectLine: selectLine.current,
-    isDownloadPage,
-    memberLocations,
-    mapViewRef,
-    mapType,
-    tileMaps,
-    savedTileSize,
-    isDownloading,
-    downloadArea,
-    savedArea,
-    downloadProgress,
-    isOffline,
-    restored,
-    attribution,
-    gpsState,
-    trackingState,
-    currentLocation,
-    magnetometer,
-    headingUp,
-    zoom,
-    zoomDecimal,
-    featureButton,
-    currentDrawTool,
-    currentPointTool,
-    currentLineTool,
-    currentPolygonTool,
-    selectedRecord,
-    isDataOpened,
-    isLoading,
-    onRegionChangeMapView,
-    onPressMapView,
-    onDragMapView,
-    onDrop,
-    onPressSvgView: pressSvgView,
-    onMoveSvgView: moveSvgView,
-    onReleaseSvgView,
-    selectFeatureButton,
-    selectDrawTool,
-    setPointTool,
-    setLineTool,
-    setPolygonTool,
-    pressZoomIn,
-    pressZoomOut,
-    pressCompass,
-    pressGPS,
-    pressTracking,
-    pressDownloadTiles,
-    pressStopDownloadTiles,
-    pressDeleteTiles,
-    pressUndoDraw,
-    pressSaveDraw,
-    pressDeleteDraw,
-    gotoMaps,
-    gotoSettings,
-    gotoLayers,
-    gotoBack,
-  };
-
   return (
-    <>
-      <Home {...props} />
-      {Platform.OS !== 'web' && (
-        <HomeModalTermsOfUse visible={isTermsOfUseOpen} pressOK={termsOfUseOK} pressCancel={termsOfUseCancel} />
-      )}
+    <HomeContext.Provider
+      value={{
+        pointDataSet,
+        lineDataSet,
+        polygonDataSet,
+        isEditingLine,
+        isEditingObject,
+        drawLine: drawLine.current,
+        editingLine: editingLineXY.current,
+        selectLine: selectLine.current,
+        isDownloadPage,
+        memberLocations,
+        mapViewRef,
+        mapType,
+        tileMaps,
+        savedTileSize,
+        isDownloading,
+        downloadArea,
+        savedArea,
+        downloadProgress,
+        isOffline,
+        restored,
+        attribution,
+        gpsState,
+        trackingState,
+        currentLocation,
+        magnetometer,
+        headingUp,
+        zoom,
+        zoomDecimal,
+        featureButton,
+        currentDrawTool,
+        currentPointTool,
+        currentLineTool,
+        currentPolygonTool,
+        selectedRecord,
+        isDataOpened,
+        isLoading,
+        isTermsOfUseOpen,
+        onRegionChangeMapView,
+        onPressMapView,
+        onDragMapView,
+        onDrop,
+        onPressSvgView: pressSvgView,
+        onMoveSvgView: moveSvgView,
+        onReleaseSvgView,
+        selectFeatureButton,
+        selectDrawTool,
+        setPointTool,
+        setLineTool,
+        setPolygonTool,
+        pressZoomIn,
+        pressZoomOut,
+        pressCompass,
+        pressGPS,
+        pressTracking,
+        pressDownloadTiles,
+        pressStopDownloadTiles,
+        pressDeleteTiles,
+        pressUndoDraw,
+        pressSaveDraw,
+        pressDeleteDraw,
+        gotoMaps,
+        gotoSettings,
+        gotoLayers,
+        gotoBack,
+        termsOfUseOK,
+        termsOfUseCancel,
+      }}
+    >
+      <Home />
+      {Platform.OS !== 'web' && <HomeModalTermsOfUse />}
       {PLUGIN.HISYOUTOOL && (
         <ModalHisyouToolSetting
           visible={visibleHisyouToolSetting}
@@ -583,6 +584,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           pressCancel={pressHisyouToolSettingCancel}
         />
       )}
-    </>
+    </HomeContext.Provider>
   );
 }

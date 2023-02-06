@@ -6,6 +6,7 @@ import { TileMapItemType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
+import { MapListContext } from '../contexts/MapList';
 
 export default function MapListContainer({ navigation }: Props_MapList) {
   const { mapList, saveMap, fetchMapList } = useMaps();
@@ -59,6 +60,8 @@ export default function MapListContainer({ navigation }: Props_MapList) {
   }, [fetchMapList, mapList.length, reloadMapList, reload]);
 
   return (
-    <MapList data={mapList} isLoading={isLoading} addMap={addMap} reloadMapList={reloadMapList} gotoBack={gotoBack} />
+    <MapListContext.Provider value={{ data: mapList, isLoading, addMap, reloadMapList, gotoBack }}>
+      <MapList />
+    </MapListContext.Provider>
   );
 }
