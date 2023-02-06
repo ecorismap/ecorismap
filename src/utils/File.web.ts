@@ -30,15 +30,15 @@ export const exportDataAndPhoto = async (
     const folder = zip.folder('');
     if (folder == null) return;
     for (const d of exportData) {
-      const folderName = sanitize(d.folder) === '' ? '.' : sanitize(d.folder);
+      const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
       if (d.type === 'PHOTO') {
         //console.log(d.data);
         const res = await fetch(d.data);
         const blob = await res.blob();
         const imageData = new File([blob], sanitize(d.name));
-        folder.file(`${folderName}/${sanitize(d.name)}`, imageData, { base64: true });
+        folder.file(`${folderName}${sanitize(d.name)}`, imageData, { base64: true });
       } else {
-        folder.file(`${folderName}/${sanitize(d.name)}`, d.data);
+        folder.file(`${folderName}${sanitize(d.name)}`, d.data);
       }
     }
 
