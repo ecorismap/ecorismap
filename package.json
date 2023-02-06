@@ -116,7 +116,7 @@
     "react-native-scale-bar": "^1.0.6",
     "react-native-screens": "~3.10.1",
     "react-native-status-bar-height": "^2.6.0",
-    "react-native-svg": "^12.3.0",
+    "react-native-svg": "^13.8.0",
     "react-native-vector-icons": "^9.0.0",
     "react-native-virgil-crypto": "^0.6.1",
     "react-native-web": "0.17.1",
@@ -133,8 +133,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.1.6",
-    "@expo/webpack-config": "^0.16.25",
-    "@firebase/rules-unit-testing": "^2.0.3",
+    "@expo/webpack-config": "~0.16.2",
     "@react-native-community/eslint-config": "^3.0.3",
     "@testing-library/dom": "^8.11.0",
     "@testing-library/jest-native": "^5.4.1",

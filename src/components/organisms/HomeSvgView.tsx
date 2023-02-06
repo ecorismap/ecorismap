@@ -96,7 +96,7 @@ export const SvgView = () => {
           return (
             <G key={uuidv4()}>
               {properties.includes('EDIT') && (
-                <Path id={`path${idx}`} d={pointsToSvg(xy)} stroke={'blue'} strokeWidth="4" />
+                <Path id={`path${idx}`} d={pointsToSvg(xy)} stroke={'blue'} strokeWidth="4" fill="none" />
               )}
               <Path
                 id={`path${idx}`}
