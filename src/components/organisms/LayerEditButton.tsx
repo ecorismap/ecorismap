@@ -1,18 +1,12 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
+import { LayerEditContext } from '../../contexts/LayerEdit';
 
 import { Button } from '../atoms';
 
-interface Props {
-  isEdited: boolean;
-  editable: boolean;
-  deleteLayer: () => void;
-  pressSaveLayer: () => void;
-}
-
-export const LayerEditButton = (props: Props) => {
-  const { isEdited, editable, deleteLayer, pressSaveLayer } = props;
+export const LayerEditButton = () => {
+  const { isEdited, editable, pressSaveLayer, pressDeleteLayer } = useContext(LayerEditContext);
 
   return (
     <View style={styles.buttonContainer}>
@@ -20,7 +14,7 @@ export const LayerEditButton = (props: Props) => {
         name={LAYEREDIT_BTN.DELETE}
         backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEdited || !editable}
-        onPress={deleteLayer}
+        onPress={pressDeleteLayer}
       />
       <Button
         name={LAYEREDIT_BTN.SAVE}

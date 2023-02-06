@@ -1,27 +1,13 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { FormatType, LayerType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, Picker } from '../atoms';
 import { t } from '../../i18n/config';
+import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 
-interface Props {
-  itemValues: { value: string; isOther: boolean }[];
-  itemFormat: FormatType;
-  pickerValues: string[];
-  refLayerIds: LayerType['id'][];
-  refLayerNames: LayerType['name'][];
-  refFieldNames: string[];
-  primaryFieldNames: string[];
-  editable: boolean;
-  changeValue: (index: number, value: string) => void;
-  pressDeleteValue: (id: number) => void;
-  pressAddValue: (other?: boolean) => void;
-  gotoBack: () => void;
-}
-export default function LayerEditFieldItemScreen(props: Props) {
+export default function LayerEditFieldItemScreen() {
   const {
     itemValues,
     itemFormat,
@@ -33,9 +19,8 @@ export default function LayerEditFieldItemScreen(props: Props) {
     editable,
     changeValue,
     pressDeleteValue,
-    pressAddValue,
     gotoBack,
-  } = props;
+  } = useContext(LayerEditFieldItemContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -132,28 +117,19 @@ export default function LayerEditFieldItemScreen(props: Props) {
         {itemFormat !== 'STRING' &&
           itemFormat !== 'INTEGER' &&
           itemFormat !== 'DECIMAL' &&
-          itemFormat !== 'REFERENCE' && (
-            <ListButtons editable={editable} format={itemFormat} addValue={pressAddValue} />
-          )}
+          itemFormat !== 'REFERENCE' && <ListButtons />}
       </ScrollView>
     </View>
   );
 }
 
-interface Props_ListButtons {
-  editable: boolean;
-  format: FormatType;
-  addValue: (other?: boolean) => void;
-}
-
-const ListButtons = (props: Props_ListButtons) => {
-  const { editable, format, addValue } = props;
-
+const ListButtons = () => {
+  const { itemFormat, editable, pressAddValue } = useContext(LayerEditFieldItemContext);
   return (
     <View style={styles.button}>
-      <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => addValue(false)} />
-      {(format === 'LIST' || format === 'CHECK' || format === 'RADIO') && (
-        <TouchableOpacity style={{ margin: 5 }} disabled={!editable} onPress={() => addValue(true)}>
+      <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => pressAddValue(false)} />
+      {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
+        <TouchableOpacity style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
           <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{t('common.addOther')}</Text>
         </TouchableOpacity>
       )}

@@ -1,24 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { HOME_BTN, COLOR, HOME_FEATURE_BTN } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
-import { FeatureButtonType, TrackingStateType } from '../../types';
+import { HomeContext } from '../../contexts/Home';
 import { Button, SelectionalButton } from '../atoms';
 
-interface Props {
-  featureButton: FeatureButtonType;
-  trackingState: TrackingStateType;
-  showMap: () => void;
-  showSettings: () => void;
-  onPressTracking: () => void;
-  showLayer: () => void;
-  selectFeatureButton: (value: FeatureButtonType) => void;
-}
-export const HomeButtons = React.memo((props: Props) => {
+export const HomeButtons = React.memo(() => {
   //console.log('render HomeButtons');
-  const { featureButton, trackingState, showMap, showSettings, onPressTracking, showLayer, selectFeatureButton } =
-    props;
+
+  const { featureButton, trackingState, gotoMaps, gotoSettings, pressTracking, gotoLayers, selectFeatureButton } =
+    useContext(HomeContext);
   //console.log('HomeButton');
 
   const { isLandscape } = useWindow();
@@ -26,19 +18,19 @@ export const HomeButtons = React.memo((props: Props) => {
   return (
     <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.MAPS} onPress={showMap} backgroundColor={COLOR.BLUE} />
+        <Button name={HOME_BTN.MAPS} onPress={gotoMaps} backgroundColor={COLOR.BLUE} />
       </View>
       {Platform.OS !== 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={HOME_BTN.TRACK}
             backgroundColor={trackingState === 'on' ? 'red' : COLOR.BLUE}
-            onPress={onPressTracking}
+            onPress={pressTracking}
           />
         </View>
       )}
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.LAYERS} backgroundColor={COLOR.BLUE} onPress={showLayer} borderRadius={50} />
+        <Button name={HOME_BTN.LAYERS} backgroundColor={COLOR.BLUE} onPress={gotoLayers} borderRadius={50} />
       </View>
       <View style={{ marginHorizontal: 9 }}>
         <SelectionalButton selectedButton={featureButton} directionRow="column">
@@ -69,7 +61,7 @@ export const HomeButtons = React.memo((props: Props) => {
         </SelectionalButton>
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={HOME_BTN.SETTINGS} backgroundColor={COLOR.BLUE} onPress={showSettings} />
+        <Button name={HOME_BTN.SETTINGS} backgroundColor={COLOR.BLUE} onPress={gotoSettings} />
       </View>
     </View>
   );

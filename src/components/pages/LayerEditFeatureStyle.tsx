@@ -1,43 +1,17 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-
 import { COLOR } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
 import { FeatureStyleModalColorPicker } from '../organisms/FeatureStyleModalColorPicker';
-import { ColorRampType, ColorStyle, ColorTypesType, FeatureType } from '../../types';
-import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import Slider from '../atoms/Slider';
 import { t } from '../../i18n/config';
+import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-interface Props {
-  colorStyle: ColorStyle;
-  colorTypes: ColorTypesType[];
-  colorTypeLabels: string[];
-  fieldNames: string[];
-  colorRamps: ColorRampType[];
-  colorRampLabels: string[];
-  layerType: FeatureType;
-  modalVisible: boolean;
-  changeColorType: (itemValue: ItemValue, itemIndex: number) => void;
-  changeTransparency: (value: number) => void;
-  changeFieldName: (itemValue: ItemValue, itemIndex: number) => void;
-  changeColorRamp: (itemValue: ItemValue, itemIndex: number) => void;
-  changeValue: (index: number, value: string) => void;
-  pressDeleteValue: (id: number) => void;
-  pressAddValue: () => void;
-  pressReloadValue: () => void;
-  pressSelectSingleColor: () => void;
-  pressSelectValueColor: (index: number) => void;
-  pressSelectColorOK: (hue: number, sat: number, val: number) => void;
-  pressSelectColorCancel: () => void;
-  gotoBack: () => void;
-}
-
-export default function LayerEditFeatureStyleScreen(props: Props) {
+export default function LayerEditFeatureStyleScreen() {
   const {
     colorStyle,
     colorTypes,
@@ -46,21 +20,13 @@ export default function LayerEditFeatureStyleScreen(props: Props) {
     colorRamps,
     colorRampLabels,
     layerType,
-    modalVisible,
     changeColorType,
     changeTransparency,
     changeFieldName,
     changeColorRamp,
-    changeValue,
-    pressDeleteValue,
-    pressAddValue,
-    pressReloadValue,
     pressSelectSingleColor,
-    pressSelectValueColor,
-    pressSelectColorOK,
-    pressSelectColorCancel,
     gotoBack,
-  } = props;
+  } = useContext(LayerEditFeatureStyleContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -121,23 +87,12 @@ export default function LayerEditFeatureStyleScreen(props: Props) {
               itemValueArray={colorRamps}
               itemLabelArray={colorRampLabels}
             />
-            <ColorTable
-              data={colorStyle.colorList}
-              changeColorValue={changeValue}
-              selectValueColor={pressSelectValueColor}
-              deleteValueColor={pressDeleteValue}
-              addColor={pressAddValue}
-              reloadFieldValue={pressReloadValue}
-            />
+            <ColorTable />
           </View>
         )}
       </ScrollView>
 
-      <FeatureStyleModalColorPicker
-        visible={modalVisible}
-        pressOK={pressSelectColorOK}
-        pressCancel={pressSelectColorCancel}
-      />
+      <FeatureStyleModalColorPicker />
     </View>
   );
 }

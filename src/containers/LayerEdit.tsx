@@ -6,6 +6,7 @@ import { Props_LayerEdit } from '../routes';
 import { LayerType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
+import { LayerEditContext } from '../contexts/LayerEdit';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const {
@@ -80,25 +81,29 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   }, [isEdited, navigation]);
 
   return (
-    <LayerEdit
-      layer={targetLayer}
-      isEdited={isEdited}
-      isNewLayer={isNewLayer}
-      editable={editable.state}
-      onChangeLayerName={changeLayerName}
-      submitLayerName={submitLayerName}
-      onChangeFeatureType={changeFeatureType}
-      onChangeFieldOrder={changeFieldOrder}
-      onChangeFieldName={changeFieldName}
-      submitFieldName={submitFieldName}
-      onChangeFieldFormat={changeFieldFormat}
-      pressSaveLayer={pressSaveLayer}
-      pressDeleteLayer={pressDeleteLayer}
-      pressAddField={addField}
-      pressDeleteField={deleteField}
-      gotoLayerEditFeatureStyle={gotoLayerEditFeatureStyle}
-      gotoLayerEditFieldItem={gotoLayerEditFieldItem}
-      gotoBack={gotoBack}
-    />
+    <LayerEditContext.Provider
+      value={{
+        layer: targetLayer,
+        isEdited,
+        isNewLayer,
+        editable: editable.state,
+        onChangeLayerName: changeLayerName,
+        submitLayerName,
+        onChangeFeatureType: changeFeatureType,
+        onChangeFieldOrder: changeFieldOrder,
+        onChangeFieldName: changeFieldName,
+        submitFieldName,
+        onChangeFieldFormat: changeFieldFormat,
+        pressSaveLayer,
+        pressDeleteField: deleteField,
+        pressAddField: addField,
+        pressDeleteLayer,
+        gotoLayerEditFeatureStyle,
+        gotoLayerEditFieldItem,
+        gotoBack,
+      }}
+    >
+      <LayerEdit />
+    </LayerEditContext.Provider>
   );
 }

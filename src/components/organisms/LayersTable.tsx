@@ -1,27 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, FlatList, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Picker, PointView, LineView, PolygonView, RectButton2 } from '../atoms';
-import { LayerType } from '../../types';
 import { t } from '../../i18n/config';
+import { LayersContext } from '../../contexts/Layers';
 
-interface Props {
-  layers: LayerType[];
-  changeVisible: (index: number, item: LayerType) => void;
-  gotoData: (item: LayerType) => void;
-  changeLabel: (index: number, itemValue: string) => void;
-  changeActiveLayer: (index: number) => void;
-  changeLayerOrder: (index: number) => void;
-  gotoLayerEdit: (item: LayerType) => void;
-  gotoColorStyle: (layer: LayerType) => void;
-}
-
-export const LayersTable = (props: Props) => {
+export const LayersTable = () => {
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
       <LayersTitle />
-      <LayersItems {...props} />
+      <LayersItems />
     </View>
   );
 };
@@ -58,17 +47,18 @@ const LayersTitle = () => {
   );
 };
 
-const LayersItems = (props: Props) => {
+const LayersItems = () => {
   const {
     layers,
     changeVisible,
-    gotoData,
     changeLabel,
     changeActiveLayer,
-    changeLayerOrder,
+    pressLayerOrder,
+    gotoData,
     gotoLayerEdit,
     gotoColorStyle,
-  } = props;
+  } = useContext(LayersContext);
+
   //console.log(layers);
   return (
     <FlatList
@@ -158,7 +148,7 @@ const LayersItems = (props: Props) => {
               <RectButton2 name="table-cog" onPress={() => gotoLayerEdit(item)} />
             </View>
             <View style={[styles.td, { flex: 1, width: 40 }]}>
-              <RectButton2 name="chevron-double-up" onPress={() => changeLayerOrder(index)} color={COLOR.GRAY2} />
+              <RectButton2 name="chevron-double-up" onPress={() => pressLayerOrder(index)} color={COLOR.GRAY2} />
             </View>
           </View>
         );

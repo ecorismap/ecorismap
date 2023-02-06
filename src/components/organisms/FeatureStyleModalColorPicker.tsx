@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
@@ -6,23 +6,18 @@ import { COLOR } from '../../constants/AppConstants';
 import HsvColorPicker from 'react-native-hsv-color-picker';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
+import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-interface Props {
-  visible: boolean;
-  pressOK: (hue: number, sat: number, val: number) => void;
-  pressCancel: () => void;
-}
+export const FeatureStyleModalColorPicker = () => {
+  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = useContext(LayerEditFeatureStyleContext);
 
-export const FeatureStyleModalColorPicker = (props: Props) => {
   const { windowWidth } = useWindow();
   const [hue, setHue] = useState(0.5);
   const [sat, setSat] = useState(0.5);
   const [val, setVal] = useState(1);
 
-  const { visible, pressOK, pressCancel } = props;
-
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={[styles.modalContents, { width: windowWidth * 0.6 }]}>
@@ -50,12 +45,12 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
               }}
             />
             <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK(hue, sat, val)}>
+              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressSelectColorOK(hue, sat, val)}>
                 <Text>OK</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => pressCancel()}
+                onPress={() => pressSelectColorCancel()}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>

@@ -1,18 +1,16 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
 import { RectButton } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { PhotoType } from '../../types';
+import { DataEditContext } from '../../contexts/DataEdit';
 
 interface Props {
   fieldName: string;
-  takePhoto: () => void;
-  pickImage: () => void;
-  photos: PhotoType[];
-  showPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
 }
 export const DataEditPhoto = (props: Props) => {
-  const { fieldName, takePhoto, pickImage, photos, showPhoto } = props;
+  const { data, pressPhoto, pressTakePhoto, pressPickPhoto } = useContext(DataEditContext);
+  const { fieldName } = props;
   //console.log('####', photos);
 
   return (
@@ -23,18 +21,18 @@ export const DataEditPhoto = (props: Props) => {
             <Text style={styles.title}>{fieldName}</Text>
           </View>
           <View style={styles.button}>
-            <RectButton name="camera" onPress={takePhoto} />
+            <RectButton name="camera" onPress={() => pressTakePhoto(fieldName)} />
           </View>
           <View style={styles.button}>
-            <RectButton name="file-image" onPress={pickImage} />
+            <RectButton name="file-image" onPress={() => pressPickPhoto(fieldName)} />
           </View>
         </View>
       </View>
       <ScrollView horizontal={true} style={{ borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
-        {photos.map(
+        {(data.field[fieldName] as PhotoType[]).map(
           (photo, index) =>
             photo.uri !== undefined && (
-              <TouchableOpacity style={{ margin: 2 }} key={index} onPress={() => showPhoto(fieldName, photo, index)}>
+              <TouchableOpacity style={{ margin: 2 }} key={index} onPress={() => pressPhoto(fieldName, photo, index)}>
                 <Image
                   source={{ uri: photo.thumbnail ? photo.thumbnail : undefined }}
                   style={{
