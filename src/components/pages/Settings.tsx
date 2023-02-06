@@ -1,33 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { FUNC_LOGIN, SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
+import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
 import { SettingsModalFileSave } from '../organisms/SettingsModalFileSave';
 import { SettingsModalMapListURL } from '../organisms/SettingsModalMapListURL';
 
-interface Props {
-  mapListURL: string | undefined;
-  isMapListURLOpen: boolean;
-  isFileSaveOpen: boolean;
-  pressMapListURLOpen: () => void;
-  pressMapListURLOK: (mapListURL: string) => void;
-  pressMapListURLCancel: () => void;
-  pressMapListURLReset: () => void;
-  pressFileOpen: () => void;
-  pressFileSave: () => void;
-  pressFileSaveOK: (mapListURL: string, includePhoto: boolean) => void;
-  pressFileSaveCancel: () => void;
-  pressClearData: () => void;
-  pressClearTileCache: () => void;
-  pressClearPhotoCache: () => void;
-  pressResetAll: () => void;
-  pressGotoManual: () => void;
-  pressOSSLicense: () => void;
-  pressVersion: () => void;
-}
-
-export default function Settings(props: Props) {
+export default function Settings() {
   const {
     mapListURL,
     isMapListURLOpen,
@@ -47,7 +27,7 @@ export default function Settings(props: Props) {
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
-  } = props;
+  } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
     container: {

@@ -1,17 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useContext } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput } from 'react-native';
 
 import { COLOR, DATAFORMAT } from '../../constants/AppConstants';
+import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
-import { FormatType, LayerType } from '../../types';
+import { FormatType } from '../../types';
 import { Button, Picker, RectButton2 } from '../atoms';
 
-interface Props_LayerEditFieldTitle {
-  editable: boolean;
-  addField: () => void;
-}
-export const LayerEditFieldTitle = (props: Props_LayerEditFieldTitle) => {
-  const { editable, addField } = props;
+export const LayerEditFieldTitle = () => {
+  const { editable, pressAddField } = useContext(LayerEditContext);
+
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 6 }]}>
@@ -33,42 +31,31 @@ export const LayerEditFieldTitle = (props: Props_LayerEditFieldTitle) => {
           size={30}
           name="plus"
           disabled={!editable}
-          onPress={addField}
+          onPress={pressAddField}
         />
       </View>
     </View>
   );
 };
 
-interface Props_LayerEditFieldTable {
-  editable: boolean;
-  data: LayerType['field'];
-  changeFieldNameText: (index: number, val: string) => void;
-  submitFieldNameText: (index: number) => void;
-  changeFieldFormatValue: (index: number, itemValue: FormatType) => void;
-  editFieldListItem: (fieldIndex: number, fieldItem: LayerType['field'][0]) => void;
-  deleteField: (index: number) => void;
-  changeFieldOrder: (index: number) => void;
-}
-
-export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
+export const LayerEditFieldTable = () => {
   const {
+    layer,
     editable,
-    data,
-    changeFieldNameText,
-    submitFieldNameText,
-    changeFieldFormatValue,
-    changeFieldOrder,
-    editFieldListItem,
-    deleteField,
-  } = props;
+    onChangeFieldOrder,
+    onChangeFieldName,
+    submitFieldName,
+    onChangeFieldFormat,
+    pressDeleteField,
+    gotoLayerEditFieldItem,
+  } = useContext(LayerEditContext);
 
   const formatTypeValues = useMemo(() => Object.keys(DATAFORMAT), []);
   const formatTypeLabels = useMemo(() => Object.values(DATAFORMAT), []);
 
   return (
     <FlatList
-      data={data}
+      data={layer.field}
       keyExtractor={(item) => item.id}
       removeClippedSubviews={false}
       renderItem={({ item, index }) => {
@@ -79,9 +66,9 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
                 style={styles.input}
                 value={item.name}
                 editable={editable}
-                onChangeText={(val: string) => changeFieldNameText(index!, val)}
-                onEndEditing={() => submitFieldNameText(index!)}
-                onBlur={() => submitFieldNameText(index!)}
+                onChangeText={(val: string) => onChangeFieldName(index!, val)}
+                onEndEditing={() => submitFieldName(index!)}
+                onBlur={() => submitFieldName(index!)}
                 //multiline={true}
               />
             </View>
@@ -89,9 +76,7 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
               <Picker
                 enabled={editable}
                 selectedValue={item.format}
-                onValueChange={(itemValue) =>
-                  editable ? changeFieldFormatValue(index!, itemValue as FormatType) : null
-                }
+                onValueChange={(itemValue) => (editable ? onChangeFieldFormat(index!, itemValue as FormatType) : null)}
                 itemLabelArray={formatTypeLabels}
                 itemValueArray={formatTypeValues}
                 maxIndex={formatTypeValues.length - 1}
@@ -105,7 +90,7 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
                 }}
                 name="minus"
                 disabled={!editable}
-                onPress={() => deleteField(index!)}
+                onPress={() => pressDeleteField(index!)}
               />
             </View>
             <View style={[styles.td, { flex: 2 }]}>
@@ -124,12 +109,12 @@ export const LayerEditFieldTable = (props: Props_LayerEditFieldTable) => {
                     padding: 0,
                   }}
                   name="play"
-                  onPress={() => editFieldListItem(index!, item)}
+                  onPress={() => gotoLayerEditFieldItem(index!, item)}
                 />
               )}
             </View>
             <View style={[styles.td, { flex: 2 }]}>
-              <RectButton2 name="chevron-double-up" disabled={!editable} onPress={() => changeFieldOrder(index)} />
+              <RectButton2 name="chevron-double-up" disabled={!editable} onPress={() => onChangeFieldOrder(index)} />
             </View>
           </View>
         );

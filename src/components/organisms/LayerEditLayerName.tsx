@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
+import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
 
-export const LayerName = (props: any) => {
-  const { value, editable, onChangeText, onEndEditing } = props;
+export const LayerName = () => {
+  const { layer, editable, onChangeLayerName, submitLayerName } = useContext(LayerEditContext);
 
   return (
     <View style={styles.tr}>
@@ -15,10 +16,10 @@ export const LayerName = (props: any) => {
           style={styles.input}
           label={t('common.layerName')}
           editable={editable}
-          value={value}
-          onChangeText={onChangeText}
-          onEndEditing={onEndEditing}
-          onBlur={onEndEditing}
+          value={layer.name}
+          onChangeText={onChangeLayerName}
+          onEndEditing={submitLayerName}
+          onBlur={submitLayerName}
         />
       </View>
     </View>

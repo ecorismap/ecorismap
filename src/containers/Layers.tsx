@@ -9,6 +9,7 @@ import { AlertAsync } from '../components/molecules/AlertAsync';
 import { useDisplay } from '../hooks/useDisplay';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
+import { LayersContext } from '../contexts/Layers';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, editable, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder, importFile } = useLayers();
@@ -82,18 +83,23 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     },
     [expandData, navigation]
   );
+
   return (
-    <Layers
-      layers={layers}
-      changeVisible={changeVisible}
-      changeLabel={changeLabel}
-      changeActiveLayer={changeActiveLayer}
-      changeLayerOrder={pressLayerOrder}
-      pressImportLayerAndData={pressImportLayerAndData}
-      pressAddLayer={gotoLayerEditForAdd}
-      gotoData={gotoData}
-      gotoLayerEdit={gotoLayerEdit}
-      gotoColorStyle={gotoColorStyle}
-    />
+    <LayersContext.Provider
+      value={{
+        layers,
+        changeVisible,
+        changeLabel,
+        changeActiveLayer,
+        pressLayerOrder,
+        gotoLayerEditForAdd,
+        pressImportLayerAndData,
+        gotoData,
+        gotoLayerEdit,
+        gotoColorStyle,
+      }}
+    >
+      <Layers />
+    </LayersContext.Provider>
   );
 }

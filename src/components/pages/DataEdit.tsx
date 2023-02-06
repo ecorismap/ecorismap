@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
@@ -9,7 +9,6 @@ import { DataEditPhoto } from '../organisms/DataEditPhoto';
 import { DataEditCoords } from '../organisms/DataEditCoords';
 import { DataEditNumber } from '../organisms/DataEditNumber';
 import { DataEditLayerName } from '../organisms/DataEditLayerName';
-import { RecordType, LatLonDMSType, LayerType, PhotoType, SelectedPhotoType } from '../../types';
 import { DataEditList } from '../organisms/DataEditList';
 import { DataEditCheck } from '../organisms/DataEditCheck';
 import { DataEditRadio } from '../organisms/DataEditRadio';
@@ -27,70 +26,29 @@ import { DataEditNumberRange } from '../organisms/DataEditNumberRange';
 import { DataEditString } from '../organisms/DataEditString';
 import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
 import { t } from '../../i18n/config';
+import { DataEditContext } from '../../contexts/DataEdit';
 
-interface Props {
-  layer: LayerType;
-  data: RecordType;
-  photo: SelectedPhotoType;
-  isPhotoViewOpen: boolean;
-  latlon: LatLonDMSType;
-  isEditingRecord: boolean;
-  isDecimal: boolean;
-  recordNumber: number;
-  maxRecordNumber: number;
-  changeLatLonType: () => void;
-  changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
-  changeField: (name: string, value: string) => void;
-  submitField: (name: string, format: string) => void;
-  onChangeRecord: (value: number) => void;
-  pressSaveData: () => void;
-  pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
-  pressTakePhoto: (name: string) => void;
-  pressPickPhoto: (name: string) => void;
-  pressClosePhoto: () => void;
-  pressRemovePhoto: () => void;
-  pressDownloadPhoto: () => void;
-  pressDeleteData: () => void;
-  pressAddReferenceData: (referenceData: RecordType | undefined, referenceLayer: LayerType, message: string) => void;
-  gotoHomeAndJump: () => void;
-  gotoGoogleMaps: () => void;
-  gotoBack: () => void;
-  gotoReferenceData: (referenceData: RecordType, referenceLayer: LayerType) => void;
-  onClose: () => void;
-}
-
-export default function DataEditScreen(props: Props) {
+export default function DataEditScreen() {
   // console.log('render DataEdit');
   const {
     layer,
     data,
     latlon,
-    photo,
-    isPhotoViewOpen,
     isEditingRecord,
     isDecimal,
     recordNumber,
     maxRecordNumber,
-    pressSaveData,
     changeLatLonType,
     changeLatLon,
     changeField,
     submitField,
     onChangeRecord,
-    pressPhoto,
-    pressTakePhoto,
-    pressPickPhoto,
-    pressClosePhoto,
-    pressRemovePhoto,
-    pressDownloadPhoto,
-    pressDeleteData,
     pressAddReferenceData,
-    gotoHomeAndJump,
-    gotoGoogleMaps,
     gotoBack,
     gotoReferenceData,
     onClose,
-  } = props;
+  } = useContext(DataEditContext);
+
   const { isDataOpened, expandData, openData } = useDisplay();
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
@@ -136,7 +94,6 @@ export default function DataEditScreen(props: Props) {
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line @typescript-eslint/no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });
@@ -157,20 +114,8 @@ export default function DataEditScreen(props: Props) {
             case 'PHOTO':
               return (
                 <View key={index}>
-                  <DataEditPhoto
-                    fieldName={name}
-                    photos={data.field[name] as PhotoType[]}
-                    showPhoto={pressPhoto}
-                    takePhoto={() => pressTakePhoto(name)}
-                    pickImage={() => pressPickPhoto(name)}
-                  />
-                  <DataEditModalPhotoView
-                    visible={isPhotoViewOpen}
-                    photo={photo}
-                    pressClose={pressClosePhoto}
-                    pressRemove={pressRemovePhoto}
-                    pressDownloadPhoto={pressDownloadPhoto}
-                  />
+                  <DataEditPhoto fieldName={name} />
+                  <DataEditModalPhotoView />
                 </View>
               );
             case 'STRING':
@@ -374,13 +319,7 @@ export default function DataEditScreen(props: Props) {
         )}
       </ScrollView>
 
-      <DataEditButtons
-        onPressJumpToMap={gotoHomeAndJump}
-        onPressJumpToGoogle={gotoGoogleMaps}
-        onPressDeleteData={pressDeleteData}
-        onPressSaveData={pressSaveData}
-        isEditing={isEditingRecord}
-      />
+      <DataEditButtons />
     </KeyboardAvoidingView>
   );
 }

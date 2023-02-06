@@ -11,6 +11,7 @@ import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { clearCacheData } from '../utils/File';
 import { useLayers } from '../hooks/useLayers';
+import { SettingsContext } from '../contexts/Settings';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useLayers();
@@ -133,25 +134,29 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   }, []);
 
   return (
-    <Settings
-      mapListURL={mapListURL}
-      isMapListURLOpen={isMapListURLOpen}
-      isFileSaveOpen={isFileSaveOpen}
-      pressMapListURLOpen={pressMapListURLOpen}
-      pressMapListURLOK={pressMapListURLOK}
-      pressMapListURLCancel={pressMapListURLCancel}
-      pressMapListURLReset={pressMapListURLReset}
-      pressFileOpen={pressFileOpen}
-      pressFileSave={pressFileSave}
-      pressFileSaveOK={pressFileSaveOK}
-      pressFileSaveCancel={pressFileSaveCancel}
-      pressClearData={pressClearData}
-      pressClearTileCache={pressClearTileCache}
-      pressClearPhotoCache={pressClearPhotoCache}
-      pressResetAll={pressResetAll}
-      pressGotoManual={pressGotoManual}
-      pressOSSLicense={pressOSSLicense}
-      pressVersion={pressVersion}
-    />
+    <SettingsContext.Provider
+      value={{
+        mapListURL,
+        isMapListURLOpen,
+        isFileSaveOpen,
+        pressMapListURLOpen,
+        pressMapListURLOK,
+        pressMapListURLCancel,
+        pressMapListURLReset,
+        pressFileOpen,
+        pressFileSave,
+        pressFileSaveOK,
+        pressFileSaveCancel,
+        pressClearData,
+        pressClearTileCache,
+        pressClearPhotoCache,
+        pressResetAll,
+        pressGotoManual,
+        pressOSSLicense,
+        pressVersion,
+      }}
+    >
+      <Settings />
+    </SettingsContext.Provider>
   );
 }
