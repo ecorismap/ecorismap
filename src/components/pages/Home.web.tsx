@@ -64,18 +64,6 @@ export default function HomeScreen() {
     isShowingProjectButtons,
     isSettingProject,
     projectName,
-    user,
-    pressJumpProject,
-    pressDownloadData,
-    pressUploadData,
-    pressSyncPosition,
-    pressCloseProject,
-    pressSaveProjectSetting,
-    pressDiscardProjectSetting,
-    pressLogout,
-    gotoLogin,
-    gotoAccount,
-    gotoProjects,
     pressProjectLabel,
     onRegionChangeMapView,
     onPressMapView,
@@ -599,17 +587,7 @@ export default function HomeScreen() {
         {projectName === undefined ||
         (!isShowingProjectButtons && !isSettingProject) ||
         isDataOpened === 'expanded' ? null : (
-          <HomeProjectButtons
-            isSettingProject={isSettingProject}
-            isSynced={isSynced}
-            onPressJumpProject={pressJumpProject}
-            onPressDownloadData={pressDownloadData}
-            onPressUploadData={pressUploadData}
-            onPressSyncPosition={pressSyncPosition}
-            onPressCloseProject={pressCloseProject}
-            onPressSaveProjectSetting={pressSaveProjectSetting}
-            onPressDiscardProjectSetting={pressDiscardProjectSetting}
-          />
+          <HomeProjectButtons />
         )}
         {projectName === undefined || isDownloadPage || isDataOpened === 'expanded' ? null : (
           <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
@@ -618,15 +596,7 @@ export default function HomeScreen() {
         {/* <HomeZoomButton zoom={zoom} top={60} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
      
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} /> */}
-        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : (
-          <HomeAccountButton
-            userInfo={user}
-            onPressLogin={gotoLogin}
-            onPressChangeProject={gotoProjects}
-            onPressShowAccount={gotoAccount}
-            onPressLogout={pressLogout}
-          />
-        )}
+        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
 
         {isDownloadPage ? (
           <HomeDownloadButton onPress={pressDeleteTiles} />

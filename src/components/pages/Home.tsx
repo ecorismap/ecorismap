@@ -69,20 +69,7 @@ export default function HomeScreen() {
     isSynced,
     memberLocations,
     isShowingProjectButtons,
-    isSettingProject,
     projectName,
-    user,
-    pressJumpProject,
-    pressDownloadData,
-    pressUploadData,
-    pressSyncPosition,
-    pressCloseProject,
-    pressSaveProjectSetting,
-    pressDiscardProjectSetting,
-    pressLogout,
-    gotoLogin,
-    gotoAccount,
-    gotoProjects,
     pressProjectLabel,
     onRegionChangeMapView,
     onPressMapView,
@@ -337,19 +324,7 @@ export default function HomeScreen() {
           zoomOut={pressZoomOut}
         />
 
-        {isShowingProjectButtons && isDataOpened !== 'expanded' && (
-          <HomeProjectButtons
-            isSettingProject={isSettingProject}
-            isSynced={isSynced}
-            onPressJumpProject={pressJumpProject}
-            onPressDownloadData={pressDownloadData}
-            onPressUploadData={pressUploadData}
-            onPressSyncPosition={pressSyncPosition}
-            onPressCloseProject={pressCloseProject}
-            onPressSaveProjectSetting={pressSaveProjectSetting}
-            onPressDiscardProjectSetting={pressDiscardProjectSetting}
-          />
-        )}
+        {isShowingProjectButtons && isDataOpened !== 'expanded' && <HomeProjectButtons />}
         {projectName === undefined || isDownloadPage || isDataOpened === 'expanded' ? null : (
           <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
         )}
@@ -357,15 +332,7 @@ export default function HomeScreen() {
         <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
-        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : (
-          <HomeAccountButton
-            userInfo={user}
-            onPressLogin={gotoLogin}
-            onPressChangeProject={gotoProjects}
-            onPressShowAccount={gotoAccount}
-            onPressLogout={pressLogout}
-          />
-        )}
+        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
         {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
         {isDownloadPage ? (
           <HomeDownloadButton onPress={pressDeleteTiles} />

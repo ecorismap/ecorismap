@@ -1,34 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { PermissionType } from '../../types';
 
-import { COLOR } from '../../constants/AppConstants';
+import { COLOR, PERMISSIONTYPE } from '../../constants/AppConstants';
 import { CheckBox } from '../molecules/CheckBox';
+import { LayerEditContext } from '../../contexts/LayerEdit';
 
-interface Props {
-  editable: boolean;
-  name: string;
-  value: PermissionType;
-  valueList: PermissionType[];
-  valueLabels: string[];
-  onValueChange: (value: PermissionType) => void;
-}
-
-export const LayerEditRadio = (props: Props) => {
-  const { editable, name, value, valueList, valueLabels, onValueChange } = props;
+export const LayerEditRadio = () => {
+  const { layer, editable, changePermission } = useContext(LayerEditContext);
+  const permissionLabels = useMemo(() => Object.values(PERMISSIONTYPE), []);
+  const permissionList = useMemo(() => Object.keys(PERMISSIONTYPE) as PermissionType[], []);
 
   const [checkedList, setCheckedList] = useState<boolean[]>([]);
 
   useEffect(() => {
-    const newCheckedList = valueList.map((v) => v === value);
+    const newCheckedList = permissionList.map((v) => v === layer.permission);
     setCheckedList(newCheckedList);
-  }, [value, valueList]);
+  }, [layer.permission, permissionList]);
 
   const onCheckList = (index: number) => {
     const newCheckedList = checkedList.map(() => false);
     newCheckedList[index] = true;
     setCheckedList(newCheckedList);
-    onValueChange(valueList[index]);
+    changePermission(permissionList[index]);
   };
 
   return (
@@ -37,10 +31,10 @@ export const LayerEditRadio = (props: Props) => {
         <View style={styles.tr2}>
           <Text style={styles.title}>{name}</Text>
           <View style={styles.checkbox}>
-            {valueList.map((item, index) => (
+            {permissionList.map((item, index) => (
               <CheckBox
                 key={index}
-                label={valueLabels[index]}
+                label={permissionLabels[index]}
                 disabled={!editable}
                 width={200}
                 checked={checkedList[index]}
