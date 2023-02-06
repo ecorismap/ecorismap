@@ -18,6 +18,7 @@ import {
   LineToolType,
   PolygonToolType,
   DrawLineType,
+  UserType,
 } from '../types';
 import { MapRef, ViewState } from 'react-map-gl';
 
@@ -28,6 +29,7 @@ export interface HomeContextType {
   pointDataSet: PointDataType[];
   lineDataSet: LineDataType[];
   polygonDataSet: PolygonDataType[];
+  isSynced: boolean;
   memberLocations: MemberLocationType[];
   mapType: MapType;
   tileMaps: TileMapType[];
@@ -52,6 +54,8 @@ export interface HomeContextType {
   isDownloading: boolean;
   downloadArea: TileRegionType;
   savedArea: TileRegionType[];
+  projectName: string | undefined;
+  user: UserType;
   attribution: string;
   featureButton: FeatureButtonType;
   currentDrawTool: DrawToolType;
@@ -65,8 +69,10 @@ export interface HomeContextType {
       }
     | undefined;
   isDataOpened: 'opened' | 'closed' | 'expanded';
+  isShowingProjectButtons: boolean;
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
+  isSettingProject: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapEvent<{}>) => void;
   onDragMapView: () => void;
@@ -77,11 +83,23 @@ export interface HomeContextType {
   pressZoomIn: () => void;
   pressZoomOut: () => void;
   pressCompass: () => void;
+  pressLogout: () => Promise<void>;
   pressDeleteTiles: () => Promise<void>;
   pressGPS: () => Promise<void>;
   pressTracking: () => void;
   pressDownloadTiles: () => Promise<void>;
   pressStopDownloadTiles: () => void;
+  pressSyncPosition: () => void;
+  pressJumpProject: () => void;
+  pressUploadData: () => void;
+  pressDownloadData: () => void;
+  pressCloseProject: () => void;
+  pressProjectLabel: () => void;
+  pressSaveProjectSetting: () => void;
+  pressDiscardProjectSetting: () => void;
+  gotoLogin: () => void;
+  gotoProjects: () => Promise<void>;
+  gotoAccount: () => Promise<void>;
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;

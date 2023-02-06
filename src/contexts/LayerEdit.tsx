@@ -13,6 +13,7 @@ interface LayerEditContextType {
   onChangeFieldName: (index: number, val: string) => void;
   submitFieldName: (index: number) => void;
   onChangeFieldFormat: (index: number, itemValue: FormatType) => void;
+  changePermission: (val: 'PRIVATE' | 'PUBLIC' | 'COMMON') => void;
   pressSaveLayer: () => void;
   pressDeleteField: (id: number) => void;
   pressAddField: () => void;

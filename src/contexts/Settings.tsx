@@ -14,6 +14,7 @@ interface SettingsContextType {
   pressFileSaveCancel: () => void;
   pressClearData: () => void;
   pressClearTileCache: () => void;
+  pressClearPhotoCache: () => void;
   pressResetAll: () => void;
   pressGotoManual: () => void;
   pressOSSLicense: () => void;

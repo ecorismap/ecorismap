@@ -728,6 +728,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isTermsOfUseOpen,
         projectName,
         user,
+        isSynced,
+        isShowingProjectButtons,
+        isSettingProject,
         onRegionChangeMapView,
         onPressMapView,
         onDragMapView,
@@ -767,7 +770,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoAccount,
         gotoLogin,
         gotoProjects,
-
         termsOfUseOK,
         termsOfUseCancel,
       }}

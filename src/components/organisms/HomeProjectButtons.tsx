@@ -1,65 +1,50 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { HomeContext } from '../../contexts/Home';
 import { Button } from '../atoms';
 
-interface Props {
-  isSettingProject: boolean;
-  isSynced: boolean;
-  onPressSyncPosition: () => void;
-  onPressJumpProject: () => void;
-  onPressUploadData: () => void;
-  onPressDownloadData: () => void;
-  onPressCloseProject: () => void;
-  onPressSaveProjectSetting: () => void;
-  onPressDiscardProjectSetting: () => void;
-}
-export const HomeProjectButtons = React.memo((props: Props) => {
+export const HomeProjectButtons = React.memo(() => {
   //console.log('render HomeButtons');
   const {
     isSettingProject,
     isSynced,
-    onPressSyncPosition,
-    onPressJumpProject,
-    onPressUploadData,
-    onPressDownloadData,
-    onPressCloseProject,
-    onPressSaveProjectSetting,
-    onPressDiscardProjectSetting,
-  } = props;
+    pressJumpProject,
+    pressDownloadData,
+    pressUploadData,
+    pressSyncPosition,
+    pressCloseProject,
+    pressSaveProjectSetting,
+    pressDiscardProjectSetting,
+  } = useContext(HomeContext);
   //console.log('HomeButton');
   return (
     <View style={styles.buttonContainer}>
       {isSettingProject ? (
         <>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name={'content-save-cog'} onPress={onPressSaveProjectSetting} backgroundColor={COLOR.BLUE} />
+            <Button name={'content-save-cog'} onPress={pressSaveProjectSetting} backgroundColor={COLOR.BLUE} />
           </View>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name={'close-octagon'} onPress={onPressDiscardProjectSetting} backgroundColor={COLOR.DARKRED} />
+            <Button name={'close-octagon'} onPress={pressDiscardProjectSetting} backgroundColor={COLOR.DARKRED} />
           </View>
         </>
       ) : (
         <>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name="home" onPress={() => onPressJumpProject()} borderRadius={50} backgroundColor={COLOR.BLUE} />
+            <Button name="home" onPress={() => pressJumpProject()} borderRadius={50} backgroundColor={COLOR.BLUE} />
           </View>
           <View style={{ marginHorizontal: 9 }}>
-            <Button
-              name="cloud-download"
-              onPress={onPressDownloadData}
-              borderRadius={50}
-              backgroundColor={COLOR.BLUE}
-            />
+            <Button name="cloud-download" onPress={pressDownloadData} borderRadius={50} backgroundColor={COLOR.BLUE} />
           </View>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name="cloud-upload" backgroundColor={COLOR.BLUE} onPress={onPressUploadData} />
+            <Button name="cloud-upload" backgroundColor={COLOR.BLUE} onPress={pressUploadData} />
           </View>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name="podcast" backgroundColor={isSynced ? COLOR.RED : COLOR.BLUE} onPress={onPressSyncPosition} />
+            <Button name="podcast" backgroundColor={isSynced ? COLOR.RED : COLOR.BLUE} onPress={pressSyncPosition} />
           </View>
           <View style={{ marginHorizontal: 9 }}>
-            <Button name="logout" backgroundColor={COLOR.BLUE} disabled={false} onPress={onPressCloseProject} />
+            <Button name="logout" backgroundColor={COLOR.BLUE} disabled={false} onPress={pressCloseProject} />
           </View>
         </>
       )}

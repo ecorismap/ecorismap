@@ -1,51 +1,43 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { TouchableOpacity, View, Image, StyleSheet, Platform, Text } from 'react-native';
 import { Button, SelectionalButton } from '../atoms';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
-import { UserType } from '../../types';
+import { HomeContext } from '../../contexts/Home';
 
-interface Props {
-  userInfo: UserType;
-  onPressLogin: () => void;
-  onPressChangeProject: () => void;
-  onPressShowAccount: () => void;
-  onPressLogout: () => void;
-}
-
-export const HomeAccountButton = (props: Props) => {
-  const { userInfo, onPressLogin, onPressChangeProject, onPressShowAccount, onPressLogout } = props;
+export const HomeAccountButton = () => {
+  const { user, gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(HomeContext);
   const [valid, setValid] = useState(true);
 
   const initial = useMemo(() => {
-    if (userInfo.displayName && userInfo.displayName !== '') {
-      return userInfo.displayName[0].toUpperCase();
-    } else if (userInfo.email && userInfo.email !== null) {
-      return userInfo.email[0].toUpperCase();
+    if (user.displayName && user.displayName !== '') {
+      return user.displayName[0].toUpperCase();
+    } else if (user.email && user.email !== null) {
+      return user.email[0].toUpperCase();
     } else {
       return '@';
     }
-  }, [userInfo]);
+  }, [user]);
 
-  useEffect(() => setValid(true), [userInfo.photoURL]);
+  useEffect(() => setValid(true), [user.photoURL]);
 
   return (
     <View style={styles.button}>
-      {userInfo.uid === undefined ? (
+      {user.uid === undefined ? (
         <Button
           name={HOME_ACCOUNT_BTN.ACCOUNT}
           //color={COLOR.WHITE}
           backgroundColor={COLOR.ALFAORANGE}
           borderColor={COLOR.ORANGE}
           borderWidth={1}
-          onPress={onPressLogin}
+          onPress={gotoLogin}
         />
       ) : (
         <>
           <SelectionalButton selectedButton={'ACCOUNT'} directionRow="column">
-            {userInfo.photoURL !== null && valid ? (
+            {user.photoURL !== null && valid ? (
               //@ts-ignore
               <TouchableOpacity id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
-                <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: userInfo.photoURL }} />
+                <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: user.photoURL }} />
               </TouchableOpacity>
             ) : (
               //@ts-ignore
@@ -70,20 +62,20 @@ export const HomeAccountButton = (props: Props) => {
                 id="PROJECTS"
                 name={HOME_ACCOUNT_BTN.PROJECTS}
                 backgroundColor={COLOR.ORANGE}
-                onPressCustom={onPressChangeProject}
+                onPressCustom={gotoProjects}
               />
             )}
             <Button
               id="SETTING"
               name={HOME_ACCOUNT_BTN.SETTING}
               backgroundColor={COLOR.ORANGE}
-              onPressCustom={onPressShowAccount}
+              onPressCustom={gotoAccount}
             />
             <Button
               id="LOGOUT"
               name={HOME_ACCOUNT_BTN.LOGOUT}
               backgroundColor={COLOR.ORANGE}
-              onPressCustom={onPressLogout}
+              onPressCustom={pressLogout}
             />
           </SelectionalButton>
         </>
