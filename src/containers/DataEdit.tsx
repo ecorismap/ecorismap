@@ -9,6 +9,7 @@ import { Alert } from '../components/atoms/Alert';
 import { useDisplay } from '../hooks/useDisplay';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
+import { DataEditContext } from '../contexts/DataEdit';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -301,35 +302,39 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   }, [cancelUpdate, closeData, isEditingRecord, unselectRecord]);
 
   return (
-    <DataEdit
-      data={targetRecord}
-      layer={targetLayer}
-      latlon={latlon}
-      photo={selectedPhoto}
-      isEditingRecord={isEditingRecord}
-      isDecimal={isDecimal}
-      isPhotoViewOpen={isPhotoViewOpen}
-      changeLatLonType={changeLatLonType}
-      changeLatLon={changeLatLon}
-      changeField={changeField}
-      submitField={submitField}
-      recordNumber={recordNumber}
-      maxRecordNumber={maxRecordNumber}
-      onChangeRecord={onChangeRecord}
-      pressSaveData={pressSaveData}
-      pressDeleteData={pressDeleteData}
-      pressTakePhoto={pressTakePhoto}
-      pressPickPhoto={pressPickPhoto}
-      pressClosePhoto={pressClosePhoto}
-      pressRemovePhoto={pressRemovePhoto}
-      pressDownloadPhoto={pressDownloadPhoto}
-      pressPhoto={pressPhoto}
-      pressAddReferenceData={pressAddReferenceData}
-      gotoGoogleMaps={gotoGoogleMaps}
-      gotoHomeAndJump={gotoHomeAndJump}
-      gotoBack={gotoBack}
-      gotoReferenceData={gotoReferenceData}
-      onClose={onClose}
-    />
+    <DataEditContext.Provider
+      value={{
+        layer: targetLayer,
+        data: targetRecord,
+        latlon,
+        photo: selectedPhoto,
+        isPhotoViewOpen,
+        isEditingRecord,
+        isDecimal,
+        recordNumber,
+        maxRecordNumber,
+        pressSaveData,
+        changeLatLonType,
+        changeLatLon,
+        changeField,
+        submitField,
+        onChangeRecord,
+        pressPhoto,
+        pressTakePhoto,
+        pressPickPhoto,
+        pressClosePhoto,
+        pressRemovePhoto,
+        pressDownloadPhoto,
+        pressDeleteData,
+        pressAddReferenceData,
+        gotoHomeAndJump,
+        gotoGoogleMaps,
+        gotoBack,
+        gotoReferenceData,
+        onClose,
+      }}
+    >
+      <DataEdit />
+    </DataEditContext.Provider>
   );
 }

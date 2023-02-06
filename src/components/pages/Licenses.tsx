@@ -1,14 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, FlatList } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { LicensesContext } from '../../contexts/Licenses';
 
-interface Props {
-  packageNames: string[];
-  pressPackageName: (item: string) => void;
-}
-
-export default function Licenses(props: Props) {
-  const { packageNames, pressPackageName } = props;
+export default function Licenses() {
+  const { packageNames, pressPackageName } = useContext(LicensesContext);
 
   const styles = StyleSheet.create({
     td: {

@@ -1,24 +1,16 @@
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import { TileMapItemType } from '../../types';
 import { MapListButtons } from '../organisms/MapListButtons';
 import { MapListTable } from '../organisms/MapListTable';
 import { t } from '../../i18n/config';
+import { MapListContext } from '../../contexts/MapList';
 
-interface Props {
-  data: TileMapItemType[];
-  isLoading: boolean;
-  addMap: (map: TileMapItemType) => void;
-  reloadMapList: () => void;
-  gotoBack: () => void;
-}
-
-export default function MapListScreen(props: Props) {
+export default function MapListScreen() {
   //console.log('render Maps');
-  const { data, isLoading, addMap, reloadMapList, gotoBack } = props;
+  const { isLoading, gotoBack } = useContext(MapListContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -42,10 +34,10 @@ export default function MapListScreen(props: Props) {
         </View>
       ) : (
         <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-          <MapListTable data={data} addMap={addMap} />
+          <MapListTable />
         </ScrollView>
       )}
-      <MapListButtons reloadMapList={reloadMapList} />
+      <MapListButtons />
     </View>
   );
 }

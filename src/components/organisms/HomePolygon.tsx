@@ -26,6 +26,7 @@ export const Polygon = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
+        if (feature.coords.length === 0) return null;
         const label =
           layer.label === ''
             ? ''

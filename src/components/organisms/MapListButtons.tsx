@@ -1,13 +1,11 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { MAPLIST_BTN } from '../../constants/AppConstants';
+import { MapListContext } from '../../contexts/MapList';
 import { Button } from '../atoms';
 
-interface Props {
-  reloadMapList: () => void;
-}
-export const MapListButtons = (props: Props) => {
-  const { reloadMapList } = props;
+export const MapListButtons = () => {
+  const { reloadMapList } = useContext(MapListContext);
 
   return (
     <View style={styles.buttonContainer}>
