@@ -1,40 +1,35 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
+import { DataEditContext } from '../../contexts/DataEdit';
 
-interface Props {
-  onPressJumpToMap: () => void;
-  onPressJumpToGoogle: () => void;
-  onPressDeleteData: () => void;
-  onPressSaveData: () => void;
-  isEditing: boolean;
-}
+export const DataEditButtons = () => {
+  const { isEditingRecord, pressSaveData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps } =
+    useContext(DataEditContext);
 
-export const DataEditButtons = (props: Props) => {
-  const { onPressJumpToMap, onPressJumpToGoogle, onPressDeleteData, onPressSaveData, isEditing } = props;
   return (
     <>
       <View style={styles.buttonContainer}>
         <Button
           name={DATAEDIT_BTN.JUMP}
-          onPress={onPressJumpToMap}
-          backgroundColor={isEditing ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditing}
+          onPress={gotoHomeAndJump}
+          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isEditingRecord}
         />
         <Button
           name={DATAEDIT_BTN.GOOGLE}
-          onPress={onPressJumpToGoogle}
-          backgroundColor={isEditing ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditing}
+          onPress={gotoGoogleMaps}
+          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isEditingRecord}
         />
-        <Button name={DATAEDIT_BTN.DELETE} onPress={onPressDeleteData} backgroundColor={COLOR.BLUE} />
+        <Button name={DATAEDIT_BTN.DELETE} onPress={pressDeleteData} backgroundColor={COLOR.BLUE} />
         <Button
           name={DATAEDIT_BTN.SAVE}
-          onPress={onPressSaveData}
-          backgroundColor={isEditing ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!isEditing}
+          onPress={pressSaveData}
+          backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!isEditingRecord}
         />
       </View>
     </>

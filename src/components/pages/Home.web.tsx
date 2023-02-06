@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useContext } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
@@ -15,7 +15,6 @@ import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
 import { Polygon } from '../organisms/HomePolygon.web';
 import { Line } from '../organisms/HomeLine';
 import { TileMapType } from '../../types';
-import { HomeProps } from './Home';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
@@ -32,57 +31,37 @@ import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
+import { HomeContext } from '../../contexts/Home';
 
-export default function HomeScreen({
-  pointDataSet,
-  lineDataSet,
-  polygonDataSet,
-  isDownloadPage,
-  downloadProgress,
-  savedTileSize,
-  restored,
-  mapViewRef,
-  gpsState,
-  trackingState,
-  currentLocation,
-  zoom,
-  zoomDecimal,
-  isEditingLine,
-  isEditingObject,
-  drawLine,
-  editingLine,
-  selectLine,
-  tileMaps,
-  isDownloading,
-  featureButton,
-  currentDrawTool,
-  currentPointTool,
-  currentLineTool,
-  currentPolygonTool,
-  selectedRecord,
-  isDataOpened,
-  isLoading,
-  onRegionChangeMapView,
-  onPressMapView,
-  onDrop,
-  onPressSvgView,
-  onMoveSvgView,
-  onReleaseSvgView,
-  pressStopDownloadTiles,
-  pressDeleteTiles,
-  pressTracking,
-  pressUndoDraw,
-  pressSaveDraw,
-  pressDeleteDraw,
-  gotoMaps,
-  gotoSettings,
-  gotoLayers,
-  selectDrawTool,
-  selectFeatureButton,
-  setPointTool,
-  setLineTool,
-  setPolygonTool,
-}: HomeProps) {
+export default function HomeScreen() {
+  const {
+    pointDataSet,
+    lineDataSet,
+    polygonDataSet,
+    isDownloadPage,
+    downloadProgress,
+    savedTileSize,
+    restored,
+    mapViewRef,
+    gpsState,
+    trackingState,
+    currentLocation,
+    zoom,
+    zoomDecimal,
+    tileMaps,
+    isDownloading,
+    featureButton,
+    currentDrawTool,
+    selectedRecord,
+    isDataOpened,
+    isLoading,
+    onRegionChangeMapView,
+    onPressMapView,
+    onDrop,
+    pressStopDownloadTiles,
+    pressDeleteTiles,
+    gotoMaps,
+  } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
   const { mapRegion, windowWidth, isLandscape } = useWindow();
@@ -416,18 +395,7 @@ export default function HomeScreen({
         }}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && (
-          <SvgView
-            drawLine={drawLine}
-            editingLine={editingLine}
-            selectLine={selectLine}
-            currentDrawTool={currentDrawTool}
-            isEditingObject={isEditingObject}
-            onPress={onPressSvgView}
-            onMove={onMoveSvgView}
-            onRelease={onReleaseSvgView}
-          />
-        )}
+        {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && <SvgView />}
         <div {...getRootProps({ className: 'dropzone' })}>
           <input {...getInputProps()} />
 
@@ -541,38 +509,9 @@ export default function HomeScreen({
           <>
             {!isDownloadPage &&
               (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') &&
-              isDataOpened !== 'expanded' && (
-                <HomeDrawTools
-                  isPositionRight={isDataOpened === 'opened' || isLandscape}
-                  isEditing={isEditingLine}
-                  isEditingObject={isEditingObject}
-                  isSelected={drawLine.length > 0 && drawLine[0].record !== undefined}
-                  featureButton={featureButton}
-                  currentDrawTool={currentDrawTool}
-                  currentPointTool={currentPointTool}
-                  currentLineTool={currentLineTool}
-                  currentPolygonTool={currentPolygonTool}
-                  selectDrawTool={selectDrawTool}
-                  pressUndoDraw={pressUndoDraw}
-                  pressSaveDraw={pressSaveDraw}
-                  pressDeleteDraw={pressDeleteDraw}
-                  setPointTool={setPointTool}
-                  setLineTool={setLineTool}
-                  setPolygonTool={setPolygonTool}
-                />
-              )}
+              isDataOpened !== 'expanded' && <HomeDrawTools />}
 
-            {isDataOpened !== 'expanded' && (
-              <HomeButtons
-                featureButton={featureButton}
-                trackingState={trackingState}
-                showMap={gotoMaps}
-                showSettings={gotoSettings}
-                onPressTracking={pressTracking}
-                showLayer={gotoLayers}
-                selectFeatureButton={selectFeatureButton}
-              />
-            )}
+            {isDataOpened !== 'expanded' && <HomeButtons />}
           </>
         )}
       </View>

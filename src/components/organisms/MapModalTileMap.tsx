@@ -1,26 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet, ScrollView } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
-import { TileMapType } from '../../types';
 import Slider from '../atoms/Slider';
 import { CheckBox } from '../molecules/CheckBox';
 import { formattedInputs } from '../../utils/Format';
 import { SmallButton } from '../atoms';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
+import { MapsContext } from '../../contexts/Maps';
 
-interface Props {
-  visible: boolean;
-  deleteTileMap: (tileMap: TileMapType) => void;
-  pressOK: (tileMap: TileMapType) => void;
-  pressCancel: () => void;
-  data: TileMapType;
-}
-
-export const MapModalTileMap = React.memo((props: Props) => {
+export const MapModalTileMap = React.memo(() => {
   //console.log('render ModalTileMap');
-  const { visible, deleteTileMap, pressOK, pressCancel, data } = props;
+  const {
+    editedMap: data,
+    isMapEditorOpen: visible,
+    pressDeleteMap,
+    pressEditMapOK,
+    pressEditMapCancel,
+  } = useContext(MapsContext);
 
   const [tileName, setTileName] = useState('');
   const [tileURL, setTileURL] = useState('');
@@ -140,7 +138,7 @@ export const MapModalTileMap = React.memo((props: Props) => {
               <SmallButton
                 name="delete"
                 onPress={() => {
-                  deleteTileMap(tileMap());
+                  pressDeleteMap(tileMap());
                 }}
                 backgroundColor={COLOR.DARKRED}
               />
@@ -225,13 +223,13 @@ export const MapModalTileMap = React.memo((props: Props) => {
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
-                onPress={() => (checkInputs() ? pressOK(tileMap()) : null)}
+                onPress={() => (checkInputs() ? pressEditMapOK(tileMap()) : null)}
               >
                 <Text>OK</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
+                onPress={pressEditMapCancel}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>

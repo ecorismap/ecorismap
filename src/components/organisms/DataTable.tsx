@@ -1,30 +1,27 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
 import { CheckBox } from '../molecules/CheckBox';
-import { RecordType, LayerType, PhotoType, FormatType } from '../../types';
-import { SortOrderType } from '../../utils/Data';
+import { RecordType, PhotoType } from '../../types';
 import dayjs from '../../i18n/dayjs';
+import { DataContext } from '../../contexts/Data';
 
-interface Props {
-  projectId: string | undefined;
-  data: RecordType[];
-  layer: LayerType;
-  checkList: boolean[];
-  sortedOrder: SortOrderType;
-  sortedName: string;
-  onSort: (colname: string, format: FormatType | '_user_') => void;
-  onPress: (index: number) => void;
-  changeChecked: (index: number, doCheck: boolean) => void;
-  changeVisible: (index: number, visible: boolean) => void;
-}
-
-export const DataTable = React.memo((props: Props) => {
-  const { projectId, data, layer, checkList, sortedOrder, sortedName, onSort, onPress, changeChecked, changeVisible } =
-    props;
+export const DataTable = React.memo(() => {
   //console.log(data[0]);
+
+  return (
+    <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
+      <DataTitle />
+      <DataItems />
+    </View>
+  );
+});
+
+const DataTitle = React.memo(() => {
+  const { projectId, layer, sortedOrder, sortedName, changeOrder, changeChecked, changeVisible } =
+    useContext(DataContext);
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
 
@@ -37,48 +34,6 @@ export const DataTable = React.memo((props: Props) => {
     setVisibleAll(!visibleAll);
     changeVisible(-1, !visibleAll);
   }, [changeVisible, visibleAll]);
-
-  return (
-    <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-      <DataTitle
-        {...{
-          projectId,
-          layer,
-          visibleAll,
-          sortedOrder,
-          sortedName,
-          onVisibleAll,
-          checkedAll,
-          onCheckAll,
-          onSort,
-        }}
-      />
-      <DataItems
-        projectId={projectId}
-        data={data}
-        layer={layer}
-        checkList={checkList}
-        changeVisible={changeVisible}
-        changeChecked={changeChecked}
-        onPress={onPress}
-      />
-    </View>
-  );
-});
-
-interface Props_DataTitle {
-  projectId: string | undefined;
-  layer: LayerType;
-  visibleAll: boolean;
-  sortedOrder: SortOrderType;
-  sortedName: string;
-  onVisibleAll: () => void;
-  checkedAll: boolean;
-  onCheckAll: (doCheck: boolean) => void;
-  onSort: (colname: string, format: FormatType | '_user_') => void;
-}
-const DataTitle = React.memo((props: Props_DataTitle) => {
-  const { projectId, layer, visibleAll, sortedOrder, sortedName, onVisibleAll, checkedAll, onCheckAll, onSort } = props;
 
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
@@ -94,7 +49,7 @@ const DataTitle = React.memo((props: Props_DataTitle) => {
         <CheckBox style={{ backgroundColor: COLOR.GRAY1 }} checked={checkedAll} onCheck={onCheckAll} />
       </View>
       {projectId !== undefined && (
-        <TouchableOpacity style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onSort('_user_', '_user_')}>
+        <TouchableOpacity style={[styles.th, { flex: 2, width: 100 }]} onPress={() => changeOrder('_user_', '_user_')}>
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
@@ -113,7 +68,7 @@ const DataTitle = React.memo((props: Props_DataTitle) => {
           <TouchableOpacity
             key={field_index}
             style={[styles.th, { flex: 2, width: 120 }]}
-            onPress={() => onSort(name, format)}
+            onPress={() => changeOrder(name, format)}
           >
             <Text>{name}</Text>
             {sortedName === name && sortedOrder === 'ASCENDING' && (
@@ -132,97 +87,77 @@ const DataTitle = React.memo((props: Props_DataTitle) => {
 interface Props_DataTableComponent {
   item: RecordType;
   index: number;
-  projectId: string | undefined;
-  layer: LayerType;
   checked: boolean;
-  changeChecked: (index: number, doCheck: boolean) => void;
-  onPress: (index: number) => void;
-  changeVisible: (index: number, visible: boolean) => void;
 }
 
-const DataTableComponent = React.memo(
-  ({ item, index, projectId, layer, checked, changeChecked, onPress, changeVisible }: Props_DataTableComponent) => {
-    //console.log('render renderItems');
-    //console.log(item);
-    return (
-      <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
-        <View style={[styles.td, { width: 50 }]}>
-          <RectButton2
-            name={item.visible ? 'eye' : 'eye-off-outline'}
-            onPress={() => changeVisible(index, !item.visible)}
-          />
-        </View>
+const DataTableComponent = React.memo(({ item, index, checked }: Props_DataTableComponent) => {
+  const { projectId, layer, gotoDataEdit, changeChecked, changeVisible } = useContext(DataContext);
+  //console.log('render renderItems');
+  //console.log(item);
+  return (
+    <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
+      <View style={[styles.td, { width: 50 }]}>
+        <RectButton2
+          name={item.visible ? 'eye' : 'eye-off-outline'}
+          onPress={() => changeVisible(index, !item.visible)}
+        />
+      </View>
+      <View style={[styles.td, { width: 60 }]}>
+        <Button
+          color={COLOR.GRAY4}
+          style={{ backgroundColor: COLOR.MAIN }}
+          borderRadius={0}
+          name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+          onPress={() => changeChecked(index, !checked)}
+        />
+      </View>
+
+      {projectId !== undefined && (
+        <TouchableOpacity style={[styles.td, { flex: 2, width: 100 }]} onPress={() => gotoDataEdit(index)}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            {item.displayName}
+          </Text>
+        </TouchableOpacity>
+      )}
+      {projectId === undefined && layer.field.length === 0 ? (
         <View style={[styles.td, { width: 60 }]}>
           <Button
             color={COLOR.GRAY4}
             style={{ backgroundColor: COLOR.MAIN }}
             borderRadius={0}
-            name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-            onPress={() => changeChecked(index, !checked)}
+            name={'menu-right'}
+            onPress={() => gotoDataEdit(index)}
           />
         </View>
-
-        {projectId !== undefined && (
-          <TouchableOpacity style={[styles.td, { flex: 2, width: 100 }]} onPress={() => onPress(index)}>
+      ) : (
+        layer.field.map(({ name, format }, field_index) => (
+          <TouchableOpacity
+            key={field_index}
+            style={[styles.td, { flex: 2, width: 120 }]}
+            onPress={() => gotoDataEdit(index)}
+          >
             <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-              {item.displayName}
+              {format === 'DATETIME' && item.field[name] !== ''
+                ? dayjs(item.field[name] as string).format('L HH:mm')
+                : format === 'PHOTO'
+                ? `${(item.field[name] as PhotoType[]).length} pic`
+                : format === 'REFERENCE'
+                ? 'Reference'
+                : item.field[name]}
             </Text>
           </TouchableOpacity>
-        )}
-        {projectId === undefined && layer.field.length === 0 ? (
-          <View style={[styles.td, { width: 60 }]}>
-            <Button
-              color={COLOR.GRAY4}
-              style={{ backgroundColor: COLOR.MAIN }}
-              borderRadius={0}
-              name={'menu-right'}
-              onPress={() => onPress(index)}
-            />
-          </View>
-        ) : (
-          layer.field.map(({ name, format }, field_index) => (
-            <TouchableOpacity
-              key={field_index}
-              style={[styles.td, { flex: 2, width: 120 }]}
-              onPress={() => onPress(index)}
-            >
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                {format === 'DATETIME' && item.field[name] !== ''
-                  ? dayjs(item.field[name] as string).format('L HH:mm')
-                  : format === 'PHOTO'
-                  ? `${(item.field[name] as PhotoType[]).length} pic`
-                  : format === 'REFERENCE'
-                  ? 'Reference'
-                  : item.field[name]}
-              </Text>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-    );
-  }
-);
+        ))
+      )}
+    </View>
+  );
+});
 
-interface Props_DataItems {
-  projectId: string | undefined;
-  data: RecordType[];
-  layer: LayerType;
-  checkList: boolean[];
-  onPress: (index: number) => void;
-  changeChecked: (index: number, doCheck: boolean) => void;
-  changeVisible: (index: number, visible: boolean) => void;
-}
-
-const DataItems = React.memo((props: Props_DataItems) => {
-  const { projectId, data, layer, checkList, changeChecked, onPress, changeVisible } = props;
+const DataItems = React.memo(() => {
+  const { data, checkList } = useContext(DataContext);
   //@ts-ignore
   const renderItem = useCallback(
-    ({ item, index }) => (
-      <DataTableComponent
-        {...{ item, index, projectId, layer, checked: checkList[index], changeChecked, onPress, changeVisible }}
-      />
-    ),
-    [changeChecked, changeVisible, checkList, layer, onPress, projectId]
+    ({ item, index }) => <DataTableComponent {...{ item, index, checked: checkList[index] }} />,
+    [checkList]
   );
   const keyExtractor = useCallback((item) => item.id, []);
   return <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />;

@@ -1,23 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, Image, Modal, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { DataEditContext } from '../../contexts/DataEdit';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
-
-import { SelectedPhotoType } from '../../types';
 import { Button } from '../atoms';
 
-interface Props {
-  visible: boolean;
-  photo: SelectedPhotoType;
-  pressClose: () => void;
-  pressRemove: () => void;
-  pressDownloadPhoto: () => void;
-}
+export const DataEditModalPhotoView = () => {
+  const { photo, isPhotoViewOpen, pressClosePhoto, pressRemovePhoto, pressDownloadPhoto } = useContext(DataEditContext);
 
-export const DataEditModalPhotoView = (props: Props) => {
   const { windowWidth } = useWindow();
-  const { visible, photo, pressClose, pressRemove, pressDownloadPhoto } = props;
+  // const { visible, photo, pressClose, pressRemove, pressDownloadPhoto } = props;
 
   const photoSize = useMemo(() => {
     return {
@@ -28,7 +21,7 @@ export const DataEditModalPhotoView = (props: Props) => {
 
   //console.log(photo);
   return (
-    <Modal animationType="none" transparent={false} visible={visible}>
+    <Modal animationType="none" transparent={false} visible={isPhotoViewOpen}>
       <View style={styles.modalCenteredView}>
         <View style={[styles.modalContents, { width: windowWidth * 1 }]}>
           {photo.hasLocal && photo.uri ? (
@@ -53,12 +46,12 @@ export const DataEditModalPhotoView = (props: Props) => {
             </View>
           )}
           <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
-            <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressClose}>
+            <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressClosePhoto}>
               <Text>{t('common.close')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
-              onPress={pressRemove}
+              onPress={pressRemovePhoto}
             >
               <Text style={{ color: COLOR.WHITE }}>{t('common.delete')}</Text>
             </TouchableOpacity>

@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import { Props_Licenses } from '../routes';
 import { Linking } from 'react-native';
 import Licenses from '../components/pages/Licenses';
+import { LicensesContext } from '../contexts/Licenses';
 import licenseFile from '../licenses.json';
 
-export default function LicensesContainers({}: Props_Licenses) {
+export default function LicensesContainers() {
   const packageNames = Object.keys(licenseFile);
 
   const pressPackageName = useCallback((packageName) => {
@@ -13,5 +13,9 @@ export default function LicensesContainers({}: Props_Licenses) {
     Linking.openURL(url);
   }, []);
 
-  return <Licenses packageNames={packageNames} pressPackageName={pressPackageName} />;
+  return (
+    <LicensesContext.Provider value={{ packageNames, pressPackageName }}>
+      <Licenses />
+    </LicensesContext.Provider>
+  );
 }

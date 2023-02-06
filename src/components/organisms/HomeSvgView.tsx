@@ -1,5 +1,4 @@
-import { Position } from '@turf/turf';
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import {
   GestureResponderEvent,
   PanResponder,
@@ -11,25 +10,24 @@ import {
 import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { v4 as uuidv4 } from 'uuid';
-import { DrawLineType, DrawToolType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
+import { HomeContext } from '../../contexts/Home';
 
-interface Props {
-  drawLine: DrawLineType[];
-  editingLine: Position[];
-  selectLine: Position[];
-  currentDrawTool: DrawToolType;
-  isEditingObject: boolean;
-  onPress: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
-  onMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
-  onRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
-}
 //React.Memoすると描画が更新されない
-export const SvgView = (props: Props) => {
-  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject, onPress, onMove, onRelease } = props;
+export const SvgView = () => {
+  const {
+    drawLine,
+    editingLine,
+    selectLine,
+    currentDrawTool,
+    isEditingObject,
+    onPressSvgView,
+    onMoveSvgView,
+    onReleaseSvgView,
+  } = useContext(HomeContext);
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   const panResponder: PanResponderInstance = useMemo(
@@ -38,16 +36,16 @@ export const SvgView = (props: Props) => {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onPress(e, gestureState);
+          onPressSvgView(e, gestureState);
         },
         onPanResponderMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onMove(e, gestureState);
+          onMoveSvgView(e, gestureState);
         },
         onPanResponderRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onRelease(e, gestureState);
+          onReleaseSvgView(e, gestureState);
         },
       }),
-    [onMove, onPress, onRelease]
+    [onMoveSvgView, onPressSvgView, onReleaseSvgView]
   );
 
   const editingStartStyle = '';

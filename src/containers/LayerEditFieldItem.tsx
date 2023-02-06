@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import LayerEditFieldItem from '../components/pages/LayerEditFieldItem';
+import { LayerEditFieldItemContext } from '../contexts/LayerEditFieldItem';
 import { useFieldList } from '../hooks/useFieldList';
 import { Props_LayerEditFieldItem } from '../routes';
 
@@ -28,19 +29,23 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
   }, [isEdited, itemValues, navigation, route.params.fieldIndex, route.params.targetLayer]);
 
   return (
-    <LayerEditFieldItem
-      editable={editable}
-      itemValues={itemValues}
-      itemFormat={route.params.fieldItem.format}
-      pickerValues={pickerValues}
-      refLayerIds={refLayerIds}
-      refLayerNames={refLayerNames}
-      refFieldNames={refFieldNames}
-      primaryFieldNames={primaryFieldNames}
-      changeValue={changeValue}
-      pressAddValue={addValue}
-      pressDeleteValue={deleteValue}
-      gotoBack={gotoBack}
-    />
+    <LayerEditFieldItemContext.Provider
+      value={{
+        itemValues,
+        itemFormat: route.params.fieldItem.format,
+        pickerValues,
+        refLayerIds,
+        refLayerNames,
+        refFieldNames,
+        primaryFieldNames,
+        editable,
+        changeValue,
+        pressAddValue: addValue,
+        pressDeleteValue: deleteValue,
+        gotoBack,
+      }}
+    >
+      <LayerEditFieldItem />
+    </LayerEditFieldItemContext.Provider>
   );
 }

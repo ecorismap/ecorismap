@@ -1,58 +1,17 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, FlatList } from 'react-native';
 
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
 import { LayerEditFieldTable, LayerEditFieldTitle } from '../organisms/LayerEditFieldTable';
 import { LayerEditButton } from '../organisms/LayerEditButton';
-
-import { FeatureType, FormatType, LayerType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
+import { LayerEditContext } from '../../contexts/LayerEdit';
 
-interface Props {
-  layer: LayerType;
-  isEdited: boolean;
-  isNewLayer: boolean;
-  editable: boolean;
-  onChangeLayerName: (val: string) => void;
-  submitLayerName: () => void;
-  onChangeFeatureType: (itemValue: FeatureType) => void;
-  onChangeFieldOrder: (index: number) => void;
-  onChangeFieldName: (index: number, val: string) => void;
-  submitFieldName: (index: number) => void;
-  onChangeFieldFormat: (index: number, itemValue: FormatType) => void;
-  pressSaveLayer: () => void;
-  pressDeleteField: (id: number) => void;
-  pressAddField: () => void;
-  pressDeleteLayer: () => void;
-  gotoLayerEditFeatureStyle: () => void;
-  gotoLayerEditFieldItem: (fieldIndex: number, fieldItem: LayerType['field'][0]) => void;
-  gotoBack: () => void;
-}
-
-export default function LayerEditScreen(props: Props) {
+export default function LayerEditScreen() {
   //console.log('render LayerEdit');
-  const {
-    layer,
-    isEdited,
-    isNewLayer,
-    editable,
-    onChangeLayerName,
-    submitLayerName,
-    onChangeFeatureType,
-    onChangeFieldOrder,
-    onChangeFieldName,
-    submitFieldName,
-    onChangeFieldFormat,
-    pressSaveLayer,
-    pressDeleteField,
-    pressAddField,
-    pressDeleteLayer,
-    gotoLayerEditFeatureStyle,
-    gotoLayerEditFieldItem,
-    gotoBack,
-  } = props;
+  const { gotoBack } = useContext(LayerEditContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -73,39 +32,14 @@ export default function LayerEditScreen(props: Props) {
         keyExtractor={() => ''}
         renderItem={() => (
           <>
-            <LayerName
-              value={layer.name}
-              editable={editable}
-              onChangeText={onChangeLayerName}
-              onEndEditing={submitLayerName}
-            />
-            <LayerStyle
-              editable={editable}
-              layer={layer}
-              isNewLayer={isNewLayer}
-              editFeatureStyle={gotoLayerEditFeatureStyle}
-              changeFeatureType={onChangeFeatureType}
-            />
-            <LayerEditFieldTitle editable={editable} addField={pressAddField} />
-            <LayerEditFieldTable
-              editable={editable}
-              data={layer.field}
-              changeFieldNameText={onChangeFieldName}
-              submitFieldNameText={submitFieldName}
-              changeFieldFormatValue={onChangeFieldFormat}
-              editFieldListItem={gotoLayerEditFieldItem}
-              deleteField={pressDeleteField}
-              changeFieldOrder={onChangeFieldOrder}
-            />
+            <LayerName />
+            <LayerStyle />
+            <LayerEditFieldTitle />
+            <LayerEditFieldTable />
           </>
         )}
       />
-      <LayerEditButton
-        isEdited={isEdited}
-        editable={editable}
-        deleteLayer={pressDeleteLayer}
-        pressSaveLayer={pressSaveLayer}
-      />
+      <LayerEditButton />
     </View>
   );
 }
