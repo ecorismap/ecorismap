@@ -1,18 +1,14 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import { SketchPicker } from 'react-color';
 import { t } from '../../i18n/config';
+import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-interface Props {
-  visible: boolean;
-  pressOK: (hue: number, sat: number, val: number) => void;
-  pressCancel: () => void;
-}
-
-export const FeatureStyleModalColorPicker = (props: Props) => {
+export const FeatureStyleModalColorPicker = () => {
+  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = useContext(LayerEditFeatureStyleContext);
   const [val, setVal] = useState({
     a: 0.74,
     h: 161.2987012987013,
@@ -20,10 +16,8 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
     v: 0.45096,
   });
 
-  const { visible, pressOK, pressCancel } = props;
-
   return (
-    <Modal animationType="none" transparent={true} visible={visible}>
+    <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
@@ -38,12 +32,15 @@ export const FeatureStyleModalColorPicker = (props: Props) => {
             />
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK(val.h, val.s, val.v)}>
+              <TouchableOpacity
+                style={styles.modalOKCancelButton}
+                onPress={() => pressSelectColorOK(val.h, val.s, val.v)}
+              >
                 <Text>OK</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
+                onPress={pressSelectColorCancel}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>
