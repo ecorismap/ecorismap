@@ -1,25 +1,17 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform, FlatList } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 import { SmallButton, RectButton2, RadioButton } from '../atoms';
-import { TileMapType } from '../../types';
+import { MapsContext } from '../../contexts/Maps';
 
-interface Props {
-  tileMap: TileMapType[];
-  changeMapOrder: (index: number) => void;
-  changeVisible: (visible: boolean, index: number) => void;
-  downloadTileMap: (item: TileMapType) => void;
-  showModalTileMap: (item: TileMapType) => void;
-}
-
-export const MapItems = React.memo((props: Props) => {
-  const { tileMap, changeMapOrder, changeVisible, downloadTileMap, showModalTileMap } = props;
+export const MapItems = React.memo(() => {
+  const { maps, changeMapOrder, changeVisible, pressDownloadMap, pressOpenEditMap } = useContext(MapsContext);
 
   return (
     <FlatList
       style={{ borderTopWidth: 1, borderColor: COLOR.GRAY2 }}
-      data={tileMap}
+      data={maps}
       keyExtractor={(item) => item.id}
       renderItem={({ item, index }) => (
         <View style={styles.tr}>
@@ -34,7 +26,7 @@ export const MapItems = React.memo((props: Props) => {
           {/*************** Edit Button ************************************* */}
           <View style={[styles.td, { flex: 1 }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
-              <SmallButton name="pencil" onPress={() => showModalTileMap(item)} backgroundColor={COLOR.BLUE} />
+              <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.BLUE} />
             )}
           </View>
           {/*************** Download Button ************************************* */}
@@ -42,7 +34,7 @@ export const MapItems = React.memo((props: Props) => {
             {item.id !== 'standard' && item.id !== 'hybrid' && Platform.OS !== 'web' && (
               <SmallButton
                 name="download"
-                onPress={() => downloadTileMap(item)}
+                onPress={() => pressDownloadMap(item)}
                 borderRadius={5}
                 backgroundColor={COLOR.GRAY3}
               />

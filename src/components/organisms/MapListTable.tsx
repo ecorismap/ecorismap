@@ -1,18 +1,15 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { TileMapItemType } from '../../types';
 import { t } from '../../i18n/config';
+import { MapListContext } from '../../contexts/MapList';
 
-interface Props {
-  data: TileMapItemType[];
-  addMap: (map: TileMapItemType) => void;
-}
+export const MapListTable = React.memo(() => {
+  const { data, addMap } = useContext(MapListContext);
 
-export const MapListTable = React.memo((props: Props) => {
-  const { data, addMap } = props;
   const titles = [
     t('common.name'),
     t('common.url'),

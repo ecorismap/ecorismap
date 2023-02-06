@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
+import { MapsContext } from '../contexts/Maps';
 import { useDisplay } from '../hooks/useDisplay';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
@@ -86,20 +87,24 @@ export default function MapContainer({ navigation }: Props_Maps) {
   }, [navigation]);
 
   return (
-    <Maps
-      maps={maps}
-      editedMap={editedMap}
-      isOffline={isOffline}
-      isMapEditorOpen={isMapEditorOpen}
-      changeVisible={changeVisible}
-      changeMapOrder={changeMapOrder}
-      pressToggleOnline={pressToggleOnline}
-      pressDownloadMap={pressDownloadMap}
-      pressDeleteMap={pressDeleteMap}
-      pressOpenEditMap={pressOpenEditMap}
-      pressEditMapOK={pressEditMapOK}
-      pressEditMapCancel={pressEditMapCancel}
-      gotoMapList={gotoMapList}
-    />
+    <MapsContext.Provider
+      value={{
+        isOffline,
+        maps,
+        editedMap,
+        isMapEditorOpen,
+        changeVisible,
+        changeMapOrder,
+        pressToggleOnline,
+        pressDownloadMap,
+        pressDeleteMap,
+        pressOpenEditMap,
+        pressEditMapOK,
+        pressEditMapCancel,
+        gotoMapList,
+      }}
+    >
+      <Maps />
+    </MapsContext.Provider>
   );
 }
