@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useContext } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
@@ -36,6 +36,8 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
+import { HomeZoomButton } from '../organisms/HomeZoomButton';
+import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 
 export default function HomeScreen() {
   const {
@@ -66,25 +68,27 @@ export default function HomeScreen() {
     projectName,
     pressProjectLabel,
     onRegionChangeMapView,
-    onPressMapView,
+    onDrop,
     pressStopDownloadTiles,
     pressDeleteTiles,
     gotoMaps,
-    onDrop,
+    pressZoomIn,
+    pressZoomOut,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
   const { mapRegion, windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
+  const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
 
-  const hoverFeatureId = useRef<
-    | {
-        source: string;
-        id: number;
-      }
-    | undefined
-  >();
+  // const hoverFeatureId = useRef<
+  //   | {
+  //       source: string;
+  //       id: number;
+  //     }
+  //   | undefined
+  // >();
   // const lineAndPolygonLayerIds = useMemo(() => {
   //   const lineIds = lineDataSet.flatMap((d) => {
   //     const layer = layers.find((v) => v.id === d.layerId);
@@ -149,6 +153,10 @@ export default function HomeScreen() {
       ),
     [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
   );
+
+  useEffect(() => {
+    selectFeatureWeb(selectedRecord);
+  }, [selectFeatureWeb, selectedRecord]);
 
   useEffect(() => {
     //console.log('#useeffect3');
@@ -228,63 +236,63 @@ export default function HomeScreen() {
   // );
 
   //hoverは使いにくいからやめ
-  const onMouseMove = useCallback(() => {}, []);
+  // const onMouseMove = useCallback(() => {}, []);
 
-  const onClick = useCallback(
-    (event) => {
-      const map = (mapViewRef.current as MapRef).getMap();
-      //console.log(event);
-      if (selectedRecord !== undefined && selectedRecord.record !== undefined) {
-        //console.log('WWW', selectedRecord.record.userId);
-        map.removeFeatureState({
-          source: `${selectedRecord.layerId}_${selectedRecord.record.userId ?? ''}`,
-        });
-      }
-      const clickedFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
-      //console.log(clickedFeature);
-      if (clickedFeature && typeof clickedFeature.id === 'number') {
-        map.setFeatureState(
-          {
-            source: clickedFeature.source,
-            id: clickedFeature.id,
-          },
-          {
-            clicked: true,
-          }
-        );
-        const [layerId, userId] = clickedFeature.layer.id.split('_');
+  // const onClick = useCallback(
+  //   (event) => {
+  //     const map = (mapViewRef.current as MapRef).getMap();
+  //     //console.log(event);
+  //     if (selectedRecord !== undefined && selectedRecord.record !== undefined) {
+  //       //console.log('WWW', selectedRecord.record.userId);
+  //       map.removeFeatureState({
+  //         source: `${selectedRecord.layerId}_${selectedRecord.record.userId ?? ''}`,
+  //       });
+  //     }
+  //     const clickedFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
+  //     //console.log(clickedFeature);
+  //     if (clickedFeature && typeof clickedFeature.id === 'number') {
+  //       map.setFeatureState(
+  //         {
+  //           source: clickedFeature.source,
+  //           id: clickedFeature.id,
+  //         },
+  //         {
+  //           clicked: true,
+  //         }
+  //       );
+  //       const [layerId, userId] = clickedFeature.layer.id.split('_');
 
-        const layer = layers.find((n) => n.id === layerId);
-        if (layer === undefined) return;
-        if (clickedFeature.layer.type === 'line') {
-          const data = lineDataSet.find(
-            (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
-          );
-          const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
-          if (feature === undefined) return;
-          //onPressLine(layer, feature);
-        } else if (clickedFeature.layer.type === 'fill') {
-          //console.log('layer:', layerId, ' user:', userId);
-          const data = polygonDataSet.find(
-            (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
-          );
-          //console.log('data:', data);
-          const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
-          //console.log(feature);
-          if (feature === undefined) return;
-          //onPressPolygon(layer, feature);
-        }
-      } else {
-        //@ts-ignore
-        onPressMapView({ nativeEvent: { coordinate: { longitude: event.lngLat.lng, latitude: event.lngLat.lat } } });
-      }
-      //BUGS 3D表示の場合はホバーやクリックのスタイル変更を反映しないので、以下の呼び出しが必要
-      if (featureButton === 'NONE') {
-        map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
-      }
-    },
-    [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
-  );
+  //       const layer = layers.find((n) => n.id === layerId);
+  //       if (layer === undefined) return;
+  //       if (clickedFeature.layer.type === 'line') {
+  //         const data = lineDataSet.find(
+  //           (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
+  //         );
+  //         const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
+  //         if (feature === undefined) return;
+  //         //onPressLine(layer, feature);
+  //       } else if (clickedFeature.layer.type === 'fill') {
+  //         //console.log('layer:', layerId, ' user:', userId);
+  //         const data = polygonDataSet.find(
+  //           (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
+  //         );
+  //         //console.log('data:', data);
+  //         const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
+  //         //console.log(feature);
+  //         if (feature === undefined) return;
+  //         //onPressPolygon(layer, feature);
+  //       }
+  //     } else {
+  //       //@ts-ignore
+  //       onPressMapView({ nativeEvent: { coordinate: { longitude: event.lngLat.lng, latitude: event.lngLat.lat } } });
+  //     }
+  //     //BUGS 3D表示の場合はホバーやクリックのスタイル変更を反映しないので、以下の呼び出しが必要
+  //     if (featureButton === 'NONE') {
+  //       map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+  //     }
+  //   },
+  //   [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
+  // );
 
   const mapStyle: string | mapboxgl.Style = useMemo(() => {
     if (FUNC_MAPBOX && tileMaps.find((tileMap) => tileMap.id === 'standard' && tileMap.visible)) {
@@ -467,8 +475,8 @@ export default function HomeScreen() {
               onLoad={onMapLoad}
               cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
               //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
-              onClick={onClick}
-              onMouseMove={onMouseMove}
+              //onClick={onClick}
+              //onMouseMove={onMouseMove}
               touchZoomRotate={featureButton === 'NONE'}
               dragRotate={featureButton === 'NONE'}
             >
@@ -593,10 +601,10 @@ export default function HomeScreen() {
           <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
         )}
 
-        {/* <HomeZoomButton zoom={zoom} top={60} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-     
-        <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} /> */}
         {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
+        <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+
+        {/* <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />  */}
 
         {isDownloadPage ? (
           <HomeDownloadButton onPress={pressDeleteTiles} />

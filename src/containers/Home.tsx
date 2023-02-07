@@ -298,10 +298,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-        const region = isLandscape
-          ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-          : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-        setTimeout(() => changeMapRegion(region, true), 300);
+        if (Platform.OS !== 'web') {
+          //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
+          const region = isLandscape
+            ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
+            : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
+          setTimeout(() => changeMapRegion(region, true), 300);
+        }
       } else {
         releaseSvgView(event);
       }
@@ -309,14 +312,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       currentDrawTool,
       isDrag,
-      openData,
-      releaseSvgView,
-      navigation,
       isEditingRecord,
       selectSingleFeature,
+      openData,
+      navigation,
+      releaseSvgView,
+      unselectRecord,
       isLandscape,
       mapRegion,
-      unselectRecord,
       changeMapRegion,
     ]
   );
