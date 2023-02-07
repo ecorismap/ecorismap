@@ -73,6 +73,7 @@ export const DataEditDatetime = (props: Props) => {
             )}
             {mode === 'datetime' && (
               <DateTimePicker
+                disableMaskedInput
                 inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue}

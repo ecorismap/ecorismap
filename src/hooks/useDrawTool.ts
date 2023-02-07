@@ -5,6 +5,7 @@ import MapView from 'react-native-maps';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n/config';
+//import * as turf from '@turf/turf';
 import {
   DrawLineType,
   DrawToolType,
@@ -387,12 +388,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       setRedraw(uuidv4());
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
-
       // For DeBug
       // selectLine.current = turf
-      //   .buffer(turf.point(pointToLatLon(point, mapRegion, mapSize)), radius)
-      //   .geometry.coordinates[0].map((d) => latLonToPoint(d, mapRegion, mapSize));
-      // setRedraw(uuidv4());
+      //   .buffer(turf.point(xyToLatLon(pXY, mapRegion, mapSize)), radius)
+      //   .geometry.coordinates[0].map((d) => latLonToXY(d, mapRegion, mapSize));
+
       let feature;
       let layer;
       let recordSet;
@@ -401,6 +401,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
           const selectedFeature = selectPointFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
+          //console.log(selectedFeature);
           if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
             recordSet = data;
@@ -411,7 +412,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       }
       if (feature === undefined && (featureButton === 'LINE' || currentDrawTool === 'ALL_INFO')) {
-        const radius = calcDegreeRadius(500, mapRegion, mapSize);
+        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+
+        setRedraw(uuidv4());
         for (const { layerId, data } of lineDataSet) {
           const selectedFeature = selectLineFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
           if (selectedFeature !== undefined) {
@@ -426,7 +429,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
 
       if (feature === undefined && (featureButton === 'POLYGON' || currentDrawTool === 'ALL_INFO')) {
-        const radius = calcDegreeRadius(500, mapRegion, mapSize);
+        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
           const selectedFeature = selectPolygonFeatureByLatLon(data, xyToLatLon(pXY, mapRegion, mapSize), radius);
           if (selectedFeature !== undefined) {
@@ -553,7 +556,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const centerLatLon = currentCenterPosition(pXY);
         if (Platform.OS === 'web') {
           const mapView = (mapViewRef as MapRef).getMap();
-          mapView.easeTo({ center: [centerLatLon.longitude, centerLatLon.longitude], animate: false });
+          mapView.easeTo({ center: [centerLatLon.longitude, centerLatLon.latitude], animate: false });
         } else {
           (mapViewRef as MapView).setCamera({ center: centerLatLon });
         }
