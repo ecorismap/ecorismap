@@ -146,7 +146,7 @@ export const Polygon = React.memo((props: Props) => {
         <Layer {...dataStyleOutline(layer)} />
       </Source>
       {/*// @ts-ignore*/}
-      <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} generateId={true}>
+      <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} promoteId={'_id'}>
         {/*// @ts-ignore*/}
         <Layer {...dataStylePolygon(layer)} />
       </Source>
