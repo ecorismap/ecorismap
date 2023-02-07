@@ -601,7 +601,9 @@ export default function HomeScreen() {
           <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
         )}
 
-        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
+        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' || featureButton !== 'NONE' ? null : (
+          <HomeAccountButton />
+        )}
         <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
         {/* <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />  */}

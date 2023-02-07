@@ -332,7 +332,9 @@ export default function HomeScreen() {
         <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
-        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
+        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' || featureButton !== 'NONE' ? null : (
+          <HomeAccountButton />
+        )}
         {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
         {isDownloadPage ? (
           <HomeDownloadButton onPress={pressDeleteTiles} />
