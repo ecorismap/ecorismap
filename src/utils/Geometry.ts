@@ -661,6 +661,24 @@ export const generateGeoJson = (
         return feature;
       });
       break;
+    case 'LINEEND':
+      features = data.map((d) => {
+        const properties = field
+          .map(({ name }) => ({ [name]: d.field[name] }))
+          .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+        const coords = d.coords as LocationType[];
+        const coordinates = coords[coords.length - 1];
+        const feature = {
+          type: 'Feature',
+          properties: { ...properties, _visible: d.visible, _id: d.id },
+          geometry: {
+            type: 'Point',
+            coordinates: [coordinates.longitude, coordinates.latitude],
+          },
+        };
+        return feature;
+      });
+      break;
   }
   return { ...geojson, features: features };
 };

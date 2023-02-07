@@ -33,7 +33,10 @@ export const HomeDrawTools = () => {
     pressDeleteDraw,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
-  const isPositionRight = useMemo(() => isDataOpened === 'opened' || isLandscape, [isDataOpened, isLandscape]);
+  const isPositionRight = useMemo(
+    () => isDataOpened === 'opened' || (isLandscape && Platform.OS !== 'web'),
+    [isDataOpened, isLandscape]
+  );
   const isSelected = useMemo(() => drawLine.length > 0 && drawLine[0].record !== undefined, [drawLine]);
   const { isHisyouToolActive } = useHisyouToolSetting();
 

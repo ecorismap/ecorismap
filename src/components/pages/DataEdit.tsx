@@ -53,10 +53,9 @@ export default function DataEditScreen() {
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
 
-  const headerLeftButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row' }}>
-        <HeaderBackButton {...props_} onPress={gotoBack} />
+  const headerTitleButton = useCallback(
+    () => (
+      <View style={{ flexDirection: 'row', flex: 1 }}>
         {maxRecordNumber > 0 && (
           <DataEditRecordSelector
             recordNumber={recordNumber}
@@ -66,7 +65,15 @@ export default function DataEditScreen() {
         )}
       </View>
     ),
-    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
+    [maxRecordNumber, onChangeRecord, recordNumber]
+  );
+  const headerLeftButton = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <View style={{ flexDirection: 'row' }}>
+        <HeaderBackButton {...props_} onPress={gotoBack} />
+      </View>
+    ),
+    [gotoBack]
   );
 
   const headerRightButton = useCallback(() => {
@@ -94,10 +101,11 @@ export default function DataEditScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
+      headerTitle: () => headerTitleButton(),
+      //headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });
-  }, [headerLeftButton, headerRightButton, navigation]);
+  }, [headerLeftButton, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <KeyboardAvoidingView
