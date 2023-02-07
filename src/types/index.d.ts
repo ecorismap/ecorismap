@@ -384,7 +384,8 @@ export type GeoJsonFeatureType =
   | 'MULTIPOINT'
   | 'MULTILINE'
   | 'MULTIPOLYGON'
-  | 'CENTROID';
+  | 'CENTROID'
+  | 'LINEEND';
 
 export type CreateProjectType = keyof typeof CREATEPROJECTTYPE;
 export type FormatType = keyof typeof DATAFORMAT;

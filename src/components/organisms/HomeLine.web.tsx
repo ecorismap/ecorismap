@@ -103,7 +103,7 @@ export const Line = React.memo((props: Props) => {
   if (data === undefined || data.length === 0) return null;
 
   const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'CENTROID', layer.name);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name);
   //console.log(geojsonLabel);
 
   return (
@@ -117,7 +117,7 @@ export const Line = React.memo((props: Props) => {
       )}
       {/*
                   //@ts-ignore*/}
-      <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} generateId={true}>
+      <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} promoteId={'_id'}>
         {/*
                   //@ts-ignore*/}
         <Layer {...dataStyle(layer)} />
