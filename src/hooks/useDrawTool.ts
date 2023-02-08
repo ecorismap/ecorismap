@@ -117,7 +117,7 @@ export type UseDrawToolReturnType = {
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
   const dispatch = useDispatch();
   const [currentDrawTool, setDrawTool] = useState<DrawToolType>('NONE');
-  const [currentPointTool, setPointTool] = useState<PointToolType>('ADD_LOCATION_POINT');
+  const [currentPointTool, setPointTool] = useState<PointToolType>('PLOT_POINT');
   const [currentLineTool, setLineTool] = useState<LineToolType>('PLOT_LINE');
   const [currentPolygonTool, setPolygonTool] = useState<PolygonToolType>('PLOT_POLYGON');
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');

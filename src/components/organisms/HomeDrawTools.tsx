@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, PLUGIN } from '../../constants/AppConstants';
+import { COLOR, DRAWTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 
@@ -8,7 +8,6 @@ import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
-import { HomePointToolButton } from './HomePointToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 
@@ -19,12 +18,10 @@ export const HomeDrawTools = () => {
     isEditingObject,
     isSelectedDraw,
     currentDrawTool,
-    currentPointTool,
     currentLineTool,
     currentPolygonTool,
     featureButton,
     selectDrawTool,
-    setPointTool,
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
@@ -43,14 +40,15 @@ export const HomeDrawTools = () => {
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         {featureButton === 'POINT' && (
-          <HomePointToolButton
-            isEditing={isEditingDraw}
-            isPositionRight={isPositionRight}
-            currentPointTool={currentPointTool}
-            currentDrawTool={currentDrawTool}
-            selectDrawTool={selectDrawTool}
-            setPointTool={setPointTool}
-          />
+          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+            <Button
+              id={'PLOT_POINT'}
+              name={POINTTOOL.PLOT_POINT}
+              backgroundColor={currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+              borderRadius={10}
+              onPress={() => selectDrawTool('PLOT_POINT')}
+            />
+          </View>
         )}
         {featureButton === 'LINE' && (
           <HomeLineToolButton
@@ -145,7 +143,7 @@ const styles = StyleSheet.create({
     left: 9,
     marginHorizontal: 0,
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 320 : 290,
+    top: Platform.OS === 'ios' ? 360 : 330,
     zIndex: 101,
   },
   buttonContainerRight: {

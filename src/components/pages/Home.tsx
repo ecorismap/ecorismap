@@ -32,7 +32,7 @@ import { AppState } from '../../modules';
 import { nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
-import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+import { HomeCommonTools } from '../organisms/HomeCommonTools';
 
 export default function HomeScreen() {
   const {
@@ -316,7 +316,7 @@ export default function HomeScreen() {
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
         {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeInfoToolButton />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
