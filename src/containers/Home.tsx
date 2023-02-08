@@ -163,8 +163,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
+          toggleTerrainForWeb('NONE');
         } else {
           setDrawTool(value);
+          toggleTerrainForWeb('LINE');
           await runTutrial('INFOTOOL');
         }
       } else if (isSelectionTool(value)) {
