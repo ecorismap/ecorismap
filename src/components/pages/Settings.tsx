@@ -22,7 +22,6 @@ export default function Settings() {
     pressFileSaveCancel,
     pressClearData,
     pressClearTileCache,
-    pressResetAll,
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
@@ -67,15 +66,6 @@ export default function Settings() {
             text={t('Settings.mapcachedelete.text')}
             info={t('Settings.mapcachedelete.info')}
             onPress={pressClearTileCache}
-          />
-        )}
-
-        {Platform.OS !== 'web' && (
-          <TextButton
-            name={SETTINGS_BTN.APRI_CLEAR}
-            text={t('Settings.apriclear.text')}
-            info={t('Settings.apriclear.info')}
-            onPress={pressResetAll}
           />
         )}
         <TextButton
