@@ -197,7 +197,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentDrawTool, isEditingDraw, isSelectedDraw, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
+    [
+      currentDrawTool,
+      isEditingDraw,
+      isSelectedDraw,
+      resetDrawTools,
+      runTutrial,
+      setDrawTool,
+      showHisyouToolSetting,
+      toggleTerrainForWeb,
+    ]
   );
 
   const onPressMapView = useCallback(async () => {
@@ -482,7 +491,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //console.log('jump', mapViewRef.current);
     if (route.params?.jumpTo != null) {
       //console.log(route.params.jumpTo);
-      changeMapRegion(route.params.jumpTo, true);
+      changeMapRegion({ ...route.params.jumpTo, zoom }, true);
       navigation.setParams({ jumpTo: undefined });
     }
 
