@@ -1,15 +1,12 @@
 import React, { useCallback, useState } from 'react';
-import * as Updates from 'expo-updates';
 import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
-import { persistor } from '../store';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { DEFAULT_MAP_LIST_URL, TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
-import { clearCacheData } from '../utils/File';
 import { useLayers } from '../hooks/useLayers';
 import { SettingsContext } from '../contexts/Settings';
 
@@ -62,14 +59,14 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     }
   }, [createNewEcorisMap, navigation]);
 
-  const pressResetAll = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
-    if (ret) {
-      await clearCacheData();
-      persistor.purge();
-      await Updates.reloadAsync();
-    }
-  }, []);
+  // const pressResetAll = useCallback(async () => {
+  //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
+  //   if (ret) {
+  //     await clearCacheData();
+  //     persistor.purge();
+  //     await Updates.reloadAsync();
+  //   }
+  // }, []);
 
   const pressClearTileCache = useCallback(async () => {
     if (Platform.OS === 'web') return;
@@ -136,7 +133,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         pressFileSaveCancel,
         pressClearData,
         pressClearTileCache,
-        pressResetAll,
         pressGotoManual,
         pressOSSLicense,
         pressVersion,
