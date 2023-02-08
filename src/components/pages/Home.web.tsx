@@ -34,6 +34,7 @@ import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
+import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 
 export default function HomeScreen() {
   const {
@@ -506,22 +507,11 @@ export default function HomeScreen() {
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
         )}
-
         <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-
-        {/* <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />  */}
-
-        {isDownloadPage ? (
-          <HomeDownloadButton onPress={pressDeleteTiles} />
-        ) : (
-          <>
-            {!isDownloadPage &&
-              (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') &&
-              isDataOpened !== 'expanded' && <HomeDrawTools />}
-
-            {isDataOpened !== 'expanded' && <HomeButtons />}
-          </>
-        )}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeInfoToolButton />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
+        {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
     </View>
   );

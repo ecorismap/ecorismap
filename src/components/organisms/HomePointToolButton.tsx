@@ -16,8 +16,7 @@ interface Props {
 }
 
 export const HomePointToolButton = (props: Props) => {
-  const { disabled, isEditing, isPositionRight, currentDrawTool, currentPointTool, selectDrawTool, setPointTool } =
-    props;
+  const { disabled, isPositionRight, currentDrawTool, currentPointTool, selectDrawTool, setPointTool } = props;
 
   return (
     <SelectionalLongPressButton
@@ -41,7 +40,7 @@ export const HomePointToolButton = (props: Props) => {
       <Button
         id={'PLOT_POINT'}
         name={POINTTOOL.PLOT_POINT}
-        disabled={disabled || isEditing}
+        disabled={disabled}
         backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
         borderRadius={10}
         onPressCustom={() => {

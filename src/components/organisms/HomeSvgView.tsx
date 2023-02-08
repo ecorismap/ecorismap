@@ -66,7 +66,14 @@ export const SvgView = () => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle = properties.includes('EDIT') ? `url(#add)` : isEditingObject ? '' : `url(#delete)`;
+          let startStyle =
+            currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
+              ? ''
+              : properties.includes('EDIT')
+              ? `url(#add)`
+              : isEditingObject
+              ? ''
+              : `url(#delete)`;
           let midStyle =
             currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
               ? properties.includes('EDIT')
@@ -94,14 +101,14 @@ export const SvgView = () => {
               <Path
                 id={`path${idx}`}
                 d={pointsToSvg(xy)}
-                stroke={properties.includes('EDIT') ? 'lightblue' : 'blue'}
+                stroke={properties.includes('EDIT') ? 'lightblue' : 'yellow'}
                 strokeWidth="2"
                 strokeDasharray={'none'}
                 fill={
                   isPolygonTool(currentDrawTool)
                     ? properties.includes('EDIT')
-                      ? COLOR.ALFAYELLOW
-                      : COLOR.ALFABLUE2
+                      ? COLOR.ALFABLUE2
+                      : COLOR.ALFAYELLOW
                     : 'none'
                 }
                 markerStart={startStyle}
