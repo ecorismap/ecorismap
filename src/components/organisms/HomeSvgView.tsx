@@ -66,14 +66,7 @@ export const SvgView = () => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle =
-            currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
-              ? ''
-              : properties.includes('EDIT')
-              ? `url(#add)`
-              : isEditingObject
-              ? ''
-              : `url(#delete)`;
+          let startStyle = properties.includes('EDIT') ? `url(#add)` : isEditingObject ? '' : `url(#delete)`;
           let midStyle =
             currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
               ? properties.includes('EDIT')
