@@ -201,13 +201,13 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="5"
-          markerHeight="5"
+          markerWidth="6"
+          markerHeight="6"
           orient="0"
         >
-          <Circle cx="5" cy="5" r="10" fill={COLOR.ALFABLUE} stroke={COLOR.WHITE} />
-          <Rect x="0.25" y="3.75" width="10" height="3" fill={COLOR.WHITE} stroke={COLOR.WHITE} />
-          <Rect x="3.75" y="0.25" width="3" height="10" fill={COLOR.WHITE} stroke={COLOR.WHITE} />
+          <Circle cx="5" cy="5" r="5" fill={COLOR.ALFABLUE} stroke="blue" strokeWidth="1" />
+          <Path stroke={COLOR.WHITE} strokeWidth="3" d="M 0 5 L 10 5 z" />
+          <Path stroke={COLOR.WHITE} strokeWidth="3" d="M 5 0 L 5 10 z" />
         </Marker>
         <Marker
           id="delete"
@@ -216,13 +216,13 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="4"
-          markerHeight="4"
+          markerWidth="6"
+          markerHeight="6"
           orient="0"
         >
-          <Circle cx="5" cy="5" r="10" fill={COLOR.ALFAGRAY} stroke={COLOR.ALFAWHITE} />
-          <Path stroke={COLOR.ALFAWHITE} strokeWidth="3" d="M 0 0 L 10 10 z" />
-          <Path stroke={COLOR.ALFAWHITE} strokeWidth="3" d="M 0 10 L 10 0 z" />
+          <Circle cx="5" cy="5" r="5" fill="grey" stroke="darkgrey" strokeWidth="1" />
+          <Path stroke={COLOR.WHITE} strokeWidth="1.5" d="M 2 2 L 8 8 z" />
+          <Path stroke={COLOR.WHITE} strokeWidth="1.5" d="M 2 8 L 8 2 z" />
         </Marker>
 
         <Marker

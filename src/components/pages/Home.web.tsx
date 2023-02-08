@@ -34,7 +34,7 @@ import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
-import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+import { HomeCommonTools } from '../organisms/HomeCommonTools';
 
 export default function HomeScreen() {
   const {
@@ -508,7 +508,7 @@ export default function HomeScreen() {
           </View>
         )}
         <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeInfoToolButton />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
