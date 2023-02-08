@@ -46,8 +46,9 @@ export interface HomeContextType {
   headingUp: boolean;
   zoom: number;
   zoomDecimal: number;
-  isEditingLine: boolean;
+  isEditingDraw: boolean;
   isEditingObject: boolean;
+  isSelectedDraw: boolean;
   drawLine: DrawLineType[];
   editingLine: Position[];
   selectLine: Position[];

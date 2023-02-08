@@ -38,6 +38,7 @@ import { HomeContext } from '../../contexts/Home';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
+import { HomeCommonTools } from '../organisms/HomeCommonTools';
 
 export default function HomeScreen() {
   const {
@@ -605,20 +606,10 @@ export default function HomeScreen() {
           <HomeAccountButton />
         )}
         <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-
-        {/* <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />  */}
-
-        {isDownloadPage ? (
-          <HomeDownloadButton onPress={pressDeleteTiles} />
-        ) : (
-          <>
-            {!isDownloadPage &&
-              (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') &&
-              isDataOpened !== 'expanded' && <HomeDrawTools />}
-
-            {isDataOpened !== 'expanded' && <HomeButtons />}
-          </>
-        )}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
+        {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
     </View>
   );

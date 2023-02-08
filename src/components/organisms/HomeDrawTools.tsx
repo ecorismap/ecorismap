@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, PLUGIN } from '../../constants/AppConstants';
+import { COLOR, DRAWTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 
@@ -8,24 +8,20 @@ import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
-import { HomePointToolButton } from './HomePointToolButton';
-import { HomeInfoToolButton } from './HomeInfoToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 
 export const HomeDrawTools = () => {
   const {
     isDataOpened,
-    isEditingLine,
+    isEditingDraw,
     isEditingObject,
+    isSelectedDraw,
     currentDrawTool,
-    currentPointTool,
     currentLineTool,
     currentPolygonTool,
     featureButton,
-    drawLine,
     selectDrawTool,
-    setPointTool,
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
@@ -37,21 +33,22 @@ export const HomeDrawTools = () => {
     () => isDataOpened === 'opened' || (isLandscape && Platform.OS !== 'web'),
     [isDataOpened, isLandscape]
   );
-  const isSelected = useMemo(() => drawLine.length > 0 && drawLine[0].record !== undefined, [drawLine]);
+
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   return (
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         {featureButton === 'POINT' && (
-          <HomePointToolButton
-            isEditing={isEditingLine}
-            isPositionRight={isPositionRight}
-            currentPointTool={currentPointTool}
-            currentDrawTool={currentDrawTool}
-            selectDrawTool={selectDrawTool}
-            setPointTool={setPointTool}
-          />
+          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+            <Button
+              id={'PLOT_POINT'}
+              name={POINTTOOL.PLOT_POINT}
+              backgroundColor={currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+              borderRadius={10}
+              onPress={() => selectDrawTool('PLOT_POINT')}
+            />
+          </View>
         )}
         {featureButton === 'LINE' && (
           <HomeLineToolButton
@@ -76,25 +73,18 @@ export const HomeDrawTools = () => {
       {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
         <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
           <HisyouToolButton
-            isEditing={isEditingLine}
-            isSelected={isSelected}
+            isEditing={isEditingDraw}
+            isSelected={isSelectedDraw}
             isPositionRight={isPositionRight}
             currentDrawTool={currentDrawTool}
             selectDrawTool={selectDrawTool}
           />
         </View>
       )}
-      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <HomeInfoToolButton
-          isEditing={isEditingLine}
-          isPositionRight={isPositionRight}
-          currentDrawTool={currentDrawTool}
-          selectDrawTool={selectDrawTool}
-        />
-      </View>
+
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeSelectionToolButton
-          isEditing={isEditingLine}
+          isEditing={isEditingDraw}
           isPositionRight={isPositionRight}
           currentDrawTool={currentDrawTool}
           selectDrawTool={selectDrawTool}
@@ -113,9 +103,9 @@ export const HomeDrawTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.SAVE}
-          backgroundColor={!isEditingLine || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+          backgroundColor={!isEditingDraw || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!isEditingLine || isEditingObject}
+          disabled={!isEditingDraw || isEditingObject}
           onPress={pressSaveDraw}
         />
       </View>
@@ -123,9 +113,9 @@ export const HomeDrawTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.UNDO}
-          backgroundColor={isEditingLine ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!isEditingLine}
+          disabled={!isEditingDraw}
           onPress={pressUndoDraw}
         />
       </View>
@@ -133,9 +123,9 @@ export const HomeDrawTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={DRAWTOOL.DELETE}
-          backgroundColor={isEditingLine || isSelected ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!(isEditingLine || isSelected)}
+          disabled={isEditingDraw || !isSelectedDraw}
           onPress={pressDeleteDraw}
         />
       </View>
@@ -145,7 +135,7 @@ export const HomeDrawTools = () => {
 const styles = StyleSheet.create({
   button: {
     alignSelf: 'flex-start',
-    marginTop: 5,
+    marginTop: 2,
     width: 36,
   },
   buttonContainer: {
@@ -153,7 +143,7 @@ const styles = StyleSheet.create({
     left: 9,
     marginHorizontal: 0,
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 260 : 230,
+    top: Platform.OS === 'ios' ? 360 : 330,
     zIndex: 101,
   },
   buttonContainerRight: {
@@ -166,15 +156,15 @@ const styles = StyleSheet.create({
   },
   buttonRight: {
     alignSelf: 'flex-end',
-    marginTop: 5,
+    marginTop: 2,
     width: 36,
   },
   selectionalButton: {
     alignSelf: 'flex-start',
-    marginTop: 5,
+    marginTop: 2,
   },
   selectionalButtonRight: {
     alignSelf: 'flex-end',
-    marginTop: 5,
+    marginTop: 2,
   },
 });
