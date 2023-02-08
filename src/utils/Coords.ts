@@ -14,9 +14,10 @@ import {
 } from '../types';
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl';
-import { LatLng } from 'react-native-maps';
+import MapView, { LatLng } from 'react-native-maps';
 import booleanValid from '@turf/boolean-valid';
 import fitCurve from 'fit-curve';
+import { Platform } from 'react-native';
 
 export const isPoint = (coords: any): coords is LocationType => {
   return 'latitude' in coords && 'longitude' in coords;
@@ -69,91 +70,111 @@ export const pointsToSvg = (points: Position[]) => {
 export const xyToLatLon = (
   xy: Position,
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
 ): Position => {
-  const topleft = turf.toMercator([
-    mapRegion.longitude - mapRegion.longitudeDelta / 2,
-    mapRegion.latitude + mapRegion.latitudeDelta / 2,
-  ]);
-  const bottomRight = turf.toMercator([
-    mapRegion.longitude + mapRegion.longitudeDelta / 2,
-    mapRegion.latitude - mapRegion.latitudeDelta / 2,
-  ]);
-  const x = xy[0];
-  const y = xy[1];
-  const top = topleft[1];
-  const bottom = bottomRight[1];
-  const left = topleft[0];
-  const right = bottomRight[0];
-  const deltaX = right - left;
-  const deltaY = top - bottom;
+  if (Platform.OS === 'web') {
+    const mapView = (mapViewRef as MapRef).getMap();
+    const latLon = mapView.unproject([xy[0], xy[1]]);
+    return [latLon.lng, latLon.lat];
+  } else {
+    const topleft = turf.toMercator([
+      mapRegion.longitude - mapRegion.longitudeDelta / 2,
+      mapRegion.latitude + mapRegion.latitudeDelta / 2,
+    ]);
+    const bottomRight = turf.toMercator([
+      mapRegion.longitude + mapRegion.longitudeDelta / 2,
+      mapRegion.latitude - mapRegion.latitudeDelta / 2,
+    ]);
+    const x = xy[0];
+    const y = xy[1];
+    const top = topleft[1];
+    const bottom = bottomRight[1];
+    const left = topleft[0];
+    const right = bottomRight[0];
+    const deltaX = right - left;
+    const deltaY = top - bottom;
 
-  return turf.toWgs84([
-    left + (x * deltaX) / mapSize.width,
-    bottom + deltaY - (deltaY * y) / mapSize.height,
-  ]) as Position;
+    return turf.toWgs84([
+      left + (x * deltaX) / mapSize.width,
+      bottom + deltaY - (deltaY * y) / mapSize.height,
+    ]) as Position;
+  }
 };
 
 export const xyToLatLonObject = (
   xy: Position,
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
 ): LatLng => {
-  const latLon = xyToLatLon(xy, mapRegion, mapSize);
+  const latLon = xyToLatLon(xy, mapRegion, mapSize, mapViewRef);
   return { longitude: latLon[0], latitude: latLon[1] };
 };
 
 export const xyArrayToLatLonArray = (
   xyArray: Position[],
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
 ): Position[] => {
-  return xyArray.map((xy) => xyToLatLon(xy, mapRegion, mapSize));
+  return xyArray.map((xy) => xyToLatLon(xy, mapRegion, mapSize, mapViewRef));
 };
 export const xyArrayToLatLonObjects = (
   xyArray: Position[],
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
-): LatLng[] => xyArray.map((xy) => xyToLatLonObject(xy, mapRegion, mapSize));
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
+): LatLng[] => xyArray.map((xy) => xyToLatLonObject(xy, mapRegion, mapSize, mapViewRef));
 
 export const latLonToXY = (
   latlon: number[],
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
 ): Position => {
-  const topleft = turf.toMercator([
-    mapRegion.longitude - mapRegion.longitudeDelta / 2,
-    mapRegion.latitude + mapRegion.latitudeDelta / 2,
-  ]);
-  const bottomRight = turf.toMercator([
-    mapRegion.longitude + mapRegion.longitudeDelta / 2,
-    mapRegion.latitude - mapRegion.latitudeDelta / 2,
-  ]);
-  const p = turf.toMercator(latlon);
-  const x = p[0];
-  const y = p[1];
-  const top = topleft[1];
-  const bottom = bottomRight[1];
-  const left = topleft[0];
-  const right = bottomRight[0];
-  const deltaX = right - left;
-  const deltaY = top - bottom;
+  if (Platform.OS === 'web') {
+    const mapView = (mapViewRef as MapRef).getMap();
+    const p = mapView.project([latlon[0], latlon[1]]);
+    return [p.x, p.y];
+  } else {
+    const topleft = turf.toMercator([
+      mapRegion.longitude - mapRegion.longitudeDelta / 2,
+      mapRegion.latitude + mapRegion.latitudeDelta / 2,
+    ]);
+    const bottomRight = turf.toMercator([
+      mapRegion.longitude + mapRegion.longitudeDelta / 2,
+      mapRegion.latitude - mapRegion.latitudeDelta / 2,
+    ]);
+    const p = turf.toMercator(latlon);
+    const x = p[0];
+    const y = p[1];
+    const top = topleft[1];
+    const bottom = bottomRight[1];
+    const left = topleft[0];
+    const right = bottomRight[0];
+    const deltaX = right - left;
+    const deltaY = top - bottom;
 
-  return [((x - left) * mapSize.width) / deltaX, ((top - y) * mapSize.height) / deltaY];
+    return [((x - left) * mapSize.width) / deltaX, ((top - y) * mapSize.height) / deltaY];
+  }
 };
 
 export const latLonArrayToXYArray = (
   latLonArray: Position[],
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
-): Position[] => latLonArray.map((latlon) => latLonToXY(latlon, mapRegion, mapSize));
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
+): Position[] => latLonArray.map((latlon) => latLonToXY(latlon, mapRegion, mapSize, mapViewRef));
 
 export const latLonObjectsToXYArray = (
   latLonObjects: LatLng[],
   mapRegion: RegionType,
-  mapSize: { width: number; height: number }
-): Position[] => latLonObjects.map((latlon) => latLonToXY([latlon.longitude, latlon.latitude], mapRegion, mapSize));
-
+  mapSize: { width: number; height: number },
+  mapViewRef: MapView | MapRef | null
+): Position[] => {
+  return latLonObjects.map((latlon) => latLonToXY([latlon.longitude, latlon.latitude], mapRegion, mapSize, mapViewRef));
+};
 export const latLonObjectsToLatLonArray = (latLonObjects: { longitude: number; latitude: number }[]): Position[] =>
   latLonObjects.map((latlon) => [latlon.longitude, latlon.latitude]);
 
