@@ -7,14 +7,14 @@ import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
 
 interface Props {
-  isEditing: boolean;
+  disabled: boolean;
   isPositionRight: boolean;
   currentDrawTool: DrawToolType;
   selectDrawTool: (value: DrawToolType) => void;
 }
 
 export const HomeInfoToolButton = (props: Props) => {
-  const { isEditing, isPositionRight, currentDrawTool, selectDrawTool } = props;
+  const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
   const [currentTool, setCurrentTool] = useState<InfoToolType>(
     isInfoTool(currentDrawTool) ? currentDrawTool : 'ALL_INFO'
   );
@@ -24,9 +24,9 @@ export const HomeInfoToolButton = (props: Props) => {
       <Button
         id={'ALL_INFO'}
         name={DRAWTOOL.ALL_INFO}
-        backgroundColor={currentDrawTool === 'ALL_INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+        backgroundColor={currentDrawTool === 'ALL_INFO' ? COLOR.ALFARED : disabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
         borderRadius={10}
-        disabled={isEditing}
+        disabled={disabled}
         onPressCustom={() => {
           setCurrentTool('ALL_INFO');
           selectDrawTool('ALL_INFO');
@@ -36,10 +36,10 @@ export const HomeInfoToolButton = (props: Props) => {
         id={'FEATURETYPE_INFO'}
         name={DRAWTOOL.FEATURETYPE_INFO}
         backgroundColor={
-          currentDrawTool === 'FEATURETYPE_INFO' ? COLOR.ALFARED : isEditing ? COLOR.ALFAGRAY : COLOR.ALFABLUE
+          currentDrawTool === 'FEATURETYPE_INFO' ? COLOR.ALFARED : disabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE
         }
         borderRadius={10}
-        disabled={isEditing}
+        disabled={disabled}
         onPressCustom={() => {
           setCurrentTool('FEATURETYPE_INFO');
           selectDrawTool('FEATURETYPE_INFO');

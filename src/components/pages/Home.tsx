@@ -36,6 +36,7 @@ import { nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
+import { HomeCommonTools } from '../organisms/HomeCommonTools';
 
 export default function HomeScreen() {
   const {
@@ -336,19 +337,10 @@ export default function HomeScreen() {
           <HomeAccountButton />
         )}
         {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
-        {isDownloadPage ? (
-          <HomeDownloadButton onPress={pressDeleteTiles} />
-        ) : (
-          <>
-            {isDataOpened !== 'expanded' &&
-              !isDownloadPage &&
-              (featureButton === 'POINT' || featureButton === 'LINE' || featureButton === 'POLYGON') && (
-                <HomeDrawTools />
-              )}
-
-            {isDataOpened !== 'expanded' && <HomeButtons />}
-          </>
-        )}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
+        {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
     </View>
   );
