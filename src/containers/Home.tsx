@@ -61,8 +61,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     drawLine,
     editingLineXY,
     selectLine,
-    isEditingLine,
+    isEditingDraw,
     isEditingObject,
+    isSelectedDraw,
     isDrag,
     currentDrawTool,
     currentPointTool,
@@ -144,8 +145,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     async (value: DrawToolType) => {
       if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
         if (currentDrawTool === value) {
-          if (isEditingLine) return;
+          if (isEditingDraw) {
+            const ret = await ConfirmAsync(t('Home.confirm.discard'));
+            if (!ret) return;
+          }
           //ドローツールをオフ
+          resetDrawTools();
           setDrawTool('NONE');
         } else {
           //ドローツールをオン
@@ -174,7 +179,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (value === 'SETTING') {
           showHisyouToolSetting();
         } else if (currentDrawTool === value) {
-          if (isEditingLine) return;
+          if (isEditingDraw) return;
           setDrawTool('NONE');
         } else {
           setDrawTool(value);
@@ -182,6 +187,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else {
         if (value === 'MOVE') {
           if (currentDrawTool === value) {
+            if (isEditingDraw || isSelectedDraw) return;
             setDrawTool('NONE');
           } else {
             setDrawTool(value);
@@ -189,7 +195,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentDrawTool, isEditingLine, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
+    [currentDrawTool, isEditingDraw, isSelectedDraw, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
   );
 
   const onPressMapView = useCallback(async () => {
@@ -512,8 +518,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pointDataSet,
         lineDataSet,
         polygonDataSet,
-        isEditingLine,
+        isEditingDraw,
         isEditingObject,
+        isSelectedDraw,
         drawLine: drawLine.current,
         editingLine: editingLineXY.current,
         selectLine: selectLine.current,
