@@ -411,7 +411,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         }
       })
       .join(',');
-    return FUNC_LOGIN ? record.displayName ?? '' + ',' + fieldCSV : fieldCSV;
+    return FUNC_LOGIN ? (record.displayName === null ? '' : record.displayName) + ',' + fieldCSV : fieldCSV;
   });
 
   let geometries: string[];
