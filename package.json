@@ -81,7 +81,7 @@
     "expo-sharing": "~10.1.0",
     "expo-splash-screen": "~0.14.1",
     "expo-status-bar": "~1.2.0",
-    "expo-task-manager": "^10.1.1",
+    "expo-task-manager": "~10.1.0",
     "fast-xml-parser": "^3.21.1",
     "fbemitter": "^3.0.0",
     "file-saver": "^2.0.5",

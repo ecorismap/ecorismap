@@ -180,9 +180,9 @@ describe('GeoJson2Data', () => {
 describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
-      'name,time,cmt,photo,geometry',
-      'St.1,2020-01-01T09:28:38+09:00,,,POINT(140.71658064854364 38.24715800176878)',
-      'St.3,,,,POINT(140.71548306286388 38.24101016421964)',
+      'displayName,name,time,cmt,photo,geometry',
+      'mizutani,St.1,2020-01-01T09:28:38+09:00,,,POINT(140.71658064854364 38.24715800176878)',
+      ',St.3,5時,,,POINT(140.71548306286388 38.24101016421964)',
     ].join(String.fromCharCode(10));
     expect(generateCSV(point_record, layers[0].field, 'POINT')).toBe(expected);
   });
