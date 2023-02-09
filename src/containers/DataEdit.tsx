@@ -143,12 +143,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       case 'LINE': {
         const coords = targetRecord.coords as LocationType[];
-        if (coords.length > 0) coord = coords[0];
+        if (coords.length > 0) coord = targetRecord.centroid ?? coords[0];
         break;
       }
       case 'POLYGON': {
         const coords = targetRecord.coords as LocationType[];
-        if (coords.length > 0) coord = coords[0];
+        if (coords.length > 0) coord = targetRecord.centroid ?? coords[0];
         break;
       }
     }
@@ -167,7 +167,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         }),
       500
     );
-  }, [closeData, isDataOpened, navigation, targetLayer.type, targetRecord.coords]);
+  }, [closeData, isDataOpened, navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;

@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    marginLeft: 80,
+    marginLeft: 0,
   },
 });

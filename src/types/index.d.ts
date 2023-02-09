@@ -1,3 +1,5 @@
+import { Position } from '@turf/turf';
+//@ts-ignore
 import firebase from 'firebase/compat/app';
 import {
   COLORRAMP,
@@ -101,7 +103,6 @@ export interface PointRecordType {
   visible: boolean;
   redraw: boolean;
   coords: LocationType;
-  centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
 }
 
@@ -373,7 +374,7 @@ export type ReturnFeatureRecordType<T> = T extends 'POINT'
   : T extends 'LINE'
   ? { editingLayer: LayerType | undefined; editingRecordSet: LineRecordType[] }
   : T extends 'POLYGON'
-  ? { editingLayer: LayerTyp | undefined; editingRecordSet: PolygonRecordType[] }
+  ? { editingLayer: LayerType | undefined; editingRecordSet: PolygonRecordType[] }
   : { editingLayer: undefined; editingRecordSet: undefined };
 
 export type GeoJsonFeatureType =

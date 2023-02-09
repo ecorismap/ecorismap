@@ -51,7 +51,7 @@
   "tutrials": {
     "pointtool": {
       "add": "Add points anywhere. \nPlease touch the place you want to add.",
-      "add_location": "Add a point to your current location. \nTurn on GPS and touch the screen. \nPress and hold the button to switch tools.",
+      "add_location": "Add a point to your current location. \nTurn on GPS and touch the screen.",
       "move": "Move point. \nPlease press and hold the point."
     },
     "home_btn": {

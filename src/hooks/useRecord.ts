@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField } from '../utils/Data';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
-import { calcCentroid } from '../utils/Coords';
+import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 
 export type UseFeatureReturnType = {
   dataUser: UserType;
@@ -210,7 +210,11 @@ export const useRecord = (): UseFeatureReturnType => {
     ) => {
       const id = uuidv4();
       const field = getDefaultField(editingLayer, editingRecordSet, id);
-      const centroid = Array.isArray(coords) ? calcCentroid(coords) : coords;
+      const centroid = Array.isArray(coords)
+        ? featureType === 'LINE'
+          ? calcLineMidPoint(coords)
+          : calcCentroid(coords)
+        : coords;
 
       const record: RecordType = {
         id: id,

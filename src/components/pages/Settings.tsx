@@ -23,7 +23,6 @@ export default function Settings() {
     pressClearData,
     pressClearTileCache,
     pressClearPhotoCache,
-    pressResetAll,
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
@@ -80,14 +79,6 @@ export default function Settings() {
           />
         )}
 
-        {Platform.OS !== 'web' && (
-          <TextButton
-            name={SETTINGS_BTN.APRI_CLEAR}
-            text={t('Settings.apriclear.text')}
-            info={t('Settings.apriclear.info')}
-            onPress={pressResetAll}
-          />
-        )}
         <TextButton
           name={SETTINGS_BTN.OSSLICENSE}
           text={t('Settings.OSSLicense.txt')}

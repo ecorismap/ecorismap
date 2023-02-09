@@ -45,7 +45,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
-  const { mapRegion, isLandscape } = useWindow();
+  const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
@@ -187,8 +187,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
+          toggleTerrainForWeb('NONE');
         } else {
           setDrawTool(value);
+          toggleTerrainForWeb('LINE');
           await runTutrial('INFOTOOL');
         }
       } else if (isSelectionTool(value)) {
@@ -219,7 +221,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentDrawTool, isEditingDraw, isSelectedDraw, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
+    [
+      currentDrawTool,
+      isEditingDraw,
+      isSelectedDraw,
+      resetDrawTools,
+      runTutrial,
+      setDrawTool,
+      showHisyouToolSetting,
+      toggleTerrainForWeb,
+    ]
   );
 
   const onPressMapView = useCallback(async () => {
@@ -304,13 +315,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-        if (Platform.OS !== 'web') {
-          //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
-          const region = isLandscape
-            ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-            : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-          setTimeout(() => changeMapRegion(region, true), 300);
-        }
+
+        setTimeout(() => changeMapRegion(mapRegion, true), 300);
       } else {
         releaseSvgView(event);
       }
@@ -324,7 +330,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       navigation,
       releaseSvgView,
       unselectRecord,
-      isLandscape,
       mapRegion,
       changeMapRegion,
     ]
@@ -656,7 +661,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //console.log('jump', mapViewRef.current);
     if (route.params?.jumpTo != null) {
       //console.log(route.params.jumpTo);
-      changeMapRegion(route.params.jumpTo, true);
+      changeMapRegion({ ...route.params.jumpTo, zoom }, true);
       navigation.setParams({ jumpTo: undefined });
     }
 
