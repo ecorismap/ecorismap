@@ -37,6 +37,8 @@ import {
   isValidPoint,
   isValidLine,
   isValidPolygon,
+  calcCentroid,
+  calcLineMidPoint,
 } from '../utils/Coords';
 import { useWindow } from './useWindow';
 import { deleteRecordsAction } from '../modules/dataSet';
@@ -176,7 +178,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     saveHisyou,
     convertFeatureToHisyouLine,
     deleteHisyouLine,
-  } = useHisyouTool(drawLine, editingLineXY, undoLine, editingObjectIndex, currentDrawTool, isEditingObject);
+  } = useHisyouTool(
+    drawLine,
+    editingLineXY,
+    undoLine,
+    editingObjectIndex,
+    currentDrawTool,
+    isEditingObject,
+    mapViewRef
+  );
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   const convertPointFeatureToDrawLine = useCallback(
@@ -271,13 +281,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
 
-    const savedRecordSet = [];
+    const savedRecordSet: RecordType[] = [];
     for (const line of drawLine.current) {
       if (line.record !== undefined && line.layerId !== undefined) {
-        const updatedRecord: RecordType = {
-          ...line.record,
-          coords: latlonArrayToLatLonObjects(line.latlon)[0],
-        };
+        const coords = latlonArrayToLatLonObjects(line.latlon)[0];
+        const updatedRecord: RecordType = { ...line.record, coords };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
         updateRecord(recordLayer, updatedRecord);
@@ -307,7 +315,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
 
-    const savedRecordSet = [];
+    const savedRecordSet: RecordType[] = [];
     if (isHisyouToolActive) {
       const {
         isOK: isOKsaveHisyou,
@@ -321,10 +329,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     } else {
       for (const line of drawLine.current) {
         if (line.record !== undefined && line.layerId !== undefined) {
-          const updatedRecord: RecordType = {
-            ...line.record,
-            coords: latlonArrayToLatLonObjects(line.latlon),
-          };
+          const coords = latlonArrayToLatLonObjects(line.latlon);
+          const centroid = calcLineMidPoint(coords);
+          const updatedRecord: RecordType = { ...line.record, coords, centroid };
           const recordLayer = findLayer(line.layerId);
           if (recordLayer === undefined) continue;
           updateRecord(recordLayer, updatedRecord);
@@ -371,13 +378,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }
 
-    const savedRecordSet = [];
+    const savedRecordSet: RecordType[] = [];
     for (const line of drawLine.current) {
       if (line.record !== undefined && line.layerId !== undefined) {
-        const updatedRecord: RecordType = {
-          ...line.record,
-          coords: latlonArrayToLatLonObjects(line.latlon),
-        };
+        const coords = latlonArrayToLatLonObjects(line.latlon);
+        const centroid = calcCentroid(coords);
+        const updatedRecord: RecordType = { ...line.record, coords, centroid };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
         updateRecord(recordLayer, updatedRecord);

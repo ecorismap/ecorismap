@@ -7,8 +7,11 @@ import {
   LatLonDMSType,
   LayerType,
   PhotoType,
+  PointRecordType,
   RecordType,
   UserType,
+  LineRecordType,
+  PolygonRecordType,
 } from '../types';
 import dayjs from '../i18n/dayjs';
 import { formattedInputs } from './Format';
@@ -225,4 +228,10 @@ export const resetDataSetUser = (dataSet: DataType[]) => {
     return { ...data, userId: undefined, data: recordSet };
   });
   return updatedDataSet;
+};
+
+export const isPointRecordType = (
+  recordSet: PointRecordType | LineRecordType | PolygonRecordType
+): recordSet is PointRecordType => {
+  return !Array.isArray(recordSet.coords);
 };
