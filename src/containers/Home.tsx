@@ -27,7 +27,6 @@ import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
-import { isPointRecordType } from '../utils/Data';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
