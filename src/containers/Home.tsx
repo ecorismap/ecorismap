@@ -293,16 +293,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetIndex: recordIndex,
         });
 
-        isPointRecordType(feature);
-        const region = isPointRecordType(feature)
-          ? { ...mapRegion, longitude: feature.coords.longitude, latitude: feature.coords.latitude }
-          : {
-              ...mapRegion,
-              longitude: feature.centroid?.longitude ?? feature.coords[0].longitude,
-              latitude: feature.centroid?.latitude ?? feature.coords[0].latitude,
-            };
-
-        setTimeout(() => changeMapRegion(region, true), 300);
+        setTimeout(() => changeMapRegion(mapRegion, true), 300);
       } else {
         releaseSvgView(event);
       }
