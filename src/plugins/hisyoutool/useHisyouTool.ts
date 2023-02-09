@@ -23,9 +23,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { useDispatch, useSelector } from 'react-redux';
 import { addRecordsAction, deleteRecordsAction } from '../../modules/dataSet';
 import { AppState } from '../../modules';
-import { LatLng } from 'react-native-maps';
+import MapView, { LatLng } from 'react-native-maps';
 import { useDrawObjects } from '../../hooks/useDrawObjects';
 import { useRecord } from '../../hooks/useRecord';
+import { MapRef } from 'react-map-gl';
 
 export type UseHisyouToolReturnType = {
   pressSvgHisyouTool: (point: Position) => void;
@@ -50,7 +51,8 @@ export const useHisyouTool = (
   undoLine: React.MutableRefObject<UndoLineType[]>,
   editingObjectIndex: React.MutableRefObject<number>,
   currentDrawTool: DrawToolType,
-  isEditingObject: MutableRefObject<boolean>
+  isEditingObject: MutableRefObject<boolean>,
+  mapViewRef: MapView | MapRef | null
 ): UseHisyouToolReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
@@ -61,7 +63,8 @@ export const useHisyouTool = (
     undoLine,
     editingObjectIndex,
     currentDrawTool,
-    isEditingObject
+    isEditingObject,
+    mapViewRef
   );
   const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
   const hisyouData = useSelector((state: AppState) => state.dataSet.find((v) => v.layerId === hisyouLayerId));
@@ -113,7 +116,7 @@ export const useHisyouTool = (
         action: 'FINISH',
       });
       //最初のノードをタッチで編集終了
-      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize);
+      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
       drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
       editingObjectIndex.current = -1;
       isEditingObject.current = false;
@@ -121,7 +124,17 @@ export const useHisyouTool = (
 
       return true;
     },
-    [editingLineXY, editingObjectIndex, drawLine, currentDrawTool, undoLine, mapRegion, mapSize, isEditingObject]
+    [
+      editingObjectIndex,
+      drawLine,
+      currentDrawTool,
+      undoLine,
+      mapRegion,
+      mapSize,
+      mapViewRef,
+      isEditingObject,
+      editingLineXY,
+    ]
   );
 
   const trySelectObjectAtPosition = useCallback(
@@ -239,7 +252,7 @@ export const useHisyouTool = (
       layerId: undefined,
       record: undefined,
       xy: editingLineXY.current,
-      latlon: xyArrayToLatLonArray(editingLineXY.current, mapRegion, mapSize),
+      latlon: xyArrayToLatLonArray(editingLineXY.current, mapRegion, mapSize, mapViewRef),
       properties: [currentDrawTool],
     });
     undoLine.current.push({
@@ -249,7 +262,7 @@ export const useHisyouTool = (
     });
 
     editingLineXY.current = [];
-  }, [currentDrawTool, drawLine, editingLineXY, mapRegion, mapSize, undoLine]);
+  }, [currentDrawTool, drawLine, editingLineXY, mapRegion, mapSize, mapViewRef, undoLine]);
 
   const releaseSvgHisyouTool = useCallback(() => {
     if (currentDrawTool === 'HISYOU') {
@@ -297,14 +310,14 @@ export const useHisyouTool = (
             id: action.id,
             layerId: hisyouLayerId,
             record: action,
-            xy: latLonObjectsToXYArray(action.coords as LatLng[], mapRegion, mapSize),
+            xy: latLonObjectsToXYArray(action.coords as LatLng[], mapRegion, mapSize, mapViewRef),
             latlon: latLonObjectsToLatLonArray(action.coords as LatLng[]),
             properties: legendsToProperties(action.field['飛翔凡例'] as string),
           });
         });
       });
     },
-    [drawLine, hisyouData?.data, hisyouLayerId, mapRegion, mapSize]
+    [drawLine, hisyouData?.data, hisyouLayerId, mapRegion, mapSize, mapViewRef]
   );
 
   const saveActions = useCallback(
@@ -363,7 +376,7 @@ export const useHisyouTool = (
         return { isOK: false, message: '飛翔レイヤが編集モードになっています', layer: undefined, recordSet: undefined };
       }
       // console.log(line);
-      const savedRecordSet = [];
+      const savedRecordSet: RecordType[] = [];
       for (const line of drawLine.current) {
         //console.log(line.properties.includes('HISYOU'));
         if (!line.properties.includes('HISYOU')) continue;

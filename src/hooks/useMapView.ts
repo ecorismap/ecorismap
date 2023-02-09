@@ -93,13 +93,23 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
           const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
           dispatch(editSettingsAction({ mapRegion: newRegion }));
         } else if (jumpTo && isRegionType(region)) {
-          const jumpRegion = {
-            latitude: region.latitude,
-            longitude: region.longitude,
-            latitudeDelta: region.latitudeDelta,
-            longitudeDelta: region.longitudeDelta,
-          };
-          (mapViewRef as MapView).animateToRegion(jumpRegion, 5);
+          // const jumpRegion = {
+          //   latitude: region.latitude,
+          //   longitude: region.longitude,
+          //   latitudeDelta: region.latitudeDelta,
+          //   longitudeDelta: region.longitudeDelta,
+          // };
+          // (mapViewRef as MapView).animateToRegion(jumpRegion, 5);
+          (mapViewRef as MapView).animateCamera(
+            {
+              center: {
+                latitude: region.latitude,
+                longitude: region.longitude,
+              },
+              zoom: region.zoom,
+            },
+            { duration: 5 }
+          );
         }
       }
     },

@@ -127,6 +127,7 @@
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
+	<key>UIApplicationSceneManifest</key> <dict> <key>UISceneConfigurations</key> <dict/> </dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
