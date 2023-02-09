@@ -8,6 +8,7 @@ import { COLOR } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
+import { calcCentroid, calcLineMidPoint } from './Coords';
 
 export const Gpx2Data = (
   gpx: string,
@@ -114,7 +115,7 @@ export const Gpx2Data = (
             redraw: false,
             visible: true,
             coords: coords,
-            centroid: coords[coords.length - 1],
+            centroid: calcLineMidPoint(coords),
             field: {
               name: trk.name ? trk.name : '',
               time: firstTrkptTime !== undefined && time.isValid() ? time.format() : '',
@@ -226,16 +227,12 @@ export const GeoJson2Data = (
               redraw: false,
               visible: true,
             };
-            const coordsData = {
-              coords: feature.geometry.coordinates.map((coords: any) => ({
-                longitude: coords[0],
-                latitude: coords[1],
-              })),
-              centroid: {
-                longitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][0],
-                latitude: feature.geometry.coordinates[feature.geometry.coordinates.length - 1][1],
-              },
-            };
+            const coords = feature.geometry.coordinates.map((xy: any) => ({
+              longitude: xy[0],
+              latitude: xy[1],
+            }));
+            const centroid = calcLineMidPoint(coords);
+            const coordsData = { coords, centroid };
             const fieldsData = fields
               .map((field) => ({
                 [field.name]: feature.properties[field.name] || '',
@@ -258,16 +255,12 @@ export const GeoJson2Data = (
                 redraw: false,
                 visible: true,
               };
-              const coordsData = {
-                coords: partCoords.map((coords: any) => ({
-                  longitude: coords[0],
-                  latitude: coords[1],
-                })),
-                centroid: {
-                  longitude: partCoords[partCoords.length - 1][0],
-                  latitude: partCoords[partCoords.length - 1][1],
-                },
-              };
+              const coords = partCoords.map((xy: any) => ({
+                longitude: xy[0],
+                latitude: xy[1],
+              }));
+              const centroid = calcLineMidPoint(coords);
+              const coordsData = { coords, centroid };
 
               const fieldsData = fields
                 .map((field) => ({
@@ -300,26 +293,22 @@ export const GeoJson2Data = (
               highQuality: true,
             });
             //console.log(simplified);
+            const coords = simplified.geometry.coordinates[0].map((xy: any) => ({
+              longitude: xy[0],
+              latitude: xy[1],
+            }));
+            const centroid = calcCentroid(coords);
+            const holes = simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
+              const holeArray = hole.map((xy: any) => ({
+                longitude: xy[0],
+                latitude: xy[1],
+              }));
+              return { ...result, [`hole${index}`]: holeArray };
+            }, {});
             const coordsData = {
-              coords: simplified.geometry.coordinates[0].map((coords: any) => ({
-                longitude: coords[0],
-                latitude: coords[1],
-              })),
-              holes: simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
-                const holeArray = hole.map((coords: any) => ({
-                  longitude: coords[0],
-                  latitude: coords[1],
-                }));
-                return { ...result, [`hole${index}`]: holeArray };
-              }, {}),
-              centroid: {
-                longitude:
-                  feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[0], 0) /
-                  feature.geometry.coordinates[0].length,
-                latitude:
-                  feature.geometry.coordinates[0].reduce((p: any, c: any) => p + c[1], 0) /
-                  feature.geometry.coordinates[0].length,
-              },
+              coords,
+              centroid,
+              holes,
             };
 
             const fieldsData = fields
@@ -351,25 +340,20 @@ export const GeoJson2Data = (
                 tolerance: 0.00001,
                 highQuality: true,
               });
-              const coordsData = {
-                //MultiPolygon
-                coords: simplified.geometry.coordinates[0].map((coords: any) => ({
-                  longitude: coords[0],
-                  latitude: coords[1],
-                })),
-                holes: simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
-                  const holeArray = hole.map((coords: any) => ({
-                    longitude: coords[0],
-                    latitude: coords[1],
-                  }));
-                  return { ...result, [`hole${index}`]: holeArray };
-                }, {}),
+              const coords = simplified.geometry.coordinates[0].map((xy: any) => ({
+                longitude: xy[0],
+                latitude: xy[1],
+              }));
+              const centroid = calcCentroid(coords);
+              const holes = simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
+                const holeArray = hole.map((xy: any) => ({
+                  longitude: xy[0],
+                  latitude: xy[1],
+                }));
+                return { ...result, [`hole${index}`]: holeArray };
+              }, {});
 
-                centroid: {
-                  longitude: partCoords[0].reduce((p: any, c: any) => p + c[0], 0) / partCoords[0].length,
-                  latitude: partCoords[0].reduce((p: any, c: any) => p + c[1], 0) / partCoords[0].length,
-                },
-              };
+              const coordsData = { coords, centroid, holes };
               const fieldsData = fields
                 .map((field) => ({
                   [field.name]: feature.properties[field.name] || '',

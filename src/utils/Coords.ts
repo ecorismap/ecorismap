@@ -624,7 +624,7 @@ export const calcDegreeRadius = (
 const bezierToPositions = (curve: Position[]) => {
   const [p1, c1, c2, p2] = curve;
   const INTERPOLATION = 10;
-  const points = [];
+  const points: number[][] = [];
 
   for (let i = 0; i <= INTERPOLATION; i++) {
     const t = (1.0 * i) / INTERPOLATION;
@@ -637,6 +637,13 @@ const bezierToPositions = (curve: Position[]) => {
 export const smoothingByBezier = (points: Position[]): Position[] => {
   const bezierCurves = fitCurve(points, 3);
   return bezierCurves.map((curve) => bezierToPositions(curve)).flat();
+};
+
+export const calcLineMidPoint = (coords: LatLng[]) => {
+  const turfLine = turf.lineString(latLonObjectsToLatLonArray(coords));
+  const lineLength = turf.length(turfLine);
+  const midPoint = turf.along(turfLine, lineLength / 2);
+  return { longitude: midPoint.geometry.coordinates[0], latitude: midPoint.geometry.coordinates[1] };
 };
 
 export const calcCentroid = (coords: LatLng[]) => {

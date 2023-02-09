@@ -27,6 +27,7 @@ import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
+import { isPointRecordType } from '../utils/Data';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -38,7 +39,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
-  const { mapRegion, isLandscape } = useWindow();
+  const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
@@ -197,7 +198,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [currentDrawTool, isEditingDraw, isSelectedDraw, resetDrawTools, runTutrial, setDrawTool, showHisyouToolSetting]
+    [
+      currentDrawTool,
+      isEditingDraw,
+      isSelectedDraw,
+      resetDrawTools,
+      runTutrial,
+      setDrawTool,
+      showHisyouToolSetting,
+      toggleTerrainForWeb,
+    ]
   );
 
   const onPressMapView = useCallback(async () => {
@@ -282,13 +292,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-        if (Platform.OS !== 'web') {
-          //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
-          const region = isLandscape
-            ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-            : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-          setTimeout(() => changeMapRegion(region, true), 300);
-        }
+
+        isPointRecordType(feature);
+        const region = isPointRecordType(feature)
+          ? { ...mapRegion, longitude: feature.coords.longitude, latitude: feature.coords.latitude }
+          : {
+              ...mapRegion,
+              longitude: feature.centroid?.longitude ?? feature.coords[0].longitude,
+              latitude: feature.centroid?.latitude ?? feature.coords[0].latitude,
+            };
+
+        setTimeout(() => changeMapRegion(region, true), 300);
       } else {
         releaseSvgView(event);
       }
@@ -302,7 +316,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       navigation,
       releaseSvgView,
       unselectRecord,
-      isLandscape,
       mapRegion,
       changeMapRegion,
     ]
@@ -482,7 +495,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //console.log('jump', mapViewRef.current);
     if (route.params?.jumpTo != null) {
       //console.log(route.params.jumpTo);
-      changeMapRegion(route.params.jumpTo, true);
+      changeMapRegion({ ...route.params.jumpTo, zoom }, true);
       navigation.setParams({ jumpTo: undefined });
     }
 

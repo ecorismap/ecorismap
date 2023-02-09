@@ -187,11 +187,11 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="4"
-          markerHeight="4"
+          markerWidth="8"
+          markerHeight="8"
           orient="0"
         >
-          <Circle cx="5" cy="5" r="10" fill="yellow" stroke="black" />
+          <Circle cx="5" cy="5" r="4" fill="yellow" stroke="black" strokeWidth="1" />
         </Marker>
 
         <Marker
