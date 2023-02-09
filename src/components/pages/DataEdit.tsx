@@ -55,7 +55,7 @@ export default function DataEditScreen() {
 
   const headerTitleButton = useCallback(
     () => (
-      <View style={{ flexDirection: 'row', flex: 1 }}>
+      <View style={{ flexDirection: 'row' }}>
         {maxRecordNumber > 0 && (
           <DataEditRecordSelector
             recordNumber={recordNumber}

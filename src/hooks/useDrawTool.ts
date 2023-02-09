@@ -178,7 +178,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     saveHisyou,
     convertFeatureToHisyouLine,
     deleteHisyouLine,
-  } = useHisyouTool(drawLine, editingLineXY, undoLine, editingObjectIndex, currentDrawTool, isEditingObject);
+  } = useHisyouTool(
+    drawLine,
+    editingLineXY,
+    undoLine,
+    editingObjectIndex,
+    currentDrawTool,
+    isEditingObject,
+    mapViewRef
+  );
   const { isHisyouToolActive } = useHisyouToolSetting();
 
   const convertPointFeatureToDrawLine = useCallback(
