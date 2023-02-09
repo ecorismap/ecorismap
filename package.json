@@ -118,7 +118,7 @@
   "devDependencies": {
     "@babel/core": "^7.12.9",
     "@babel/preset-env": "^7.1.6",
-    "@expo/webpack-config": "^18.0.1",
+    "@expo/webpack-config": "~0.16.2",
     "@react-native-community/eslint-config": "^3.0.3",
     "@testing-library/dom": "^8.11.0",
     "@testing-library/jest-native": "^5.4.1",
@@ -138,7 +138,6 @@
     "@types/xmldom": "^0.1.31",
     "@typescript-eslint/eslint-plugin": "^5.3.0",
     "@typescript-eslint/parser": "^5.3.0",
-    "babel-preset-expo": "^9.2.2",
     "cypress": "^10.3.0",
     "cypress-firebase": "^2.2.1",
     "eslint": "^7.18.0",

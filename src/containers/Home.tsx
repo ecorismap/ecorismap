@@ -39,7 +39,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { isDataOpened, openData, expandData, closeData } = useDisplay();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
-  const { mapRegion, isLandscape } = useWindow();
+  const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
@@ -292,8 +292,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-        //if (Platform.OS !== 'web') {
-        //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
+
         isPointRecordType(feature);
         const region = isPointRecordType(feature)
           ? { ...mapRegion, longitude: feature.coords.longitude, latitude: feature.coords.latitude }
@@ -304,7 +303,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             };
 
         setTimeout(() => changeMapRegion(region, true), 300);
-        // }
       } else {
         releaseSvgView(event);
       }

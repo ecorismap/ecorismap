@@ -95,7 +95,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
 
     const BATCH_SIZE = 10;
 
-    let batch = [];
+    let batch: Promise<void>[] = [];
     let d = 0;
     for (const tile of tiles) {
       if (pause.current) {
@@ -125,7 +125,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     }
     await Promise.all(batch);
 
-    let batchDownload = [];
+    let batchDownload: Promise<void>[] = [];
     let errorCount = 0;
     d = 0;
 
