@@ -106,6 +106,7 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
                 latitude: region.latitude,
                 longitude: region.longitude,
               },
+              zoom: region.zoom,
             },
             { duration: 5 }
           );

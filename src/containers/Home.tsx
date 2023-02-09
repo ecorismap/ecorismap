@@ -27,6 +27,7 @@ import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
+import { isPointRecordType } from '../utils/Data';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -291,13 +292,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-        if (Platform.OS !== 'web') {
-          //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
-          const region = isLandscape
-            ? { ...mapRegion, longitudeDelta: mapRegion.longitudeDelta / 2 }
-            : { ...mapRegion, latitudeDelta: mapRegion.latitudeDelta / 2 };
-          setTimeout(() => changeMapRegion(region, true), 300);
-        }
+        //if (Platform.OS !== 'web') {
+        //webの場合は、タイミングの関係？で選択の色付けがうまくいかないので、無効にする。
+        isPointRecordType(feature);
+        const region = isPointRecordType(feature)
+          ? { ...mapRegion, longitude: feature.coords.longitude, latitude: feature.coords.latitude }
+          : {
+              ...mapRegion,
+              longitude: feature.centroid?.longitude ?? feature.coords[0].longitude,
+              latitude: feature.centroid?.latitude ?? feature.coords[0].latitude,
+            };
+
+        setTimeout(() => changeMapRegion(region, true), 300);
+        // }
       } else {
         releaseSvgView(event);
       }
@@ -311,7 +318,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       navigation,
       releaseSvgView,
       unselectRecord,
-      isLandscape,
       mapRegion,
       changeMapRegion,
     ]
