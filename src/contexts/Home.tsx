@@ -69,7 +69,7 @@ export interface HomeContextType {
         record: RecordType;
       }
     | undefined;
-  isDataOpened: 'opened' | 'closed' | 'expanded';
+  screenState: 'opened' | 'closed' | 'expanded';
   isShowingProjectButtons: boolean;
   isLoading: boolean;
   isTermsOfUseOpen: boolean;

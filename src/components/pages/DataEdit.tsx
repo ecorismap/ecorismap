@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { DataEditDatetime } from '../organisms/DataEditDatetime';
 import { DataEditReference } from '../organisms/DataEditReference';
-import { useDisplay } from '../../hooks/useDisplay';
+import { useScreen } from '../../hooks/useScreen';
 import { DataEditRecordSelector } from '../organisms/DataEditRecordSelector';
 import { DataEditTable } from '../organisms/DataEditTable';
 import { useSelector } from 'react-redux';
@@ -49,7 +49,7 @@ export default function DataEditScreen() {
     onClose,
   } = useContext(DataEditContext);
 
-  const { isDataOpened, expandData, openData } = useDisplay();
+  const { screenState, expandData, openData } = useScreen();
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
 
@@ -80,9 +80,9 @@ export default function DataEditScreen() {
     return (
       <View style={{ flexDirection: 'row' }}>
         <HeaderRightButton
-          name={isDataOpened === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
+          name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
           backgroundColor={COLOR.GRAY0}
-          onPress={isDataOpened === 'opened' ? expandData : openData}
+          onPress={screenState === 'opened' ? expandData : openData}
           borderRadius={5}
           size={21}
           color={COLOR.BLACK}
@@ -97,7 +97,7 @@ export default function DataEditScreen() {
         />
       </View>
     );
-  }, [expandData, isDataOpened, onClose, openData]);
+  }, [expandData, screenState, onClose, openData]);
 
   useEffect(() => {
     navigation.setOptions({

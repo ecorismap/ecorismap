@@ -16,7 +16,7 @@ import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
 import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
 import { t } from '../i18n/config';
@@ -43,7 +43,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const projectName = useSelector((state: AppState) => state.settings.projectName);
   const user = useSelector((state: AppState) => state.user);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const { isDataOpened, openData, expandData, closeData } = useDisplay();
+  const { screenState, openData, expandData, closeData } = useScreen();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -248,7 +248,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!isOK || layer === undefined || record === undefined) {
         Alert.alert('', message);
       } else {
-        isDataOpened === 'closed' ? expandData() : openData();
+        screenState === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
             previous: 'Home',
@@ -267,7 +267,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     trackingState,
     addCurrentPoint,
     selectDrawTool,
-    isDataOpened,
+    screenState,
     expandData,
     openData,
     navigation,
@@ -738,7 +738,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentLineTool,
         currentPolygonTool,
         selectedRecord,
-        isDataOpened,
+        screenState,
         isLoading,
         isTermsOfUseOpen,
         projectName,

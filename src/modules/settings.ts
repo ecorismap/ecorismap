@@ -9,7 +9,7 @@ export function createSettingsInitialState(): SettingsType {
     tutrials: TUTRIALS,
     isSettingProject: false,
     isSynced: false,
-    isDataOpened: 'closed',
+    screenState: 'closed',
     isEditingRecord: false,
     isOffline: false,
     updatedAt: new Date('2000/1/1'),

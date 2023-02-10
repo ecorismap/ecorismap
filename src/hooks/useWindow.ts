@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Platform, useWindowDimensions } from 'react-native';
-import { useDisplay } from './useDisplay';
+import { useScreen } from './useScreen';
 import { RegionType } from '../types';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
@@ -18,7 +18,7 @@ export type UseWindowReturnType = {
 
 export const useWindow = (): UseWindowReturnType => {
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
-  const { isDataOpened } = useDisplay();
+  const { screenState } = useScreen();
   const window = useWindowDimensions();
   const isLandscape = useMemo(() => window.width > window.height, [window.height, window.width]);
   const windowWidth = window.width;
@@ -27,28 +27,28 @@ export const useWindow = (): UseWindowReturnType => {
   const windowHeight = isLandscape ? window.height - StatusBarHeight : window.height;
 
   const mapSize = useMemo(() => {
-    // if (Platform.OS === 'web' && mapViewRef.current && isDataOpened) {
+    // if (Platform.OS === 'web' && mapViewRef.current && screenState) {
     //   const mapView = (mapViewRef.current as MapRef).getMap();
     //   return { width: mapView.getContainer().offsetWidth, height: mapView.getContainer().offsetHeight };
     // } else {
     return {
       height: isLandscape
         ? windowHeight
-        : isDataOpened === 'expanded'
+        : screenState === 'expanded'
         ? 0
-        : isDataOpened === 'opened'
+        : screenState === 'opened'
         ? windowHeight / 2
         : windowHeight,
       width: !isLandscape
         ? windowWidth
-        : isDataOpened === 'expanded'
+        : screenState === 'expanded'
         ? 0
-        : isDataOpened === 'opened'
+        : screenState === 'opened'
         ? windowWidth / 2
         : windowWidth,
     };
     // }
-  }, [isDataOpened, isLandscape, windowHeight, windowWidth]);
+  }, [screenState, isLandscape, windowHeight, windowWidth]);
 
   return {
     mapRegion,

@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
 import { MapsContext } from '../contexts/Maps';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
@@ -23,7 +23,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     changeMapOrder,
     toggleOnline,
   } = useMaps();
-  const { closeData } = useDisplay();
+  const { closeData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressToggleOnline = useCallback(async () => {
