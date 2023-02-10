@@ -6,7 +6,7 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
@@ -15,7 +15,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   //console.log(route.params.targetData);
   const [isPhotoViewOpen, setPhotoEditorOpen] = useState(false);
 
-  const { isDataOpened, closeData } = useDisplay();
+  const { screenState, closeData } = useScreen();
   const {
     targetRecord,
     targetLayer,
@@ -144,7 +144,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       }
     }
-    if (isDataOpened === 'expanded') closeData();
+    if (screenState === 'expanded') closeData();
 
     setTimeout(
       () =>
@@ -159,7 +159,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         }),
       500
     );
-  }, [closeData, isDataOpened, navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
+  }, [closeData, screenState, navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;

@@ -61,7 +61,7 @@ export default function HomeScreen() {
     featureButton,
     currentDrawTool,
     selectedRecord,
-    isDataOpened,
+    screenState,
     isLoading,
     onRegionChangeMapView,
     onPressMapView,
@@ -87,18 +87,18 @@ export default function HomeScreen() {
       isLandscape
         ? {
             height: windowHeight - navigationHeaderHeight,
-            width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
+            width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : '0%',
           }
         : {
             width: windowWidth - navigationHeaderHeight,
             height:
-              isDataOpened === 'expanded'
+              screenState === 'expanded'
                 ? windowHeight - navigationHeaderHeight
-                : isDataOpened === 'opened'
+                : screenState === 'opened'
                 ? windowHeight / 2
                 : '0%',
           },
-    [isDataOpened, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
+    [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
   );
 
   const mapStyle = useMemo(
@@ -106,18 +106,18 @@ export default function HomeScreen() {
       isLandscape
         ? {
             height: windowHeight - navigationHeaderHeight,
-            width: isDataOpened === 'expanded' ? '0%' : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
+            width: screenState === 'expanded' ? '0%' : screenState === 'opened' ? windowWidth / 2 : windowWidth,
           }
         : {
             width: windowWidth,
             height:
-              isDataOpened === 'expanded'
+              screenState === 'expanded'
                 ? '0%'
-                : isDataOpened === 'opened'
+                : screenState === 'opened'
                 ? windowHeight / 2
                 : windowHeight - navigationHeaderHeight,
           },
-    [isDataOpened, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
+    [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
   );
 
   //console.log('Home');
@@ -297,7 +297,7 @@ export default function HomeScreen() {
             />
           )}
         </MapView>
-        {mapRegion && isDataOpened !== 'expanded' && (
+        {mapRegion && screenState !== 'expanded' && (
           <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
@@ -315,10 +315,10 @@ export default function HomeScreen() {
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
-        {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
+        {screenState !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
+        {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
     </View>

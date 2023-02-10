@@ -6,12 +6,12 @@ import HeaderRightButton from '../molecules/HeaderRightButton';
 
 import { useNavigation } from '@react-navigation/native';
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
-import { useDisplay } from '../../hooks/useDisplay';
+import { useScreen } from '../../hooks/useScreen';
 
 export default function LayerScreen() {
   //console.log('render Layer');
 
-  const { isDataOpened, closeData, expandData, openData } = useDisplay();
+  const { screenState, closeData, expandData, openData } = useScreen();
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(() => <></>, []);
@@ -19,9 +19,9 @@ export default function LayerScreen() {
     () => (
       <View style={{ flexDirection: 'row' }}>
         <HeaderRightButton
-          name={isDataOpened === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
+          name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
           backgroundColor={COLOR.GRAY0}
-          onPress={isDataOpened === 'opened' ? expandData : openData}
+          onPress={screenState === 'opened' ? expandData : openData}
           borderRadius={5}
           size={21}
           color={COLOR.BLACK}
@@ -36,7 +36,7 @@ export default function LayerScreen() {
         />
       </View>
     ),
-    [closeData, expandData, isDataOpened, openData]
+    [closeData, expandData, screenState, openData]
   );
 
   useEffect(() => {
