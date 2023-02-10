@@ -14,7 +14,7 @@ import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { useLayers } from '../hooks/useLayers';
@@ -36,7 +36,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
-  const { isDataOpened, openData, expandData, closeData } = useDisplay();
+  const { screenState, openData, expandData, closeData } = useScreen();
   const { editable, getReceivedFile, importDropedFile } = useLayers();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -224,7 +224,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!isOK || layer === undefined || record === undefined) {
         Alert.alert('', message);
       } else {
-        isDataOpened === 'closed' ? expandData() : openData();
+        screenState === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
             previous: 'Home',
@@ -243,7 +243,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     trackingState,
     addCurrentPoint,
     selectDrawTool,
-    isDataOpened,
+    screenState,
     expandData,
     openData,
     navigation,
@@ -555,7 +555,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentLineTool,
         currentPolygonTool,
         selectedRecord,
-        isDataOpened,
+        screenState,
         isLoading,
         isTermsOfUseOpen,
         onRegionChangeMapView,

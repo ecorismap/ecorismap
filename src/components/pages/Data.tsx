@@ -8,7 +8,7 @@ import { DataButton } from '../organisms/DataButton';
 
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { useDisplay } from '../../hooks/useDisplay';
+import { useScreen } from '../../hooks/useScreen';
 import { DataContext } from '../../contexts/Data';
 
 export default function DataScreen() {
@@ -17,7 +17,7 @@ export default function DataScreen() {
   const { layer, isChecked, gotoBack } = useContext(DataContext);
 
   const navigation = useNavigation();
-  const { isDataOpened, expandData, openData, closeData } = useDisplay();
+  const { screenState, expandData, openData, closeData } = useScreen();
 
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
@@ -28,9 +28,9 @@ export default function DataScreen() {
     return (
       <View style={{ flexDirection: 'row' }}>
         <HeaderRightButton
-          name={isDataOpened === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
+          name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
           backgroundColor={COLOR.GRAY0}
-          onPress={isDataOpened === 'opened' ? expandData : openData}
+          onPress={screenState === 'opened' ? expandData : openData}
           borderRadius={5}
           size={21}
           color={COLOR.BLACK}
@@ -45,7 +45,7 @@ export default function DataScreen() {
         />
       </View>
     );
-  }, [closeData, expandData, isDataOpened, openData]);
+  }, [closeData, expandData, screenState, openData]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -61,7 +61,7 @@ export default function DataScreen() {
     headerLeftButton,
     headerRightButton,
     isChecked,
-    isDataOpened,
+    screenState,
     layer.name,
     navigation,
     openData,

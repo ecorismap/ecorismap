@@ -13,7 +13,7 @@ import { HomeContext } from '../../contexts/Home';
 
 export const HomeDrawTools = () => {
   const {
-    isDataOpened,
+    screenState,
     isEditingDraw,
     isEditingObject,
     isSelectedDraw,
@@ -30,8 +30,8 @@ export const HomeDrawTools = () => {
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(
-    () => isDataOpened === 'opened' || (isLandscape && Platform.OS !== 'web'),
-    [isDataOpened, isLandscape]
+    () => screenState === 'opened' || (isLandscape && Platform.OS !== 'web'),
+    [screenState, isLandscape]
   );
 
   const { isHisyouToolActive } = useHisyouToolSetting();
