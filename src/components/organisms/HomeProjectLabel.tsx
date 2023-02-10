@@ -25,6 +25,7 @@ export default function HomeProjectLabel(props: Props) {
         borderRadius: 5,
         borderColor: COLOR.GRAY2,
         borderWidth: 1,
+        zIndex: 100,
       }}
       onPress={onPress}
     >
