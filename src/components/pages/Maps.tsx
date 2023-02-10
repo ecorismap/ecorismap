@@ -6,14 +6,14 @@ import { MapButtons } from '../organisms/MapButttons';
 import { MapModalTileMap } from '../organisms/MapModalTileMap';
 import { MapItems } from '../organisms/MapItems';
 import { useNavigation } from '@react-navigation/native';
-import { useDisplay } from '../../hooks/useDisplay';
+import { useScreen } from '../../hooks/useScreen';
 import { MapsContext } from '../../contexts/Maps';
 
 export default function MapScreen() {
   //console.log('render Maps');
   const { isOffline, pressToggleOnline } = useContext(MapsContext);
   const navigation = useNavigation();
-  const { isDataOpened, expandData, openData, closeData } = useDisplay();
+  const { screenState, expandData, openData, closeData } = useScreen();
 
   const headerLeftButton = useCallback(
     () =>
@@ -31,9 +31,9 @@ export default function MapScreen() {
     () => (
       <View style={{ flexDirection: 'row' }}>
         <HeaderRightButton
-          name={isDataOpened === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
+          name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
           backgroundColor={COLOR.GRAY0}
-          onPress={isDataOpened === 'opened' ? expandData : openData}
+          onPress={screenState === 'opened' ? expandData : openData}
           borderRadius={5}
           size={21}
           color={COLOR.BLACK}
@@ -48,7 +48,7 @@ export default function MapScreen() {
         />
       </View>
     ),
-    [closeData, expandData, isDataOpened, openData]
+    [closeData, expandData, screenState, openData]
   );
 
   useEffect(() => {

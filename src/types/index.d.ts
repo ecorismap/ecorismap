@@ -266,7 +266,7 @@ export interface SettingsType {
   isSettingProject: boolean;
   isSynced: boolean;
   isOffline: boolean;
-  isDataOpened: 'opened' | 'closed' | 'expanded';
+  screenState: 'opened' | 'closed' | 'expanded';
   tileRegions: TileRegionType[];
   projectId: string | undefined;
   projectName: string | undefined;

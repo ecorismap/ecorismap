@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { useProjects } from '../hooks/useProjects';
 import { usePurchasesWeb } from '../hooks/usePurchasesWeb';
 import { t } from '../i18n/config';
@@ -12,7 +12,7 @@ import { validateProjectLicense } from '../utils/Project';
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
   const { projects, user, ownerProjectsCount, fetchProjects, addProject } = useProjects();
   const { customerLicense } = usePurchasesWeb();
-  const { closeData } = useDisplay();
+  const { closeData } = useScreen();
 
   const [isLoading, setIsLoading] = useState(false);
 

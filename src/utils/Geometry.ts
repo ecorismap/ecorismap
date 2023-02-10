@@ -446,6 +446,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       break;
   }
   const csv =
+    '\ufeff' +
     header +
     String.fromCharCode(10) +
     properties.map((property, i) => property + ',' + geometries[i]).join(String.fromCharCode(10));

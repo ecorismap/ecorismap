@@ -5,12 +5,12 @@ import { Button } from '../atoms';
 import { HomeContext } from '../../contexts/Home';
 import { HomeInfoToolButton } from './HomeInfoToolButton';
 import { useWindow } from '../../hooks/useWindow';
-import { useDisplay } from '../../hooks/useDisplay';
+import { useScreen } from '../../hooks/useScreen';
 
 export const HomeCommonTools = () => {
   const { isEditingDraw, isSelectedDraw, currentDrawTool, selectDrawTool } = useContext(HomeContext);
   const { isLandscape } = useWindow();
-  const { isDataOpened } = useDisplay();
+  const { screenState } = useScreen();
 
   const styles = StyleSheet.create({
     button: {
@@ -24,7 +24,7 @@ export const HomeCommonTools = () => {
       left: 9,
       marginHorizontal: 0,
       position: 'absolute',
-      top: Platform.OS === 'ios' && !isLandscape && isDataOpened !== 'opened' ? 260 : 220,
+      top: Platform.OS === 'ios' && !isLandscape && screenState !== 'opened' ? 260 : 220,
       zIndex: 101,
     },
 
