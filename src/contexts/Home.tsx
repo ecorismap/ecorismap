@@ -65,7 +65,7 @@ export interface HomeContextType {
         record: RecordType;
       }
     | undefined;
-  isDataOpened: 'opened' | 'closed' | 'expanded';
+  screenState: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
