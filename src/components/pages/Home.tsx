@@ -88,7 +88,35 @@ export default function HomeScreen() {
   const layers = useSelector((state: AppState) => state.layers);
   const navigation = useNavigation();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+    },
 
+    headerRight: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginRight: 10,
+    },
+    map: {
+      ...StyleSheet.absoluteFillObject,
+      minHeight: 1,
+      minWidth: 1,
+    },
+    scaleBar: {
+      bottom: isDataOpened === 'opened' ? 2 : 80,
+      left: 65,
+      position: 'absolute',
+    },
+    scaleBarLandscape: {
+      bottom: 2,
+      left: 80,
+      position: 'absolute',
+    },
+  });
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
   const dataStyle = useMemo(
@@ -147,7 +175,7 @@ export default function HomeScreen() {
           <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
         </View>
       ),
-    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
+    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize, styles.headerRight]
   );
 
   useEffect(() => {
@@ -317,13 +345,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <HomeZoomButton
-          zoom={zoom}
-          top={Platform.OS === 'ios' ? 90 : 60}
-          left={10}
-          zoomIn={pressZoomIn}
-          zoomOut={pressZoomOut}
-        />
+        <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
         {isShowingProjectButtons && isDataOpened !== 'expanded' && <HomeProjectButtons />}
         {projectName === undefined || isDownloadPage || isDataOpened === 'expanded' ? null : (
@@ -333,10 +355,8 @@ export default function HomeScreen() {
         <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
-        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' || featureButton !== 'NONE' ? null : (
-          <HomeAccountButton />
-        )}
-        {isDataOpened !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
+        {!FUNC_LOGIN || isDownloadPage || isDataOpened === 'expanded' ? null : <HomeAccountButton />}
+        {isDataOpened !== 'expanded' && <HomeAttributionText bottom={8} attribution={attribution} />}
         {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
@@ -345,33 +365,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-    minHeight: 1,
-    minWidth: 1,
-  },
-  scaleBar: {
-    bottom: 80,
-    left: 50,
-    position: 'absolute',
-  },
-  scaleBarLandscape: {
-    bottom: 43,
-    left: 10,
-    position: 'absolute',
-  },
-});

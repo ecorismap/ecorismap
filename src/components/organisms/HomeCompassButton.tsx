@@ -2,6 +2,8 @@ import React from 'react';
 import { Platform, View } from 'react-native';
 import { Button } from '../atoms';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
+import { useWindow } from '../../hooks/useWindow';
+import { useDisplay } from '../../hooks/useDisplay';
 
 interface Props {
   magnetometer: any;
@@ -12,6 +14,8 @@ interface Props {
 export const HomeCompassButton = React.memo((props: Props) => {
   //console.log('render Compass');
   const { magnetometer, headingUp, onPressCompass } = props;
+  const { isLandscape } = useWindow();
+  const { isDataOpened } = useDisplay();
 
   return (
     <View
@@ -19,7 +23,7 @@ export const HomeCompassButton = React.memo((props: Props) => {
         marginHorizontal: 0,
         left: 9,
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 40 : 10,
+        top: Platform.OS === 'ios' && !isLandscape && isDataOpened !== 'opened' ? 40 : 20,
         transform: [{ rotate: `${!magnetometer || !headingUp ? 0 : 360 - magnetometer!.trueHeading}deg` }],
         zIndex: 101,
         elevation: 101,

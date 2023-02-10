@@ -3,9 +3,13 @@ import { TouchableOpacity, View, Image, StyleSheet, Platform, Text } from 'react
 import { Button, SelectionalButton } from '../atoms';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
+import { useWindow } from '../../hooks/useWindow';
+import { useDisplay } from '../../hooks/useDisplay';
 
 export const HomeAccountButton = () => {
   const { user, gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(HomeContext);
+  const { isLandscape } = useWindow();
+  const { isDataOpened } = useDisplay();
   const [valid, setValid] = useState(true);
 
   const initial = useMemo(() => {
@@ -20,6 +24,27 @@ export const HomeAccountButton = () => {
 
   useEffect(() => setValid(true), [user.photoURL]);
 
+  const styles = StyleSheet.create({
+    button: {
+      elevation: 101,
+      marginHorizontal: 0,
+      position: 'absolute',
+      right: 9,
+      top: Platform.OS === 'ios' && !isLandscape && isDataOpened !== 'opened' ? 40 : 20,
+      zIndex: 101,
+    },
+    icon: {
+      borderRadius: 50,
+      height: 35,
+      marginBottom: 5,
+      width: 35,
+    },
+    textIcon: {
+      color: COLOR.WHITE,
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+  });
   return (
     <View style={styles.button}>
       {user.uid === undefined ? (
@@ -83,25 +108,3 @@ export const HomeAccountButton = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  button: {
-    elevation: 101,
-    marginHorizontal: 0,
-    position: 'absolute',
-    right: 12,
-    top: Platform.OS === 'ios' ? 40 : 10,
-    zIndex: 101,
-  },
-  icon: {
-    borderRadius: 50,
-    height: 35,
-    marginBottom: 5,
-    width: 35,
-  },
-  textIcon: {
-    color: COLOR.WHITE,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-});
