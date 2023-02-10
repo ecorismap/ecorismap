@@ -227,7 +227,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         screenState === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
-            previous: 'Home',
+            previous: 'Data',
             targetData: record,
             targetLayer: layer,
             targetRecordSet: [],
@@ -349,7 +349,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       openData();
       setTimeout(function () {
         navigation.navigate('DataEdit', {
-          previous: 'Home',
+          previous: 'Data',
           targetData: recordSet[0],
           targetLayer: layer,
           targetRecordSet: recordSet,

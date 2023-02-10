@@ -53,6 +53,27 @@ export default function DataEditScreen() {
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
 
+  const headerLeftButtonzForDevice = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <View style={{ flexDirection: 'row', flex: 3, justifyContent: 'center' }}>
+        <View style={{ flex: 1 }}>
+          <HeaderBackButton {...props_} onPress={gotoBack} style={{ width: 30 }} />
+        </View>
+        <View style={{ flex: 1 }}>
+          {maxRecordNumber > 0 && (
+            <DataEditRecordSelector
+              recordNumber={recordNumber}
+              maxRecordNumber={maxRecordNumber}
+              onChangeRecord={onChangeRecord}
+            />
+          )}
+        </View>
+        <View style={{ flex: 1 }} />
+      </View>
+    ),
+    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
+  );
+
   const headerTitleButton = useCallback(
     () => (
       <View style={{ flexDirection: 'row' }}>
@@ -100,12 +121,21 @@ export default function DataEditScreen() {
   }, [expandData, screenState, onClose, openData]);
 
   useEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => headerTitleButton(),
-      //headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-      headerRight: () => headerRightButton(),
-    });
-  }, [headerLeftButton, headerRightButton, headerTitleButton, navigation]);
+    //デバイスだとheaderTitleにbackButtonが表示されてしまうバグ？のためheaderLeftだけで処理する
+    //Selectorをセンタリングするのが目的
+    if (Platform.OS === 'web') {
+      navigation.setOptions({
+        headerTitle: () => headerTitleButton(),
+        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
+        headerRight: () => headerRightButton(),
+      });
+    } else {
+      navigation.setOptions({
+        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButtonzForDevice(props),
+        headerRight: () => headerRightButton(),
+      });
+    }
+  }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <KeyboardAvoidingView
