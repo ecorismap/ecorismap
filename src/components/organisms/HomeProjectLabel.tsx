@@ -2,6 +2,8 @@ import React from 'react';
 import { Text, Platform, TouchableOpacity } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
+import { useDisplay } from '../../hooks/useDisplay';
+import { useWindow } from '../../hooks/useWindow';
 
 interface Props {
   onPress: () => void;
@@ -10,13 +12,14 @@ interface Props {
 
 export default function HomeProjectLabel(props: Props) {
   const { name, onPress } = props;
-
+  const { isDataOpened } = useDisplay();
+  const { isLandscape } = useWindow();
   return (
     <TouchableOpacity
       style={{
         alignSelf: 'center',
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 40 : 10,
+        top: Platform.OS === 'ios' && isDataOpened === 'closed' && !isLandscape ? 40 : 10,
         padding: 5,
         backgroundColor: COLOR.ALFAWHITE,
         borderRadius: 5,
