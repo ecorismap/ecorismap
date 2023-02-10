@@ -227,7 +227,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         screenState === 'closed' ? expandData() : openData();
         setTimeout(function () {
           navigation.navigate('DataEdit', {
-            previous: 'Home',
+            previous: 'Data',
             targetData: record,
             targetLayer: layer,
             targetRecordSet: [],
@@ -270,6 +270,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (isDrag) {
           //INFOでドラッグした場合は移動のみ実行
           releaseSvgView(event);
+          return;
         }
         if (isEditingRecord) {
           await AlertAsync(t('Home.alert.discardChanges'));
@@ -279,7 +280,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
         if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
           unselectRecord();
-
           return;
         }
 
@@ -349,7 +349,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       openData();
       setTimeout(function () {
         navigation.navigate('DataEdit', {
-          previous: 'Home',
+          previous: 'Data',
           targetData: recordSet[0],
           targetLayer: layer,
           targetRecordSet: recordSet,
