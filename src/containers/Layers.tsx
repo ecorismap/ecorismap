@@ -6,7 +6,7 @@ import { TEMPLATE_LAYER } from '../modules/layers';
 import { useLayers } from '../hooks/useLayers';
 import { Props_Layers } from '../routes';
 import { AlertAsync } from '../components/molecules/AlertAsync';
-import { useDisplay } from '../hooks/useDisplay';
+import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
@@ -14,7 +14,7 @@ import { LayersContext } from '../contexts/Layers';
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, editable, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder, importFile } = useLayers();
 
-  const { expandData } = useDisplay();
+  const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(

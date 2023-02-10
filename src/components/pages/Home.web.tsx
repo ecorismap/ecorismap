@@ -56,7 +56,7 @@ export default function HomeScreen() {
     featureButton,
     currentDrawTool,
     selectedRecord,
-    isDataOpened,
+    screenState,
     isLoading,
     onRegionChangeMapView,
     onDrop,
@@ -387,9 +387,9 @@ export default function HomeScreen() {
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View
         style={{
-          display: isDataOpened === 'closed' ? 'none' : 'flex',
+          display: screenState === 'closed' ? 'none' : 'flex',
           height: '100%',
-          width: isDataOpened === 'expanded' ? windowWidth : isDataOpened === 'opened' ? windowWidth / 2 : '0%',
+          width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : '0%',
         }}
       >
         <DataRoutes />
@@ -397,7 +397,7 @@ export default function HomeScreen() {
       <View
         style={{
           height: '100%',
-          width: isDataOpened === 'expanded' ? 0 : isDataOpened === 'opened' ? windowWidth / 2 : windowWidth,
+          width: screenState === 'expanded' ? 0 : screenState === 'opened' ? windowWidth / 2 : windowWidth,
           justifyContent: 'flex-end',
           zIndex: 0,
           elevation: 0,
@@ -496,7 +496,7 @@ export default function HomeScreen() {
             </Map>
           </View>
         </div>
-        {mapRegion && isDataOpened !== 'expanded' && (
+        {mapRegion && screenState !== 'expanded' && (
           <View
             style={{
               left: 50,
@@ -508,9 +508,9 @@ export default function HomeScreen() {
           </View>
         )}
         <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
-        {isDataOpened !== 'expanded' && !isDownloadPage && <HomeButtons />}
+        {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
     </View>

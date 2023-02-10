@@ -9,7 +9,7 @@ import { RegionType } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { deltaToZoom, zoomToDelta } from '../utils/Coords';
 import { useDispatch } from 'react-redux';
-import { useDisplay } from './useDisplay';
+import { useScreen } from './useScreen';
 
 export type UseMapViewReturnType = {
   zoom: number;
@@ -21,7 +21,7 @@ export type UseMapViewReturnType = {
 
 export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewReturnType => {
   const { isLandscape, windowWidth, mapRegion } = useWindow();
-  const { isDataOpened } = useDisplay();
+  const { screenState } = useScreen();
   const dispatch = useDispatch();
 
   const zoomDecimal = useMemo(() => {
@@ -119,14 +119,14 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
   useEffect(() => {
     //Dataを表示させたときにmapRegionを強制的に更新する。mapの見た目は更新されているがmapRegionは更新されていないバグ？のため
 
-    if (mapViewRef === null || isDataOpened === 'expanded') return;
+    if (mapViewRef === null || screenState === 'expanded') return;
     if (Platform.OS === 'web') {
       (mapViewRef as MapRef).resize();
     } else {
       setTimeout(() => (mapViewRef as MapView).animateToRegion(mapRegion, 1), 100);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDataOpened, isLandscape]);
+  }, [screenState, isLandscape]);
 
   return { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } as const;
 };
