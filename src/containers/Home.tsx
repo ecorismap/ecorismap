@@ -64,7 +64,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isEditingDraw,
     isEditingObject,
     isSelectedDraw,
-    isDrag,
     currentDrawTool,
     currentPointTool,
     currentLineTool,
@@ -78,6 +77,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressSvgView,
     moveSvgView,
     releaseSvgView,
+    releaseSvgInfoTool,
     savePoint,
     saveLine,
     savePolygon,
@@ -267,15 +267,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onReleaseSvgView = useCallback(
     async (event: GestureResponderEvent) => {
       if (isInfoTool(currentDrawTool)) {
-        if (isDrag) {
-          //INFOでドラッグした場合は移動のみ実行
-          releaseSvgView(event);
-          return;
-        }
+        const { hasDragged } = releaseSvgInfoTool(event);
+        if (hasDragged) return;
         if (isEditingRecord) {
           await AlertAsync(t('Home.alert.discardChanges'));
           return;
         }
+
         const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
         if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
@@ -299,15 +297,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     },
     [
       currentDrawTool,
-      isDrag,
+      releaseSvgInfoTool,
       isEditingRecord,
       selectSingleFeature,
       openData,
       navigation,
-      releaseSvgView,
       unselectRecord,
-      mapRegion,
       changeMapRegion,
+      mapRegion,
+      releaseSvgView,
     ]
   );
   /************** select button ************/
