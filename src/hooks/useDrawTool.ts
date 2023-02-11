@@ -55,7 +55,6 @@ export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
   isEditingObject: boolean;
   isSelectedDraw: boolean;
-  isDrag: boolean;
   drawLine: React.MutableRefObject<DrawLineType[]>;
   editingLineXY: React.MutableRefObject<Position[]>;
   selectLine: React.MutableRefObject<Position[]>;
@@ -96,6 +95,9 @@ export type UseDrawToolReturnType = {
   pressSvgView: (event: GestureResponderEvent) => void;
   moveSvgView: (event: GestureResponderEvent) => void;
   releaseSvgView: (event: GestureResponderEvent) => void;
+  releaseSvgInfoTool: (event: GestureResponderEvent) => {
+    hasDragged: boolean;
+  };
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -133,7 +135,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const isEditingDraw = useRef(false);
   const isEditingObject = useRef(false);
   const isSelectedDraw = useRef(false);
-  const isDrag = useRef(false);
+  const isHided = useRef(false);
   const offset = useRef([0, 0]);
   const dragStartCenterPosition = useRef<{ startX: number; startY: number; longitude: number; latitude: number }>({
     startX: 0,
@@ -263,7 +265,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectLine.current = [];
     undoLine.current = [];
     isEditingObject.current = false;
-    isDrag.current = false;
     setRedraw(uuidv4());
   }, [isEditingObject]);
 
@@ -403,6 +404,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     (event: GestureResponderEvent) => {
       resetDrawTools();
       setRedraw(uuidv4());
+
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
       // For DeBug
@@ -443,7 +445,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           );
           if (selectedFeature !== undefined) {
             layer = findLayer(layerId);
-            if (isHisyouToolActive) convertFeatureToHisyouLine(layerId, [selectedFeature]);
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
             feature = selectedFeature;
@@ -477,11 +478,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { layer, feature, recordSet, recordIndex };
     },
     [
-      convertFeatureToHisyouLine,
       currentDrawTool,
       featureButton,
       findLayer,
-      isHisyouToolActive,
       lineDataSet,
       mapRegion,
       mapSize,
@@ -587,6 +586,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const hideDrawLine = useCallback(() => {
     drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
+    isHided.current = true;
     setRedraw(uuidv4());
   }, []);
 
@@ -595,6 +595,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       (line, idx) =>
         (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
     );
+    isHided.current = false;
     setRedraw(uuidv4());
   }, [mapRegion, mapSize, mapViewRef]);
 
@@ -621,7 +622,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         };
         //xyを消してsvgの描画を止める。表示のタイムラグがでるため
         hideDrawLine();
-        isDrag.current = true;
         return;
       }
       if (currentDrawTool === 'SELECT') {
@@ -710,17 +710,34 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [currentCenterPosition, currentDrawTool, mapViewRef, moveSvgFreehandTool, moveSvgHisyouTool, moveSvgPlotTool]
   );
 
+  const hasDragged = (pXY: Position) => {
+    if (Math.abs(dragStartCenterPosition.current.startX - pXY[0]) > 5) return true;
+    if (Math.abs(dragStartCenterPosition.current.startY - pXY[1]) > 5) return true;
+
+    return false;
+  };
+
+  const releaseSvgInfoTool = useCallback(
+    (event: GestureResponderEvent) => {
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+
+      showDrawLine();
+      setRedraw(uuidv4());
+      const dragged = hasDragged(pXY);
+      return { hasDragged: dragged };
+    },
+    [showDrawLine]
+  );
+
   const releaseSvgView = useCallback(
     (event: GestureResponderEvent) => {
       //console.log('##', gesture.numberActiveTouches);
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'MOVE') {
         //xy座標を更新してsvgを表示
         showDrawLine();
-        isDrag.current = false;
         setRedraw(uuidv4());
-        return;
       }
       if (currentDrawTool === 'SELECT') {
         selectEditableFeatures();
@@ -843,8 +860,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
-    if (drawLine.current.length > 0 && !isDrag.current) {
-      //console.log('redraw', dayjs());
+    if (drawLine.current.length > 0 && !isHided.current) {
       drawLine.current.forEach(
         (line, idx) =>
           (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
@@ -857,7 +873,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isEditingDraw: isEditingDraw.current,
     isEditingObject: isEditingObject.current,
     isSelectedDraw: isSelectedDraw.current,
-    isDrag: isDrag.current,
     currentDrawTool,
     currentPointTool,
     currentLineTool,
@@ -879,6 +894,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     pressSvgView,
     moveSvgView,
     releaseSvgView,
+    releaseSvgInfoTool,
     selectSingleFeature,
     resetDrawTools,
     hideDrawLine,

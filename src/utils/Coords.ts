@@ -268,7 +268,7 @@ export const getSnappedPositionWithLine = (point: Position, line: Position[], op
 };
 
 export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[], RANGE: number = 500) => {
-  if (xyLine.length < 2) return { isNear: false, index: -1, snappedToLast: undefined };
+  if (xyLine.length < 2) return { isNear: false, index: -1, position: undefined };
   const snapped = getSnappedPositionWithLine(xyPoint, xyLine, { isXY: true });
   return { isNear: snapped.distance < RANGE, index: snapped.index, position: snapped.position };
 };
@@ -359,8 +359,8 @@ export const modifyLine = (original: DrawLineType, modified: Position[], current
   } = checkDistanceFromLine(endPoint, original.xy, 1000);
 
   //最初が離れている場合（修正にはならないのでありえない）
-  if (!startIsNear) return original.xy;
-  if (!endIsNear) {
+  if (!startIsNear || startPosition === undefined) return original.xy;
+  if (!endIsNear || endPosition === undefined) {
     //console.log('最後が離れている');
 
     const firstLine = startIsNearWithLast ? original.xy : original.xy.slice(0, startIndex + 1);
@@ -489,7 +489,7 @@ export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointC
     if (features.length === 0) return undefined;
     return features[0];
   } catch (e) {
-    console.log(e);
+    //console.log(e);
     return undefined;
   }
 };

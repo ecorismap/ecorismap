@@ -15,6 +15,7 @@ import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 import { HomeContext } from '../../contexts/Home';
+import { HISYOUTOOL } from '../../plugins/hisyoutool/Constants';
 
 //React.Memoすると描画が更新されない
 export const SvgView = () => {
@@ -74,7 +75,7 @@ export const SvgView = () => {
               : isEditingObject
               ? ''
               : `url(#delete)`;
-          let midStyle =
+          const midStyle =
             currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
               ? properties.includes('EDIT')
                 ? `url(#plot)`
@@ -82,17 +83,25 @@ export const SvgView = () => {
               : '';
           let endStyle = properties.includes('POINT') ? `url(#point)` : properties.includes('EDIT') ? `url(#last)` : '';
           if (isHisyouToolActive) {
-            startStyle = !properties.includes('HISYOU')
-              ? ''
-              : properties.includes('EDIT')
-              ? `url(#add)`
-              : isEditingObject
-              ? ''
-              : `url(#delete)`;
-            midStyle = '';
-            endStyle = properties.includes('arrow') ? 'url(#arrow)' : properties.includes('TOMARI') ? `url(#dot)` : '';
+            if (
+              !properties.includes('HISYOU') &&
+              (properties.includes('HISYOU_NOEDIT') || Object.keys(HISYOUTOOL).some((p) => properties.includes(p)))
+            ) {
+              startStyle = '';
+            }
+            if (properties.includes('arrow')) {
+              endStyle = 'url(#arrow)';
+            }
+            if (properties.includes('TOMARI')) {
+              endStyle = `url(#dot)`;
+            }
           }
 
+          let strokeColor = properties.includes('EDIT') ? 'lightblue' : 'yellow';
+
+          if (Object.keys(HISYOUTOOL).some((p) => properties.includes(p)) || properties.includes('HISYOU_NOEDIT')) {
+            strokeColor = 'blue';
+          }
           return (
             <G key={uuidv4()}>
               {properties.includes('EDIT') && (
@@ -101,7 +110,7 @@ export const SvgView = () => {
               <Path
                 id={`path${idx}`}
                 d={pointsToSvg(xy)}
-                stroke={properties.includes('EDIT') ? 'lightblue' : 'yellow'}
+                stroke={strokeColor}
                 strokeWidth="2"
                 strokeDasharray={'none'}
                 fill={
@@ -116,7 +125,7 @@ export const SvgView = () => {
                 markerEnd={endStyle}
               />
 
-              {isHisyouToolActive && <HisyouSVG id={idx} properties={properties} strokeColor={'blue'} />}
+              {isHisyouToolActive && <HisyouSVG id={idx} properties={properties} strokeColor={'brown'} />}
             </G>
           );
         })}
@@ -161,24 +170,24 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="5"
-          markerHeight="4"
+          markerWidth="6"
+          markerHeight="5"
           orient="auto"
         >
-          <Path stroke="blue" strokeWidth="1" fill="blue" d="M 0 0 L 10 5 L 0 10 z" />
+          <Path stroke="black" strokeWidth="1" fill="black" d="M 0 0 L 10 5 L 0 10 z" />
         </Marker>
         <Marker
           id="dot"
           viewBox="0 0 10 10"
           refX="5"
-          refY="7"
+          refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
           markerWidth="4"
           markerHeight="4"
           orient="auto"
         >
-          <Circle cx="5" cy="5" r="5" fill="blue" stroke="white" />
+          <Circle cx="5" cy="5" r="5" fill="black" stroke="white" />
         </Marker>
         <Marker
           id="point"

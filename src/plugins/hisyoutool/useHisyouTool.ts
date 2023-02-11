@@ -1,5 +1,5 @@
 import { Position } from '@turf/turf';
-import { MutableRefObject, useCallback, useRef } from 'react';
+import { MutableRefObject, useCallback, useEffect, useRef } from 'react';
 import { DrawLineType, DrawToolType, LayerType, LineRecordType, RecordType, UndoLineType } from '../../types';
 import {
   checkDistanceFromLine,
@@ -27,6 +27,7 @@ import MapView, { LatLng } from 'react-native-maps';
 import { useDrawObjects } from '../../hooks/useDrawObjects';
 import { useRecord } from '../../hooks/useRecord';
 import { MapRef } from 'react-map-gl';
+import { useHisyouToolSetting } from './useHisyouToolSetting';
 
 export type UseHisyouToolReturnType = {
   pressSvgHisyouTool: (point: Position) => void;
@@ -57,7 +58,7 @@ export const useHisyouTool = (
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
   const { dataUser, generateRecord, addRecord } = useRecord();
-  const { pressSvgFreehandTool, moveSvgFreehandTool, releaseSvgFreehandTool } = useDrawObjects(
+  const { moveSvgFreehandTool, releaseSvgFreehandTool } = useDrawObjects(
     drawLine,
     editingLineXY,
     undoLine,
@@ -68,6 +69,8 @@ export const useHisyouTool = (
   );
   const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
   const hisyouData = useSelector((state: AppState) => state.dataSet.find((v) => v.layerId === hisyouLayerId));
+  const { selectedRecord } = useRecord();
+  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const editingHisyouObjects = useRef<{
     hisyouLineIndex: number | undefined;
@@ -137,7 +140,32 @@ export const useHisyouTool = (
     ]
   );
 
-  const trySelectObjectAtPosition = useCallback(
+  const tryDeleteHisyouObjectAtPosition = useCallback(
+    (pXY: Position) => {
+      const deleteIndex = drawLine.current.findIndex((line) => {
+        if (!line.properties.includes('HISYOU')) return false;
+        return line.xy.length > 0 && isNearWithPlot(pXY, line.xy[0]);
+      });
+      if (deleteIndex !== -1) {
+        undoLine.current.push({
+          index: deleteIndex,
+          latlon: drawLine.current[deleteIndex].latlon,
+          action: 'DELETE',
+        });
+        drawLine.current[deleteIndex] = {
+          ...drawLine.current[deleteIndex],
+          xy: [],
+          latlon: [],
+          //properties: [],
+        };
+        return { isDeleted: true, hisyouId: drawLine.current[deleteIndex].id };
+      }
+      return { isDeleted: false, hisyouId: undefined };
+    },
+    [drawLine, undoLine]
+  );
+
+  const trySelectHisyouObjectAtPosition = useCallback(
     (pXY: Position) => {
       editingObjectIndex.current = drawLine.current.findIndex((line) => {
         if (line.xy.length === 0) return false;
@@ -160,54 +188,97 @@ export const useHisyouTool = (
     [drawLine, editingObjectIndex, undoLine]
   );
 
-  const deleteHisyouActions = useCallback(() => {
-    //既存ラインの選択
-    const hisyouLine = drawLine.current[editingObjectIndex.current];
-    const hisyouActionsIndex = drawLine.current
-      .map((line, idx) => line.id === hisyouLine.id && !line.properties.includes('HISYOU') && idx)
-      .filter((v): v is number => v !== false);
+  const deleteHisyouActions = useCallback(
+    (hisyouLineId) => {
+      //既存ラインの選択
+      const hisyouActionsIndex = drawLine.current
+        .map((line, idx) => line.id === hisyouLineId && !line.properties.includes('HISYOU') && idx)
+        .filter((v): v is number => v !== false);
 
-    hisyouActionsIndex.forEach((index) => {
-      undoLine.current.push({
-        index: index,
-        latlon: drawLine.current[index].latlon,
-        action: 'DELETE',
+      hisyouActionsIndex.forEach((index) => {
+        undoLine.current.push({
+          index: index,
+          latlon: drawLine.current[index].latlon,
+          action: 'DELETE',
+        });
+        drawLine.current[index] = {
+          ...drawLine.current[index],
+          xy: [],
+          latlon: [],
+        };
       });
-      drawLine.current[index] = {
-        ...drawLine.current[index],
-        xy: [],
+      editingHisyouObjects.current.hisyouActionsIndex = [];
+    },
+    [drawLine, undoLine]
+  );
+
+  const editStartNewHisyouObject = useCallback(
+    (pXY: Position) => {
+      //console.log('New Line');
+
+      //新規ラインの場合
+      drawLine.current.push({
+        id: uuidv4(),
+        layerId: undefined,
+        record: undefined,
+        xy: [pXY],
         latlon: [],
-      };
-    });
-    editingHisyouObjects.current.hisyouActionsIndex = [];
-  }, [drawLine, editingObjectIndex, undoLine]);
+        properties: ['EDIT', 'arrow'],
+      });
+
+      undoLine.current.push({
+        index: -1,
+        latlon: [],
+        action: 'NEW',
+      });
+      isEditingObject.current = true;
+      editingObjectIndex.current = -1;
+    },
+    [drawLine, editingObjectIndex, isEditingObject, undoLine]
+  );
 
   const pressSvgHisyouTool = useCallback(
     (pXY: Position) => {
-      if (!isEditingObject.current) {
-        const isSelected = trySelectObjectAtPosition(pXY);
-        if (isSelected) return;
-      }
       if (isEditingObject.current) {
+        //編集中で最初をクリックしたら編集終了
         const isFishished = tryFinishHisyouEdit(pXY);
         if (isFishished) return;
-        if (currentDrawTool === 'HISYOU') deleteHisyouActions();
-      }
-
-      if (currentDrawTool === 'HISYOU') {
-        pressSvgFreehandTool(pXY);
+        //飛翔を変更するならアクション一旦削除
+        if (currentDrawTool === 'HISYOU') {
+          const hisyouLine = drawLine.current[editingObjectIndex.current];
+          deleteHisyouActions(hisyouLine.id);
+          editingLineXY.current = [pXY];
+          return;
+        } else {
+          startEditHisyouAction(pXY);
+        }
       } else {
-        startEditHisyouAction(pXY);
+        if (currentDrawTool === 'HISYOU') {
+          //編集中ではなく最初をクリックしたら削除
+          const { isDeleted, hisyouId } = tryDeleteHisyouObjectAtPosition(pXY);
+          if (isDeleted && hisyouId !== undefined) {
+            deleteHisyouActions(hisyouId);
+            return;
+          }
+          const isSelected = trySelectHisyouObjectAtPosition(pXY);
+          if (isSelected) return;
+
+          editStartNewHisyouObject(pXY);
+        }
       }
     },
     [
       currentDrawTool,
       deleteHisyouActions,
+      drawLine,
+      editStartNewHisyouObject,
+      editingLineXY,
+      editingObjectIndex,
       isEditingObject,
-      pressSvgFreehandTool,
       startEditHisyouAction,
+      tryDeleteHisyouObjectAtPosition,
       tryFinishHisyouEdit,
-      trySelectObjectAtPosition,
+      trySelectHisyouObjectAtPosition,
     ]
   );
 
@@ -234,13 +305,14 @@ export const useHisyouTool = (
 
   const moveSvgHisyouTool = useCallback(
     (pXY: Position) => {
+      if (!isEditingObject.current) return;
       if (currentDrawTool === 'HISYOU') {
         moveSvgFreehandTool(pXY);
       } else {
         drawEditingHisyouAction(pXY);
       }
     },
-    [currentDrawTool, drawEditingHisyouAction, moveSvgFreehandTool]
+    [currentDrawTool, drawEditingHisyouAction, isEditingObject, moveSvgFreehandTool]
   );
 
   const createNewAction = useCallback(() => {
@@ -305,7 +377,6 @@ export const useHisyouTool = (
 
         if (actions === undefined) return;
         actions.forEach((action) => {
-          //console.log(action.field._ref, action.field['飛翔凡例']);
           drawLine.current.push({
             id: action.id,
             layerId: hisyouLayerId,
@@ -411,6 +482,11 @@ export const useHisyouTool = (
       }
     });
   }, [dataUser.uid, dispatch, drawLine, hisyouLayerId]);
+
+  useEffect(() => {
+    if (isHisyouToolActive && selectedRecord !== undefined)
+      convertFeatureToHisyouLine(selectedRecord.layerId, [selectedRecord.record as LineRecordType]);
+  }, [convertFeatureToHisyouLine, isHisyouToolActive, selectedRecord]);
 
   return {
     pressSvgHisyouTool,
