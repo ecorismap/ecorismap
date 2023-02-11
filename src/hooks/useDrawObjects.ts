@@ -463,19 +463,6 @@ export const useDrawObjects = (
 
   const pressSvgFreehandTool = useCallback(
     (pXY: Position) => {
-      /*
-        A.編集中でないなら、
-          a.既存のプロットに近いか?
-          - 最初のノードに近ければ、オブジェクトを削除
-          - 近いものがある場合は、既存オブジェクトを選択
-          - 近いものが無い場合は、新規オブジェクトの作成
-
-        B.編集中なら
-        　b.編集中のプロット（ノードもしくはライン）に近いか
-          - 近ければ、ノードの修正もしくは途中にプロットを追加
-          - 最初のノードをタッチするだけなら編集終了（ポリゴンは閉じる）
-          - 近くなければ、最後尾にプロットを追加
-      */
       if (isEditingObject.current) {
         //編集中なら、
         const isFishished = tryFinishFreehandEditObject(pXY);
