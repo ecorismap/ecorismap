@@ -21,7 +21,7 @@ export const HisyouSVG = (props: HisyouSVGProps) => {
       )}
 
       {properties.includes('SENJYOU') && (
-        <SVGText fontWeight={100} fontSize={20}>
+        <SVGText fontWeight={100} fontSize={18}>
           <TextPath href={`#path${id}`} startOffset="0%">
             <TSpan fill={strokeColor}>{'◎'.repeat(300)}</TSpan>
           </TextPath>
