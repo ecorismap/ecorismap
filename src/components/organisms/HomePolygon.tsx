@@ -61,7 +61,7 @@ export const Polygon = React.memo((props: Props) => {
           );
         } else {
           return (
-            <Marker key={feature.id} coordinate={feature.centroid!}>
+            <Marker key={feature.id} coordinate={feature.centroid ?? feature.coords[0]}>
               <View style={{ alignItems: 'center' }}>
                 {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
                 <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
