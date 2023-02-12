@@ -120,6 +120,35 @@ export default function HomeScreen() {
     [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
   );
 
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+    },
+
+    headerRight: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginRight: 10,
+    },
+    map: {
+      ...StyleSheet.absoluteFillObject,
+      minHeight: 1,
+      minWidth: 1,
+    },
+    scaleBar: {
+      bottom: 80,
+      left: 65,
+      position: 'absolute',
+    },
+    scaleBarLandscape: {
+      bottom: 60,
+      left: 65,
+      position: 'absolute',
+    },
+  });
   //console.log('Home');
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
@@ -138,7 +167,7 @@ export default function HomeScreen() {
           <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
         </View>
       ),
-    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
+    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize, styles.headerRight]
   );
 
   useEffect(() => {
@@ -303,19 +332,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <HomeZoomButton
-          zoom={zoom}
-          top={Platform.OS === 'ios' ? 90 : 60}
-          left={10}
-          zoomIn={pressZoomIn}
-          zoomOut={pressZoomOut}
-        />
+        <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
         <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
-        {screenState !== 'expanded' && <HomeAttributionText bottom={12} attribution={attribution} />}
+        {screenState !== 'expanded' && <HomeAttributionText bottom={8} attribution={attribution} />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
@@ -324,33 +347,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-    minHeight: 1,
-    minWidth: 1,
-  },
-  scaleBar: {
-    bottom: 80,
-    left: 50,
-    position: 'absolute',
-  },
-  scaleBarLandscape: {
-    bottom: 43,
-    left: 10,
-    position: 'absolute',
-  },
-});
