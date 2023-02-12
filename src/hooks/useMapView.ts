@@ -44,7 +44,6 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
 
   const zoomIn = useCallback(() => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
-    console.log(mapRegion);
     const coords = {
       latitude: latitude,
       longitude: longitude,
