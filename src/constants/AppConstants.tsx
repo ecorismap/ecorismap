@@ -13,7 +13,7 @@ export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
 export const FUNC_MAPBOX = false;
 
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
