@@ -88,35 +88,7 @@ export default function HomeScreen() {
   const layers = useSelector((state: AppState) => state.layers);
   const navigation = useNavigation();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
-  const styles = StyleSheet.create({
-    container: {
-      alignItems: 'center',
-      flex: 1,
-      justifyContent: 'center',
-    },
 
-    headerRight: {
-      alignItems: 'center',
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginRight: 10,
-    },
-    map: {
-      ...StyleSheet.absoluteFillObject,
-      minHeight: 1,
-      minWidth: 1,
-    },
-    scaleBar: {
-      bottom: screenState === 'opened' ? 2 : 80,
-      left: 65,
-      position: 'absolute',
-    },
-    scaleBarLandscape: {
-      bottom: 2,
-      left: 80,
-      position: 'absolute',
-    },
-  });
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
   const dataStyle = useMemo(
@@ -157,6 +129,35 @@ export default function HomeScreen() {
     [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
   );
 
+  const styles = StyleSheet.create({
+    container: {
+      alignItems: 'center',
+      flex: 1,
+      justifyContent: 'center',
+    },
+
+    headerRight: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      marginRight: 10,
+    },
+    map: {
+      ...StyleSheet.absoluteFillObject,
+      minHeight: 1,
+      minWidth: 1,
+    },
+    scaleBar: {
+      bottom: 80,
+      left: 65,
+      position: 'absolute',
+    },
+    scaleBarLandscape: {
+      bottom: 60,
+      left: 65,
+      position: 'absolute',
+    },
+  });
   //console.log('Home');
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
