@@ -640,6 +640,7 @@ export const smoothingByBezier = (points: Position[]): Position[] => {
 };
 
 export const calcLineMidPoint = (coords: LatLng[]) => {
+  if (coords.length < 2) return undefined;
   const turfLine = turf.lineString(latLonObjectsToLatLonArray(coords));
   const lineLength = turf.length(turfLine);
   const midPoint = turf.along(turfLine, lineLength / 2);
@@ -647,6 +648,7 @@ export const calcLineMidPoint = (coords: LatLng[]) => {
 };
 
 export const calcCentroid = (coords: LatLng[]) => {
+  if (coords.length < 4) return undefined;
   return {
     longitude: coords.reduce((p, c) => p + c.longitude, 0) / coords.length,
     latitude: coords.reduce((p, c) => p + c.latitude, 0) / coords.length,
