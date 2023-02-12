@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 5,
+    marginVertical: 20,
     zIndex: 100,
   },
 });
