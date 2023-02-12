@@ -30,11 +30,48 @@ export const HomeDrawTools = () => {
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(
-    () => screenState === 'opened' || (isLandscape && Platform.OS !== 'web'),
+    () => Platform.OS !== 'web' && (screenState === 'opened' || isLandscape),
     [screenState, isLandscape]
   );
 
   const { isHisyouToolActive } = useHisyouToolSetting();
+
+  const styles = StyleSheet.create({
+    button: {
+      alignSelf: 'flex-start',
+      marginTop: 2,
+      width: 36,
+    },
+    buttonContainer: {
+      elevation: 101,
+      left: 9,
+      marginHorizontal: 0,
+      position: 'absolute',
+      top: Platform.OS === 'ios' ? 360 : 330,
+      zIndex: 101,
+    },
+    buttonContainerRight: {
+      elevation: 101,
+      marginHorizontal: 0,
+      position: 'absolute',
+      right: 10,
+      top: 70,
+      zIndex: 101,
+    },
+    buttonRight: {
+      alignSelf: 'flex-end',
+      marginTop: 2,
+      width: 36,
+    },
+    selectionalButton: {
+      alignSelf: 'flex-start',
+      marginTop: 2,
+    },
+    selectionalButtonRight: {
+      alignSelf: 'flex-end',
+      marginTop: 2,
+    },
+  });
 
   return (
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
@@ -132,39 +169,3 @@ export const HomeDrawTools = () => {
     </View>
   );
 };
-const styles = StyleSheet.create({
-  button: {
-    alignSelf: 'flex-start',
-    marginTop: 2,
-    width: 36,
-  },
-  buttonContainer: {
-    elevation: 101,
-    left: 9,
-    marginHorizontal: 0,
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 360 : 330,
-    zIndex: 101,
-  },
-  buttonContainerRight: {
-    elevation: 101,
-    marginHorizontal: 0,
-    position: 'absolute',
-    right: 10,
-    top: Platform.OS === 'ios' ? 40 : 10,
-    zIndex: 101,
-  },
-  buttonRight: {
-    alignSelf: 'flex-end',
-    marginTop: 2,
-    width: 36,
-  },
-  selectionalButton: {
-    alignSelf: 'flex-start',
-    marginTop: 2,
-  },
-  selectionalButtonRight: {
-    alignSelf: 'flex-end',
-    marginTop: 2,
-  },
-});

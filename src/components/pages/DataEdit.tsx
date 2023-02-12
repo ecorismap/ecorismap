@@ -68,10 +68,27 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flex: 1 }} />
+        <View style={{ flexDirection: 'row', flex: 1 }}>
+          <HeaderRightButton
+            name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
+            backgroundColor={COLOR.GRAY0}
+            onPress={screenState === 'opened' ? expandData : openData}
+            borderRadius={5}
+            size={21}
+            color={COLOR.BLACK}
+          />
+          <HeaderRightButton
+            name={NAV_BTN.CLOSE}
+            backgroundColor={COLOR.GRAY0}
+            onPress={onClose}
+            borderRadius={5}
+            size={21}
+            color={COLOR.BLACK}
+          />
+        </View>
       </View>
     ),
-    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
+    [expandData, gotoBack, maxRecordNumber, onChangeRecord, onClose, openData, recordNumber, screenState]
   );
 
   const headerTitleButton = useCallback(
@@ -132,7 +149,6 @@ export default function DataEditScreen() {
     } else {
       navigation.setOptions({
         headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButtonzForDevice(props),
-        headerRight: () => headerRightButton(),
       });
     }
   }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
