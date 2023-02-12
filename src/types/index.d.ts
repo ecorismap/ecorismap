@@ -125,7 +125,7 @@ export interface PolygonRecordType {
   redraw: boolean;
   coords: Array<LocationType>;
   holes?: { [key: string]: Array<LocationType> };
-  centroid: LocationType;
+  centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
 }
 
