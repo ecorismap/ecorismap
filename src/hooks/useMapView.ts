@@ -54,7 +54,7 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
       mapViewRef.animateToRegion(coords, 200);
     } else if (isMapRef(mapViewRef)) {
       const mapRef = mapViewRef.getMap();
-      mapRef.flyTo({ zoom: mapRef.getZoom() + 1 });
+      mapRef.flyTo({ center: [longitude, latitude], zoom: mapRef.getZoom() + 1, essential: true });
     }
   }, [mapRegion, mapViewRef]);
 
@@ -70,7 +70,11 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
       mapViewRef.animateToRegion(coords, 200);
     } else if (isMapRef(mapViewRef)) {
       const mapRef = mapViewRef.getMap();
-      mapRef.flyTo({ zoom: mapRef.getZoom() === 0 ? 0 : mapRef.getZoom() - 1 });
+      mapRef.flyTo({
+        center: [longitude, latitude],
+        zoom: mapRef.getZoom() === 0 ? 0 : mapRef.getZoom() - 1,
+        essential: true,
+      });
     }
   }, [mapRegion, mapViewRef]);
 
