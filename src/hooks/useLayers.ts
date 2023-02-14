@@ -184,14 +184,19 @@ export const useLayers = (): UseLayersReturnType => {
       switch (ext?.toLowerCase()) {
         case 'zip': {
           const loaded = await unzipFromUri(uri);
-          const jsonFiles = loaded.file(/\.json$/);
-          if (jsonFiles.length !== 1) throw 'invalid zip file';
-          const jsonDecompressed = await jsonFiles[0].async('text');
+          //console.log(loaded);
+
+          const files = Object.keys(loaded.files);
+          const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
+
+          if (jsonFile === undefined) throw 'invalid zip file';
+          const jsonDecompressed = await loaded.files[jsonFile].async('text');
           const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
 
-          const geojsonFiles = loaded.file(/\.geojson$/);
-          if (geojsonFiles.length !== 1) throw 'invalid zip file';
-          const geojson = await geojsonFiles[0].async('text');
+          const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+          if (geojsonFile === undefined) throw 'invalid zip file';
+          const geojson = await loaded.files[geojsonFile].async('text');
+
           //ToDo 有効なgeojsonファイルかチェック
           importGeoJson(geojson, 'POINT', name, importedLayer);
           importGeoJson(geojson, 'MULTIPOINT', name, importedLayer);
