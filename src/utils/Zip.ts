@@ -1,5 +1,8 @@
 import pako from 'pako';
 import { Buffer } from 'buffer';
+import { Platform } from 'react-native';
+import JSZip from 'jszip';
+import * as FileSystem from 'expo-file-system';
 
 export function gzip(str: string) {
   return Buffer.from(pako.deflate(str)).toString('base64');
@@ -32,4 +35,16 @@ function toArrayBuffer(buffer: Buffer) {
 
 function toBuffer(byteArray: ArrayBuffer) {
   return Buffer.from(byteArray);
+}
+
+export async function unzipFromUri(uri: string) {
+  let base64;
+  if (Platform.OS === 'web') {
+    const arr = uri.split(',');
+    base64 = arr[arr.length - 1];
+  } else {
+    base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  }
+  const loaded = await JSZip.loadAsync(base64, { base64: true });
+  return loaded;
 }
