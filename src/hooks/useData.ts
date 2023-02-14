@@ -185,6 +185,9 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
     const records = allUserRecordSet.filter((_, i) => checkList[i]);
+    //LayerSetting
+    const layerSetting = JSON.stringify(targetLayer);
+    exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
     //GeoJSON
     const geojson = generateGeoJson(records, targetLayer.field, targetLayer.type, targetLayer.name);
     const geojsonData = JSON.stringify(geojson);

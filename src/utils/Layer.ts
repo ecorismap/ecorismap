@@ -1,6 +1,8 @@
+import { cloneDeep } from 'lodash';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 import { RecordType, LayerType } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const getColor = (layer: LayerType, feature: RecordType) => {
   const colorStyle = layer.colorStyle;
@@ -87,3 +89,12 @@ export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'Public
   );
   return targetLayers;
 };
+
+export function updateLayerIds(layer: LayerType) {
+  const newLayer = cloneDeep(layer);
+  newLayer.id = uuidv4();
+  newLayer.field.forEach((f) => {
+    f.id = uuidv4();
+  });
+  return newLayer;
+}
