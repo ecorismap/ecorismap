@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, getLayerSerial } from '../../utils/Layer';
+import { getColor, getLayerSerial, updateLayerIds } from '../../utils/Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -130,5 +130,36 @@ describe('getLayerSerial', () => {
 
   it('return next serial field number', () => {
     expect(getLayerSerial(layer, data)).toBe(3);
+  });
+});
+
+describe('test ecorismap', function () {
+  it('test ecorismap.updateLayerIds', function (done) {
+    const layer: LayerType = {
+      id: '1',
+      name: 'トラック',
+      type: 'LINE',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        color: COLOR.RED,
+        fieldName: 'name',
+        colorRamp: 'RANDOM',
+        colorList: [],
+        transparency: 1,
+      },
+      label: 'name',
+      visible: true,
+      active: true,
+      field: [
+        { id: '1-0', name: 'name', format: 'SERIAL' },
+        { id: '1-1', name: 'time', format: 'DATETIME' },
+        { id: '1-2', name: 'cmt', format: 'STRING' },
+      ],
+    };
+    const newLayer = updateLayerIds(layer);
+    expect(newLayer.id).not.toEqual(layer.id);
+    expect(newLayer.field[0].id).not.toEqual(layer.field[0].id);
+    done();
   });
 });
