@@ -11,7 +11,7 @@ export const exportDataAndPhoto = async (
     data: string;
     name: string;
     folder: string;
-    type: ExportType | 'JSON' | 'PHOTO';
+    type: ExportType | 'PHOTO';
   }[],
   exportDataName: string,
   ext: string
