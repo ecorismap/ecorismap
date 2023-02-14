@@ -1,7 +1,16 @@
 import { parse } from 'fast-xml-parser';
 import { v4 as uuidv4 } from 'uuid';
 import xmlBuilder from 'xmlbuilder';
-import { RecordType, FeatureType, LayerType, LocationType, GeoJsonFeatureType, PhotoType, FormatType } from '../types';
+import {
+  RecordType,
+  FeatureType,
+  LayerType,
+  LocationType,
+  GeoJsonFeatureType,
+  PhotoType,
+  FormatType,
+  FieldType,
+} from '../types';
 import * as turf from '@turf/helpers';
 import simplify from '@turf/simplify';
 import { COLOR } from '../constants/AppConstants';
@@ -19,28 +28,7 @@ export const Gpx2Data = (
 ) => {
   try {
     //console.log(type);
-    const newLayer: LayerType = {
-      id: uuidv4(),
-      name: sanitize(fileName),
-      type: type,
-      permission: 'PRIVATE',
-      colorStyle: {
-        colorType: 'SINGLE',
-        transparency: 0.8,
-        color: COLOR.RED,
-        fieldName: '',
-        colorRamp: 'RANDOM',
-        colorList: [],
-      },
-      label: 'name',
-      visible: true,
-      active: false,
-      field: [
-        { id: uuidv4(), name: 'name', format: 'STRING' },
-        { id: uuidv4(), name: 'time', format: 'DATETIME' },
-        { id: uuidv4(), name: 'cmt', format: 'STRING' },
-      ],
-    };
+    const newLayer: LayerType = createGpxLayer(fileName, type);
 
     const json = parse(gpx, {
       ignoreAttributes: false,
@@ -140,7 +128,6 @@ export const Gpx2Data = (
 export const GeoJson2Data = (
   geojson: string,
   type: GeoJsonFeatureType,
-  fileName: string,
   userId: string | undefined,
   displayName: string | null
 ) => {
@@ -368,27 +355,9 @@ export const GeoJson2Data = (
         break;
     }
 
-    const newLayer: LayerType = {
-      id: uuidv4(),
-      name: sanitize(fileName),
-      type: featureType,
-      permission: 'PRIVATE',
-      colorStyle: {
-        colorType: 'SINGLE',
-        transparency: 0.8,
-        color: COLOR.RED,
-        fieldName: '',
-        colorRamp: 'RANDOM',
-        colorList: [],
-      },
-      label: '',
-      visible: true,
-      active: false,
-      field: fields,
-    };
-
-    return { layer: newLayer, recordSet: importedData };
+    return { recordSet: importedData, featureType, fields };
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 };
@@ -667,3 +636,49 @@ export const generateGeoJson = (
   }
   return { ...geojson, features: features };
 };
+
+export function createGeoJsonLayer(fileName: string, featureType: FeatureType, fields: FieldType[]): LayerType {
+  return {
+    id: uuidv4(),
+    name: sanitize(fileName),
+    type: featureType,
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.8,
+      color: COLOR.RED,
+      fieldName: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+    },
+    label: '',
+    visible: true,
+    active: false,
+    field: fields,
+  };
+}
+
+function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
+  return {
+    id: uuidv4(),
+    name: sanitize(fileName),
+    type: featureType,
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.8,
+      color: COLOR.RED,
+      fieldName: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+    },
+    label: 'name',
+    visible: true,
+    active: false,
+    field: [
+      { id: uuidv4(), name: 'name', format: 'STRING' },
+      { id: uuidv4(), name: 'time', format: 'DATETIME' },
+      { id: uuidv4(), name: 'cmt', format: 'STRING' },
+    ],
+  };
+}

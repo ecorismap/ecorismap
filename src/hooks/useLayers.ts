@@ -18,7 +18,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 //@ts-ignore
 import Base64 from 'Base64';
-import { Gpx2Data, GeoJson2Data } from '../utils/Geometry';
+import { Gpx2Data, GeoJson2Data, createGeoJsonLayer } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { setDataSetAction, createDataSetInitialState, addDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
@@ -31,10 +31,13 @@ import { AlertAsync } from '../components/molecules/AlertAsync';
 import { clearCacheData, exportDataAndPhoto } from '../utils/File';
 import { kml } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
-import JSZip from 'jszip';
+
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { AppID, PHOTO_FOLDER } from '../constants/AppConstants';
+
+import { unzipFromUri } from '../utils/Zip';
+import { updateLayerIds } from '../utils/Layer';
 
 export type UseLayersReturnType = {
   layers: LayerType[];
@@ -153,16 +156,23 @@ export const useLayers = (): UseLayersReturnType => {
   );
 
   const importGeoJson = useCallback(
-    (geojson: string, featureType: GeoJsonFeatureType, importFileName: string) => {
-      const data = GeoJson2Data(geojson, featureType, importFileName, dataUser.uid, dataUser.displayName);
+    (geojson: string, featureType: GeoJsonFeatureType, importFileName: string, layer?: LayerType) => {
+      const data = GeoJson2Data(geojson, featureType, dataUser.uid, dataUser.displayName);
+      //console.log('data', data);
       if (data === undefined) {
         return;
       }
-
+      let importedLayer;
+      if (layer === undefined) {
+        importedLayer = createGeoJsonLayer(importFileName, data.featureType, data.fields);
+      } else {
+        importedLayer = cloneDeep(layer);
+        //ToDo Layerとデータの整合性のチェック
+      }
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
       if (data.recordSet.length > 0) {
-        dispatch(addLayerAction(data.layer));
-        dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
+        dispatch(addLayerAction(importedLayer));
+        dispatch(addDataAction([{ layerId: importedLayer.id, userId: dataUser.uid, data: data.recordSet }]));
       }
     },
     [dispatch, dataUser.displayName, dataUser.uid]
@@ -172,6 +182,25 @@ export const useLayers = (): UseLayersReturnType => {
     async (name: string, uri: string) => {
       const ext = getExt(name);
       switch (ext?.toLowerCase()) {
+        case 'zip': {
+          const loaded = await unzipFromUri(uri);
+          const jsonFiles = loaded.file(/\.json$/);
+          if (jsonFiles.length !== 1) throw 'invalid zip file';
+          const jsonDecompressed = await jsonFiles[0].async('text');
+          const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
+
+          const geojsonFiles = loaded.file(/\.geojson$/);
+          if (geojsonFiles.length !== 1) throw 'invalid zip file';
+          const geojson = await geojsonFiles[0].async('text');
+          //ToDo 有効なgeojsonファイルかチェック
+          importGeoJson(geojson, 'POINT', name, importedLayer);
+          importGeoJson(geojson, 'MULTIPOINT', name, importedLayer);
+          importGeoJson(geojson, 'LINE', name, importedLayer);
+          importGeoJson(geojson, 'MULTILINE', name, importedLayer);
+          importGeoJson(geojson, 'POLYGON', name, importedLayer);
+          importGeoJson(geojson, 'MULTIPOLYGON', name, importedLayer);
+          break;
+        }
         case 'kml': {
           let kmlString;
           if (Platform.OS === 'web') {
@@ -196,15 +225,8 @@ export const useLayers = (): UseLayersReturnType => {
           break;
         }
         case 'kmz': {
-          let base64;
-          if (Platform.OS === 'web') {
-            const arr = uri.split(',');
-            base64 = arr[arr.length - 1];
-          } else {
-            base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-          }
-          const archive = await JSZip.loadAsync(base64, { base64: true }); // ZIP の読み込み
-          const files = archive.file(/\.kml$/);
+          const loaded = await unzipFromUri(uri);
+          const files = loaded.file(/\.kml$/);
 
           const parser = new DOMParser();
           for (const file of files) {
@@ -304,7 +326,8 @@ export const useLayers = (): UseLayersReturnType => {
         ext?.toLowerCase() !== 'gpx' &&
         ext?.toLowerCase() !== 'geojson' &&
         ext?.toLowerCase() !== 'kml' &&
-        ext?.toLowerCase() !== 'kmz'
+        ext?.toLowerCase() !== 'kmz' &&
+        ext?.toLowerCase() !== 'zip'
       ) {
         return { isOK: false, message: t('hooks.message.wrongExtension') };
       }
@@ -403,19 +426,9 @@ export const useLayers = (): UseLayersReturnType => {
 
   const importEcorisMapFile = async (uri: string) => {
     try {
-      let base64;
-      if (Platform.OS === 'web') {
-        const arr = uri.split(',');
-        base64 = arr[arr.length - 1];
-      } else {
-        base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-      }
-      //console.log(base64);
-      const loaded = await JSZip.loadAsync(base64, { base64: true }); // ZIP の読み込み
+      const loaded = await unzipFromUri(uri);
       const files = Object.keys(loaded.files);
-      //console.log(files);
       const jsonFile = files.find((f) => getExt(f) === 'json');
-      //console.log(jsonFile);
       if (jsonFile === undefined) return;
       const decompressed = await loaded.files[jsonFile].async('text');
       const data: { dataSet: DataType[]; layers: LayerType[]; settings: SettingsType; maps: TileMapType[] } =
