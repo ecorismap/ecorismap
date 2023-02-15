@@ -139,6 +139,7 @@ export interface ColorStyle {
   transparency: number;
   color: string;
   fieldName: string;
+  customFieldValue: string;
   colorRamp: ColorRampType;
   colorList: {
     value: string | number | undefined;

@@ -8,9 +8,12 @@ import { AppState } from '../modules';
 import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgb } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
+import { t } from '../i18n/config';
 
 export type UseFeatureStyleReturnType = {
   isEdited: boolean;
+  isCustom: boolean;
+  customFieldValue: string;
   colorStyle: ColorStyle;
   colorTypes: ColorTypesType[];
   colorTypeLabels: string[];
@@ -19,6 +22,8 @@ export type UseFeatureStyleReturnType = {
   fieldNames: string[];
   layerType: FeatureType;
   modalVisible: boolean;
+  setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
+  changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue) => void;
   changeTransparency: (value: number) => void;
   changeFieldName: (itemValue: ItemValue) => void;
@@ -51,10 +56,15 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer_);
   const [isEdited, setIsEdited] = useState(isEdited_);
   const [modalVisible, setModalVisible] = useState(false);
+  const [isCustom, setIsCustom] = useState(false);
+  const [customFieldValue, setCustomFieldValue] = useState('');
   const colorListIndex = useRef(0);
 
-  const fieldNames = useMemo(
-    () => targetLayer.field.reduce((a: any, b: any) => (b.format !== 'PHOTO' ? [...a, b.name] : [...a]), ['']),
+  const fieldNames: string[] = useMemo(
+    () => [
+      ...targetLayer.field.reduce((a: any, b: any) => (b.format !== 'PHOTO' ? [...a, b.name] : [...a]), ['']),
+      t('common.custom'),
+    ],
     [targetLayer.field]
   );
   const colorRamps = useMemo(() => Object.keys(COLORRAMP) as ColorRampType[], []);
@@ -72,6 +82,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   useEffect(() => {
     setColorStyle(layer_.colorStyle);
     setTargetLayer(layer_);
+    setIsCustom(layer_.colorStyle.fieldName === t('common.custom'));
+    setCustomFieldValue(layer_.colorStyle.customFieldValue);
   }, [layer_, layer_.colorStyle]);
 
   const changeColorType = useCallback(
@@ -97,6 +109,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const changeFieldName = useCallback(
     (itemValue: ItemValue) => {
       if (colorStyle.fieldName !== itemValue) {
+        setIsCustom(itemValue === t('common.custom'));
         setColorStyle({ ...colorStyle, fieldName: itemValue as string });
         setIsEdited(true);
       }
@@ -120,6 +133,14 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
       newColorStyle.colorList[index].value = value;
       setColorStyle(newColorStyle);
       setIsEdited(true);
+    },
+    [colorStyle]
+  );
+
+  const changeCustomFieldValue = useCallback(
+    (value: string) => {
+      setColorStyle({ ...colorStyle, customFieldValue: value });
+      setCustomFieldValue(value);
     },
     [colorStyle]
   );
@@ -155,9 +176,28 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const reloadValue = useCallback(() => {
     let valueList: (string | number)[] = [];
     if (colorStyle.colorType === 'CATEGORIZED') {
-      valueList = Array.from(
-        new Set(allUserData.map((data) => data !== undefined && data.field[colorStyle.fieldName]).filter((v) => v))
-      ) as (string | number)[];
+      if (colorStyle.fieldName === t('common.custom')) {
+        const customFieldNames = colorStyle.customFieldValue.split('|');
+
+        const valueListArray = customFieldNames.map((name) =>
+          Array.from(
+            new Set(
+              allUserData
+                .map((data) => data !== undefined && data.field[name])
+                .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number')
+            )
+          )
+        );
+        valueList = valueListArray.reduce((a, b) => a.flatMap((x) => b.map((y) => `${x}|${y}`)));
+      } else {
+        valueList = Array.from(
+          new Set(
+            allUserData
+              .map((data) => data !== undefined && data.field[colorStyle.fieldName])
+              .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number')
+          )
+        );
+      }
     } else if (colorStyle.colorType === 'USER') {
       valueList = displayNames;
     }
@@ -165,7 +205,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     const newColorStyle = cloneDeep(colorStyle);
     newColorStyle.colorList = [];
     valueList.forEach((value, index) => {
-      newColorStyle.colorList.push({ value: value as string | number, color: colorList[index] });
+      newColorStyle.colorList.push({ value, color: colorList[index] });
     });
     setColorStyle(newColorStyle);
     setIsEdited(true);
@@ -198,6 +238,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
 
   return {
     isEdited,
+    isCustom,
+    customFieldValue,
     colorStyle,
     colorTypes,
     colorTypeLabels,
@@ -206,6 +248,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     fieldNames,
     layerType,
     modalVisible,
+    setIsCustom,
+    changeCustomFieldValue,
     changeColorType,
     changeTransparency,
     changeFieldName,

@@ -10,8 +10,15 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   if (colorStyle.colorType === 'SINGLE') {
     color = colorStyle.color;
   } else if (colorStyle.colorType === 'CATEGORIZED') {
-    const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
-    color = colorObj ? colorObj.color : colorStyle.color;
+    if (colorStyle.fieldName === t('common.custom')) {
+      const fieldNames = colorStyle.customFieldValue.split('|');
+      const customValue = fieldNames.map((name) => feature.field[name]).join('|');
+      const colorObj = colorStyle.colorList.find(({ value }) => value === customValue);
+      color = colorObj ? colorObj.color : colorStyle.color;
+    } else {
+      const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
+      color = colorObj ? colorObj.color : colorStyle.color;
+    }
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
     color = colorObj ? colorObj.color : colorStyle.color;

@@ -18,7 +18,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 //@ts-ignore
 import Base64 from 'Base64';
-import { Gpx2Data, GeoJson2Data, createGeoJsonLayer } from '../utils/Geometry';
+import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { setDataSetAction, createDataSetInitialState, addDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
@@ -36,9 +36,9 @@ import { DOMParser } from '@xmldom/xmldom';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { AppID, PHOTO_FOLDER } from '../constants/AppConstants';
-
 import { unzipFromUri } from '../utils/Zip';
 import { updateLayerIds } from '../utils/Layer';
+import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 
 export type UseLayersReturnType = {
   layers: LayerType[];
@@ -157,24 +157,25 @@ export const useLayers = (): UseLayersReturnType => {
   );
 
   const importGeoJson = useCallback(
-    (geojson: string, featureType: GeoJsonFeatureType, importFileName: string, layer?: LayerType) => {
-      const data = GeoJson2Data(geojson, featureType, dataUser.uid, dataUser.displayName);
-      //console.log('data', data);
-      if (data === undefined) {
-        return;
-      }
-      let importedLayer;
-      if (layer === undefined) {
-        importedLayer = createGeoJsonLayer(importFileName, data.featureType, data.fields);
-      } else {
-        importedLayer = cloneDeep(layer);
-        //ToDo Layerとデータの整合性のチェック
-      }
+    (
+      geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
+      featureType: GeoJsonFeatureType,
+      importFileName: string,
+      importedLayer?: LayerType
+    ) => {
+      const layer =
+        importedLayer === undefined
+          ? createLayerFromGeoJson(geojson, importFileName, featureType)
+          : cloneDeep(importedLayer);
+      const recordSet = GeoJson2Data(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
+
+      if (recordSet === undefined) return;
+      if (recordSet.length === 0) return;
+      //ToDo Layerとデータの整合性のチェック
+
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
-      if (data.recordSet.length > 0) {
-        dispatch(addLayerAction(importedLayer));
-        dispatch(addDataAction([{ layerId: importedLayer.id, userId: dataUser.uid, data: data.recordSet }]));
-      }
+      dispatch(addLayerAction(layer));
+      dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -182,24 +183,34 @@ export const useLayers = (): UseLayersReturnType => {
   const loadFile = useCallback(
     async (name: string, uri: string) => {
       const ext = getExt(name);
+      const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
+        'POINT',
+        'MULTIPOINT',
+        'LINE',
+        'MULTILINE',
+        'POLYGON',
+        'MULTIPOLYGON',
+      ];
       switch (ext?.toLowerCase()) {
         case 'zip': {
           const loaded = await unzipFromUri(uri);
-          const jsonFiles = loaded.file(/\.json$/);
-          if (jsonFiles.length !== 1) throw 'invalid zip file';
-          const jsonDecompressed = await jsonFiles[0].async('text');
+          //console.log(loaded);
+
+          const files = Object.keys(loaded.files);
+          const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
+          if (jsonFile === undefined) throw 'invalid zip file';
+          const jsonDecompressed = await loaded.files[jsonFile].async('text');
           const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
 
-          const geojsonFiles = loaded.file(/\.geojson$/);
-          if (geojsonFiles.length !== 1) throw 'invalid zip file';
-          const geojson = await geojsonFiles[0].async('text');
+          const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+          if (geojsonFile === undefined) throw 'invalid zip file';
+          const geojsonStrings = await loaded.files[geojsonFile].async('text');
+          const geojson = JSON.parse(geojsonStrings);
           //ToDo 有効なgeojsonファイルかチェック
-          importGeoJson(geojson, 'POINT', name, importedLayer);
-          importGeoJson(geojson, 'MULTIPOINT', name, importedLayer);
-          importGeoJson(geojson, 'LINE', name, importedLayer);
-          importGeoJson(geojson, 'MULTILINE', name, importedLayer);
-          importGeoJson(geojson, 'POLYGON', name, importedLayer);
-          importGeoJson(geojson, 'MULTIPOLYGON', name, importedLayer);
+          importGeoJson(geojson, importedLayer.type, name, importedLayer);
+          //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
+          if (importedLayer.type !== 'NONE') importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+
           break;
         }
         case 'kml': {
@@ -215,13 +226,11 @@ export const useLayers = (): UseLayersReturnType => {
 
           const parser = new DOMParser();
           const xml = parser.parseFromString(kmlString, 'text/xml');
-          const geojson = JSON.stringify(kml(xml));
-          importGeoJson(geojson, 'POINT', name);
-          importGeoJson(geojson, 'MULTIPOINT', name);
-          importGeoJson(geojson, 'LINE', name);
-          importGeoJson(geojson, 'MULTILINE', name);
-          importGeoJson(geojson, 'POLYGON', name);
-          importGeoJson(geojson, 'MULTIPOLYGON', name);
+          const geojson = kml(xml);
+
+          geoJsonFeatureTypes.forEach((featureType) => {
+            importGeoJson(geojson, featureType, name);
+          });
 
           break;
         }
@@ -233,13 +242,10 @@ export const useLayers = (): UseLayersReturnType => {
           for (const file of files) {
             const kmlString = await file.async('string');
             const xml = parser.parseFromString(kmlString, 'text/xml');
-            const geojson = JSON.stringify(kml(xml));
-            importGeoJson(geojson, 'POINT', name);
-            importGeoJson(geojson, 'MULTIPOINT', name);
-            importGeoJson(geojson, 'LINE', name);
-            importGeoJson(geojson, 'MULTILINE', name);
-            importGeoJson(geojson, 'POLYGON', name);
-            importGeoJson(geojson, 'MULTIPOLYGON', name);
+            const geojson = kml(xml);
+            geoJsonFeatureTypes.forEach((featureType) => {
+              importGeoJson(geojson, featureType, name);
+            });
           }
 
           break;
@@ -261,22 +267,20 @@ export const useLayers = (): UseLayersReturnType => {
           break;
         }
         case 'geojson': {
-          let geojson;
+          let geojsonStrings;
           if (Platform.OS === 'web') {
             const arr = uri.split(',');
             const base64 = arr[arr.length - 1];
-            geojson = decodeURIComponent(escape(Base64.atob(base64)));
+            geojsonStrings = decodeURIComponent(escape(Base64.atob(base64)));
           } else {
             //console.log(geojson);
-            geojson = await FileSystem.readAsStringAsync(uri);
+            geojsonStrings = await FileSystem.readAsStringAsync(uri);
           }
 
-          importGeoJson(geojson, 'POINT', name);
-          importGeoJson(geojson, 'MULTIPOINT', name);
-          importGeoJson(geojson, 'LINE', name);
-          importGeoJson(geojson, 'MULTILINE', name);
-          importGeoJson(geojson, 'POLYGON', name);
-          importGeoJson(geojson, 'MULTIPOLYGON', name);
+          const geojson = JSON.parse(geojsonStrings);
+          geoJsonFeatureTypes.forEach((featureType) => {
+            importGeoJson(geojson, featureType, name);
+          });
           break;
         }
         default:

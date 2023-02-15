@@ -10,9 +10,12 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import Slider from '../atoms/Slider';
 import { t } from '../../i18n/config';
 import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
+import { TextInput } from '../atoms';
 
 export default function LayerEditFeatureStyleScreen() {
   const {
+    isCustom,
+    customFieldValue,
     colorStyle,
     colorTypes,
     colorTypeLabels,
@@ -20,6 +23,7 @@ export default function LayerEditFeatureStyleScreen() {
     colorRamps,
     colorRampLabels,
     layerType,
+    changeCustomFieldValue,
     changeColorType,
     changeTransparency,
     changeFieldName,
@@ -80,6 +84,17 @@ export default function LayerEditFeatureStyleScreen() {
                 itemLabelArray={fieldNames}
               />
             )}
+            {isCustom && (
+              <View style={styles.td}>
+                <TextInput
+                  label={t('common.customField')}
+                  value={customFieldValue}
+                  onChangeText={changeCustomFieldValue}
+                  style={styles.input}
+                  editable={true}
+                />
+              </View>
+            )}
             <SimplePicker
               label={t('common.colorLamp')}
               value={colorStyle.colorRamp}
@@ -101,5 +116,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  input: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 5,
+    flex: 2,
+    fontSize: 16,
+    height: 40,
+    paddingHorizontal: 12,
+    paddingLeft: 10,
+  },
+
+  td: {
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: COLOR.GRAY2,
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 0,
   },
 });
