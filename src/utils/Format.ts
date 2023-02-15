@@ -61,6 +61,12 @@ export const formattedInputs = (
         break;
       }
       case 'INTEGER': {
+        //ToDo 未入力チェエク
+        // 現在は未入力は許可している
+        if (value === '') {
+          result = value;
+          break;
+        }
         const pattern = /^[+-]?\d+$/g;
         const regMatch = value.match(pattern);
         if (regMatch === null) {
@@ -73,6 +79,12 @@ export const formattedInputs = (
         break;
       }
       case 'DECIMAL': {
+        //ToDo 未入力チェエク
+        // 現在は未入力は許可している
+        if (value === '') {
+          result = value;
+          break;
+        }
         const pattern = /^[+-]?\d+(?:\.\d+)?$/g;
         const regMatch = value.match(pattern);
         if (regMatch === null) {

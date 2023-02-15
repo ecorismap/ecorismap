@@ -3,6 +3,8 @@ import { createContext } from 'react';
 import { ColorRampType, ColorStyle, ColorTypesType, FeatureType } from '../types';
 
 interface LayerEditFeatureStyleContextType {
+  isCustom: boolean;
+  customFieldValue: string;
   colorStyle: ColorStyle;
   colorTypes: ColorTypesType[];
   colorTypeLabels: string[];
@@ -11,6 +13,8 @@ interface LayerEditFeatureStyleContextType {
   colorRampLabels: string[];
   layerType: FeatureType;
   modalVisible: boolean;
+  setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
+  changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue, itemIndex: number) => void;
   changeTransparency: (value: number) => void;
   changeFieldName: (itemValue: ItemValue, itemIndex: number) => void;

@@ -115,7 +115,9 @@
     "fileName": "ファイル名",
     "includePhoto": "写真を含む",
     "version": "バージョン",
-    "distance": "距離"
+    "distance": "距離",
+    "customField": "カスタムフィールド",
+    "custom": "カスタム"
   },
   "Home": {
     "confirm": {

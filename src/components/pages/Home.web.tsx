@@ -507,7 +507,9 @@ export default function HomeScreen() {
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
         )}
-        <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+        {screenState !== 'expanded' && !isDownloadPage && (
+          <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+        )}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
