@@ -603,7 +603,9 @@ export default function HomeScreen() {
         )}
 
         {!FUNC_LOGIN || isDownloadPage || screenState === 'expanded' ? null : <HomeAccountButton />}
-        <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+        {screenState !== 'expanded' && !isDownloadPage && (
+          <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+        )}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}

@@ -7,6 +7,8 @@ import { Props_LayerEditFeatureStyle } from '../routes';
 export default function LayerEditFeatureStyleContainer({ navigation, route }: Props_LayerEditFeatureStyle) {
   const {
     isEdited,
+    isCustom,
+    customFieldValue,
     colorStyle,
     colorTypes,
     colorTypeLabels,
@@ -15,6 +17,8 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
     fieldNames,
     layerType,
     modalVisible,
+    changeCustomFieldValue,
+    setIsCustom,
     changeColorType,
     changeTransparency,
     changeFieldName,
@@ -46,6 +50,8 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
   return (
     <LayerEditFeatureStyleContext.Provider
       value={{
+        isCustom,
+        customFieldValue,
         colorStyle,
         colorTypes,
         colorTypeLabels,
@@ -54,6 +60,8 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
         fieldNames,
         layerType,
         modalVisible,
+        setIsCustom,
+        changeCustomFieldValue,
         changeColorType,
         changeTransparency,
         changeFieldName,

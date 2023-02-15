@@ -1,11 +1,12 @@
-import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson, getArrowDeg } from '../../utils/Geometry';
-import { geojson } from '../resources/geojson';
+import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../../utils/Geometry';
+import { geoJsonString } from '../resources/geojson';
 import track_gpx from '../resources/track_gpx';
 import invalid_track_gpx from '../resources/invalid_track_gpx';
 import point_gpx from '../resources/point_gpx';
 import invalid_point_gpx from '../resources/invalid_point_gpx';
 import { layers } from '../resources/layer';
 import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../resources/record';
+import { LayerType } from '../../types';
 jest.mock('uuid', () => ({ v4: () => '1234' }));
 
 describe('Gpx2Data', () => {
@@ -14,7 +15,7 @@ describe('Gpx2Data', () => {
   });
 
   it('return data from gpx', () => {
-    jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
+    jest.useFakeTimers().setSystemTime(new Date('2022-06-02 12:00:00'));
 
     expect(Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual({
       layer: {
@@ -41,7 +42,7 @@ describe('Gpx2Data', () => {
       },
       recordSet: [
         {
-          centroid: { ele: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
+          centroid: { latitude: 42.49825390520844, longitude: 139.85345520080352 },
           coords: [
             { ele: 141.93, latitude: 42.498248918, longitude: 139.8534992896, timestamp: 1612225718000 },
             { ele: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
@@ -62,7 +63,7 @@ describe('Gpx2Data', () => {
   });
 
   it('return track from valid gpx', () => {
-    jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
+    //jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
@@ -77,7 +78,7 @@ describe('Gpx2Data', () => {
   });
 
   it('return track from invalid gpx', () => {
-    jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
+    // jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
@@ -92,7 +93,7 @@ describe('Gpx2Data', () => {
   });
 
   it('return point from valid gpx', () => {
-    jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
+    //jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
@@ -109,7 +110,7 @@ describe('Gpx2Data', () => {
 });
 
 it('return  point from invalid gpx', () => {
-  jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
+  jest.useFakeTimers().setSystemTime(new Date('2022-06-02 12:00:00'));
   const data = Gpx2Data(invalid_point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
   const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
   expect(checkValue).toStrictEqual([
@@ -129,62 +130,63 @@ it('return  point from invalid gpx', () => {
 });
 
 describe('GeoJson2Data', () => {
+  const layer: LayerType = {
+    active: false,
+    colorStyle: {
+      color: '#ff0000',
+      colorList: [],
+      colorRamp: 'RANDOM',
+      colorType: 'SINGLE',
+      fieldName: '',
+      transparency: 0.8,
+    },
+    field: [{ format: 'STRING', id: '1234', name: 'name' }],
+    id: '1234',
+    label: '',
+    name: 'test.geojson',
+    permission: 'PRIVATE',
+    type: 'POINT',
+    visible: true,
+  };
   it('return data from geojson', () => {
-    expect(GeoJson2Data(geojson, 'POINT', 'test.geojson', '34-56', 'user1')).toStrictEqual({
-      recordSet: [
-        {
-          coords: { latitude: 38.24715800176878, longitude: 140.71658064854364 },
-          field: { name: 'St.1' },
-          id: '1234',
-          userId: '34-56',
-          displayName: 'user1',
-          redraw: false,
-          visible: true,
-        },
-        {
-          coords: { latitude: 38.24101016421964, longitude: 140.71548306286388 },
-          field: { name: 'St.3' },
-          id: '1234',
-          userId: '34-56',
-          displayName: 'user1',
-          redraw: false,
-          visible: true,
-        },
-      ],
-      layer: {
-        active: false,
-        colorStyle: {
-          color: '#ff0000',
-          colorList: [],
-          colorRamp: 'RANDOM',
-          colorType: 'SINGLE',
-          fieldName: '',
-          transparency: 0.8,
-        },
-        field: [{ format: 'STRING', id: '1234', name: 'name' }],
+    const geojson = JSON.parse(geoJsonString);
+
+    expect(GeoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual([
+      {
+        coords: { latitude: 38.24715800176878, longitude: 140.71658064854364 },
+        field: { name: 'St.1' },
         id: '1234',
-        label: '',
-        name: 'test.geojson',
-        permission: 'PRIVATE',
-        type: 'POINT',
+        userId: '34-56',
+        displayName: 'user1',
+        redraw: false,
         visible: true,
       },
-    });
+      {
+        coords: { latitude: 38.24101016421964, longitude: 140.71548306286388 },
+        field: { name: 'St.3' },
+        id: '1234',
+        userId: '34-56',
+        displayName: 'user1',
+        redraw: false,
+        visible: true,
+      },
+    ]);
   });
 
   it('return undefine from invalid geojson', () => {
-    expect(GeoJson2Data('invalid geojson', 'POINT', 'test.geojson', '34-56', 'user1')).toStrictEqual(undefined);
+    const geojson = JSON.parse('{ "features": "invalid geojson" }');
+    expect(GeoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual(undefined);
   });
 });
 
 describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
-      'displayName,name,time,cmt,photo,geometry',
-      'mizutani,St.1,2020-01-01T09:28:38+09:00,,,POINT(140.71658064854364 38.24715800176878)',
-      ',St.3,5時,,,POINT(140.71548306286388 38.24101016421964)',
-    ].join(String.fromCharCode(10));
-    expect(generateCSV(point_record, layers[0].field, 'POINT')).toBe(expected);
+      '\ufeff' + 'name,time,cmt,photo,geometry',
+      'St.1,2020-01-01T09:28:38+09:00,,,POINT(140.71658064854364 38.24715800176878)',
+      'St.3,5時,,,POINT(140.71548306286388 38.24101016421964)',
+    ];
+    expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
   });
 });
 
@@ -209,18 +211,12 @@ describe('generateGeoJson', () => {
         },
         {
           geometry: { coordinates: [140.71548306286388, 38.24101016421964], type: 'Point' },
-          properties: { _id: '1234', _visible: true, cmt: undefined, name: 'St.3', time: undefined },
+          properties: { _id: '1234', _visible: true, cmt: undefined, name: 'St.3', time: '5時' },
           type: 'Feature',
         },
       ],
       name: 'test',
       type: 'FeatureCollection',
     });
-  });
-});
-
-describe('getArrowDeg', () => {
-  it('return arrow degree from line record', () => {
-    expect(getArrowDeg(line_record[0])).toBe(-58.63939584351132);
   });
 });

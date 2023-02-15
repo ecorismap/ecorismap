@@ -1,2 +1,2 @@
-export const geojson =
+export const geoJsonString =
   '{"type": "FeatureCollection","name": "定点位置","crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },"features": [{"type": "Feature","properties": { "name": "St.1" },"geometry": { "type": "Point", "coordinates": [140.716580648543641, 38.247158001768781, 0.0] }},{"type": "Feature","properties": { "name": "St.3" },"geometry": { "type": "Point", "coordinates": [140.715483062863882, 38.241010164219638, 0.0] }}]}';

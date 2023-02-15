@@ -179,7 +179,9 @@ export const latLonObjectsToLatLonArray = (latLonObjects: { longitude: number; l
   latLonObjects.map((latlon) => [latlon.longitude, latlon.latitude]);
 
 export const latlonArrayToLatLonObjects = (latLonArray: Position[]): LatLng[] =>
-  latLonArray.map((latlon) => ({ longitude: latlon[0], latitude: latlon[1] }));
+  latLonArray.map((latLon) => latlonToLatLonObject(latLon));
+
+export const latlonToLatLonObject = (latLon: Position): LatLng => ({ longitude: latLon[0], latitude: latLon[1] });
 
 export const deltaToZoom = (windowWidth: number, delta: { longitudeDelta: number; latitudeDelta: number }) => {
   //ToDo 常にlongitudeで計算するのか？
