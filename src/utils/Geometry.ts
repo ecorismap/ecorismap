@@ -17,7 +17,20 @@ import { COLOR } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
-import { calcCentroid, calcLineMidPoint } from './Coords';
+import { calcCentroid, calcLineMidPoint, latlonToLatLonObject } from './Coords';
+import {
+  Feature,
+  FeatureCollection,
+  LineString,
+  MultiLineString,
+  MultiPoint,
+  MultiPolygon,
+  Point,
+  Polygon,
+  GeoJsonProperties,
+  Geometry,
+} from 'geojson';
+import { Position } from '@turf/turf';
 
 export const Gpx2Data = (
   gpx: string,
@@ -126,236 +139,85 @@ export const Gpx2Data = (
 };
 
 export const GeoJson2Data = (
-  geojson: string,
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
+  layer: LayerType,
   type: GeoJsonFeatureType,
   userId: string | undefined,
   displayName: string | null
 ) => {
   try {
-    const json = JSON.parse(geojson);
-    if (json.features === undefined || json.features.length === 0) return undefined;
-    const fields = Object.keys(json.features[0].properties).map((fieldName) => ({
-      id: uuidv4(),
-      name: fieldName,
-      format: 'STRING' as FormatType,
-    }));
-
-    let featureType: FeatureType = 'NONE';
     let importedData: RecordType[] = [];
+    console.log(type);
     switch (type) {
       case 'POINT':
-        featureType = 'POINT';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'Point')
-          .map((feature: any) => {
-            const baseData = {
-              id: uuidv4(),
-              userId: userId,
-              displayName: displayName,
-              redraw: false,
-              visible: true,
+        importedData = geojson.features
+          .filter((feature): feature is Feature<Point> => feature.geometry?.type === 'Point')
+          .map((feature) => {
+            return {
+              ...createBase(userId, displayName),
+              coords: latlonToLatLonObject(feature.geometry.coordinates),
+              field: createFields(layer.field, feature),
             };
-            const coordsData = {
-              coords: {
-                longitude: feature.geometry.coordinates[0],
-                latitude: feature.geometry.coordinates[1],
-              },
-            };
-            const fieldsData = fields
-              .map((field) => ({
-                [field.name]: feature.properties[field.name] || '',
-              }))
-              .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-            const record = { ...baseData, ...coordsData, field: fieldsData };
-            return record;
           });
         break;
       case 'MULTIPOINT':
-        featureType = 'POINT';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'MultiPoint')
-          .map((feature: any) => {
-            return feature.geometry.coordinates.map((partCoords: any) => {
-              const baseData = {
-                id: uuidv4(),
-                userId: userId,
-                displayName: displayName,
-                redraw: false,
-                visible: true,
-              };
-              const coordsData = {
-                coords: {
-                  longitude: partCoords[0],
-                  latitude: partCoords[1],
-                },
-              };
-
-              const fieldsData = fields
-                .map((field) => ({
-                  [field.name]: feature.properties[field.name] || '',
-                }))
-                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-              return record;
-            });
-          })
+        importedData = geojson.features
+          .filter((feature): feature is Feature<MultiPoint> => feature.geometry?.type === 'MultiPoint')
+          .map((feature) =>
+            feature.geometry.coordinates.map((partCoords) => ({
+              ...createBase(userId, displayName),
+              coords: latlonToLatLonObject(partCoords),
+              field: createFields(layer.field, feature),
+            }))
+          )
           .flat();
-
         break;
       case 'LINE':
-        featureType = 'LINE';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'LineString')
-          .map((feature: any) => {
-            const baseData = {
-              id: uuidv4(),
-              userId: userId,
-              displayName: displayName,
-              redraw: false,
-              visible: true,
-            };
-            const coords = feature.geometry.coordinates.map((xy: any) => ({
-              longitude: xy[0],
-              latitude: xy[1],
-            }));
-            const centroid = calcLineMidPoint(coords);
-            const coordsData = { coords, centroid };
-            const fieldsData = fields
-              .map((field) => ({
-                [field.name]: feature.properties[field.name] || '',
-              }))
-              .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-            const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-            return record;
-          });
+        importedData = geojson.features
+          .filter((feature): feature is Feature<LineString> => feature.geometry?.type === 'LineString')
+          .map((feature) => ({
+            ...createBase(userId, displayName),
+            ...createGeometryFromLineStringGeoJson(feature.geometry.coordinates),
+            field: createFields(layer.field, feature),
+          }));
         break;
       case 'MULTILINE':
-        featureType = 'LINE';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'MultiLineString')
-          .map((feature: any) => {
-            return feature.geometry.coordinates.map((partCoords: any) => {
-              const baseData = {
-                id: uuidv4(),
-                userId: userId,
-                displayName: displayName,
-                redraw: false,
-                visible: true,
-              };
-              const coords = partCoords.map((xy: any) => ({
-                longitude: xy[0],
-                latitude: xy[1],
-              }));
-              const centroid = calcLineMidPoint(coords);
-              const coordsData = { coords, centroid };
-
-              const fieldsData = fields
-                .map((field) => ({
-                  [field.name]: feature.properties[field.name] || '',
-                }))
-                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-              return record;
-            });
-          })
+        importedData = geojson.features
+          .filter((feature): feature is Feature<MultiLineString> => feature.geometry?.type === 'MultiLineString')
+          .map((feature) =>
+            feature.geometry.coordinates.map((partCoords) => ({
+              ...createBase(userId, displayName),
+              ...createGeometryFromLineStringGeoJson(partCoords),
+              field: createFields(layer.field, feature),
+            }))
+          )
           .flat();
-
         break;
 
       case 'POLYGON':
-        featureType = 'POLYGON';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'Polygon')
-          .map((feature: any) => {
-            const baseData = {
-              id: uuidv4(),
-              userId: userId,
-              displayName: displayName,
-              redraw: false,
-              visible: true,
-            };
-            const polygon = turf.polygon(feature.geometry.coordinates);
-            const simplified = simplify(polygon, {
-              tolerance: 0.00001,
-              highQuality: true,
-            });
-            //console.log(simplified);
-            const coords = simplified.geometry.coordinates[0].map((xy: any) => ({
-              longitude: xy[0],
-              latitude: xy[1],
-            }));
-            const centroid = calcCentroid(coords);
-            const holes = simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
-              const holeArray = hole.map((xy: any) => ({
-                longitude: xy[0],
-                latitude: xy[1],
-              }));
-              return { ...result, [`hole${index}`]: holeArray };
-            }, {});
-            const coordsData = {
-              coords,
-              centroid,
-              holes,
-            };
-
-            const fieldsData = fields
-              .map((field) => ({
-                [field.name]: feature.properties[field.name] || '',
-              }))
-              .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-            //console.log({ ...baseData, ...fieldsData });
-            const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-            return record;
-          });
+        importedData = geojson.features
+          .filter((feature): feature is Feature<Polygon> => feature.geometry?.type === 'Polygon')
+          .map((feature) => ({
+            ...createBase(userId, displayName),
+            ...createGeometryFromPolygonGeoJson(feature.geometry.coordinates),
+            field: createFields(layer.field, feature),
+          }));
         break;
       case 'MULTIPOLYGON':
-        featureType = 'POLYGON';
-        importedData = json.features
-          .filter((feature: any) => feature.geometry.type === 'MultiPolygon')
-          .map((feature: any) => {
-            return feature.geometry.coordinates.map((partCoords: any) => {
-              const baseData = {
-                id: uuidv4(),
-                userId: userId,
-                displayName: displayName,
-                redraw: false,
-                visible: true,
-              };
-
-              const polygon = turf.polygon(partCoords);
-              const simplified = simplify(polygon, {
-                tolerance: 0.00001,
-                highQuality: true,
-              });
-              const coords = simplified.geometry.coordinates[0].map((xy: any) => ({
-                longitude: xy[0],
-                latitude: xy[1],
-              }));
-              const centroid = calcCentroid(coords);
-              const holes = simplified.geometry.coordinates.slice(1).reduce((result, hole: any, index) => {
-                const holeArray = hole.map((xy: any) => ({
-                  longitude: xy[0],
-                  latitude: xy[1],
-                }));
-                return { ...result, [`hole${index}`]: holeArray };
-              }, {});
-
-              const coordsData = { coords, centroid, holes };
-              const fieldsData = fields
-                .map((field) => ({
-                  [field.name]: feature.properties[field.name] || '',
-                }))
-                .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-              //console.log(feature.properties.name);
-              const record: RecordType = { ...baseData, ...coordsData, field: fieldsData };
-              return record;
-            });
-          })
+        importedData = geojson.features
+          .filter((feature): feature is Feature<MultiPolygon> => feature.geometry?.type === 'MultiPolygon')
+          .map((feature) =>
+            feature.geometry.coordinates.map((partCoords) => ({
+              ...createBase(userId, displayName),
+              ...createGeometryFromPolygonGeoJson(partCoords),
+              field: createFields(layer.field, feature),
+            }))
+          )
           .flat();
         break;
     }
 
-    return { recordSet: importedData, featureType, fields };
+    return importedData;
   } catch (e) {
     console.log(e);
     return undefined;
@@ -637,7 +499,74 @@ export const generateGeoJson = (
   return { ...geojson, features: features };
 };
 
-export function createGeoJsonLayer(fileName: string, featureType: FeatureType, fields: FieldType[]): LayerType {
+function createGeometryFromLineStringGeoJson(coordinates: Position[]) {
+  const coords = coordinates.map((xy) => latlonToLatLonObject(xy));
+  const centroid = calcLineMidPoint(coords);
+  return { coords, centroid };
+}
+
+function createGeometryFromPolygonGeoJson(coordinates: Position[][]) {
+  const polygon = turf.polygon(coordinates);
+  const simplified = simplify(polygon, {
+    tolerance: 0.00001,
+    highQuality: true,
+  });
+  //console.log(simplified);
+  const coords = simplified.geometry.coordinates[0].map((xy) => latlonToLatLonObject(xy));
+  const holes = simplified.geometry.coordinates
+    .slice(1)
+    .reduce((result, hole, index) => ({ ...result, [`hole${index}`]: hole.map((xy) => latlonToLatLonObject(xy)) }), {});
+  const centroid = calcCentroid(coords);
+  return { coords, holes, centroid };
+}
+
+function createBase(userId: string | undefined, displayName: string | null) {
+  return {
+    id: uuidv4(),
+    userId: userId,
+    displayName: displayName,
+    redraw: false,
+    visible: true,
+  };
+}
+
+function createFields(fields: FieldType[], feature: Feature) {
+  const properties = feature.properties;
+  if (properties === null) return {};
+  return fields
+    .map((field) =>
+      field.format === 'PHOTO'
+        ? {
+            [field.name]: [],
+          }
+        : {
+            [field.name]: properties[field.name] || '',
+          }
+    )
+    .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+}
+
+export function createLayerFromGeoJson(
+  geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
+  fileName: string,
+  geoJsonFeatureType: GeoJsonFeatureType
+): LayerType {
+  let featureType: FeatureType;
+  if (geoJsonFeatureType === 'POINT') {
+    featureType = 'POINT';
+  } else if (geoJsonFeatureType === 'MULTIPOINT') {
+    featureType = 'POINT';
+  } else if (geoJsonFeatureType === 'LINE') {
+    featureType = 'LINE';
+  } else if (geoJsonFeatureType === 'MULTILINE') {
+    featureType = 'LINE';
+  } else if (geoJsonFeatureType === 'POLYGON') {
+    featureType = 'POLYGON';
+  } else if (geoJsonFeatureType === 'MULTIPOLYGON') {
+    featureType = 'POLYGON';
+  } else {
+    featureType = 'NONE';
+  }
   return {
     id: uuidv4(),
     name: sanitize(fileName),
@@ -648,13 +577,14 @@ export function createGeoJsonLayer(fileName: string, featureType: FeatureType, f
       transparency: 0.8,
       color: COLOR.RED,
       fieldName: '',
+      customFieldValue: '',
       colorRamp: 'RANDOM',
       colorList: [],
     },
     label: '',
     visible: true,
     active: false,
-    field: fields,
+    field: createAllStringFieldsFromGeoJson(geojson),
   };
 }
 
@@ -669,6 +599,7 @@ function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
       transparency: 0.8,
       color: COLOR.RED,
       fieldName: '',
+      customFieldValue: '',
       colorRamp: 'RANDOM',
       colorList: [],
     },
@@ -681,4 +612,17 @@ function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
       { id: uuidv4(), name: 'cmt', format: 'STRING' },
     ],
   };
+}
+
+function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) {
+  if (geojson.features === undefined) return [];
+  if (geojson.features.length === 0) return [];
+  const properties = geojson.features[0].properties;
+  if (properties === null) return [];
+  const fields = Object.keys(properties).map((fieldName) => ({
+    id: uuidv4(),
+    name: fieldName,
+    format: 'STRING' as FormatType,
+  }));
+  return fields;
 }

@@ -27,7 +27,7 @@ export const DataEditRadio = (props: Props) => {
     setCheckedList(newCheckedList);
     if (otherItem !== undefined) {
       const hasInputedText = !checkItemValues.includes(value);
-      if (hasInputedText) {
+      if (hasInputedText && value !== '') {
         setOtherText(value);
         setOtherChecked(true);
       }
