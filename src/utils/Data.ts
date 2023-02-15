@@ -60,7 +60,7 @@ export const getInitialFieldValue = (
     case 'RADIO':
       return list === undefined || list[0] === undefined ? '' : list[0].value;
     case 'CHECK':
-      return list === undefined || list[0] === undefined ? '' : list[0].value;
+      return '';
     case 'SERIAL':
       return 0;
     case 'INTEGER':

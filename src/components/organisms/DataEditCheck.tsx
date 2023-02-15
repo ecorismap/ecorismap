@@ -15,7 +15,6 @@ interface Props {
 
 export const DataEditCheck = (props: Props) => {
   const { name, value, checkItems, onValueChange } = props;
-
   const [checkedList, setCheckedList] = useState<boolean[]>([]);
   const [otherChecked, setOtherChecked] = useState<boolean>(false);
   const [otherText, setOtherText] = useState('');
@@ -29,7 +28,7 @@ export const DataEditCheck = (props: Props) => {
     setCheckedList(newCheckedList);
     if (otherItem !== undefined) {
       const inputedText = checkedValue.find((v) => !checkItemValues.includes(v));
-      if (inputedText !== undefined) {
+      if (inputedText !== undefined && inputedText !== '') {
         setOtherText(inputedText);
         setOtherChecked(true);
       }
