@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   tr2: {
     flex: 1,
     flexDirection: 'column',
-    margin: 5,
+    margin: 0,
   },
 });
 
