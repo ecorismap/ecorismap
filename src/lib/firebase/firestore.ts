@@ -285,6 +285,48 @@ export const uploadData = async (projectId: string, data: ProjectDataType) => {
   }
 };
 
+export const uploadCommonData = async (projectId: string, data: ProjectDataType) => {
+  try {
+    const { userId, layerId, permission, ...others } = data;
+    const encdata = await enc(others, userId, projectId);
+    const dataFS: DataFS = {
+      userId,
+      layerId,
+      permission,
+      encdata,
+      encryptedAt: firebase.firestore.Timestamp.now(),
+    };
+    const KBytes = sizeof(dataFS) / 1024;
+    //console.log(others);
+    //console.log(KBytes);
+    if (KBytes > 1000) {
+      return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
+    }
+    //console.log(dataFS);
+
+    const querySnapshot = await firestore
+      .collection(`projects/${projectId}/data`)
+      .where('permission', '==', 'COMMON')
+      .where('layerId', '==', layerId)
+      .get();
+    if (querySnapshot.docs.length === 0) {
+      await firestore.collection(`projects/${projectId}/data`).add(dataFS);
+    } else if (querySnapshot.docs.length === 1) {
+      await querySnapshot.docs[0].ref.set(dataFS);
+    } else {
+      throw new Error('COMMONデータが複数存在します');
+    }
+
+    return { isOK: true, message: '' };
+  } catch (error) {
+    return {
+      isOK: false,
+      message: `${error}
+    データのアップロードに失敗しました`,
+    };
+  }
+};
+
 export const downloadCommonData = async (projectId: string) => {
   try {
     const projectDataSet = await firestore

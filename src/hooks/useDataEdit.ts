@@ -349,7 +349,7 @@ export const useDataEdit = (
     if (tracking !== undefined && tracking.dataId === targetRecord.id) {
       return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
     }
-    if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid) {
+    if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid && !isOwnerAdmin) {
       return { isOK: false, message: t('hooks.message.cannotEditOthers') };
     }
     if (!targetLayer.active && !isHisyouLayer) {
@@ -412,7 +412,8 @@ export const useDataEdit = (
     if (tracking !== undefined && tracking.dataId === targetRecord.id) {
       return { isOK: false, message: t('hooks.message.cannotDeleteInTracking') };
     }
-    if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid) {
+
+    if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid && !isOwnerAdmin) {
       return { isOK: false, message: t('hooks.message.cannotEditOthers') };
     }
     if (!targetLayer.active) {

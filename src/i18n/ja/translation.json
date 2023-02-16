@@ -548,7 +548,7 @@
       "invalidDataFormat": "データの形式が正しくありません。",
       "failGetData": "データの取得に失敗しました。",
       "onlyAdminCanEdit": "管理者しか編集できません",
-      "lockProject": "プロジェクトを開いている時はできません。",
+      "lockProject": "プロジェクトを開いている時はコモンレイヤを編集できません。",
       "cannotSaveDataToLocalStorage": "プロジェクトを開いている時は保存できません",
       "cannotLoadEcorisMapFile": "プロジェクトを開いている時は読み込めません",
       "cannotLoadDataInTrackking": "トラックの記録中はできません。",

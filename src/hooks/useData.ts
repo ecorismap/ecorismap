@@ -142,7 +142,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     if (tracking !== undefined && tracking.layerId === targetLayer.id) {
       return { isOK: false, message: t('hooks.message.cannotDeleteInTracking') };
     }
-    if (hasOpened(projectId) && hasOthersData) {
+    if (hasOpened(projectId) && hasOthersData && !isOwnerAdmin) {
       return { isOK: false, message: t('hooks.message.cannotDeleteOthers') };
     }
     if (!targetLayer.active) {
