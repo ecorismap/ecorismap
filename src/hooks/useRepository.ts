@@ -258,6 +258,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
       for (const layer of targetLayers) {
         //自分のデータ削除
+
         await projectStore.deleteData(project.id, layer.id, user.uid);
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const targetRecordSet = getTargetRecordSet(dataSet, layer, user);
@@ -275,17 +276,30 @@ export const useRepository = (): UseRepositoryReturnType => {
             await projectStorage.deleteStoragePhoto(photo.projectId, photo.layerId, photo.userId, photo.photoId);
           })
         );
-
-        const { isOK, message } = await projectStore.uploadData(project.id, {
-          layerId: layer.id,
-          userId: user.uid,
-          permission: layer.permission,
-          data: updatedData,
-        });
-        if (!isOK) {
-          //ToDo 処理続けるかどうか？
-          return { isOK: false, message: message };
+        if (uploadType !== 'Common') {
+          const { isOK, message } = await projectStore.uploadData(project.id, {
+            layerId: layer.id,
+            userId: user.uid,
+            permission: layer.permission,
+            data: updatedData,
+          });
+          if (!isOK) {
+            //ToDo 処理続けるかどうか？
+            return { isOK: false, message: message };
+          }
+        } else {
+          const { isOK, message } = await projectStore.uploadCommonData(project.id, {
+            layerId: layer.id,
+            userId: user.uid,
+            permission: layer.permission,
+            data: updatedData,
+          });
+          if (!isOK) {
+            //ToDo 処理続けるかどうか？
+            return { isOK: false, message: message };
+          }
         }
+
         dispatch(
           updateRecordsAction({
             layerId: layer.id,
