@@ -154,6 +154,10 @@ export const useProject = (): UseProjectReturnType => {
     if (!dataOK) {
       return { isOK: false, message: dataMessage };
     }
+    const uploadTemplateResult = await uploadDataToRepository(project, hasUploadLicense, 'Template');
+    if (!uploadTemplateResult.isOK) {
+      return { isOK: false, message: uploadTemplateResult.message };
+    }
     return { isOK: true, message: t('hooks.message.updateProjectSettings') };
   }, [project, uploadDataToRepository, uploadProjectSettings]);
 

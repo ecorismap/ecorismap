@@ -38,31 +38,34 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const [isLoading, setIsLoading] = useState(false);
   const { ownerProjectsCount } = useProjects();
 
-  const pressOpenProject = useCallback(async () => {
-    const { isOK: licenseIsOK, message: licenseMessage } = validateProjectLicense(
-      targetProject.license,
-      ownerProjectsCount
-    );
-    if (!licenseIsOK && isOwner) {
-      if (Platform.OS === 'web') {
-        Alert.alert('', licenseMessage + t('ProjectEdit.alert.openProjectWeb'));
-      } else {
-        Alert.alert('', t('ProjectEdit.alert.openProject'));
+  const pressOpenProject = useCallback(
+    async (isSetting: boolean) => {
+      const { isOK: licenseIsOK, message: licenseMessage } = validateProjectLicense(
+        targetProject.license,
+        ownerProjectsCount
+      );
+      if (!licenseIsOK && isOwner) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', licenseMessage + t('ProjectEdit.alert.openProjectWeb'));
+        } else {
+          Alert.alert('', t('ProjectEdit.alert.openProject'));
+        }
+        return;
       }
-      return;
-    }
 
-    setIsLoading(true);
-    const { isOK, message, region } = await openProject();
-    setIsLoading(false);
-    if (!isOK) {
-      await AlertAsync(message);
-    } else {
-      navigation.navigate('Home', {
-        jumpTo: region,
-      });
-    }
-  }, [isOwner, navigation, openProject, ownerProjectsCount, targetProject.license]);
+      setIsLoading(true);
+      const { isOK, message, region } = await openProject(isSetting);
+      setIsLoading(false);
+      if (!isOK) {
+        await AlertAsync(message);
+      } else {
+        navigation.navigate('Home', {
+          jumpTo: region,
+        });
+      }
+    },
+    [isOwner, navigation, openProject, ownerProjectsCount, targetProject.license]
+  );
 
   const pressExportProject = useCallback(async () => {
     if (Platform.OS !== 'web') {
@@ -132,7 +135,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   );
 
   const pressSettingProject = useCallback(async () => {
-    await pressOpenProject();
+    await pressOpenProject(true);
     startProjectSetting();
     Alert.alert('', t('ProjectEdit.alert.settingProject'));
   }, [pressOpenProject, startProjectSetting]);

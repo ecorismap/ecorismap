@@ -18,6 +18,7 @@ import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
 import { isPoint, LatLonDMS } from './Coords';
 import { t } from '../i18n/config';
+import { v4 as uuidv4 } from 'uuid';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
@@ -206,7 +207,12 @@ export const updateRecordPhoto = (record: RecordType, fieldName: string, index: 
   return updateRecord;
 };
 
-export const getTargetRecordSet = (dataSet: DataType[], layer: LayerType, user: UserType) => {
+export const getTargetRecordSet = (
+  dataSet: DataType[],
+  layer: LayerType,
+  user: UserType,
+  isTemplate?: boolean
+): RecordType[] => {
   //Commonの時は、全データが対象（アップロード後にCommonに変更した場合などもあるため）.Commonのデータをアップロードするのは管理者の場合のみ
   //PublicとPrivateの時は、自分のデータまたはundefine（プロジェクト作成時にログインしていない時に作成したデータをsaveでアップロードする場合）
   let targetDataSet: DataType | undefined;
@@ -215,11 +221,27 @@ export const getTargetRecordSet = (dataSet: DataType[], layer: LayerType, user: 
   } else {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id && (d.userId === undefined || d.userId === user.uid));
   }
-  const recordSet: RecordType[] =
-    targetDataSet !== undefined
-      ? targetDataSet.data.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }))
-      : [];
-  return recordSet;
+  const recordSet: RecordType[] = cloneDeep(targetDataSet?.data ?? []);
+  return isTemplate
+    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: 'template' }))
+    : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }));
+};
+
+export const createRecordSetFromTemplate = (dataSet: DataType[], user: UserType, privateLayerIds: string[]) => {
+  return dataSet
+    .map((recordSet) => {
+      const alreadyHasData = privateLayerIds.find((id) => id === recordSet.layerId);
+      if (alreadyHasData) return undefined;
+      const updatedRecordSet = recordSet.data.map((d) => ({
+        ...d,
+        id: uuidv4(),
+        userId: user.uid,
+        displayName: user.displayName,
+      }));
+
+      return { ...recordSet, data: updatedRecordSet, userId: user.uid };
+    })
+    .filter((v) => v !== undefined) as DataType[];
 };
 
 export const resetDataSetUser = (dataSet: DataType[]) => {

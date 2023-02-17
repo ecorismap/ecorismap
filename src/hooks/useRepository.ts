@@ -22,7 +22,7 @@ import { addProjectAction, deleteProjectAction, updateProjectAction } from '../m
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { hasLoggedIn } from '../utils/Account';
-import { getTargetRecordSet } from '../utils/Data';
+import { createRecordSetFromTemplate, getTargetRecordSet } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
 import { usePhoto } from './usePhoto';
@@ -86,6 +86,13 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  downloadCommonData: (
+    project: ProjectType,
+    shouldPhotoDownload: boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
   downloadPublicData: (
     project: ProjectType,
     shouldPhotoDownload: boolean
@@ -96,6 +103,15 @@ export type UseRepositoryReturnType = {
   downloadPrivateData: (
     project: ProjectType,
     shouldPhotoDownload: boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+    privateLayerIds?: string[];
+  }>;
+  downloadTemplateData: (
+    project_: ProjectType,
+    shouldPhotoDownload: boolean,
+    privateLayerIds: string[]
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -110,7 +126,7 @@ export type UseRepositoryReturnType = {
   uploadData: (
     project_: ProjectType,
     hasUploadLicense: boolean,
-    uploadType: 'All' | 'PublicAndPrivate' | 'Common'
+    uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -130,6 +146,7 @@ export const useRepository = (): UseRepositoryReturnType => {
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const mapType = useSelector((state: AppState) => state.settings.mapType);
+  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   //const drawTools = useSelector((state: AppState) => state.settings.drawTools);
   const plugins = useSelector((state: AppState) => state.settings.plugins);
   const updatedAt = useSelector((state: AppState) => state.settings.updatedAt);
@@ -234,7 +251,11 @@ export const useRepository = (): UseRepositoryReturnType => {
   );
 
   const uploadData = useCallback(
-    async (project: ProjectType, hasUploadLicense: boolean, uploadType: 'All' | 'PublicAndPrivate' | 'Common') => {
+    async (
+      project: ProjectType,
+      hasUploadLicense: boolean,
+      uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
+    ) => {
       //ToDo バッチアップロード?
       //firestore上の対象レイヤの自分のデータを一旦すべて削除
 
@@ -261,7 +282,8 @@ export const useRepository = (): UseRepositoryReturnType => {
 
         await projectStore.deleteData(project.id, layer.id, user.uid);
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
-        const targetRecordSet = getTargetRecordSet(dataSet, layer, user);
+        const isTemplate = uploadType === 'Template';
+        const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
 
         const updatedData = await updateStoragePhotos(
           hasUploadLicense,
@@ -276,18 +298,19 @@ export const useRepository = (): UseRepositoryReturnType => {
             await projectStorage.deleteStoragePhoto(photo.projectId, photo.layerId, photo.userId, photo.photoId);
           })
         );
-        if (uploadType !== 'Common') {
-          const { isOK, message } = await projectStore.uploadData(project.id, {
+
+        if (uploadType === 'Template') {
+          const { isOK, message } = await projectStore.uploadTemplateData(project.id, {
             layerId: layer.id,
             userId: user.uid,
-            permission: layer.permission,
+            permission: 'TEMPLATE',
             data: updatedData,
           });
           if (!isOK) {
             //ToDo 処理続けるかどうか？
             return { isOK: false, message: message };
           }
-        } else {
+        } else if (uploadType === 'Common') {
           const { isOK, message } = await projectStore.uploadCommonData(project.id, {
             layerId: layer.id,
             userId: user.uid,
@@ -298,19 +321,31 @@ export const useRepository = (): UseRepositoryReturnType => {
             //ToDo 処理続けるかどうか？
             return { isOK: false, message: message };
           }
-        }
-
-        dispatch(
-          updateRecordsAction({
+        } else {
+          const { isOK, message } = await projectStore.uploadData(project.id, {
             layerId: layer.id,
             userId: user.uid,
+            permission: layer.permission,
             data: updatedData,
-          })
-        );
+          });
+          if (!isOK) {
+            //ToDo 処理続けるかどうか？
+            return { isOK: false, message: message };
+          }
+        }
+        if (!isSettingProject) {
+          dispatch(
+            updateRecordsAction({
+              layerId: layer.id,
+              userId: user.uid,
+              data: updatedData,
+            })
+          );
+        }
       }
       return { isOK: true, message: '' };
     },
-    [dataSet, dispatch, layers, photosToBeDeleted, updateStoragePhotos, updatedAt, user]
+    [dataSet, dispatch, isSettingProject, layers, photosToBeDeleted, updateStoragePhotos, updatedAt, user]
   );
 
   const uploadProjectSettings = useCallback(
@@ -585,6 +620,24 @@ export const useRepository = (): UseRepositoryReturnType => {
     [dispatch, downloadPhotos, layers]
   );
 
+  const downloadCommonData = useCallback(
+    async (project_: ProjectType, shouldPhotoDownload: boolean) => {
+      const { isOK, message, data } = await projectStore.downloadCommonData(project_.id);
+      if (!isOK || data === undefined) {
+        return { isOK: false, message };
+      }
+      let updatedData: DataType[];
+      if (shouldPhotoDownload) {
+        updatedData = await downloadPhotos(layers, data, project_);
+      } else {
+        updatedData = data;
+      }
+      dispatch(updateDataAction(updatedData));
+      return { isOK: true, message: '' };
+    },
+    [dispatch, downloadPhotos, layers]
+  );
+
   const downloadPublicData = useCallback(
     async (project_: ProjectType, shouldPhotoDownload: boolean) => {
       const { isOK, message, data } = await projectStore.downloadPublicData(project_.id);
@@ -619,6 +672,31 @@ export const useRepository = (): UseRepositoryReturnType => {
       } else {
         updatedData = data;
       }
+      const privateLayerIds = updatedData.map((d) => d.layerId);
+      dispatch(updateDataAction(updatedData));
+      return { isOK: true, message: '', privateLayerIds };
+    },
+    [dispatch, downloadPhotos, layers, user]
+  );
+
+  const downloadTemplateData = useCallback(
+    async (project_: ProjectType, shouldPhotoDownload: boolean, privateLayerIds: string[]) => {
+      if (!hasLoggedIn(user)) {
+        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+      }
+      const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
+
+      if (!isOK || data === undefined) {
+        return { isOK: false, message };
+      }
+      let updatedData: DataType[];
+      if (shouldPhotoDownload) {
+        updatedData = await downloadPhotos(layers, data, project_);
+      } else {
+        updatedData = data;
+      }
+      updatedData = createRecordSetFromTemplate(updatedData, user, privateLayerIds);
+
       dispatch(updateDataAction(updatedData));
       return { isOK: true, message: '' };
     },
@@ -653,8 +731,10 @@ export const useRepository = (): UseRepositoryReturnType => {
     downloadProjectSettings,
     downloadAllData,
     downloadPublicAndCommonData,
+    downloadCommonData,
     downloadPublicData,
     downloadPrivateData,
+    downloadTemplateData,
     downloadPublicAndAllPrivateData,
     uploadData,
     uploadProjectSettings,

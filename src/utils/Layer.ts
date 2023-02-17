@@ -69,7 +69,10 @@ export const checkLayerInputs = (layer: LayerType) => {
   return { isOK: true, message: '' };
 };
 
-export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'PublicAndPrivate' | 'Common') => {
+export const getTargetLayers = (
+  layers: LayerType[],
+  uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
+) => {
   let withCommonData = false;
   let withPublicData = false;
   let withPrivateData = false;
@@ -86,14 +89,19 @@ export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'Public
     case 'Common':
       withCommonData = true;
       break;
+    case 'Template':
+      withPrivateData = true;
+      break;
   }
 
-  const targetLayers = layers.filter(
-    async (layer) =>
+  const targetLayers = layers.filter((layer) => {
+    const result =
       (withCommonData && layer.permission === 'COMMON') ||
       (withPublicData && layer.permission === 'PUBLIC') ||
-      (withPrivateData && layer.permission === 'PRIVATE')
-  );
+      (withPrivateData && layer.permission === 'PRIVATE');
+    //console.log(result, layer.name, layer.permission);
+    return result;
+  });
   return targetLayers;
 };
 

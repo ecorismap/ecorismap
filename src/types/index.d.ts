@@ -66,7 +66,7 @@ export interface DataType {
 
 export interface ProjectDataType extends DataType {
   userId: string;
-  permission: PermissionType;
+  permission: PermissionType | 'TEMPLATE';
 }
 
 export interface PointDataType {
@@ -328,7 +328,7 @@ export interface ProjectSettingsFS {
 export interface DataFS {
   userId: string;
   layerId: string;
-  permission: PermissionType;
+  permission: PermissionType | 'TEMPLATE';
   encdata: string[];
   encryptedAt: firebase.firestore.Timestamp;
 }

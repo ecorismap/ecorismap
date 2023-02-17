@@ -87,6 +87,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     <DataContext.Provider
       value={{
         projectId,
+        isOwnerAdmin,
         data,
         layer,
         isChecked,
