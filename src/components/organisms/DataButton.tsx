@@ -1,20 +1,18 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLOR, DATA_BTN } from '../../constants/AppConstants';
 import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
 
 export const DataButton = () => {
-  const { projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
-
-  const exportDisabled = useMemo(() => projectId !== undefined, [projectId]);
+  const { isChecked, isOwnerAdmin, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
 
   return (
     <>
       <View style={styles.button}>
         <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
 
-        {!exportDisabled && (
+        {isOwnerAdmin && (
           <Button
             name={DATA_BTN.EXPORT}
             onPress={pressExportData}

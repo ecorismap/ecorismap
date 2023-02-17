@@ -14,6 +14,7 @@ import dayjs from '../i18n/dayjs';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { firestore } from '../lib/firebase/firebase';
 import { t } from '../i18n/config';
+import { Platform } from 'react-native';
 
 export type UseProjectEditReturnType = {
   isProjectOpen: boolean;
@@ -26,7 +27,7 @@ export type UseProjectEditReturnType = {
   copiedProjectName: string | undefined;
   isEdited: boolean;
   projectRegion: RegionType;
-  openProject: () => Promise<{
+  openProject: (isSetting: boolean) => Promise<{
     isOK: boolean;
     message: string;
     region: RegionType | undefined;
@@ -100,7 +101,9 @@ export const useProjectEdit = (
     downloadProjectSettings,
     downloadAllData,
     downloadPublicAndCommonData,
+    downloadCommonData,
     downloadPrivateData,
+    downloadTemplateData,
   } = useRepository();
 
   const { loadE3kitGroup, createE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers } = useE3kitGroup();
@@ -110,69 +113,90 @@ export const useProjectEdit = (
     setCreateType(initialCreateType);
   }, [initialCreateType, initialProject]);
 
-  const openProject = useCallback(async () => {
-    if (tracking !== undefined) {
-      return { isOK: false, message: t('hooks.message.finishTrackking'), region: undefined };
-    }
-
-    //オープンするときは写真はダウンロードしない
-    const shouldPhotoDownload = false;
-
-    const { isOK: groupOK, message: groupMessage } = await loadE3kitGroup(targetProject);
-    if (!groupOK) {
-      return { isOK: false, message: groupMessage, region: undefined };
-    }
-
-    const { isOK: settingsOK, message: settingsMessage, region } = await downloadProjectSettings(targetProject);
-    if (!settingsOK) {
-      return { isOK: false, message: settingsMessage, region: undefined };
-    }
-    if (isOwnerAdmin) {
-      //オーナー＆管理者なら全員のデータをダウンロード
-
-      const { isOK: dataOK, message: dataMessage } = await downloadAllData(targetProject, shouldPhotoDownload);
-      if (!dataOK) {
-        return { isOK: false, message: dataMessage, region: undefined };
+  const openProject = useCallback(
+    async (isSetting: boolean) => {
+      if (tracking !== undefined) {
+        return { isOK: false, message: t('hooks.message.finishTrackking'), region: undefined };
       }
-    } else {
-      //オーナー＆管理者でなければ自分のデータをダウンロード
-      const { isOK: publicAndCommonOK, message: publicAndCommonMessage } = await downloadPublicAndCommonData(
-        targetProject,
-        shouldPhotoDownload
+
+      //オープンするときは写真はダウンロードしない
+      const shouldPhotoDownload = false;
+
+      const { isOK: groupOK, message: groupMessage } = await loadE3kitGroup(targetProject);
+      if (!groupOK) {
+        return { isOK: false, message: groupMessage, region: undefined };
+      }
+
+      const { isOK: settingsOK, message: settingsMessage, region } = await downloadProjectSettings(targetProject);
+      if (!settingsOK) {
+        return { isOK: false, message: settingsMessage, region: undefined };
+      }
+      if (isOwnerAdmin && Platform.OS === 'web') {
+        //オーナー＆管理者なら全員のデータをダウンロード
+        if (isSetting) {
+          const downloadCommonResult = await downloadCommonData(targetProject, shouldPhotoDownload);
+          if (!downloadCommonResult.isOK) {
+            return { isOK: false, message: downloadCommonResult.message, region: undefined };
+          }
+          const downloadTemplateResult = await downloadTemplateData(targetProject, shouldPhotoDownload, []);
+          if (!downloadTemplateResult.isOK) {
+            return { isOK: false, message: downloadTemplateResult.message, region: undefined };
+          }
+        } else {
+          const { isOK: dataOK, message: dataMessage } = await downloadAllData(targetProject, shouldPhotoDownload);
+
+          if (!dataOK) {
+            return { isOK: false, message: dataMessage, region: undefined };
+          }
+        }
+      } else {
+        //オーナー＆管理者でなければ自分のデータをダウンロード
+        const { isOK: publicAndCommonOK, message: publicAndCommonMessage } = await downloadPublicAndCommonData(
+          targetProject,
+          shouldPhotoDownload
+        );
+        if (!publicAndCommonOK) {
+          return { isOK: false, message: publicAndCommonMessage, region: undefined };
+        }
+        const {
+          isOK: privateOK,
+          message: privateMessage,
+          privateLayerIds,
+        } = await downloadPrivateData(targetProject, shouldPhotoDownload);
+        if (!privateOK || privateLayerIds === undefined) {
+          return { isOK: false, message: privateMessage, region: undefined };
+        }
+        const downloadTemplateResult = await downloadTemplateData(targetProject, shouldPhotoDownload, privateLayerIds);
+        if (!downloadTemplateResult.isOK) {
+          return { isOK: false, message: downloadTemplateResult.message, region: undefined };
+        }
+      }
+
+      dispatch(
+        editSettingsAction({
+          role: role,
+          projectId: targetProject.id,
+          projectName: targetProject.name,
+          photosToBeDeleted: [],
+        })
       );
-      if (!publicAndCommonOK) {
-        return { isOK: false, message: publicAndCommonMessage, region: undefined };
-      }
-      const { isOK: privateOK, message: privateMessage } = await downloadPrivateData(
-        targetProject,
-        shouldPhotoDownload
-      );
-      if (!privateOK) {
-        return { isOK: false, message: privateMessage, region: undefined };
-      }
-    }
-
-    dispatch(
-      editSettingsAction({
-        role: role,
-        projectId: targetProject.id,
-        projectName: targetProject.name,
-        photosToBeDeleted: [],
-      })
-    );
-    return { isOK: true, message: '', region };
-  }, [
-    dispatch,
-    downloadAllData,
-    downloadPrivateData,
-    downloadProjectSettings,
-    downloadPublicAndCommonData,
-    isOwnerAdmin,
-    loadE3kitGroup,
-    role,
-    targetProject,
-    tracking,
-  ]);
+      return { isOK: true, message: '', region };
+    },
+    [
+      dispatch,
+      downloadAllData,
+      downloadCommonData,
+      downloadPrivateData,
+      downloadProjectSettings,
+      downloadPublicAndCommonData,
+      downloadTemplateData,
+      isOwnerAdmin,
+      loadE3kitGroup,
+      role,
+      targetProject,
+      tracking,
+    ]
+  );
 
   const deleteProject = useCallback(async () => {
     //ToDo 消した後に他のユーザーがアップロード、ダウンロードした時のエラー処理

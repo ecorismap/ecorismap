@@ -32,7 +32,7 @@ interface Props {
   pressAddMember: () => void;
   pressDeleteMember: (idx: number) => void;
   pressSaveProject: () => void;
-  pressOpenProject: () => void;
+  pressOpenProject: (isSetting: boolean) => void;
   pressExportProject: () => void;
   pressDeleteProject: () => void;
   pressSettingProject: () => void;
@@ -75,7 +75,7 @@ export default function ProjectEditScreen(props: Props) {
   });
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
     [gotoBack]
   );
@@ -167,7 +167,7 @@ export default function ProjectEditScreen(props: Props) {
         isNew={isNew}
         isProjectOpen={isProjectOpen}
         isOwnerAdmin={isOwnerAdmin}
-        onPressOpenProject={pressOpenProject}
+        onPressOpenProject={() => pressOpenProject(false)}
         onPressDeleteProject={pressDeleteProject}
         onPressExportProject={pressExportProject}
         onPressSettingProject={pressSettingProject}
