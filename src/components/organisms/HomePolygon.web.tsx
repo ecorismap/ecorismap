@@ -3,8 +3,8 @@ import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl';
 import { RecordType, LayerType } from '../../types';
 import { generateGeoJson } from '../../utils/Geometry';
-import { hex2rgba } from '../../utils/Color';
 import { COLOR } from '../../constants/AppConstants';
+import { getColorRule } from '../../utils/Layer';
 
 interface Props {
   data: RecordType[];
@@ -21,39 +21,15 @@ export const Polygon = React.memo((props: Props) => {
 
   const getColorExpression = useCallback(
     (layer_: LayerType, transparency: number) => {
-      const colorStyle = layer_.colorStyle;
+      const colorExpression = [
+        'case',
+        ['boolean', ['feature-state', 'clicked'], false],
+        COLOR.YELLOW,
+        ['boolean', ['feature-state', 'hover'], false],
+        COLOR.YELLOW,
+        getColorRule(layer_, transparency, displayName),
+      ];
 
-      let colorExpression;
-      if (colorStyle.colorType === 'SINGLE') {
-        colorExpression = [
-          'case',
-          ['boolean', ['feature-state', 'clicked'], false],
-          COLOR.YELLOW,
-          ['boolean', ['feature-state', 'hover'], false],
-          COLOR.YELLOW,
-          hex2rgba(colorStyle.color, 1 - transparency),
-        ];
-      } else if (colorStyle.colorType === 'CATEGORIZED') {
-        const colorRule = colorStyle.colorList
-          .map(({ value, color }) => [
-            ['==', ['get', layer_.colorStyle.fieldName], value],
-            hex2rgba(color, 1 - transparency),
-          ])
-          .flat();
-        colorExpression = [
-          'case',
-          ['boolean', ['feature-state', 'clicked'], false],
-          COLOR.YELLOW,
-          ['boolean', ['feature-state', 'hover'], false],
-          COLOR.YELLOW,
-          ...colorRule,
-          'rgb(255,0,0)',
-        ];
-      } else if (colorStyle.colorType === 'USER') {
-        const colorObj = colorStyle.colorList.find(({ value }) => value === displayName);
-
-        colorExpression = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) : 'rgb(255,0,0)';
-      }
       return colorExpression;
     },
     [displayName]
