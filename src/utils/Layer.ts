@@ -41,7 +41,12 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
     if (fieldName === t('common.custom')) {
       const fieldNames = customFieldValue.split('|');
       const defaultColor = 'grey';
-      const conditionalColors = colorList.map(({ value, color: c }) => [value + '|', c]).flat();
+      const conditionalColors = colorList
+        .map(({ value, color: c }) => {
+          const colorValue = hex2rgba(c, 1 - transparency) ?? defaultColor;
+          return [value + '|', colorValue];
+        })
+        .flat();
       const field = fieldNames.map((f) => [['get', f], '|']).flat();
       colorRule = ['match', ['concat', ...field], ...conditionalColors, defaultColor];
     } else {
@@ -49,15 +54,16 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
 
       const conditionalColors = colorList
         .map(({ value, color: c }) => {
-          const colorValue = hex2rgba(c, 1 - transparency) ?? 'rgb(255,0,0)';
+          const colorValue = hex2rgba(c, 1 - transparency) ?? defaultColor;
           return [value, colorValue];
         })
         .flat();
       colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
     }
   } else if (colorType === 'USER') {
+    const defaultColor = 'grey';
     const colorObj = colorList.find(({ value }) => value === displayName);
-    colorRule = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) ?? 'rgb(255,0,0)' : 'rgb(255,0,0)';
+    colorRule = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) ?? defaultColor : defaultColor;
   }
   return colorRule;
 }
