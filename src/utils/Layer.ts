@@ -3,6 +3,7 @@ import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 import { RecordType, LayerType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { hex2rgba } from './Color';
 
 export const getColor = (layer: LayerType, feature: RecordType) => {
   const colorStyle = layer.colorStyle;
@@ -25,6 +26,41 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   }
   return color;
 };
+
+export function getColorRule(layer_: LayerType, transparency: number, displayName?: string) {
+  let colorRule: any;
+  //const colorStyle = layer_.colorStyle;
+  const colorType = layer_.colorStyle.colorType;
+  const fieldName = layer_.colorStyle.fieldName;
+  const colorList = layer_.colorStyle.colorList;
+  const customFieldValue = layer_.colorStyle.customFieldValue;
+  const color = layer_.colorStyle.color;
+  if (colorType === 'SINGLE') {
+    colorRule = hex2rgba(color, 1 - transparency) ?? 'rgb(255,0,0)';
+  } else if (colorType === 'CATEGORIZED') {
+    if (fieldName === t('common.custom')) {
+      const fieldNames = customFieldValue.split('|');
+      const defaultColor = 'grey';
+      const conditionalColors = colorList.map(({ value, color: c }) => [value + '|', c]).flat();
+      const field = fieldNames.map((f) => [['get', f], '|']).flat();
+      colorRule = ['match', ['concat', ...field], ...conditionalColors, defaultColor];
+    } else {
+      const defaultColor = 'grey';
+
+      const conditionalColors = colorList
+        .map(({ value, color: c }) => {
+          const colorValue = hex2rgba(c, 1 - transparency) ?? 'rgb(255,0,0)';
+          return [value, colorValue];
+        })
+        .flat();
+      colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
+    }
+  } else if (colorType === 'USER') {
+    const colorObj = colorList.find(({ value }) => value === displayName);
+    colorRule = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) ?? 'rgb(255,0,0)' : 'rgb(255,0,0)';
+  }
+  return colorRule;
+}
 
 export const getPhotoFields = (layer: LayerType) => {
   return layer.field.filter((f) => f.format === 'PHOTO');
