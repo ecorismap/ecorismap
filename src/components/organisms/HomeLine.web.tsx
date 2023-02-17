@@ -4,6 +4,7 @@ import { Layer, Source } from 'react-map-gl';
 import { RecordType, LayerType } from '../../types';
 import { generateGeoJson } from '../../utils/Geometry';
 import { COLOR } from '../../constants/AppConstants';
+import { getColorRule } from '../../utils/Layer';
 
 interface Props {
   data: RecordType[];
@@ -20,34 +21,15 @@ export const Line = React.memo((props: Props) => {
 
   const getColorExpression = useCallback(
     (layer_: LayerType) => {
-      const colorStyle = layer_.colorStyle;
-      let colorExpression;
-      if (colorStyle.colorType === 'SINGLE') {
-        colorExpression = [
-          'case',
-          ['boolean', ['feature-state', 'clicked'], false],
-          COLOR.YELLOW,
-          ['boolean', ['feature-state', 'hover'], false],
-          COLOR.YELLOW,
-          colorStyle.color,
-        ];
-      } else if (colorStyle.colorType === 'CATEGORIZED') {
-        const colorRule = colorStyle.colorList
-          .map(({ value, color }) => [['==', ['get', layer_.colorStyle.fieldName], value], color])
-          .flat();
-        colorExpression = [
-          'case',
-          ['boolean', ['feature-state', 'clicked'], false],
-          COLOR.YELLOW,
-          ['boolean', ['feature-state', 'hover'], false],
-          COLOR.YELLOW,
-          ...colorRule,
-          'rgb(255,0,0)',
-        ];
-      } else if (colorStyle.colorType === 'USER') {
-        const colorObj = colorStyle.colorList.find(({ value }) => value === displayName);
-        colorExpression = colorObj ? colorObj.color : 'rgb(255,0,0)';
-      }
+      const colorExpression = [
+        'case',
+        ['boolean', ['feature-state', 'clicked'], false],
+        COLOR.YELLOW,
+        ['boolean', ['feature-state', 'hover'], false],
+        COLOR.YELLOW,
+        getColorRule(layer_, 0, displayName),
+      ];
+
       return colorExpression;
     },
     [displayName]
