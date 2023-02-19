@@ -41,7 +41,7 @@ export default function LayerScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => headerLeftButton(),
+      //headerLeft: () => headerLeftButton(),
       headerRight: () => headerRightButton(),
     });
   }, [headerLeftButton, headerRightButton, navigation]);
