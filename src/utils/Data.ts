@@ -231,7 +231,7 @@ export const resetDataSetUser = (dataSet: DataType[]) => {
 };
 
 export const isPointRecordType = (
-  recordSet: PointRecordType | LineRecordType | PolygonRecordType
+  recordSet: RecordType | PointRecordType | LineRecordType | PolygonRecordType | undefined
 ): recordSet is PointRecordType => {
-  return !Array.isArray(recordSet.coords);
+  return recordSet !== undefined && !Array.isArray(recordSet.coords);
 };
