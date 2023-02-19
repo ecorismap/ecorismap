@@ -39,6 +39,7 @@ import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
+import { isPointRecordType } from '../../utils/Data';
 
 export default function HomeScreen() {
   const {
@@ -156,6 +157,7 @@ export default function HomeScreen() {
   );
 
   useEffect(() => {
+    if (isPointRecordType(selectedRecord?.record)) return;
     selectFeatureWeb(selectedRecord);
   }, [selectFeatureWeb, selectedRecord]);
 
