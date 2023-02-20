@@ -7,15 +7,7 @@ import Routes from './routes';
 import { persistor, store } from './store';
 
 if (Platform.OS !== 'web') {
-  LogBox.ignoreLogs([
-    // 'the ref',
-    // 'Reanimated',
-    // 'requestPermissionsAsync',
-    // 'Unable to deactivate',
-    // 'Unable to activate',
-    // 'Overwriting fontFamily style attribute preprocessor',
-    'VirtualizedLists',
-  ]);
+  LogBox.ignoreLogs(['Animated: `useNativeDriver`', 'VirtualizedLists']);
 }
 
 export default function App() {
