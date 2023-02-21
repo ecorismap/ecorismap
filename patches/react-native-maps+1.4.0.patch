@@ -1,0 +1,759 @@
+diff --git a/node_modules/react-native-maps/.DS_Store b/node_modules/react-native-maps/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.h b/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.h
+new file mode 100644
+index 0000000..49d34ee
+--- /dev/null
++++ b/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.h
+@@ -0,0 +1,23 @@
++//
++//  AIRGoogleMapURLTile.h
++//  Created by Nick Italiano on 11/5/16.
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import <GoogleMaps/GoogleMaps.h>
++
++@interface AIRGoogleMapUrlTileOverlay : GMSSyncTileLayer
++@property (nonatomic, copy) NSString *template;
++@property (nonatomic, assign) NSInteger maximumZ;
++@property (nonatomic, assign) NSInteger minimumZ;
++@property (nonatomic) NSInteger maximumNativeZ;
++@property (nonatomic, assign) NSInteger tileSize;
++@property (nonatomic) NSInteger doubleTileSize;
++@property (nonatomic, assign) BOOL flipY;
++@property (nonatomic, assign) BOOL offlineMode;
++@property (nonatomic, copy) NSString *tileCachePath;
++@property (nonatomic, assign) NSInteger tileCacheMaxAge;
++@end
++
++#endif
+diff --git a/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.m b/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.m
+new file mode 100644
+index 0000000..26847bc
+--- /dev/null
++++ b/node_modules/react-native-maps/AIRGoogleMapUrlTileOverlay.m
+@@ -0,0 +1,203 @@
++//
++//  AIRGoogleMapURLTile.m
++//  Created by Nick Italiano on 11/5/16.
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import "AIRGoogleMapUrlTileOverlay.h"
++@implementation AIRGoogleMapUrlTileOverlay
++- (id)init {
++  self = [super init];
++  return self;
++}
++
++- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
++  //   NSLog(@"zoomA %lf", self.map.camera.zoom);
++  //   NSLog(@"zoomB %lf", floor(self.map.camera.zoom));
++  //   NSLog(@"zoomC %ld", zoom);
++
++  //   NSLog(@"tileSizeB %ld", self.tileSize);
++  //   NSLog(@"width %.0f", [[UIScreen mainScreen] bounds].size.width);
++  //   NSLog(@"native width %.0f", [[UIScreen mainScreen]
++  //   nativeBounds].size.width); NSLog(@"scale %.0f", [UIScreen
++  //   mainScreen].scale); NSLog(@"native scale %.0f", [UIScreen
++  //   mainScreen].nativeScale);
++
++  //   int zoomDiff = zoom -　floor(self.map.camera.zoom);
++  //   NSLog(@"zoomDiff %d", zoomDiff);
++  //   zoom = zoom - zoomDiff;
++  //   x = x / pow(2, zoomDiff);
++  //   y = y / pow(2, zoomDiff);
++  // int mapZoom = floor(self.map.camera.zoom);
++  // int mapZoom = zoom;
++  if (self.maximumZ && zoom > self.maximumZ) {
++    return kGMSTileLayerNoTile;
++  }
++
++  if (self.minimumZ && zoom < self.minimumZ) {
++    return kGMSTileLayerNoTile;
++  }
++
++  int drawType = 0; // 0:original 1:high-resolution 2:overzoom
++
++  if (zoom > self.maximumNativeZ && !self.doubleTileSize) {
++    drawType = 2;
++  } else if (zoom > self.maximumNativeZ - 1 && self.doubleTileSize) {
++    drawType = 2;
++  } else if (zoom <= self.maximumNativeZ && !self.doubleTileSize) {
++    drawType = 0;
++  } else if (zoom <= self.maximumNativeZ - 1 && self.doubleTileSize) {
++    drawType = 1;
++  }
++  //NSLog(@"drawType %d,%ld,%ld", drawType,zoom,self.maximumNativeZ);
++  NSData *data;
++  if (drawType == 0 || drawType == 1) {
++    data = [self getTile:zoom x:x y:y];
++  } else if (drawType == 2) {
++    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
++  }
++  if(!data && self.offlineMode && self.tileCachePath){
++    NSInteger zoomLevelToStart = (zoom > self.maximumZ) ? self.maximumZ : zoom; 
++    NSInteger minimumZoomToSearch = self.minimumZ >= zoomLevelToStart - 3 ? self.minimumZ : zoomLevelToStart - 3;
++    data = [self drawOverZoomTile:(NSUInteger)zoomLevelToStart x:(NSUInteger)x y:(NSUInteger)y minZ:minimumZoomToSearch];
++  }
++  if(data){
++    UIImage *img = [[UIImage alloc] initWithData:data];
++    return img;
++  }
++  return kGMSTileLayerNoTile;
++}
++
++- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++
++  //NSString *url = self.offlineMode && self.tileCachePath ?  [NSString stringWithFormat:@"%@%@",self.tileCachePath,@"/{z}/{x}/{y}.png"] : self.template;
++  //NSLog(@"%@", url);
++  if (self.flipY == YES) {
++    y = (1 << zoom) - y - 1;
++  }
++
++  NSString *urlXYZ = self.template;
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat:@"%ld",(long)x]];
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat:@"%ld",(long)y]];
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat:@"%ld",(long)zoom]];
++  NSString *tileCacheXYZ =[NSString stringWithFormat:@"%@/%ld/%ld/%ld", self.tileCachePath, (long)zoom, (long)x,(long)y];
++  NSURL *tileCacheFileDirectory =[NSURL URLWithString:[NSString stringWithFormat:@"%@/%ld/%ld/", self.tileCachePath,(long)zoom, (long)x]];
++  NSURL *tileCacheFilePath = [NSURL URLWithString:(self.tileCachePath ?  tileCacheXYZ : urlXYZ)];
++ 
++ 
++  NSString *url = self.offlineMode && self.tileCachePath ?  tileCacheXYZ : urlXYZ;
++  NSData *data;
++  data = [self readTileImage:tileCacheFilePath];
++  if(!data){
++    data = [self fetchTile:url];
++    if(!data){
++      return nil;
++    }else{
++      if (self.tileCachePath) {
++          [self writeTileImage:tileCacheFileDirectory withTileCacheFilePath:tileCacheFilePath withTileData:data];
++      }
++      return data;
++    }  
++  }else{
++    return data;
++  }
++}
++
++- (NSData *)readTileImage:(NSURL *)url
++{
++  NSError *error = nil;
++  NSData *data = [NSData dataWithContentsOfURL:url
++                                       options:NSDataReadingUncached
++                                         error:&error];
++  if (error) {
++    //NSLog(@"%@", [error localizedDescription]);
++    return nil;
++  } else {
++    return data;
++  }
++}
++
++- (NSData *)fetchTile:(NSString *)url
++{
++  NSError *error = nil;
++  NSURL *uri = [NSURL URLWithString:url];
++  NSData *data = [NSData dataWithContentsOfURL:uri
++                                       options:NSDataReadingUncached
++                                         error:&error];
++  if (error) {
++    //NSLog(@"%@", [error localizedDescription]);
++    return nil;
++  } else {
++    return data;
++  }
++}
++
++- (void)writeTileImage:(NSURL *)tileCacheFileDirectory withTileCacheFilePath:(NSURL *)tileCacheFilePath withTileData:(NSData *)data
++{
++    NSError *error;
++    
++    if (![[NSFileManager defaultManager] fileExistsAtPath:[tileCacheFileDirectory path]]) {
++        [[NSFileManager defaultManager] createDirectoryAtPath:[tileCacheFileDirectory path] withIntermediateDirectories:YES attributes:nil error:&error];
++        if (error) {
++            //NSLog(@"Error: %@", error);
++            return;
++        }
++    }
++    [[NSFileManager defaultManager] createFileAtPath:[tileCacheFilePath path] contents:data attributes:nil];
++    //NSLog(@"tileCache SAVED tile %@", [tileCacheFilePath path]);
++}
++
++
++- (NSData *)getHalfTile:(NSData *)data
++             leftColumn:(NSUInteger)leftColumn
++                 topRow:(NSUInteger)topRow {
++  UIImage *image = [UIImage imageWithData:data];
++  CGRect originalRect = CGRectMake(0, 0, image.size.width, image.size.height);
++
++  UIGraphicsBeginImageContext(originalRect.size);
++  {
++    CGRect drawRect = CGRectApplyAffineTransform(
++        originalRect, CGAffineTransformMakeScale(2, 2));
++    drawRect = CGRectApplyAffineTransform(
++        drawRect,
++        CGAffineTransformMakeTranslation(-image.size.width * leftColumn,
++                                         -image.size.height * topRow));
++    [image drawInRect:drawRect];
++    image = UIGraphicsGetImageFromCurrentImageContext();
++  }
++  UIGraphicsEndImageContext();
++
++  return UIImagePNGRepresentation(image);
++}
++
++// - (NSData *)drawOverZoomTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++//   if (zoom <= self.maximumNativeZ) {
++//     return [self getTile:zoom x:x y:y];
++//   }
++//   BOOL leftColumn = x % 2 == 0;
++//   BOOL topRow = y % 2 == 0;
++//   NSData *Data = [self drawOverZoomTile:(zoom - 1) x:(x / 2) y:(y / 2)];
++//   return [self getHalfTile:Data leftColumn:1 - leftColumn topRow:1 - topRow];
++// }
++
++- (NSData *)drawOverZoomTile:(NSUInteger)tryZ x:(NSUInteger)x y:(NSUInteger)y minZ:(NSInteger)minZ {
++    //NSLog(@"#$#$#$#$#$ %ld,%ld,%ld,%ld", tryZ,x,y,minZ);
++    NSData *Data = [self getTile:tryZ x:x y:y];
++    if (Data) {
++        
++        return Data;
++    } else if (tryZ >= minZ) {
++        Data = [self drawOverZoomTile:(tryZ - 1) x:(x / 2) y:(y / 2) minZ:minZ];
++        BOOL leftColumn = x % 2 == 0;
++        BOOL topRow = y % 2 == 0;
++        return [self getHalfTile:Data leftColumn:1 - leftColumn topRow:1 - topRow];
++      
++    } else {
++        return nil;
++    }
++}
++
++@end
++
++#endif
+diff --git a/node_modules/react-native-maps/ios/.DS_Store b/node_modules/react-native-maps/ios/.DS_Store
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m
+index ee501d8..f372ecc 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapURLTileManager.m
+@@ -8,7 +8,7 @@
+ #import "AIRGoogleMapUrlTileManager.h"
+ #import "AIRGoogleMapUrlTile.h"
+ 
+-@interface AIRGoogleMapUrlTileManager()
++@interface AIRGoogleMapUrlTileManager ()
+ 
+ @end
+ 
+@@ -18,15 +18,22 @@ @implementation AIRGoogleMapUrlTileManager
+ 
+ - (UIView *)view
+ {
+-  AIRGoogleMapUrlTile *tileLayer = [AIRGoogleMapUrlTile new];
+-  return tileLayer;
++    AIRGoogleMapUrlTile *tileLayer = [AIRGoogleMapUrlTile new];
++    return tileLayer;
+ }
+ 
+ RCT_EXPORT_VIEW_PROPERTY(urlTemplate, NSString)
+ RCT_EXPORT_VIEW_PROPERTY(zIndex, int)
++RCT_EXPORT_VIEW_PROPERTY(opacity, float)
++RCT_EXPORT_VIEW_PROPERTY(doubleTileSize, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(maximumZ, NSInteger)
+ RCT_EXPORT_VIEW_PROPERTY(minimumZ, NSInteger)
++RCT_EXPORT_VIEW_PROPERTY(maximumNativeZ, NSInteger)
+ RCT_EXPORT_VIEW_PROPERTY(flipY, BOOL)
++RCT_EXPORT_VIEW_PROPERTY(offlineMode, BOOL)
++RCT_EXPORT_VIEW_PROPERTY(tileCachePath, NSString)
++RCT_EXPORT_VIEW_PROPERTY(tileCacheMaxAge, NSInteger)
++
+ 
+ @end
+ 
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
+index 05b2afd..31f77d7 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.h
+@@ -7,16 +7,25 @@
+ 
+ #import <Foundation/Foundation.h>
+ #import <GoogleMaps/GoogleMaps.h>
++#import "AIRGoogleMapUrlTileOverlay.h"
+ 
+ @interface AIRGoogleMapUrlTile : UIView
+ 
+-@property (nonatomic, strong) GMSURLTileLayer *tileLayer;
+-@property (nonatomic, assign) NSString *urlTemplate;
++@property (nonatomic, strong) AIRGoogleMapUrlTileOverlay *tileLayer;
++@property (nonatomic, copy) NSString *urlTemplate;
+ @property (nonatomic, assign) int zIndex;
+-@property NSInteger *maximumZ;
+-@property NSInteger *minimumZ;
+-@property BOOL flipY;
++@property (nonatomic, assign) float opacity;
++@property (nonatomic, assign) BOOL doubleTileSize;
++@property (nonatomic, assign) NSInteger maximumZ;
++@property (nonatomic, assign) NSInteger minimumZ;
++@property (nonatomic, assign) NSInteger maximumNativeZ;
++@property (nonatomic, assign) NSInteger tileSize;
++@property (nonatomic, assign) BOOL flipY;
++@property (nonatomic, assign) BOOL offlineMode;
++@property (nonatomic, copy) NSString *tileCachePath;
++@property (nonatomic, assign) NSInteger tileCacheMaxAge;
+ 
+ @end
+ 
+ #endif
++
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
+index c9beb39..d218183 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTile.m
+@@ -6,51 +6,171 @@
+ #ifdef HAVE_GOOGLE_MAPS
+ 
+ #import "AIRGoogleMapUrlTile.h"
++#import "RCTConvert+GMSMapViewType.h"
++#import <React/RCTConvert.h>
++#import "AIRGoogleMapUrlTileOverlay.h"
+ 
+ @implementation AIRGoogleMapUrlTile
+ 
+-- (void)setZIndex:(int)zIndex
+-{
++- (id)init {
++  self = [super init];
++  _opacity = 1;
++  return self;
++}
++- (void)setZIndex:(int)zIndex {
+   _zIndex = zIndex;
+   _tileLayer.zIndex = zIndex;
+ }
+ 
+-- (void)setUrlTemplate:(NSString *)urlTemplate
+-{
+-  _urlTemplate = urlTemplate;
+-  _tileLayer = [GMSURLTileLayer tileLayerWithURLConstructor:[self _getTileURLConstructor]];
+-  _tileLayer.tileSize = [[UIScreen mainScreen] scale] * 256;
++- (void)setFlipY:(BOOL)flipY {
++  _flipY = flipY;
++  if (self.tileLayer && flipY) {
++    [self.tileLayer setFlipY:_flipY];
++    [self.tileLayer clearTileCache];
++  }
+ }
+ 
+-- (GMSTileURLConstructor)_getTileURLConstructor
+-{
+-  NSString *urlTemplate = self.urlTemplate;
+-  NSInteger *maximumZ = self.maximumZ;
+-  NSInteger *minimumZ = self.minimumZ;
+-  GMSTileURLConstructor urls = ^NSURL* _Nullable (NSUInteger x, NSUInteger y, NSUInteger zoom) {
++- (void)setTileSize:(NSInteger)tileSize {
++  _tileSize = tileSize;
++  if (self.tileLayer && tileSize) {
++    self.tileLayer.tileSize = tileSize;
++    [self.tileLayer clearTileCache];
++  }
++}
+     
+-    if (self.flipY == YES) {
+-      y = (1 << zoom) - y - 1;
+-    }
+     
+-    NSString *url = urlTemplate;
+-    url = [url stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat: @"%ld", (long)x]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat: @"%ld", (long)y]];
+-    url = [url stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat: @"%ld", (long)zoom]];
++- (void)setMinimumZ:(NSInteger)minimumZ {
++  _minimumZ = minimumZ;
++  if (self.tileLayer && minimumZ) {
++    [self.tileLayer setMinimumZ:_minimumZ];
++    [self.tileLayer clearTileCache];
++  }
++}
+ 
+-   if(maximumZ && (long)zoom > (long)maximumZ) {
+-      return nil;
+-    }
++- (void)setMaximumZ:(NSInteger)maximumZ {
++  _maximumZ = maximumZ;
++  if (self.tileLayer && maximumZ) {
++    [self.tileLayer setMaximumZ:_maximumZ];
++    [self.tileLayer clearTileCache];
++  }
++}
++
++- (void)setMaximumNativeZ:(NSInteger)maximumNativeZ {
++  _maximumNativeZ = maximumNativeZ;
++  if (self.tileLayer && maximumNativeZ) {
++    [self.tileLayer setMaximumNativeZ:maximumNativeZ];
++    [self.tileLayer clearTileCache];
++  }
++}
++
++- (void)setDoubleTileSize:(BOOL)doubleTileSize {
++  if (_tileSize)
++    return;
++  // float screenTileSize =
++  //    [[UIScreen mainScreen] bounds].size.width * [UIScreen mainScreen].scale;
++  // float screenTileSize = 256 * [UIScreen mainScreen].scale;
++  // これが正解
++  float screenTileSize =
++      [[UIScreen mainScreen] nativeBounds].size.width / 256 * 256;
++
++  _tileSize = doubleTileSize ? screenTileSize / 2 : screenTileSize;
++  // NSLog(@"tileSizeA %ld", _tileSize);
++  if (self.tileLayer) {
++    self.tileLayer.tileSize = _tileSize;
++    //[self.tileLayer setTileSize:_tileSize];//上のじゃないとできない？
++    [self.tileLayer setDoubleTileSize:doubleTileSize];
++    [self.tileLayer clearTileCache];
++  }
++}
++
++- (void)setOpacity:(float)opacity {
++  _opacity = opacity;
++  if (self.tileLayer) {
++    [self.tileLayer setOpacity:opacity];
++    [self.tileLayer clearTileCache];
++  }
++}
++
++- (void)setUrlTemplate:(NSString *)urlTemplate {
+ 
+-    if(minimumZ && (long)zoom < (long)minimumZ) {
+-      return nil;
++  _urlTemplate = urlTemplate;
++    
++  //  _tileLayer = [GMSURLTileLayer tileLayerWithURLConstructor:[self
++  //  _getTileURLConstructor]];
++  AIRGoogleMapUrlTileOverlay *tile = [[AIRGoogleMapUrlTileOverlay alloc] init];
++  [tile setTemplate:urlTemplate];
++  [tile setFlipY:_flipY];
++  [tile setMaximumZ:_maximumZ];
++  [tile setMinimumZ:_minimumZ];
++  [tile setTileSize:_tileSize];
++  [tile setDoubleTileSize:_doubleTileSize];
++  [tile setMaximumNativeZ:_maximumNativeZ];
++  [tile setZIndex:_zIndex];
++  [tile setOpacity:_opacity];
++  [tile setOfflineMode:_offlineMode];
++  [tile setTileCachePath:_tileCachePath];
++  [tile setTileCacheMaxAge:_tileCacheMaxAge];
++  _tileLayer = tile;
++}
++
++- (void)setOfflineMode:(BOOL)offlineMode {
++    _offlineMode = offlineMode;
++    if (self.tileLayer && offlineMode) {
++        self.tileLayer.offlineMode = _offlineMode;
++        [self.tileLayer clearTileCache];
+     }
++}
++
++- (void)setTileCachePath:(NSString *)tileCachePath{
++    if (!tileCachePath) return;
++    _tileCachePath = tileCachePath;
++    self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
++    [self.tileLayer clearTileCache];
++}
+ 
+-    return [NSURL URLWithString:url];
+-  };
+-  return urls;
++- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge{
++    _tileCacheMaxAge = tileCacheMaxAge;
++    if (self.tileLayer && tileCacheMaxAge) {
++        self.tileLayer.tileCacheMaxAge = _tileCacheMaxAge;
++        [self.tileLayer clearTileCache];
++    } 
+ }
+ 
+ @end
+ 
++// - (GMSTileURLConstructor)_getTileURLConstructor
++// {
++//   NSString *urlTemplate = self.urlTemplate;
++//   NSInteger *maximumZ = self.maximumZ;
++//   NSInteger *minimumZ = self.minimumZ;
++//   GMSTileURLConstructor urls = ^NSURL* _Nullable (NSUInteger x, NSUInteger y,
++//   NSUInteger zoom) {
++
++//     if (self.flipY == YES) {
++//       y = (1 << zoom) - y - 1;
++//     }
++
++//     NSString *url = urlTemplate;
++//     url = [url stringByReplacingOccurrencesOfString:@"{x}"
++//     withString:[NSString stringWithFormat: @"%ld", (long)x]]; url = [url
++//     stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString
++//     stringWithFormat: @"%ld", (long)y]]; url = [url
++//     stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString
++//     stringWithFormat: @"%ld", (long)zoom]];
++
++//    if(maximumZ && (long)zoom > (long)maximumZ) {
++//       return nil;
++//     }
++
++//     if(minimumZ && (long)zoom < (long)minimumZ) {
++//       return nil;
++//     }
++
++//     return [NSURL URLWithString:url];
++//   };
++//   return urls;
++// }
++
++// @end
++
+ #endif
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h
+new file mode 100644
+index 0000000..49d34ee
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h
+@@ -0,0 +1,23 @@
++//
++//  AIRGoogleMapURLTile.h
++//  Created by Nick Italiano on 11/5/16.
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import <GoogleMaps/GoogleMaps.h>
++
++@interface AIRGoogleMapUrlTileOverlay : GMSSyncTileLayer
++@property (nonatomic, copy) NSString *template;
++@property (nonatomic, assign) NSInteger maximumZ;
++@property (nonatomic, assign) NSInteger minimumZ;
++@property (nonatomic) NSInteger maximumNativeZ;
++@property (nonatomic, assign) NSInteger tileSize;
++@property (nonatomic) NSInteger doubleTileSize;
++@property (nonatomic, assign) BOOL flipY;
++@property (nonatomic, assign) BOOL offlineMode;
++@property (nonatomic, copy) NSString *tileCachePath;
++@property (nonatomic, assign) NSInteger tileCacheMaxAge;
++@end
++
++#endif
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
+new file mode 100644
+index 0000000..26847bc
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
+@@ -0,0 +1,203 @@
++//
++//  AIRGoogleMapURLTile.m
++//  Created by Nick Italiano on 11/5/16.
++//
++
++#ifdef HAVE_GOOGLE_MAPS
++
++#import "AIRGoogleMapUrlTileOverlay.h"
++@implementation AIRGoogleMapUrlTileOverlay
++- (id)init {
++  self = [super init];
++  return self;
++}
++
++- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
++  //   NSLog(@"zoomA %lf", self.map.camera.zoom);
++  //   NSLog(@"zoomB %lf", floor(self.map.camera.zoom));
++  //   NSLog(@"zoomC %ld", zoom);
++
++  //   NSLog(@"tileSizeB %ld", self.tileSize);
++  //   NSLog(@"width %.0f", [[UIScreen mainScreen] bounds].size.width);
++  //   NSLog(@"native width %.0f", [[UIScreen mainScreen]
++  //   nativeBounds].size.width); NSLog(@"scale %.0f", [UIScreen
++  //   mainScreen].scale); NSLog(@"native scale %.0f", [UIScreen
++  //   mainScreen].nativeScale);
++
++  //   int zoomDiff = zoom -　floor(self.map.camera.zoom);
++  //   NSLog(@"zoomDiff %d", zoomDiff);
++  //   zoom = zoom - zoomDiff;
++  //   x = x / pow(2, zoomDiff);
++  //   y = y / pow(2, zoomDiff);
++  // int mapZoom = floor(self.map.camera.zoom);
++  // int mapZoom = zoom;
++  if (self.maximumZ && zoom > self.maximumZ) {
++    return kGMSTileLayerNoTile;
++  }
++
++  if (self.minimumZ && zoom < self.minimumZ) {
++    return kGMSTileLayerNoTile;
++  }
++
++  int drawType = 0; // 0:original 1:high-resolution 2:overzoom
++
++  if (zoom > self.maximumNativeZ && !self.doubleTileSize) {
++    drawType = 2;
++  } else if (zoom > self.maximumNativeZ - 1 && self.doubleTileSize) {
++    drawType = 2;
++  } else if (zoom <= self.maximumNativeZ && !self.doubleTileSize) {
++    drawType = 0;
++  } else if (zoom <= self.maximumNativeZ - 1 && self.doubleTileSize) {
++    drawType = 1;
++  }
++  //NSLog(@"drawType %d,%ld,%ld", drawType,zoom,self.maximumNativeZ);
++  NSData *data;
++  if (drawType == 0 || drawType == 1) {
++    data = [self getTile:zoom x:x y:y];
++  } else if (drawType == 2) {
++    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
++  }
++  if(!data && self.offlineMode && self.tileCachePath){
++    NSInteger zoomLevelToStart = (zoom > self.maximumZ) ? self.maximumZ : zoom; 
++    NSInteger minimumZoomToSearch = self.minimumZ >= zoomLevelToStart - 3 ? self.minimumZ : zoomLevelToStart - 3;
++    data = [self drawOverZoomTile:(NSUInteger)zoomLevelToStart x:(NSUInteger)x y:(NSUInteger)y minZ:minimumZoomToSearch];
++  }
++  if(data){
++    UIImage *img = [[UIImage alloc] initWithData:data];
++    return img;
++  }
++  return kGMSTileLayerNoTile;
++}
++
++- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++
++  //NSString *url = self.offlineMode && self.tileCachePath ?  [NSString stringWithFormat:@"%@%@",self.tileCachePath,@"/{z}/{x}/{y}.png"] : self.template;
++  //NSLog(@"%@", url);
++  if (self.flipY == YES) {
++    y = (1 << zoom) - y - 1;
++  }
++
++  NSString *urlXYZ = self.template;
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{x}" withString:[NSString stringWithFormat:@"%ld",(long)x]];
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{y}" withString:[NSString stringWithFormat:@"%ld",(long)y]];
++  urlXYZ = [urlXYZ stringByReplacingOccurrencesOfString:@"{z}" withString:[NSString stringWithFormat:@"%ld",(long)zoom]];
++  NSString *tileCacheXYZ =[NSString stringWithFormat:@"%@/%ld/%ld/%ld", self.tileCachePath, (long)zoom, (long)x,(long)y];
++  NSURL *tileCacheFileDirectory =[NSURL URLWithString:[NSString stringWithFormat:@"%@/%ld/%ld/", self.tileCachePath,(long)zoom, (long)x]];
++  NSURL *tileCacheFilePath = [NSURL URLWithString:(self.tileCachePath ?  tileCacheXYZ : urlXYZ)];
++ 
++ 
++  NSString *url = self.offlineMode && self.tileCachePath ?  tileCacheXYZ : urlXYZ;
++  NSData *data;
++  data = [self readTileImage:tileCacheFilePath];
++  if(!data){
++    data = [self fetchTile:url];
++    if(!data){
++      return nil;
++    }else{
++      if (self.tileCachePath) {
++          [self writeTileImage:tileCacheFileDirectory withTileCacheFilePath:tileCacheFilePath withTileData:data];
++      }
++      return data;
++    }  
++  }else{
++    return data;
++  }
++}
++
++- (NSData *)readTileImage:(NSURL *)url
++{
++  NSError *error = nil;
++  NSData *data = [NSData dataWithContentsOfURL:url
++                                       options:NSDataReadingUncached
++                                         error:&error];
++  if (error) {
++    //NSLog(@"%@", [error localizedDescription]);
++    return nil;
++  } else {
++    return data;
++  }
++}
++
++- (NSData *)fetchTile:(NSString *)url
++{
++  NSError *error = nil;
++  NSURL *uri = [NSURL URLWithString:url];
++  NSData *data = [NSData dataWithContentsOfURL:uri
++                                       options:NSDataReadingUncached
++                                         error:&error];
++  if (error) {
++    //NSLog(@"%@", [error localizedDescription]);
++    return nil;
++  } else {
++    return data;
++  }
++}
++
++- (void)writeTileImage:(NSURL *)tileCacheFileDirectory withTileCacheFilePath:(NSURL *)tileCacheFilePath withTileData:(NSData *)data
++{
++    NSError *error;
++    
++    if (![[NSFileManager defaultManager] fileExistsAtPath:[tileCacheFileDirectory path]]) {
++        [[NSFileManager defaultManager] createDirectoryAtPath:[tileCacheFileDirectory path] withIntermediateDirectories:YES attributes:nil error:&error];
++        if (error) {
++            //NSLog(@"Error: %@", error);
++            return;
++        }
++    }
++    [[NSFileManager defaultManager] createFileAtPath:[tileCacheFilePath path] contents:data attributes:nil];
++    //NSLog(@"tileCache SAVED tile %@", [tileCacheFilePath path]);
++}
++
++
++- (NSData *)getHalfTile:(NSData *)data
++             leftColumn:(NSUInteger)leftColumn
++                 topRow:(NSUInteger)topRow {
++  UIImage *image = [UIImage imageWithData:data];
++  CGRect originalRect = CGRectMake(0, 0, image.size.width, image.size.height);
++
++  UIGraphicsBeginImageContext(originalRect.size);
++  {
++    CGRect drawRect = CGRectApplyAffineTransform(
++        originalRect, CGAffineTransformMakeScale(2, 2));
++    drawRect = CGRectApplyAffineTransform(
++        drawRect,
++        CGAffineTransformMakeTranslation(-image.size.width * leftColumn,
++                                         -image.size.height * topRow));
++    [image drawInRect:drawRect];
++    image = UIGraphicsGetImageFromCurrentImageContext();
++  }
++  UIGraphicsEndImageContext();
++
++  return UIImagePNGRepresentation(image);
++}
++
++// - (NSData *)drawOverZoomTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++//   if (zoom <= self.maximumNativeZ) {
++//     return [self getTile:zoom x:x y:y];
++//   }
++//   BOOL leftColumn = x % 2 == 0;
++//   BOOL topRow = y % 2 == 0;
++//   NSData *Data = [self drawOverZoomTile:(zoom - 1) x:(x / 2) y:(y / 2)];
++//   return [self getHalfTile:Data leftColumn:1 - leftColumn topRow:1 - topRow];
++// }
++
++- (NSData *)drawOverZoomTile:(NSUInteger)tryZ x:(NSUInteger)x y:(NSUInteger)y minZ:(NSInteger)minZ {
++    //NSLog(@"#$#$#$#$#$ %ld,%ld,%ld,%ld", tryZ,x,y,minZ);
++    NSData *Data = [self getTile:tryZ x:x y:y];
++    if (Data) {
++        
++        return Data;
++    } else if (tryZ >= minZ) {
++        Data = [self drawOverZoomTile:(tryZ - 1) x:(x / 2) y:(y / 2) minZ:minZ];
++        BOOL leftColumn = x % 2 == 0;
++        BOOL topRow = y % 2 == 0;
++        return [self getHalfTile:Data leftColumn:1 - leftColumn topRow:1 - topRow];
++      
++    } else {
++        return nil;
++    }
++}
++
++@end
++
++#endif
