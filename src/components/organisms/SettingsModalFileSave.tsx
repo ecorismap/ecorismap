@@ -20,7 +20,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
   const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
 
-  const onChangeText = useCallback((input) => {
+  const onChangeText = useCallback((input: string) => {
     //console.log('#', input);
     //console.log('##', sanitize(input));
     setValue(input);
@@ -111,7 +111,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{t('common.fileName')} </Text>
+            <Text style={styles.modalTitle}>{`${t('common.fileName')}`} </Text>
 
             <View
               style={{

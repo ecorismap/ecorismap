@@ -41,7 +41,7 @@ export const DataEditNumberRange = (props: Props) => {
         />
 
         <View style={{ marginTop: 20 }}>
-          <Text>{t('common.ndash')}</Text>
+          <Text>{`${t('common.ndash')}`}</Text>
         </View>
 
         <TextInput

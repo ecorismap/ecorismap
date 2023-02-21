@@ -98,7 +98,7 @@ export const DataEditTimeRange = (props: Props) => {
           />
         </TouchableOpacity>
         <View style={{ marginTop: 20 }}>
-          <Text>{t('common.ndash')}</Text>
+          <Text>{`${t('common.ndash')}`}</Text>
         </View>
         <TouchableOpacity style={styles.tr2} onPress={() => setOpen2(true)}>
           {name && <Text style={styles.title}> </Text>}
