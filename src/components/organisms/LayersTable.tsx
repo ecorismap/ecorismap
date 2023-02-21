@@ -19,28 +19,28 @@ const LayersTitle = () => {
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { flex: 2, width: 85 }]}>
-        <Text>{t('common.visible')}</Text>
+        <Text>{`${t('common.visible')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 2, width: 60 }]}>
-        <Text>{t('common.edit')}</Text>
+        <Text>{`${t('common.edit')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 5, width: 150 }]}>
-        <Text>{t('common.layerName')}</Text>
+        <Text>{`${t('common.layerName')}`}</Text>
       </View>
 
       <View style={[styles.th, { flex: 5, width: 160 }]}>
-        <Text>{t('common.label')}</Text>
+        <Text>{`${t('common.label')}`}</Text>
       </View>
       {Platform.OS === 'web' ? (
         <>
           <View style={[styles.th, { flex: 3, width: 80, borderRightColor: COLOR.GRAY1 }]}>
-            <Text>{t('common.layerSetting')}</Text>
+            <Text>{`${t('common.layerSetting')}`}</Text>
           </View>
           <View style={[styles.th, { flex: 1, width: 30 }]} />
         </>
       ) : (
         <View style={[styles.th, { flex: 4, width: 110, borderRightColor: COLOR.GRAY1 }]}>
-          <Text>{t('common.layerSetting')}</Text>
+          <Text>{`${t('common.layerSetting')}`}</Text>
         </View>
       )}
     </View>

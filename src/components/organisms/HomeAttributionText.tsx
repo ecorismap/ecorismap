@@ -22,7 +22,7 @@ export const HomeAttributionText = (props: Props) => {
           textShadowRadius: 1,
         }}
       >
-        {t('common.source')}: {attribution}
+        {`${t('common.source')}`}: {attribution}
       </Text>
     </View>
   ) : null;

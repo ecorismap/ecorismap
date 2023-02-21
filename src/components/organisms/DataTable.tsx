@@ -138,12 +138,12 @@ const DataTableComponent = React.memo(({ item, index, checked }: Props_DataTable
           >
             <Text adjustsFontSizeToFit={true} numberOfLines={2}>
               {format === 'DATETIME' && item.field[name] !== ''
-                ? dayjs(item.field[name] as string).format('L HH:mm')
+                ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
                 : format === 'PHOTO'
                 ? `${(item.field[name] as PhotoType[]).length} pic`
                 : format === 'REFERENCE'
                 ? 'Reference'
-                : item.field[name]}
+                : `${item.field[name]}`}
             </Text>
           </TouchableOpacity>
         ))
@@ -156,10 +156,12 @@ const DataItems = React.memo(() => {
   const { data, checkList } = useContext(DataContext);
   //@ts-ignore
   const renderItem = useCallback(
-    ({ item, index }) => <DataTableComponent {...{ item, index, checked: checkList[index] }} />,
+    ({ item, index }: { item: RecordType; index: number }) => (
+      <DataTableComponent {...{ item, index, checked: checkList[index] }} />
+    ),
     [checkList]
   );
-  const keyExtractor = useCallback((item) => item.id, []);
+  const keyExtractor = useCallback((item: RecordType) => item.id, []);
   return <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />;
 });
 

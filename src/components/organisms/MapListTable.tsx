@@ -23,13 +23,13 @@ export const MapListTable = React.memo(() => {
   ];
   //@ts-ignore
   const renderItem = useCallback(({ item }) => <MapListTableComponent item={item} addMap={addMap} />, [addMap]);
-  const keyExtractor = useCallback((item, idx) => idx, []);
+  const keyExtractor = useCallback((item: TileMapItemType) => item.url, []);
 
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
       <View style={{ height: 45, flexDirection: 'row' }}>
         <View style={[styles.th, { width: 60 }]}>
-          <Text>{t('common.add')}</Text>
+          <Text>{`${t('common.add')}`}</Text>
         </View>
 
         {titles.map((title, idx) => (

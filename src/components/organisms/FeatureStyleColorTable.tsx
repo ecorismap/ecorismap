@@ -20,10 +20,10 @@ const ColorListTitle = () => {
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 5 }]}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.fieldValue')}</Text>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.fieldValue')}`}</Text>
       </View>
       <View style={[styles.td3, { flex: 3 }]}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.color')}</Text>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.color')}`}</Text>
       </View>
       <View style={styles.td3} />
     </View>
