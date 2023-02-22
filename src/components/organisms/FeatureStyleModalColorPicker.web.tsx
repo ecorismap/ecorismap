@@ -21,7 +21,7 @@ export const FeatureStyleModalColorPicker = () => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{t('common.selectColor')}</Text>
+            <Text style={styles.modalTitle}>{`${t('common.selectColor')}`}</Text>
             <SketchPicker
               disableAlpha={true}
               color={val}

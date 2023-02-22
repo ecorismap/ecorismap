@@ -13,14 +13,14 @@ export const LayerEditFieldTitle = () => {
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 6 }]}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.fieldName')}</Text>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.fieldName')}`}</Text>
       </View>
       <View style={[styles.td3, { flex: 8 }]}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.dataFormat')}</Text>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.dataFormat')}`}</Text>
       </View>
       <View style={[styles.td3, { flex: 2 }]} />
       <View style={[styles.td3, { flex: 2 }]}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.setValue')}</Text>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.setValue')}`}</Text>
       </View>
       <View style={[styles.td3, { flex: 2 }]}>
         <Button

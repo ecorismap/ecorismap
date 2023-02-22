@@ -103,10 +103,10 @@ const DataItems = React.memo((props: Props_DataItems) => {
               <View key={field_index} style={[styles.td, { flex: 1, width: 120 }]}>
                 <Text adjustsFontSizeToFit={true} numberOfLines={2}>
                   {format === 'DATETIME' && item.field[name] !== ''
-                    ? dayjs(item.field[name] as string).format('L HH:mm')
+                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
                     : format === 'PHOTO'
                     ? `${(item.field[name] as PhotoType[]).length} pic`
-                    : item.field[name]}
+                    : `${item.field[name]}`}
                 </Text>
               </View>
             ))}

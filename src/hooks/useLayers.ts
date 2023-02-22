@@ -290,7 +290,7 @@ export const useLayers = (): UseLayersReturnType => {
   );
 
   const importDropedFile = useCallback(
-    async (acceptedFiles) => {
+    async (acceptedFiles: any) => {
       const filePromises = acceptedFiles.map((f: any) => {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();

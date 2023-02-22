@@ -47,13 +47,13 @@ export const DataEditModalPhotoView = () => {
           )}
           <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
             <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressClosePhoto}>
-              <Text>{t('common.close')}</Text>
+              <Text>{`${t('common.close')}`}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
               onPress={pressRemovePhoto}
             >
-              <Text style={{ color: COLOR.WHITE }}>{t('common.delete')}</Text>
+              <Text style={{ color: COLOR.WHITE }}>{`${t('common.delete')}`}</Text>
             </TouchableOpacity>
           </View>
         </View>
