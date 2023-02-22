@@ -25,8 +25,8 @@ import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
-import DataRoutes from '../../routes/DataRoutes';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
+import SplitScreen from '../../routes/split';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
@@ -197,7 +197,7 @@ export default function HomeScreen() {
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
-        <DataRoutes />
+        <SplitScreen />
       </View>
       <View
         style={[
