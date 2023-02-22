@@ -14,7 +14,7 @@ import { t } from '../i18n/config';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function DataRoutes() {
+export default function SplitScreen() {
   return (
     // <NavigationContainer independent={true}>
     <Stack.Navigator
