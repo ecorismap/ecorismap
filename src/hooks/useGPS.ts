@@ -59,11 +59,11 @@ export const useGPS = (): UseGPSReturnType => {
     }
   }, []);
 
-  const setHeadingUpFunction = useCallback(async (headingFunc) => {
+  const setHeadingUpFunction = useCallback(async (headingFunc: (pos: Location.LocationHeadingObject) => void) => {
     updateHeading.current = headingFunc;
   }, []);
 
-  const setFollowMapFunction = useCallback(async (followFunc) => {
+  const setFollowMapFunction = useCallback(async (followFunc: (pos: Location.LocationObject) => void) => {
     updateGpsPosition.current = followFunc;
   }, []);
 

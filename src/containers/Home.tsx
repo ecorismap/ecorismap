@@ -274,7 +274,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   ]);
 
   const onDrop = useCallback(
-    async (acceptedFiles) => {
+    async (acceptedFiles: any) => {
       if (!editable) {
         await AlertAsync(t('hooks.message.lockProject'));
         return;
@@ -691,9 +691,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //起動時に読み込む場合
     (async () => await getReceivedFile())();
     //バックグラウンド時に読み込む場合
-    RNAppState.addEventListener('change', onChange);
+    const subscription = RNAppState.addEventListener('change', onChange);
     return () => {
-      RNAppState.removeEventListener('change', onChange);
+      subscription.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

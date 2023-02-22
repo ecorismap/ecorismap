@@ -110,7 +110,7 @@ export const DataEditTimeRange = (props: Props) => {
           </LocalizationProvider>
         </View>
         <View style={{ marginTop: 20 }}>
-          <Text>{t('common.ndash')}</Text>
+          <Text>{`${t('common.ndash')}`}</Text>
         </View>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}

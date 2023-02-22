@@ -1,120 +1,112 @@
-diff --git a/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin
+diff --git a/node_modules/expo-location/android/build/.transforms/6d5838d10dbdaf453975e3efc03b1552/results.bin b/node_modules/expo-location/android/build/.transforms/6d5838d10dbdaf453975e3efc03b1552/results.bin
 new file mode 100644
 index 0000000..0d259dd
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/results.bin
++++ b/node_modules/expo-location/android/build/.transforms/6d5838d10dbdaf453975e3efc03b1552/results.bin
 @@ -0,0 +1 @@
 +o/classes
-diff --git a/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/transformed/classes/classes.dex b/node_modules/expo-task-manager/android/build/.transforms/a9200ead5f9a5c85660df9979a311556/transformed/classes/classes.dex
+diff --git a/node_modules/expo-location/android/build/.transforms/6d5838d10dbdaf453975e3efc03b1552/transformed/classes/classes.dex b/node_modules/expo-location/android/build/.transforms/6d5838d10dbdaf453975e3efc03b1552/transformed/classes/classes.dex
 new file mode 100644
 index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java b/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java
+diff --git a/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java b/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java
 new file mode 100644
-index 0000000..25bfd26
+index 0000000..f698a3a
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/generated/source/buildConfig/debug/expo/modules/taskManager/BuildConfig.java
++++ b/node_modules/expo-location/android/build/generated/source/buildConfig/debug/expo/modules/location/BuildConfig.java
 @@ -0,0 +1,10 @@
 +/**
 + * Automatically generated file. DO NOT MODIFY
 + */
-+package expo.modules.taskManager;
++package expo.modules.location;
 +
 +public final class BuildConfig {
 +  public static final boolean DEBUG = Boolean.parseBoolean("true");
-+  public static final String LIBRARY_PACKAGE_NAME = "expo.modules.taskManager";
++  public static final String LIBRARY_PACKAGE_NAME = "expo.modules.location";
 +  public static final String BUILD_TYPE = "debug";
 +}
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+diff --git a/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
 new file mode 100644
-index 0000000..24b3747
+index 0000000..cb96878
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
-@@ -0,0 +1,33 @@
++++ b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+@@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.taskManager"
-+    android:versionCode="23"
-+    android:versionName="10.1.0" >
++    package="expo.modules.location" >
 +
 +    <uses-sdk
-+        android:minSdkVersion="29"
++        android:minSdkVersion="21"
 +        android:targetSdkVersion="31" />
 +
++    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
++    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
++    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
++
 +    <application>
-+        <receiver
-+            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
-+            android:exported="false" >
-+            <intent-filter>
-+                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
-+                <action android:name="android.intent.action.BOOT_COMPLETED" />
-+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-+            </intent-filter>
-+        </receiver>
-+
 +        <service
-+            android:name="expo.modules.taskManager.TaskJobService"
-+            android:enabled="true"
++            android:name="expo.modules.location.services.LocationTaskService"
 +            android:exported="false"
-+            android:permission="android.permission.BIND_JOB_SERVICE" />
-+
-+        <meta-data
-+            android:name="expo.modules.taskManager.oneAppId"
-+            android:value="true" />
++            android:foregroundServiceType="location" />
 +    </application>
 +
 +</manifest>
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+diff --git a/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
 new file mode 100644
-index 0000000..ae419cb
+index 0000000..17c9285
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
-@@ -0,0 +1,16 @@
++++ b/node_modules/expo-location/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+@@ -0,0 +1,18 @@
 +{
-+  "version": 2,
++  "version": 3,
 +  "artifactType": {
 +    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
 +    "kind": "Directory"
 +  },
-+  "applicationId": "expo.modules.taskManager",
++  "applicationId": "expo.modules.location",
 +  "variantName": "debug",
 +  "elements": [
 +    {
 +      "type": "SINGLE",
 +      "filters": [],
++      "attributes": [],
 +      "outputFile": "AndroidManifest.xml"
 +    }
-+  ]
++  ],
++  "elementType": "File"
 +}
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+diff --git a/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
 new file mode 100644
-index 0000000..d8560bd
+index 0000000..8c9c699
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
-@@ -0,0 +1,2 @@
++++ b/node_modules/expo-location/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+@@ -0,0 +1,4 @@
 +aarFormatVersion=1.0
 +aarMetadataVersion=1.0
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
++minCompileSdk=1
++minAndroidGradlePluginVersion=1.0.0
+diff --git a/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
 new file mode 100644
 index 0000000..9e26dfe
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
++++ b/node_modules/expo-location/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
 @@ -0,0 +1 @@
 +{}
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/expo-task-manager/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
+diff --git a/node_modules/expo-location/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/expo-location/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
 index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/expo-task-manager/android/build/intermediates/compile_r_class_jar/debug/R.jar
+diff --git a/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt
+index 0000000..e77c1b0
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
+diff --git a/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
-index 0000000..a8801e1
+index 0000000..2672e11
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/compile_symbol_list/debug/R.txt
-@@ -0,0 +1,1789 @@
++++ b/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt
+@@ -0,0 +1,2090 @@
 +int anim abc_fade_in 0x0
 +int anim abc_fade_out 0x0
 +int anim abc_grow_fade_in_from_bottom 0x0
@@ -127,12 +119,31 @@ index 0000000..a8801e1
 +int anim abc_slide_out_top 0x0
 +int anim abc_tooltip_enter 0x0
 +int anim abc_tooltip_exit 0x0
++int anim btn_checkbox_to_checked_box_inner_merged_animation 0x0
++int anim btn_checkbox_to_checked_box_outer_merged_animation 0x0
++int anim btn_checkbox_to_checked_icon_null_animation 0x0
++int anim btn_checkbox_to_unchecked_box_inner_merged_animation 0x0
++int anim btn_checkbox_to_unchecked_check_path_merged_animation 0x0
++int anim btn_checkbox_to_unchecked_icon_null_animation 0x0
++int anim btn_radio_to_off_mtrl_dot_group_animation 0x0
++int anim btn_radio_to_off_mtrl_ring_outer_animation 0x0
++int anim btn_radio_to_off_mtrl_ring_outer_path_animation 0x0
++int anim btn_radio_to_on_mtrl_dot_group_animation 0x0
++int anim btn_radio_to_on_mtrl_ring_outer_animation 0x0
++int anim btn_radio_to_on_mtrl_ring_outer_path_animation 0x0
 +int anim catalyst_fade_in 0x0
 +int anim catalyst_fade_out 0x0
 +int anim catalyst_push_up_in 0x0
 +int anim catalyst_push_up_out 0x0
 +int anim catalyst_slide_down 0x0
 +int anim catalyst_slide_up 0x0
++int anim fragment_fast_out_extra_slow_in 0x0
++int animator fragment_close_enter 0x0
++int animator fragment_close_exit 0x0
++int animator fragment_fade_enter 0x0
++int animator fragment_fade_exit 0x0
++int animator fragment_open_enter 0x0
++int animator fragment_open_exit 0x0
 +int attr actionBarDivider 0x0
 +int attr actionBarItemBackground 0x0
 +int attr actionBarPopupTheme 0x0
@@ -151,6 +162,7 @@ index 0000000..a8801e1
 +int attr actionMenuTextColor 0x0
 +int attr actionModeBackground 0x0
 +int attr actionModeCloseButtonStyle 0x0
++int attr actionModeCloseContentDescription 0x0
 +int attr actionModeCloseDrawable 0x0
 +int attr actionModeCopyDrawable 0x0
 +int attr actionModeCutDrawable 0x0
@@ -161,6 +173,7 @@ index 0000000..a8801e1
 +int attr actionModeShareDrawable 0x0
 +int attr actionModeSplitBackground 0x0
 +int attr actionModeStyle 0x0
++int attr actionModeTheme 0x0
 +int attr actionModeWebSearchDrawable 0x0
 +int attr actionOverflowButtonStyle 0x0
 +int attr actionOverflowMenuStyle 0x0
@@ -185,6 +198,11 @@ index 0000000..a8801e1
 +int attr autoSizePresetSizes 0x0
 +int attr autoSizeStepGranularity 0x0
 +int attr autoSizeTextType 0x0
++int attr autofillInlineSuggestionChip 0x0
++int attr autofillInlineSuggestionEndIconStyle 0x0
++int attr autofillInlineSuggestionStartIconStyle 0x0
++int attr autofillInlineSuggestionSubtitle 0x0
++int attr autofillInlineSuggestionTitle 0x0
 +int attr background 0x0
 +int attr backgroundImage 0x0
 +int attr backgroundSplit 0x0
@@ -198,15 +216,21 @@ index 0000000..a8801e1
 +int attr buttonBarNeutralButtonStyle 0x0
 +int attr buttonBarPositiveButtonStyle 0x0
 +int attr buttonBarStyle 0x0
++int attr buttonCompat 0x0
 +int attr buttonGravity 0x0
 +int attr buttonIconDimen 0x0
 +int attr buttonPanelSideLayout 0x0
++int attr buttonSize 0x0
 +int attr buttonStyle 0x0
 +int attr buttonStyleSmall 0x0
 +int attr buttonTint 0x0
 +int attr buttonTintMode 0x0
++int attr checkMarkCompat 0x0
++int attr checkMarkTint 0x0
++int attr checkMarkTintMode 0x0
 +int attr checkboxStyle 0x0
 +int attr checkedTextViewStyle 0x0
++int attr circleCrop 0x0
 +int attr closeIcon 0x0
 +int attr closeItemLayout 0x0
 +int attr collapseContentDescription 0x0
@@ -221,6 +245,7 @@ index 0000000..a8801e1
 +int attr colorError 0x0
 +int attr colorPrimary 0x0
 +int attr colorPrimaryDark 0x0
++int attr colorScheme 0x0
 +int attr colorSwitchThumbNormal 0x0
 +int attr commitIcon 0x0
 +int attr contentDescription 0x0
@@ -242,7 +267,15 @@ index 0000000..a8801e1
 +int attr dividerHorizontal 0x0
 +int attr dividerPadding 0x0
 +int attr dividerVertical 0x0
++int attr drawableBottomCompat 0x0
++int attr drawableEndCompat 0x0
++int attr drawableLeftCompat 0x0
++int attr drawableRightCompat 0x0
 +int attr drawableSize 0x0
++int attr drawableStartCompat 0x0
++int attr drawableTint 0x0
++int attr drawableTintMode 0x0
++int attr drawableTopCompat 0x0
 +int attr drawerArrowStyle 0x0
 +int attr dropDownListViewStyle 0x0
 +int attr dropdownListPreferredItemHeight 0x0
@@ -250,6 +283,7 @@ index 0000000..a8801e1
 +int attr editTextColor 0x0
 +int attr editTextStyle 0x0
 +int attr elevation 0x0
++int attr emojiCompatEnabled 0x0
 +int attr expandActivityOverflowButtonDrawable 0x0
 +int attr fadeDuration 0x0
 +int attr failureImage 0x0
@@ -263,6 +297,7 @@ index 0000000..a8801e1
 +int attr fontProviderFetchTimeout 0x0
 +int attr fontProviderPackage 0x0
 +int attr fontProviderQuery 0x0
++int attr fontProviderSystemFontFamily 0x0
 +int attr fontStyle 0x0
 +int attr fontVariationSettings 0x0
 +int attr fontWeight 0x0
@@ -276,12 +311,16 @@ index 0000000..a8801e1
 +int attr iconTint 0x0
 +int attr iconTintMode 0x0
 +int attr iconifiedByDefault 0x0
++int attr imageAspectRatio 0x0
++int attr imageAspectRatioAdjust 0x0
 +int attr imageButtonStyle 0x0
 +int attr indeterminateProgressStyle 0x0
 +int attr initialActivityCount 0x0
++int attr isAutofillInlineSuggestionTheme 0x0
 +int attr isLightTheme 0x0
 +int attr itemPadding 0x0
 +int attr keylines 0x0
++int attr lStar 0x0
 +int attr lastBaselineToBottomHeight 0x0
 +int attr layout 0x0
 +int attr layout_anchor 0x0
@@ -292,6 +331,8 @@ index 0000000..a8801e1
 +int attr layout_keyline 0x0
 +int attr lineHeight 0x0
 +int attr listChoiceBackgroundIndicator 0x0
++int attr listChoiceIndicatorMultipleAnimated 0x0
++int attr listChoiceIndicatorSingleAnimated 0x0
 +int attr listDividerAlertDialog 0x0
 +int attr listItemLayout 0x0
 +int attr listLayout 0x0
@@ -300,16 +341,20 @@ index 0000000..a8801e1
 +int attr listPreferredItemHeight 0x0
 +int attr listPreferredItemHeightLarge 0x0
 +int attr listPreferredItemHeightSmall 0x0
++int attr listPreferredItemPaddingEnd 0x0
 +int attr listPreferredItemPaddingLeft 0x0
 +int attr listPreferredItemPaddingRight 0x0
++int attr listPreferredItemPaddingStart 0x0
 +int attr logo 0x0
 +int attr logoDescription 0x0
 +int attr maxButtonHeight 0x0
 +int attr measureWithLargestChild 0x0
++int attr menu 0x0
 +int attr multiChoiceItemLayout 0x0
 +int attr navigationContentDescription 0x0
 +int attr navigationIcon 0x0
 +int attr navigationMode 0x0
++int attr nestedScrollViewStyle 0x0
 +int attr numericModifiers 0x0
 +int attr overlapAnchor 0x0
 +int attr overlayImage 0x0
@@ -334,6 +379,7 @@ index 0000000..a8801e1
 +int attr progressBarStyle 0x0
 +int attr queryBackground 0x0
 +int attr queryHint 0x0
++int attr queryPatterns 0x0
 +int attr radioButtonStyle 0x0
 +int attr ratingBarStyle 0x0
 +int attr ratingBarStyleIndicator 0x0
@@ -354,12 +400,14 @@ index 0000000..a8801e1
 +int attr roundingBorderColor 0x0
 +int attr roundingBorderPadding 0x0
 +int attr roundingBorderWidth 0x0
++int attr scopeUris 0x0
 +int attr searchHintIcon 0x0
 +int attr searchIcon 0x0
 +int attr searchViewStyle 0x0
 +int attr seekBarStyle 0x0
 +int attr selectableItemBackground 0x0
 +int attr selectableItemBackgroundBorderless 0x0
++int attr shortcutMatchRequired 0x0
 +int attr showAsAction 0x0
 +int attr showDividers 0x0
 +int attr showText 0x0
@@ -394,6 +442,7 @@ index 0000000..a8801e1
 +int attr textAppearanceSmallPopupMenu 0x0
 +int attr textColorAlertDialogListItem 0x0
 +int attr textColorSearchUrl 0x0
++int attr textLocale 0x0
 +int attr theme 0x0
 +int attr thickness 0x0
 +int attr thumbTextPadding 0x0
@@ -437,16 +486,16 @@ index 0000000..a8801e1
 +int attr windowMinWidthMinor 0x0
 +int attr windowNoTitle 0x0
 +int bool abc_action_bar_embed_tabs 0x0
-+int bool abc_allow_stacked_button_bar 0x0
 +int bool abc_config_actionMenuItemAllCaps 0x0
 +int color abc_background_cache_hint_selector_material_dark 0x0
 +int color abc_background_cache_hint_selector_material_light 0x0
 +int color abc_btn_colored_borderless_text_material 0x0
 +int color abc_btn_colored_text_material 0x0
 +int color abc_color_highlight_material 0x0
++int color abc_decor_view_status_guard 0x0
++int color abc_decor_view_status_guard_light 0x0
 +int color abc_hint_foreground_material_dark 0x0
 +int color abc_hint_foreground_material_light 0x0
-+int color abc_input_method_navigation_guard 0x0
 +int color abc_primary_text_disable_only_material_dark 0x0
 +int color abc_primary_text_disable_only_material_light 0x0
 +int color abc_primary_text_material_dark 0x0
@@ -465,6 +514,8 @@ index 0000000..a8801e1
 +int color abc_tint_switch_track 0x0
 +int color accent_material_dark 0x0
 +int color accent_material_light 0x0
++int color androidx_core_ripple_material_light 0x0
++int color androidx_core_secondary_text_default_material_light 0x0
 +int color background_floating_material_dark 0x0
 +int color background_floating_material_light 0x0
 +int color background_material_dark 0x0
@@ -479,6 +530,17 @@ index 0000000..a8801e1
 +int color button_material_light 0x0
 +int color catalyst_logbox_background 0x0
 +int color catalyst_redbox_background 0x0
++int color common_google_signin_btn_text_dark 0x0
++int color common_google_signin_btn_text_dark_default 0x0
++int color common_google_signin_btn_text_dark_disabled 0x0
++int color common_google_signin_btn_text_dark_focused 0x0
++int color common_google_signin_btn_text_dark_pressed 0x0
++int color common_google_signin_btn_text_light 0x0
++int color common_google_signin_btn_text_light_default 0x0
++int color common_google_signin_btn_text_light_disabled 0x0
++int color common_google_signin_btn_text_light_focused 0x0
++int color common_google_signin_btn_text_light_pressed 0x0
++int color common_google_signin_btn_tint 0x0
 +int color dim_foreground_disabled_material_dark 0x0
 +int color dim_foreground_disabled_material_light 0x0
 +int color dim_foreground_material_dark 0x0
@@ -503,6 +565,7 @@ index 0000000..a8801e1
 +int color material_grey_900 0x0
 +int color notification_action_color_filter 0x0
 +int color notification_icon_bg_color 0x0
++int color notification_material_background_media_default_color 0x0
 +int color primary_dark_material_dark 0x0
 +int color primary_dark_material_light 0x0
 +int color primary_material_dark 0x0
@@ -573,6 +636,9 @@ index 0000000..a8801e1
 +int dimen abc_edit_text_inset_horizontal_material 0x0
 +int dimen abc_edit_text_inset_top_material 0x0
 +int dimen abc_floating_window_z 0x0
++int dimen abc_list_item_height_large_material 0x0
++int dimen abc_list_item_height_material 0x0
++int dimen abc_list_item_height_small_material 0x0
 +int dimen abc_list_item_padding_horizontal_material 0x0
 +int dimen abc_panel_menu_list_width 0x0
 +int dimen abc_progress_bar_height_material 0x0
@@ -581,6 +647,9 @@ index 0000000..a8801e1
 +int dimen abc_seekbar_track_background_height_material 0x0
 +int dimen abc_seekbar_track_progress_height_material 0x0
 +int dimen abc_select_dialog_padding_start_material 0x0
++int dimen abc_star_big 0x0
++int dimen abc_star_medium 0x0
++int dimen abc_star_small 0x0
 +int dimen abc_switch_padding 0x0
 +int dimen abc_text_size_body_1_material 0x0
 +int dimen abc_text_size_body_2_material 0x0
@@ -600,6 +669,7 @@ index 0000000..a8801e1
 +int dimen abc_text_size_subtitle_material_toolbar 0x0
 +int dimen abc_text_size_title_material 0x0
 +int dimen abc_text_size_title_material_toolbar 0x0
++int dimen autofill_inline_suggestion_icon_size 0x0
 +int dimen compat_button_inset_horizontal_material 0x0
 +int dimen compat_button_inset_vertical_material 0x0
 +int dimen compat_button_padding_horizontal_material 0x0
@@ -631,6 +701,10 @@ index 0000000..a8801e1
 +int dimen notification_subtext_size 0x0
 +int dimen notification_top_pad 0x0
 +int dimen notification_top_pad_large_text 0x0
++int dimen subtitle_corner_radius 0x0
++int dimen subtitle_outline_width 0x0
++int dimen subtitle_shadow_offset 0x0
++int dimen subtitle_shadow_radius 0x0
 +int dimen tooltip_corner_radius 0x0
 +int dimen tooltip_horizontal_padding 0x0
 +int dimen tooltip_margin 0x0
@@ -643,11 +717,13 @@ index 0000000..a8801e1
 +int drawable abc_action_bar_item_background_material 0x0
 +int drawable abc_btn_borderless_material 0x0
 +int drawable abc_btn_check_material 0x0
++int drawable abc_btn_check_material_anim 0x0
 +int drawable abc_btn_check_to_on_mtrl_000 0x0
 +int drawable abc_btn_check_to_on_mtrl_015 0x0
 +int drawable abc_btn_colored_material 0x0
 +int drawable abc_btn_default_mtrl_shape 0x0
 +int drawable abc_btn_radio_material 0x0
++int drawable abc_btn_radio_material_anim 0x0
 +int drawable abc_btn_radio_to_on_mtrl_000 0x0
 +int drawable abc_btn_radio_to_on_mtrl_015 0x0
 +int drawable abc_btn_switch_to_on_mtrl_00001 0x0
@@ -670,12 +746,6 @@ index 0000000..a8801e1
 +int drawable abc_ic_menu_selectall_mtrl_alpha 0x0
 +int drawable abc_ic_menu_share_mtrl_alpha 0x0
 +int drawable abc_ic_search_api_material 0x0
-+int drawable abc_ic_star_black_16dp 0x0
-+int drawable abc_ic_star_black_36dp 0x0
-+int drawable abc_ic_star_black_48dp 0x0
-+int drawable abc_ic_star_half_black_16dp 0x0
-+int drawable abc_ic_star_half_black_36dp 0x0
-+int drawable abc_ic_star_half_black_48dp 0x0
 +int drawable abc_ic_voice_search_api_material 0x0
 +int drawable abc_item_background_holo_dark 0x0
 +int drawable abc_item_background_holo_light 0x0
@@ -706,23 +776,60 @@ index 0000000..a8801e1
 +int drawable abc_seekbar_track_material 0x0
 +int drawable abc_spinner_mtrl_am_alpha 0x0
 +int drawable abc_spinner_textfield_background_material 0x0
++int drawable abc_star_black_48dp 0x0
++int drawable abc_star_half_black_48dp 0x0
 +int drawable abc_switch_thumb_material 0x0
 +int drawable abc_switch_track_mtrl_alpha 0x0
 +int drawable abc_tab_indicator_material 0x0
 +int drawable abc_tab_indicator_mtrl_alpha 0x0
 +int drawable abc_text_cursor_material 0x0
-+int drawable abc_text_select_handle_left_mtrl_dark 0x0
-+int drawable abc_text_select_handle_left_mtrl_light 0x0
-+int drawable abc_text_select_handle_middle_mtrl_dark 0x0
-+int drawable abc_text_select_handle_middle_mtrl_light 0x0
-+int drawable abc_text_select_handle_right_mtrl_dark 0x0
-+int drawable abc_text_select_handle_right_mtrl_light 0x0
++int drawable abc_text_select_handle_left_mtrl 0x0
++int drawable abc_text_select_handle_middle_mtrl 0x0
++int drawable abc_text_select_handle_right_mtrl 0x0
 +int drawable abc_textfield_activated_mtrl_alpha 0x0
 +int drawable abc_textfield_default_mtrl_alpha 0x0
 +int drawable abc_textfield_search_activated_mtrl_alpha 0x0
 +int drawable abc_textfield_search_default_mtrl_alpha 0x0
 +int drawable abc_textfield_search_material 0x0
 +int drawable abc_vector_test 0x0
++int drawable autofill_inline_suggestion_chip_background 0x0
++int drawable btn_checkbox_checked_mtrl 0x0
++int drawable btn_checkbox_checked_to_unchecked_mtrl_animation 0x0
++int drawable btn_checkbox_unchecked_mtrl 0x0
++int drawable btn_checkbox_unchecked_to_checked_mtrl_animation 0x0
++int drawable btn_radio_off_mtrl 0x0
++int drawable btn_radio_off_to_on_mtrl_animation 0x0
++int drawable btn_radio_on_mtrl 0x0
++int drawable btn_radio_on_to_off_mtrl_animation 0x0
++int drawable common_full_open_on_phone 0x0
++int drawable common_google_signin_btn_icon_dark 0x0
++int drawable common_google_signin_btn_icon_dark_disabled 0x0
++int drawable common_google_signin_btn_icon_dark_focused 0x0
++int drawable common_google_signin_btn_icon_dark_normal 0x0
++int drawable common_google_signin_btn_icon_dark_normal_background 0x0
++int drawable common_google_signin_btn_icon_dark_pressed 0x0
++int drawable common_google_signin_btn_icon_disabled 0x0
++int drawable common_google_signin_btn_icon_light 0x0
++int drawable common_google_signin_btn_icon_light_disabled 0x0
++int drawable common_google_signin_btn_icon_light_focused 0x0
++int drawable common_google_signin_btn_icon_light_normal 0x0
++int drawable common_google_signin_btn_icon_light_normal_background 0x0
++int drawable common_google_signin_btn_icon_light_pressed 0x0
++int drawable common_google_signin_btn_text_dark 0x0
++int drawable common_google_signin_btn_text_dark_disabled 0x0
++int drawable common_google_signin_btn_text_dark_focused 0x0
++int drawable common_google_signin_btn_text_dark_normal 0x0
++int drawable common_google_signin_btn_text_dark_normal_background 0x0
++int drawable common_google_signin_btn_text_dark_pressed 0x0
++int drawable common_google_signin_btn_text_disabled 0x0
++int drawable common_google_signin_btn_text_light 0x0
++int drawable common_google_signin_btn_text_light_disabled 0x0
++int drawable common_google_signin_btn_text_light_focused 0x0
++int drawable common_google_signin_btn_text_light_normal 0x0
++int drawable common_google_signin_btn_text_light_normal_background 0x0
++int drawable common_google_signin_btn_text_light_pressed 0x0
++int drawable googleg_disabled_color_18 0x0
++int drawable googleg_standard_color_18 0x0
 +int drawable notification_action_background 0x0
 +int drawable notification_bg 0x0
 +int drawable notification_bg_low 0x0
@@ -736,14 +843,52 @@ index 0000000..a8801e1
 +int drawable notification_tile_bg 0x0
 +int drawable notify_panel_notification_icon_bg 0x0
 +int drawable redbox_top_border_background 0x0
++int drawable test_level_drawable 0x0
 +int drawable tooltip_frame_dark 0x0
 +int drawable tooltip_frame_light 0x0
++int id accessibility_action_clickable_span 0x0
 +int id accessibility_actions 0x0
++int id accessibility_collection 0x0
++int id accessibility_collection_item 0x0
++int id accessibility_custom_action_0 0x0
++int id accessibility_custom_action_1 0x0
++int id accessibility_custom_action_10 0x0
++int id accessibility_custom_action_11 0x0
++int id accessibility_custom_action_12 0x0
++int id accessibility_custom_action_13 0x0
++int id accessibility_custom_action_14 0x0
++int id accessibility_custom_action_15 0x0
++int id accessibility_custom_action_16 0x0
++int id accessibility_custom_action_17 0x0
++int id accessibility_custom_action_18 0x0
++int id accessibility_custom_action_19 0x0
++int id accessibility_custom_action_2 0x0
++int id accessibility_custom_action_20 0x0
++int id accessibility_custom_action_21 0x0
++int id accessibility_custom_action_22 0x0
++int id accessibility_custom_action_23 0x0
++int id accessibility_custom_action_24 0x0
++int id accessibility_custom_action_25 0x0
++int id accessibility_custom_action_26 0x0
++int id accessibility_custom_action_27 0x0
++int id accessibility_custom_action_28 0x0
++int id accessibility_custom_action_29 0x0
++int id accessibility_custom_action_3 0x0
++int id accessibility_custom_action_30 0x0
++int id accessibility_custom_action_31 0x0
++int id accessibility_custom_action_4 0x0
++int id accessibility_custom_action_5 0x0
++int id accessibility_custom_action_6 0x0
++int id accessibility_custom_action_7 0x0
++int id accessibility_custom_action_8 0x0
++int id accessibility_custom_action_9 0x0
 +int id accessibility_hint 0x0
 +int id accessibility_label 0x0
++int id accessibility_links 0x0
 +int id accessibility_role 0x0
 +int id accessibility_state 0x0
 +int id accessibility_value 0x0
++int id action0 0x0
 +int id action_bar 0x0
 +int id action_bar_activity_content 0x0
 +int id action_bar_container 0x0
@@ -764,25 +909,37 @@ index 0000000..a8801e1
 +int id actions 0x0
 +int id activity_chooser_view_content 0x0
 +int id add 0x0
++int id adjust_height 0x0
++int id adjust_width 0x0
 +int id alertTitle 0x0
 +int id async 0x0
++int id auto 0x0
++int id autofill_inline_suggestion_end_icon 0x0
++int id autofill_inline_suggestion_start_icon 0x0
++int id autofill_inline_suggestion_subtitle 0x0
++int id autofill_inline_suggestion_title 0x0
 +int id blocking 0x0
 +int id bottom 0x0
 +int id buttonPanel 0x0
++int id cancel_action 0x0
 +int id catalyst_redbox_title 0x0
 +int id center 0x0
 +int id centerCrop 0x0
 +int id centerInside 0x0
 +int id checkbox 0x0
++int id checked 0x0
 +int id chronometer 0x0
 +int id content 0x0
 +int id contentPanel 0x0
 +int id custom 0x0
 +int id customPanel 0x0
++int id dark 0x0
 +int id decor_content_parent 0x0
 +int id default_activity_button 0x0
++int id dialog_button 0x0
 +int id edit_query 0x0
 +int id end 0x0
++int id end_padder 0x0
 +int id expand_activities_button 0x0
 +int id expanded_menu 0x0
 +int id fitBottomStart 0x0
@@ -793,18 +950,27 @@ index 0000000..a8801e1
 +int id focusCrop 0x0
 +int id forever 0x0
 +int id fps_text 0x0
++int id fragment_container_view_tag 0x0
 +int id group_divider 0x0
 +int id home 0x0
 +int id icon 0x0
 +int id icon_group 0x0
++int id icon_only 0x0
 +int id image 0x0
 +int id info 0x0
 +int id italic 0x0
++int id item1 0x0
++int id item2 0x0
++int id item3 0x0
++int id item4 0x0
++int id labelled_by 0x0
 +int id left 0x0
++int id light 0x0
 +int id line1 0x0
 +int id line3 0x0
 +int id listMode 0x0
 +int id list_item 0x0
++int id media_actions 0x0
 +int id message 0x0
 +int id multiply 0x0
 +int id none 0x0
@@ -812,7 +978,15 @@ index 0000000..a8801e1
 +int id notification_background 0x0
 +int id notification_main_column 0x0
 +int id notification_main_column_container 0x0
++int id off 0x0
++int id on 0x0
 +int id parentPanel 0x0
++int id pointer_enter 0x0
++int id pointer_enter_capture 0x0
++int id pointer_leave 0x0
++int id pointer_leave_capture 0x0
++int id pointer_move 0x0
++int id pointer_move_capture 0x0
 +int id progress_circular 0x0
 +int id progress_horizontal 0x0
 +int id radio 0x0
@@ -846,17 +1020,30 @@ index 0000000..a8801e1
 +int id select_dialog_listview 0x0
 +int id shortcut 0x0
 +int id spacer 0x0
++int id special_effects_controller_view_tag 0x0
 +int id split_action_bar 0x0
 +int id src_atop 0x0
 +int id src_in 0x0
 +int id src_over 0x0
++int id standard 0x0
 +int id start 0x0
++int id status_bar_latest_event_content 0x0
 +int id submenuarrow 0x0
 +int id submit_area 0x0
 +int id tabMode 0x0
++int id tag_accessibility_actions 0x0
++int id tag_accessibility_clickable_spans 0x0
++int id tag_accessibility_heading 0x0
++int id tag_accessibility_pane_title 0x0
++int id tag_on_apply_window_listener 0x0
++int id tag_on_receive_content_listener 0x0
++int id tag_on_receive_content_mime_types 0x0
++int id tag_screen_reader_focusable 0x0
++int id tag_state_description 0x0
 +int id tag_transition_group 0x0
 +int id tag_unhandled_key_event_manager 0x0
 +int id tag_unhandled_key_listeners 0x0
++int id tag_window_insets_animation_callback 0x0
 +int id text 0x0
 +int id text2 0x0
 +int id textSpacerNoButtons 0x0
@@ -867,18 +1054,32 @@ index 0000000..a8801e1
 +int id title_template 0x0
 +int id top 0x0
 +int id topPanel 0x0
++int id unchecked 0x0
 +int id uniform 0x0
 +int id up 0x0
 +int id view_tag_instance_handle 0x0
 +int id view_tag_native_id 0x0
++int id view_tree_lifecycle_owner 0x0
++int id view_tree_saved_state_registry_owner 0x0
++int id view_tree_view_model_store_owner 0x0
++int id visible_removing_fragment_view_tag 0x0
++int id wide 0x0
 +int id wrap_content 0x0
 +int integer abc_config_activityDefaultDur 0x0
 +int integer abc_config_activityShortDur 0x0
 +int integer cancel_button_image_alpha 0x0
 +int integer config_tooltipAnimTime 0x0
++int integer google_play_services_version 0x0
 +int integer react_native_dev_server_port 0x0
 +int integer react_native_inspector_proxy_port 0x0
 +int integer status_bar_notification_info_maxnum 0x0
++int interpolator btn_checkbox_checked_mtrl_animation_interpolator_0 0x0
++int interpolator btn_checkbox_checked_mtrl_animation_interpolator_1 0x0
++int interpolator btn_checkbox_unchecked_mtrl_animation_interpolator_0 0x0
++int interpolator btn_checkbox_unchecked_mtrl_animation_interpolator_1 0x0
++int interpolator btn_radio_to_off_mtrl_animation_interpolator_0 0x0
++int interpolator btn_radio_to_on_mtrl_animation_interpolator_0 0x0
++int interpolator fast_out_slow_in 0x0
 +int layout abc_action_bar_title_item 0x0
 +int layout abc_action_bar_up_container 0x0
 +int layout abc_action_menu_item_layout 0x0
@@ -907,12 +1108,23 @@ index 0000000..a8801e1
 +int layout abc_search_view 0x0
 +int layout abc_select_dialog_material 0x0
 +int layout abc_tooltip 0x0
++int layout autofill_inline_suggestion 0x0
++int layout custom_dialog 0x0
 +int layout dev_loading_view 0x0
 +int layout fps_view 0x0
 +int layout notification_action 0x0
 +int layout notification_action_tombstone 0x0
++int layout notification_media_action 0x0
++int layout notification_media_cancel_action 0x0
++int layout notification_template_big_media 0x0
++int layout notification_template_big_media_custom 0x0
++int layout notification_template_big_media_narrow 0x0
++int layout notification_template_big_media_narrow_custom 0x0
 +int layout notification_template_custom_big 0x0
 +int layout notification_template_icon_group 0x0
++int layout notification_template_lines_media 0x0
++int layout notification_template_media 0x0
++int layout notification_template_media_custom 0x0
 +int layout notification_template_part_chronometer 0x0
 +int layout notification_template_part_time 0x0
 +int layout redbox_item_frame 0x0
@@ -922,6 +1134,8 @@ index 0000000..a8801e1
 +int layout select_dialog_multichoice_material 0x0
 +int layout select_dialog_singlechoice_material 0x0
 +int layout support_simple_spinner_dropdown_item 0x0
++int menu example_menu 0x0
++int menu example_menu2 0x0
 +int string abc_action_bar_home_description 0x0
 +int string abc_action_bar_up_description 0x0
 +int string abc_action_menu_overflow_description 0x0
@@ -930,18 +1144,6 @@ index 0000000..a8801e1
 +int string abc_activitychooserview_choose_application 0x0
 +int string abc_capital_off 0x0
 +int string abc_capital_on 0x0
-+int string abc_font_family_body_1_material 0x0
-+int string abc_font_family_body_2_material 0x0
-+int string abc_font_family_button_material 0x0
-+int string abc_font_family_caption_material 0x0
-+int string abc_font_family_display_1_material 0x0
-+int string abc_font_family_display_2_material 0x0
-+int string abc_font_family_display_3_material 0x0
-+int string abc_font_family_display_4_material 0x0
-+int string abc_font_family_headline_material 0x0
-+int string abc_font_family_menu_material 0x0
-+int string abc_font_family_subhead_material 0x0
-+int string abc_font_family_title_material 0x0
 +int string abc_menu_alt_shortcut_label 0x0
 +int string abc_menu_ctrl_shortcut_label 0x0
 +int string abc_menu_delete_shortcut_label 0x0
@@ -962,7 +1164,6 @@ index 0000000..a8801e1
 +int string abc_shareactionprovider_share_with_application 0x0
 +int string abc_toolbar_collapse_description 0x0
 +int string alert_description 0x0
-+int string button_description 0x0
 +int string catalyst_change_bundle_location 0x0
 +int string catalyst_copy_button 0x0
 +int string catalyst_debug 0x0
@@ -980,6 +1181,7 @@ index 0000000..a8801e1
 +int string catalyst_hot_reloading_auto_enable 0x0
 +int string catalyst_hot_reloading_stop 0x0
 +int string catalyst_inspector 0x0
++int string catalyst_inspector_stop 0x0
 +int string catalyst_loading_from_url 0x0
 +int string catalyst_open_flipper_error 0x0
 +int string catalyst_perf_monitor 0x0
@@ -993,6 +1195,24 @@ index 0000000..a8801e1
 +int string catalyst_settings 0x0
 +int string catalyst_settings_title 0x0
 +int string combobox_description 0x0
++int string common_google_play_services_enable_button 0x0
++int string common_google_play_services_enable_text 0x0
++int string common_google_play_services_enable_title 0x0
++int string common_google_play_services_install_button 0x0
++int string common_google_play_services_install_text 0x0
++int string common_google_play_services_install_title 0x0
++int string common_google_play_services_notification_channel_name 0x0
++int string common_google_play_services_notification_ticker 0x0
++int string common_google_play_services_unknown_issue 0x0
++int string common_google_play_services_unsupported_text 0x0
++int string common_google_play_services_update_button 0x0
++int string common_google_play_services_update_text 0x0
++int string common_google_play_services_update_title 0x0
++int string common_google_play_services_updating_text 0x0
++int string common_google_play_services_wear_update_text 0x0
++int string common_open_on_phone 0x0
++int string common_signin_button_text 0x0
++int string common_signin_button_text_long 0x0
 +int string header_description 0x0
 +int string image_description 0x0
 +int string imagebutton_description 0x0
@@ -1004,7 +1224,6 @@ index 0000000..a8801e1
 +int string radiogroup_description 0x0
 +int string rn_tab_description 0x0
 +int string scrollbar_description 0x0
-+int string search_description 0x0
 +int string search_menu_title 0x0
 +int string spinbutton_description 0x0
 +int string state_busy_description 0x0
@@ -1013,6 +1232,7 @@ index 0000000..a8801e1
 +int string state_mixed_description 0x0
 +int string state_off_description 0x0
 +int string state_on_description 0x0
++int string state_unselected_description 0x0
 +int string status_bar_notification_info_overflow 0x0
 +int string summary_description 0x0
 +int string tablist_description 0x0
@@ -1177,6 +1397,7 @@ index 0000000..a8801e1
 +int style Base_Widget_AppCompat_SeekBar_Discrete 0x0
 +int style Base_Widget_AppCompat_Spinner 0x0
 +int style Base_Widget_AppCompat_Spinner_Underlined 0x0
++int style Base_Widget_AppCompat_TextView 0x0
 +int style Base_Widget_AppCompat_TextView_SpinnerItem 0x0
 +int style Base_Widget_AppCompat_Toolbar 0x0
 +int style Base_Widget_AppCompat_Toolbar_Button_Navigation 0x0
@@ -1263,9 +1484,14 @@ index 0000000..a8801e1
 +int style TextAppearance_AppCompat_Widget_TextView_SpinnerItem 0x0
 +int style TextAppearance_Compat_Notification 0x0
 +int style TextAppearance_Compat_Notification_Info 0x0
++int style TextAppearance_Compat_Notification_Info_Media 0x0
 +int style TextAppearance_Compat_Notification_Line2 0x0
++int style TextAppearance_Compat_Notification_Line2_Media 0x0
++int style TextAppearance_Compat_Notification_Media 0x0
 +int style TextAppearance_Compat_Notification_Time 0x0
++int style TextAppearance_Compat_Notification_Time_Media 0x0
 +int style TextAppearance_Compat_Notification_Title 0x0
++int style TextAppearance_Compat_Notification_Title_Media 0x0
 +int style TextAppearance_Widget_AppCompat_ExpandedMenu_Item 0x0
 +int style TextAppearance_Widget_AppCompat_Toolbar_Subtitle 0x0
 +int style TextAppearance_Widget_AppCompat_Toolbar_Title 0x0
@@ -1274,6 +1500,8 @@ index 0000000..a8801e1
 +int style ThemeOverlay_AppCompat_ActionBar 0x0
 +int style ThemeOverlay_AppCompat_Dark 0x0
 +int style ThemeOverlay_AppCompat_Dark_ActionBar 0x0
++int style ThemeOverlay_AppCompat_DayNight 0x0
++int style ThemeOverlay_AppCompat_DayNight_ActionBar 0x0
 +int style ThemeOverlay_AppCompat_Dialog 0x0
 +int style ThemeOverlay_AppCompat_Dialog_Alert 0x0
 +int style ThemeOverlay_AppCompat_Light 0x0
@@ -1290,6 +1518,7 @@ index 0000000..a8801e1
 +int style Theme_AppCompat_DialogWhenLarge 0x0
 +int style Theme_AppCompat_Dialog_Alert 0x0
 +int style Theme_AppCompat_Dialog_MinWidth 0x0
++int style Theme_AppCompat_Empty 0x0
 +int style Theme_AppCompat_Light 0x0
 +int style Theme_AppCompat_Light_DarkActionBar 0x0
 +int style Theme_AppCompat_Light_Dialog 0x0
@@ -1298,6 +1527,7 @@ index 0000000..a8801e1
 +int style Theme_AppCompat_Light_Dialog_MinWidth 0x0
 +int style Theme_AppCompat_Light_NoActionBar 0x0
 +int style Theme_AppCompat_NoActionBar 0x0
++int style Theme_AutofillInlineSuggestion 0x0
 +int style Theme_Catalyst 0x0
 +int style Theme_Catalyst_LogBox 0x0
 +int style Theme_Catalyst_RedBox 0x0
@@ -1375,9 +1605,16 @@ index 0000000..a8801e1
 +int style Widget_AppCompat_Spinner_DropDown 0x0
 +int style Widget_AppCompat_Spinner_DropDown_ActionBar 0x0
 +int style Widget_AppCompat_Spinner_Underlined 0x0
++int style Widget_AppCompat_TextView 0x0
 +int style Widget_AppCompat_TextView_SpinnerItem 0x0
 +int style Widget_AppCompat_Toolbar 0x0
 +int style Widget_AppCompat_Toolbar_Button_Navigation 0x0
++int style Widget_Autofill 0x0
++int style Widget_Autofill_InlineSuggestionChip 0x0
++int style Widget_Autofill_InlineSuggestionEndIconStyle 0x0
++int style Widget_Autofill_InlineSuggestionStartIconStyle 0x0
++int style Widget_Autofill_InlineSuggestionSubtitle 0x0
++int style Widget_Autofill_InlineSuggestionTitle 0x0
 +int style Widget_Compat_NotificationActionContainer 0x0
 +int style Widget_Compat_NotificationActionText 0x0
 +int style Widget_Support_CoordinatorLayout 0x0
@@ -1451,6 +1688,7 @@ index 0000000..a8801e1
 +int styleable AnimatedStateListDrawableTransition_android_fromId 1
 +int styleable AnimatedStateListDrawableTransition_android_reversible 2
 +int styleable AnimatedStateListDrawableTransition_android_toId 3
++int[] styleable AppCompatEmojiHelper {  }
 +int[] styleable AppCompatImageView { 0x1010119, 0x0, 0x0, 0x0 }
 +int styleable AppCompatImageView_android_src 0
 +int styleable AppCompatImageView_srcCompat 1
@@ -1469,19 +1707,30 @@ index 0000000..a8801e1
 +int styleable AppCompatTextHelper_android_drawableStart 4
 +int styleable AppCompatTextHelper_android_drawableTop 5
 +int styleable AppCompatTextHelper_android_textAppearance 6
-+int[] styleable AppCompatTextView { 0x1010034, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
++int[] styleable AppCompatTextView { 0x1010034, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable AppCompatTextView_android_textAppearance 0
 +int styleable AppCompatTextView_autoSizeMaxTextSize 1
 +int styleable AppCompatTextView_autoSizeMinTextSize 2
 +int styleable AppCompatTextView_autoSizePresetSizes 3
 +int styleable AppCompatTextView_autoSizeStepGranularity 4
 +int styleable AppCompatTextView_autoSizeTextType 5
-+int styleable AppCompatTextView_firstBaselineToTopHeight 6
-+int styleable AppCompatTextView_fontFamily 7
-+int styleable AppCompatTextView_lastBaselineToBottomHeight 8
-+int styleable AppCompatTextView_lineHeight 9
-+int styleable AppCompatTextView_textAllCaps 10
-+int[] styleable AppCompatTheme { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x10100ae, 0x1010057, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
++int styleable AppCompatTextView_drawableBottomCompat 6
++int styleable AppCompatTextView_drawableEndCompat 7
++int styleable AppCompatTextView_drawableLeftCompat 8
++int styleable AppCompatTextView_drawableRightCompat 9
++int styleable AppCompatTextView_drawableStartCompat 10
++int styleable AppCompatTextView_drawableTint 11
++int styleable AppCompatTextView_drawableTintMode 12
++int styleable AppCompatTextView_drawableTopCompat 13
++int styleable AppCompatTextView_emojiCompatEnabled 14
++int styleable AppCompatTextView_firstBaselineToTopHeight 15
++int styleable AppCompatTextView_fontFamily 16
++int styleable AppCompatTextView_fontVariationSettings 17
++int styleable AppCompatTextView_lastBaselineToBottomHeight 18
++int styleable AppCompatTextView_lineHeight 19
++int styleable AppCompatTextView_textAllCaps 20
++int styleable AppCompatTextView_textLocale 21
++int[] styleable AppCompatTheme { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x10100ae, 0x1010057, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable AppCompatTheme_actionBarDivider 0
 +int styleable AppCompatTheme_actionBarItemBackground 1
 +int styleable AppCompatTheme_actionBarPopupTheme 2
@@ -1499,120 +1748,144 @@ index 0000000..a8801e1
 +int styleable AppCompatTheme_actionMenuTextColor 14
 +int styleable AppCompatTheme_actionModeBackground 15
 +int styleable AppCompatTheme_actionModeCloseButtonStyle 16
-+int styleable AppCompatTheme_actionModeCloseDrawable 17
-+int styleable AppCompatTheme_actionModeCopyDrawable 18
-+int styleable AppCompatTheme_actionModeCutDrawable 19
-+int styleable AppCompatTheme_actionModeFindDrawable 20
-+int styleable AppCompatTheme_actionModePasteDrawable 21
-+int styleable AppCompatTheme_actionModePopupWindowStyle 22
-+int styleable AppCompatTheme_actionModeSelectAllDrawable 23
-+int styleable AppCompatTheme_actionModeShareDrawable 24
-+int styleable AppCompatTheme_actionModeSplitBackground 25
-+int styleable AppCompatTheme_actionModeStyle 26
-+int styleable AppCompatTheme_actionModeWebSearchDrawable 27
-+int styleable AppCompatTheme_actionOverflowButtonStyle 28
-+int styleable AppCompatTheme_actionOverflowMenuStyle 29
-+int styleable AppCompatTheme_activityChooserViewStyle 30
-+int styleable AppCompatTheme_alertDialogButtonGroupStyle 31
-+int styleable AppCompatTheme_alertDialogCenterButtons 32
-+int styleable AppCompatTheme_alertDialogStyle 33
-+int styleable AppCompatTheme_alertDialogTheme 34
-+int styleable AppCompatTheme_android_windowAnimationStyle 35
-+int styleable AppCompatTheme_android_windowIsFloating 36
-+int styleable AppCompatTheme_autoCompleteTextViewStyle 37
-+int styleable AppCompatTheme_borderlessButtonStyle 38
-+int styleable AppCompatTheme_buttonBarButtonStyle 39
-+int styleable AppCompatTheme_buttonBarNegativeButtonStyle 40
-+int styleable AppCompatTheme_buttonBarNeutralButtonStyle 41
-+int styleable AppCompatTheme_buttonBarPositiveButtonStyle 42
-+int styleable AppCompatTheme_buttonBarStyle 43
-+int styleable AppCompatTheme_buttonStyle 44
-+int styleable AppCompatTheme_buttonStyleSmall 45
-+int styleable AppCompatTheme_checkboxStyle 46
-+int styleable AppCompatTheme_checkedTextViewStyle 47
-+int styleable AppCompatTheme_colorAccent 48
-+int styleable AppCompatTheme_colorBackgroundFloating 49
-+int styleable AppCompatTheme_colorButtonNormal 50
-+int styleable AppCompatTheme_colorControlActivated 51
-+int styleable AppCompatTheme_colorControlHighlight 52
-+int styleable AppCompatTheme_colorControlNormal 53
-+int styleable AppCompatTheme_colorError 54
-+int styleable AppCompatTheme_colorPrimary 55
-+int styleable AppCompatTheme_colorPrimaryDark 56
-+int styleable AppCompatTheme_colorSwitchThumbNormal 57
-+int styleable AppCompatTheme_controlBackground 58
-+int styleable AppCompatTheme_dialogCornerRadius 59
-+int styleable AppCompatTheme_dialogPreferredPadding 60
-+int styleable AppCompatTheme_dialogTheme 61
-+int styleable AppCompatTheme_dividerHorizontal 62
-+int styleable AppCompatTheme_dividerVertical 63
-+int styleable AppCompatTheme_dropDownListViewStyle 64
-+int styleable AppCompatTheme_dropdownListPreferredItemHeight 65
-+int styleable AppCompatTheme_editTextBackground 66
-+int styleable AppCompatTheme_editTextColor 67
-+int styleable AppCompatTheme_editTextStyle 68
-+int styleable AppCompatTheme_homeAsUpIndicator 69
-+int styleable AppCompatTheme_imageButtonStyle 70
-+int styleable AppCompatTheme_listChoiceBackgroundIndicator 71
-+int styleable AppCompatTheme_listDividerAlertDialog 72
-+int styleable AppCompatTheme_listMenuViewStyle 73
-+int styleable AppCompatTheme_listPopupWindowStyle 74
-+int styleable AppCompatTheme_listPreferredItemHeight 75
-+int styleable AppCompatTheme_listPreferredItemHeightLarge 76
-+int styleable AppCompatTheme_listPreferredItemHeightSmall 77
-+int styleable AppCompatTheme_listPreferredItemPaddingLeft 78
-+int styleable AppCompatTheme_listPreferredItemPaddingRight 79
-+int styleable AppCompatTheme_panelBackground 80
-+int styleable AppCompatTheme_panelMenuListTheme 81
-+int styleable AppCompatTheme_panelMenuListWidth 82
-+int styleable AppCompatTheme_popupMenuStyle 83
-+int styleable AppCompatTheme_popupWindowStyle 84
-+int styleable AppCompatTheme_radioButtonStyle 85
-+int styleable AppCompatTheme_ratingBarStyle 86
-+int styleable AppCompatTheme_ratingBarStyleIndicator 87
-+int styleable AppCompatTheme_ratingBarStyleSmall 88
-+int styleable AppCompatTheme_searchViewStyle 89
-+int styleable AppCompatTheme_seekBarStyle 90
-+int styleable AppCompatTheme_selectableItemBackground 91
-+int styleable AppCompatTheme_selectableItemBackgroundBorderless 92
-+int styleable AppCompatTheme_spinnerDropDownItemStyle 93
-+int styleable AppCompatTheme_spinnerStyle 94
-+int styleable AppCompatTheme_switchStyle 95
-+int styleable AppCompatTheme_textAppearanceLargePopupMenu 96
-+int styleable AppCompatTheme_textAppearanceListItem 97
-+int styleable AppCompatTheme_textAppearanceListItemSecondary 98
-+int styleable AppCompatTheme_textAppearanceListItemSmall 99
-+int styleable AppCompatTheme_textAppearancePopupMenuHeader 100
-+int styleable AppCompatTheme_textAppearanceSearchResultSubtitle 101
-+int styleable AppCompatTheme_textAppearanceSearchResultTitle 102
-+int styleable AppCompatTheme_textAppearanceSmallPopupMenu 103
-+int styleable AppCompatTheme_textColorAlertDialogListItem 104
-+int styleable AppCompatTheme_textColorSearchUrl 105
-+int styleable AppCompatTheme_toolbarNavigationButtonStyle 106
-+int styleable AppCompatTheme_toolbarStyle 107
-+int styleable AppCompatTheme_tooltipForegroundColor 108
-+int styleable AppCompatTheme_tooltipFrameBackground 109
-+int styleable AppCompatTheme_viewInflaterClass 110
-+int styleable AppCompatTheme_windowActionBar 111
-+int styleable AppCompatTheme_windowActionBarOverlay 112
-+int styleable AppCompatTheme_windowActionModeOverlay 113
-+int styleable AppCompatTheme_windowFixedHeightMajor 114
-+int styleable AppCompatTheme_windowFixedHeightMinor 115
-+int styleable AppCompatTheme_windowFixedWidthMajor 116
-+int styleable AppCompatTheme_windowFixedWidthMinor 117
-+int styleable AppCompatTheme_windowMinWidthMajor 118
-+int styleable AppCompatTheme_windowMinWidthMinor 119
-+int styleable AppCompatTheme_windowNoTitle 120
++int styleable AppCompatTheme_actionModeCloseContentDescription 17
++int styleable AppCompatTheme_actionModeCloseDrawable 18
++int styleable AppCompatTheme_actionModeCopyDrawable 19
++int styleable AppCompatTheme_actionModeCutDrawable 20
++int styleable AppCompatTheme_actionModeFindDrawable 21
++int styleable AppCompatTheme_actionModePasteDrawable 22
++int styleable AppCompatTheme_actionModePopupWindowStyle 23
++int styleable AppCompatTheme_actionModeSelectAllDrawable 24
++int styleable AppCompatTheme_actionModeShareDrawable 25
++int styleable AppCompatTheme_actionModeSplitBackground 26
++int styleable AppCompatTheme_actionModeStyle 27
++int styleable AppCompatTheme_actionModeTheme 28
++int styleable AppCompatTheme_actionModeWebSearchDrawable 29
++int styleable AppCompatTheme_actionOverflowButtonStyle 30
++int styleable AppCompatTheme_actionOverflowMenuStyle 31
++int styleable AppCompatTheme_activityChooserViewStyle 32
++int styleable AppCompatTheme_alertDialogButtonGroupStyle 33
++int styleable AppCompatTheme_alertDialogCenterButtons 34
++int styleable AppCompatTheme_alertDialogStyle 35
++int styleable AppCompatTheme_alertDialogTheme 36
++int styleable AppCompatTheme_android_windowAnimationStyle 37
++int styleable AppCompatTheme_android_windowIsFloating 38
++int styleable AppCompatTheme_autoCompleteTextViewStyle 39
++int styleable AppCompatTheme_borderlessButtonStyle 40
++int styleable AppCompatTheme_buttonBarButtonStyle 41
++int styleable AppCompatTheme_buttonBarNegativeButtonStyle 42
++int styleable AppCompatTheme_buttonBarNeutralButtonStyle 43
++int styleable AppCompatTheme_buttonBarPositiveButtonStyle 44
++int styleable AppCompatTheme_buttonBarStyle 45
++int styleable AppCompatTheme_buttonStyle 46
++int styleable AppCompatTheme_buttonStyleSmall 47
++int styleable AppCompatTheme_checkboxStyle 48
++int styleable AppCompatTheme_checkedTextViewStyle 49
++int styleable AppCompatTheme_colorAccent 50
++int styleable AppCompatTheme_colorBackgroundFloating 51
++int styleable AppCompatTheme_colorButtonNormal 52
++int styleable AppCompatTheme_colorControlActivated 53
++int styleable AppCompatTheme_colorControlHighlight 54
++int styleable AppCompatTheme_colorControlNormal 55
++int styleable AppCompatTheme_colorError 56
++int styleable AppCompatTheme_colorPrimary 57
++int styleable AppCompatTheme_colorPrimaryDark 58
++int styleable AppCompatTheme_colorSwitchThumbNormal 59
++int styleable AppCompatTheme_controlBackground 60
++int styleable AppCompatTheme_dialogCornerRadius 61
++int styleable AppCompatTheme_dialogPreferredPadding 62
++int styleable AppCompatTheme_dialogTheme 63
++int styleable AppCompatTheme_dividerHorizontal 64
++int styleable AppCompatTheme_dividerVertical 65
++int styleable AppCompatTheme_dropDownListViewStyle 66
++int styleable AppCompatTheme_dropdownListPreferredItemHeight 67
++int styleable AppCompatTheme_editTextBackground 68
++int styleable AppCompatTheme_editTextColor 69
++int styleable AppCompatTheme_editTextStyle 70
++int styleable AppCompatTheme_homeAsUpIndicator 71
++int styleable AppCompatTheme_imageButtonStyle 72
++int styleable AppCompatTheme_listChoiceBackgroundIndicator 73
++int styleable AppCompatTheme_listChoiceIndicatorMultipleAnimated 74
++int styleable AppCompatTheme_listChoiceIndicatorSingleAnimated 75
++int styleable AppCompatTheme_listDividerAlertDialog 76
++int styleable AppCompatTheme_listMenuViewStyle 77
++int styleable AppCompatTheme_listPopupWindowStyle 78
++int styleable AppCompatTheme_listPreferredItemHeight 79
++int styleable AppCompatTheme_listPreferredItemHeightLarge 80
++int styleable AppCompatTheme_listPreferredItemHeightSmall 81
++int styleable AppCompatTheme_listPreferredItemPaddingEnd 82
++int styleable AppCompatTheme_listPreferredItemPaddingLeft 83
++int styleable AppCompatTheme_listPreferredItemPaddingRight 84
++int styleable AppCompatTheme_listPreferredItemPaddingStart 85
++int styleable AppCompatTheme_panelBackground 86
++int styleable AppCompatTheme_panelMenuListTheme 87
++int styleable AppCompatTheme_panelMenuListWidth 88
++int styleable AppCompatTheme_popupMenuStyle 89
++int styleable AppCompatTheme_popupWindowStyle 90
++int styleable AppCompatTheme_radioButtonStyle 91
++int styleable AppCompatTheme_ratingBarStyle 92
++int styleable AppCompatTheme_ratingBarStyleIndicator 93
++int styleable AppCompatTheme_ratingBarStyleSmall 94
++int styleable AppCompatTheme_searchViewStyle 95
++int styleable AppCompatTheme_seekBarStyle 96
++int styleable AppCompatTheme_selectableItemBackground 97
++int styleable AppCompatTheme_selectableItemBackgroundBorderless 98
++int styleable AppCompatTheme_spinnerDropDownItemStyle 99
++int styleable AppCompatTheme_spinnerStyle 100
++int styleable AppCompatTheme_switchStyle 101
++int styleable AppCompatTheme_textAppearanceLargePopupMenu 102
++int styleable AppCompatTheme_textAppearanceListItem 103
++int styleable AppCompatTheme_textAppearanceListItemSecondary 104
++int styleable AppCompatTheme_textAppearanceListItemSmall 105
++int styleable AppCompatTheme_textAppearancePopupMenuHeader 106
++int styleable AppCompatTheme_textAppearanceSearchResultSubtitle 107
++int styleable AppCompatTheme_textAppearanceSearchResultTitle 108
++int styleable AppCompatTheme_textAppearanceSmallPopupMenu 109
++int styleable AppCompatTheme_textColorAlertDialogListItem 110
++int styleable AppCompatTheme_textColorSearchUrl 111
++int styleable AppCompatTheme_toolbarNavigationButtonStyle 112
++int styleable AppCompatTheme_toolbarStyle 113
++int styleable AppCompatTheme_tooltipForegroundColor 114
++int styleable AppCompatTheme_tooltipFrameBackground 115
++int styleable AppCompatTheme_viewInflaterClass 116
++int styleable AppCompatTheme_windowActionBar 117
++int styleable AppCompatTheme_windowActionBarOverlay 118
++int styleable AppCompatTheme_windowActionModeOverlay 119
++int styleable AppCompatTheme_windowFixedHeightMajor 120
++int styleable AppCompatTheme_windowFixedHeightMinor 121
++int styleable AppCompatTheme_windowFixedWidthMajor 122
++int styleable AppCompatTheme_windowFixedWidthMinor 123
++int styleable AppCompatTheme_windowMinWidthMajor 124
++int styleable AppCompatTheme_windowMinWidthMinor 125
++int styleable AppCompatTheme_windowNoTitle 126
++int[] styleable Autofill_InlineSuggestion { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
++int styleable Autofill_InlineSuggestion_autofillInlineSuggestionChip 0
++int styleable Autofill_InlineSuggestion_autofillInlineSuggestionEndIconStyle 1
++int styleable Autofill_InlineSuggestion_autofillInlineSuggestionStartIconStyle 2
++int styleable Autofill_InlineSuggestion_autofillInlineSuggestionSubtitle 3
++int styleable Autofill_InlineSuggestion_autofillInlineSuggestionTitle 4
++int styleable Autofill_InlineSuggestion_isAutofillInlineSuggestionTheme 5
 +int[] styleable ButtonBarLayout { 0x0 }
 +int styleable ButtonBarLayout_allowStacking 0
-+int[] styleable ColorStateListItem { 0x0, 0x101031f, 0x10101a5 }
++int[] styleable Capability { 0x0, 0x0 }
++int styleable Capability_queryPatterns 0
++int styleable Capability_shortcutMatchRequired 1
++int[] styleable CheckedTextView { 0x1010108, 0x0, 0x0, 0x0 }
++int styleable CheckedTextView_android_checkMark 0
++int styleable CheckedTextView_checkMarkCompat 1
++int styleable CheckedTextView_checkMarkTint 2
++int styleable CheckedTextView_checkMarkTintMode 3
++int[] styleable ColorStateListItem { 0x0, 0x101031f, 0x10101a5, 0x1010647, 0x0 }
 +int styleable ColorStateListItem_alpha 0
 +int styleable ColorStateListItem_android_alpha 1
 +int styleable ColorStateListItem_android_color 2
-+int[] styleable CompoundButton { 0x1010107, 0x0, 0x0 }
++int styleable ColorStateListItem_android_lStar 3
++int styleable ColorStateListItem_lStar 4
++int[] styleable CompoundButton { 0x1010107, 0x0, 0x0, 0x0 }
 +int styleable CompoundButton_android_button 0
-+int styleable CompoundButton_buttonTint 1
-+int styleable CompoundButton_buttonTintMode 2
++int styleable CompoundButton_buttonCompat 1
++int styleable CompoundButton_buttonTint 2
++int styleable CompoundButton_buttonTintMode 3
 +int[] styleable CoordinatorLayout { 0x0, 0x0 }
 +int styleable CoordinatorLayout_keylines 0
 +int styleable CoordinatorLayout_statusBarBackground 1
@@ -1633,13 +1906,14 @@ index 0000000..a8801e1
 +int styleable DrawerArrowToggle_gapBetweenBars 5
 +int styleable DrawerArrowToggle_spinBars 6
 +int styleable DrawerArrowToggle_thickness 7
-+int[] styleable FontFamily { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
++int[] styleable FontFamily { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable FontFamily_fontProviderAuthority 0
 +int styleable FontFamily_fontProviderCerts 1
 +int styleable FontFamily_fontProviderFetchStrategy 2
 +int styleable FontFamily_fontProviderFetchTimeout 3
 +int styleable FontFamily_fontProviderPackage 4
 +int styleable FontFamily_fontProviderQuery 5
++int styleable FontFamily_fontProviderSystemFontFamily 6
 +int[] styleable FontFamilyFont { 0x1010532, 0x101053f, 0x1010570, 0x1010533, 0x101056f, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable FontFamilyFont_android_font 0
 +int styleable FontFamilyFont_android_fontStyle 1
@@ -1651,6 +1925,13 @@ index 0000000..a8801e1
 +int styleable FontFamilyFont_fontVariationSettings 7
 +int styleable FontFamilyFont_fontWeight 8
 +int styleable FontFamilyFont_ttcIndex 9
++int[] styleable Fragment { 0x10100d0, 0x1010003, 0x10100d1 }
++int styleable Fragment_android_id 0
++int styleable Fragment_android_name 1
++int styleable Fragment_android_tag 2
++int[] styleable FragmentContainerView { 0x1010003, 0x10100d1 }
++int styleable FragmentContainerView_android_name 0
++int styleable FragmentContainerView_android_tag 1
 +int[] styleable GenericDraweeHierarchy { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable GenericDraweeHierarchy_actualImageScaleType 0
 +int styleable GenericDraweeHierarchy_backgroundImage 1
@@ -1715,6 +1996,10 @@ index 0000000..a8801e1
 +int[] styleable ListPopupWindow { 0x10102ac, 0x10102ad }
 +int styleable ListPopupWindow_android_dropDownHorizontalOffset 0
 +int styleable ListPopupWindow_android_dropDownVerticalOffset 1
++int[] styleable LoadingImageView { 0x0, 0x0, 0x0 }
++int styleable LoadingImageView_circleCrop 0
++int styleable LoadingImageView_imageAspectRatio 1
++int styleable LoadingImageView_imageAspectRatioAdjust 2
 +int[] styleable MenuGroup { 0x10101e0, 0x101000e, 0x10100d0, 0x10101de, 0x10101df, 0x1010194 }
 +int styleable MenuGroup_android_checkableBehavior 0
 +int styleable MenuGroup_android_enabled 1
@@ -1783,6 +2068,10 @@ index 0000000..a8801e1
 +int styleable SearchView_submitBackground 14
 +int styleable SearchView_suggestionRowLayout 15
 +int styleable SearchView_voiceIcon 16
++int[] styleable SignInButton { 0x0, 0x0, 0x0 }
++int styleable SignInButton_buttonSize 0
++int styleable SignInButton_colorScheme 1
++int styleable SignInButton_scopeUris 2
 +int[] styleable SimpleDraweeView { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable SimpleDraweeView_actualImageResource 0
 +int styleable SimpleDraweeView_actualImageScaleType 1
@@ -1845,7 +2134,7 @@ index 0000000..a8801e1
 +int styleable SwitchCompat_track 11
 +int styleable SwitchCompat_trackTint 12
 +int styleable SwitchCompat_trackTintMode 13
-+int[] styleable TextAppearance { 0x10103ac, 0x1010161, 0x1010162, 0x1010163, 0x1010164, 0x1010098, 0x101009a, 0x101009b, 0x1010095, 0x1010097, 0x1010096, 0x0, 0x0 }
++int[] styleable TextAppearance { 0x10103ac, 0x1010161, 0x1010162, 0x1010163, 0x1010164, 0x1010098, 0x101009a, 0x101009b, 0x1010585, 0x1010095, 0x1010097, 0x1010096, 0x0, 0x0, 0x0, 0x0 }
 +int styleable TextAppearance_android_fontFamily 0
 +int styleable TextAppearance_android_shadowColor 1
 +int styleable TextAppearance_android_shadowDx 2
@@ -1854,12 +2143,15 @@ index 0000000..a8801e1
 +int styleable TextAppearance_android_textColor 5
 +int styleable TextAppearance_android_textColorHint 6
 +int styleable TextAppearance_android_textColorLink 7
-+int styleable TextAppearance_android_textSize 8
-+int styleable TextAppearance_android_textStyle 9
-+int styleable TextAppearance_android_typeface 10
-+int styleable TextAppearance_fontFamily 11
-+int styleable TextAppearance_textAllCaps 12
-+int[] styleable Toolbar { 0x10100af, 0x1010140, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
++int styleable TextAppearance_android_textFontWeight 8
++int styleable TextAppearance_android_textSize 9
++int styleable TextAppearance_android_textStyle 10
++int styleable TextAppearance_android_typeface 11
++int styleable TextAppearance_fontFamily 12
++int styleable TextAppearance_fontVariationSettings 13
++int styleable TextAppearance_textAllCaps 14
++int styleable TextAppearance_textLocale 15
++int[] styleable Toolbar { 0x10100af, 0x1010140, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }
 +int styleable Toolbar_android_gravity 0
 +int styleable Toolbar_android_minHeight 1
 +int styleable Toolbar_buttonGravity 2
@@ -1874,21 +2166,22 @@ index 0000000..a8801e1
 +int styleable Toolbar_logo 11
 +int styleable Toolbar_logoDescription 12
 +int styleable Toolbar_maxButtonHeight 13
-+int styleable Toolbar_navigationContentDescription 14
-+int styleable Toolbar_navigationIcon 15
-+int styleable Toolbar_popupTheme 16
-+int styleable Toolbar_subtitle 17
-+int styleable Toolbar_subtitleTextAppearance 18
-+int styleable Toolbar_subtitleTextColor 19
-+int styleable Toolbar_title 20
-+int styleable Toolbar_titleMargin 21
-+int styleable Toolbar_titleMarginBottom 22
-+int styleable Toolbar_titleMarginEnd 23
-+int styleable Toolbar_titleMarginStart 24
-+int styleable Toolbar_titleMarginTop 25
-+int styleable Toolbar_titleMargins 26
-+int styleable Toolbar_titleTextAppearance 27
-+int styleable Toolbar_titleTextColor 28
++int styleable Toolbar_menu 14
++int styleable Toolbar_navigationContentDescription 15
++int styleable Toolbar_navigationIcon 16
++int styleable Toolbar_popupTheme 17
++int styleable Toolbar_subtitle 18
++int styleable Toolbar_subtitleTextAppearance 19
++int styleable Toolbar_subtitleTextColor 20
++int styleable Toolbar_title 21
++int styleable Toolbar_titleMargin 22
++int styleable Toolbar_titleMarginBottom 23
++int styleable Toolbar_titleMarginEnd 24
++int styleable Toolbar_titleMarginStart 25
++int styleable Toolbar_titleMarginTop 26
++int styleable Toolbar_titleMargins 27
++int styleable Toolbar_titleTextAppearance 28
++int styleable Toolbar_titleTextColor 29
 +int[] styleable View { 0x10100da, 0x1010000, 0x0, 0x0, 0x0 }
 +int styleable View_android_focusable 0
 +int styleable View_android_theme 1
@@ -1904,267 +2197,246 @@ index 0000000..a8801e1
 +int styleable ViewStubCompat_android_inflatedId 1
 +int styleable ViewStubCompat_android_layout 2
 +int xml rn_dev_preferences 0x0
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+diff --git a/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..e687c45
+index 0000000..dd92204
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/jniLibs"/></dataSet></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
-new file mode 100644
-index 0000000..979ff5d
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/shaders"/></dataSet></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml
-new file mode 100644
-index 0000000..2713486
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugAssets/merger.xml
-@@ -0,0 +1,2 @@
-+<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/assets"/></dataSet></merger>
-\ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
-new file mode 100644
-index 0000000..09931bb
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/compile-file-map.properties
++++ b/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Sat Nov 19 06:03:16 JST 2022
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml
++#Fri Feb 03 14:45:00 JST 2023
+diff --git a/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
-index 0000000..deaadc2
+index 0000000..56feb53
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/incremental/packageDebugResources/merger.xml
++++ b/node_modules/expo-location/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/debug/res"/></dataSet><mergedItems/></merger>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/res"/><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/build/generated/res/rs/debug"/><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/debug/res"/></dataSet><mergedItems/></merger>
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/BuildConfig.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/BuildConfig.class
+diff --git a/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Task.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Task.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskBroadcastReceiver.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskBroadcastReceiver.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskJobService.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskJobService.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerInternalModule.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerInternalModule.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule$1.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerModule.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerPackage.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerPackage.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils$1.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskManagerUtils.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$1.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$1.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$2.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService$2.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/TaskService.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Utils.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/Utils.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/InvalidConsumerClassException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/InvalidConsumerClassException.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskNotFoundException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskNotFoundException.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskRegisteringFailedException.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/exceptions/TaskRegisteringFailedException.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/BareTasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/BareTasksAndEventsRepository.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository$AppConfig.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository$AppConfig.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksAndEventsRepository.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksPersistence.class b/node_modules/expo-task-manager/android/build/intermediates/javac/debug/classes/expo/modules/taskManager/repository/TasksPersistence.class
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/library_java_res/debug/res.jar b/node_modules/expo-task-manager/android/build/intermediates/library_java_res/debug/res.jar
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml b/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
-new file mode 100644
-index 0000000..24b3747
+index 0000000..1d48021
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/library_manifest/debug/AndroidManifest.xml
++++ b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/android/app/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/android/app/src/debug/jniLibs"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+new file mode 100644
+index 0000000..25b669f
+--- /dev/null
++++ b/node_modules/expo-location/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/android/app/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/android/app/src/debug/shaders"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml
+new file mode 100644
+index 0000000..2b167b9
+--- /dev/null
++++ b/node_modules/expo-location/android/build/intermediates/incremental/packageDebugAssets/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo/android/src/debug/assets"/></dataSet></merger>
+\ No newline at end of file
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class
+new file mode 100644
+index 0000000..aee9bb6
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class
+new file mode 100644
+index 0000000..0d3fc7b
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class
+new file mode 100644
+index 0000000..a0ac817
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class
+new file mode 100644
+index 0000000..fc0d1c6
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class
+new file mode 100644
+index 0000000..ce578fb
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class
+new file mode 100644
+index 0000000..4b1644b
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class
+new file mode 100644
+index 0000000..0b90296
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class
+new file mode 100644
+index 0000000..682f8cd
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class
+new file mode 100644
+index 0000000..e15aa78
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class
+new file mode 100644
+index 0000000..dbc4dfd
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class
+new file mode 100644
+index 0000000..7db6f58
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class
+new file mode 100644
+index 0000000..ca26b59
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class
+new file mode 100644
+index 0000000..fceb3d7
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class
+new file mode 100644
+index 0000000..282ff3a
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class
+new file mode 100644
+index 0000000..67e1d94
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class
+new file mode 100644
+index 0000000..b33a405
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class
+new file mode 100644
+index 0000000..bea9700
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class
+new file mode 100644
+index 0000000..f1f748f
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class
+new file mode 100644
+index 0000000..8be8a2d
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class
+new file mode 100644
+index 0000000..f42a706
+Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class differ
+diff --git a/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+new file mode 100644
+index 0000000..78ac5b8
+--- /dev/null
++++ b/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+@@ -0,0 +1,2 @@
++R_DEF: Internal format may change without notice
++local
+diff --git a/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+new file mode 100644
+index 0000000..cbb7456
+--- /dev/null
++++ b/node_modules/expo-location/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
 @@ -0,0 +1,33 @@
++1<?xml version="1.0" encoding="utf-8"?>
++2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++3    package="expo.modules.location" >
++4
++5    <uses-sdk
++6        android:minSdkVersion="21"
++6-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++7        android:targetSdkVersion="31" />
++7-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++8
++9    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
++9-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:3-79
++9-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:20-76
++10    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
++10-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:3-77
++10-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:20-74
++11    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
++11-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:3-75
++11-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:20-72
++12
++13    <application>
++13-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:8:3-13:17
++14        <service
++14-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:9:5-12:50
++15            android:name="expo.modules.location.services.LocationTaskService"
++15-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:10:7-51
++16            android:exported="false"
++16-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:11:7-31
++17            android:foregroundServiceType="location" />
++17-->/Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:12:7-47
++18    </application>
++19
++20</manifest>
+diff --git a/node_modules/expo-location/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml b/node_modules/expo-location/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+new file mode 100644
+index 0000000..cb96878
+--- /dev/null
++++ b/node_modules/expo-location/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+@@ -0,0 +1,20 @@
 +<?xml version="1.0" encoding="utf-8"?>
 +<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+    package="expo.modules.taskManager"
-+    android:versionCode="23"
-+    android:versionName="10.1.0" >
++    package="expo.modules.location" >
 +
 +    <uses-sdk
-+        android:minSdkVersion="29"
++        android:minSdkVersion="21"
 +        android:targetSdkVersion="31" />
 +
++    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
++    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
++    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
++
 +    <application>
-+        <receiver
-+            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
-+            android:exported="false" >
-+            <intent-filter>
-+                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
-+                <action android:name="android.intent.action.BOOT_COMPLETED" />
-+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-+            </intent-filter>
-+        </receiver>
-+
 +        <service
-+            android:name="expo.modules.taskManager.TaskJobService"
-+            android:enabled="true"
++            android:name="expo.modules.location.services.LocationTaskService"
 +            android:exported="false"
-+            android:permission="android.permission.BIND_JOB_SERVICE" />
-+
-+        <meta-data
-+            android:name="expo.modules.taskManager.oneAppId"
-+            android:value="true" />
++            android:foregroundServiceType="location" />
 +    </application>
 +
 +</manifest>
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
-new file mode 100644
-index 0000000..78ac5b8
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
-@@ -0,0 +1,2 @@
-+R_DEF: Internal format may change without notice
-+local
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
-new file mode 100644
-index 0000000..c869c61
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
-@@ -0,0 +1,54 @@
-+1<?xml version="1.0" encoding="utf-8"?>
-+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-+3    package="expo.modules.taskManager"
-+4    android:versionCode="23"
-+5    android:versionName="10.1.0" >
-+6
-+7    <uses-sdk
-+8        android:minSdkVersion="29"
-+8-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+9        android:targetSdkVersion="31" />
-+9-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+10
-+11    <application>
-+11-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:4:5-21:19
-+12        <receiver
-+12-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:5:9-13:20
-+13            android:name="expo.modules.taskManager.TaskBroadcastReceiver"
-+13-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:6:13-50
-+14            android:exported="false" >
-+14-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:7:13-37
-+15            <intent-filter>
-+15-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:8:13-12:29
-+16                <action android:name="expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION" />
-+16-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:17-103
-+16-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:25-100
-+17                <action android:name="android.intent.action.BOOT_COMPLETED" />
-+17-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:17-79
-+17-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:25-76
-+18                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-+18-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:17-84
-+18-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:25-81
-+19            </intent-filter>
-+20        </receiver>
-+21
-+22        <service
-+22-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:14:9-18:72
-+23            android:name="expo.modules.taskManager.TaskJobService"
-+23-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:15:13-43
-+24            android:enabled="true"
-+24-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:16:13-35
-+25            android:exported="false"
-+25-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:17:13-37
-+26            android:permission="android.permission.BIND_JOB_SERVICE" />
-+26-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:18:13-69
-+27
-+28        <meta-data
-+28-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:7-89
-+29            android:name="expo.modules.taskManager.oneAppId"
-+29-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:18-66
-+30            android:value="true" />
-+30-->/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:67-87
-+31    </application>
-+32
-+33</manifest>
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json
+diff --git a/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json
 new file mode 100644
 index 0000000..0637a08
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/navigation_json/debug/navigation.json
++++ b/node_modules/expo-location/android/build/intermediates/navigation_json/debug/navigation.json
 @@ -0,0 +1 @@
 +[]
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json b/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json
+diff --git a/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json b/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json
 new file mode 100644
-index 0000000..5a1dabd
+index 0000000..3f98e00
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/packaged_manifests/debug/output-metadata.json
-@@ -0,0 +1,16 @@
++++ b/node_modules/expo-location/android/build/intermediates/packaged_manifests/debug/output-metadata.json
+@@ -0,0 +1,18 @@
 +{
-+  "version": 2,
++  "version": 3,
 +  "artifactType": {
 +    "type": "PACKAGED_MANIFESTS",
 +    "kind": "Directory"
 +  },
-+  "applicationId": "expo.modules.taskManager",
++  "applicationId": "expo.modules.location",
 +  "variantName": "debug",
 +  "elements": [
 +    {
 +      "type": "SINGLE",
 +      "filters": [],
-+      "outputFile": "../../library_manifest/debug/AndroidManifest.xml"
++      "attributes": [],
++      "outputFile": "../../merged_manifest/debug/AndroidManifest.xml"
 +    }
-+  ]
++  ],
++  "elementType": "File"
 +}
 \ No newline at end of file
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/expo-task-manager/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
+diff --git a/node_modules/expo-location/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/expo-location/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
 index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+diff --git a/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
-index 0000000..d57fc46
+index 0000000..3b84c0b
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
-@@ -0,0 +1,1315 @@
-+expo.modules.taskManager
++++ b/node_modules/expo-location/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+@@ -0,0 +1,1568 @@
++expo.modules.location
 +anim abc_fade_in
 +anim abc_fade_out
 +anim abc_grow_fade_in_from_bottom
@@ -2177,12 +2449,31 @@ index 0000000..d57fc46
 +anim abc_slide_out_top
 +anim abc_tooltip_enter
 +anim abc_tooltip_exit
++anim btn_checkbox_to_checked_box_inner_merged_animation
++anim btn_checkbox_to_checked_box_outer_merged_animation
++anim btn_checkbox_to_checked_icon_null_animation
++anim btn_checkbox_to_unchecked_box_inner_merged_animation
++anim btn_checkbox_to_unchecked_check_path_merged_animation
++anim btn_checkbox_to_unchecked_icon_null_animation
++anim btn_radio_to_off_mtrl_dot_group_animation
++anim btn_radio_to_off_mtrl_ring_outer_animation
++anim btn_radio_to_off_mtrl_ring_outer_path_animation
++anim btn_radio_to_on_mtrl_dot_group_animation
++anim btn_radio_to_on_mtrl_ring_outer_animation
++anim btn_radio_to_on_mtrl_ring_outer_path_animation
 +anim catalyst_fade_in
 +anim catalyst_fade_out
 +anim catalyst_push_up_in
 +anim catalyst_push_up_out
 +anim catalyst_slide_down
 +anim catalyst_slide_up
++anim fragment_fast_out_extra_slow_in
++animator fragment_close_enter
++animator fragment_close_exit
++animator fragment_fade_enter
++animator fragment_fade_exit
++animator fragment_open_enter
++animator fragment_open_exit
 +attr actionBarDivider
 +attr actionBarItemBackground
 +attr actionBarPopupTheme
@@ -2201,6 +2492,7 @@ index 0000000..d57fc46
 +attr actionMenuTextColor
 +attr actionModeBackground
 +attr actionModeCloseButtonStyle
++attr actionModeCloseContentDescription
 +attr actionModeCloseDrawable
 +attr actionModeCopyDrawable
 +attr actionModeCutDrawable
@@ -2211,6 +2503,7 @@ index 0000000..d57fc46
 +attr actionModeShareDrawable
 +attr actionModeSplitBackground
 +attr actionModeStyle
++attr actionModeTheme
 +attr actionModeWebSearchDrawable
 +attr actionOverflowButtonStyle
 +attr actionOverflowMenuStyle
@@ -2235,6 +2528,11 @@ index 0000000..d57fc46
 +attr autoSizePresetSizes
 +attr autoSizeStepGranularity
 +attr autoSizeTextType
++attr autofillInlineSuggestionChip
++attr autofillInlineSuggestionEndIconStyle
++attr autofillInlineSuggestionStartIconStyle
++attr autofillInlineSuggestionSubtitle
++attr autofillInlineSuggestionTitle
 +attr background
 +attr backgroundImage
 +attr backgroundSplit
@@ -2248,15 +2546,21 @@ index 0000000..d57fc46
 +attr buttonBarNeutralButtonStyle
 +attr buttonBarPositiveButtonStyle
 +attr buttonBarStyle
++attr buttonCompat
 +attr buttonGravity
 +attr buttonIconDimen
 +attr buttonPanelSideLayout
++attr buttonSize
 +attr buttonStyle
 +attr buttonStyleSmall
 +attr buttonTint
 +attr buttonTintMode
++attr checkMarkCompat
++attr checkMarkTint
++attr checkMarkTintMode
 +attr checkboxStyle
 +attr checkedTextViewStyle
++attr circleCrop
 +attr closeIcon
 +attr closeItemLayout
 +attr collapseContentDescription
@@ -2271,6 +2575,7 @@ index 0000000..d57fc46
 +attr colorError
 +attr colorPrimary
 +attr colorPrimaryDark
++attr colorScheme
 +attr colorSwitchThumbNormal
 +attr commitIcon
 +attr contentDescription
@@ -2292,7 +2597,15 @@ index 0000000..d57fc46
 +attr dividerHorizontal
 +attr dividerPadding
 +attr dividerVertical
++attr drawableBottomCompat
++attr drawableEndCompat
++attr drawableLeftCompat
++attr drawableRightCompat
 +attr drawableSize
++attr drawableStartCompat
++attr drawableTint
++attr drawableTintMode
++attr drawableTopCompat
 +attr drawerArrowStyle
 +attr dropDownListViewStyle
 +attr dropdownListPreferredItemHeight
@@ -2300,6 +2613,7 @@ index 0000000..d57fc46
 +attr editTextColor
 +attr editTextStyle
 +attr elevation
++attr emojiCompatEnabled
 +attr expandActivityOverflowButtonDrawable
 +attr fadeDuration
 +attr failureImage
@@ -2313,6 +2627,7 @@ index 0000000..d57fc46
 +attr fontProviderFetchTimeout
 +attr fontProviderPackage
 +attr fontProviderQuery
++attr fontProviderSystemFontFamily
 +attr fontStyle
 +attr fontVariationSettings
 +attr fontWeight
@@ -2326,12 +2641,16 @@ index 0000000..d57fc46
 +attr iconTint
 +attr iconTintMode
 +attr iconifiedByDefault
++attr imageAspectRatio
++attr imageAspectRatioAdjust
 +attr imageButtonStyle
 +attr indeterminateProgressStyle
 +attr initialActivityCount
++attr isAutofillInlineSuggestionTheme
 +attr isLightTheme
 +attr itemPadding
 +attr keylines
++attr lStar
 +attr lastBaselineToBottomHeight
 +attr layout
 +attr layout_anchor
@@ -2342,6 +2661,8 @@ index 0000000..d57fc46
 +attr layout_keyline
 +attr lineHeight
 +attr listChoiceBackgroundIndicator
++attr listChoiceIndicatorMultipleAnimated
++attr listChoiceIndicatorSingleAnimated
 +attr listDividerAlertDialog
 +attr listItemLayout
 +attr listLayout
@@ -2350,16 +2671,20 @@ index 0000000..d57fc46
 +attr listPreferredItemHeight
 +attr listPreferredItemHeightLarge
 +attr listPreferredItemHeightSmall
++attr listPreferredItemPaddingEnd
 +attr listPreferredItemPaddingLeft
 +attr listPreferredItemPaddingRight
++attr listPreferredItemPaddingStart
 +attr logo
 +attr logoDescription
 +attr maxButtonHeight
 +attr measureWithLargestChild
++attr menu
 +attr multiChoiceItemLayout
 +attr navigationContentDescription
 +attr navigationIcon
 +attr navigationMode
++attr nestedScrollViewStyle
 +attr numericModifiers
 +attr overlapAnchor
 +attr overlayImage
@@ -2384,6 +2709,7 @@ index 0000000..d57fc46
 +attr progressBarStyle
 +attr queryBackground
 +attr queryHint
++attr queryPatterns
 +attr radioButtonStyle
 +attr ratingBarStyle
 +attr ratingBarStyleIndicator
@@ -2404,12 +2730,14 @@ index 0000000..d57fc46
 +attr roundingBorderColor
 +attr roundingBorderPadding
 +attr roundingBorderWidth
++attr scopeUris
 +attr searchHintIcon
 +attr searchIcon
 +attr searchViewStyle
 +attr seekBarStyle
 +attr selectableItemBackground
 +attr selectableItemBackgroundBorderless
++attr shortcutMatchRequired
 +attr showAsAction
 +attr showDividers
 +attr showText
@@ -2444,6 +2772,7 @@ index 0000000..d57fc46
 +attr textAppearanceSmallPopupMenu
 +attr textColorAlertDialogListItem
 +attr textColorSearchUrl
++attr textLocale
 +attr theme
 +attr thickness
 +attr thumbTextPadding
@@ -2487,16 +2816,16 @@ index 0000000..d57fc46
 +attr windowMinWidthMinor
 +attr windowNoTitle
 +bool abc_action_bar_embed_tabs
-+bool abc_allow_stacked_button_bar
 +bool abc_config_actionMenuItemAllCaps
 +color abc_background_cache_hint_selector_material_dark
 +color abc_background_cache_hint_selector_material_light
 +color abc_btn_colored_borderless_text_material
 +color abc_btn_colored_text_material
 +color abc_color_highlight_material
++color abc_decor_view_status_guard
++color abc_decor_view_status_guard_light
 +color abc_hint_foreground_material_dark
 +color abc_hint_foreground_material_light
-+color abc_input_method_navigation_guard
 +color abc_primary_text_disable_only_material_dark
 +color abc_primary_text_disable_only_material_light
 +color abc_primary_text_material_dark
@@ -2515,6 +2844,8 @@ index 0000000..d57fc46
 +color abc_tint_switch_track
 +color accent_material_dark
 +color accent_material_light
++color androidx_core_ripple_material_light
++color androidx_core_secondary_text_default_material_light
 +color background_floating_material_dark
 +color background_floating_material_light
 +color background_material_dark
@@ -2529,6 +2860,17 @@ index 0000000..d57fc46
 +color button_material_light
 +color catalyst_logbox_background
 +color catalyst_redbox_background
++color common_google_signin_btn_text_dark
++color common_google_signin_btn_text_dark_default
++color common_google_signin_btn_text_dark_disabled
++color common_google_signin_btn_text_dark_focused
++color common_google_signin_btn_text_dark_pressed
++color common_google_signin_btn_text_light
++color common_google_signin_btn_text_light_default
++color common_google_signin_btn_text_light_disabled
++color common_google_signin_btn_text_light_focused
++color common_google_signin_btn_text_light_pressed
++color common_google_signin_btn_tint
 +color dim_foreground_disabled_material_dark
 +color dim_foreground_disabled_material_light
 +color dim_foreground_material_dark
@@ -2553,6 +2895,7 @@ index 0000000..d57fc46
 +color material_grey_900
 +color notification_action_color_filter
 +color notification_icon_bg_color
++color notification_material_background_media_default_color
 +color primary_dark_material_dark
 +color primary_dark_material_light
 +color primary_material_dark
@@ -2623,6 +2966,9 @@ index 0000000..d57fc46
 +dimen abc_edit_text_inset_horizontal_material
 +dimen abc_edit_text_inset_top_material
 +dimen abc_floating_window_z
++dimen abc_list_item_height_large_material
++dimen abc_list_item_height_material
++dimen abc_list_item_height_small_material
 +dimen abc_list_item_padding_horizontal_material
 +dimen abc_panel_menu_list_width
 +dimen abc_progress_bar_height_material
@@ -2631,6 +2977,9 @@ index 0000000..d57fc46
 +dimen abc_seekbar_track_background_height_material
 +dimen abc_seekbar_track_progress_height_material
 +dimen abc_select_dialog_padding_start_material
++dimen abc_star_big
++dimen abc_star_medium
++dimen abc_star_small
 +dimen abc_switch_padding
 +dimen abc_text_size_body_1_material
 +dimen abc_text_size_body_2_material
@@ -2650,6 +2999,7 @@ index 0000000..d57fc46
 +dimen abc_text_size_subtitle_material_toolbar
 +dimen abc_text_size_title_material
 +dimen abc_text_size_title_material_toolbar
++dimen autofill_inline_suggestion_icon_size
 +dimen compat_button_inset_horizontal_material
 +dimen compat_button_inset_vertical_material
 +dimen compat_button_padding_horizontal_material
@@ -2681,6 +3031,10 @@ index 0000000..d57fc46
 +dimen notification_subtext_size
 +dimen notification_top_pad
 +dimen notification_top_pad_large_text
++dimen subtitle_corner_radius
++dimen subtitle_outline_width
++dimen subtitle_shadow_offset
++dimen subtitle_shadow_radius
 +dimen tooltip_corner_radius
 +dimen tooltip_horizontal_padding
 +dimen tooltip_margin
@@ -2693,11 +3047,13 @@ index 0000000..d57fc46
 +drawable abc_action_bar_item_background_material
 +drawable abc_btn_borderless_material
 +drawable abc_btn_check_material
++drawable abc_btn_check_material_anim
 +drawable abc_btn_check_to_on_mtrl_000
 +drawable abc_btn_check_to_on_mtrl_015
 +drawable abc_btn_colored_material
 +drawable abc_btn_default_mtrl_shape
 +drawable abc_btn_radio_material
++drawable abc_btn_radio_material_anim
 +drawable abc_btn_radio_to_on_mtrl_000
 +drawable abc_btn_radio_to_on_mtrl_015
 +drawable abc_btn_switch_to_on_mtrl_00001
@@ -2720,12 +3076,6 @@ index 0000000..d57fc46
 +drawable abc_ic_menu_selectall_mtrl_alpha
 +drawable abc_ic_menu_share_mtrl_alpha
 +drawable abc_ic_search_api_material
-+drawable abc_ic_star_black_16dp
-+drawable abc_ic_star_black_36dp
-+drawable abc_ic_star_black_48dp
-+drawable abc_ic_star_half_black_16dp
-+drawable abc_ic_star_half_black_36dp
-+drawable abc_ic_star_half_black_48dp
 +drawable abc_ic_voice_search_api_material
 +drawable abc_item_background_holo_dark
 +drawable abc_item_background_holo_light
@@ -2756,23 +3106,60 @@ index 0000000..d57fc46
 +drawable abc_seekbar_track_material
 +drawable abc_spinner_mtrl_am_alpha
 +drawable abc_spinner_textfield_background_material
++drawable abc_star_black_48dp
++drawable abc_star_half_black_48dp
 +drawable abc_switch_thumb_material
 +drawable abc_switch_track_mtrl_alpha
 +drawable abc_tab_indicator_material
 +drawable abc_tab_indicator_mtrl_alpha
 +drawable abc_text_cursor_material
-+drawable abc_text_select_handle_left_mtrl_dark
-+drawable abc_text_select_handle_left_mtrl_light
-+drawable abc_text_select_handle_middle_mtrl_dark
-+drawable abc_text_select_handle_middle_mtrl_light
-+drawable abc_text_select_handle_right_mtrl_dark
-+drawable abc_text_select_handle_right_mtrl_light
++drawable abc_text_select_handle_left_mtrl
++drawable abc_text_select_handle_middle_mtrl
++drawable abc_text_select_handle_right_mtrl
 +drawable abc_textfield_activated_mtrl_alpha
 +drawable abc_textfield_default_mtrl_alpha
 +drawable abc_textfield_search_activated_mtrl_alpha
 +drawable abc_textfield_search_default_mtrl_alpha
 +drawable abc_textfield_search_material
 +drawable abc_vector_test
++drawable autofill_inline_suggestion_chip_background
++drawable btn_checkbox_checked_mtrl
++drawable btn_checkbox_checked_to_unchecked_mtrl_animation
++drawable btn_checkbox_unchecked_mtrl
++drawable btn_checkbox_unchecked_to_checked_mtrl_animation
++drawable btn_radio_off_mtrl
++drawable btn_radio_off_to_on_mtrl_animation
++drawable btn_radio_on_mtrl
++drawable btn_radio_on_to_off_mtrl_animation
++drawable common_full_open_on_phone
++drawable common_google_signin_btn_icon_dark
++drawable common_google_signin_btn_icon_dark_disabled
++drawable common_google_signin_btn_icon_dark_focused
++drawable common_google_signin_btn_icon_dark_normal
++drawable common_google_signin_btn_icon_dark_normal_background
++drawable common_google_signin_btn_icon_dark_pressed
++drawable common_google_signin_btn_icon_disabled
++drawable common_google_signin_btn_icon_light
++drawable common_google_signin_btn_icon_light_disabled
++drawable common_google_signin_btn_icon_light_focused
++drawable common_google_signin_btn_icon_light_normal
++drawable common_google_signin_btn_icon_light_normal_background
++drawable common_google_signin_btn_icon_light_pressed
++drawable common_google_signin_btn_text_dark
++drawable common_google_signin_btn_text_dark_disabled
++drawable common_google_signin_btn_text_dark_focused
++drawable common_google_signin_btn_text_dark_normal
++drawable common_google_signin_btn_text_dark_normal_background
++drawable common_google_signin_btn_text_dark_pressed
++drawable common_google_signin_btn_text_disabled
++drawable common_google_signin_btn_text_light
++drawable common_google_signin_btn_text_light_disabled
++drawable common_google_signin_btn_text_light_focused
++drawable common_google_signin_btn_text_light_normal
++drawable common_google_signin_btn_text_light_normal_background
++drawable common_google_signin_btn_text_light_pressed
++drawable googleg_disabled_color_18
++drawable googleg_standard_color_18
 +drawable notification_action_background
 +drawable notification_bg
 +drawable notification_bg_low
@@ -2786,14 +3173,52 @@ index 0000000..d57fc46
 +drawable notification_tile_bg
 +drawable notify_panel_notification_icon_bg
 +drawable redbox_top_border_background
++drawable test_level_drawable
 +drawable tooltip_frame_dark
 +drawable tooltip_frame_light
++id accessibility_action_clickable_span
 +id accessibility_actions
++id accessibility_collection
++id accessibility_collection_item
++id accessibility_custom_action_0
++id accessibility_custom_action_1
++id accessibility_custom_action_10
++id accessibility_custom_action_11
++id accessibility_custom_action_12
++id accessibility_custom_action_13
++id accessibility_custom_action_14
++id accessibility_custom_action_15
++id accessibility_custom_action_16
++id accessibility_custom_action_17
++id accessibility_custom_action_18
++id accessibility_custom_action_19
++id accessibility_custom_action_2
++id accessibility_custom_action_20
++id accessibility_custom_action_21
++id accessibility_custom_action_22
++id accessibility_custom_action_23
++id accessibility_custom_action_24
++id accessibility_custom_action_25
++id accessibility_custom_action_26
++id accessibility_custom_action_27
++id accessibility_custom_action_28
++id accessibility_custom_action_29
++id accessibility_custom_action_3
++id accessibility_custom_action_30
++id accessibility_custom_action_31
++id accessibility_custom_action_4
++id accessibility_custom_action_5
++id accessibility_custom_action_6
++id accessibility_custom_action_7
++id accessibility_custom_action_8
++id accessibility_custom_action_9
 +id accessibility_hint
 +id accessibility_label
++id accessibility_links
 +id accessibility_role
 +id accessibility_state
 +id accessibility_value
++id action0
 +id action_bar
 +id action_bar_activity_content
 +id action_bar_container
@@ -2814,25 +3239,37 @@ index 0000000..d57fc46
 +id actions
 +id activity_chooser_view_content
 +id add
++id adjust_height
++id adjust_width
 +id alertTitle
 +id async
++id auto
++id autofill_inline_suggestion_end_icon
++id autofill_inline_suggestion_start_icon
++id autofill_inline_suggestion_subtitle
++id autofill_inline_suggestion_title
 +id blocking
 +id bottom
 +id buttonPanel
++id cancel_action
 +id catalyst_redbox_title
 +id center
 +id centerCrop
 +id centerInside
 +id checkbox
++id checked
 +id chronometer
 +id content
 +id contentPanel
 +id custom
 +id customPanel
++id dark
 +id decor_content_parent
 +id default_activity_button
++id dialog_button
 +id edit_query
 +id end
++id end_padder
 +id expand_activities_button
 +id expanded_menu
 +id fitBottomStart
@@ -2843,18 +3280,27 @@ index 0000000..d57fc46
 +id focusCrop
 +id forever
 +id fps_text
++id fragment_container_view_tag
 +id group_divider
 +id home
 +id icon
 +id icon_group
++id icon_only
 +id image
 +id info
 +id italic
++id item1
++id item2
++id item3
++id item4
++id labelled_by
 +id left
++id light
 +id line1
 +id line3
 +id listMode
 +id list_item
++id media_actions
 +id message
 +id multiply
 +id none
@@ -2862,7 +3308,15 @@ index 0000000..d57fc46
 +id notification_background
 +id notification_main_column
 +id notification_main_column_container
++id off
++id on
 +id parentPanel
++id pointer_enter
++id pointer_enter_capture
++id pointer_leave
++id pointer_leave_capture
++id pointer_move
++id pointer_move_capture
 +id progress_circular
 +id progress_horizontal
 +id radio
@@ -2896,17 +3350,30 @@ index 0000000..d57fc46
 +id select_dialog_listview
 +id shortcut
 +id spacer
++id special_effects_controller_view_tag
 +id split_action_bar
 +id src_atop
 +id src_in
 +id src_over
++id standard
 +id start
++id status_bar_latest_event_content
 +id submenuarrow
 +id submit_area
 +id tabMode
++id tag_accessibility_actions
++id tag_accessibility_clickable_spans
++id tag_accessibility_heading
++id tag_accessibility_pane_title
++id tag_on_apply_window_listener
++id tag_on_receive_content_listener
++id tag_on_receive_content_mime_types
++id tag_screen_reader_focusable
++id tag_state_description
 +id tag_transition_group
 +id tag_unhandled_key_event_manager
 +id tag_unhandled_key_listeners
++id tag_window_insets_animation_callback
 +id text
 +id text2
 +id textSpacerNoButtons
@@ -2917,18 +3384,32 @@ index 0000000..d57fc46
 +id title_template
 +id top
 +id topPanel
++id unchecked
 +id uniform
 +id up
 +id view_tag_instance_handle
 +id view_tag_native_id
++id view_tree_lifecycle_owner
++id view_tree_saved_state_registry_owner
++id view_tree_view_model_store_owner
++id visible_removing_fragment_view_tag
++id wide
 +id wrap_content
 +integer abc_config_activityDefaultDur
 +integer abc_config_activityShortDur
 +integer cancel_button_image_alpha
 +integer config_tooltipAnimTime
++integer google_play_services_version
 +integer react_native_dev_server_port
 +integer react_native_inspector_proxy_port
 +integer status_bar_notification_info_maxnum
++interpolator btn_checkbox_checked_mtrl_animation_interpolator_0
++interpolator btn_checkbox_checked_mtrl_animation_interpolator_1
++interpolator btn_checkbox_unchecked_mtrl_animation_interpolator_0
++interpolator btn_checkbox_unchecked_mtrl_animation_interpolator_1
++interpolator btn_radio_to_off_mtrl_animation_interpolator_0
++interpolator btn_radio_to_on_mtrl_animation_interpolator_0
++interpolator fast_out_slow_in
 +layout abc_action_bar_title_item
 +layout abc_action_bar_up_container
 +layout abc_action_menu_item_layout
@@ -2957,12 +3438,23 @@ index 0000000..d57fc46
 +layout abc_search_view
 +layout abc_select_dialog_material
 +layout abc_tooltip
++layout autofill_inline_suggestion
++layout custom_dialog
 +layout dev_loading_view
 +layout fps_view
 +layout notification_action
 +layout notification_action_tombstone
++layout notification_media_action
++layout notification_media_cancel_action
++layout notification_template_big_media
++layout notification_template_big_media_custom
++layout notification_template_big_media_narrow
++layout notification_template_big_media_narrow_custom
 +layout notification_template_custom_big
 +layout notification_template_icon_group
++layout notification_template_lines_media
++layout notification_template_media
++layout notification_template_media_custom
 +layout notification_template_part_chronometer
 +layout notification_template_part_time
 +layout redbox_item_frame
@@ -2972,6 +3464,8 @@ index 0000000..d57fc46
 +layout select_dialog_multichoice_material
 +layout select_dialog_singlechoice_material
 +layout support_simple_spinner_dropdown_item
++menu example_menu
++menu example_menu2
 +string abc_action_bar_home_description
 +string abc_action_bar_up_description
 +string abc_action_menu_overflow_description
@@ -2980,18 +3474,6 @@ index 0000000..d57fc46
 +string abc_activitychooserview_choose_application
 +string abc_capital_off
 +string abc_capital_on
-+string abc_font_family_body_1_material
-+string abc_font_family_body_2_material
-+string abc_font_family_button_material
-+string abc_font_family_caption_material
-+string abc_font_family_display_1_material
-+string abc_font_family_display_2_material
-+string abc_font_family_display_3_material
-+string abc_font_family_display_4_material
-+string abc_font_family_headline_material
-+string abc_font_family_menu_material
-+string abc_font_family_subhead_material
-+string abc_font_family_title_material
 +string abc_menu_alt_shortcut_label
 +string abc_menu_ctrl_shortcut_label
 +string abc_menu_delete_shortcut_label
@@ -3012,7 +3494,6 @@ index 0000000..d57fc46
 +string abc_shareactionprovider_share_with_application
 +string abc_toolbar_collapse_description
 +string alert_description
-+string button_description
 +string catalyst_change_bundle_location
 +string catalyst_copy_button
 +string catalyst_debug
@@ -3030,6 +3511,7 @@ index 0000000..d57fc46
 +string catalyst_hot_reloading_auto_enable
 +string catalyst_hot_reloading_stop
 +string catalyst_inspector
++string catalyst_inspector_stop
 +string catalyst_loading_from_url
 +string catalyst_open_flipper_error
 +string catalyst_perf_monitor
@@ -3043,6 +3525,24 @@ index 0000000..d57fc46
 +string catalyst_settings
 +string catalyst_settings_title
 +string combobox_description
++string common_google_play_services_enable_button
++string common_google_play_services_enable_text
++string common_google_play_services_enable_title
++string common_google_play_services_install_button
++string common_google_play_services_install_text
++string common_google_play_services_install_title
++string common_google_play_services_notification_channel_name
++string common_google_play_services_notification_ticker
++string common_google_play_services_unknown_issue
++string common_google_play_services_unsupported_text
++string common_google_play_services_update_button
++string common_google_play_services_update_text
++string common_google_play_services_update_title
++string common_google_play_services_updating_text
++string common_google_play_services_wear_update_text
++string common_open_on_phone
++string common_signin_button_text
++string common_signin_button_text_long
 +string header_description
 +string image_description
 +string imagebutton_description
@@ -3054,7 +3554,6 @@ index 0000000..d57fc46
 +string radiogroup_description
 +string rn_tab_description
 +string scrollbar_description
-+string search_description
 +string search_menu_title
 +string spinbutton_description
 +string state_busy_description
@@ -3063,6 +3562,7 @@ index 0000000..d57fc46
 +string state_mixed_description
 +string state_off_description
 +string state_on_description
++string state_unselected_description
 +string status_bar_notification_info_overflow
 +string summary_description
 +string tablist_description
@@ -3227,6 +3727,7 @@ index 0000000..d57fc46
 +style Base_Widget_AppCompat_SeekBar_Discrete
 +style Base_Widget_AppCompat_Spinner
 +style Base_Widget_AppCompat_Spinner_Underlined
++style Base_Widget_AppCompat_TextView
 +style Base_Widget_AppCompat_TextView_SpinnerItem
 +style Base_Widget_AppCompat_Toolbar
 +style Base_Widget_AppCompat_Toolbar_Button_Navigation
@@ -3313,9 +3814,14 @@ index 0000000..d57fc46
 +style TextAppearance_AppCompat_Widget_TextView_SpinnerItem
 +style TextAppearance_Compat_Notification
 +style TextAppearance_Compat_Notification_Info
++style TextAppearance_Compat_Notification_Info_Media
 +style TextAppearance_Compat_Notification_Line2
++style TextAppearance_Compat_Notification_Line2_Media
++style TextAppearance_Compat_Notification_Media
 +style TextAppearance_Compat_Notification_Time
++style TextAppearance_Compat_Notification_Time_Media
 +style TextAppearance_Compat_Notification_Title
++style TextAppearance_Compat_Notification_Title_Media
 +style TextAppearance_Widget_AppCompat_ExpandedMenu_Item
 +style TextAppearance_Widget_AppCompat_Toolbar_Subtitle
 +style TextAppearance_Widget_AppCompat_Toolbar_Title
@@ -3324,6 +3830,8 @@ index 0000000..d57fc46
 +style ThemeOverlay_AppCompat_ActionBar
 +style ThemeOverlay_AppCompat_Dark
 +style ThemeOverlay_AppCompat_Dark_ActionBar
++style ThemeOverlay_AppCompat_DayNight
++style ThemeOverlay_AppCompat_DayNight_ActionBar
 +style ThemeOverlay_AppCompat_Dialog
 +style ThemeOverlay_AppCompat_Dialog_Alert
 +style ThemeOverlay_AppCompat_Light
@@ -3340,6 +3848,7 @@ index 0000000..d57fc46
 +style Theme_AppCompat_DialogWhenLarge
 +style Theme_AppCompat_Dialog_Alert
 +style Theme_AppCompat_Dialog_MinWidth
++style Theme_AppCompat_Empty
 +style Theme_AppCompat_Light
 +style Theme_AppCompat_Light_DarkActionBar
 +style Theme_AppCompat_Light_Dialog
@@ -3348,6 +3857,7 @@ index 0000000..d57fc46
 +style Theme_AppCompat_Light_Dialog_MinWidth
 +style Theme_AppCompat_Light_NoActionBar
 +style Theme_AppCompat_NoActionBar
++style Theme_AutofillInlineSuggestion
 +style Theme_Catalyst
 +style Theme_Catalyst_LogBox
 +style Theme_Catalyst_RedBox
@@ -3425,9 +3935,16 @@ index 0000000..d57fc46
 +style Widget_AppCompat_Spinner_DropDown
 +style Widget_AppCompat_Spinner_DropDown_ActionBar
 +style Widget_AppCompat_Spinner_Underlined
++style Widget_AppCompat_TextView
 +style Widget_AppCompat_TextView_SpinnerItem
 +style Widget_AppCompat_Toolbar
 +style Widget_AppCompat_Toolbar_Button_Navigation
++style Widget_Autofill
++style Widget_Autofill_InlineSuggestionChip
++style Widget_Autofill_InlineSuggestionEndIconStyle
++style Widget_Autofill_InlineSuggestionStartIconStyle
++style Widget_Autofill_InlineSuggestionSubtitle
++style Widget_Autofill_InlineSuggestionTitle
 +style Widget_Compat_NotificationActionContainer
 +style Widget_Compat_NotificationActionText
 +style Widget_Support_CoordinatorLayout
@@ -3442,25 +3959,32 @@ index 0000000..d57fc46
 +styleable AnimatedStateListDrawableCompat android_constantSize android_dither android_enterFadeDuration android_exitFadeDuration android_variablePadding android_visible
 +styleable AnimatedStateListDrawableItem android_drawable android_id
 +styleable AnimatedStateListDrawableTransition android_drawable android_fromId android_reversible android_toId
++styleable AppCompatEmojiHelper
 +styleable AppCompatImageView android_src srcCompat tint tintMode
 +styleable AppCompatSeekBar android_thumb tickMark tickMarkTint tickMarkTintMode
 +styleable AppCompatTextHelper android_drawableBottom android_drawableEnd android_drawableLeft android_drawableRight android_drawableStart android_drawableTop android_textAppearance
-+styleable AppCompatTextView android_textAppearance autoSizeMaxTextSize autoSizeMinTextSize autoSizePresetSizes autoSizeStepGranularity autoSizeTextType firstBaselineToTopHeight fontFamily lastBaselineToBottomHeight lineHeight textAllCaps
-+styleable AppCompatTheme actionBarDivider actionBarItemBackground actionBarPopupTheme actionBarSize actionBarSplitStyle actionBarStyle actionBarTabBarStyle actionBarTabStyle actionBarTabTextStyle actionBarTheme actionBarWidgetTheme actionButtonStyle actionDropDownStyle actionMenuTextAppearance actionMenuTextColor actionModeBackground actionModeCloseButtonStyle actionModeCloseDrawable actionModeCopyDrawable actionModeCutDrawable actionModeFindDrawable actionModePasteDrawable actionModePopupWindowStyle actionModeSelectAllDrawable actionModeShareDrawable actionModeSplitBackground actionModeStyle actionModeWebSearchDrawable actionOverflowButtonStyle actionOverflowMenuStyle activityChooserViewStyle alertDialogButtonGroupStyle alertDialogCenterButtons alertDialogStyle alertDialogTheme android_windowAnimationStyle android_windowIsFloating autoCompleteTextViewStyle borderlessButtonStyle buttonBarButtonStyle buttonBarNegativeButtonStyle buttonBarNeutralButtonStyle buttonBarPositiveButtonStyle buttonBarStyle buttonStyle buttonStyleSmall checkboxStyle checkedTextViewStyle colorAccent colorBackgroundFloating colorButtonNormal colorControlActivated colorControlHighlight colorControlNormal colorError colorPrimary colorPrimaryDark colorSwitchThumbNormal controlBackground dialogCornerRadius dialogPreferredPadding dialogTheme dividerHorizontal dividerVertical dropDownListViewStyle dropdownListPreferredItemHeight editTextBackground editTextColor editTextStyle homeAsUpIndicator imageButtonStyle listChoiceBackgroundIndicator listDividerAlertDialog listMenuViewStyle listPopupWindowStyle listPreferredItemHeight listPreferredItemHeightLarge listPreferredItemHeightSmall listPreferredItemPaddingLeft listPreferredItemPaddingRight panelBackground panelMenuListTheme panelMenuListWidth popupMenuStyle popupWindowStyle radioButtonStyle ratingBarStyle ratingBarStyleIndicator ratingBarStyleSmall searchViewStyle seekBarStyle selectableItemBackground selectableItemBackgroundBorderless spinnerDropDownItemStyle spinnerStyle switchStyle textAppearanceLargePopupMenu textAppearanceListItem textAppearanceListItemSecondary textAppearanceListItemSmall textAppearancePopupMenuHeader textAppearanceSearchResultSubtitle textAppearanceSearchResultTitle textAppearanceSmallPopupMenu textColorAlertDialogListItem textColorSearchUrl toolbarNavigationButtonStyle toolbarStyle tooltipForegroundColor tooltipFrameBackground viewInflaterClass windowActionBar windowActionBarOverlay windowActionModeOverlay windowFixedHeightMajor windowFixedHeightMinor windowFixedWidthMajor windowFixedWidthMinor windowMinWidthMajor windowMinWidthMinor windowNoTitle
++styleable AppCompatTextView android_textAppearance autoSizeMaxTextSize autoSizeMinTextSize autoSizePresetSizes autoSizeStepGranularity autoSizeTextType drawableBottomCompat drawableEndCompat drawableLeftCompat drawableRightCompat drawableStartCompat drawableTint drawableTintMode drawableTopCompat emojiCompatEnabled firstBaselineToTopHeight fontFamily fontVariationSettings lastBaselineToBottomHeight lineHeight textAllCaps textLocale
++styleable AppCompatTheme actionBarDivider actionBarItemBackground actionBarPopupTheme actionBarSize actionBarSplitStyle actionBarStyle actionBarTabBarStyle actionBarTabStyle actionBarTabTextStyle actionBarTheme actionBarWidgetTheme actionButtonStyle actionDropDownStyle actionMenuTextAppearance actionMenuTextColor actionModeBackground actionModeCloseButtonStyle actionModeCloseContentDescription actionModeCloseDrawable actionModeCopyDrawable actionModeCutDrawable actionModeFindDrawable actionModePasteDrawable actionModePopupWindowStyle actionModeSelectAllDrawable actionModeShareDrawable actionModeSplitBackground actionModeStyle actionModeTheme actionModeWebSearchDrawable actionOverflowButtonStyle actionOverflowMenuStyle activityChooserViewStyle alertDialogButtonGroupStyle alertDialogCenterButtons alertDialogStyle alertDialogTheme android_windowAnimationStyle android_windowIsFloating autoCompleteTextViewStyle borderlessButtonStyle buttonBarButtonStyle buttonBarNegativeButtonStyle buttonBarNeutralButtonStyle buttonBarPositiveButtonStyle buttonBarStyle buttonStyle buttonStyleSmall checkboxStyle checkedTextViewStyle colorAccent colorBackgroundFloating colorButtonNormal colorControlActivated colorControlHighlight colorControlNormal colorError colorPrimary colorPrimaryDark colorSwitchThumbNormal controlBackground dialogCornerRadius dialogPreferredPadding dialogTheme dividerHorizontal dividerVertical dropDownListViewStyle dropdownListPreferredItemHeight editTextBackground editTextColor editTextStyle homeAsUpIndicator imageButtonStyle listChoiceBackgroundIndicator listChoiceIndicatorMultipleAnimated listChoiceIndicatorSingleAnimated listDividerAlertDialog listMenuViewStyle listPopupWindowStyle listPreferredItemHeight listPreferredItemHeightLarge listPreferredItemHeightSmall listPreferredItemPaddingEnd listPreferredItemPaddingLeft listPreferredItemPaddingRight listPreferredItemPaddingStart panelBackground panelMenuListTheme panelMenuListWidth popupMenuStyle popupWindowStyle radioButtonStyle ratingBarStyle ratingBarStyleIndicator ratingBarStyleSmall searchViewStyle seekBarStyle selectableItemBackground selectableItemBackgroundBorderless spinnerDropDownItemStyle spinnerStyle switchStyle textAppearanceLargePopupMenu textAppearanceListItem textAppearanceListItemSecondary textAppearanceListItemSmall textAppearancePopupMenuHeader textAppearanceSearchResultSubtitle textAppearanceSearchResultTitle textAppearanceSmallPopupMenu textColorAlertDialogListItem textColorSearchUrl toolbarNavigationButtonStyle toolbarStyle tooltipForegroundColor tooltipFrameBackground viewInflaterClass windowActionBar windowActionBarOverlay windowActionModeOverlay windowFixedHeightMajor windowFixedHeightMinor windowFixedWidthMajor windowFixedWidthMinor windowMinWidthMajor windowMinWidthMinor windowNoTitle
++styleable Autofill_InlineSuggestion autofillInlineSuggestionChip autofillInlineSuggestionEndIconStyle autofillInlineSuggestionStartIconStyle autofillInlineSuggestionSubtitle autofillInlineSuggestionTitle isAutofillInlineSuggestionTheme
 +styleable ButtonBarLayout allowStacking
-+styleable ColorStateListItem alpha android_alpha android_color
-+styleable CompoundButton android_button buttonTint buttonTintMode
++styleable Capability queryPatterns shortcutMatchRequired
++styleable CheckedTextView android_checkMark checkMarkCompat checkMarkTint checkMarkTintMode
++styleable ColorStateListItem alpha android_alpha android_color android_lStar lStar
++styleable CompoundButton android_button buttonCompat buttonTint buttonTintMode
 +styleable CoordinatorLayout keylines statusBarBackground
 +styleable CoordinatorLayout_Layout android_layout_gravity layout_anchor layout_anchorGravity layout_behavior layout_dodgeInsetEdges layout_insetEdge layout_keyline
 +styleable DrawerArrowToggle arrowHeadLength arrowShaftLength barLength color drawableSize gapBetweenBars spinBars thickness
-+styleable FontFamily fontProviderAuthority fontProviderCerts fontProviderFetchStrategy fontProviderFetchTimeout fontProviderPackage fontProviderQuery
++styleable FontFamily fontProviderAuthority fontProviderCerts fontProviderFetchStrategy fontProviderFetchTimeout fontProviderPackage fontProviderQuery fontProviderSystemFontFamily
 +styleable FontFamilyFont android_font android_fontStyle android_fontVariationSettings android_fontWeight android_ttcIndex font fontStyle fontVariationSettings fontWeight ttcIndex
++styleable Fragment android_id android_name android_tag
++styleable FragmentContainerView android_name android_tag
 +styleable GenericDraweeHierarchy actualImageScaleType backgroundImage fadeDuration failureImage failureImageScaleType overlayImage placeholderImage placeholderImageScaleType pressedStateOverlayImage progressBarAutoRotateInterval progressBarImage progressBarImageScaleType retryImage retryImageScaleType roundAsCircle roundBottomEnd roundBottomLeft roundBottomRight roundBottomStart roundTopEnd roundTopLeft roundTopRight roundTopStart roundWithOverlayColor roundedCornerRadius roundingBorderColor roundingBorderPadding roundingBorderWidth viewAspectRatio
 +styleable GradientColor android_centerColor android_centerX android_centerY android_endColor android_endX android_endY android_gradientRadius android_startColor android_startX android_startY android_tileMode android_type
 +styleable GradientColorItem android_color android_offset
 +styleable LinearLayoutCompat android_baselineAligned android_baselineAlignedChildIndex android_gravity android_orientation android_weightSum divider dividerPadding measureWithLargestChild showDividers
 +styleable LinearLayoutCompat_Layout android_layout_gravity android_layout_height android_layout_weight android_layout_width
 +styleable ListPopupWindow android_dropDownHorizontalOffset android_dropDownVerticalOffset
++styleable LoadingImageView circleCrop imageAspectRatio imageAspectRatioAdjust
 +styleable MenuGroup android_checkableBehavior android_enabled android_id android_menuCategory android_orderInCategory android_visible
 +styleable MenuItem actionLayout actionProviderClass actionViewClass alphabeticModifiers android_alphabeticShortcut android_checkable android_checked android_enabled android_icon android_id android_menuCategory android_numericShortcut android_onClick android_orderInCategory android_title android_titleCondensed android_visible contentDescription iconTint iconTintMode numericModifiers showAsAction tooltipText
 +styleable MenuView android_headerBackground android_horizontalDivider android_itemBackground android_itemIconDisabledAlpha android_itemTextAppearance android_verticalDivider android_windowAnimationStyle preserveIconSpacing subMenuArrow
@@ -3468,329 +3992,110 @@ index 0000000..d57fc46
 +styleable PopupWindowBackgroundState state_above_anchor
 +styleable RecycleListView paddingBottomNoButtons paddingTopNoTitle
 +styleable SearchView android_focusable android_imeOptions android_inputType android_maxWidth closeIcon commitIcon defaultQueryHint goIcon iconifiedByDefault layout queryBackground queryHint searchHintIcon searchIcon submitBackground suggestionRowLayout voiceIcon
++styleable SignInButton buttonSize colorScheme scopeUris
 +styleable SimpleDraweeView actualImageResource actualImageScaleType actualImageUri backgroundImage fadeDuration failureImage failureImageScaleType overlayImage placeholderImage placeholderImageScaleType pressedStateOverlayImage progressBarAutoRotateInterval progressBarImage progressBarImageScaleType retryImage retryImageScaleType roundAsCircle roundBottomEnd roundBottomLeft roundBottomRight roundBottomStart roundTopEnd roundTopLeft roundTopRight roundTopStart roundWithOverlayColor roundedCornerRadius roundingBorderColor roundingBorderPadding roundingBorderWidth viewAspectRatio
 +styleable Spinner android_dropDownWidth android_entries android_popupBackground android_prompt popupTheme
 +styleable StateListDrawable android_constantSize android_dither android_enterFadeDuration android_exitFadeDuration android_variablePadding android_visible
 +styleable StateListDrawableItem android_drawable
 +styleable SwitchCompat android_textOff android_textOn android_thumb showText splitTrack switchMinWidth switchPadding switchTextAppearance thumbTextPadding thumbTint thumbTintMode track trackTint trackTintMode
-+styleable TextAppearance android_fontFamily android_shadowColor android_shadowDx android_shadowDy android_shadowRadius android_textColor android_textColorHint android_textColorLink android_textSize android_textStyle android_typeface fontFamily textAllCaps
-+styleable Toolbar android_gravity android_minHeight buttonGravity collapseContentDescription collapseIcon contentInsetEnd contentInsetEndWithActions contentInsetLeft contentInsetRight contentInsetStart contentInsetStartWithNavigation logo logoDescription maxButtonHeight navigationContentDescription navigationIcon popupTheme subtitle subtitleTextAppearance subtitleTextColor title titleMargin titleMarginBottom titleMarginEnd titleMarginStart titleMarginTop titleMargins titleTextAppearance titleTextColor
++styleable TextAppearance android_fontFamily android_shadowColor android_shadowDx android_shadowDy android_shadowRadius android_textColor android_textColorHint android_textColorLink android_textFontWeight android_textSize android_textStyle android_typeface fontFamily fontVariationSettings textAllCaps textLocale
++styleable Toolbar android_gravity android_minHeight buttonGravity collapseContentDescription collapseIcon contentInsetEnd contentInsetEndWithActions contentInsetLeft contentInsetRight contentInsetStart contentInsetStartWithNavigation logo logoDescription maxButtonHeight menu navigationContentDescription navigationIcon popupTheme subtitle subtitleTextAppearance subtitleTextColor title titleMargin titleMarginBottom titleMarginEnd titleMarginStart titleMarginTop titleMargins titleTextAppearance titleTextColor
 +styleable View android_focusable android_theme paddingEnd paddingStart theme
 +styleable ViewBackgroundHelper android_background backgroundTint backgroundTintMode
 +styleable ViewStubCompat android_id android_inflatedId android_layout
 +xml rn_dev_preferences
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/build-history.bin b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/build-history.bin
+diff --git a/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt
 new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-attributes.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/java-sources-proto-map.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/proto.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/source-to-classes.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/subtypes.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.keystream.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.values.at b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab.values.at
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i.len b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/caches-jvm/jvm/kotlin/supertypes.tab_i.len
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/last-build.bin b/node_modules/expo-task-manager/android/build/kotlin/compileDebugKotlin/last-build.bin
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt
-new file mode 100644
-index 0000000..e38d274
+index 0000000..bb04b3c
 --- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/outputs/logs/manifest-merger-debug-report.txt
-@@ -0,0 +1,75 @@
++++ b/node_modules/expo-location/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,47 @@
 +-- Merging decision tree log ---
 +manifest
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:1-14:12
 +	package
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:2:5-39
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+	android:versionName
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+	android:versionCode
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:1-22:12
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:2:3-34
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
 +	xmlns:android
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:1:11-69
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:1:11-69
++uses-permission#android.permission.ACCESS_COARSE_LOCATION
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:3-79
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:4:20-76
++uses-permission#android.permission.ACCESS_FINE_LOCATION
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:3-77
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:5:20-74
++uses-permission#android.permission.FOREGROUND_SERVICE
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:3-75
++	android:name
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:6:20-72
 +application
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:4:5-21:19
-+receiver#expo.modules.taskManager.TaskBroadcastReceiver
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:5:9-13:20
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:8:3-13:17
++service#expo.modules.location.services.LocationTaskService
++ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:9:5-12:50
 +	android:exported
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:7:13-37
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:11:7-31
++	android:foregroundServiceType
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:12:7-47
 +	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:6:13-50
-+intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.MY_PACKAGE_REPLACED+action:name:expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:8:13-12:29
-+action#expo.modules.taskManager.TaskBroadcastReceiver.INTENT_ACTION
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:17-103
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:9:25-100
-+action#android.intent.action.BOOT_COMPLETED
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:17-79
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:10:25-76
-+action#android.intent.action.MY_PACKAGE_REPLACED
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:17-84
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:11:25-81
-+service#expo.modules.taskManager.TaskJobService
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:14:9-18:72
-+	android:enabled
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:16:13-35
-+	android:exported
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:17:13-37
-+	android:permission
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:18:13-69
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:15:13-43
-+meta-data#expo.modules.taskManager.oneAppId
-+ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:7-89
-+	android:value
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:67-87
-+	android:name
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml:20:18-66
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml:10:7-51
 +uses-sdk
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
 +	android:targetSdkVersion
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
 +	android:minSdkVersion
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-+		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo-task-manager/android/src/main/AndroidManifest.xml
-diff --git a/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt b/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
-new file mode 100644
-index 0000000..fda9b17
---- /dev/null
-+++ b/node_modules/expo-task-manager/android/build/tmp/compileDebugJavaWithJavac/source-classes-mapping.txt
-@@ -0,0 +1,39 @@
-+expo/modules/taskManager/TaskManagerPackage.java
-+ expo.modules.taskManager.TaskManagerPackage
-+expo/modules/taskManager/exceptions/TaskRegisteringFailedException.java
-+ expo.modules.taskManager.exceptions.TaskRegisteringFailedException
-+expo/modules/taskManager/TaskManagerInternalModule.java
-+ expo.modules.taskManager.TaskManagerInternalModule
-+expo/modules/taskManager/BuildConfig.java
-+ expo.modules.taskManager.BuildConfig
-+expo/modules/taskManager/TaskJobService.java
-+ expo.modules.taskManager.TaskJobService
-+expo/modules/taskManager/repository/ManagedTasksAndEventsRepository.java
-+ expo.modules.taskManager.repository.ManagedTasksAndEventsRepository
-+expo/modules/taskManager/repository/TasksPersistence.java
-+ expo.modules.taskManager.repository.TasksPersistence
-+expo/modules/taskManager/repository/TasksAndEventsRepository.java
-+ expo.modules.taskManager.repository.TasksAndEventsRepository
-+ expo.modules.taskManager.repository.TasksAndEventsRepository$AppConfig
-+expo/modules/taskManager/exceptions/InvalidConsumerClassException.java
-+ expo.modules.taskManager.exceptions.InvalidConsumerClassException
-+expo/modules/taskManager/Utils.java
-+ expo.modules.taskManager.Utils
-+expo/modules/taskManager/TaskManagerModule.java
-+ expo.modules.taskManager.TaskManagerModule
-+ expo.modules.taskManager.TaskManagerModule$1
-+expo/modules/taskManager/repository/BareTasksAndEventsRepository.java
-+ expo.modules.taskManager.repository.BareTasksAndEventsRepository
-+expo/modules/taskManager/TaskBroadcastReceiver.java
-+ expo.modules.taskManager.TaskBroadcastReceiver
-+expo/modules/taskManager/exceptions/TaskNotFoundException.java
-+ expo.modules.taskManager.exceptions.TaskNotFoundException
-+expo/modules/taskManager/TaskManagerUtils.java
-+ expo.modules.taskManager.TaskManagerUtils
-+ expo.modules.taskManager.TaskManagerUtils$1
-+expo/modules/taskManager/TaskService.java
-+ expo.modules.taskManager.TaskService
-+ expo.modules.taskManager.TaskService$1
-+ expo.modules.taskManager.TaskService$2
-+expo/modules/taskManager/Task.java
-+ expo.modules.taskManager.Task
-diff --git a/node_modules/expo-task-manager/android/build/tmp/kotlin-classes/debug/META-INF/expo-task-manager_debug.kotlin_module b/node_modules/expo-task-manager/android/build/tmp/kotlin-classes/debug/META-INF/expo-task-manager_debug.kotlin_module
-new file mode 100644
-index 0000000..e69de29
-diff --git a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
-index 0b46ff6..132523b 100644
---- a/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
-+++ b/node_modules/expo-task-manager/android/src/main/java/expo/modules/taskManager/TaskManagerUtils.java
-@@ -9,6 +9,7 @@ import android.content.Context;
- import android.content.Intent;
- import android.net.Uri;
- import android.os.Bundle;
-+import android.os.Build;
- import android.os.Parcelable;
- import android.os.PersistableBundle;
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		ADDED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
++		INJECTED from /Users/mizutani/prg/ecorismap/upgrade/ecorismap/node_modules/expo-location/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
+index b9b62da..b97bc73 100644
+--- a/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
++++ b/node_modules/expo-location/android/src/main/java/expo/modules/location/services/LocationTaskService.java
+@@ -17,7 +17,13 @@ import android.os.IBinder;
+ import androidx.annotation.Nullable;
  import android.util.Log;
-@@ -43,7 +44,9 @@ public class TaskManagerUtils implements TaskManagerUtilsInterface {
  
-   @Override
-   public PendingIntent createTaskIntent(Context context, TaskInterface task) {
--    return createTaskIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT);
-+    // We're defaulting to the behaviour prior API 31 (mutable) even though Android recommends immutability
-+    int mutableFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
-+    return createTaskIntent(context, task, PendingIntent.FLAG_UPDATE_CURRENT|mutableFlag);
++import android.content.pm.ApplicationInfo;
++import android.content.pm.PackageManager;
++import androidx.core.app.NotificationCompat;
++
+ public class LocationTaskService extends Service {
++  public static final String META_DATA_DEFAULT_ICON_KEY = "expo.modules.notifications.default_notification_icon";
++  
+   private static final String TAG = "LocationTaskService";
+   private static int sServiceId = 481756;
+   private String mChannelId;
+@@ -111,10 +117,22 @@ public class LocationTaskService extends Service {
+     }
+ 
+     return builder.setCategory(Notification.CATEGORY_SERVICE)
+-        .setSmallIcon(getApplicationInfo().icon)
++        .setSmallIcon(getIcon())
+         .build();
    }
  
-   @Override
-@@ -184,7 +187,8 @@ public class TaskManagerUtils implements TaskManagerUtilsInterface {
-       .build();
- 
-     intent.setData(dataUri);
--
-+    // We're defaulting to the behaviour prior API 31 (mutable) even though Android recommends immutability
-+    int mutableFlag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
-     return PendingIntent.getBroadcast(context, PENDING_INTENT_REQUEST_CODE, intent, flags);
-   }
- 
++  protected int getIcon() {
++    try {
++      ApplicationInfo ai = mParentContext.getPackageManager().getApplicationInfo(mParentContext.getPackageName(), PackageManager.GET_META_DATA);
++      if (ai.metaData.containsKey(META_DATA_DEFAULT_ICON_KEY)) {
++        return ai.metaData.getInt(META_DATA_DEFAULT_ICON_KEY);
++      }
++    } catch (PackageManager.NameNotFoundException | ClassCastException e) {
++      Log.e("expo-notifications", "Could not have fetched default notification icon.");
++    }
++    return mParentContext.getApplicationInfo().icon;
++  }
++
+   @TargetApi(26)
+   private void prepareChannel(String id) {
+     NotificationManager notificationManager = (NotificationManager) getSystemService(Activity.NOTIFICATION_SERVICE);

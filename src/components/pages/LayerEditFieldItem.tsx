@@ -52,7 +52,7 @@ export default function LayerEditFieldItemScreen() {
         ) : (
           <>
             <View style={[styles.td3, { flex: 4 }]}>
-              <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.value')}</Text>
+              <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
             </View>
             <View style={styles.td3} />
           </>
@@ -130,7 +130,7 @@ const ListButtons = () => {
       <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => pressAddValue(false)} />
       {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
         <TouchableOpacity style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
-          <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{t('common.addOther')}</Text>
+          <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{`${t('common.addOther')}`}</Text>
         </TouchableOpacity>
       )}
     </View>

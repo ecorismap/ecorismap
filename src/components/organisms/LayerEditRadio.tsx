@@ -5,6 +5,7 @@ import { PermissionType } from '../../types';
 import { COLOR, PERMISSIONTYPE } from '../../constants/AppConstants';
 import { CheckBox } from '../molecules/CheckBox';
 import { LayerEditContext } from '../../contexts/LayerEdit';
+import { t } from '../../i18n/config';
 
 export const LayerEditRadio = () => {
   const { layer, editable, changePermission } = useContext(LayerEditContext);
@@ -29,7 +30,7 @@ export const LayerEditRadio = () => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <View style={styles.tr2}>
-          <Text style={styles.title}>{name}</Text>
+          <Text style={styles.title}>{`${t('common.permission')}`}</Text>
           <View style={styles.checkbox}>
             {permissionList.map((item, index) => (
               <CheckBox
