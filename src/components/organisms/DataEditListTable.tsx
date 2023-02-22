@@ -39,10 +39,10 @@ export const DataEditListTable = (props: Props_DataEditListTable) => {
       </View>
       <View style={styles.tr3}>
         <View style={[styles.td3, { flex: 100 }]}>
-          <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.select')}</Text>
+          <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.select')}`}</Text>
         </View>
         <View style={[styles.td3, { flex: 100 }]}>
-          <Text style={[styles.title, { textAlign: 'center' }]}>{t('common.value')}</Text>
+          <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           <Button

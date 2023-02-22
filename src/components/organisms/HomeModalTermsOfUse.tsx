@@ -99,13 +99,13 @@ export const HomeModalTermsOfUse = React.memo(() => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{t('common.confirm')} </Text>
+            <Text style={styles.modalTitle}>{`${t('common.confirm')}`} </Text>
 
             <View style={{ flexDirection: 'column', marginBottom: 10 }}>
               <Text>{TUTRIALS_MESSAGE.TERMS_OF_USE}</Text>
               <View style={{ alignItems: 'center', margin: 10 }}>
                 <TouchableOpacity onPress={pressTermsOfUse}>
-                  <Text style={styles.text}>{t('common.termsOfUse')}</Text>
+                  <Text style={styles.text}>{`${t('common.termsOfUse')}`}</Text>
                 </TouchableOpacity>
               </View>
             </View>

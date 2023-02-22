@@ -173,6 +173,7 @@ export const useDataEdit = (
           let uri;
           //ImagePickerのバグのためwebに処理を追加
           //https://github.com/expo/expo/issues/9984
+          if (result.uri === undefined) throw new Error('result.uri is undefined');
           if (Platform.OS === 'web') {
             extension = result.uri.split(';')[0].split('/')[1];
             fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
@@ -218,44 +219,50 @@ export const useDataEdit = (
 
   const takePhoto = useCallback(
     async (name: string) => {
-      let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (res.status !== 'granted') {
-        //console.log('require camera permission');
-        return;
-      }
-      res = await ImagePicker.requestCameraPermissionsAsync();
-      if (res.status !== 'granted') {
-        //console.log('require camera permission');
-        return;
-      }
+      try {
+        let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (res.status !== 'granted') {
+          //console.log('require camera permission');
+          return;
+        }
+        res = await ImagePicker.requestCameraPermissionsAsync();
+        if (res.status !== 'granted') {
+          //console.log('require camera permission');
+          return;
+        }
 
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: false,
-        exif: true,
-      });
-      if (!result.cancelled) {
-        const extension = result.uri.split('.').pop();
-        const fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-        const uri = await saveToStorage(result.uri, fileName, {
-          copy: true,
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: false,
+          exif: true,
         });
+        if (!result.cancelled) {
+          if (result.uri === undefined || result.width === undefined || result.height === undefined)
+            throw new Error('result.uri is undefined');
+          const extension = result.uri.split('.').pop();
+          const fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
+          const uri = await saveToStorage(result.uri, fileName, {
+            copy: true,
+          });
 
-        const thumbnail = await createThumbnail(uri);
-        const m = cloneDeep(targetRecord);
-        const photoId = uuidv4();
-        (m.field[name] as PhotoType[]).push({
-          id: photoId,
-          name: fileName,
-          uri: uri,
-          url: null,
-          width: result.width,
-          height: result.height,
-          thumbnail: thumbnail,
-          key: null,
-        });
-        setTargetRecord(m);
-        setIsEditingRecord(true);
-        setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri }]);
+          const thumbnail = await createThumbnail(uri);
+          const m = cloneDeep(targetRecord);
+          const photoId = uuidv4();
+          (m.field[name] as PhotoType[]).push({
+            id: photoId,
+            name: fileName,
+            uri: uri,
+            url: null,
+            width: result.width,
+            height: result.height,
+            thumbnail: thumbnail,
+            key: null,
+          });
+          setTargetRecord(m);
+          setIsEditingRecord(true);
+          setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri }]);
+        }
+      } catch (e) {
+        console.log(e);
       }
     },
     [createThumbnail, saveToStorage, setIsEditingRecord, targetRecord, temporaryAddedPhotoList]

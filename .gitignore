@@ -81,3 +81,6 @@ APIKeys.ts
 
 #exclude template from ignore
 !/template/*
+
+android_bac/
+ios_bac/
