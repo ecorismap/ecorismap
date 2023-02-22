@@ -189,7 +189,7 @@ export const useHisyouTool = (
   );
 
   const deleteHisyouActions = useCallback(
-    (hisyouLineId) => {
+    (hisyouLineId: string) => {
       //既存ラインの選択
       const hisyouActionsIndex = drawLine.current
         .map((line, idx) => line.id === hisyouLineId && !line.properties.includes('HISYOU') && idx)

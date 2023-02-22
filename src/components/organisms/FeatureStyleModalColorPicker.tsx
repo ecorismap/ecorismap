@@ -44,7 +44,7 @@ export const FeatureStyleModalColorPicker = () => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={[styles.modalContents, { width: windowWidth * 0.6, height: 330 }]}>
-            <Text style={styles.modalTitle}>{t('common.selectColor')} </Text>
+            <Text style={styles.modalTitle}>{`${t('common.selectColor')}`} </Text>
             <ColorPicker
               value={'red'}
               sliderThickness={20}

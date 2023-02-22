@@ -100,7 +100,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{t('common.mapListURL')} </Text>
+            <Text style={styles.modalTitle}>{`${t('common.mapListURL')}`} </Text>
 
             <View style={{ flexDirection: 'row' }}>
               <TextInput
@@ -125,7 +125,7 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressReset}
               >
-                <Text>{t('common.reset')}</Text>
+                <Text>{`${t('common.reset')}`}</Text>
               </TouchableOpacity>
             </View>
           </View>

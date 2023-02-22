@@ -1,26 +1,14 @@
 diff --git a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
-index 56662d2..a7aeb07 100644
+index 9b15499..34dd2e0 100644
 --- a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
 +++ b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.cjs.js
-@@ -38,7 +38,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
+@@ -34,7 +34,8 @@
  
  var reactNativeVirgilCrypto = require('react-native-virgil-crypto');
  var reactNativeKeychain = require('react-native-keychain');
--var reactNative = _interopDefault(require('react-native'));
-+var reactNative = _interopDefault(require('@react-native-async-storage/async-storage'));
- 
- var global$1 = (typeof global !== "undefined" ? global :
-             typeof self !== "undefined" ? self :
-diff --git a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
-index 4687abc..35a74e9 100644
---- a/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
-+++ b/node_modules/@virgilsecurity/e3kit-native/dist/e3kit-native.es.js
-@@ -33,7 +33,7 @@
- import { virgilCrypto, virgilBrainKeyCrypto, HashAlgorithm } from 'react-native-virgil-crypto';
- export { KeyPairType } from 'react-native-virgil-crypto';
- import { getGenericPassword, setGenericPassword, resetGenericPassword } from 'react-native-keychain';
--import reactNative from 'react-native';
-+import reactNative from '@react-native-async-storage/async-storage';
+-var require$$0$4 = require('react-native');
++var require$$0$4 = require('@react-native-async-storage/async-storage');
++//var require$$0$4 = require('react-native');
  
  var global$1 = (typeof global !== "undefined" ? global :
              typeof self !== "undefined" ? self :

@@ -133,7 +133,7 @@ export const MapModalTileMap = React.memo(() => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{t('Maps.modal.title')}</Text>
+            <Text style={styles.modalTitle}>{`${t('Maps.modal.title')}`}</Text>
             <View style={styles.modalHeaderButton}>
               <SmallButton
                 name="delete"

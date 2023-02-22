@@ -7,7 +7,7 @@ import licenseFile from '../licenses.json';
 export default function LicensesContainers() {
   const packageNames = Object.keys(licenseFile);
 
-  const pressPackageName = useCallback((packageName) => {
+  const pressPackageName = useCallback((packageName: string) => {
     //@ts-ignore
     const url = licenseFile[packageName].licenseUrl;
     Linking.openURL(url);
