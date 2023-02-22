@@ -22,7 +22,7 @@ import Purchases from '../containers/Purchases';
 import Settings from '../containers/Settings';
 import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
-import DataRoutes from './DataRoutes';
+import SplitScreen from './split';
 import { t } from '../i18n/config';
 import Licenses from '../containers/Licenses';
 import { FUNC_LOGIN } from '../constants/AppConstants';
@@ -46,6 +46,7 @@ export type RootStackParamList = {
     isNew: boolean;
     createType?: CreateProjectType;
   };
+  SplitScreen: undefined;
   Maps: undefined;
   MapList: undefined;
   Data: {
@@ -137,7 +138,7 @@ export default function Routes() {
               component={ProjectEdit}
               options={{ title: t('ProjectEdit.navigation.title') }}
             />
-            <Stack.Screen name="Data" component={DataRoutes} options={{ title: t('Data.navigation.title') }} />
+            <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
           </>
         )}
       </Stack.Navigator>

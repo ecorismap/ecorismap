@@ -21,7 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
 import mapboxgl, { AnyLayer } from 'mapbox-gl';
-import DataRoutes from '../../routes/DataRoutes';
+import SplitScreen from '../../routes/split';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { Loading } from '../molecules/Loading';
@@ -447,7 +447,7 @@ export default function HomeScreen() {
           width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : '0%',
         }}
       >
-        <DataRoutes />
+        <SplitScreen />
       </View>
       <View
         style={{
