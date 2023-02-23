@@ -7,16 +7,12 @@ import invalid_point_gpx from '../resources/invalid_point_gpx';
 import { layers } from '../resources/layer';
 import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../resources/record';
 import { LayerType } from '../../types';
+import MockDate from 'mockdate';
 jest.mock('uuid', () => ({ v4: () => '1234' }));
+MockDate.set('2000-01-01');
 
 describe('Gpx2Data', () => {
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
   it('return data from gpx', () => {
-    jest.useFakeTimers().setSystemTime(new Date('2022-06-02 12:00:00'));
-
     expect(Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual({
       layer: {
         active: false,
@@ -26,6 +22,7 @@ describe('Gpx2Data', () => {
           colorRamp: 'RANDOM',
           colorType: 'SINGLE',
           fieldName: '',
+          customFieldValue: '',
           transparency: 0.8,
         },
         field: [
@@ -63,7 +60,6 @@ describe('Gpx2Data', () => {
   });
 
   it('return track from valid gpx', () => {
-    //jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
@@ -78,7 +74,6 @@ describe('Gpx2Data', () => {
   });
 
   it('return track from invalid gpx', () => {
-    // jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
     const data = Gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
@@ -110,7 +105,6 @@ describe('Gpx2Data', () => {
 });
 
 it('return  point from invalid gpx', () => {
-  jest.useFakeTimers().setSystemTime(new Date('2022-06-02 12:00:00'));
   const data = Gpx2Data(invalid_point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
   const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
   expect(checkValue).toStrictEqual([
@@ -124,7 +118,7 @@ it('return  point from invalid gpx', () => {
     },
     {
       coords: { ele: undefined, latitude: 0, longitude: 0 },
-      field: { cmt: '', name: '', time: '2022-06-02T12:00:00+09:00' },
+      field: { cmt: '', name: '', time: '2000-01-01T09:00:00+09:00' },
     },
   ]);
 });
@@ -137,6 +131,7 @@ describe('GeoJson2Data', () => {
       colorList: [],
       colorRamp: 'RANDOM',
       colorType: 'SINGLE',
+      customFieldValue: '',
       fieldName: '',
       transparency: 0.8,
     },

@@ -85,20 +85,21 @@ export type UseLayersReturnType = {
 
 export const useLayers = (): UseLayersReturnType => {
   const dispatch = useDispatch();
+
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const settings = useSelector((state: AppState) => state.settings);
   const maps = useSelector((state: AppState) => state.tileMaps);
-
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const role = useSelector((state: AppState) => state.settings.role);
+  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
+
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const role = useSelector((state: AppState) => state.settings.role);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const editable = useMemo(
     () =>
       ((role === 'OWNER' || role === 'ADMIN') && isSettingProject) || user.uid === undefined || projectId === undefined,
