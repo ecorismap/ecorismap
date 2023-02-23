@@ -15766,10 +15766,10 @@ react-native-vector-icons@^9.0.0:
     prop-types "^15.7.2"
     yargs "^16.1.1"
 
-react-native-virgil-crypto@^0.6.2:
-  version "0.6.2"
-  resolved "https://registry.yarnpkg.com/react-native-virgil-crypto/-/react-native-virgil-crypto-0.6.2.tgz#531a1be02d5770e2d4534acf39179fe30a3ba4a6"
-  integrity sha512-IucVES+tGI/3ECokLVFWylMyx+9+bqwD9EE9PJgaHW+vvmiA5t6ebhUjsd3JTCBIXzXrS/Lq+dPKLIpXlAsg4Q==
+react-native-virgil-crypto@^0.6.3:
+  version "0.6.3"
+  resolved "https://registry.yarnpkg.com/react-native-virgil-crypto/-/react-native-virgil-crypto-0.6.3.tgz#470305467b495b7e69b5272e2bbcb3e16a271810"
+  integrity sha512-rvxb5kcig2AqyXWrpf7h5UeKN5kNv8i0vYnaFJRNo+9vw0sMICfwxmjb/qNO73075is86vo8meU8cypf4tVrDA==
   dependencies:
     "@virgilsecurity/crypto-types" "1.1.1"
     buffer "^6.0.3"
