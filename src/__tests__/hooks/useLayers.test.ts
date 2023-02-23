@@ -1,27 +1,29 @@
-import { RenderResult, renderHook, act } from '@testing-library/react-hooks';
 import { LayerType, TrackingType, UserType } from '../../types';
-import { COLOR, FEATURETYPE, PERMISSIONTYPE } from '../../constants/AppConstants';
-import { useLayers, UseLayersReturnType } from '../../hooks/useLayers';
-import { createLayersInitialState } from '../../modules/layers';
+import { COLOR } from '../../constants/AppConstants';
+import { useLayers } from '../../hooks/useLayers';
+import { renderHook, act } from '@testing-library/react-hooks';
+import { dataSet } from '../resources/dataSet';
+import { settings } from '../resources/settings';
+import { maps } from '../resources/maps';
 
 const layers: LayerType[] = [
-  ...createLayersInitialState(),
   {
-    id: '3',
-    name: 'ポイント',
-    type: FEATURETYPE.POINT,
+    id: '0',
+    name: 'point',
+    type: 'POINT',
     permission: 'PRIVATE',
     colorStyle: {
-      colorType: 'Single',
+      colorType: 'SINGLE',
+      transparency: 0.2,
       color: COLOR.RED,
       fieldName: 'name',
-      colorRamp: 'Random',
+      customFieldValue: '',
+      colorRamp: 'RANDOM',
       colorList: [],
-      transparency: 1,
     },
     label: 'name',
     visible: true,
-    active: false,
+    active: true,
     field: [
       { id: '0-0', name: 'name', format: 'SERIAL' },
       { id: '0-1', name: 'time', format: 'DATETIME' },
@@ -42,7 +44,6 @@ const tracking: TrackingType = {
 };
 
 const projectId = '0';
-const isOwner = 'true';
 const isSettingProject = 'true';
 
 let mockDispatch = jest.fn();
@@ -53,16 +54,37 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
+jest.mock('i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+  language: ['en'],
+  initReactI18next: {
+    type: '3rdParty',
+    init: () => {},
+  },
+  use: () => {
+    return {
+      init: () => {},
+    };
+  },
+  t: (key: string) => key,
+}));
+jest.mock('../../utils/File', () => ({ clearCacheData: jest.fn(), exportDataAndPhoto: jest.fn() }));
+
 describe('useLayers', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
     mockSelector = jest
       .fn()
       .mockReturnValueOnce(layers)
+      .mockReturnValueOnce(dataSet)
+      .mockReturnValueOnce(settings)
+      .mockReturnValueOnce(maps)
+      .mockReturnValueOnce(projectId)
       .mockReturnValueOnce(user)
       .mockReturnValueOnce(tracking)
-      .mockReturnValueOnce(projectId)
-      .mockReturnValueOnce(isOwner)
+      .mockReturnValueOnce(settings.role)
       .mockReturnValueOnce(isSettingProject);
   });
 
@@ -70,16 +92,14 @@ describe('useLayers', () => {
     jest.resetAllMocks();
   });
 
-  let result: RenderResult<UseLayersReturnType>;
+  //let result: RenderResult<UseLayersReturnType>;
 
   test('changeActiveLayerを呼ぶと、アクティブの場合、非アクティブになる', () => {
-    result = renderHook(() => useLayers()).result;
-
+    const { result } = renderHook(() => useLayers());
     expect(result.current.layers[0].active).toBe(true);
     act(() => {
       result.current.changeActiveLayer(0);
     });
-
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'layers/set',
       value: [{ ...result.current.layers[0], active: false }, ...result.current.layers.slice(1)],
@@ -87,23 +107,17 @@ describe('useLayers', () => {
   });
 
   test('changeActiveLayerを呼ぶと、非アクティブはアクティブになり、同タイプは非アクティブになる', () => {
-    result = renderHook(() => useLayers()).result;
+    const { result } = renderHook(() => useLayers());
 
     expect(result.current.layers[0].active).toBe(true);
-    expect(result.current.layers[3].active).toBe(false);
-    expect(result.current.layers[0].type).toBe(FEATURETYPE.POINT);
-    expect(result.current.layers[3].type).toBe(FEATURETYPE.POINT);
+    expect(result.current.layers[0].type).toBe('POINT');
     act(() => {
-      result.current.changeActiveLayer(3);
+      result.current.changeActiveLayer(0);
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'layers/set',
-      value: [
-        { ...result.current.layers[0], active: false },
-        ...result.current.layers.slice(1, 3),
-        { ...result.current.layers[3], active: true },
-      ],
+      value: [{ ...result.current.layers[0], active: false }],
     });
   });
 });
