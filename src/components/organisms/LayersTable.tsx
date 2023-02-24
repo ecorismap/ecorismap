@@ -71,10 +71,7 @@ const LayersItems = () => {
         return (
           <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
             <View style={[styles.td, { flex: 2, width: 85, borderRightColor: COLOR.MAIN }]}>
-              <RectButton2
-                name={item.visible ? 'eye' : 'checkbox-blank-outline'}
-                onPress={() => changeVisible(index, item)}
-              />
+              <RectButton2 name={item.visible ? 'eye' : 'checkbox-blank-outline'} onPress={() => changeVisible(item)} />
               {item.type === 'POINT' && (
                 <TouchableOpacity onPress={() => gotoColorStyle(item)}>
                   <PointView
@@ -137,7 +134,7 @@ const LayersItems = () => {
             <View style={[styles.td, { flex: 5, width: 160 }]}>
               <Picker
                 selectedValue={item.label}
-                onValueChange={(itemValue) => changeLabel(index, itemValue as string)}
+                onValueChange={(itemValue) => changeLabel(item, itemValue as string)}
                 itemLabelArray={fieldNames}
                 itemValueArray={fieldNames}
                 maxIndex={fieldNames.length - 1}

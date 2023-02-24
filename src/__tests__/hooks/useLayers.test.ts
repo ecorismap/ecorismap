@@ -120,4 +120,19 @@ describe('useLayers', () => {
       value: [{ ...result.current.layers[0], active: false }],
     });
   });
+
+  test('表示非表示ボタンを押すとレイヤの表示非表示が切り替わる', () => {
+    const { result } = renderHook(() => useLayers());
+    const layer = result.current.layers[0];
+    expect(layer.visible).toBe(true);
+
+    act(() => {
+      result.current.changeVisible(layer);
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'layers/update',
+      value: { ...layer, visible: false },
+    });
+  });
 });
