@@ -10,10 +10,13 @@ import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
+import { useLayers2 } from '../hooks/useLayers2';
+import { useEditable } from '../hooks/useEditable';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
-  const { layers, editable, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder, importFile } = useLayers();
-
+  const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
+  const { editable } = useEditable();
+  const { importFile } = useLayers2();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 

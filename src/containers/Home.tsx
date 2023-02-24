@@ -17,7 +17,6 @@ import { MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
-import { useLayers } from '../hooks/useLayers';
 import { useWindow } from '../hooks/useWindow';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
 import { ModalHisyouToolSetting } from '../plugins/hisyoutool/ModalHisyouToolSetting';
@@ -27,6 +26,8 @@ import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
+import { useLayers2 } from '../hooks/useLayers2';
+import { useEditable } from '../hooks/useEditable';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -37,7 +38,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { screenState, openData, expandData, closeData } = useScreen();
-  const { editable, getReceivedFile, importDropedFile } = useLayers();
+  const { editable } = useEditable();
+  const { getReceivedFile, importDropedFile } = useLayers2();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);

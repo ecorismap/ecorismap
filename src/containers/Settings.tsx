@@ -7,11 +7,11 @@ import * as FileSystem from 'expo-file-system';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
-import { useLayers } from '../hooks/useLayers';
 import { SettingsContext } from '../contexts/Settings';
+import { useLayers2 } from '../hooks/useLayers2';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
-  const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useLayers();
+  const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useLayers2();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
