@@ -42,13 +42,10 @@ import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 export type UseLayersReturnType = {
   layers: LayerType[];
   editable: boolean;
-  changeLabel: (index: number, labelValue: string) => void;
-  changeVisible: (index: number, layer: LayerType) => void;
+  changeLabel: (layer: LayerType, labelValue: string) => void;
+  changeVisible: (layer: LayerType) => void;
   changeActiveLayer: (index: number) => void;
-  changeLayerOrder: (index: number) => {
-    isOK: boolean;
-    message: string;
-  };
+  changeLayerOrder: (index: number) => void;
   importProject: () => Promise<{
     isOK: boolean;
     message: string;
@@ -106,21 +103,17 @@ export const useLayers = (): UseLayersReturnType => {
     [isSettingProject, projectId, role, user.uid]
   );
   const changeLabel = useCallback(
-    (index: number, labelValue: string) => {
-      const newLayer = cloneDeep(layers[index]);
-      newLayer.label = labelValue;
-      dispatch(updateLayerAction(newLayer));
+    (layer: LayerType, labelValue: string) => {
+      dispatch(updateLayerAction({ ...layer, label: labelValue }));
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   const changeVisible = useCallback(
-    (index: number, layer: LayerType) => {
-      const newLayer = cloneDeep(layers[index]);
-      newLayer.visible = !layer.visible;
-      dispatch(updateLayerAction(newLayer));
+    (layer: LayerType) => {
+      dispatch(updateLayerAction({ ...layer, visible: !layer.visible }));
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   const changeActiveLayer = useCallback(
@@ -139,6 +132,15 @@ export const useLayers = (): UseLayersReturnType => {
       }
 
       dispatch(setLayersAction(newlayers));
+    },
+    [dispatch, layers]
+  );
+
+  const changeLayerOrder = useCallback(
+    (index: number) => {
+      const newLayers = cloneDeep(layers);
+      [newLayers[index], newLayers[index - 1]] = [newLayers[index - 1], newLayers[index]];
+      dispatch(setLayersAction(newLayers));
     },
     [dispatch, layers]
   );
@@ -580,20 +582,6 @@ export const useLayers = (): UseLayersReturnType => {
     return { isOK: true, message: '' };
   }, [dispatch, settings.tutrials, tracking]);
 
-  const changeLayerOrder = useCallback(
-    (index: number) => {
-      if (!editable) {
-        return { isOK: false, message: t('hooks.message.lockProject') };
-      }
-      if (index === 0) return { isOK: true, message: '' };
-      const newLayers = cloneDeep(layers);
-      [newLayers[index], newLayers[index - 1]] = [newLayers[index - 1], newLayers[index]];
-      dispatch(setLayersAction(newLayers));
-      return { isOK: true, message: '' };
-    },
-    [dispatch, editable, layers]
-  );
-
   return {
     layers,
     editable,
@@ -601,6 +589,7 @@ export const useLayers = (): UseLayersReturnType => {
     changeVisible,
     changeActiveLayer,
     changeLayerOrder,
+
     importProject,
     importFile,
     importDropedFile,
