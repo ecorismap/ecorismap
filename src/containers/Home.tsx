@@ -26,8 +26,10 @@ import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
-import { useLayers2 } from '../hooks/useLayers2';
+import { useGeoFile } from '../hooks/useGeoFile';
 import { useEditable } from '../hooks/useEditable';
+import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
+import { importDropedFile } from '../utils/File.web';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -39,7 +41,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { screenState, openData, expandData, closeData } = useScreen();
   const { editable } = useEditable();
-  const { getReceivedFile, importDropedFile } = useLayers2();
+  const { importGeoFile } = useGeoFile();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
@@ -253,17 +255,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
+      if (Platform.OS !== 'web') return;
       if (!editable) {
         await AlertAsync(t('hooks.message.lockProject'));
         return;
       }
-      const ret = await importDropedFile(acceptedFiles);
-      if (ret.length > 0) {
+      const files = await importDropedFile(acceptedFiles);
+      if (files.length > 0) {
+        for (const f of files) {
+          const { message } = await importGeoFile(f.name, f.uri, f.size);
+          if (message !== '') await AlertAsync(message);
+        }
         await AlertAsync(t('hooks.message.receiveFile'));
       }
-      //console.log(ret);
     },
-    [editable, importDropedFile]
+    [editable, importGeoFile]
   );
 
   const onReleaseSvgView = useCallback(
@@ -500,20 +506,24 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
-    //外部ファイルの読み込み
-    const onChange = async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        //console.log('!!!!', 'active');
-        await getReceivedFile();
-      }
-    };
     //起動時に読み込む場合
-    (async () => await getReceivedFile())();
+    (async () => await importExternalFiles())();
+
     //バックグラウンド時に読み込む場合
-    const subscription = RNAppState.addEventListener('change', onChange);
+    const subscription = RNAppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') await importExternalFiles();
+    });
     return () => {
       subscription.remove();
     };
+
+    async function importExternalFiles() {
+      const files = await getReceivedFiles();
+      if (files === undefined || files.length === 0) return;
+      const { message } = await importGeoFile(files[0].uri, files[0].name, files[0].size);
+      if (message !== '') await AlertAsync(message);
+      await deleteReceivedFiles(files);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
