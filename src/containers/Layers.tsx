@@ -10,13 +10,14 @@ import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
-import { useLayers2 } from '../hooks/useLayers2';
 import { useEditable } from '../hooks/useEditable';
+import * as DocumentPicker from 'expo-document-picker';
+import { useGeoFile } from '../hooks/useGeoFile';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
   const { editable } = useEditable();
-  const { importFile } = useLayers2();
+  const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
@@ -37,9 +38,12 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       AlertAsync(t('hooks.message.lockProject'));
       return;
     }
-    const { message } = await importFile();
+    const file = await DocumentPicker.getDocumentAsync({});
+    if (file.type === 'cancel') return;
+
+    const { message } = await importGeoFile(file.uri, file.name, file.size);
     if (message !== '') await AlertAsync(message);
-  }, [editable, importFile, runTutrial]);
+  }, [editable, importGeoFile, runTutrial]);
 
   const gotoLayerEditForAdd = useCallback(() => {
     if (!editable) {

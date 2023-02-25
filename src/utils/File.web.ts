@@ -52,3 +52,26 @@ export const exportDataAndPhoto = async (
 };
 
 export const clearCacheData = async () => {};
+
+export async function importDropedFile(acceptedFiles: any) {
+  const filePromises = acceptedFiles.map((f: any) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onabort = (error) => reject(error);
+      reader.onerror = (error) => reject(error);
+      reader.onload = async () => {
+        try {
+          const uri = reader.result;
+          if (typeof uri === 'string') {
+            resolve({ uri, name: f.name, size: f.size });
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.readAsDataURL(f);
+      //console.log(f);
+    });
+  });
+  return (await Promise.all(filePromises)) as { uri: string; name: string; size: number | undefined }[];
+}
