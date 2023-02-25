@@ -7,6 +7,7 @@ import invalid_point_gpx from '../resources/invalid_point_gpx';
 import { layers } from '../resources/layer';
 import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../resources/record';
 import { LayerType } from '../../types';
+//@ts-ignore
 import MockDate from 'mockdate';
 jest.mock('uuid', () => ({ v4: () => '1234' }));
 MockDate.set('2000-01-01');

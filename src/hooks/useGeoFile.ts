@@ -1,12 +1,11 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FeatureType, GeoJsonFeatureType, LayerType } from '../types';
 
 import { AppState } from '../modules';
 import { addLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system';
-//@ts-ignore
-import Base64 from 'Base64';
+
 import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { addDataAction } from '../modules/dataSet';
@@ -19,23 +18,34 @@ import { DOMParser } from '@xmldom/xmldom';
 import { unzipFromUri } from '../utils/Zip';
 import { updateLayerIds } from '../utils/Layer';
 import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
+import { decodeUri } from '../utils/File.web';
 
 export type UseGeoFileReturnType = {
+  isLoading: boolean;
   importGeoFile: (
     uri: string,
-    fileName: string,
-    fileSize: number | undefined
+    name: string,
+    size: number | undefined
   ) => Promise<{
     isOK: boolean;
     message: string;
   }>;
 };
 
+const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
+  'POINT',
+  'MULTIPOINT',
+  'LINE',
+  'MULTILINE',
+  'POLYGON',
+  'MULTIPOLYGON',
+];
+
 export const useGeoFile = (): UseGeoFileReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
-
+  const [isLoading, setIsLoading] = useState(false);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
@@ -78,158 +88,140 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [dispatch, dataUser.displayName, dataUser.uid]
   );
 
+  const loadGeojson = useCallback(
+    async (uri: string, name: string) => {
+      const geojsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const geojson = JSON.parse(geojsonStrings);
+      geoJsonFeatureTypes.forEach((featureType) => {
+        importGeoJson(geojson, featureType, name);
+      });
+    },
+    [importGeoJson]
+  );
+
+  const loadGpx = useCallback(
+    async (uri: string, name: string) => {
+      const gpx = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      importGPX(gpx, 'POINT', name);
+      importGPX(gpx, 'LINE', name);
+    },
+    [importGPX]
+  );
+
+  const loadKmz = useCallback(
+    async (uri: string, name: string) => {
+      const loaded = await unzipFromUri(uri);
+      const files = loaded.file(/\.kml$/);
+
+      const parser = new DOMParser();
+      for (const file of files) {
+        const kmlString = await file.async('string');
+        const xml = parser.parseFromString(kmlString, 'text/xml');
+        const geojson = kml(xml);
+        geoJsonFeatureTypes.forEach((featureType) => {
+          importGeoJson(geojson, featureType, name);
+        });
+      }
+    },
+    [importGeoJson]
+  );
+
+  const loadKml = useCallback(
+    async (uri: string, name: string) => {
+      const kmlString = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(kmlString, 'text/xml');
+      const geojson = kml(xml);
+
+      geoJsonFeatureTypes.forEach((featureType) => {
+        importGeoJson(geojson, featureType, name);
+      });
+    },
+    [importGeoJson]
+  );
+
+  const loadZip = useCallback(
+    async (uri: string, name: string) => {
+      const loaded = await unzipFromUri(uri);
+      //console.log(loaded);
+      const files = Object.keys(loaded.files);
+      const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
+      if (jsonFile === undefined) throw 'invalid zip file';
+      const jsonDecompressed = await loaded.files[jsonFile].async('text');
+      const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
+
+      const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+      if (geojsonFile === undefined) throw 'invalid zip file';
+      const geojsonStrings = await loaded.files[geojsonFile].async('text');
+      const geojson = JSON.parse(geojsonStrings);
+      //ToDo 有効なgeojsonファイルかチェック
+      importGeoJson(geojson, importedLayer.type, name, importedLayer);
+      //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
+      if (importedLayer.type !== 'NONE') importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+    },
+    [importGeoJson]
+  );
+
   const loadFile = useCallback(
     async (name: string, uri: string) => {
       const ext = getExt(name)?.toLowerCase();
 
       switch (ext) {
         case 'zip': {
-          await loadZip();
+          await loadZip(uri, name);
           break;
         }
         case 'kml': {
-          await loadKml();
+          await loadKml(uri, name);
           break;
         }
         case 'kmz': {
-          await loadKmz();
+          await loadKmz(uri, name);
           break;
         }
         case 'gpx': {
-          await loadGpx();
+          await loadGpx(uri, name);
           break;
         }
         case 'geojson': {
-          await loadGeojson();
+          await loadGeojson(uri, name);
           break;
         }
         default:
           throw 'invalid extension';
       }
-
-      const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
-        'POINT',
-        'MULTIPOINT',
-        'LINE',
-        'MULTILINE',
-        'POLYGON',
-        'MULTIPOLYGON',
-      ];
-      async function loadGeojson() {
-        let geojsonStrings;
-        if (Platform.OS === 'web') {
-          const arr = uri.split(',');
-          const base64 = arr[arr.length - 1];
-          geojsonStrings = decodeURIComponent(escape(Base64.atob(base64)));
-        } else {
-          //console.log(geojson);
-          geojsonStrings = await FileSystem.readAsStringAsync(uri);
-        }
-
-        const geojson = JSON.parse(geojsonStrings);
-        geoJsonFeatureTypes.forEach((featureType) => {
-          importGeoJson(geojson, featureType, name);
-        });
-      }
-
-      async function loadGpx() {
-        let gpx;
-        if (Platform.OS === 'web') {
-          const arr = uri.split(',');
-          const base64 = arr[arr.length - 1];
-
-          gpx = decodeURIComponent(escape(Base64.atob(base64)));
-        } else {
-          gpx = await FileSystem.readAsStringAsync(uri);
-        }
-
-        //console.log(gpx);
-        importGPX(gpx, 'POINT', name);
-        importGPX(gpx, 'LINE', name);
-      }
-
-      async function loadKmz() {
-        const loaded = await unzipFromUri(uri);
-        const files = loaded.file(/\.kml$/);
-
-        const parser = new DOMParser();
-        for (const file of files) {
-          const kmlString = await file.async('string');
-          const xml = parser.parseFromString(kmlString, 'text/xml');
-          const geojson = kml(xml);
-          geoJsonFeatureTypes.forEach((featureType) => {
-            importGeoJson(geojson, featureType, name);
-          });
-        }
-      }
-
-      async function loadKml() {
-        let kmlString;
-        if (Platform.OS === 'web') {
-          const arr = uri.split(',');
-          const base64 = arr[arr.length - 1];
-
-          kmlString = decodeURIComponent(escape(Base64.atob(base64)));
-        } else {
-          kmlString = await FileSystem.readAsStringAsync(uri);
-        }
-
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(kmlString, 'text/xml');
-        const geojson = kml(xml);
-
-        geoJsonFeatureTypes.forEach((featureType) => {
-          importGeoJson(geojson, featureType, name);
-        });
-      }
-
-      async function loadZip() {
-        const loaded = await unzipFromUri(uri);
-        //console.log(loaded);
-        const files = Object.keys(loaded.files);
-        const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
-        if (jsonFile === undefined) throw 'invalid zip file';
-        const jsonDecompressed = await loaded.files[jsonFile].async('text');
-        const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
-
-        const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
-        if (geojsonFile === undefined) throw 'invalid zip file';
-        const geojsonStrings = await loaded.files[geojsonFile].async('text');
-        const geojson = JSON.parse(geojsonStrings);
-        //ToDo 有効なgeojsonファイルかチェック
-        importGeoJson(geojson, importedLayer.type, name, importedLayer);
-        //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-        if (importedLayer.type !== 'NONE') importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
-      }
     },
-    [importGPX, importGeoJson]
+    [loadGeojson, loadGpx, loadKml, loadKmz, loadZip]
   );
 
   const importGeoFile = useCallback(
-    async (uri: string, fileName: string, fileSize: number | undefined) => {
+    async (uri: string, name: string, size: number | undefined) => {
       try {
         //console.log(file);
-        const ext = getExt(fileName)?.toLowerCase();
-
+        setIsLoading(true);
+        const ext = getExt(name)?.toLowerCase();
         if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
           return { isOK: false, message: t('hooks.message.wrongExtension') };
         }
-        if (fileSize === undefined) {
+        if (size === undefined) {
           return { isOK: false, message: t('hooks.message.cannotGetFileSize') };
         }
-        if (fileSize / 1024 > 1000) {
+        if (size / 1024 > 1000) {
           return { isOK: false, message: t('hooks.message.cannotImportData') };
         }
-        await loadFile(fileName, uri);
+        await loadFile(name, uri);
         return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
         return { isOK: true, message: t('hooks.message.failReceiveFile') };
+      } finally {
+        setIsLoading(false);
       }
     },
     [loadFile]
   );
 
   return {
+    isLoading,
     importGeoFile,
   } as const;
 };

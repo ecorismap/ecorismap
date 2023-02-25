@@ -263,8 +263,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const files = await importDropedFile(acceptedFiles);
       if (files.length > 0) {
         for (const f of files) {
-          const { message } = await importGeoFile(f.name, f.uri, f.size);
-          if (message !== '') await AlertAsync(message);
+          const { isOK, message } = await importGeoFile(f.uri, f.name, f.size);
+          if (!isOK) await AlertAsync(`${f.name}:${message}`);
         }
         await AlertAsync(t('hooks.message.receiveFile'));
       }
