@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ExportType, FormatType, LayerType, PhotoType, RecordType } from '../types';
+import { ExportType, LayerType, PhotoType, RecordType } from '../types';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
 import { AppState } from '../modules';
-import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import { exportDataAndPhoto } from '../utils/File';
@@ -15,11 +15,11 @@ export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
   checkList: boolean[];
-  sortedName: string;
-  sortedOrder: SortOrderType;
-  changeVisible: (index: number, visible: boolean) => void;
-  changeChecked: (index: number, checked: boolean) => void;
-  changeOrder: (colname: string, format: FormatType | '_user_') => void;
+  changeVisible: (record: RecordType) => void;
+  changeVisibleAll: (visible: boolean) => void;
+  changeChecked: (index: number) => void;
+  changeCheckedAll: (checked: boolean) => void;
+  changeOrder: (colname: string, order: SortOrderType) => void;
   addRecord: (referenceDataId?: string | undefined) => Promise<{
     isOK: boolean;
     message: string;
@@ -48,8 +48,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const { deleteRecordPhotos } = usePhoto();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
-  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
-  const [sortedName, setSortedName] = useState<string>('');
+
   const [checkList, setCheckList] = useState<boolean[]>([]);
 
   const ownRecordSet = useMemo(
@@ -59,71 +58,54 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
 
   const changeOrder = useCallback(
-    (colname: string, format: FormatType | '_user_' | null, order?: SortOrderType, data?: RecordType[]) => {
-      if (format === 'PHOTO') return;
-      let sortOrder: SortOrderType;
-
-      if (order) {
-        sortOrder = order;
-      } else if (sortedName === colname && sortedOrder === 'ASCENDING') {
-        sortOrder = 'DESCENDING';
-      } else {
-        sortOrder = 'ASCENDING';
-      }
-      let targetData = allUserRecordSet;
-      if (data) targetData = data;
-      const { data: sortedData, idx } = sortData(targetData, colname, sortOrder);
+    (colName: string, order: SortOrderType) => {
+      const { data: sortedData, idx } = sortData(allUserRecordSet, colName, order);
       const sortedCheckList = idx.map((d) => checkList[d]);
-      setSortedOrder(sortOrder);
-      setSortedName(colname);
       setCheckList(sortedCheckList);
       setAllUserRecordSet(sortedData);
     },
-    [allUserRecordSet, checkList, sortedName, sortedOrder]
+    [allUserRecordSet, checkList]
   );
 
-  const changeVisible = useCallback(
-    (index: number, visible: boolean) => {
-      if (index >= 0) {
-        const record = allUserRecordSet[index];
+  const changeVisibleAll = useCallback(
+    (visible: boolean) => {
+      const data = dataSet.filter((d) => d.layerId === targetLayer.id);
+      data.forEach((d) =>
         dispatch(
-          updateRecordsAction({
-            layerId: targetLayer.id,
-            userId: record.userId,
-            data: [{ ...record, visible }],
+          setRecordSetAction({
+            ...d,
+            data: d.data.map((record) => ({ ...record, visible })),
           })
-        );
-      } else {
-        dataSet.forEach((d) => {
-          const recordSetbyUser = allUserRecordSet
-            .map((record) => record.userId === d.userId && { ...record, visible })
-            .filter((v): v is RecordType => !v !== undefined);
-          if (recordSetbyUser.length > 0) {
-            dispatch(
-              updateRecordsAction({
-                layerId: targetLayer.id,
-                userId: d.userId,
-                data: recordSetbyUser,
-              })
-            );
-          }
-        });
-      }
+        )
+      );
     },
-    [allUserRecordSet, dataSet, dispatch, targetLayer.id]
+    [dataSet, dispatch, targetLayer.id]
+  );
+  const changeVisible = useCallback(
+    (record: RecordType) => {
+      dispatch(
+        updateRecordsAction({
+          layerId: targetLayer.id,
+          userId: record.userId,
+          data: [{ ...record, visible: !record.visible }],
+        })
+      );
+    },
+    [dispatch, targetLayer.id]
+  );
+
+  const changeCheckedAll = useCallback(
+    (checked: boolean) => {
+      setCheckList(checkList.map(() => checked));
+    },
+    [checkList]
   );
 
   const changeChecked = useCallback(
-    (index: number, checked: boolean) => {
-      if (index >= 0) {
-        const updatedCheckList = [...checkList];
-        updatedCheckList[index] = checked;
-        setCheckList(updatedCheckList);
-      } else {
-        //タイトルのチェックで全部を変更。indexは-1
-        const updatedCheckList = checkList.map((_d) => checked);
-        setCheckList(updatedCheckList);
-      }
+    (index: number) => {
+      const updatedCheckList = [...checkList];
+      updatedCheckList[index] = !checkList[index];
+      setCheckList(updatedCheckList);
     },
     [checkList]
   );
@@ -222,25 +204,18 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   useEffect(() => {
     const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
-    // console.log(dataSet);
-
     setCheckList(new Array(data.length).fill(false));
-    if (sortedOrder !== 'UNSORTED') {
-      changeOrder(sortedName, null, sortedOrder, data);
-    } else {
-      setAllUserRecordSet(data);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setAllUserRecordSet(data);
   }, [dataSet, targetLayer.id]);
 
   return {
     allUserRecordSet,
     isChecked,
     checkList,
-    sortedName,
-    sortedOrder,
     changeVisible,
+    changeVisibleAll,
     changeChecked,
+    changeCheckedAll,
     changeOrder,
     addRecord,
     deleteRecords,
