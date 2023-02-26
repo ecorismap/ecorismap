@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import { exportDataAndPhoto } from '../utils/File';
 import { usePhoto } from './usePhoto';
-import { t } from '../i18n/config';
 import dayjs from 'dayjs';
 
 export type UseDataReturnType = {
@@ -20,19 +19,9 @@ export type UseDataReturnType = {
   changeChecked: (index: number) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
-  addRecord: (referenceDataId?: string | undefined) => Promise<{
-    isOK: boolean;
-    message: string;
-    data: RecordType | undefined;
-  }>;
-  deleteRecords: () => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
-  exportRecords: () => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
+  addRecord: () => RecordType;
+  deleteRecords: () => void;
+  exportRecords: () => Promise<boolean>;
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -44,7 +33,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [projectId, user]
   );
 
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const { deleteRecordPhotos } = usePhoto();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
@@ -110,17 +98,24 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [checkList]
   );
 
+  const addRecord = useCallback(() => {
+    const id = uuidv4();
+    const field = getDefaultField(targetLayer, ownRecordSet, id);
+
+    const newData: RecordType = {
+      id: id,
+      userId: dataUser.uid,
+      displayName: dataUser.displayName,
+      visible: true,
+      redraw: false,
+      coords: { latitude: 0, longitude: 0 },
+      field: field,
+    };
+    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
+    return newData;
+  }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
+
   const deleteRecords = useCallback(async () => {
-    //自分が削除できるデータか確認
-
-    if (tracking !== undefined && tracking.layerId === targetLayer.id) {
-      return { isOK: false, message: t('hooks.message.cannotDeleteInTracking') };
-    }
-
-    if (!targetLayer.active) {
-      return { isOK: false, message: t('hooks.message.noEditMode') };
-    }
-
     const records = allUserRecordSet.filter((_, i) => checkList[i]);
     records.forEach((record) => {
       deleteRecordPhotos(targetLayer, record, projectId, record.userId);
@@ -133,8 +128,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
         data: records,
       })
     );
-    return { isOK: true, message: '' };
-  }, [allUserRecordSet, checkList, dataUser.uid, deleteRecordPhotos, dispatch, projectId, targetLayer, tracking]);
+  }, [allUserRecordSet, checkList, dataUser.uid, deleteRecordPhotos, dispatch, projectId, targetLayer]);
 
   const exportRecords = useCallback(async () => {
     const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
@@ -175,32 +169,8 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
     const exportDataName = `${targetLayer.name}_${time}`;
     const isOK = await exportDataAndPhoto(exportData, exportDataName, 'zip');
-    if (!isOK) return { isOK: false, message: t('hooks.message.failExport') };
-    return { isOK: true, message: '' };
+    return isOK;
   }, [allUserRecordSet, checkList, targetLayer]);
-
-  const addRecord = useCallback(async () => {
-    if (!targetLayer.active) {
-      return { isOK: false, message: t('hooks.message.noEditMode'), data: undefined };
-    }
-
-    const id = uuidv4();
-    const field = getDefaultField(targetLayer, ownRecordSet, id);
-
-    const newData: RecordType = {
-      id: id,
-      userId: dataUser.uid,
-      displayName: dataUser.displayName,
-      visible: true,
-      redraw: false,
-      coords: { latitude: 0, longitude: 0 },
-      field: field,
-    };
-
-    //console.log("###", newData);
-    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-    return { isOK: true, message: '', data: newData };
-  }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
 
   useEffect(() => {
     const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
