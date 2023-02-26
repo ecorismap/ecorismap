@@ -5,6 +5,7 @@ import { AppState } from '../modules';
 
 export type UseLayersReturnType = {
   isOwnerAdmin: boolean;
+  isMemberAndProjectOpened: boolean;
   editable: boolean;
 };
 
@@ -15,6 +16,7 @@ export const usePermission = (): UseLayersReturnType => {
   const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
 
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
+  const isMemberAndProjectOpened = useMemo(() => role === 'MEMBER' && projectId !== undefined, [projectId, role]);
 
   const editable = useMemo(
     () =>
@@ -24,6 +26,7 @@ export const usePermission = (): UseLayersReturnType => {
 
   return {
     isOwnerAdmin,
+    isMemberAndProjectOpened,
     editable,
   } as const;
 };
