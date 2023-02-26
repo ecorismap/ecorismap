@@ -10,13 +10,13 @@ import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
-import { useEditable } from '../hooks/useEditable';
+import { usePermission } from '../hooks/usePermission';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
-  const { editable } = useEditable();
+  const { editable } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();

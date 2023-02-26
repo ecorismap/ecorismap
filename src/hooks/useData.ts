@@ -12,9 +12,7 @@ import { t } from '../i18n/config';
 import dayjs from 'dayjs';
 
 export type UseDataReturnType = {
-  isOwnerAdmin: boolean;
   allUserRecordSet: RecordType[];
-  ownRecordSet: RecordType[];
   isChecked: boolean;
   checkList: boolean[];
   sortedName: string;
@@ -27,7 +25,7 @@ export type UseDataReturnType = {
     message: string;
     data: RecordType | undefined;
   }>;
-  deleteSelectedRecords: () => Promise<{
+  deleteRecords: () => Promise<{
     isOK: boolean;
     message: string;
   }>;
@@ -48,7 +46,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const dataSet = useSelector((state: AppState) => state.dataSet);
-  const role = useSelector((state: AppState) => state.settings.role);
   const { deleteRecordPhotos } = usePhoto();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
   const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
@@ -60,7 +57,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [allUserRecordSet, dataUser.uid]
   );
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
   const changeOrder = useCallback(
     (colname: string, format: FormatType | '_user_' | null, order?: SortOrderType, data?: RecordType[]) => {
@@ -132,7 +128,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [checkList]
   );
 
-  const deleteSelectedRecords = useCallback(async () => {
+  const deleteRecords = useCallback(async () => {
     //自分が削除できるデータか確認
 
     if (tracking !== undefined && tracking.layerId === targetLayer.id) {
@@ -238,9 +234,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   }, [dataSet, targetLayer.id]);
 
   return {
-    isOwnerAdmin,
     allUserRecordSet,
-    ownRecordSet,
     isChecked,
     checkList,
     sortedName,
@@ -249,7 +243,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     changeChecked,
     changeOrder,
     addRecord,
-    deleteSelectedRecords,
+    deleteRecords,
     exportRecords,
   } as const;
 };

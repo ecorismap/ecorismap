@@ -27,7 +27,7 @@ import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
-import { useEditable } from '../hooks/useEditable';
+import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 
@@ -40,7 +40,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { screenState, openData, expandData, closeData } = useScreen();
-  const { editable } = useEditable();
+  const { editable } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
