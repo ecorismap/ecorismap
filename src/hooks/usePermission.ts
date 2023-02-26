@@ -4,14 +4,17 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 
 export type UseLayersReturnType = {
+  isOwnerAdmin: boolean;
   editable: boolean;
 };
 
-export const useEditable = (): UseLayersReturnType => {
+export const usePermission = (): UseLayersReturnType => {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
   const role = useSelector((state: AppState) => state.settings.role);
   const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
+
+  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
   const editable = useMemo(
     () =>
@@ -20,6 +23,7 @@ export const useEditable = (): UseLayersReturnType => {
   );
 
   return {
+    isOwnerAdmin,
     editable,
   } as const;
 };

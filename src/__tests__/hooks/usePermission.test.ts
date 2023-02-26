@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react-hooks';
-import { useEditable } from '../../hooks/useEditable';
+import { usePermission } from '../../hooks/usePermission';
 import { RoleType, UserType } from '../../types';
 
 let mockSelector = jest.fn();
@@ -8,7 +8,7 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
-describe('useEditable', () => {
+describe('usePermission', () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
@@ -31,7 +31,7 @@ describe('useEditable', () => {
       .mockReturnValueOnce(user)
       .mockReturnValueOnce(role)
       .mockReturnValueOnce(isSettingProject);
-    const { result } = renderHook(() => useEditable());
+    const { result } = renderHook(() => usePermission());
     expect(result.current.editable).toBe(true);
   });
   test('プロジェクトを開いてなければ編集可能', () => {
@@ -43,7 +43,7 @@ describe('useEditable', () => {
       .mockReturnValueOnce(user)
       .mockReturnValueOnce(role)
       .mockReturnValueOnce(isSettingProject);
-    const { result } = renderHook(() => useEditable());
+    const { result } = renderHook(() => usePermission());
     expect(result.current.editable).toBe(true);
   });
   test('メンバーはプロジェクトを開いている時は編集不可', () => {
@@ -55,7 +55,7 @@ describe('useEditable', () => {
       .mockReturnValueOnce(user)
       .mockReturnValueOnce(role)
       .mockReturnValueOnce(isSettingProject);
-    const { result } = renderHook(() => useEditable());
+    const { result } = renderHook(() => usePermission());
     expect(result.current.editable).toBe(false);
   });
 });

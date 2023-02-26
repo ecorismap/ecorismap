@@ -9,6 +9,7 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
+import { usePermission } from '../hooks/usePermission';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -16,7 +17,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
-    isOwnerAdmin,
     allUserRecordSet: data,
     isChecked,
     checkList,
@@ -26,9 +26,10 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeChecked,
     changeOrder,
     addRecord,
-    deleteSelectedRecords,
+    deleteRecords,
     exportRecords,
   } = useData(route.params.targetLayer);
+  const { isOwnerAdmin } = usePermission();
 
   const pressExportData = useCallback(async () => {
     if (!(isOwnerAdmin || projectId === undefined)) {
@@ -44,12 +45,12 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (ret) {
-      const { isOK, message } = await deleteSelectedRecords();
+      const { isOK, message } = await deleteRecords();
       if (!isOK) {
         await AlertAsync(message);
       }
     }
-  }, [deleteSelectedRecords]);
+  }, [deleteRecords]);
 
   const pressAddData = useCallback(async () => {
     const { message, data: addedData } = await addRecord();
