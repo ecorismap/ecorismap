@@ -532,7 +532,8 @@
       "failSaveFile": "Failed to save file.",
       "invalidPolygon": "Can't save for invalid line.",
       "invalidLine": "Can't save for invalid line",
-      "invalidPoint": "Can't save for invalid point."
+      "invalidPoint": "Can't save for invalid point.",
+      "cannotInRunningProject": "Not possible when project is open"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
