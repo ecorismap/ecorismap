@@ -7,11 +7,15 @@ import * as FileSystem from 'expo-file-system';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
-import { useLayers } from '../hooks/useLayers';
 import { SettingsContext } from '../contexts/Settings';
+import * as DocumentPicker from 'expo-document-picker';
+import { useSelector } from 'react-redux';
+import { AppState } from '../modules';
+import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
-  const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useLayers();
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useEcorisMapFile();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
@@ -38,18 +42,29 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const pressFileOpen = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
-      const { isOK, message } = await loadEcorisMapFile();
+      if (tracking !== undefined) {
+        await AlertAsync(t('hooks.message.cannotLoadDataInTrackking'));
+        return;
+      }
+      const file = await DocumentPicker.getDocumentAsync({});
+      if (file.type === 'cancel') {
+        return;
+      }
+      const { isOK, message } = await loadEcorisMapFile(file.uri, file.name, file.size);
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {
         await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
       }
     }
-  }, [loadEcorisMapFile]);
+  }, [loadEcorisMapFile, tracking]);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
     if (ret) {
+      if (tracking !== undefined) {
+        return { isOK: false, message: t('hooks.message.cannotInTracking') };
+      }
       const { isOK, message } = await createNewEcorisMap();
       if (!isOK) {
         await AlertAsync(message);
@@ -57,7 +72,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         navigation.navigate('Home');
       }
     }
-  }, [createNewEcorisMap, navigation]);
+  }, [createNewEcorisMap, navigation, tracking]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
