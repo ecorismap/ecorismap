@@ -43,8 +43,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (ret) {
-      if (route.params.targetLayer.permission === 'COMMON' && !isRunningProject) {
-        Alert.alert('', t('hooks.message.cannotEditCommon'));
+      if (isRunningProject) {
+        Alert.alert('', t('hooks.message.cannotInRunningProject'));
       }
       if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
         Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
@@ -66,18 +66,11 @@ export default function DataContainer({ navigation, route }: Props_Data) {
 
       deleteRecords();
     }
-  }, [
-    deleteRecords,
-    isRunningProject,
-    route.params.targetLayer.active,
-    route.params.targetLayer.id,
-    route.params.targetLayer.permission,
-    tracking,
-  ]);
+  }, [deleteRecords, isRunningProject, route.params.targetLayer.active, route.params.targetLayer.id, tracking]);
 
   const pressAddData = useCallback(async () => {
-    if (route.params.targetLayer.permission === 'COMMON' && !isRunningProject) {
-      Alert.alert('', t('hooks.message.cannotEditCommon'));
+    if (isRunningProject) {
+      Alert.alert('', t('hooks.message.cannotInRunningProject'));
     }
     if (!route.params.targetLayer.active) {
       Alert.alert('', t('hooks.message.noEditMode'));
@@ -92,14 +85,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       targetRecordSet: [],
       targetIndex: 0,
     });
-  }, [
-    addRecord,
-    isRunningProject,
-    layer,
-    navigation,
-    route.params.targetLayer.active,
-    route.params.targetLayer.permission,
-  ]);
+  }, [addRecord, isRunningProject, layer, navigation, route.params.targetLayer.active]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
