@@ -16,26 +16,26 @@ import { useGeoFile } from '../hooks/useGeoFile';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
-  const { editable } = usePermission();
+  const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(
     (index: number) => {
-      if (!editable) {
-        AlertAsync(t('hooks.message.lockProject'));
+      if (isRunningProject) {
+        AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
       changeLayerOrder(index);
     },
-    [changeLayerOrder, editable]
+    [changeLayerOrder, isRunningProject]
   );
 
   const pressImportLayerAndData = useCallback(async () => {
     await runTutrial('LAYERS_BTN_IMPORT');
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     const file = await DocumentPicker.getDocumentAsync({});
@@ -43,11 +43,11 @@ export default function LayerContainer({ navigation }: Props_Layers) {
 
     const { message } = await importGeoFile(file.uri, file.name, file.size);
     if (message !== '') await AlertAsync(message);
-  }, [editable, importGeoFile, runTutrial]);
+  }, [importGeoFile, isRunningProject, runTutrial]);
 
   const gotoLayerEditForAdd = useCallback(() => {
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     expandData();
@@ -56,7 +56,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       targetLayer: { ...TEMPLATE_LAYER, id: uuidv4() },
       isEdited: true,
     });
-  }, [editable, expandData, navigation]);
+  }, [expandData, isRunningProject, navigation]);
 
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {

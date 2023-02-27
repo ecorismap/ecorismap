@@ -8,8 +8,6 @@ import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { Props_Maps } from '../routes';
 import { TileMapType } from '../types';
-import { usePermission } from '../hooks/usePermission';
-import { Alert } from 'react-native';
 
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -27,7 +25,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
   } = useMaps();
   const { closeData } = useScreen();
   const { runTutrial } = useTutrial();
-  const { isMemberAndProjectOpened, projectOpened } = usePermission();
 
   const pressToggleOnline = useCallback(async () => {
     if (isOffline) {
@@ -73,17 +70,9 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressEditMapOK = useCallback(
     async (newTileMap: TileMapType) => {
-      if (isMemberAndProjectOpened) {
-        Alert.alert('', t('hooks.message.onlyAdminCanEdit'));
-        return;
-      }
-      if (projectOpened) {
-        Alert.alert(t('hooks.message.lockProject'));
-        return;
-      }
       saveMap(newTileMap);
     },
-    [isMemberAndProjectOpened, projectOpened, saveMap]
+    [saveMap]
   );
 
   const pressEditMapCancel = useCallback(() => {

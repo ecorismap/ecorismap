@@ -40,7 +40,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { screenState, openData, expandData, closeData } = useScreen();
-  const { editable } = usePermission();
+  const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -256,8 +256,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
       if (Platform.OS !== 'web') return;
-      if (!editable) {
-        await AlertAsync(t('hooks.message.lockProject'));
+      if (!isRunningProject) {
+        await AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
       const files = await importDropedFile(acceptedFiles);
@@ -269,7 +269,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('hooks.message.receiveFile'));
       }
     },
-    [editable, importGeoFile]
+    [importGeoFile, isRunningProject]
   );
 
   const onReleaseSvgView = useCallback(
