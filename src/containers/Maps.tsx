@@ -70,10 +70,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressEditMapOK = useCallback(
     async (newTileMap: TileMapType) => {
-      const { isOK, message } = saveMap(newTileMap);
-      if (!isOK) {
-        await AlertAsync(message);
-      }
+      saveMap(newTileMap);
     },
     [saveMap]
   );

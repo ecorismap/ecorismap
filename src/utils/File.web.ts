@@ -2,6 +2,8 @@ import JSZip from 'jszip';
 import { Platform } from 'react-native';
 import sanitize from 'sanitize-filename';
 import { ExportType } from '../types';
+//@ts-ignore
+import Base64 from 'Base64';
 
 //bugのため以下の記述が必要。https://github.com/eligrey/FileSaver.js/pull/533
 let FileSaver: { saveAs: (arg0: any, arg1: string) => void };
@@ -52,3 +54,32 @@ export const exportDataAndPhoto = async (
 };
 
 export const clearCacheData = async () => {};
+
+export async function importDropedFile(acceptedFiles: any) {
+  const filePromises = acceptedFiles.map((f: any) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onabort = (error) => reject(error);
+      reader.onerror = (error) => reject(error);
+      reader.onload = async () => {
+        try {
+          const uri = reader.result;
+          if (typeof uri === 'string') {
+            resolve({ uri, name: f.name, size: f.size });
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.readAsDataURL(f);
+      //console.log(f);
+    });
+  });
+  return (await Promise.all(filePromises)) as { uri: string; name: string; size: number | undefined }[];
+}
+
+export function decodeUri(uri: string) {
+  const arr = uri.split(',');
+  const base64 = arr[arr.length - 1];
+  return decodeURIComponent(escape(Base64.atob(base64)));
+}

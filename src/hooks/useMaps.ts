@@ -32,10 +32,7 @@ export type UseMapsReturnType = {
     message: string;
   };
   closeEditMap: () => void;
-  saveMap: (newTileMap: TileMapType) => {
-    isOK: boolean;
-    message: string;
-  };
+  saveMap: (newTileMap: TileMapType) => void;
   fetchMapList: (signal: AbortSignal) => Promise<{
     isOK: boolean;
     message: string;
@@ -221,7 +218,6 @@ export const useMaps = (): UseMapsReturnType => {
       }
       dispatch(setTileMapsAction(newTileMaps));
       setMapEditorOpen(false);
-      return { isOK: true, message: '' };
     },
     [dispatch, isSettingProject, isOwnerAdmin, maps, projectId]
   );

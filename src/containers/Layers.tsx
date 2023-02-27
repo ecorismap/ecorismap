@@ -10,37 +10,44 @@ import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
+import { usePermission } from '../hooks/usePermission';
+import * as DocumentPicker from 'expo-document-picker';
+import { useGeoFile } from '../hooks/useGeoFile';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
-  const { layers, editable, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder, importFile } = useLayers();
-
+  const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
+  const { isRunningProject } = usePermission();
+  const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(
     (index: number) => {
-      if (!editable) {
-        AlertAsync(t('hooks.message.lockProject'));
+      if (isRunningProject) {
+        AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
       changeLayerOrder(index);
     },
-    [changeLayerOrder, editable]
+    [changeLayerOrder, isRunningProject]
   );
 
   const pressImportLayerAndData = useCallback(async () => {
     await runTutrial('LAYERS_BTN_IMPORT');
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    const { message } = await importFile();
+    const file = await DocumentPicker.getDocumentAsync({});
+    if (file.type === 'cancel') return;
+
+    const { message } = await importGeoFile(file.uri, file.name, file.size);
     if (message !== '') await AlertAsync(message);
-  }, [editable, importFile, runTutrial]);
+  }, [importGeoFile, isRunningProject, runTutrial]);
 
   const gotoLayerEditForAdd = useCallback(() => {
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     expandData();
@@ -49,7 +56,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       targetLayer: { ...TEMPLATE_LAYER, id: uuidv4() },
       isEdited: true,
     });
-  }, [editable, expandData, navigation]);
+  }, [expandData, isRunningProject, navigation]);
 
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {

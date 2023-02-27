@@ -5,13 +5,15 @@ import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
 
 export const DataButton = () => {
-  const { isChecked, isOwnerAdmin, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
+  const { layer, isChecked, isOwnerAdmin, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
 
   return (
     <>
       <View style={styles.button}>
-        <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
-
+        {layer.type === 'NONE' ||
+          (layer.type === 'POINT' && (
+            <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
+          ))}
         {isOwnerAdmin && (
           <Button
             name={DATA_BTN.EXPORT}
