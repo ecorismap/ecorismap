@@ -5,66 +5,70 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useData } from '../hooks/useData';
 import { Props_Data } from '../routes';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
+import { usePermission } from '../hooks/usePermission';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
-
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
-    isOwnerAdmin,
     allUserRecordSet: data,
     isChecked,
     checkList,
-    sortedName,
-    sortedOrder,
     changeVisible,
+    changeVisibleAll,
     changeChecked,
+    changeCheckedAll,
     changeOrder,
     addRecord,
-    deleteSelectedRecords,
+    deleteRecords,
     exportRecords,
   } = useData(route.params.targetLayer);
+  const { isMemberAndProjectOpened } = usePermission();
 
   const pressExportData = useCallback(async () => {
-    if (!(isOwnerAdmin || projectId === undefined)) {
+    if (isMemberAndProjectOpened) {
       Alert.alert('', t('Data.alert.exportData'));
       return;
     }
-    const { isOK, message } = await exportRecords();
-    if (!isOK) {
-      await AlertAsync(message);
-    }
-  }, [exportRecords, isOwnerAdmin, projectId]);
+    const isOK = await exportRecords();
+    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+  }, [exportRecords, isMemberAndProjectOpened]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (ret) {
-      const { isOK, message } = await deleteSelectedRecords();
-      if (!isOK) {
-        await AlertAsync(message);
+      if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
+        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+        return;
       }
+      if (!route.params.targetLayer.active) {
+        Alert.alert('', t('hooks.message.noEditMode'));
+        return;
+      }
+      deleteRecords();
     }
-  }, [deleteSelectedRecords]);
+  }, [deleteRecords, route.params.targetLayer.active, route.params.targetLayer.id, tracking]);
 
   const pressAddData = useCallback(async () => {
-    const { message, data: addedData } = await addRecord();
-    if (addedData === undefined) {
-      await AlertAsync(message);
-    } else {
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: addedData,
-        targetLayer: layer,
-        targetRecordSet: [],
-        targetIndex: 0,
-      });
+    if (!route.params.targetLayer.active) {
+      Alert.alert('', t('hooks.message.noEditMode'));
+      return;
     }
-  }, [addRecord, layer, navigation]);
+    const addedData = addRecord();
+    navigation.navigate('DataEdit', {
+      previous: 'Data',
+      targetData: addedData,
+      targetLayer: layer,
+      targetRecordSet: [],
+      targetIndex: 0,
+    });
+  }, [addRecord, layer, navigation, route.params.targetLayer.active]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
@@ -91,11 +95,11 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         layer,
         isChecked,
         checkList,
-        sortedOrder,
-        sortedName,
         changeOrder,
         changeChecked,
+        changeCheckedAll,
         changeVisible,
+        changeVisibleAll,
         pressAddData,
         pressDeleteData,
         pressExportData,

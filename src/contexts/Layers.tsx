@@ -3,8 +3,8 @@ import { LayerType } from '../types';
 
 interface LayersContextType {
   layers: LayerType[];
-  changeVisible: (index: number, layer: LayerType) => void;
-  changeLabel: (index: number, labelValue: string) => void;
+  changeVisible: (layer: LayerType) => void;
+  changeLabel: (layer: LayerType, labelValue: string) => void;
   changeActiveLayer: (index: number) => void;
   pressLayerOrder: (index: number) => void;
   gotoLayerEdit: (layer: LayerType) => void;
