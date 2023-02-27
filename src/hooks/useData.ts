@@ -1,41 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ExportType, FormatType, LayerType, PhotoType, RecordType } from '../types';
+import { ExportType, LayerType, PhotoType, RecordType } from '../types';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
 import { AppState } from '../modules';
-import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
-import { hasOpened } from '../utils/Project';
 import { exportDataAndPhoto } from '../utils/File';
 import { usePhoto } from './usePhoto';
-import { t } from '../i18n/config';
 import dayjs from 'dayjs';
 
 export type UseDataReturnType = {
-  isOwnerAdmin: boolean;
   allUserRecordSet: RecordType[];
-  ownRecordSet: RecordType[];
   isChecked: boolean;
   checkList: boolean[];
-  sortedName: string;
-  sortedOrder: SortOrderType;
-  changeVisible: (index: number, visible: boolean) => void;
-  changeChecked: (index: number, checked: boolean) => void;
-  changeOrder: (colname: string, format: FormatType | '_user_') => void;
-  addRecord: (referenceDataId?: string | undefined) => Promise<{
-    isOK: boolean;
-    message: string;
-    data: RecordType | undefined;
-  }>;
-  deleteSelectedRecords: () => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
-  exportRecords: () => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
+  changeVisible: (record: RecordType) => void;
+  changeVisibleAll: (visible: boolean) => void;
+  changeChecked: (index: number) => void;
+  changeCheckedAll: (checked: boolean) => void;
+  changeOrder: (colname: string, order: SortOrderType) => void;
+  addRecord: () => RecordType;
+  deleteRecords: () => void;
+  exportRecords: () => Promise<boolean>;
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -47,14 +33,10 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [projectId, user]
   );
 
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const dataSet = useSelector((state: AppState) => state.dataSet);
-  const role = useSelector((state: AppState) => state.settings.role);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const { deleteRecordPhotos } = usePhoto();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
-  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
-  const [sortedName, setSortedName] = useState<string>('');
+
   const [checkList, setCheckList] = useState<boolean[]>([]);
 
   const ownRecordSet = useMemo(
@@ -62,99 +44,78 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [allUserRecordSet, dataUser.uid]
   );
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
   const changeOrder = useCallback(
-    (colname: string, format: FormatType | '_user_' | null, order?: SortOrderType, data?: RecordType[]) => {
-      if (format === 'PHOTO') return;
-      let sortOrder: SortOrderType;
-
-      if (order) {
-        sortOrder = order;
-      } else if (sortedName === colname && sortedOrder === 'ASCENDING') {
-        sortOrder = 'DESCENDING';
-      } else {
-        sortOrder = 'ASCENDING';
-      }
-      let targetData = allUserRecordSet;
-      if (data) targetData = data;
-      const { data: sortedData, idx } = sortData(targetData, colname, sortOrder);
+    (colName: string, order: SortOrderType) => {
+      const { data: sortedData, idx } = sortData(allUserRecordSet, colName, order);
       const sortedCheckList = idx.map((d) => checkList[d]);
-      setSortedOrder(sortOrder);
-      setSortedName(colname);
       setCheckList(sortedCheckList);
       setAllUserRecordSet(sortedData);
     },
-    [allUserRecordSet, checkList, sortedName, sortedOrder]
+    [allUserRecordSet, checkList]
   );
 
-  const changeVisible = useCallback(
-    (index: number, visible: boolean) => {
-      if (index >= 0) {
-        const record = allUserRecordSet[index];
+  const changeVisibleAll = useCallback(
+    (visible: boolean) => {
+      const data = dataSet.filter((d) => d.layerId === targetLayer.id);
+      data.forEach((d) =>
         dispatch(
-          updateRecordsAction({
-            layerId: targetLayer.id,
-            userId: record.userId,
-            data: [{ ...record, visible }],
+          setRecordSetAction({
+            ...d,
+            data: d.data.map((record) => ({ ...record, visible })),
           })
-        );
-      } else {
-        dataSet.forEach((d) => {
-          const recordSetbyUser = allUserRecordSet
-            .map((record) => record.userId === d.userId && { ...record, visible })
-            .filter((v): v is RecordType => !v !== undefined);
-          if (recordSetbyUser.length > 0) {
-            dispatch(
-              updateRecordsAction({
-                layerId: targetLayer.id,
-                userId: d.userId,
-                data: recordSetbyUser,
-              })
-            );
-          }
-        });
-      }
+        )
+      );
     },
-    [allUserRecordSet, dataSet, dispatch, targetLayer.id]
+    [dataSet, dispatch, targetLayer.id]
+  );
+  const changeVisible = useCallback(
+    (record: RecordType) => {
+      dispatch(
+        updateRecordsAction({
+          layerId: targetLayer.id,
+          userId: record.userId,
+          data: [{ ...record, visible: !record.visible }],
+        })
+      );
+    },
+    [dispatch, targetLayer.id]
   );
 
-  const changeChecked = useCallback(
-    (index: number, checked: boolean) => {
-      if (index >= 0) {
-        const updatedCheckList = [...checkList];
-        updatedCheckList[index] = checked;
-        setCheckList(updatedCheckList);
-      } else {
-        //タイトルのチェックで全部を変更。indexは-1
-        const updatedCheckList = checkList.map((_d) => checked);
-        setCheckList(updatedCheckList);
-      }
+  const changeCheckedAll = useCallback(
+    (checked: boolean) => {
+      setCheckList(checkList.map(() => checked));
     },
     [checkList]
   );
 
-  const deleteSelectedRecords = useCallback(async () => {
-    //自分が削除できるデータか確認
-    const hasOthersData = checkList.some(
-      (checked, i) => checked && allUserRecordSet[i].userId !== undefined && allUserRecordSet[i].userId !== dataUser.uid
-    );
-    if (tracking !== undefined && tracking.layerId === targetLayer.id) {
-      return { isOK: false, message: t('hooks.message.cannotDeleteInTracking') };
-    }
-    if (hasOpened(projectId) && hasOthersData && !isOwnerAdmin) {
-      return { isOK: false, message: t('hooks.message.cannotDeleteOthers') };
-    }
-    if (!targetLayer.active) {
-      return { isOK: false, message: t('hooks.message.noEditMode') };
-    }
-    if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-      return { isOK: false, message: t('hooks.message.lockProject') };
-    }
-    if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && !isOwnerAdmin) {
-      return { isOK: false, message: t('hooks.message.noPermissionToCommon') };
-    }
+  const changeChecked = useCallback(
+    (index: number) => {
+      const updatedCheckList = [...checkList];
+      updatedCheckList[index] = !checkList[index];
+      setCheckList(updatedCheckList);
+    },
+    [checkList]
+  );
 
+  const addRecord = useCallback(() => {
+    const id = uuidv4();
+    const field = getDefaultField(targetLayer, ownRecordSet, id);
+
+    const newData: RecordType = {
+      id: id,
+      userId: dataUser.uid,
+      displayName: dataUser.displayName,
+      visible: true,
+      redraw: false,
+      coords: { latitude: 0, longitude: 0 },
+      field: field,
+    };
+    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
+    return newData;
+  }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
+
+  const deleteRecords = useCallback(async () => {
     const records = allUserRecordSet.filter((_, i) => checkList[i]);
     records.forEach((record) => {
       deleteRecordPhotos(targetLayer, record, projectId, record.userId);
@@ -168,18 +129,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       })
     );
     return { isOK: true, message: '' };
-  }, [
-    allUserRecordSet,
-    checkList,
-    dataUser.uid,
-    deleteRecordPhotos,
-    dispatch,
-    isSettingProject,
-    isOwnerAdmin,
-    projectId,
-    targetLayer,
-    tracking,
-  ]);
+  }, [allUserRecordSet, checkList, dataUser.uid, deleteRecordPhotos, dispatch, projectId, targetLayer]);
 
   const exportRecords = useCallback(async () => {
     const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
@@ -220,77 +170,26 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
     const exportDataName = `${targetLayer.name}_${time}`;
     const isOK = await exportDataAndPhoto(exportData, exportDataName, 'zip');
-    if (!isOK) return { isOK: false, message: t('hooks.message.failExport') };
-    return { isOK: true, message: '' };
+    return isOK;
   }, [allUserRecordSet, checkList, targetLayer]);
-
-  const addRecord = useCallback(async () => {
-    if (!targetLayer.active) {
-      return { isOK: false, message: t('hooks.message.noEditMode'), data: undefined };
-    }
-    if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-      return { isOK: false, message: t('hooks.message.unlockToEditCommon'), data: undefined };
-    }
-    if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && !isOwnerAdmin) {
-      return { isOK: false, message: t('hooks.message.noPermissionToCommon'), data: undefined };
-    }
-    if (targetLayer.type !== 'NONE' && targetLayer.type !== 'POINT') {
-      //ボタンをdisableにした方が良いかも？
-      return { isOK: false, message: t('hooks.message.cannotThisLayer'), data: undefined };
-    }
-
-    const id = uuidv4();
-    const field = getDefaultField(targetLayer, ownRecordSet, id);
-    const newData: RecordType = {
-      id: id,
-      userId: dataUser.uid,
-      displayName: dataUser.displayName,
-      visible: true,
-      redraw: false,
-      coords: { latitude: 0, longitude: 0 },
-      field: field,
-    };
-
-    //console.log("###", newData);
-    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-    return { isOK: true, message: '', data: newData };
-  }, [
-    targetLayer,
-    projectId,
-    isOwnerAdmin,
-    isSettingProject,
-    ownRecordSet,
-    dataUser.uid,
-    dataUser.displayName,
-    dispatch,
-  ]);
 
   useEffect(() => {
     const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
-    // console.log(dataSet);
-
     setCheckList(new Array(data.length).fill(false));
-    if (sortedOrder !== 'UNSORTED') {
-      changeOrder(sortedName, null, sortedOrder, data);
-    } else {
-      setAllUserRecordSet(data);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setAllUserRecordSet(data);
   }, [dataSet, targetLayer.id]);
 
   return {
-    isOwnerAdmin,
     allUserRecordSet,
-    ownRecordSet,
     isChecked,
     checkList,
-    sortedName,
-    sortedOrder,
     changeVisible,
+    changeVisibleAll,
     changeChecked,
+    changeCheckedAll,
     changeOrder,
     addRecord,
-    deleteSelectedRecords,
+    deleteRecords,
     exportRecords,
   } as const;
 };

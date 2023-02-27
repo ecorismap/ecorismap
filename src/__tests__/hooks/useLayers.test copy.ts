@@ -62,6 +62,24 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
+jest.mock('i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+  language: ['en'],
+  initReactI18next: {
+    type: '3rdParty',
+    init: () => {},
+  },
+  use: () => {
+    return {
+      init: () => {},
+    };
+  },
+  t: (key: string) => key,
+}));
+jest.mock('../../utils/File', () => ({ clearCacheData: jest.fn(), exportDataAndPhoto: jest.fn() }));
+
 describe('useLayers', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();

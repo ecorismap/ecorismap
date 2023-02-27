@@ -4,9 +4,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
 import { CheckBox } from '../molecules/CheckBox';
-import { RecordType, PhotoType } from '../../types';
+import { RecordType, PhotoType, FormatType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
+import { SortOrderType } from '../../utils/Data';
 
 export const DataTable = React.memo(() => {
   //console.log(data[0]);
@@ -20,20 +21,32 @@ export const DataTable = React.memo(() => {
 });
 
 const DataTitle = React.memo(() => {
-  const { projectId, layer, sortedOrder, sortedName, changeOrder, changeChecked, changeVisible } =
-    useContext(DataContext);
+  const { projectId, layer, changeOrder, changeCheckedAll, changeVisibleAll } = useContext(DataContext);
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
+  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
+  const [sortedName, setSortedName] = useState<string>('');
 
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
-    changeChecked(-1, !checkedAll);
-  }, [changeChecked, checkedAll]);
+    changeCheckedAll(!checkedAll);
+  }, [changeCheckedAll, checkedAll]);
 
   const onVisibleAll = useCallback(() => {
     setVisibleAll(!visibleAll);
-    changeVisible(-1, !visibleAll);
-  }, [changeVisible, visibleAll]);
+    changeVisibleAll(!visibleAll);
+  }, [changeVisibleAll, visibleAll]);
+
+  const onChangeOrder = useCallback(
+    (colName: string, format: FormatType | '_user_') => {
+      if (format === 'PHOTO') return;
+      const sortOrder = sortedName === colName && sortedOrder === 'ASCENDING' ? 'DESCENDING' : 'ASCENDING';
+      setSortedName(colName);
+      setSortedOrder(sortOrder);
+      changeOrder(colName, sortOrder);
+    },
+    [changeOrder, sortedName, sortedOrder]
+  );
 
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
@@ -49,7 +62,10 @@ const DataTitle = React.memo(() => {
         <CheckBox style={{ backgroundColor: COLOR.GRAY1 }} checked={checkedAll} onCheck={onCheckAll} />
       </View>
       {projectId !== undefined && (
-        <TouchableOpacity style={[styles.th, { flex: 2, width: 100 }]} onPress={() => changeOrder('_user_', '_user_')}>
+        <TouchableOpacity
+          style={[styles.th, { flex: 2, width: 100 }]}
+          onPress={() => onChangeOrder('_user_', '_user_')}
+        >
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
@@ -68,7 +84,7 @@ const DataTitle = React.memo(() => {
           <TouchableOpacity
             key={field_index}
             style={[styles.th, { flex: 2, width: 120 }]}
-            onPress={() => changeOrder(name, format)}
+            onPress={() => onChangeOrder(name, format)}
           >
             <Text>{name}</Text>
             {sortedName === name && sortedOrder === 'ASCENDING' && (
@@ -97,10 +113,7 @@ const DataTableComponent = React.memo(({ item, index, checked }: Props_DataTable
   return (
     <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
       <View style={[styles.td, { width: 50 }]}>
-        <RectButton2
-          name={item.visible ? 'eye' : 'eye-off-outline'}
-          onPress={() => changeVisible(index, !item.visible)}
-        />
+        <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
       </View>
       <View style={[styles.td, { width: 60 }]}>
         <Button

@@ -5,6 +5,8 @@ import { zip } from 'react-native-zip-archive';
 import sanitize from 'sanitize-filename';
 import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
+import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 
 export const exportDataAndPhoto = async (
   exportData: {
@@ -77,3 +79,56 @@ export const clearCacheData = async () => {
     }
   }
 };
+
+export async function getReceivedFiles() {
+  try {
+    const dirPath = FileSystem.cacheDirectory + '';
+    if (Platform.OS === 'ios') copyFromInbox(dirPath);
+
+    const files = await FileSystem.readDirectoryAsync(dirPath);
+    const filesPromise = files.map(async (name) => {
+      const uri = dirPath + encodeURI(name);
+      const size = (await FileSystem.getInfoAsync(uri)).size;
+      return { name, uri, size };
+    });
+    return await Promise.all(filesPromise);
+  } catch (e: any) {
+    console.log(e);
+    await clearCacheData();
+    return undefined;
+  }
+
+  async function copyFromInbox(dirPath: string) {
+    const inboxPath = FileSystem.documentDirectory + `../tmp/${AppID}-Inbox/`;
+    const dirInfo = await FileSystem.getInfoAsync(inboxPath).catch(() => {
+      return;
+    });
+    if (dirInfo === undefined || !dirInfo.exists) {
+      //console.log('No Inbox');
+      return;
+    }
+    const dir = await FileSystem.readDirectoryAsync(inboxPath);
+
+    for (const fileName of dir) {
+      //console.log('!!!!', fileName);
+      const ext = getExt(fileName)?.toLowerCase();
+      if (ext === 'geojson' || ext === 'gpx' || ext === 'kml' || ext === 'kmz') {
+        //console.log('#', inboxPath + encodeURI(fileName));
+        await FileSystem.copyAsync({ from: inboxPath + encodeURI(fileName), to: dirPath + encodeURI(fileName) });
+        await FileSystem.deleteAsync(inboxPath);
+      }
+    }
+  }
+}
+
+export async function deleteReceivedFiles(
+  files: {
+    name: string;
+    uri: string;
+    size: number | undefined;
+  }[]
+) {
+  for (const file of files) {
+    await FileSystem.deleteAsync(file.uri);
+  }
+}
