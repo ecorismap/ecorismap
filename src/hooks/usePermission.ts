@@ -7,6 +7,7 @@ export type UseLayersReturnType = {
   isOwnerAdmin: boolean;
   isMemberAndProjectOpened: boolean;
   editable: boolean;
+  projectOpened: boolean;
 };
 
 export const usePermission = (): UseLayersReturnType => {
@@ -17,7 +18,7 @@ export const usePermission = (): UseLayersReturnType => {
 
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const isMemberAndProjectOpened = useMemo(() => role === 'MEMBER' && projectId !== undefined, [projectId, role]);
-
+  const projectOpened = useMemo(() => projectId !== undefined, [projectId]);
   const editable = useMemo(
     () =>
       ((role === 'OWNER' || role === 'ADMIN') && isSettingProject) || user.uid === undefined || projectId === undefined,
@@ -27,6 +28,7 @@ export const usePermission = (): UseLayersReturnType => {
   return {
     isOwnerAdmin,
     isMemberAndProjectOpened,
+    projectOpened,
     editable,
   } as const;
 };

@@ -14,10 +14,9 @@ import { AppState } from '../modules';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useEcorisMapFile();
   const { mapListURL, saveMapListURL } = useMaps();
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
-
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
 
