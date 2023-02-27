@@ -5,7 +5,6 @@ import { Props_MapList } from '../routes';
 import { TileMapItemType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { AlertAsync } from '../components/molecules/AlertAsync';
-import { Alert } from '../components/atoms/Alert';
 import { MapListContext } from '../contexts/MapList';
 
 export default function MapListContainer({ navigation }: Props_MapList) {
@@ -15,11 +14,7 @@ export default function MapListContainer({ navigation }: Props_MapList) {
 
   const addMap = (map: TileMapItemType) => {
     const tileMap = { ...map, id: uuidv4(), visible: true, maptype: 'none' as const };
-    const { isOK, message } = saveMap(tileMap);
-    if (!isOK) {
-      Alert.alert(message);
-      return;
-    }
+    saveMap(tileMap);
     navigation.navigate('Maps');
   };
 
