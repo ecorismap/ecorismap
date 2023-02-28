@@ -83,3 +83,6 @@ export function decodeUri(uri: string) {
   const base64 = arr[arr.length - 1];
   return decodeURIComponent(escape(Base64.atob(base64)));
 }
+
+export async function deleteReceivedFiles() {}
+export async function getReceivedFiles() {}
