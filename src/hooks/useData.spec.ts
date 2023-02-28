@@ -1,7 +1,9 @@
-import { LayerType } from '../../types';
-import { COLOR } from '../../constants/AppConstants';
-import { useLayers } from '../../hooks/useLayers';
+import { LayerType, UserType } from '../types';
+import { COLOR } from '../constants/AppConstants';
+import { useLayers } from './useLayers';
 import { renderHook, act } from '@testing-library/react-hooks';
+import { useData } from './useData';
+import { dataSet } from '../__tests__/resources/dataSet';
 
 const layers: LayerType[] = [
   {
@@ -54,6 +56,14 @@ const layers: LayerType[] = [
   },
 ];
 
+const projectId = '0';
+const user: UserType = {
+  uid: '0123',
+  email: 'abc@test.com',
+  displayName: 'abc',
+  photoURL: 'https://www.dummy.com/test.jpg',
+};
+
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();
 
@@ -62,10 +72,10 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
-describe('useLayers', () => {
+describe('useData', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
-    mockSelector = jest.fn().mockReturnValueOnce(layers);
+    mockSelector = jest.fn().mockReturnValueOnce(projectId).mockReturnValueOnce(user).mockReturnValueOnce(dataSet);
   });
 
   afterEach(() => {
@@ -107,19 +117,17 @@ describe('useLayers', () => {
     });
   });
 
-  test('表示非表示ボタンを押すとレイヤの表示非表示が切り替わる', () => {
-    const { result } = renderHook(() => useLayers());
-    const layer = result.current.layers[0];
-    expect(layer.visible).toBe(true);
+  test('表示非表示ボタンを押すとデータの表示非表示が切り替わる', () => {
+    const layer = layers[0];
+    const { result } = renderHook(() => useData(layer));
+    const record = result.current.allUserRecordSet[0];
+    expect(record.visible).toBe(true);
 
     act(() => {
-      result.current.changeVisible(layer);
+      result.current.changeVisible(record);
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/update',
-      value: { ...layer, visible: false },
-    });
+    expect(mockDispatch).toHaveBeenCalledWith();
   });
 
   test('ラベルが切り替わる', () => {
