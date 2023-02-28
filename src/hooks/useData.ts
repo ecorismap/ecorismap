@@ -6,14 +6,13 @@ import { AppState } from '../modules';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
-import { exportDataAndPhoto } from '../utils/File';
-import { usePhoto } from './usePhoto';
 import dayjs from 'dayjs';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
   checkList: boolean[];
+  targetRecords: RecordType[];
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
   changeChecked: (index: number) => void;
@@ -21,7 +20,15 @@ export type UseDataReturnType = {
   changeOrder: (colname: string, order: SortOrderType) => void;
   addRecord: () => RecordType;
   deleteRecords: () => void;
-  exportRecords: () => Promise<boolean>;
+  generateExportGeoData: () => {
+    exportData: {
+      data: string;
+      name: string;
+      type: ExportType | 'PHOTO';
+      folder: string;
+    }[];
+    fileName: string;
+  };
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -29,8 +36,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
   const dataSet = useSelector((state: AppState) => state.dataSet);
-
-  const { deleteRecordPhotos } = usePhoto();
 
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<boolean[]>([]);
@@ -44,6 +49,8 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [allUserRecordSet, dataUser.uid]
   );
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
+
+  const targetRecords = useMemo(() => allUserRecordSet.filter((_, i) => checkList[i]), [allUserRecordSet, checkList]);
 
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType) => {
@@ -115,41 +122,36 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     return newData;
   }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
 
-  const deleteRecords = useCallback(async () => {
-    const records = allUserRecordSet.filter((_, i) => checkList[i]);
-    records.forEach((record) => {
-      deleteRecordPhotos(targetLayer, record, projectId, record.userId);
-    });
-
+  const deleteRecords = useCallback(() => {
     dispatch(
       deleteRecordsAction({
         layerId: targetLayer.id,
         userId: dataUser.uid,
-        data: records,
+        data: targetRecords,
       })
     );
-  }, [allUserRecordSet, checkList, dataUser.uid, deleteRecordPhotos, dispatch, projectId, targetLayer]);
+  }, [dataUser.uid, dispatch, targetLayer.id, targetRecords]);
 
-  const exportRecords = useCallback(async () => {
+  const generateExportGeoData = useCallback(() => {
     const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const records = allUserRecordSet.filter((_, i) => checkList[i]);
+
     //LayerSetting
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
     //GeoJSON
-    const geojson = generateGeoJson(records, targetLayer.field, targetLayer.type, targetLayer.name);
+    const geojson = generateGeoJson(targetRecords, targetLayer.field, targetLayer.type, targetLayer.name);
     const geojsonData = JSON.stringify(geojson);
     const geojsonName = `${targetLayer.name}_${time}.geojson`;
     exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
     //CSV
-    const csv = generateCSV(records, targetLayer.field, targetLayer.type);
+    const csv = generateCSV(targetRecords, targetLayer.field, targetLayer.type);
     const csvData = csv;
     const csvName = `${targetLayer.name}_${time}.csv`;
     exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: '' });
     //GPX
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
-      const gpx = generateGPX(records, targetLayer.type);
+      const gpx = generateGPX(targetRecords, targetLayer.type);
       const gpxData = gpx;
       const gpxName = `${targetLayer.name}_${time}.gpx`;
       exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: '' });
@@ -157,22 +159,22 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     //Photo
 
     const photoFields = targetLayer.field.filter((f) => f.format === 'PHOTO');
-    records.forEach((record) => {
-      photoFields.forEach((photoField) => {
-        (record.field[photoField.name] as PhotoType[]).forEach((photo) => {
+    targetRecords.forEach(({ field }) => {
+      photoFields.forEach(({ name }) => {
+        const photos = field[name] as PhotoType[];
+        for (const photo of photos) {
           if (photo.uri) {
             exportData.push({ data: photo.uri, name: photo.name, type: 'PHOTO', folder: '' });
           }
-        });
+        }
       });
     });
-
-    const exportDataName = `${targetLayer.name}_${time}`;
-    const isOK = await exportDataAndPhoto(exportData, exportDataName, 'zip');
-    return isOK;
-  }, [allUserRecordSet, checkList, targetLayer]);
+    const fileName = `${targetLayer.name}_${time}`;
+    return { exportData, fileName };
+  }, [targetLayer, targetRecords]);
 
   useEffect(() => {
+    if (dataSet === undefined) return;
     const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
     setCheckList(new Array(data.length).fill(false));
     setAllUserRecordSet(data);
@@ -182,6 +184,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     allUserRecordSet,
     isChecked,
     checkList,
+    targetRecords,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -189,6 +192,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     changeOrder,
     addRecord,
     deleteRecords,
-    exportRecords,
+    generateExportGeoData,
   } as const;
 };

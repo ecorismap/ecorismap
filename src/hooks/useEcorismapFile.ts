@@ -15,12 +15,12 @@ import { createSettingsInitialState, setSettingsAction } from '../modules/settin
 import { resetDataSetUser } from '../utils/Data';
 import { t } from '../i18n/config';
 import { getExt } from '../utils/General';
-import { exportDataAndPhoto } from '../utils/File';
 
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
+import { exportGeoFile } from '../utils/File.web';
 
 export type UseEcorisMapFileReturnType = {
   importProject: (
@@ -190,7 +190,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         }
       }
 
-      const isOK = await exportDataAndPhoto(exportData, fileName, 'ecorismap');
+      const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
       if (!isOK) {
         return { isOK: false, message: t('hooks.message.failSaveFile') };
       }

@@ -1,57 +1,51 @@
-import { LayerType, UserType } from '../types';
-import { COLOR } from '../constants/AppConstants';
-import { useLayers } from './useLayers';
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useData } from './useData';
-import { dataSet } from '../__tests__/resources/dataSet';
+import { DataType, LayerType, UserType } from '../types';
+import { COLOR } from '../constants/AppConstants';
+//@ts-ignore
+import MockDate from 'mockdate';
+jest.mock('uuid', () => ({ v4: () => '1234' }));
+MockDate.set('2000-01-01');
 
-const layers: LayerType[] = [
-  {
-    id: '0',
-    name: 'point',
-    type: 'POINT',
-    permission: 'PRIVATE',
-    colorStyle: {
-      colorType: 'SINGLE',
-      transparency: 0.2,
-      color: COLOR.RED,
-      fieldName: 'name',
-      customFieldValue: '',
-      colorRamp: 'RANDOM',
-      colorList: [],
-    },
-    label: 'name',
-    visible: true,
-    active: true,
-    field: [
-      { id: '0-0', name: 'name', format: 'SERIAL' },
-      { id: '0-1', name: 'time', format: 'DATETIME' },
-      { id: '0-2', name: 'cmt', format: 'STRING' },
-      { id: '0-3', name: 'photo', format: 'PHOTO' },
-    ],
+const layer: LayerType = {
+  id: '1',
+  name: 'point',
+  type: 'POINT',
+  permission: 'PRIVATE',
+  colorStyle: {
+    colorType: 'SINGLE',
+    transparency: 0.2,
+    color: COLOR.RED,
+    fieldName: 'name',
+    customFieldValue: '',
+    colorRamp: 'RANDOM',
+    colorList: [],
   },
+  label: 'name',
+  visible: true,
+  active: false,
+  field: [
+    { id: '0-0', name: 'name', format: 'SERIAL' },
+    { id: '0-1', name: 'time', format: 'DATETIME' },
+    { id: '0-2', name: 'cmt', format: 'STRING' },
+    { id: '0-3', name: 'photo', format: 'PHOTO' },
+  ],
+};
+const dataSet: DataType[] = [
+  { layerId: '0', userId: undefined, data: [] },
   {
-    id: '1',
-    name: 'point',
-    type: 'POINT',
-    permission: 'PRIVATE',
-    colorStyle: {
-      colorType: 'SINGLE',
-      transparency: 0.2,
-      color: COLOR.RED,
-      fieldName: 'name',
-      customFieldValue: '',
-      colorRamp: 'RANDOM',
-      colorList: [],
-    },
-    label: 'name',
-    visible: true,
-    active: false,
-    field: [
-      { id: '0-0', name: 'name', format: 'SERIAL' },
-      { id: '0-1', name: 'time', format: 'DATETIME' },
-      { id: '0-2', name: 'cmt', format: 'STRING' },
-      { id: '0-3', name: 'photo', format: 'PHOTO' },
+    layerId: '1',
+    userId: '0123',
+    data: [
+      {
+        id: '0',
+        userId: '0',
+        displayName: 'abc',
+        visible: true,
+        redraw: false,
+        coords: [{ latitude: 0, longitude: 0 }],
+        field: { name: 'abc', time: '2020-01-01T00:00:00.000Z', cmt: 'test', photo: 'https://www.dummy.com/test.jpg' },
+      },
     ],
   },
 ];
@@ -75,51 +69,24 @@ jest.mock('react-redux', () => ({
 describe('useData', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
-    mockSelector = jest.fn().mockReturnValueOnce(projectId).mockReturnValueOnce(user).mockReturnValueOnce(dataSet);
+    //useDataからusePhotoを呼んでいて、そこでもuseSelectorが呼ばれている。
+    mockSelector = jest
+      .fn()
+      .mockReturnValueOnce(projectId)
+      .mockReturnValueOnce(user)
+      .mockReturnValueOnce(dataSet)
+      .mockReturnValueOnce(projectId)
+      .mockReturnValueOnce(user)
+      .mockReturnValueOnce(dataSet);
   });
 
   afterEach(() => {
     jest.resetAllMocks();
   });
 
-  //let result: RenderResult<UseLayersReturnType>;
-
-  test('編集ボタンを押すとアクティブの場合、非アクティブになる', () => {
-    const { result } = renderHook(() => useLayers());
-    expect(result.current.layers[0].active).toBe(true);
-    act(() => {
-      result.current.changeActiveLayer(0);
-    });
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [{ ...result.current.layers[0], active: false }, ...result.current.layers.slice(1)],
-    });
-  });
-
-  test('編集ボタンを押すと非アクティブはアクティブになり、同タイプは非アクティブになる', () => {
-    const { result } = renderHook(() => useLayers());
-
-    expect(result.current.layers[0].active).toBe(true);
-    expect(result.current.layers[1].active).toBe(false);
-    expect(result.current.layers[0].type).toBe('POINT');
-    expect(result.current.layers[1].type).toBe('POINT');
-
-    act(() => {
-      result.current.changeActiveLayer(1);
-    });
-
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [
-        { ...result.current.layers[0], active: false },
-        { ...result.current.layers[1], active: true },
-      ],
-    });
-  });
-
   test('表示非表示ボタンを押すとデータの表示非表示が切り替わる', () => {
-    const layer = layers[0];
     const { result } = renderHook(() => useData(layer));
+
     const record = result.current.allUserRecordSet[0];
     expect(record.visible).toBe(true);
 
@@ -127,44 +94,165 @@ describe('useData', () => {
       result.current.changeVisible(record);
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith();
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'dataSet/updateRecords',
+      value: {
+        data: [
+          {
+            coords: [{ latitude: 0, longitude: 0 }],
+            displayName: 'abc',
+            field: {
+              cmt: 'test',
+              name: 'abc',
+              photo: 'https://www.dummy.com/test.jpg',
+              time: '2020-01-01T00:00:00.000Z',
+            },
+            id: '0',
+            redraw: false,
+            userId: '0',
+            visible: false,
+          },
+        ],
+        layerId: '1',
+        userId: '0',
+      },
+    });
   });
 
-  test('ラベルが切り替わる', () => {
-    const { result } = renderHook(() => useLayers());
-    const layer = result.current.layers[0];
-    expect(layer.label).toBe('name');
+  test('全表示非表示ボタンを押すとすべてのデータの表示非表示が切り替わる', () => {
+    const { result } = renderHook(() => useData(layer));
 
+    //expect(mockSelector).toBeCalledTimes(8);
     act(() => {
-      result.current.changeLabel(layer, 'id');
+      result.current.changeVisibleAll(true);
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/update',
-      value: { ...layer, label: 'id' },
+      type: 'dataSet/setRecordSet',
+      value: {
+        data: [
+          {
+            coords: [{ latitude: 0, longitude: 0 }],
+            displayName: 'abc',
+            field: {
+              cmt: 'test',
+              name: 'abc',
+              photo: 'https://www.dummy.com/test.jpg',
+              time: '2020-01-01T00:00:00.000Z',
+            },
+            id: '0',
+            redraw: false,
+            userId: '0',
+            visible: true,
+          },
+        ],
+        layerId: '1',
+        userId: '0123',
+      },
     });
   });
 
-  test('レイヤ順番ボタンを押すと順番が一つ前になる', () => {
-    const { result } = renderHook(() => useLayers());
-    expect(result.current.layers).toEqual(layers);
+  test('チェックボタンを押すとデータのチェックが切り替わる', () => {
+    const { result } = renderHook(() => useData(layer));
+    expect(result.current.checkList[0]).toBe(false);
 
     act(() => {
-      result.current.changeLayerOrder(1);
+      result.current.changeChecked(0);
+    });
+
+    expect(result.current.checkList[0]).toBe(true);
+  });
+
+  test('全チェックボタンを押すとすべてのデータのチェックが切り替わる', () => {
+    const { result } = renderHook(() => useData(layer));
+    expect(result.current.checkList[0]).toBe(false);
+
+    act(() => {
+      result.current.changeCheckedAll(true);
+    });
+
+    expect(result.current.checkList[0]).toBe(true);
+  });
+
+  test('データ追加ボタンを押すとデータが追加される', () => {
+    const { result } = renderHook(() => useData(layer));
+    act(() => {
+      result.current.addRecord();
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'dataSet/addRecords',
+      value: {
+        data: [
+          {
+            coords: { latitude: 0, longitude: 0 },
+            displayName: 'abc',
+            field: { cmt: '', name: 1, photo: [], time: '2000-01-01T09:00:00+09:00' },
+            id: '1234',
+            redraw: false,
+            userId: '0123',
+            visible: true,
+          },
+        ],
+        layerId: '1',
+        userId: '0123',
+      },
+    });
+  });
+
+  test('データ削除ボタンを押すとチェックされているデータが削除される', () => {
+    const { result } = renderHook(() => useData(layer));
+
+    expect(result.current.checkList[0]).toBe(false);
+    act(() => {
+      result.current.changeChecked(0);
+    });
+    expect(result.current.checkList[0]).toBe(true);
+    act(() => {
+      result.current.deleteRecords();
     });
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [result.current.layers[1], result.current.layers[0]],
+      type: 'dataSet/deleteRecords',
+      value: {
+        data: [
+          {
+            coords: [{ latitude: 0, longitude: 0 }],
+            displayName: 'abc',
+            field: {
+              cmt: 'test',
+              name: 'abc',
+              photo: 'https://www.dummy.com/test.jpg',
+              time: '2020-01-01T00:00:00.000Z',
+            },
+            id: '0',
+            redraw: false,
+            userId: '0',
+            visible: true,
+          },
+        ],
+        layerId: '1',
+        userId: undefined,
+      },
     });
   });
 
-  test('一番上のレイヤ順番ボタンを押しても順番は変わらない', () => {
-    const { result } = renderHook(() => useLayers());
-    expect(result.current.layers).toEqual(layers);
+  test('エクスポートボタンを押すとチェックされているデータがジオデータに変換される', () => {
+    const { result } = renderHook(() => useData(layer));
 
+    expect(result.current.checkList[0]).toBe(false);
     act(() => {
-      result.current.changeLayerOrder(0);
+      result.current.changeChecked(0);
     });
-    expect(mockDispatch).toHaveLength(0);
+    expect(result.current.checkList[0]).toBe(true);
+
+    let exportData;
+    let fileName;
+    act(() => {
+      const ret = result.current.generateExportGeoData();
+      exportData = ret.exportData;
+      fileName = ret.fileName;
+    });
+    expect(exportData).not.toEqual('');
+    expect(fileName).toEqual('point_2000-01-01_09-00-00');
   });
 });
