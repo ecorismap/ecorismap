@@ -28,17 +28,17 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
+  const dataSet = useSelector((state: AppState) => state.dataSet);
+
+  const { deleteRecordPhotos } = usePhoto();
+
+  const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
+  const [checkList, setCheckList] = useState<boolean[]>([]);
+
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
-
-  const dataSet = useSelector((state: AppState) => state.dataSet);
-  const { deleteRecordPhotos } = usePhoto();
-  const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
-
-  const [checkList, setCheckList] = useState<boolean[]>([]);
-
   const ownRecordSet = useMemo(
     () => allUserRecordSet.filter((d) => d.userId === dataUser.uid),
     [allUserRecordSet, dataUser.uid]

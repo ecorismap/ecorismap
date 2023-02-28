@@ -29,16 +29,16 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     deleteRecords,
     exportRecords,
   } = useData(route.params.targetLayer);
-  const { isMemberAndProjectOpened } = usePermission();
+  const { isMember } = usePermission();
 
   const pressExportData = useCallback(async () => {
-    if (isMemberAndProjectOpened) {
+    if (isMember) {
       Alert.alert('', t('Data.alert.exportData'));
       return;
     }
     const isOK = await exportRecords();
     if (!isOK) Alert.alert('', t('hooks.message.failExport'));
-  }, [exportRecords, isMemberAndProjectOpened]);
+  }, [exportRecords, isMember]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));

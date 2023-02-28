@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { useGeoFile } from '../../hooks/useGeoFile';
-import { UserType } from '../../types';
+import { useGeoFile } from './useGeoFile';
+import { UserType } from '../types';
 //@ts-ignore
 import Base64 from 'Base64';
 
