@@ -16,18 +16,18 @@ export const exportFile = async (data: string, fileName: string) => {
   FileSaver.saveAs(blob, fileName);
 };
 
-export const exportDataAndPhoto = async (
+export const exportGeoFile = async (
   exportData: {
     data: string;
     name: string;
     folder: string;
     type: ExportType | 'PHOTO';
   }[],
-  exportDataName: string,
+  exportFileName: string,
   ext: string
 ) => {
   try {
-    const targetPath = `${sanitize(exportDataName)}.${ext}`;
+    const targetPath = `${sanitize(exportFileName)}.${ext}`;
     const zip = new JSZip();
     const folder = zip.folder('');
     if (folder == null) return;
