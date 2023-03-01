@@ -12,10 +12,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
+import { getExt } from '../utils/General';
+import { exportGeoFile } from '../utils/File';
+import sanitize from 'sanitize-filename';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const { createNewEcorisMap, saveEcorisMapFile, loadEcorisMapFile } = useEcorisMapFile();
+  const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile } = useEcorisMapFile();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
@@ -30,13 +33,19 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
 
   const pressFileSaveOK = useCallback(
     async (fileName: string, includePhoto: boolean) => {
-      const { isOK, message } = await saveEcorisMapFile(fileName, includePhoto);
-      if (!isOK) {
-        await AlertAsync(message);
+      if (sanitize(fileName) === '') {
+        await AlertAsync(t('hooks.message.inputCorrectFilename'));
+        return;
       }
+      const exportData = generateEcorisMapData(includePhoto);
+      const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
+      if (!isOK) {
+        await AlertAsync(t('hooks.message.failSaveFile'));
+      }
+
       setIsFileSaveOpen(false);
     },
-    [saveEcorisMapFile]
+    [generateEcorisMapData]
   );
 
   const pressFileOpen = useCallback(async () => {
@@ -50,14 +59,20 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (file.type === 'cancel') {
         return;
       }
-      const { isOK, message } = await loadEcorisMapFile(file.uri, file.name, file.size);
+      const ext = getExt(file.name);
+      if (ext?.toLowerCase() !== 'ecorismap') {
+        await AlertAsync(t('hooks.message.wrongExtension'));
+        return;
+      }
+      console.log(file.uri);
+      const { isOK, message } = await openEcorisMapFile(file.uri);
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {
         await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
       }
     }
-  }, [loadEcorisMapFile, tracking]);
+  }, [openEcorisMapFile, tracking]);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
@@ -65,14 +80,14 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (tracking !== undefined) {
         return { isOK: false, message: t('hooks.message.cannotInTracking') };
       }
-      const { isOK, message } = await createNewEcorisMap();
+      const { isOK, message } = await clearEcorisMap();
       if (!isOK) {
         await AlertAsync(message);
       } else {
         navigation.navigate('Home');
       }
     }
-  }, [createNewEcorisMap, navigation, tracking]);
+  }, [clearEcorisMap, navigation, tracking]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
