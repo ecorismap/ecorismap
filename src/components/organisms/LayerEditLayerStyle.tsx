@@ -8,8 +8,8 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 import { FeatureType } from '../../types';
 
 export const LayerStyle = () => {
-  const { layer, isNewLayer, editable, onChangeFeatureType, gotoLayerEditFeatureStyle } = useContext(LayerEditContext);
-
+  const { layer, isNewLayer, onChangeFeatureType, gotoLayerEditFeatureStyle } = useContext(LayerEditContext);
+  const editable = true;
   const featureValueList = useMemo(() => Object.keys(FEATURETYPE), []);
   const featureValueLabels = useMemo(() => Object.values(FEATURETYPE), []);
   return (
