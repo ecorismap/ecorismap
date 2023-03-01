@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DataType, ExportType, LayerType, PhotoType, ProjectSettingsType, SettingsType, TileMapType } from '../types';
+import { DataType, EcorisMapFileType, ExportType, PhotoType, ProjectSettingsType } from '../types';
 
 import { AppState } from '../modules';
 import { setLayersAction, createLayersInitialState } from '../modules/layers';
@@ -17,12 +17,12 @@ import { t } from '../i18n/config';
 import { getExt } from '../utils/General';
 
 import dayjs from '../i18n/dayjs';
-import sanitize from 'sanitize-filename';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
-import { exportGeoFile } from '../utils/File.web';
+import JSZip from 'jszip';
 
 export type UseEcorisMapFileReturnType = {
+  isLoading: boolean;
   importProject: (
     uri: string,
     name: string,
@@ -31,22 +31,18 @@ export type UseEcorisMapFileReturnType = {
     isOK: boolean;
     message: string;
   }>;
-  createNewEcorisMap: () => Promise<{
+  clearEcorisMap: () => Promise<{
     isOK: boolean;
     message: string;
   }>;
-  saveEcorisMapFile: (
-    fileName: string,
-    includePhoto: boolean
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
-  loadEcorisMapFile: (
-    uri: string,
-    name: string,
-    size: number | undefined
-  ) => Promise<{
+  generateEcorisMapData: (includePhoto: boolean) => {
+    data: string;
+    name: string;
+    type: ExportType | 'JSON' | 'PHOTO';
+    folder: string;
+  }[];
+
+  openEcorisMapFile: (uri: string) => Promise<{
     isOK: boolean;
     message: string;
   }>;
@@ -59,9 +55,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const settings = useSelector((state: AppState) => state.settings);
   const maps = useSelector((state: AppState) => state.tileMaps);
+  const [isLoading, setIsLoading] = useState(false);
 
   const importProject = useCallback(
-    async (uri: string, name: string, size: number | undefined) => {
+    async (uri: string, name: string) => {
       // if (tracking !== undefined) {
       //   return { isOK: false, message: t('hooks.message.cannotInTracking') };
       // }
@@ -94,80 +91,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     [dispatch]
   );
 
-  const importEcorisMapFile = async (uri: string) => {
-    try {
-      const loaded = await unzipFromUri(uri);
-      const files = Object.keys(loaded.files);
-      const jsonFile = files.find((f) => getExt(f) === 'json');
-      if (jsonFile === undefined) return;
-      const decompressed = await loaded.files[jsonFile].async('text');
-      const data: { dataSet: DataType[]; layers: LayerType[]; settings: SettingsType; maps: TileMapType[] } =
-        JSON.parse(decompressed);
-      //console.log(data);
-      //写真をコピー
-      //URIを書き換える
-      let newDataSet: DataType[] = [];
-      for (const layer of data.layers) {
-        const folder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
-        if (Platform.OS !== 'web') {
-          await FileSystem.makeDirectoryAsync(folder, {
-            intermediates: true,
-          });
-        }
-        const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
-        const layerDataSet = data.dataSet.filter((d) => d.layerId === layer.id);
-
-        const newLayerDataSet = layerDataSet.map(async (layerData) => {
-          const newRecords = layerData.data.map(async (record) => {
-            const newRecord = cloneDeep(record);
-            for (const photoField of photoFields) {
-              const photos = (record.field[photoField.name] as PhotoType[]).map(async (photo) => {
-                if (photo.uri) {
-                  let newUri;
-                  if (Platform.OS === 'web') {
-                    const content = await loaded.files[`${layer.id}/${photo.id}`].async('arraybuffer');
-                    const buffer = new Uint8Array(content);
-                    const photoData = new Blob([buffer.buffer]);
-                    newUri = URL.createObjectURL(photoData);
-                    //console.log(newUri);
-                  } else {
-                    const photoData = await loaded.files[`${layer.id}/${photo.id}`].async('base64');
-                    newUri = folder + '/' + photo.name;
-                    //console.log(newUri);
-                    await FileSystem.writeAsStringAsync(newUri, photoData, {
-                      encoding: FileSystem.EncodingType.Base64,
-                    });
-                  }
-                  return { ...photo, uri: newUri };
-                } else {
-                  return photo;
-                }
-              });
-              newRecord.field[photoField.name] = await Promise.all(photos);
-            }
-
-            return newRecord;
-          });
-          const newData: DataType = { ...layerData, data: await Promise.all(newRecords) };
-          return newData;
-        });
-        newDataSet = [...newDataSet, ...(await Promise.all(newLayerDataSet))];
-      }
-
-      //console.log(data.dataSet);
-      //console.log(newDataSet);
-      return { ...data, dataSet: newDataSet };
-    } catch (e) {
-      console.log(e);
-      return undefined;
-    }
-  };
-
-  const saveEcorisMapFile = useCallback(
-    async (fileName: string, includePhoto: boolean) => {
-      if (sanitize(fileName) === '') {
-        return { isOK: false, message: t('hooks.message.inputCorrectFilename') };
-      }
+  const generateEcorisMapData = useCallback(
+    (includePhoto: boolean) => {
       const exportData: { data: string; name: string; type: ExportType | 'JSON' | 'PHOTO'; folder: string }[] = [];
       const savedData = JSON.stringify({ dataSet, layers, settings, maps });
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
@@ -189,38 +114,125 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           });
         }
       }
-
-      const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
-      if (!isOK) {
-        return { isOK: false, message: t('hooks.message.failSaveFile') };
-      }
-      return { isOK: true, message: '' };
+      return exportData;
     },
     [dataSet, layers, maps, settings]
   );
 
+  async function importPhotos(
+    files: {
+      [key: string]: JSZip.JSZipObject;
+    },
+    layerId: string,
+    photoName: string,
+    photoId: string,
+    folder: string
+  ) {
+    let newUri;
+    if (Platform.OS === 'web') {
+      const content = await files[`${layerId}/${photoId}`].async('arraybuffer');
+      const buffer = new Uint8Array(content);
+      const photoData = new Blob([buffer.buffer]);
+      newUri = URL.createObjectURL(photoData);
+      //console.log(newUri);
+    } else {
+      const photoData = await files[`${layerId}/${photoId}`].async('base64');
+      newUri = folder + '/' + photoName;
+      //console.log(newUri);
+      await FileSystem.writeAsStringAsync(newUri, photoData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    }
+    return newUri;
+  }
+
+  const updatePhotoField = useCallback(
+    async (
+      data: EcorisMapFileType,
+      files: {
+        [key: string]: JSZip.JSZipObject;
+      }
+    ) => {
+      //写真をコピー
+      //URIを書き換える
+      let newDataSet: DataType[] = [];
+      for (const layer of data.layers) {
+        const folder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
+        if (Platform.OS !== 'web') {
+          await FileSystem.makeDirectoryAsync(folder, {
+            intermediates: true,
+          });
+        }
+        const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
+        const layerDataSet = data.dataSet.filter((d) => d.layerId === layer.id);
+
+        const newLayerDataSet = layerDataSet.map(async (layerData) => {
+          const newRecords = layerData.data.map(async (record) => {
+            const newRecord = cloneDeep(record);
+            for (const photoField of photoFields) {
+              const photos = (record.field[photoField.name] as PhotoType[]).map(async (photo) => {
+                if (photo.uri) {
+                  const newUri = await importPhotos(files, layer.id, photo.name, photo.id, folder);
+                  return { ...photo, uri: newUri };
+                } else {
+                  return photo;
+                }
+              });
+              newRecord.field[photoField.name] = await Promise.all(photos);
+            }
+
+            return newRecord;
+          });
+          return { ...layerData, data: await Promise.all(newRecords) };
+        });
+        newDataSet = [...newDataSet, ...(await Promise.all(newLayerDataSet))];
+      }
+      return newDataSet;
+    },
+    []
+  );
+
   const loadEcorisMapFile = useCallback(
-    async (uri: string, name: string, size: number | undefined) => {
-      const ext = getExt(name);
-      if (ext?.toLowerCase() !== 'ecorismap') {
-        return { isOK: false, message: t('hooks.message.wrongExtension') };
+    async (uri: string) => {
+      try {
+        setIsLoading(true);
+        const loaded = await unzipFromUri(uri);
+        const jsonFile = Object.keys(loaded.files).find((f) => getExt(f) === 'json');
+        if (jsonFile === undefined) return;
+        const decompressed = await loaded.files[jsonFile].async('text');
+        const data = JSON.parse(decompressed) as EcorisMapFileType;
+
+        const updatedDataSet = await updatePhotoField(data, loaded.files);
+
+        return { ...data, dataSet: updatedDataSet };
+      } catch (e) {
+        console.log(e);
+        return undefined;
+      } finally {
+        setIsLoading(false);
       }
-      //console.log(file.uri);
-      const loaded = await importEcorisMapFile(uri);
-      if (loaded === undefined) {
-        return { isOK: false, message: t('hooks.message.failGetData') };
-      }
+    },
+    [updatePhotoField]
+  );
+
+  const openEcorisMapFile = useCallback(
+    async (uri: string) => {
       //console.log('######', loaded);
+      const loaded = await loadEcorisMapFile(uri);
+      if (loaded === undefined) {
+        return { isOK: true, message: t('hooks.message.failGetData') };
+      }
+      //ToDo: データのサイズチェック。もともと書き出したものだからチェックいらない？
       dispatch(setDataSetAction(loaded.dataSet));
       dispatch(setLayersAction(loaded.layers));
       dispatch(setSettingsAction(loaded.settings));
       dispatch(setTileMapsAction(loaded.maps));
       return { isOK: true, message: '' };
     },
-    [dispatch]
+    [dispatch, loadEcorisMapFile]
   );
 
-  const createNewEcorisMap = useCallback(async () => {
+  const clearEcorisMap = useCallback(async () => {
     //レイヤ、データ、地図情報、設定をリセット。設定のtutrialは現在の状況を引き継ぐ
     dispatch(setLayersAction(createLayersInitialState()));
     dispatch(setDataSetAction(createDataSetInitialState()));
@@ -234,12 +246,13 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     //   await FileSystem.deleteAsync(uri);
     // }
     return { isOK: true, message: '' };
-  }, [dispatch, settings.tutrials]);
+  }, [dispatch, settings?.tutrials]);
 
   return {
+    isLoading,
     importProject,
-    createNewEcorisMap,
-    saveEcorisMapFile,
-    loadEcorisMapFile,
+    clearEcorisMap,
+    generateEcorisMapData,
+    openEcorisMapFile,
   } as const;
 };
