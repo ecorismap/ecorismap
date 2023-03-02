@@ -42,7 +42,7 @@ export const Point = React.memo((props: Props) => {
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}
-            tracksViewChanges={Platform.OS === 'ios' ? true : false} //iosでラベル変更を表示に反映するため
+            tracksViewChanges={true} //iosでラベル変更を表示に反映するため
             coordinate={feature.coords}
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.8 }}
