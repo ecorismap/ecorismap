@@ -1,10 +1,11 @@
 plugins {
     id 'com.android.application'
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+    id 'com.google.gms.google-services'
     id 'com.google.firebase.firebase-perf'
 }
 apply plugin: "com.android.application"
-apply plugin: 'com.google.gms.google-services'
+//apply plugin: 'com.google.gms.google-services'
 import com.android.build.OutputFile
 
 /**
