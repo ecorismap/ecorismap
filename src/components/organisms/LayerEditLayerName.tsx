@@ -7,8 +7,8 @@ import { t } from '../../i18n/config';
 import { TextInput } from '../atoms';
 
 export const LayerName = () => {
-  const { layer, editable, onChangeLayerName, submitLayerName } = useContext(LayerEditContext);
-
+  const { layer, onChangeLayerName, submitLayerName } = useContext(LayerEditContext);
+  const editable = true;
   return (
     <View style={styles.tr}>
       <View style={styles.td}>

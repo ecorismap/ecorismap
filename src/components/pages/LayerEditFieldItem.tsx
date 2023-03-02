@@ -16,13 +16,12 @@ export default function LayerEditFieldItemScreen() {
     refLayerNames,
     refFieldNames,
     primaryFieldNames,
-    editable,
     changeValue,
     pressDeleteValue,
     gotoBack,
   } = useContext(LayerEditFieldItemContext);
   const navigation = useNavigation();
-
+  const editable = true;
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
     [gotoBack]
@@ -124,7 +123,8 @@ export default function LayerEditFieldItemScreen() {
 }
 
 const ListButtons = () => {
-  const { itemFormat, editable, pressAddValue } = useContext(LayerEditFieldItemContext);
+  const { itemFormat, pressAddValue } = useContext(LayerEditFieldItemContext);
+  const editable = true;
   return (
     <View style={styles.button}>
       <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => pressAddValue(false)} />

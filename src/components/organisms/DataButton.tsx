@@ -5,15 +5,17 @@ import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
 
 export const DataButton = () => {
-  const { projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
+  const { layer, projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
 
   const exportDisabled = useMemo(() => projectId !== undefined, [projectId]);
 
   return (
     <>
       <View style={styles.button}>
-        <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
-
+        {layer.type === 'NONE' ||
+          (layer.type === 'POINT' && (
+            <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
+          ))}
         {!exportDisabled && (
           <Button
             name={DATA_BTN.EXPORT}

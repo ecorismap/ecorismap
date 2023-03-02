@@ -13,41 +13,54 @@ import { LayersContext } from '../contexts/Layers';
 import { usePermission } from '../hooks/usePermission';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
+import { getExt } from '../utils/General';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
-  const { editable } = usePermission();
+  const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(
     (index: number) => {
-      if (!editable) {
-        AlertAsync(t('hooks.message.lockProject'));
+      if (isRunningProject) {
+        AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
       changeLayerOrder(index);
     },
-    [changeLayerOrder, editable]
+    [changeLayerOrder, isRunningProject]
   );
 
   const pressImportLayerAndData = useCallback(async () => {
     await runTutrial('LAYERS_BTN_IMPORT');
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.type === 'cancel') return;
-
-    const { message } = await importGeoFile(file.uri, file.name, file.size);
+    const ext = getExt(file.name)?.toLowerCase();
+    if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
+      await AlertAsync(t('hooks.message.wrongExtension'));
+      return;
+    }
+    if (file.size === undefined) {
+      await AlertAsync(t('hooks.message.cannotGetFileSize'));
+      return;
+    }
+    if (file.size / 1024 > 1000) {
+      await AlertAsync(t('hooks.message.cannotImportData'));
+      return;
+    }
+    const { message } = await importGeoFile(file.uri, file.name);
     if (message !== '') await AlertAsync(message);
-  }, [editable, importGeoFile, runTutrial]);
+  }, [importGeoFile, isRunningProject, runTutrial]);
 
   const gotoLayerEditForAdd = useCallback(() => {
-    if (!editable) {
-      AlertAsync(t('hooks.message.lockProject'));
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     expandData();
@@ -56,7 +69,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       targetLayer: { ...TEMPLATE_LAYER, id: uuidv4() },
       isEdited: true,
     });
-  }, [editable, expandData, navigation]);
+  }, [expandData, isRunningProject, navigation]);
 
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {

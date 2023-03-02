@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { Marker, LatLng } from 'react-native-maps';
 
 interface Props {
@@ -14,7 +14,11 @@ const LineLabel = React.memo((props: Props) => {
   const { coordinate, label, size, color, borderColor } = props;
   //console.log(arrow.deg);
   return (
-    <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={coordinate}>
+    <Marker
+      anchor={{ x: 0.5, y: 0.5 }}
+      coordinate={coordinate}
+      tracksViewChanges={Platform.OS === 'ios' ? true : false}
+    >
       <View style={{ alignItems: 'center' }}>
         <Text
           style={{

@@ -13,7 +13,6 @@ export type UseFieldListReturnType = {
   refLayerNames: string[];
   refFieldNames: string[];
   primaryFieldNames: string[];
-  editable: boolean;
   changeValue: (index: number, value: string) => void;
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
@@ -24,11 +23,12 @@ export const useFieldList = (
   fieldIndex: number,
   isEdited_: boolean
 ): UseFieldListReturnType => {
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const layers = useSelector((state: AppState) => state.layers);
+
   const [pickerValues, setPickerValues] = useState(['', '', '']);
   const [itemValues, setItemValues] = useState<{ value: string; isOther: boolean }[]>([]);
   const [isEdited, setIsEdited] = useState(isEdited_);
+
   const format = useMemo(() => targetLayer.field[fieldIndex].format, [fieldIndex, targetLayer.field]);
 
   const refLayerIds = useMemo(
@@ -47,14 +47,6 @@ export const useFieldList = (
   }, [layers, pickerValues]);
 
   const primaryFieldNames = useMemo(() => ['', '_id', ...targetLayer.field.map((f) => f.name)], [targetLayer.field]);
-
-  const editable = useMemo(() => {
-    if (tracking !== undefined && tracking.layerId === targetLayer.id) {
-      return false;
-    }
-
-    return true;
-  }, [targetLayer.id, tracking]);
 
   useEffect(() => {
     setIsEdited(isEdited_);
@@ -129,7 +121,6 @@ export const useFieldList = (
     refLayerNames,
     refFieldNames,
     primaryFieldNames,
-    editable,
     changeValue,
     addValue,
     deleteValue,
