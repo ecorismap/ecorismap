@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
