@@ -11,7 +11,7 @@ export const getColor = (layer: LayerType, feature: RecordType) => {
   if (colorStyle.colorType === 'SINGLE') {
     color = colorStyle.color;
   } else if (colorStyle.colorType === 'CATEGORIZED') {
-    if (colorStyle.fieldName === t('common.custom')) {
+    if (colorStyle.fieldName === '__CUSTOM') {
       const fieldNames = colorStyle.customFieldValue.split('|');
       const customValue = fieldNames.map((name) => feature.field[name]).join('|');
       const colorObj = colorStyle.colorList.find(({ value }) => value === customValue);
@@ -38,7 +38,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
   if (colorType === 'SINGLE') {
     colorRule = hex2rgba(color, 1 - transparency) ?? 'rgb(255,0,0)';
   } else if (colorType === 'CATEGORIZED') {
-    if (fieldName === t('common.custom')) {
+    if (fieldName === '__CUSTOM') {
       const fieldNames = customFieldValue.split('|');
       const defaultColor = 'grey';
       const conditionalColors = colorList

@@ -79,7 +79,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       if (recordSet === undefined) return;
       if (recordSet.length === 0) return;
       //ToDo Layerとデータの整合性のチェック
-
+      console.log(layer);
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
       dispatch(addLayerAction(layer));
       dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));

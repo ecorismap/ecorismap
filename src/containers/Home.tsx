@@ -256,7 +256,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
       if (Platform.OS !== 'web') return;
-      if (!isRunningProject) {
+      if (isRunningProject) {
         await AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
