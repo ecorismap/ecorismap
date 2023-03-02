@@ -154,12 +154,7 @@ export default function DataEditScreen() {
   }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      enabled
-      keyboardVerticalOffset={10}
-    >
+    <KeyboardAvoidingView style={styles.container} behavior={'padding'} enabled keyboardVerticalOffset={10}>
       <ScrollView>
         <DataEditLayerName value={layer.name} />
 
