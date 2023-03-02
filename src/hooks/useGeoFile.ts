@@ -24,8 +24,7 @@ export type UseGeoFileReturnType = {
   isLoading: boolean;
   importGeoFile: (
     uri: string,
-    name: string,
-    size: number | undefined
+    name: string
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -195,20 +194,11 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   );
 
   const importGeoFile = useCallback(
-    async (uri: string, name: string, size: number | undefined) => {
+    async (uri: string, name: string) => {
       try {
         //console.log(file);
         setIsLoading(true);
-        const ext = getExt(name)?.toLowerCase();
-        if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
-          return { isOK: false, message: t('hooks.message.wrongExtension') };
-        }
-        if (size === undefined) {
-          return { isOK: false, message: t('hooks.message.cannotGetFileSize') };
-        }
-        if (size / 1024 > 1000) {
-          return { isOK: false, message: t('hooks.message.cannotImportData') };
-        }
+
         await loadFile(name, uri);
         return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
