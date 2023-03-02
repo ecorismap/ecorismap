@@ -8,8 +8,8 @@ import { FormatType } from '../../types';
 import { Button, Picker, RectButton2 } from '../atoms';
 
 export const LayerEditFieldTitle = () => {
-  const { editable, pressAddField } = useContext(LayerEditContext);
-
+  const { pressAddField } = useContext(LayerEditContext);
+  const editable = true;
   return (
     <View style={styles.tr3}>
       <View style={[styles.td3, { flex: 6 }]}>
@@ -41,7 +41,6 @@ export const LayerEditFieldTitle = () => {
 export const LayerEditFieldTable = () => {
   const {
     layer,
-    editable,
     onChangeFieldOrder,
     onChangeFieldName,
     submitFieldName,
@@ -49,7 +48,7 @@ export const LayerEditFieldTable = () => {
     pressDeleteField,
     gotoLayerEditFieldItem,
   } = useContext(LayerEditContext);
-
+  const editable = true;
   const formatTypeValues = useMemo(() => Object.keys(DATAFORMAT), []);
   const formatTypeLabels = useMemo(() => Object.values(DATAFORMAT), []);
 

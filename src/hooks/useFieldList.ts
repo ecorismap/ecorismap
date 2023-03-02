@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { LayerType } from '../types';
 import { AppState } from '../modules';
 import { cloneDeep } from 'lodash';
-import { hasOpened } from '../utils/Project';
 import { t } from '../i18n/config';
 
 export type UseFieldListReturnType = {
@@ -14,7 +13,6 @@ export type UseFieldListReturnType = {
   refLayerNames: string[];
   refFieldNames: string[];
   primaryFieldNames: string[];
-  editable: boolean;
   changeValue: (index: number, value: string) => void;
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
@@ -25,15 +23,11 @@ export const useFieldList = (
   fieldIndex: number,
   isEdited_: boolean
 ): UseFieldListReturnType => {
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const role = useSelector((state: AppState) => state.settings.role);
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const layers = useSelector((state: AppState) => state.layers);
+
   const [pickerValues, setPickerValues] = useState(['', '', '']);
   const [itemValues, setItemValues] = useState<{ value: string; isOther: boolean }[]>([]);
   const [isEdited, setIsEdited] = useState(isEdited_);
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const format = useMemo(() => targetLayer.field[fieldIndex].format, [fieldIndex, targetLayer.field]);
 
   const refLayerIds = useMemo(
@@ -52,19 +46,6 @@ export const useFieldList = (
   }, [layers, pickerValues]);
 
   const primaryFieldNames = useMemo(() => ['', '_id', ...targetLayer.field.map((f) => f.name)], [targetLayer.field]);
-
-  const editable = useMemo(() => {
-    if (tracking !== undefined && tracking.layerId === targetLayer.id) {
-      return false;
-    }
-    if (hasOpened(projectId) && !isOwnerAdmin) {
-      return false;
-    }
-    if (hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-      return false;
-    }
-    return true;
-  }, [isSettingProject, isOwnerAdmin, projectId, targetLayer.id, tracking]);
 
   useEffect(() => {
     setIsEdited(isEdited_);
@@ -139,7 +120,6 @@ export const useFieldList = (
     refLayerNames,
     refFieldNames,
     primaryFieldNames,
-    editable,
     changeValue,
     addValue,
     deleteValue,

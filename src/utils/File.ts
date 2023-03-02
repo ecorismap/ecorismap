@@ -8,17 +8,17 @@ import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 
-export const exportDataAndPhoto = async (
+export const exportGeoFile = async (
   exportData: {
     data: string;
     name: string;
     folder: string;
     type: ExportType | 'PHOTO';
   }[],
-  exportDataName: string,
+  exportFileName: string,
   ext: string
 ) => {
-  const fileName = sanitize(exportDataName);
+  const fileName = sanitize(exportFileName);
   const sourcePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
   const targetPath = `${RNFS.CachesDirectoryPath}/${fileName}.${ext}`;
   // console.log(sourcePath);

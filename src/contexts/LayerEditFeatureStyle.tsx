@@ -8,7 +8,8 @@ interface LayerEditFeatureStyleContextType {
   colorStyle: ColorStyle;
   colorTypes: ColorTypesType[];
   colorTypeLabels: string[];
-  fieldNames: string[];
+  fieldValues: string[];
+  fieldLabels: string[];
   colorRamps: ColorRampType[];
   colorRampLabels: string[];
   layerType: FeatureType;

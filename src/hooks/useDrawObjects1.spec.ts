@@ -1,8 +1,8 @@
 import { RenderResult, renderHook, act } from '@testing-library/react-hooks';
 import { Position } from '@turf/turf';
-import { useDrawObjects, UseDrawObjectsReturnType } from '../../hooks/useDrawObjects';
+import { useDrawObjects, UseDrawObjectsReturnType } from './useDrawObjects';
 
-import { DrawLineType, DrawToolType, RegionType, UndoLineType } from '../../types';
+import { DrawLineType, DrawToolType, RegionType, UndoLineType } from '../types';
 
 const mapRegion: RegionType = {
   latitude: 35,
@@ -33,7 +33,15 @@ describe('useDrawTool', () => {
     mockSelector = jest.fn().mockReturnValue(mapRegion);
     mockWindowDimensions = jest.fn().mockReturnValue({ width: 411, height: 852 });
     result = renderHook(() =>
-      useDrawObjects(drawLine, editingLineXY, undoLine, editingObjectIndex, currentDrawTool, isEditingObject)
+      useDrawObjects(
+        drawLine,
+        editingLineXY,
+        undoLine,
+        editingObjectIndex,
+        currentDrawTool,
+        isEditingObject,
+        mapViewRef
+      )
     ).result;
   });
 
@@ -51,6 +59,13 @@ describe('useDrawTool', () => {
   const editingObjectIndex = { current: -1 };
   const currentDrawTool: DrawToolType = 'PLOT_LINE';
   const isEditingObject: { current: boolean } = { current: false };
+  const mapViewRef: any = {
+    // animateToRegion: jest.fn(),
+    // animateCamera: jest.fn(),
+    // getMap: () => {
+    //   return { getBounds: undefined };
+    // },
+  };
 
   const pXY = [0, 0];
   const pXY2 = [1, 1];

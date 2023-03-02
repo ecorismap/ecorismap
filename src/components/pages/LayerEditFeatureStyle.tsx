@@ -19,7 +19,8 @@ export default function LayerEditFeatureStyleScreen() {
     colorStyle,
     colorTypes,
     colorTypeLabels,
-    fieldNames,
+    fieldValues,
+    fieldLabels,
     colorRamps,
     colorRampLabels,
     layerType,
@@ -80,8 +81,8 @@ export default function LayerEditFeatureStyleScreen() {
                 label={t('common.fieldName')}
                 value={colorStyle.fieldName}
                 onValueChange={changeFieldName}
-                itemValueArray={fieldNames}
-                itemLabelArray={fieldNames}
+                itemValueArray={fieldValues}
+                itemLabelArray={fieldLabels}
               />
             )}
             {isCustom && (

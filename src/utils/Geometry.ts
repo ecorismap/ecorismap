@@ -147,7 +147,7 @@ export const GeoJson2Data = (
 ) => {
   try {
     let importedData: RecordType[] = [];
-    console.log(type);
+
     switch (type) {
       case 'POINT':
         importedData = geojson.features

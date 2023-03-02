@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
 import { ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useLayerEdit } from '../hooks/useLayerEdit';
@@ -7,15 +7,18 @@ import { LayerType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
+import { useSelector } from 'react-redux';
+import { AppState } from '../modules';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const {
     targetLayer,
     isEdited,
     isNewLayer,
-    editable,
     saveLayer,
     deleteLayer,
+    deleteLayerPhotos,
     changeLayerName,
     submitLayerName,
     changeFeatureType,
@@ -34,24 +37,29 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     route.params.colorStyle
   );
 
-  useEffect(() => {
-    if (!editable.state) setTimeout(() => Alert.alert('', editable.message), 500);
-  }, [editable.message, editable.state]);
-
   const pressSaveLayer = useCallback(() => {
+    if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
+      Alert.alert('', t('hooks.message.cannotSaveInTracking'));
+      return;
+    }
     const { isOK, message } = saveLayer();
     if (!isOK) {
       Alert.alert('', message);
     }
-  }, [saveLayer]);
+  }, [route.params.targetLayer.id, saveLayer, tracking]);
 
   const pressDeleteLayer = useCallback(async () => {
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
     if (ret) {
+      if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
+        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+        return;
+      }
       deleteLayer();
+      await deleteLayerPhotos();
       navigation.navigate('Layers');
     }
-  }, [deleteLayer, navigation]);
+  }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {
@@ -87,7 +95,6 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
         layer: targetLayer,
         isEdited,
         isNewLayer,
-        editable: editable.state,
         onChangeLayerName: changeLayerName,
         submitLayerName,
         onChangeFeatureType: changeFeatureType,

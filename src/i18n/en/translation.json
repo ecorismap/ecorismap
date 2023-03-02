@@ -167,7 +167,7 @@
     "version": "Ver.",
     "distance": "distance",
     "customField": "custom field",
-    "custom": "custom"
+    "custom": "CUSTOM"
   },
   "firebase": {
     "message": {
@@ -534,7 +534,8 @@
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
       "cannotEditCommon": "Common layers cannot be edited",
-      "cannotInRunningProject": "You can't do it when you have a project open."
+      "cannotInRunningProject": "Not possible when project is open",
+      "cannotSaveInTracking": "It cannot be changed while the track is being recorded."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
