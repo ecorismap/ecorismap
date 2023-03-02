@@ -28,7 +28,7 @@ import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
 import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
-
+import { useKeyboard } from '@react-native-community/hooks';
 // let fs: any;
 // if (Platform.OS === 'web') {
 //   fs = require('fs');
@@ -90,7 +90,7 @@ export const useDataEdit = (
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
-
+  const { keyboardShown } = useKeyboard();
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
   const { hisyouLayerId } = useHisyouToolSetting();
@@ -322,7 +322,11 @@ export const useDataEdit = (
     if (!targetLayer.active && !isHisyouLayer) {
       return { isOK: false, message: t('hooks.message.noEditMode') };
     }
-
+    if (keyboardShown) {
+      //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
+      //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
+      return { isOK: false, message: '入力を確定してください' };
+    }
     const { isOK, message } = checkFieldInput(targetLayer, targetRecord);
 
     if (!isOK) {
@@ -357,6 +361,7 @@ export const useDataEdit = (
     targetRecord,
     targetLayer,
     isHisyouLayer,
+    keyboardShown,
     latlon,
     isDecimal,
     temporaryDeletePhotoList,
