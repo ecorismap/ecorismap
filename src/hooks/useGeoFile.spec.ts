@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { useGeoFile } from '../../hooks/useGeoFile';
-import { UserType } from '../../types';
+import { useGeoFile } from './useGeoFile';
+import { UserType } from '../types';
 //@ts-ignore
 import Base64 from 'Base64';
 
@@ -40,7 +40,6 @@ describe('useGeoFile', () => {
 
   test('web環境でgeojsonを読み込む', async () => {
     const name = 'test.geojson';
-    const size = 1860;
     const geojsonData = {
       type: 'FeatureCollection',
       features: [
@@ -61,7 +60,7 @@ describe('useGeoFile', () => {
     const { result, waitForNextUpdate } = renderHook(() => useGeoFile());
     let ret;
     act(async () => {
-      ret = await result.current.importGeoFile(uri, name, size);
+      ret = await result.current.importGeoFile(uri, name);
     });
     expect(result.current.isLoading).toBe(true);
     await waitForNextUpdate();

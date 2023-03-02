@@ -13,22 +13,18 @@ import { addDataAction, deleteDataAction, updateDataAction } from '../modules/da
 import { addLayerAction, deleteLayerAction, updateLayerAction } from '../modules/layers';
 import { getInitialFieldValue } from '../utils/Data';
 import { checkLayerInputs } from '../utils/Layer';
-import { t } from '../i18n/config';
 import sanitize from 'sanitize-filename';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
   isEdited: boolean;
   isNewLayer: boolean;
-  editable: {
-    state: boolean;
-    message: string;
-  };
   saveLayer: () => {
     isOK: boolean;
     message: string;
   };
   deleteLayer: () => void;
+  deleteLayerPhotos: () => Promise<void>;
   changeLayerName: (val: string) => void;
   submitLayerName: () => void;
   changeFeatureType: (itemValue: FeatureType) => void;
@@ -52,24 +48,16 @@ export const useLayerEdit = (
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const layers = useSelector((state: AppState) => state.layers);
   const user = useSelector((state: AppState) => state.user);
-  const dataUser = useMemo(
-    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
-    [projectId, user]
-  );
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const dataSet = useSelector((state: AppState) => state.dataSet.filter((d) => d.layerId === layer.id));
   const isNewLayer = useSelector((state: AppState) => state.layers.every((d) => d.id !== layer.id));
 
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [isEdited, setIsEdited] = useState(isStyleEdited);
 
-  const editable = useMemo(() => {
-    if (tracking !== undefined && tracking.layerId === layer.id) {
-      return { state: false, message: t('hooks.message.cannotChangeInTracking') };
-    }
-
-    return { state: true, message: '' };
-  }, [layer.id, tracking]);
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
 
   useEffect(() => {
     setTargetLayer(layer);
@@ -165,24 +153,20 @@ export const useLayerEdit = (
     return { isOK: true, message: '' };
   }, [dataUser.uid, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
 
-  const deleteLayerPhotos = useCallback(() => {
+  const deleteLayerPhotos = useCallback(async () => {
     if (Platform.OS === 'web') {
       return;
     } else {
       if (projectId === undefined) return;
       const folder = `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}`;
-      FileSystem.deleteAsync(folder, { idempotent: true });
+      await FileSystem.deleteAsync(folder, { idempotent: true });
     }
   }, [projectId, targetLayer.id]);
 
   const deleteLayer = useCallback(async () => {
-    //データ内の写真の削除
-    deleteLayerPhotos();
-    //データの削除
     dispatch(deleteDataAction(dataSet));
-    //レイヤの削除
     dispatch(deleteLayerAction(targetLayer));
-  }, [dataSet, deleteLayerPhotos, dispatch, targetLayer]);
+  }, [dataSet, dispatch, targetLayer]);
 
   const changeLayerName = useCallback(
     (val: string) => {
@@ -290,9 +274,9 @@ export const useLayerEdit = (
     targetLayer,
     isEdited,
     isNewLayer,
-    editable,
     saveLayer,
     deleteLayer,
+    deleteLayerPhotos,
     changeLayerName,
     submitLayerName,
     changeFeatureType,

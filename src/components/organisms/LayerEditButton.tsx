@@ -6,8 +6,8 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 import { Button } from '../atoms';
 
 export const LayerEditButton = () => {
-  const { isEdited, editable, pressSaveLayer, pressDeleteLayer } = useContext(LayerEditContext);
-
+  const { isEdited, pressSaveLayer, pressDeleteLayer } = useContext(LayerEditContext);
+  const editable = true;
   return (
     <View style={styles.buttonContainer}>
       <Button

@@ -5,7 +5,6 @@ interface LayerEditContextType {
   layer: LayerType;
   isEdited: boolean;
   isNewLayer: boolean;
-  editable: boolean;
   onChangeLayerName: (val: string) => void;
   submitLayerName: () => void;
   onChangeFeatureType: (itemValue: FeatureType) => void;

@@ -32,7 +32,8 @@ export const DataEditReference = (props: Props) => {
         Alert.alert('', '一旦変更を保存してください。');
         return;
       }
-      const { message, data: referenceData } = await addRecord();
+      const referenceData = addRecord();
+      const message = 'need refactoring!!!';
       pressAddReferenceData(referenceData, referenceLayer, message);
     },
     [addRecord, isEditingRecord, pressAddReferenceData]

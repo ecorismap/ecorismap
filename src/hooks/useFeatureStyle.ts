@@ -19,7 +19,8 @@ export type UseFeatureStyleReturnType = {
   colorTypeLabels: string[];
   colorRamps: ColorRampType[];
   colorRampLabels: string[];
-  fieldNames: string[];
+  fieldValues: string[];
+  fieldLabels: string[];
   layerType: FeatureType;
   modalVisible: boolean;
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
@@ -56,7 +57,14 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const [customFieldValue, setCustomFieldValue] = useState('');
   const colorListIndex = useRef(0);
 
-  const fieldNames: string[] = useMemo(
+  const fieldValues: string[] = useMemo(
+    () => [
+      ...targetLayer.field.reduce((a: any, b: any) => (b.format !== 'PHOTO' ? [...a, b.name] : [...a]), ['']),
+      '__CUSTOM',
+    ],
+    [targetLayer.field]
+  );
+  const fieldLabels: string[] = useMemo(
     () => [
       ...targetLayer.field.reduce((a: any, b: any) => (b.format !== 'PHOTO' ? [...a, b.name] : [...a]), ['']),
       t('common.custom'),
@@ -78,7 +86,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   useEffect(() => {
     setColorStyle(layer_.colorStyle);
     setTargetLayer(layer_);
-    setIsCustom(layer_.colorStyle.fieldName === t('common.custom'));
+    setIsCustom(layer_.colorStyle.fieldName === '__CUSTOM');
     setCustomFieldValue(layer_.colorStyle.customFieldValue);
   }, [layer_, layer_.colorStyle]);
 
@@ -105,8 +113,9 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const changeFieldName = useCallback(
     (itemValue: ItemValue) => {
       if (colorStyle.fieldName !== itemValue) {
-        setIsCustom(itemValue === t('common.custom'));
-        setColorStyle({ ...colorStyle, fieldName: itemValue as string });
+        const fieldName = itemValue === t('common.custom') ? '__CUSTOM' : (itemValue as string);
+        setIsCustom(fieldName === '__CUSTOM');
+        setColorStyle({ ...colorStyle, fieldName });
         setIsEdited(true);
       }
     },
@@ -172,7 +181,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const reloadValue = useCallback(() => {
     let valueList: (string | number)[] = [];
     if (colorStyle.colorType === 'CATEGORIZED') {
-      if (colorStyle.fieldName === t('common.custom')) {
+      if (colorStyle.fieldName === '__CUSTOM') {
         const customFieldNames = colorStyle.customFieldValue.split('|');
 
         const valueListArray = customFieldNames.map((name) =>
@@ -239,7 +248,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     colorTypeLabels,
     colorRamps,
     colorRampLabels,
-    fieldNames,
+    fieldValues,
+    fieldLabels,
     layerType,
     modalVisible,
     setIsCustom,

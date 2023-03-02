@@ -12,7 +12,7 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
-import { isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
+import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool, isSelectionTool } from '../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
@@ -40,7 +40,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
   const { screenState, openData, expandData, closeData } = useScreen();
-  const { editable } = usePermission();
+  const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -256,20 +256,33 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
       if (Platform.OS !== 'web') return;
-      if (!editable) {
-        await AlertAsync(t('hooks.message.lockProject'));
+      if (isRunningProject) {
+        await AlertAsync(t('hooks.message.cannotInRunningProject'));
         return;
       }
       const files = await importDropedFile(acceptedFiles);
       if (files.length > 0) {
-        for (const f of files) {
-          const { isOK, message } = await importGeoFile(f.uri, f.name, f.size);
-          if (!isOK) await AlertAsync(`${f.name}:${message}`);
+        for (const file of files) {
+          const ext = getExt(file.name)?.toLowerCase();
+          if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
+            await AlertAsync(t('hooks.message.wrongExtension'));
+            continue;
+          }
+          if (file.size === undefined) {
+            await AlertAsync(t('hooks.message.cannotGetFileSize'));
+            continue;
+          }
+          if (file.size / 1024 > 1000) {
+            await AlertAsync(t('hooks.message.cannotImportData'));
+            continue;
+          }
+          const { isOK, message } = await importGeoFile(file.uri, file.name);
+          if (!isOK) await AlertAsync(`${file.name}:${message}`);
         }
         await AlertAsync(t('hooks.message.receiveFile'));
       }
     },
-    [editable, importGeoFile]
+    [importGeoFile, isRunningProject]
   );
 
   const onReleaseSvgView = useCallback(
@@ -520,7 +533,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     async function importExternalFiles() {
       const files = await getReceivedFiles();
       if (files === undefined || files.length === 0) return;
-      const { message } = await importGeoFile(files[0].uri, files[0].name, files[0].size);
+      const ext = getExt(files[0].name)?.toLowerCase();
+      if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) return;
+      if (files[0].size === undefined) {
+        await AlertAsync(t('hooks.message.cannotGetFileSize'));
+        return;
+      }
+      if (files[0].size / 1024 > 1000) {
+        await AlertAsync(t('hooks.message.cannotImportData'));
+        return;
+      }
+      const { message } = await importGeoFile(files[0].uri, files[0].name);
       if (message !== '') await AlertAsync(message);
       await deleteReceivedFiles(files);
     }

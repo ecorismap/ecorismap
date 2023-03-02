@@ -167,7 +167,7 @@
     "version": "Ver.",
     "distance": "distance",
     "customField": "custom field",
-    "custom": "custom"
+    "custom": "CUSTOM"
   },
   "firebase": {
     "message": {
@@ -532,7 +532,9 @@
       "failSaveFile": "Failed to save file.",
       "invalidPolygon": "Can't save for invalid line.",
       "invalidLine": "Can't save for invalid line",
-      "invalidPoint": "Can't save for invalid point."
+      "invalidPoint": "Can't save for invalid point.",
+      "cannotInRunningProject": "Not possible when project is open",
+      "cannotSaveInTracking": "It cannot be changed while the track is being recorded."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

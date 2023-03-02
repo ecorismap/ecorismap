@@ -1,7 +1,7 @@
 import { RenderResult, renderHook, act } from '@testing-library/react-hooks';
-import { useMapView, UseMapViewReturnType } from '../../hooks/useMapView';
+import { useMapView, UseMapViewReturnType } from './useMapView';
 
-import { RegionType } from '../../types';
+import { RegionType } from '../types';
 
 const mapRegion: RegionType = {
   latitude: 35,
