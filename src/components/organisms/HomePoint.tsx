@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
@@ -42,7 +42,7 @@ export const Point = React.memo((props: Props) => {
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}
-            tracksViewChanges={true} //iosでラベル変更を表示に反映するため
+            tracksViewChanges={Platform.OS === 'ios' ? true : false} //iosでラベル変更を表示に反映するため
             coordinate={feature.coords}
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.8 }}
