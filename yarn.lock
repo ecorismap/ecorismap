@@ -3172,6 +3172,13 @@
   resolved "https://registry.yarnpkg.com/@react-native-firebase/functions/-/functions-16.7.0.tgz#4d1d97bfbb605626b101575f458ae176d1d43049"
   integrity sha512-4ot/C3zQgWy0Huhq0ZqJeOGUp1z3P512NGpkstWXv8qENKNUohvQV+K/U/CU+hWduLfia2re6dmdFZIFNGwzFA==
 
+"@react-native-firebase/perf@^17.3.1":
+  version "17.3.1"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/perf/-/perf-17.3.1.tgz#c195e7e3b79994f4d20d01dfda30c2e839e5d15a"
+  integrity sha512-nGTZtT80JbIpzGUU5V57WtLncTvlz4uW1FxOTCj47hrbfnADQxtSQRuNuzphsf3IPW4V1awWla2MK2Lv7NejTg==
+  dependencies:
+    "@expo/config-plugins" "^5.0.4"
+
 "@react-native-firebase/storage@^16.4.5":
   version "16.7.0"
   resolved "https://registry.yarnpkg.com/@react-native-firebase/storage/-/storage-16.7.0.tgz#109c03dfd7240e6bdea871f631fca2784369eec9"
@@ -13833,6 +13840,11 @@ mkdirp@^1.0.3, mkdirp@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
+
+mockdate@^3.0.5:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/mockdate/-/mockdate-3.0.5.tgz#789be686deb3149e7df2b663d2bc4392bc3284fb"
+  integrity sha512-iniQP4rj1FhBdBYS/+eQv7j1tadJ9lJtdzgOpvsOHng/GbcDh2Fhdeq+ZRldrPYdXvCyfFUmFeEwEGXZB5I/AQ==
 
 morgan@^1.10.0, morgan@^1.8.2:
   version "1.10.0"
