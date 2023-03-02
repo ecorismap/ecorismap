@@ -1,11 +1,13 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { COLOR, DATA_BTN } from '../../constants/AppConstants';
 import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
 
 export const DataButton = () => {
-  const { layer, isChecked, isOwnerAdmin, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
+  const { layer, projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
+
+  const exportDisabled = useMemo(() => projectId !== undefined, [projectId]);
 
   return (
     <>
@@ -14,7 +16,7 @@ export const DataButton = () => {
           (layer.type === 'POINT' && (
             <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
           ))}
-        {isOwnerAdmin && (
+        {!exportDisabled && (
           <Button
             name={DATA_BTN.EXPORT}
             onPress={pressExportData}

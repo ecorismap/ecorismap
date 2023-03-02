@@ -13,6 +13,7 @@ import { LayersContext } from '../contexts/Layers';
 import { usePermission } from '../hooks/usePermission';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
+import { getExt } from '../utils/General';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
@@ -40,8 +41,20 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     }
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.type === 'cancel') return;
-
-    const { message } = await importGeoFile(file.uri, file.name, file.size);
+    const ext = getExt(file.name)?.toLowerCase();
+    if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
+      await AlertAsync(t('hooks.message.wrongExtension'));
+      return;
+    }
+    if (file.size === undefined) {
+      await AlertAsync(t('hooks.message.cannotGetFileSize'));
+      return;
+    }
+    if (file.size / 1024 > 1000) {
+      await AlertAsync(t('hooks.message.cannotImportData'));
+      return;
+    }
+    const { message } = await importGeoFile(file.uri, file.name);
     if (message !== '') await AlertAsync(message);
   }, [importGeoFile, isRunningProject, runTutrial]);
 

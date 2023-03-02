@@ -622,7 +622,8 @@
       "invalidLine": "ラインが不正なため保存できません。",
       "invalidPoint": "ポイントが不正なため保存できません。",
       "cannotEditCommon": "コモンレイヤは編集できません",
-      "cannotInRunningProject": "プロジェクトを開いている時はできません。"
+      "cannotInRunningProject": "プロジェクトを開いている時はできません。",
+      "cannotSaveInTracking": "トラックの記録中は変更できません。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

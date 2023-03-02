@@ -10,6 +10,8 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { usePermission } from '../hooks/usePermission';
+import { exportGeoFile } from '../utils/File';
+import { usePhoto } from '../hooks/usePhoto';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -20,6 +22,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     allUserRecordSet: data,
     isChecked,
     checkList,
+    targetRecords,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -27,18 +30,20 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeOrder,
     addRecord,
     deleteRecords,
-    exportRecords,
+    generateExportGeoData,
   } = useData(route.params.targetLayer);
-  const { isMemberAndProjectOpened, isRunningProject, isOwnerAdmin } = usePermission();
+  const { isMember, isRunningProject, isOwnerAdmin } = usePermission();
+  const { deleteRecordPhotos } = usePhoto();
 
   const pressExportData = useCallback(async () => {
-    if (isMemberAndProjectOpened) {
+    if (isMember) {
       Alert.alert('', t('Data.alert.exportData'));
       return;
     }
-    const isOK = await exportRecords();
+    const { exportData, fileName } = generateExportGeoData();
+    const isOK = await exportGeoFile(exportData, fileName, 'zip');
     if (!isOK) Alert.alert('', t('hooks.message.failExport'));
-  }, [exportRecords, isMemberAndProjectOpened]);
+  }, [generateExportGeoData, isMember]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
@@ -65,8 +70,19 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       // }
 
       deleteRecords();
+      targetRecords.forEach((record) => {
+        deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
+      });
     }
-  }, [deleteRecords, isRunningProject, route.params.targetLayer.active, route.params.targetLayer.id, tracking]);
+  }, [
+    deleteRecordPhotos,
+    deleteRecords,
+    isRunningProject,
+    projectId,
+    route.params.targetLayer,
+    targetRecords,
+    tracking,
+  ]);
 
   const pressAddData = useCallback(async () => {
     if (isRunningProject) {

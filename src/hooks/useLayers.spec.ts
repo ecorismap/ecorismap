@@ -1,6 +1,6 @@
-import { LayerType } from '../../types';
-import { COLOR } from '../../constants/AppConstants';
-import { useLayers } from '../../hooks/useLayers';
+import { LayerType } from '../types';
+import { COLOR } from '../constants/AppConstants';
+import { useLayers } from './useLayers';
 import { renderHook, act } from '@testing-library/react-hooks';
 
 const layers: LayerType[] = [

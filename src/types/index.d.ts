@@ -437,3 +437,10 @@ export interface Checkout_sessions {
 }
 
 export type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unkown';
+
+export interface EcorisMapFileType {
+  dataSet: DataType[];
+  layers: LayerType[];
+  settings: SettingsType;
+  maps: TileMapType[];
+}

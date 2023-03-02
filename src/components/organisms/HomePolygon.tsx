@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
@@ -61,7 +61,11 @@ export const Polygon = React.memo((props: Props) => {
           );
         } else {
           return (
-            <Marker key={feature.id} coordinate={feature.centroid ?? feature.coords[0]}>
+            <Marker
+              key={feature.id}
+              coordinate={feature.centroid ?? feature.coords[0]}
+              tracksViewChanges={Platform.OS === 'ios' ? true : false}
+            >
               <View style={{ alignItems: 'center' }}>
                 {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
                 <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
