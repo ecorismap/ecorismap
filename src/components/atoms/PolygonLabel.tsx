@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { LatLng, Marker } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 
@@ -13,7 +13,7 @@ interface Props {
 const PolygonLabel = React.memo((props: Props) => {
   const { coordinate, label, size, color } = props;
   return (
-    <Marker coordinate={coordinate}>
+    <Marker coordinate={coordinate} tracksViewChanges={Platform.OS === 'ios' ? true : false}>
       <View style={{ alignItems: 'center' }}>
         <Text
           style={{
