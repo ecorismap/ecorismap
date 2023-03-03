@@ -11,28 +11,19 @@ import {
 } from '../types';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
-import { v4 as uuidv4 } from 'uuid';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
-import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library';
 import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
 import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
-import { checkCoordsInput, checkFieldInput, updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
+import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { editSettingsAction } from '../modules/settings';
-import dayjs from '../i18n/dayjs';
 import { usePhoto } from './usePhoto';
-import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
-import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
-import { useKeyboard } from '@react-native-community/hooks';
-// let fs: any;
-// if (Platform.OS === 'web') {
-//   fs = require('fs');
-// }
+import { v4 as uuidv4 } from 'uuid';
+
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
   targetLayer: LayerType;
@@ -42,20 +33,25 @@ export type UseDataEditReturnType = {
   isDecimal: boolean;
   recordNumber: number;
   maxRecordNumber: number;
+  photoFolder: string;
   changeRecord: (value: number) => void;
   saveData: () => {
     isOK: boolean;
     message: string;
   };
-  pickImage: (name: string) => Promise<void>;
-  takePhoto: (name: string) => Promise<void>;
-  removeSelectedPhoto: () => Promise<void>;
-
-  setPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
-  deleteRecord: () => {
-    isOK: boolean;
-    message: string;
-  };
+  addPhoto: (
+    fieldName: string,
+    photo: {
+      uri: string;
+      thumbnail: string | null;
+      width: number | undefined;
+      height: number | undefined;
+      name: string;
+    }
+  ) => void;
+  removePhoto: (photo: SelectedPhotoType) => void;
+  selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
+  deleteRecord: () => void;
   changeLatLonType: () => void;
   changeField: (name: string, value: string) => void;
   submitField: (name: string, format: string) => void;
@@ -72,13 +68,8 @@ export const useDataEdit = (
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
-  const dataUser = useMemo(
-    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
-    [projectId, user]
-  );
-
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
+
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>(recordSet);
@@ -90,11 +81,22 @@ export const useDataEdit = (
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
-  const { keyboardShown } = useKeyboard();
-  const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
+
+  const { deleteLocalPhoto, deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
-  const { hisyouLayerId } = useHisyouToolSetting();
-  const isHisyouLayer = targetLayer.id === hisyouLayerId;
+
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
+  const photoFolder = useMemo(
+    () =>
+      projectId !== undefined
+        ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${dataUser.uid}`
+        : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`,
+    [dataUser.uid, projectId, targetLayer.id]
+  );
+
   const maxRecordNumber = targetRecordSet.length;
 
   useEffect(() => {
@@ -132,171 +134,35 @@ export const useDataEdit = (
     [selectRecord, targetLayer.id, targetLayer.type, targetRecordSet]
   );
 
-  const saveToStorage = useCallback(
-    async (fileUri: string, fileName: string, options?: { copy: boolean }) => {
-      const folder =
-        projectId !== undefined
-          ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${dataUser.uid}`
-          : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`;
-      await FileSystem.makeDirectoryAsync(folder, {
-        intermediates: true,
-      });
-      const newUri = folder + '/' + fileName;
-      await FileSystem.copyAsync({ from: fileUri, to: newUri });
-      if (options && options.copy) {
-        await MediaLibrary.createAssetAsync(newUri);
+  const removePhoto = useCallback(
+    (photo: SelectedPhotoType) => {
+      if (photo.uri) {
+        const addedPhoto = temporaryAddedPhotoList.find(({ photoId }) => photoId === photo.id);
+        if (addedPhoto === undefined) {
+          setTemporaryDeletePhotoList([...temporaryDeletePhotoList, { photoId: photo.id, uri: photo.uri }]);
+        } else {
+          //一旦追加したものを削除する場合
+          const updatedList = temporaryAddedPhotoList.filter(({ photoId }) => photoId !== photo.id);
+          setTemporaryAddedPhotoList(updatedList);
+        }
       }
-
-      return newUri;
-    },
-    [dataUser.uid, projectId, targetLayer.id]
-  );
-
-  const pickImage = useCallback(
-    async (name: string) => {
-      try {
-        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permission.status !== 'granted') {
-          return;
-        }
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: false,
-          //aspect: [4, 3],
-          quality: 1,
-        });
-
-        if (!result.cancelled) {
-          //console.log(result);
-          let extension;
-          let fileName;
-          let uri;
-          //ImagePickerのバグのためwebに処理を追加
-          //https://github.com/expo/expo/issues/9984
-          if (result.uri === undefined) throw new Error('result.uri is undefined');
-          if (Platform.OS === 'web') {
-            extension = result.uri.split(';')[0].split('/')[1];
-            fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-            const res = await fetch(result.uri);
-            const blob = await res.blob();
-            uri = URL.createObjectURL(blob);
-            //写真のデータそのもの。変更可能？
-          } else {
-            extension = result.uri.split('.').pop();
-            fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-            uri = result.uri;
-            uri = await saveToStorage(uri, fileName);
-          }
-          //console.log('###', result.uri);
-          const thumbnail = await createThumbnail(uri);
-          //console.log('$$$', uri);
-          const m = cloneDeep(targetRecord);
-          const photoId = uuidv4();
-          (m.field[name] as PhotoType[]).push({
-            id: photoId,
-            name: fileName,
-            uri: uri,
-            url: null,
-            width: result.width,
-            height: result.height,
-            thumbnail: thumbnail,
-            key: null,
-          } as PhotoType);
-
-          //console.log(m.field[name]);
-          setTargetRecord(m);
-          setIsEditingRecord(true);
-          setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri }]);
-        }
-
-        //console.log(result);
-      } catch (error) {
-        console.log(error);
-      }
-    },
-    [createThumbnail, saveToStorage, setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
-  );
-
-  const takePhoto = useCallback(
-    async (name: string) => {
-      try {
-        let res = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (res.status !== 'granted') {
-          //console.log('require camera permission');
-          return;
-        }
-        res = await ImagePicker.requestCameraPermissionsAsync();
-        if (res.status !== 'granted') {
-          //console.log('require camera permission');
-          return;
-        }
-
-        const result = await ImagePicker.launchCameraAsync({
-          allowsEditing: false,
-          exif: true,
-        });
-        if (!result.cancelled) {
-          if (result.uri === undefined || result.width === undefined || result.height === undefined)
-            throw new Error('result.uri is undefined');
-          const extension = result.uri.split('.').pop();
-          const fileName = `EMAP_${dayjs().format('YYYYMMDD_HHmmss')}.${extension}`;
-          const uri = await saveToStorage(result.uri, fileName, {
-            copy: true,
-          });
-
-          const thumbnail = await createThumbnail(uri);
-          const m = cloneDeep(targetRecord);
-          const photoId = uuidv4();
-          (m.field[name] as PhotoType[]).push({
-            id: photoId,
-            name: fileName,
-            uri: uri,
-            url: null,
-            width: result.width,
-            height: result.height,
-            thumbnail: thumbnail,
-            key: null,
-          });
-          setTargetRecord(m);
-          setIsEditingRecord(true);
-          setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri }]);
-        }
-      } catch (e) {
-        console.log(e);
-      }
-    },
-    [createThumbnail, saveToStorage, setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
-  );
-
-  const removeSelectedPhoto = useCallback(async () => {
-    if (selectedPhoto.uri) {
-      const addedPhoto = temporaryAddedPhotoList.find(({ photoId }) => photoId === selectedPhoto.id);
-      if (addedPhoto === undefined) {
-        setTemporaryDeletePhotoList([
-          ...temporaryDeletePhotoList,
-          { photoId: selectedPhoto.id, uri: selectedPhoto.uri },
-        ]);
+      const m = cloneDeep(targetRecord);
+      const photos = m.field[photo.fieldName] as PhotoType[];
+      if (projectId === undefined) {
+        photos.splice(photo.index, 1);
       } else {
-        //一旦追加したものを削除する場合
-        const updatedList = temporaryAddedPhotoList.filter(({ photoId }) => photoId !== selectedPhoto.id);
-        setTemporaryAddedPhotoList(updatedList);
+        //アップロードする際に削除すべきものはuriをundefinedにする
+        photos[photo.index] = { ...photo, uri: undefined };
       }
-    }
-    const m = cloneDeep(targetRecord);
-    if (projectId === undefined) {
-      (m.field[selectedPhoto!.fieldName] as PhotoType[]).splice(selectedPhoto!.index, 1);
-    } else {
-      //アップロードする際に削除すべきものはuriをundefinedにする
-      (m.field[selectedPhoto!.fieldName] as PhotoType[])[selectedPhoto!.index] = { ...selectedPhoto, uri: undefined };
-    }
 
-    setSelectedPhoto({} as SelectedPhotoType);
-    setTargetRecord(m);
-    setIsEditingRecord(true);
-  }, [projectId, selectedPhoto, setIsEditingRecord, targetRecord, temporaryAddedPhotoList, temporaryDeletePhotoList]);
+      setSelectedPhoto({} as SelectedPhotoType);
+      setTargetRecord(m);
+      setIsEditingRecord(true);
+    },
+    [projectId, setIsEditingRecord, targetRecord, temporaryAddedPhotoList, temporaryDeletePhotoList]
+  );
 
-  const setPhoto = useCallback(async (fieldName: string, photo: PhotoType, index: number) => {
-    //console.log('!!! photo !!!', photo);
+  const selectPhoto = useCallback(async (fieldName: string, photo: PhotoType, index: number) => {
     let hasLocal = false;
     if (photo.uri) {
       if (Platform.OS === 'web') {
@@ -306,7 +172,6 @@ export const useDataEdit = (
         const { exists } = await FileSystem.getInfoAsync(photo.uri);
         //PHOTO_FOLDERになければオリジナルがあってもダウンロードするバージョン
         //hasLocal = exists && photo.url !== null;
-
         //PHOTO_FOLDERもしくはオリジナルがあればダウンロードしないバージョン
         hasLocal = exists;
       }
@@ -314,28 +179,40 @@ export const useDataEdit = (
     setSelectedPhoto({ ...photo, hasLocal, index: index, fieldName: fieldName });
   }, []);
 
+  const addPhoto = useCallback(
+    (
+      fieldName: string,
+      photo: {
+        uri: string;
+        thumbnail: string | null;
+        width: number | undefined;
+        height: number | undefined;
+        name: string;
+      }
+    ) => {
+      //console.log('$$$', uri);
+      const m = cloneDeep(targetRecord);
+      const photoId = uuidv4();
+      (m.field[fieldName] as PhotoType[]).push({
+        id: photoId,
+        name: photo.name,
+        url: null,
+        uri: photo.uri,
+        width: photo.width,
+        height: photo.height,
+        thumbnail: photo.thumbnail,
+        key: null,
+      } as PhotoType);
+
+      //console.log(m.field[name]);
+      setTargetRecord(m);
+      setIsEditingRecord(true);
+      setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri: photo.uri }]);
+    },
+    [setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
+  );
+
   const saveData = useCallback(() => {
-    if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-      return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
-    }
-
-    if (!targetLayer.active && !isHisyouLayer) {
-      return { isOK: false, message: t('hooks.message.noEditMode') };
-    }
-    if (keyboardShown) {
-      //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
-      //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
-      return { isOK: false, message: '入力を確定してください' };
-    }
-    const { isOK, message } = checkFieldInput(targetLayer, targetRecord);
-
-    if (!isOK) {
-      return { isOK: false, message: message };
-    }
-    if (!checkCoordsInput(latlon, isDecimal)) {
-      return { isOK: false, message: t('hooks.message.invalidCoordinate') };
-    }
-
     temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
@@ -357,11 +234,8 @@ export const useDataEdit = (
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
   }, [
-    tracking,
     targetRecord,
     targetLayer,
-    isHisyouLayer,
-    keyboardShown,
     latlon,
     isDecimal,
     temporaryDeletePhotoList,
@@ -372,18 +246,6 @@ export const useDataEdit = (
   ]);
 
   const deleteRecord = useCallback(() => {
-    if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-      return { isOK: false, message: t('hooks.message.cannotDeleteInTracking') };
-    }
-
-    if (!targetLayer.active) {
-      return { isOK: false, message: t('hooks.message.noEditMode') };
-    }
-
-    if (isEditingRecord) {
-      saveData();
-    }
-
     deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
@@ -394,8 +256,7 @@ export const useDataEdit = (
         data: [targetRecord],
       })
     );
-    return { isOK: true, message: '' };
-  }, [tracking, targetRecord, targetLayer, isEditingRecord, deleteRecordPhotos, projectId, dispatch, saveData]);
+  }, [targetRecord, targetLayer, deleteRecordPhotos, projectId, dispatch]);
 
   const changeField = useCallback(
     (name: string, value: string) => {
@@ -421,9 +282,6 @@ export const useDataEdit = (
   );
 
   const changeLatLonType = useCallback(() => {
-    if (!checkCoordsInput(latlon, isDecimal)) {
-      return { isOK: false, message: t('hooks.message.invalidCoordinate') };
-    }
     const latLonDms = LatLonDMS(latlon, isDecimal);
     setLatLon(latLonDms);
     setIsDecimal(!isDecimal);
@@ -455,17 +313,17 @@ export const useDataEdit = (
     isDecimal,
     recordNumber,
     maxRecordNumber,
+    photoFolder,
+    addPhoto,
+    removePhoto,
+    selectPhoto,
     changeRecord,
-    saveData,
-    pickImage,
-    takePhoto,
-    removeSelectedPhoto,
-    setPhoto,
     deleteRecord,
     changeLatLonType,
     changeField,
     submitField,
     changeLatLon,
     cancelUpdate,
+    saveData,
   } as const;
 };

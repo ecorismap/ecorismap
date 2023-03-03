@@ -10,6 +10,12 @@ import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
+import { useSelector } from 'react-redux';
+import { AppState } from '../modules';
+import { useKeyboard } from '@react-native-community/hooks';
+import { checkCoordsInput, checkFieldInput } from '../utils/Data';
+import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
+import { usePhoto } from '../hooks/usePhoto';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -25,12 +31,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     isDecimal,
     recordNumber,
     maxRecordNumber,
+    photoFolder,
     changeRecord,
     saveData,
-    pickImage,
-    takePhoto,
-    removeSelectedPhoto,
-    setPhoto,
+    addPhoto,
+    removePhoto,
+    selectPhoto,
     deleteRecord,
     changeLatLonType,
     changeField,
@@ -43,68 +49,116 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const { unselectRecord } = useRecord();
-
+  const { keyboardShown } = useKeyboard();
+  const { pickImage, takePhoto } = usePhoto();
+  const { hisyouLayerId } = useHisyouToolSetting();
+  const isHisyouLayer = targetLayer.id === hisyouLayerId;
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
+    if (tracking !== undefined && tracking.dataId === targetRecord.id) {
+      Alert.alert('', t('hooks.message.cannotEditInTracking'));
+      return;
+    }
+    if (!targetLayer.active && !isHisyouLayer) {
+      Alert.alert('', t('hooks.message.noEditMode'));
+      return;
+    }
+    if (keyboardShown) {
+      //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
+      //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
+      Alert.alert('', '入力を確定してください');
+      return;
+    }
+    const checkInputResult = checkFieldInput(targetLayer, targetRecord);
+    if (!checkInputResult.isOK) {
+      Alert.alert('', checkInputResult.message);
+      return;
+    }
+    if (!checkCoordsInput(latlon, isDecimal)) {
+      Alert.alert('', t('hooks.message.invalidCoordinate'));
+      return;
+    }
+
     const { isOK, message } = saveData();
     if (!isOK) {
       Alert.alert('', message);
     }
-  }, [saveData]);
+  }, [isDecimal, isHisyouLayer, keyboardShown, latlon, saveData, targetLayer, targetRecord, tracking]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
-      const { isOK, message } = deleteRecord();
-      if (!isOK) {
-        Alert.alert('', message);
-      } else {
-        if (route.params.previous === 'Home') {
-          closeData();
-        } else if (route.params.previous === 'Data') {
-          navigation.navigate('Data', {
-            targetLayer: { ...targetLayer },
-          });
-        }
+      if (tracking !== undefined && tracking.dataId === targetRecord.id) {
+        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+        return;
+      }
+      if (!targetLayer.active) {
+        Alert.alert('', t('hooks.message.noEditMode'));
+        return;
+      }
+      if (isEditingRecord) saveData();
+      deleteRecord();
+
+      if (route.params.previous === 'Home') {
+        closeData();
+      } else if (route.params.previous === 'Data') {
+        navigation.navigate('Data', {
+          targetLayer: { ...targetLayer },
+        });
       }
     }
-  }, [closeData, deleteRecord, navigation, route.params.previous, targetLayer]);
+  }, [
+    closeData,
+    deleteRecord,
+    isEditingRecord,
+    navigation,
+    route.params.previous,
+    saveData,
+    targetLayer,
+    targetRecord.id,
+    tracking,
+  ]);
 
   const pressPickPhoto = useCallback(
-    async (name: string) => {
-      await pickImage(name);
+    async (fieldName: string) => {
+      const photo = await pickImage(photoFolder);
+      if (photo === undefined) return;
+      addPhoto(fieldName, photo);
     },
-    [pickImage]
+    [addPhoto, photoFolder, pickImage]
   );
+
   const pressTakePhoto = useCallback(
-    async (name: string) => {
+    async (fieldName: string) => {
       if (Platform.OS === 'web') {
         Alert.alert('', t('DataEdit.confirm.takePhoto'));
         return;
       }
-      await takePhoto(name);
+      const photo = await takePhoto(fieldName);
+      if (photo === undefined) return;
+      addPhoto(fieldName, photo);
     },
-    [takePhoto]
+    [addPhoto, takePhoto]
   );
 
   const pressPhoto = useCallback(
     (fieldName: string, photo: PhotoType, index: number) => {
-      setPhoto(fieldName, photo, index);
+      selectPhoto(fieldName, photo, index);
       setPhotoEditorOpen(true);
     },
-    [setPhoto]
+    [selectPhoto]
   );
 
   const pressRemovePhoto = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.removePhoto'));
-    if (ret) {
-      removeSelectedPhoto();
-      setPhotoEditorOpen(false);
-    }
-  }, [removeSelectedPhoto]);
+    if (!ret) return;
+    removePhoto(selectedPhoto);
+    setPhotoEditorOpen(false);
+  }, [removePhoto, selectedPhoto]);
 
   const pressClosePhoto = useCallback(() => {
     setPhotoEditorOpen(false);

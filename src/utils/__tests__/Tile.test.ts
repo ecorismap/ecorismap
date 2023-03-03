@@ -1,5 +1,5 @@
 import { TileRegionType } from '../../types';
-import { tileGridForRegion } from '../../utils/Tile';
+import { tileGridForRegion } from '../Tile';
 
 describe('tileGridForRegion', () => {
   const tileRegion: TileRegionType = {

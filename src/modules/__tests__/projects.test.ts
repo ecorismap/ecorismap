@@ -1,9 +1,4 @@
-import reducer, {
-  addProjectAction,
-  deleteProjectAction,
-  setProjectsAction,
-  updateProjectAction,
-} from '../../modules/projects';
+import reducer, { addProjectAction, deleteProjectAction, setProjectsAction, updateProjectAction } from '../projects';
 import { ProjectType } from '../../types';
 
 describe('modules/project', () => {

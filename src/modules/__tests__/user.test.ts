@@ -1,4 +1,4 @@
-import reducer, { setUserAction } from '../../modules/user';
+import reducer, { setUserAction } from '../user';
 describe('modules/user', () => {
   test('should set the user to state', () => {
     const state = { uid: undefined, email: '', displayName: '', photoURL: '' };
