@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, updateLayerIds } from '../../utils/Layer';
+import { getColor, updateLayerIds } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {

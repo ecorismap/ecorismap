@@ -41,7 +41,7 @@ export const expectedLineGpx = `<?xml version="1.0" encoding="UTF-8"?>
 export const point_record: RecordType[] = [
   {
     coords: { latitude: 38.24715800176878, longitude: 140.71658064854364, ele: 100 },
-    field: { name: 'St.1', time: '2020-01-01T09:28:38+09:00' },
+    field: { name: 'St.1', time: '2020-01-01T09:28:38+09:00', cmt: '', photo: [] },
     id: '1234',
     visible: true,
     userId: '0',
@@ -50,7 +50,23 @@ export const point_record: RecordType[] = [
   },
   {
     coords: { latitude: 38.24101016421964, longitude: 140.71548306286388, ele: undefined },
-    field: { name: 'St.3', time: '5時' },
+    field: {
+      name: 'St.3',
+      time: '5時',
+      cmt: '',
+      photo: [
+        {
+          height: 300,
+          id: '123456789',
+          key: null,
+          name: 'test.jpg',
+          thumbnail: 'test_thumbnail.jpg',
+          uri: 'test.jpg',
+          url: null,
+          width: 400,
+        },
+      ],
+    },
     id: '1234',
     visible: true,
     userId: '1',

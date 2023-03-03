@@ -1,5 +1,21 @@
-import reducer, { addTileMapAction, createTileMapsInitialState, setTileMapsAction } from '../../modules/tileMaps';
+import reducer, { addTileMapAction, createTileMapsInitialState, setTileMapsAction } from '../tileMaps';
 import { TileMapType } from '../../types';
+jest.mock('i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+  }),
+  language: ['en'],
+  initReactI18next: {
+    type: '3rdParty',
+    init: () => {},
+  },
+  use: () => {
+    return {
+      init: () => {},
+    };
+  },
+  t: (key: string) => key,
+}));
 
 describe('modules/tileMaps', () => {
   test('should set the tileMaps to state', () => {
