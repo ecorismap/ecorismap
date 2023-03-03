@@ -102,7 +102,7 @@ export const useDataEdit = (
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
-  const { keyboardShown } = useKeyboard();
+
   const { deleteLocalPhoto, createThumbnail, deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
   const { hisyouLayerId } = useHisyouToolSetting();
@@ -110,7 +110,7 @@ export const useDataEdit = (
   const maxRecordNumber = targetRecordSet.length;
 
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
-
+  const { keyboardShown } = useKeyboard();
   useEffect(() => {
     //データの初期化。以降はchangeRecordで行う。
     selectRecord(layer.id, record);
@@ -407,8 +407,10 @@ export const useDataEdit = (
     targetRecord,
     projectId,
     dataUser.uid,
+    isOwnerAdmin,
     targetLayer,
     isHisyouLayer,
+    isSettingProject,
     keyboardShown,
     latlon,
     isDecimal,
