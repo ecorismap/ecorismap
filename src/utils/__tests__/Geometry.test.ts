@@ -1,11 +1,11 @@
-import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../../utils/Geometry';
-import { geoJsonString } from '../resources/geojson';
-import track_gpx from '../resources/track_gpx';
-import invalid_track_gpx from '../resources/invalid_track_gpx';
-import point_gpx from '../resources/point_gpx';
-import invalid_point_gpx from '../resources/invalid_point_gpx';
-import { layers } from '../resources/layer';
-import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../resources/record';
+import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../Geometry';
+import { geoJsonString } from '../../__tests__/resources/geojson';
+import track_gpx from '../../__tests__/resources/track_gpx';
+import invalid_track_gpx from '../../__tests__/resources/invalid_track_gpx';
+import point_gpx from '../../__tests__/resources/point_gpx';
+import invalid_point_gpx from '../../__tests__/resources/invalid_point_gpx';
+import { layers } from '../../__tests__/resources/layer';
+import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../../__tests__/resources/record';
 import { LayerType } from '../../types';
 //@ts-ignore
 import MockDate from 'mockdate';

@@ -1,4 +1,4 @@
-import { hsv2rgb, hex2rgba, getRandomColor } from '../../utils/Color';
+import { hsv2rgb, hex2rgba, getRandomColor } from '../Color';
 
 describe('hsv2rgb', () => {
   it('return rgb value from hsv', () => {

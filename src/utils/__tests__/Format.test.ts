@@ -1,4 +1,4 @@
-import { formattedInputs } from '../../utils/Format';
+import { formattedInputs } from '../Format';
 
 describe('formattedInput', () => {
   it('check string value', () => {

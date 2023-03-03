@@ -1,12 +1,18 @@
-import { MemberLocationType, SettingsType, TileRegionType, TrackingType } from '../../types';
-import reducer, { editSettingsAction } from '../../modules/settings';
+import { DEFAULT_MAP_LIST_URL } from '../../constants/AppConstants';
+import { TUTRIALS } from '../../constants/Tutrials';
+import { MemberLocationType, RoleType, SettingsType, TileRegionType, TrackingType } from '../../types';
+import reducer, { editSettingsAction } from '../settings';
 describe('modules/settings', () => {
   const state: SettingsType = {
-    role: undefined,
+    tutrials: TUTRIALS,
     isSettingProject: false,
     isSynced: false,
-    mapType: 'none',
+    screenState: 'closed',
+    isEditingRecord: false,
     isOffline: false,
+    updatedAt: new Date('2000/1/1'),
+    role: undefined as RoleType | undefined,
+    mapType: 'standard',
     tileRegions: [] as TileRegionType[],
     mapRegion: {
       latitude: 35,
@@ -15,6 +21,8 @@ describe('modules/settings', () => {
       longitudeDelta: 0.00922,
       zoom: 15,
     },
+    projectId: undefined as string | undefined,
+    projectName: undefined as string | undefined,
     projectRegion: {
       latitude: 35,
       longitude: 135,
@@ -22,9 +30,13 @@ describe('modules/settings', () => {
       longitudeDelta: 0.00922,
       zoom: 15,
     },
-    projectId: undefined as string | undefined,
     memberLocation: [] as MemberLocationType[],
     tracking: undefined as TrackingType | undefined,
+    selectedRecord: undefined,
+    plugins: {},
+    photosToBeDeleted: [],
+    mapListURL: DEFAULT_MAP_LIST_URL,
+    mapList: [],
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';
