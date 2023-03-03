@@ -1,5 +1,5 @@
 import { RecordType } from '../../types';
-import { sortData, getInitialFieldValue } from '../../utils/Data';
+import { sortData, getInitialFieldValue } from '../Data';
 
 describe('sortData', () => {
   const recordExt: RecordType[] = [

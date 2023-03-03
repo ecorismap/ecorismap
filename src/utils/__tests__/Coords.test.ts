@@ -10,7 +10,7 @@ import {
   tryClosePolygon,
   latLonToXY,
   xyToLatLon,
-} from '../../utils/Coords';
+} from '../Coords';
 
 describe('decimal2dms', () => {
   it('return dms value from decimal', () => {
