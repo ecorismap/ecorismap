@@ -23,6 +23,7 @@ import { editSettingsAction } from '../modules/settings';
 import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { v4 as uuidv4 } from 'uuid';
+import { deleteLocalPhoto } from '../utils/Photo';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -82,7 +83,7 @@ export const useDataEdit = (
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
-  const { deleteLocalPhoto, deleteRecordPhotos } = usePhoto();
+  const { deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
 
   const dataUser = useMemo(
@@ -242,7 +243,6 @@ export const useDataEdit = (
     dispatch,
     targetRecordSet,
     setIsEditingRecord,
-    deleteLocalPhoto,
   ]);
 
   const deleteRecord = useCallback(() => {
@@ -302,7 +302,7 @@ export const useDataEdit = (
     temporaryAddedPhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
-  }, [deleteLocalPhoto, setIsEditingRecord, temporaryAddedPhotoList]);
+  }, [setIsEditingRecord, temporaryAddedPhotoList]);
 
   return {
     targetRecord,

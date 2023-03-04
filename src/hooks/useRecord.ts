@@ -23,7 +23,7 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 
-export type UseFeatureReturnType = {
+export type UseRecordReturnType = {
   dataUser: UserType;
   projectId: string | undefined;
   pointDataSet: PointDataType[];
@@ -83,7 +83,7 @@ export type UseFeatureReturnType = {
   isLayerEditable: (type: FeatureType, layer: LayerType) => boolean | undefined;
 };
 
-export const useRecord = (): UseFeatureReturnType => {
+export const useRecord = (): UseRecordReturnType => {
   const dispatch = useDispatch();
 
   const layers = useSelector((state: AppState) => state.layers);
@@ -107,15 +107,13 @@ export const useRecord = (): UseFeatureReturnType => {
         .map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
         .flat() as PolygonDataType[]
   );
-
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
   const role = useSelector((state: AppState) => state.settings.role);
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
+  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
   const activeLineLayer = useMemo(() => layers.find((d) => d.active && d.type === 'LINE'), [layers]);
   const activePolygonLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POLYGON'), [layers]);
-
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
