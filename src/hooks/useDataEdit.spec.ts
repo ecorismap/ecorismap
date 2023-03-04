@@ -38,20 +38,19 @@ const user: UserType = {
   photoURL: 'https://www.dummy.com/test.jpg',
 };
 const isEditingRecord = false;
-const photosToBeDeleted = {};
 
 jest.mock('./usePhoto', () => ({
   usePhoto: () => ({
-    photosToBeDeleted: photosToBeDeleted,
+    deleteRecordPhotos: jest.fn,
   }),
 }));
-// jest.mock('./useRecord', () => ({
-//   useRecord: () => ({
-//     selectRecord: jest.fn().mockReturnValueOnce(''),
-//   }),
-// }));
 
-//ToDo useDataEditでselectRecordをコメントアウトすればテストが通る。モックの仕方がわからない。
+jest.mock('./useRecord', () => ({
+  useRecord: () => ({
+    selectRecord: jest.fn,
+  }),
+}));
+
 describe('useDataEdit', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
