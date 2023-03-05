@@ -163,28 +163,28 @@ export default function Account(props: Props) {
           <Text style={styles.modalTitle}>{'EcorisMap'}</Text>
           <Text style={styles.modalTitle}>
             {accountFormState === 'loginUserAccount'
-              ? t('Account.title.login')
+              ? `${t('Account.title.login')}`
               : accountFormState === 'resetUserPassword'
-              ? t('Account.title.resetUserPassword')
+              ? `${t('Account.title.resetUserPassword')}`
               : accountFormState === 'updateUserProfile'
-              ? t('Account.title.updateUserProfile')
+              ? `${t('Account.title.updateUserProfile')}`
               : accountFormState === 'changeUserPassword'
-              ? t('Account.title.changeUserPassword')
+              ? `${t('Account.title.changeUserPassword')}`
               : accountFormState === 'registEncryptPassword'
-              ? t('Account.title.registEncryptPassword')
+              ? `${t('Account.title.registEncryptPassword')}`
               : accountFormState === 'backupEncryptPassword'
-              ? t('Account.title.backupEncryptPassword')
+              ? `${t('Account.title.backupEncryptPassword')}`
               : accountFormState === 'restoreEncryptKey'
-              ? t('Account.title.restoreEncryptKey')
+              ? `${t('Account.title.restoreEncryptKey')}`
               : accountFormState === 'resetEncryptKey'
-              ? t('Account.title.resetEncryptKey')
+              ? `${t('Account.title.resetEncryptKey')}`
               : accountFormState === 'changeEncryptPassword'
-              ? t('Account.title.changeEncryptPassword')
+              ? `${t('Account.title.changeEncryptPassword')}`
               : accountFormState === 'deleteUserAccount'
-              ? t('Account.title.deleteUserAccount')
+              ? `${t('Account.title.deleteUserAccount')}`
               : accountFormState === 'deleteAllProjects'
-              ? t('Account.title.deleteAllProjects')
-              : t('Account.title.createUserAccount')}
+              ? `${t('Account.title.deleteAllProjects')}`
+              : `${t('Account.title.createUserAccount')}`}
           </Text>
 
           {(accountFormState === 'signupUserAccount' ||
@@ -194,7 +194,7 @@ export default function Account(props: Props) {
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               placeholder="email"
               placeholderTextColor={COLOR.GRAY3}
-              autoCompleteType={'email'}
+              autoComplete={'email'}
               value={email}
               onChangeText={(text) => setEmail(text)}
             />
@@ -203,7 +203,7 @@ export default function Account(props: Props) {
             <TextInput
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               secureTextEntry={true}
-              autoCompleteType={'password'}
+              autoComplete={'password'}
               placeholder={t('Account.placeholder.changePassword')}
               placeholderTextColor={COLOR.GRAY3}
               value={oldPassword}
@@ -223,7 +223,7 @@ export default function Account(props: Props) {
             <TextInput
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               secureTextEntry={true}
-              autoCompleteType={'password'}
+              autoComplete={'password'}
               placeholder={
                 accountFormState === 'changeUserPassword'
                   ? t('Account.placeholder.newPassword')
@@ -246,7 +246,7 @@ export default function Account(props: Props) {
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
               placeholder={t('Account.placeholder.displayName')}
               placeholderTextColor={COLOR.GRAY3}
-              autoCompleteType={'name'}
+              autoComplete={'name'}
               value={displayName}
               onChangeText={(text) => setDisplayName(text)}
             />
@@ -270,7 +270,7 @@ export default function Account(props: Props) {
               style={styles.resetText}
               onPress={accountFormState === 'loginUserAccount' ? changeResetPasswordForm : changeResetEncryptForm}
             >
-              <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{t('Account.text.forgetPassword')}</Text>
+              <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{`${t('Account.text.forgetPassword')}`}</Text>
             </TouchableOpacity>
           )}
           <Loading visible={isLoading} text="" />
@@ -278,7 +278,7 @@ export default function Account(props: Props) {
           <View style={styles.modalButtonContainer}>
             {accountFormState === 'loginUserAccount' ? (
               <TouchableOpacity style={styles.resetText} onPress={changeSignUpForm}>
-                <Text style={styles.underline}>{t('Account.text.createAccount')}</Text>
+                <Text style={styles.underline}>{`${t('Account.text.createAccount')}`}</Text>
               </TouchableOpacity>
             ) : (
               <Text />
@@ -311,7 +311,7 @@ export default function Account(props: Props) {
                   : pressSignupUserAccount(email, password)
               }
             >
-              <Text style={{ color: COLOR.WHITE }}>{t('Account.text.next')}</Text>
+              <Text style={{ color: COLOR.WHITE }}>{`${t('Account.text.next')}`}</Text>
             </TouchableOpacity>
           </View>
         </View>

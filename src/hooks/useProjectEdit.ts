@@ -9,12 +9,12 @@ import { useRepository } from './useRepository';
 import { useE3kitGroup } from './useE3kitGroup';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
-import { exportDataAndPhoto } from '../utils/File.web';
 import dayjs from '../i18n/dayjs';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { firestore } from '../lib/firebase/firebase';
 import { t } from '../i18n/config';
 import { Platform } from 'react-native';
+import { exportGeoFile } from '../utils/File';
 
 export type UseProjectEditReturnType = {
   isProjectOpen: boolean;
@@ -261,7 +261,7 @@ export const useProjectEdit = (
       });
     }
     const exportDataName = `${targetProject.name}_${time}`;
-    const isOK = await exportDataAndPhoto(exportData, exportDataName, 'zip');
+    const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
     if (!isOK) {
       return { isOK: false, message: t('hooks.message.failSaveFile') };
     }

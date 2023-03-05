@@ -200,13 +200,6 @@ export const updateRecordCoords = (record: RecordType, latlon: LatLonDMSType, is
   }
 };
 
-export const updateRecordPhoto = (record: RecordType, fieldName: string, index: number, uri: string) => {
-  const updateRecord = cloneDeep(record);
-  const photoField = updateRecord.field[fieldName] as PhotoType[];
-  photoField[index].uri = uri;
-  return updateRecord;
-};
-
 export const getTargetRecordSet = (
   dataSet: DataType[],
   layer: LayerType,
