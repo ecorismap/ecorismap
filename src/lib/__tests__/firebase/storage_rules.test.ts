@@ -37,7 +37,7 @@ describe('users', () => {
       const projectId = 'project';
       const layerId = 'layer';
       beforeEach(async () => {
-        await testEnv.withSecurityRulesDisabled(async (context) => {
+        await testEnv.withSecurityRulesDisabled(async (context: any) => {
           await userImageRef(context.storage(), projectId, layerId, userId, 'icon.png')
             .put(loadIconImage(), { contentType })
             .then();
@@ -61,7 +61,7 @@ describe('users', () => {
       const layerId = 'layer';
 
       beforeEach(async () => {
-        await testEnv.withSecurityRulesDisabled(async (context) => {
+        await testEnv.withSecurityRulesDisabled(async (context: any) => {
           await userImageRef(context.storage(), projectId, layerId, userId, 'icon.png').put(loadIconImage());
         });
       });
@@ -98,7 +98,7 @@ describe('users', () => {
       const layerId = 'layer';
 
       beforeEach(async () => {
-        await testEnv.withSecurityRulesDisabled(async (context) => {
+        await testEnv.withSecurityRulesDisabled(async (context: any) => {
           const storage = context.storage();
           await userImageRef(storage, projectId, layerId, userId, 'icon1.png').put(loadIconImage(), { contentType });
           await userImageRef(storage, projectId, layerId, userId, 'icon2.png').put(loadIconImage(), { contentType });
@@ -200,7 +200,7 @@ describe('users', () => {
       const layerId = 'layer';
 
       beforeEach(async () => {
-        await testEnv.withSecurityRulesDisabled(async (context) => {
+        await testEnv.withSecurityRulesDisabled(async (context: any) => {
           const storage = context.storage();
           await userImageRef(storage, projectId, layerId, userId, 'icon.png').put(loadIconImage(), { contentType });
         });
@@ -222,7 +222,7 @@ describe('users', () => {
       const layerId = 'layer';
 
       beforeEach(async () => {
-        await testEnv.withSecurityRulesDisabled(async (context) => {
+        await testEnv.withSecurityRulesDisabled(async (context: any) => {
           const storage = context.storage();
           await userImageRef(storage, projectId, layerId, userId, 'icon.png').put(loadIconImage(), { contentType });
         });
