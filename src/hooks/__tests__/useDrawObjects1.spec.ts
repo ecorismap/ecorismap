@@ -1,8 +1,8 @@
 import { RenderResult, renderHook, act } from '@testing-library/react-hooks';
 import { Position } from '@turf/turf';
-import { useDrawObjects, UseDrawObjectsReturnType } from './useDrawObjects';
+import { useDrawObjects, UseDrawObjectsReturnType } from '../useDrawObjects';
 
-import { DrawLineType, DrawToolType, RegionType, UndoLineType } from '../types';
+import { DrawLineType, DrawToolType, RegionType, UndoLineType } from '../../types';
 
 const mapRegion: RegionType = {
   latitude: 35,

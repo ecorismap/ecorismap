@@ -1,4 +1,4 @@
-import { gzip, unzip } from '../../utils/Zip';
+import { gzip, unzip } from '../Zip';
 
 const str = `あいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえおあいうえお`;
 describe('gzip', () => {

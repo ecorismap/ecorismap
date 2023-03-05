@@ -1,12 +1,11 @@
-import { Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../types';
-import * as FileSystem from 'expo-file-system';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useCallback } from 'react';
 import { editSettingsAction } from '../modules/settings';
 import { getPhotoFields } from '../utils/Layer';
+import { deleteLocalPhoto } from '../utils/Photo';
 
 export type UsePhotoReturnType = {
   photosToBeDeleted: {
@@ -17,15 +16,13 @@ export type UsePhotoReturnType = {
   }[];
   addToBeDeletedPhoto: (photo: { projectId: string; layerId: string; userId: string; photoId: string }) => void;
   clearToBeDeletedPhotos: () => void;
-  deleteLocalAllPhotos: (uri: string) => void;
+
   deleteRecordPhotos: (
     layer: LayerType,
     record: RecordType,
     projectId: string | undefined,
     userId: string | undefined
   ) => void;
-  deleteLocalPhoto: (uri: string) => void;
-  createThumbnail: (uri: string) => Promise<string | null>;
 };
 
 export const usePhoto = (): UsePhotoReturnType => {
@@ -45,22 +42,6 @@ export const usePhoto = (): UsePhotoReturnType => {
     },
     [dispatch, photosToBeDeleted]
   );
-
-  const deleteLocalAllPhotos = (uri: string) => {
-    if (Platform.OS === 'web') {
-      return;
-    } else {
-      FileSystem.deleteAsync(uri, { idempotent: true });
-    }
-  };
-
-  const deleteLocalPhoto = (uri: string) => {
-    if (Platform.OS === 'web') {
-      return;
-    } else {
-      FileSystem.deleteAsync(uri, { idempotent: true });
-    }
-  };
 
   const deleteRecordPhotos = (
     layer: LayerType,
@@ -86,27 +67,10 @@ export const usePhoto = (): UsePhotoReturnType => {
     }
   };
 
-  const createThumbnail = async (uri: string) => {
-    const thumbnail = await manipulateAsync(uri, [{ resize: { height: 150 } }], {
-      compress: 0.7,
-      format: SaveFormat.JPEG,
-      base64: true,
-    });
-
-    if (Platform.OS === 'web') {
-      return thumbnail.base64 ? thumbnail.base64 : null;
-    } else {
-      return thumbnail.base64 ? `data:image/jpeg;base64,${thumbnail.base64}` : null;
-    }
-  };
-
   return {
     photosToBeDeleted,
     addToBeDeletedPhoto,
     clearToBeDeletedPhotos,
-    deleteLocalAllPhotos,
-    deleteLocalPhoto,
     deleteRecordPhotos,
-    createThumbnail,
   } as const;
 };

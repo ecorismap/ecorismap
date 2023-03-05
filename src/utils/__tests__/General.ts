@@ -1,4 +1,4 @@
-import { nearDegree } from '../../utils/General';
+import { nearDegree } from '../General';
 
 describe('nearDegree', () => {
   it('return nearDegree by interval value 5', () => {

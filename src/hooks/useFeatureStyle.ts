@@ -79,7 +79,6 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const colorRampLabels = useMemo(() => Object.values(COLORRAMP), []);
   const colorTypes = useMemo(() => Object.keys(COLORTYPE) as ColorTypesType[], []);
   const colorTypeLabels = useMemo(() => Object.values(COLORTYPE), []);
-
   const layerType = useMemo(() => layer_.type, [layer_.type]);
 
   useEffect(() => {

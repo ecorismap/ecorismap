@@ -1,5 +1,5 @@
 import { RecordType } from '../../types';
-import { sortData, getInitialFieldValue } from '../../utils/Data';
+import { sortData, getInitialFieldValue } from '../Data';
 
 describe('sortData', () => {
   const recordExt: RecordType[] = [
@@ -138,7 +138,7 @@ describe('getInitialFieldValue', () => {
         { value: 'b', isOther: false },
         { value: 'c', isOther: false },
       ])
-    ).toStrictEqual('a');
+    ).toStrictEqual('');
     expect(
       getInitialFieldValue('RADIO', [
         { value: 'a', isOther: false },

@@ -9,6 +9,7 @@ import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
+import { checkLayerInputs } from '../utils/Layer';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -42,11 +43,13 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
       Alert.alert('', t('hooks.message.cannotSaveInTracking'));
       return;
     }
-    const { isOK, message } = saveLayer();
-    if (!isOK) {
-      Alert.alert('', message);
+    const checkLayerInputsResult = checkLayerInputs(targetLayer);
+    if (!checkLayerInputsResult.isOK) {
+      Alert.alert('', checkLayerInputsResult.message);
+      return;
     }
-  }, [route.params.targetLayer.id, saveLayer, tracking]);
+    saveLayer();
+  }, [route.params.targetLayer.id, saveLayer, targetLayer, tracking]);
 
   const pressDeleteLayer = useCallback(async () => {
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
