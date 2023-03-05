@@ -12,17 +12,13 @@ import * as FileSystem from 'expo-file-system';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, updateLayerAction } from '../modules/layers';
 import { getInitialFieldValue } from '../utils/Data';
-import { checkLayerInputs } from '../utils/Layer';
 import sanitize from 'sanitize-filename';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
   isEdited: boolean;
   isNewLayer: boolean;
-  saveLayer: () => {
-    isOK: boolean;
-    message: string;
-  };
+  saveLayer: () => void;
   deleteLayer: () => void;
   deleteLayerPhotos: () => Promise<void>;
   changeLayerName: (val: string) => void;
@@ -120,11 +116,6 @@ export const useLayerEdit = (
   );
 
   const saveLayer = useCallback(() => {
-    const { isOK, message } = checkLayerInputs(targetLayer);
-    if (!isOK) {
-      return { isOK: false, message };
-    }
-
     const oldLayer = layers.find((l) => l.id === targetLayer.id);
     const initialFields = oldLayer !== undefined ? oldLayer.field : [];
     const updateFields = targetLayer.field;
@@ -150,20 +141,16 @@ export const useLayerEdit = (
       dispatch(updateLayerAction(targetLayer));
     }
     setIsEdited(false);
-    return { isOK: true, message: '' };
   }, [dataUser.uid, dispatch, isNewLayer, layers, targetLayer, updateDataOfTheLayer]);
 
   const deleteLayerPhotos = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      return;
-    } else {
-      if (projectId === undefined) return;
-      const folder = `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}`;
-      await FileSystem.deleteAsync(folder, { idempotent: true });
-    }
+    if (Platform.OS === 'web') return;
+    if (projectId === undefined) return;
+    const folder = `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}`;
+    await FileSystem.deleteAsync(folder, { idempotent: true });
   }, [projectId, targetLayer.id]);
 
-  const deleteLayer = useCallback(async () => {
+  const deleteLayer = useCallback(() => {
     dispatch(deleteDataAction(dataSet));
     dispatch(deleteLayerAction(targetLayer));
   }, [dataSet, dispatch, targetLayer]);

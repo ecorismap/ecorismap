@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Linking, Platform } from 'react-native';
 import { LayerType, LocationType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
@@ -15,7 +15,7 @@ import { AppState } from '../modules';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
-import { usePhoto } from '../hooks/usePhoto';
+import { pickImage, takePhoto } from '../utils/Photo';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -52,7 +52,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const { unselectRecord } = useRecord();
   const { keyboardShown } = useKeyboard();
-  const { pickImage, takePhoto } = usePhoto();
   const { hisyouLayerId } = useHisyouToolSetting();
   const isHisyouLayer = targetLayer.id === hisyouLayerId;
   //console.log('####', targetLayer);
@@ -129,7 +128,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto, photoFolder, pickImage]
+    [addPhoto, photoFolder]
   );
 
   const pressTakePhoto = useCallback(
@@ -142,7 +141,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto, takePhoto]
+    [addPhoto]
   );
 
   const pressPhoto = useCallback(
@@ -316,22 +315,24 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   );
 
   const pressAddReferenceData = useCallback(
-    async (referenceData: RecordType | undefined, referenceLayer: LayerType, message: string) => {
-      if (referenceData === undefined) {
-        await AlertAsync(message);
-      } else {
-        navigation.navigate('DataEdit', {
-          previous: 'DataEdit',
-          targetData: referenceData,
-          targetLayer: referenceLayer,
-          targetRecordSet: [],
-          targetIndex: 0,
-          mainData: targetRecord,
-          mainLayer: targetLayer,
-        });
+    async (referenceLayer: LayerType, addRecord: () => RecordType) => {
+      if (isEditingRecord) {
+        Alert.alert('', '一旦変更を保存してください。');
+        return;
       }
+      const referenceData = addRecord();
+
+      navigation.navigate('DataEdit', {
+        previous: 'DataEdit',
+        targetData: referenceData,
+        targetLayer: referenceLayer,
+        targetRecordSet: [],
+        targetIndex: 0,
+        mainData: targetRecord,
+        mainLayer: targetLayer,
+      });
     },
-    [navigation, targetLayer, targetRecord]
+    [isEditingRecord, navigation, targetLayer, targetRecord]
   );
 
   const onClose = useCallback(async () => {
