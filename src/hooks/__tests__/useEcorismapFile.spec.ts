@@ -1,9 +1,9 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { dataSet } from '../__tests__/resources/dataSet';
-import { layers } from '../__tests__/resources/layer';
-import { maps } from '../__tests__/resources/maps';
-import { settings } from '../__tests__/resources/settings';
-import { useEcorisMapFile } from './useEcorismapFile';
+import { dataSet } from '../../__tests__/resources/dataSet';
+import { layers } from '../../__tests__/resources/layer';
+import { maps } from '../../__tests__/resources/maps';
+import { settings } from '../../__tests__/resources/settings';
+import { useEcorisMapFile } from '../useEcorismapFile';
 
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();

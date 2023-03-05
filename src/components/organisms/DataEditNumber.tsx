@@ -8,20 +8,21 @@ interface Props {
   name: string;
   value: number | string;
   type: 'INTEGER' | 'DECIMAL' | 'SERIAL';
-  onChangeText: (name: string, value: string) => void;
+  onChangeText: (name: string, value: string | number) => void;
   onEndEditing: () => void;
 }
 
 export const DataEditNumber = (props: Props) => {
   const { name, value, type, onChangeText, onEndEditing } = props;
-
+  //plus minusボタンで値を変更するときは、textinputと違って数値で返す。
+  //textinputはonEndEditingが呼ばれformatedInputで数値に変換されるため。
   const plus = () => {
-    const val = isNaN(parseFloat(value.toString())) ? '0' : (parseFloat(value.toString()) + 1).toString();
+    const val = isNaN(parseFloat(value.toString())) ? 0 : parseFloat(value.toString()) + 1;
     onChangeText(name, val);
   };
 
   const minus = () => {
-    const val = isNaN(parseFloat(value.toString())) ? '0' : (parseFloat(value.toString()) - 1).toString();
+    const val = isNaN(parseFloat(value.toString())) ? 0 : parseFloat(value.toString()) - 1;
     onChangeText(name, val);
   };
 

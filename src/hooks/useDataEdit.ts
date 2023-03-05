@@ -23,6 +23,7 @@ import { editSettingsAction } from '../modules/settings';
 import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { v4 as uuidv4 } from 'uuid';
+import { deleteLocalPhoto } from '../utils/Photo';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -53,7 +54,7 @@ export type UseDataEditReturnType = {
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
   changeLatLonType: () => void;
-  changeField: (name: string, value: string) => void;
+  changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
   changeLatLon: (val: string, latlonType: LatLonDMSKey, dmsType: DMSKey) => void;
   cancelUpdate: () => void;
@@ -82,7 +83,7 @@ export const useDataEdit = (
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
-  const { deleteLocalPhoto, deleteRecordPhotos } = usePhoto();
+  const { deleteRecordPhotos } = usePhoto();
   const { selectRecord } = useRecord();
 
   const dataUser = useMemo(
@@ -242,7 +243,6 @@ export const useDataEdit = (
     dispatch,
     targetRecordSet,
     setIsEditingRecord,
-    deleteLocalPhoto,
   ]);
 
   const deleteRecord = useCallback(() => {
@@ -259,7 +259,7 @@ export const useDataEdit = (
   }, [targetRecord, targetLayer, deleteRecordPhotos, projectId, dispatch]);
 
   const changeField = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: string | number) => {
       const m = cloneDeep(targetRecord);
       if (m.field[name] !== value) {
         m.field[name] = value;
@@ -302,7 +302,7 @@ export const useDataEdit = (
     temporaryAddedPhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
-  }, [deleteLocalPhoto, setIsEditingRecord, temporaryAddedPhotoList]);
+  }, [setIsEditingRecord, temporaryAddedPhotoList]);
 
   return {
     targetRecord,
