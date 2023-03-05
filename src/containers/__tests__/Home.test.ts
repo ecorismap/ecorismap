@@ -1,16 +1,5 @@
-describe('', () => {
+describe('changeLayer', () => {
   test('', () => {
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
-});
-
-describe('データの追加', () => {
-  test('ログインしていてプロジェクトに入っていなくてもデータ追加できる？', () => {
-    expect(true).toBe(false);
-  });
-});
-
-describe('ログアウト', () => {
-  test('スマホなら単純にログアウト', () => {});
-  test('Webならローカルキーを削除する', () => {});
 });

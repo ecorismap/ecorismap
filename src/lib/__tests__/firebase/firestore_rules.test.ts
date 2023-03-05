@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as firebase from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where, Timestamp } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 
 let testEnv: firebase.RulesTestEnvironment;
 const projectID = 'ecorismap';
