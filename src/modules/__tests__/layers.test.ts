@@ -1,5 +1,5 @@
 import { COLOR } from '../../constants/AppConstants';
-import reducer, { setLayersAction, addLayerAction, updateLayerAction, deleteLayerAction } from '../../modules/layers';
+import reducer, { setLayersAction, addLayerAction, updateLayerAction, deleteLayerAction } from '../layers';
 import { LayerType } from '../../types';
 describe('modules/layers', () => {
   const state: LayerType[] = [
@@ -12,6 +12,7 @@ describe('modules/layers', () => {
         colorType: 'SINGLE',
         color: COLOR.RED,
         fieldName: 'name',
+        customFieldValue: '',
         colorRamp: 'RANDOM',
         colorList: [],
         transparency: 1,
@@ -38,6 +39,7 @@ describe('modules/layers', () => {
           colorType: 'SINGLE',
           color: COLOR.RED,
           fieldName: 'name',
+          customFieldValue: '',
           colorRamp: 'RANDOM',
           colorList: [],
           transparency: 1,
@@ -66,6 +68,7 @@ describe('modules/layers', () => {
         colorType: 'SINGLE',
         color: COLOR.RED,
         fieldName: 'name',
+        customFieldValue: '',
         colorRamp: 'RANDOM',
         colorList: [],
         transparency: 1,
@@ -93,6 +96,7 @@ describe('modules/layers', () => {
         colorType: 'SINGLE',
         color: COLOR.RED,
         fieldName: 'name',
+        customFieldValue: '',
         colorRamp: 'RANDOM',
         colorList: [],
         transparency: 1,
@@ -120,6 +124,7 @@ describe('modules/layers', () => {
         colorType: 'SINGLE',
         color: COLOR.RED,
         fieldName: 'name',
+        customFieldValue: '',
         colorRamp: 'RANDOM',
         colorList: [],
         transparency: 1,

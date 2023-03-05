@@ -1,4 +1,4 @@
-import { formattedInputs } from '../../utils/Format';
+import { formattedInputs } from '../Format';
 
 describe('formattedInput', () => {
   it('check string value', () => {
@@ -17,14 +17,14 @@ describe('formattedInput', () => {
     expect(formattedInputs('-1', 'INTEGER')).toStrictEqual({ isOK: true, result: -1 });
     expect(formattedInputs('123', 'INTEGER')).toStrictEqual({ isOK: true, result: 123 });
     expect(formattedInputs('123a', 'INTEGER')).toStrictEqual({ isOK: false, result: '123a' });
-    expect(formattedInputs('', 'INTEGER')).toStrictEqual({ isOK: false, result: '' });
+    expect(formattedInputs('', 'INTEGER')).toStrictEqual({ isOK: true, result: '' });
   });
   it('check decimal value', () => {
     expect(formattedInputs(123.5, 'DECIMAL')).toStrictEqual({ isOK: true, result: 123.5 });
     expect(formattedInputs('-1.1', 'DECIMAL')).toStrictEqual({ isOK: true, result: -1.1 });
     expect(formattedInputs('123.0', 'DECIMAL')).toStrictEqual({ isOK: true, result: 123 });
     expect(formattedInputs('123a', 'DECIMAL')).toStrictEqual({ isOK: false, result: '123a' });
-    expect(formattedInputs('', 'DECIMAL')).toStrictEqual({ isOK: false, result: '' });
+    expect(formattedInputs('', 'DECIMAL')).toStrictEqual({ isOK: true, result: '' });
   });
   it('check url value', () => {
     expect(formattedInputs('https://map.ecoris.info/tiles/{z}/{x}/{y}.png', 'url')).toStrictEqual({
@@ -62,15 +62,15 @@ describe('formattedInput', () => {
     expect(formattedInputs('test', 'members')).toStrictEqual({ isOK: false, result: 'test' });
   });
 
-  it('check latitude-decimal value', () => {
+  it('check latitude-decimal value.文字列にして返す', () => {
     expect(formattedInputs('135.12345', 'latitude-decimal')).toStrictEqual({ isOK: false, result: '135.12345' });
     expect(formattedInputs('35.12345', 'latitude-decimal')).toStrictEqual({ isOK: true, result: '35.12345' });
     expect(formattedInputs('-35.5', 'latitude-decimal')).toStrictEqual({ isOK: true, result: '-35.5' });
     expect(formattedInputs('', 'latitude-decimal')).toStrictEqual({ isOK: false, result: '' });
-    expect(formattedInputs(35, 'latitude-decimal')).toStrictEqual({ isOK: false, result: 35 });
+    expect(formattedInputs(35, 'latitude-decimal')).toStrictEqual({ isOK: true, result: '35' });
     expect(formattedInputs(135, 'latitude-decimal')).toStrictEqual({ isOK: false, result: 135 });
     expect(formattedInputs(Number('135.1'), 'latitude-decimal')).toStrictEqual({ isOK: false, result: 135.1 });
-    expect(formattedInputs(Number(''), 'latitude-decimal')).toStrictEqual({ isOK: false, result: 0 });
+    expect(formattedInputs(Number(''), 'latitude-decimal')).toStrictEqual({ isOK: true, result: '0' });
     expect(formattedInputs(Number('135.1abc'), 'latitude-decimal')).toStrictEqual({ isOK: false, result: NaN });
   });
   it('check longitude-decimal value', () => {

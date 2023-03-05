@@ -8,7 +8,7 @@ import reducer, {
   updateTrackFieldAction,
   updateRecordsAction,
   addDataAction,
-} from '../../modules/dataSet';
+} from '../dataSet';
 import { DataType } from '../../types';
 describe('modules/dataSet', () => {
   const state: DataType[] = [

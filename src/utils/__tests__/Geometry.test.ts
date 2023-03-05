@@ -1,11 +1,11 @@
-import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../../utils/Geometry';
-import { geoJsonString } from '../resources/geojson';
-import track_gpx from '../resources/track_gpx';
-import invalid_track_gpx from '../resources/invalid_track_gpx';
-import point_gpx from '../resources/point_gpx';
-import invalid_point_gpx from '../resources/invalid_point_gpx';
-import { layers } from '../resources/layer';
-import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../resources/record';
+import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../Geometry';
+import { geoJsonString } from '../../__tests__/resources/geojson';
+import track_gpx from '../../__tests__/resources/track_gpx';
+import invalid_track_gpx from '../../__tests__/resources/invalid_track_gpx';
+import point_gpx from '../../__tests__/resources/point_gpx';
+import invalid_point_gpx from '../../__tests__/resources/invalid_point_gpx';
+import { layers } from '../../__tests__/resources/layer';
+import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '../../__tests__/resources/record';
 import { LayerType } from '../../types';
 //@ts-ignore
 import MockDate from 'mockdate';
@@ -179,8 +179,8 @@ describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
       '\ufeff' + 'name,time,cmt,photo,geometry',
-      'St.1,2020-01-01T09:28:38+09:00,,,POINT(140.71658064854364 38.24715800176878)',
-      'St.3,5時,,,POINT(140.71548306286388 38.24101016421964)',
+      'St.1,2020-01-01T09:28:38+09:00,,"",POINT(140.71658064854364 38.24715800176878)',
+      'St.3,5時,,"test.jpg",POINT(140.71548306286388 38.24101016421964)',
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
   });
@@ -202,12 +202,12 @@ describe('generateGeoJson', () => {
       features: [
         {
           geometry: { coordinates: [140.71658064854364, 38.24715800176878], type: 'Point' },
-          properties: { _id: '1234', _visible: true, cmt: undefined, name: 'St.1', time: '2020-01-01T09:28:38+09:00' },
+          properties: { _id: '1234', _visible: true, cmt: '', name: 'St.1', time: '2020-01-01T09:28:38+09:00' },
           type: 'Feature',
         },
         {
           geometry: { coordinates: [140.71548306286388, 38.24101016421964], type: 'Point' },
-          properties: { _id: '1234', _visible: true, cmt: undefined, name: 'St.3', time: '5時' },
+          properties: { _id: '1234', _visible: true, cmt: '', name: 'St.3', time: '5時' },
           type: 'Feature',
         },
       ],

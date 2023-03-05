@@ -1,5 +1,5 @@
 import { LocationObject } from 'expo-location';
-import { updateLocations, isLocationObject, getLineLength, toLocationType } from '../../utils/Location';
+import { updateLocations, isLocationObject, getLineLength, toLocationType } from '../Location';
 
 describe('updateLocations', () => {
   const savedLocations = [
