@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react-hooks';
-import { usePermission } from './usePermission';
+import { usePermission } from '../usePermission';
 
 let mockSelector = jest.fn();
 

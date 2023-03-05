@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { useData } from './useData';
-import { DataType, LayerType, UserType } from '../types';
-import { COLOR } from '../constants/AppConstants';
+import { useData } from '../useData';
+import { DataType, LayerType, UserType } from '../../types';
+import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import MockDate from 'mockdate';
 jest.mock('uuid', () => ({ v4: () => '1234' }));

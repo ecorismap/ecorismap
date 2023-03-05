@@ -1,8 +1,8 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { PhotoType, SelectedPhotoType, UserType } from '../types';
-import { layers } from '../__tests__/resources/layer';
-import { point_record } from '../__tests__/resources/record';
-import { useDataEdit } from './useDataEdit';
+import { PhotoType, SelectedPhotoType, UserType } from '../../types';
+import { layers } from '../../__tests__/resources/layer';
+import { point_record } from '../../__tests__/resources/record';
+import { useDataEdit } from '../useDataEdit';
 
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();
@@ -39,13 +39,13 @@ const user: UserType = {
 };
 const isEditingRecord = false;
 
-jest.mock('./usePhoto', () => ({
+jest.mock('../usePhoto', () => ({
   usePhoto: () => ({
     deleteRecordPhotos: jest.fn,
   }),
 }));
 
-jest.mock('./useRecord', () => ({
+jest.mock('../useRecord', () => ({
   useRecord: () => ({
     selectRecord: jest.fn,
   }),

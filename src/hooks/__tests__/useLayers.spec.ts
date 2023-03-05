@@ -1,6 +1,6 @@
-import { LayerType } from '../types';
-import { COLOR } from '../constants/AppConstants';
-import { useLayers } from './useLayers';
+import { LayerType } from '../../types';
+import { COLOR } from '../../constants/AppConstants';
+import { useLayers } from '../useLayers';
 import { renderHook, act } from '@testing-library/react-hooks';
 
 const layers: LayerType[] = [
@@ -61,24 +61,6 @@ jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
   useSelector: () => mockSelector(),
 }));
-
-jest.mock('i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string) => key,
-  }),
-  language: ['en'],
-  initReactI18next: {
-    type: '3rdParty',
-    init: () => {},
-  },
-  use: () => {
-    return {
-      init: () => {},
-    };
-  },
-  t: (key: string) => key,
-}));
-jest.mock('../../utils/File', () => ({ clearCacheData: jest.fn(), exportDataAndPhoto: jest.fn() }));
 
 describe('useLayers', () => {
   beforeEach(() => {
