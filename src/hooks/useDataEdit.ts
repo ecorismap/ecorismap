@@ -54,7 +54,7 @@ export type UseDataEditReturnType = {
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
   changeLatLonType: () => void;
-  changeField: (name: string, value: string) => void;
+  changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
   changeLatLon: (val: string, latlonType: LatLonDMSKey, dmsType: DMSKey) => void;
   cancelUpdate: () => void;
@@ -259,7 +259,7 @@ export const useDataEdit = (
   }, [targetRecord, targetLayer, deleteRecordPhotos, projectId, dispatch]);
 
   const changeField = useCallback(
-    (name: string, value: string) => {
+    (name: string, value: string | number) => {
       const m = cloneDeep(targetRecord);
       if (m.field[name] !== value) {
         m.field[name] = value;
