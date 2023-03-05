@@ -43,7 +43,7 @@ export const useFieldList = (
   const refFieldNames = useMemo(() => {
     const layerId = pickerValues[0];
     const refLayer = layers.find((layer) => layer.id === layerId);
-    return refLayer?.field.map((l) => l.name) ?? [];
+    return ['', ...(refLayer?.field.map((l) => l.name) ?? [''])];
   }, [layers, pickerValues]);
 
   const primaryFieldNames = useMemo(() => ['', '_id', ...targetLayer.field.map((f) => f.name)], [targetLayer.field]);

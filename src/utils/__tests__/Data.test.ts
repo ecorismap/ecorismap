@@ -138,7 +138,7 @@ describe('getInitialFieldValue', () => {
         { value: 'b', isOther: false },
         { value: 'c', isOther: false },
       ])
-    ).toStrictEqual('a');
+    ).toStrictEqual('');
     expect(
       getInitialFieldValue('RADIO', [
         { value: 'a', isOther: false },

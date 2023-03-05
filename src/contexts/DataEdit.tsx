@@ -13,7 +13,7 @@ interface DataEditContextType {
   maxRecordNumber: number;
   changeLatLonType: () => void;
   changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
-  changeField: (name: string, value: string) => void;
+  changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
   onChangeRecord: (value: number) => void;
   pressSaveData: () => void;
@@ -24,7 +24,7 @@ interface DataEditContextType {
   pressRemovePhoto: () => void;
   pressDownloadPhoto: () => void;
   pressDeleteData: () => void;
-  pressAddReferenceData: (referenceData: RecordType | undefined, referenceLayer: LayerType, message: string) => void;
+  pressAddReferenceData: (referenceLayer: LayerType, addRecord: () => RecordType) => void;
   gotoHomeAndJump: () => void;
   gotoGoogleMaps: () => void;
   gotoBack: () => void;

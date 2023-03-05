@@ -1,44 +1,29 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useData } from '../../hooks/useData';
 import { LayerType, PhotoType, RecordType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { Button } from '../atoms';
-import { Alert } from '../atoms/Alert';
 
 interface Props {
   name: string;
   primaryKey: string | number | PhotoType[];
   refLayer: LayerType;
   refField: string;
-  isEditingRecord: boolean;
   onPress: (referenceData: RecordType, referenceLayer: LayerType) => void;
-  pressAddReferenceData: (referenceData: RecordType | undefined, referenceLayer: LayerType, message: string) => void;
+  pressAddReferenceData: (referenceLayer: LayerType, addRecord: () => RecordType) => void;
 }
 
 export const DataEditReference = (props: Props) => {
-  const { name, primaryKey, refLayer, refField, isEditingRecord, onPress, pressAddReferenceData } = props;
+  const { name, primaryKey, refLayer, refField, onPress, pressAddReferenceData } = props;
   const { allUserRecordSet, addRecord } = useData(refLayer);
-
+  console.log(allUserRecordSet);
   const data = useMemo(
     () => allUserRecordSet.filter((d) => d.field[refField] === primaryKey),
     [allUserRecordSet, primaryKey, refField]
   );
-
-  const addReferenceData = useCallback(
-    async (referenceLayer: LayerType) => {
-      if (isEditingRecord) {
-        Alert.alert('', '一旦変更を保存してください。');
-        return;
-      }
-      const referenceData = addRecord();
-      const message = 'need refactoring!!!';
-      pressAddReferenceData(referenceData, referenceLayer, message);
-    },
-    [addRecord, isEditingRecord, pressAddReferenceData]
-  );
-
+  console.log(data);
   return (
     <View style={{ flexDirection: 'column', flex: 1 }}>
       <View style={styles.tr3}>
@@ -54,7 +39,7 @@ export const DataEditReference = (props: Props) => {
                   padding: 0,
                 }}
                 name="plus"
-                onPress={() => addReferenceData(refLayer)}
+                onPress={() => pressAddReferenceData(refLayer, addRecord)}
               />
             ))}
         </View>

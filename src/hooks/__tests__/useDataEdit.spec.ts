@@ -1,8 +1,8 @@
 import { renderHook, act } from '@testing-library/react-hooks';
-import { PhotoType, SelectedPhotoType, UserType } from '../types';
-import { layers } from '../__tests__/resources/layer';
-import { point_record } from '../__tests__/resources/record';
-import { useDataEdit } from './useDataEdit';
+import { PhotoType, SelectedPhotoType, UserType } from '../../types';
+import { layers } from '../../__tests__/resources/layer';
+import { point_record } from '../../__tests__/resources/record';
+import { useDataEdit } from '../useDataEdit';
 
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();
@@ -38,20 +38,19 @@ const user: UserType = {
   photoURL: 'https://www.dummy.com/test.jpg',
 };
 const isEditingRecord = false;
-const photosToBeDeleted = {};
 
-jest.mock('./usePhoto', () => ({
+jest.mock('../usePhoto', () => ({
   usePhoto: () => ({
-    photosToBeDeleted: photosToBeDeleted,
+    deleteRecordPhotos: jest.fn,
   }),
 }));
-// jest.mock('./useRecord', () => ({
-//   useRecord: () => ({
-//     selectRecord: jest.fn().mockReturnValueOnce(''),
-//   }),
-// }));
 
-//ToDo useDataEditでselectRecordをコメントアウトすればテストが通る。モックの仕方がわからない。
+jest.mock('../useRecord', () => ({
+  useRecord: () => ({
+    selectRecord: jest.fn,
+  }),
+}));
+
 describe('useDataEdit', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();

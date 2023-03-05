@@ -34,7 +34,6 @@ export default function DataEditScreen() {
     layer,
     data,
     latlon,
-    isEditingRecord,
     isDecimal,
     recordNumber,
     maxRecordNumber,
@@ -301,7 +300,20 @@ export default function DataEditScreen() {
               const refField = list && list[1] && list[1].value;
               const primaryField = list && list[2] && list[2].value;
               const primaryKey = primaryField === '_id' ? data.id : primaryField && data.field[primaryField];
-              //console.log(refLayerId, refField, primaryField, primaryKey);
+              console.log(
+                'list',
+                list,
+                'refLayerId',
+                refLayerId,
+                'refLayer',
+                refLayer,
+                'refField',
+                refField,
+                'primaryField',
+                primaryField,
+                'primaryKey',
+                primaryKey
+              );
               return (
                 refLayer !== undefined &&
                 refField !== undefined &&
@@ -312,7 +324,6 @@ export default function DataEditScreen() {
                     primaryKey={primaryKey}
                     refLayer={refLayer}
                     refField={refField}
-                    isEditingRecord={isEditingRecord}
                     onPress={gotoReferenceData}
                     pressAddReferenceData={pressAddReferenceData}
                   />
