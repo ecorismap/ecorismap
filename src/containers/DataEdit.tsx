@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Linking, Platform } from 'react-native';
 import { LayerType, LocationType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
@@ -16,6 +16,7 @@ import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { pickImage, takePhoto } from '../utils/Photo';
+import * as projectStorage from '../lib/firebase/storage';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -33,11 +34,11 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     maxRecordNumber,
     photoFolder,
     addPhoto,
+    updatePhoto,
     selectPhoto,
     removePhoto,
     changeRecord,
     saveData,
-    downloadPhoto,
     deleteRecord,
     changeLatLonType,
     changeField,
@@ -186,11 +187,25 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressDownloadPhoto = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.downloadPhoto'));
     if (ret) {
-      const { message } = await downloadPhoto();
-      await AlertAsync(message);
+      // if (!hasOpened(projectId)) {
+      //   Alert.alert('', t('hooks.message.openProject'));
+      //   return;
+      // }
+
+      const { url, key, name, fieldName, index } = selectedPhoto;
+      if (url === null || key === null) {
+        Alert.alert('', t('hooks.message.unkownURL'));
+        return;
+      }
+      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, name, photoFolder);
+      if (!isOK || uri === null) {
+        Alert.alert('', message);
+        return;
+      }
+      updatePhoto(fieldName, index, uri);
     }
     setPhotoEditorOpen(false);
-  }, [downloadPhoto]);
+  }, [photoFolder, selectedPhoto, updatePhoto]);
 
   const onChangeRecord = useCallback(
     async (value: number) => {

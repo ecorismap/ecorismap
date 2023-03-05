@@ -19,6 +19,7 @@ export const initializeUser = async (userId: string) => {
   const getToken = firebaseRN.app().functions('asia-northeast1').httpsCallable('getVirgilJwt');
   const initializeFunction = () => getToken().then((result) => result.data.token);
   try {
+    //@ts-ignore
     eThree = await EThree.initialize(initializeFunction, { AsyncStorage });
     const hasRegistered = await hasRegisterdUser(userId);
     if (!hasRegistered) {

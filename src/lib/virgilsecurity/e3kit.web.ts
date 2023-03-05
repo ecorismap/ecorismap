@@ -1,3 +1,4 @@
+//@ts-ignore
 import { EThree } from '@virgilsecurity/e3kit-browser';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
@@ -302,7 +303,7 @@ export const hasPrivateKeyBackup = async () => {
   return eThree
     .restorePrivateKey('_')
     .then(() => true)
-    .catch((e) => {
+    .catch((e: any) => {
       if (e.name === 'PrivateKeyNoBackupError') return false;
       if (e.name === 'WrongKeyknoxPasswordError') return true;
       throw e;
@@ -317,7 +318,7 @@ export const hasRegisterdUser = async (userId: string | null) => {
     return eThree
       .findUsers(userId)
       .then(() => true)
-      .catch((e) => {
+      .catch((e: any) => {
         if (e.name === 'UsersNotFoundError') return false;
         throw e;
       });

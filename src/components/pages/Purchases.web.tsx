@@ -90,10 +90,10 @@ const ProductPage = (props: ProductPage_Props) => {
       <Loading visible={isLoading} text="" />
       <View style={{ marginBottom: 50 }}>
         <View style={styles.titleFrame}>
-          <Text style={styles.title}>{t('Purchases.title')}</Text>
+          <Text style={styles.title}>{`${t('Purchases.title')}`}</Text>
         </View>
         <View style={styles.frame}>
-          <Text style={styles.subtitle}>{t('Purchases.menu1')}</Text>
+          <Text style={styles.subtitle}>{`${t('Purchases.menu1')}`}</Text>
           <View style={styles.products}>
             {products.map(({ product, prices }, idx) => {
               return (
@@ -124,7 +124,7 @@ const ProductPage = (props: ProductPage_Props) => {
           </View>
         </View>
         <View style={styles.frame}>
-          <Text style={styles.subtitle}>{t('Purchases.menu2')}</Text>
+          <Text style={styles.subtitle}>{`${t('Purchases.menu2')}`}</Text>
           <CheckBox
             style={{ backgroundColor: COLOR.WHITE }}
             label={t('Purchases.confirmCheck')}
@@ -142,7 +142,7 @@ const ProductPage = (props: ProductPage_Props) => {
             onPress={() => selectedPrice && onPressPurchase(selectedPrice)}
             disabled={!checked}
           >
-            <Text style={{ color: COLOR.WHITE, fontWeight: 'bold', fontSize: 18 }}>{t('Purchases.apply')}</Text>
+            <Text style={{ color: COLOR.WHITE, fontWeight: 'bold', fontSize: 18 }}>{`${t('Purchases.apply')}`}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -159,7 +159,7 @@ const ProductPage = (props: ProductPage_Props) => {
         >
           <View style={{ width: 700 }}>
             <Text style={{ textAlign: 'left', fontSize: 20, fontWeight: 'bold', margin: 20 }}>
-              {t('Purchases.notes')}
+              {`${t('Purchases.notes')}`}
             </Text>
           </View>
           <View
@@ -184,8 +184,8 @@ const ErrorPage = () => {
   return (
     <View style={styles.container}>
       <View style={styles.errorFrame}>
-        <Text>{t('Purchases.errorMessage1')}</Text>
-        <Text>{t('Purchases.errorMessage2')}</Text>
+        <Text>{`${t('Purchases.errorMessage1')}`}</Text>
+        <Text>{`${t('Purchases.errorMessage2')}`}</Text>
       </View>
     </View>
   );
@@ -204,10 +204,10 @@ const CustomerPage = (props: CustomerPage_Props) => {
     <View style={styles.container}>
       <Loading visible={isLoading} text="" />
       <View style={[styles.titleFrame, { borderBottomColor: COLOR.DARKGREEN }]}>
-        <Text style={styles.title}>{t('Purchases.accountInfo')}</Text>
+        <Text style={styles.title}>{`${t('Purchases.accountInfo')}`}</Text>
       </View>
       <View style={styles.frame}>
-        <Text style={styles.subtitle}>{t('Purchases.currentPlan')}</Text>
+        <Text style={styles.subtitle}>{`${t('Purchases.currentPlan')}`}</Text>
         <View style={styles.products}>
           {products.map(({ product, prices }, idx) => {
             return (
@@ -240,13 +240,13 @@ const CustomerPage = (props: CustomerPage_Props) => {
         </View>
       </View>
       <View style={styles.frame}>
-        <Text style={styles.subtitle}>{t('Purchases.applicationInfo')}</Text>
+        <Text style={styles.subtitle}>{`${t('Purchases.applicationInfo')}`}</Text>
         <View style={{ marginTop: 10, alignItems: 'center' }}>
           <TouchableOpacity
             style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}
             onPress={() => customerPortal && window.location.assign(customerPortal)}
           >
-            <Text style={styles.portal}>{t('Purchases.applicationChange')}</Text>
+            <Text style={styles.portal}>{`${t('Purchases.applicationChange')}`}</Text>
             <Feather name="external-link" size={24} />
           </TouchableOpacity>
         </View>

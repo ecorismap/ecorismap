@@ -18,9 +18,6 @@ import { cloneDeep } from 'lodash';
 import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
-import * as projectStorage from '../lib/firebase/storage';
-import { hasOpened } from '../utils/Project';
-import { updateRecordPhoto } from '../utils/Data';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { editSettingsAction } from '../modules/settings';
 import { usePhoto } from './usePhoto';
@@ -43,10 +40,6 @@ export type UseDataEditReturnType = {
     isOK: boolean;
     message: string;
   };
-  downloadPhoto: () => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
   addPhoto: (
     fieldName: string,
     photo: {
@@ -57,6 +50,7 @@ export type UseDataEditReturnType = {
       name: string;
     }
   ) => void;
+  updatePhoto: (fieldName: string, index: number, uri: string) => void;
   removePhoto: (photo: SelectedPhotoType) => void;
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
@@ -170,20 +164,6 @@ export const useDataEdit = (
     [projectId, setIsEditingRecord, targetRecord, temporaryAddedPhotoList, temporaryDeletePhotoList]
   );
 
-  const downloadPhoto = useCallback(async () => {
-    const folder = `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${dataUser.uid}`;
-    const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, name, folder);
-    if (!isOK || uri === null) {
-      return { isOK: false, message };
-    }
-
-    const updatedRecord = updateRecordPhoto(targetRecord, fieldName, index, uri);
-
-    setTargetRecord(updatedRecord);
-    setIsEditingRecord(true);
-    return { isOK: true, message: t('hooks.message.downloaded') };
-  }, [projectId, targetLayer.id, dataUser.uid, targetRecord, setIsEditingRecord]);
-
   const selectPhoto = useCallback(async (fieldName: string, photo: PhotoType, index: number) => {
     let hasLocal = false;
     if (photo.uri) {
@@ -213,9 +193,10 @@ export const useDataEdit = (
       }
     ) => {
       //console.log('$$$', uri);
-      const m = cloneDeep(targetRecord);
+      const updatedRecord = cloneDeep(targetRecord);
       const photoId = uuidv4();
-      (m.field[fieldName] as PhotoType[]).push({
+      const photoField = updatedRecord.field[fieldName] as PhotoType[];
+      photoField.push({
         id: photoId,
         name: photo.name,
         url: null,
@@ -227,11 +208,22 @@ export const useDataEdit = (
       } as PhotoType);
 
       //console.log(m.field[name]);
-      setTargetRecord(m);
+      setTargetRecord(updatedRecord);
       setIsEditingRecord(true);
       setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri: photo.uri }]);
     },
     [setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
+  );
+
+  const updatePhoto = useCallback(
+    (fieldName: string, index: number, uri: string) => {
+      const updatedRecord = cloneDeep(targetRecord);
+      const photoField = updatedRecord.field[fieldName] as PhotoType[];
+      photoField[index].uri = uri;
+      setTargetRecord(updatedRecord);
+      setIsEditingRecord(true);
+    },
+    [targetRecord, setIsEditingRecord]
   );
 
   const saveData = useCallback(() => {
@@ -338,7 +330,7 @@ export const useDataEdit = (
     addPhoto,
     removePhoto,
     selectPhoto,
-    downloadPhoto,
+    updatePhoto,
     changeRecord,
     deleteRecord,
     changeLatLonType,

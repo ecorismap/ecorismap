@@ -24,14 +24,12 @@ export default function Projects(props: Props) {
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
     [gotoBack]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerBackTitle: 'Back',
     });
@@ -43,19 +41,19 @@ export default function Projects(props: Props) {
         <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', height: 45 }}>
             <View style={[styles.th, { flex: 2, width: 60 }]}>
-              <Text>{t('common.owner')}</Text>
+              <Text>{`${t('common.owner')}`}</Text>
             </View>
             <View style={[styles.th, { flex: 3, width: 180 }]}>
-              <Text>{t('common.projectName')}</Text>
+              <Text>{`${t('common.projectName')}`}</Text>
             </View>
             <View style={[styles.th, { flex: 2, width: 120 }]}>
-              <Text>{t('common.overview')}</Text>
+              <Text>{`${t('common.overview')}`}</Text>
             </View>
             <View style={[styles.th, { flex: 2, width: 120 }]}>
-              <Text>{t('common.usage')}</Text>
+              <Text>{`${t('common.usage')}`}</Text>
             </View>
             <View style={[styles.th, { flex: 2, width: 120 }]}>
-              <Text>{t('common.license')}</Text>
+              <Text>{`${t('common.license')}`}</Text>
             </View>
           </View>
           {isLoading && <Loading visible={isLoading} text="" />}
