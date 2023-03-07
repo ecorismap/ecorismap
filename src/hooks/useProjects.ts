@@ -1,47 +1,35 @@
-import { useCallback, useMemo } from 'react';
-import { ProjectType, UserType } from '../types';
+import { useCallback, useState } from 'react';
+import { ProjectType, LoginUserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction } from '../modules/projects';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
-import { hasLoggedIn } from '../utils/Account';
 import { v4 as uuidv4 } from 'uuid';
-import { t } from '../i18n/config';
 
 export type UseProjectsReturnType = {
+  isLoading: boolean;
   projects: ProjectType[];
-  user: UserType;
-  ownerProjectsCount: number;
-  fetchProjects: () => Promise<{
+  getOwnerProjectsCount: (user: LoginUserType) => number;
+  fetchProjects: (user: LoginUserType) => Promise<{
     isOK: boolean;
     message: string;
   }>;
-  addProject: () => {
-    isOK: boolean;
-    message: string;
-    project: ProjectType | undefined;
-  };
+  generateProject: (user: LoginUserType) => ProjectType;
 };
 
 export const useProjects = (): UseProjectsReturnType => {
   const dispatch = useDispatch();
-  const user = useSelector((state: AppState) => state.user);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const projects = useSelector((state: AppState) => state.projects);
-  //console.log('useProjects', projects);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const ownerProjectsCount = useMemo(
-    () => projects.filter((project) => project.ownerUid === user.uid).length,
-    [projects, user.uid]
+  const getOwnerProjectsCount = useCallback(
+    (user: LoginUserType) => {
+      return projects.filter((project) => project.ownerUid === user.uid).length;
+    },
+    [projects]
   );
 
-  const addProject = useCallback(() => {
-    if (!hasLoggedIn(user)) {
-      return { isOK: false, message: t('hooks.message.pleaseLogin'), project: undefined };
-    }
-    if (isSettingProject) {
-      return { isOK: false, message: t('hooks.message.cannotAddProject'), project: undefined };
-    }
+  const generateProject = useCallback((user: LoginUserType) => {
     //ライセンスは不正防止のためadd後にfunctionsで更新するが、ひとまず入れておく。本当は、Listnerで更新した方が良い。
     const project: ProjectType = {
       id: uuidv4(),
@@ -54,22 +42,23 @@ export const useProjects = (): UseProjectsReturnType => {
       storage: { count: 0 },
       license: 'Unkown',
     };
-    return { isOK: true, message: '', project };
-  }, [isSettingProject, user]);
+    return project;
+  }, []);
 
-  const fetchProjects = useCallback(async () => {
-    //console.log('fetch');
-    if (user.uid === undefined) {
-      return { isOK: false, message: t('hooks.message.cannotFindUser') };
-    }
-    dispatch(setProjectsAction([]));
-    const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
-    if (!isOK || updatedProjects === undefined) {
-      return { isOK: false, message };
-    }
-    dispatch(setProjectsAction(updatedProjects));
-    return { isOK: true, message };
-  }, [user.uid, dispatch]);
+  const fetchProjects = useCallback(
+    async (user: LoginUserType) => {
+      dispatch(setProjectsAction([]));
+      setIsLoading(true);
+      const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
+      setIsLoading(false);
+      if (!isOK || updatedProjects === undefined) {
+        return { isOK: false, message };
+      }
+      dispatch(setProjectsAction(updatedProjects));
+      return { isOK: true, message };
+    },
+    [dispatch]
+  );
 
-  return { projects, user, ownerProjectsCount, fetchProjects, addProject } as const;
+  return { isLoading, projects, getOwnerProjectsCount, fetchProjects, generateProject } as const;
 };

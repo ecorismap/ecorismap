@@ -527,7 +527,7 @@
       "errorDownload": "地図のダウンロードに失敗しました。ネット環境を確認してください。"
     },
     "message": {
-      "pleaseLogin": "ログインしてください。",
+      "pleaseLogin": "ログインし直してください。",
       "cannotUploadData": "レイヤの設定が更新されているのでアップロードできません。",
       "noCopyProject": "コピーするプロジェクトがありません。",
       "unknownError": "不明なエラーです。もう一度試してください",
