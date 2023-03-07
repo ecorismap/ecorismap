@@ -34,6 +34,7 @@ import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
+import * as e3kit from '../lib/virgilsecurity/e3kit';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -46,6 +47,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const projectName = useSelector((state: AppState) => state.settings.projectName);
   const user = useSelector((state: AppState) => state.user);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
+
   const { screenState, openData, expandData, closeData } = useScreen();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
@@ -134,7 +137,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     downloadData,
     uploadData,
     syncPosition,
-    closeProject,
+    clearProject,
     saveProjectSetting,
   } = useProject();
 
@@ -485,27 +488,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.logout'));
       if (!ret) return;
     }
-
-    if (Platform.OS === 'web') {
-      // const isCleanupLocalKey = await ConfirmAsync(
-      //   '暗号化キーも削除しますか？他人のデバイスの場合、削除することをお勧めします。'
-      // );
-      const isCleanupLocalKey = true;
-      const { isOK, message } = await logout(isCleanupLocalKey);
-      if (!isOK) {
-        await AlertAsync(message);
-      } else {
-        navigation.navigate('Account', {});
-      }
-    } else {
-      const { isOK, message } = await logout();
-      if (!isOK) {
-        await AlertAsync(message);
-      } else {
-        navigation.navigate('Home');
-      }
+    if (tracking !== undefined) {
+      Alert.alert('', t('hooks.message.finishTrackking'));
+      return;
     }
-  }, [isSettingProject, logout, navigation]);
+    if (Platform.OS === 'web') {
+      await e3kit.cleanupEncryptKey();
+      await logout();
+      clearProject();
+      navigation.navigate('Account', {});
+    } else {
+      await logout();
+      clearProject();
+      navigation.navigate('Home');
+    }
+  }, [clearProject, isSettingProject, logout, navigation, tracking]);
 
   const pressZoomIn = useCallback(() => {
     hideDrawLine();
@@ -588,14 +585,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressCloseProject = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
     if (ret) {
-      const { isOK, message } = closeProject();
-      if (!isOK) {
-        await AlertAsync(message);
-      } else {
-        setIsShowingProjectButtons(false);
+      if (tracking !== undefined) {
+        Alert.alert('', t('hooks.message.finishTrackking'));
+        return;
       }
+      clearProject();
+      setIsShowingProjectButtons(false);
     }
-  }, [closeProject]);
+  }, [clearProject, tracking]);
 
   const pressSaveProjectSetting = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
@@ -607,18 +604,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await AlertAsync(message);
     } else {
       await AlertAsync(t('Home.alert.saveProject'));
-      closeProject();
+      clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     }
-  }, [closeProject, navigation, project, saveProjectSetting]);
+  }, [clearProject, navigation, project, saveProjectSetting]);
 
   const pressDiscardProjectSetting = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.discardProject'));
     if (ret) {
-      closeProject();
+      clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     }
-  }, [closeProject, navigation, project]);
+  }, [clearProject, navigation, project]);
   /****************** goto ****************************/
 
   const gotoProjects = useCallback(async () => {
