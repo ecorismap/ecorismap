@@ -1,24 +1,13 @@
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { ACCOUNT_SETTINGS_BTN, FUNC_ENCRYPTION, FUNC_PROJECT, FUNC_PURCHASE } from '../../constants/AppConstants';
+import { AccountSettingsContext } from '../../contexts/AccountSettings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
 
-interface Props {
-  pressUpdateUserProfile: () => void;
-  pressChangeUserPassword: () => void;
-  pressChangeEncryptPassword: () => void;
-  pressResetEncryptKey: () => void;
-  pressDeleteUserAccount: () => void;
-  pressUpgradeAccount: () => void;
-  pressImportProject: () => void;
-  pressDeleteAllProjects: () => void;
-  pressGotoHome: () => void;
-}
-
-export default function AccountSettings(props: Props) {
+export default function AccountSettings() {
   const {
     pressUpdateUserProfile,
     pressChangeUserPassword,
@@ -29,7 +18,8 @@ export default function AccountSettings(props: Props) {
     pressImportProject,
     pressDeleteAllProjects,
     pressGotoHome,
-  } = props;
+  } = useContext(AccountSettingsContext);
+
   const navigation = useNavigation();
   const styles = StyleSheet.create({
     container: {
@@ -38,14 +28,12 @@ export default function AccountSettings(props: Props) {
   });
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line no-shadow
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={pressGotoHome} />,
     [pressGotoHome]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       //
     });

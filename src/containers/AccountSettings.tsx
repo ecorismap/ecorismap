@@ -10,6 +10,7 @@ import { Props_AccountSettings } from '../routes';
 import { getExt } from '../utils/General';
 import * as DocumentPicker from 'expo-document-picker';
 import { usePermission } from '../hooks/usePermission';
+import { AccountSettingsContext } from '../contexts/AccountSettings';
 
 export default function AccountSettingsContainers({ navigation }: Props_AccountSettings) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -98,16 +99,20 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
   }, [navigation]);
 
   return (
-    <AccountSettings
-      pressUpdateUserProfile={pressUpdateUserProfile}
-      pressChangeUserPassword={pressChangeUserPassword}
-      pressChangeEncryptPassword={pressChangeEncryptPassword}
-      pressResetEncryptKey={pressResetEncryptKey}
-      pressDeleteUserAccount={pressDeleteUserAccount}
-      pressUpgradeAccount={pressUpgradeAccount}
-      pressImportProject={pressImportProject}
-      pressDeleteAllProjects={pressDeleteAllProjects}
-      pressGotoHome={pressGotoHome}
-    />
+    <AccountSettingsContext.Provider
+      value={{
+        pressUpdateUserProfile,
+        pressChangeUserPassword,
+        pressChangeEncryptPassword,
+        pressResetEncryptKey,
+        pressDeleteUserAccount,
+        pressUpgradeAccount,
+        pressImportProject,
+        pressDeleteAllProjects,
+        pressGotoHome,
+      }}
+    >
+      <AccountSettings />
+    </AccountSettingsContext.Provider>
   );
 }

@@ -8,6 +8,7 @@ import { usePurchasesWeb } from '../hooks/usePurchasesWeb';
 import { t } from '../i18n/config';
 import { Props_Projects } from '../routes';
 import { validateProjectLicense } from '../utils/Project';
+import { ProjectsContext } from '../contexts/Projects';
 
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
   const { projects, user, ownerProjectsCount, fetchProjects, addProject } = useProjects();
@@ -64,14 +65,18 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, [navigation, projects.length, reloadProjects, route.params?.reload]);
 
   return (
-    <Projects
-      projects={projects}
-      user={user}
-      isLoading={isLoading}
-      onReloadProjects={reloadProjects}
-      gotoProject={gotoProject}
-      pressAddProject={pressAddProject}
-      gotoBack={gotoBack}
-    />
+    <ProjectsContext.Provider
+      value={{
+        projects,
+        user,
+        isLoading,
+        onReloadProjects: reloadProjects,
+        gotoProject,
+        pressAddProject,
+        gotoBack,
+      }}
+    >
+      <Projects />
+    </ProjectsContext.Provider>
   );
 }

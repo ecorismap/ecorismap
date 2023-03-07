@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
+import { AccountContext } from '../contexts/Account';
 import { useAccount } from '../hooks/useAccount';
 import { t } from '../i18n/config';
 import { Props_Account } from '../routes';
@@ -277,27 +278,31 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   }, [setAccountFormState, setAccountMessage]);
 
   return (
-    <Account
-      user={user}
-      accountFormState={accountFormState}
-      message={accountMessage}
-      isLoading={isLoading}
-      pressLoginUserAccount={pressLoginUserAccount}
-      pressClose={pressClose}
-      pressResetUserPassword={pressResetUserPassword}
-      pressSignupUserAccount={pressSignupUserAccount}
-      pressUpdateUserProfile={pressUpdateUserProfile}
-      pressChangeUserPassword={pressChangeUserPassword}
-      pressDeleteUserAccount={pressDeleteUserAccount}
-      pressChangeEncryptPassword={pressChangeEncryptPassword}
-      pressRestoreEncryptKey={pressRestoreEncryptKey}
-      pressRegistEncryptPassword={pressRegistEncryptPassword}
-      pressBackupEncryptPassword={pressBackupEncryptPassword}
-      pressResetEncryptKey={pressResetEncryptKey}
-      pressDeleteAllProjects={pressDeleteAllProjects}
-      changeSignUpForm={changeSignUpForm}
-      changeResetPasswordForm={changeResetForm}
-      changeResetEncryptForm={changeResetEncryptForm}
-    />
+    <AccountContext.Provider
+      value={{
+        user,
+        accountFormState,
+        message: accountMessage,
+        isLoading,
+        pressLoginUserAccount,
+        pressClose,
+        pressResetUserPassword,
+        pressSignupUserAccount,
+        pressUpdateUserProfile,
+        pressChangeUserPassword,
+        pressDeleteUserAccount,
+        pressChangeEncryptPassword,
+        pressRestoreEncryptKey,
+        pressRegistEncryptPassword,
+        pressBackupEncryptPassword,
+        pressResetEncryptKey,
+        pressDeleteAllProjects,
+        changeSignUpForm,
+        changeResetPasswordForm: changeResetForm,
+        changeResetEncryptForm,
+      }}
+    >
+      <Account />
+    </AccountContext.Provider>
   );
 }

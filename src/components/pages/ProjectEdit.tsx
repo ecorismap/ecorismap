@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { COLOR, CREATEPROJECTTYPE, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
@@ -6,40 +6,15 @@ import { ProjectEditButtons } from '../organisms/ProjectEditButtons';
 import { ProjectNamePicker } from '../organisms/ProjecEditProjectNamePicker';
 import { ProjectEditRadio } from '../organisms/ProjectEditRadio';
 import { ProjectEditMembers } from '../organisms/ProjectEditMembers';
-import { CreateProjectType, ProjectType } from '../../types';
+import { CreateProjectType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { EditString } from '../molecules/EditString';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
+import { ProjectEditContext } from '../../contexts/ProjectEdit';
 
-interface Props {
-  createType: CreateProjectType | undefined;
-  isNew: boolean;
-  isProjectOpen: boolean;
-  project: ProjectType;
-  isOwner: boolean;
-  isOwnerAdmin: boolean;
-  isEdited: boolean;
-  isLoading: boolean;
-  pickerValue: string;
-  pickerItems: string[] | undefined;
-  changeText: (name: string, value: string) => void;
-  changeCreateType: (value: CreateProjectType) => void;
-  changeDuplicateProjectName: (itemValue: string, itemIndex: number) => void;
-  changeMemberText: (value: string, idx: number) => void;
-  changeAdmin: (checked: boolean, idx: number) => void;
-  pressAddMember: () => void;
-  pressDeleteMember: (idx: number) => void;
-  pressSaveProject: () => void;
-  pressOpenProject: (isSetting: boolean) => void;
-  pressExportProject: () => void;
-  pressDeleteProject: () => void;
-  pressSettingProject: () => void;
-  gotoBack: () => void;
-}
-
-export default function ProjectEditScreen(props: Props) {
+export default function ProjectEditScreen() {
   const {
     createType,
     isNew,
@@ -64,7 +39,7 @@ export default function ProjectEditScreen(props: Props) {
     pressDeleteProject,
     pressSettingProject,
     gotoBack,
-  } = props;
+  } = useContext(ProjectEditContext);
   const navigation = useNavigation();
   const styles = StyleSheet.create({
     container: {
@@ -75,7 +50,6 @@ export default function ProjectEditScreen(props: Props) {
   });
 
   const headerLeftButton = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-shadow
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
     [gotoBack]
   );
@@ -98,7 +72,6 @@ export default function ProjectEditScreen(props: Props) {
 
   useEffect(() => {
     navigation.setOptions({
-      // eslint-disable-next-line no-shadow
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerBackTitle: t('common.back'),
       headerRight: () => headerRightButton(),

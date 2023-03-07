@@ -1,35 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
+import { AccountContext } from '../../contexts/Account';
 import { t } from '../../i18n/config';
-import { AccountFormStateType, UserType } from '../../types';
 import { Button } from '../atoms';
 import { Loading } from '../molecules/Loading';
 
-interface Props {
-  user: UserType;
-  accountFormState: AccountFormStateType | undefined;
-  message: string;
-  isLoading: boolean;
-  changeResetPasswordForm: () => void;
-  changeResetEncryptForm: () => void;
-  changeSignUpForm: () => void;
-  pressLoginUserAccount: (email: string, password: string) => void;
-  pressSignupUserAccount: (email: string, password: string) => void;
-  pressResetUserPassword: (email: string) => void;
-  pressUpdateUserProfile: (displayName: string, photoURL: string) => void;
-  pressChangeUserPassword: (oldPassword: string, password: string) => void;
-  pressDeleteUserAccount: (password: string) => void;
-  pressChangeEncryptPassword: (oldPassword: string, password: string) => void;
-  pressRestoreEncryptKey: (password: string) => void;
-  pressRegistEncryptPassword: (password: string) => void;
-  pressBackupEncryptPassword: (password: string) => void;
-  pressResetEncryptKey: (password: string) => void;
-  pressDeleteAllProjects: (password: string) => void;
-  pressClose: () => void;
-}
-
-export default function Account(props: Props) {
+export default function Account() {
   const {
     user,
     accountFormState,
@@ -39,7 +16,6 @@ export default function Account(props: Props) {
     changeResetEncryptForm,
     changeSignUpForm,
     pressLoginUserAccount,
-    //pressGoogleLogin,
     pressSignupUserAccount,
     pressResetUserPassword,
     pressUpdateUserProfile,
@@ -52,7 +28,7 @@ export default function Account(props: Props) {
     pressResetEncryptKey,
     pressDeleteAllProjects,
     pressClose,
-  } = props;
+  } = useContext(AccountContext);
 
   const [displayName, setDisplayName] = useState(user.displayName ? user.displayName : '');
   const [photoURL, setPhotoURL] = useState(user.photoURL ? user.photoURL : '');
