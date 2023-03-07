@@ -27,10 +27,7 @@ export type UseProjectReturnType = {
     message: string;
   }>;
   syncPosition: (shouldSync: boolean) => void;
-  closeProject: () => {
-    isOK: boolean;
-    message: string;
-  };
+  clearProject: () => void;
   saveProjectSetting: () => Promise<{
     isOK: boolean;
     message: string;
@@ -43,7 +40,6 @@ export const useProject = (): UseProjectReturnType => {
   const user = useSelector((state: AppState) => state.user);
   const isSynced = useSelector((state: AppState) => state.settings.isSynced);
   const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const projectRegion = useSelector((state: AppState) => state.settings.projectRegion);
   const projects = useSelector((state: AppState) => state.projects);
   const project = useMemo(() => projects.find((d) => d.id === projectId), [projectId, projects]);
@@ -106,12 +102,7 @@ export const useProject = (): UseProjectReturnType => {
     [dispatch, project, user]
   );
 
-  const closeProject = useCallback(() => {
-    //データ、レイヤ、地図情報を初期状態にする。
-    if (tracking !== undefined) {
-      return { isOK: false, message: t('hooks.message.finishTrackking') };
-    }
-
+  const clearProject = useCallback(() => {
     dispatch(
       editSettingsAction({
         role: undefined,
@@ -126,8 +117,7 @@ export const useProject = (): UseProjectReturnType => {
     dispatch(setLayersAction(createLayersInitialState()));
     dispatch(setDataSetAction(createDataSetInitialState()));
     dispatch(setTileMapsAction(createTileMapsInitialState()));
-    return { isOK: true, message: '' };
-  }, [dispatch, tracking]);
+  }, [dispatch]);
 
   const saveProjectSetting = useCallback(async () => {
     //コモンデータの写真はあればアップロードする
@@ -169,7 +159,7 @@ export const useProject = (): UseProjectReturnType => {
     downloadData,
     uploadData,
     syncPosition,
-    closeProject,
+    clearProject,
     saveProjectSetting,
   } as const;
 };

@@ -1,8 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Platform } from 'react-native';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
-import { FUNC_PROJECT } from '../constants/AppConstants';
 import { useAccount } from '../hooks/useAccount';
 import { t } from '../i18n/config';
 import { Props_Account } from '../routes';
@@ -12,8 +11,16 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     user,
     accountMessage,
     accountFormState,
+    isLoading,
     setAccountFormState,
     setAccountMessage,
+    checkPassword,
+    checkUserPassword,
+    checkEncryptPassword,
+    checkEmail,
+    checkProfile,
+    initializeEncript,
+    sendConfirmEMail,
     login,
     logout,
     signUp,
@@ -29,58 +36,59 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     deleteAllProjects,
   } = useAccount(route.params?.accountFormState, route.params?.message);
 
-  const [isLoading, setIsLoading] = useState(false);
-
   const pressLoginUserAccount = useCallback(
     async (email: string, password: string) => {
-      setIsLoading(true);
-      const { isOK } = await login(email, password);
-      setIsLoading(false);
-      if (isOK) {
-        if (FUNC_PROJECT) {
-          navigation.navigate('Projects');
-        } else {
-          navigation.navigate('Home');
-        }
-      }
+      const checkEmailResult = checkEmail(email);
+      if (!checkEmailResult.isOK) return;
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
+      const loginResult = await login(email, password);
+      if (!loginResult.isOK || loginResult.authUser === undefined) return;
+      const initializeEncriptResult = await initializeEncript(loginResult.authUser);
+      if (!initializeEncriptResult.isOK) return;
+      setAccountMessage('');
+      navigation.navigate('Projects');
     },
-    [login, navigation]
+    [checkEmail, checkPassword, initializeEncript, login, navigation, setAccountMessage]
   );
 
   const pressSignupUserAccount = useCallback(
     async (email: string, password: string) => {
-      setIsLoading(true);
-      const { isOK } = await signUp(email, password);
-      setIsLoading(false);
-      if (isOK) {
-        await AlertAsync(t('Account.alert.activate'));
-        if (Platform.OS === 'web') {
-          navigation.navigate('Account', {});
-        } else {
-          navigation.navigate('Home');
-        }
+      const checkEmailResult = checkEmail(email);
+      if (!checkEmailResult.isOK) return;
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
+      const signUpResult = await signUp(email, password);
+      if (!signUpResult.isOK) return;
+      const sendConfirmEMailResult = await sendConfirmEMail();
+      if (!sendConfirmEMailResult.isOK) return;
+      setAccountMessage('');
+
+      await AlertAsync(t('Account.alert.activate'));
+      if (Platform.OS === 'web') {
+        navigation.navigate('Account', {});
       } else {
+        navigation.navigate('Home');
       }
     },
-    [navigation, signUp]
+    [checkEmail, checkPassword, navigation, sendConfirmEMail, setAccountMessage, signUp]
   );
 
   const pressResetUserPassword = useCallback(
     async (email: string) => {
-      setIsLoading(true);
-      const { isOK } = await resetUserPassword(email);
-      setIsLoading(false);
-      if (isOK) {
-        await AlertAsync(t('Account.alert.resetPassword'));
-        if (Platform.OS === 'web') {
-          navigation.navigate('Account', {});
-        } else {
-          navigation.navigate('Home');
-        }
+      const checkEmailResult = checkEmail(email);
+      if (!checkEmailResult.isOK) return;
+      const resetUserPasswordResult = await resetUserPassword(email);
+      if (!resetUserPasswordResult.isOK) return;
+      setAccountMessage('');
+      await AlertAsync(t('Account.alert.resetPassword'));
+      if (Platform.OS === 'web') {
+        navigation.navigate('Account', {});
       } else {
+        navigation.navigate('Home');
       }
     },
-    [navigation, resetUserPassword]
+    [checkEmail, navigation, resetUserPassword, setAccountMessage]
   );
 
   const pressClose = useCallback(async () => {
@@ -99,50 +107,49 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
 
   const pressUpdateUserProfile = useCallback(
     async (displayName: string, photoURL: string) => {
-      setIsLoading(true);
-      const { isOK } = await updateUserProfile(displayName, photoURL);
-      setIsLoading(false);
-      if (isOK) {
-        await AlertAsync(t('Account.alert.updateUserProfile'));
-        navigation.navigate('Home');
-      } else {
-      }
+      const checkProfileResult = checkProfile(displayName, photoURL);
+      if (!checkProfileResult.isOK) return;
+      const updateUserProfileResult = await updateUserProfile(displayName, photoURL);
+      if (!updateUserProfileResult.isOK) return;
+      setAccountMessage('');
+      await AlertAsync(t('Account.alert.updateUserProfile'));
+      navigation.navigate('Home');
     },
-    [navigation, updateUserProfile]
+    [checkProfile, navigation, setAccountMessage, updateUserProfile]
   );
 
   const pressChangeUserPassword = useCallback(
     async (oldPassword: string, password: string) => {
-      setIsLoading(true);
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
       const { isOK } = await changeUserPassword(oldPassword, password);
-      setIsLoading(false);
-      if (isOK) {
-        await AlertAsync(t('Account.alert.changeUserPassword'));
-        navigation.navigate('Home');
-      } else {
-      }
+      if (!isOK) return;
+      setAccountMessage('');
+      await AlertAsync(t('Account.alert.changeUserPassword'));
+      navigation.navigate('Home');
     },
-    [changeUserPassword, navigation]
+    [changeUserPassword, checkPassword, navigation, setAccountMessage]
   );
 
   const pressChangeEncryptPassword = useCallback(
     async (oldPassword: string, password: string) => {
-      setIsLoading(true);
+      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await changeEncryptPassword(oldPassword, password);
-      setIsLoading(false);
-      if (isOK) {
-        await AlertAsync(t('Account.alert.changeEncryptPassword'));
-        navigation.navigate('Home');
-      }
+      if (!isOK) return;
+      setAccountMessage('');
+      await AlertAsync(t('Account.alert.changeEncryptPassword'));
+      navigation.navigate('Home');
     },
-    [changeEncryptPassword, navigation]
+    [changeEncryptPassword, checkEncryptPassword, navigation, setAccountMessage]
   );
 
   const pressRestoreEncryptKey = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await restoreEncryptKey(password);
-      setIsLoading(false);
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailRestoreEncryptKey'));
         await logout();
@@ -150,14 +157,16 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         navigation.navigate('Home');
       }
     },
-    [logout, navigation, restoreEncryptKey]
+    [checkEncryptPassword, logout, navigation, restoreEncryptKey, setAccountMessage]
   );
 
   const pressRegistEncryptPassword = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await registEncryptPassword(password);
-      setIsLoading(false);
+
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailRegistEncryptPassword'));
         await logout();
@@ -165,14 +174,15 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         navigation.navigate('Home');
       }
     },
-    [logout, navigation, registEncryptPassword]
+    [checkEncryptPassword, logout, navigation, registEncryptPassword, setAccountMessage]
   );
 
   const pressBackupEncryptPassword = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkEncryptPasswordResult = checkEncryptPassword(password);
+      if (!checkEncryptPasswordResult.isOK) return;
       const { isOK } = await backupEncryptPassword(password);
-      setIsLoading(false);
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailBackupEncryptPassword'));
         await logout();
@@ -186,14 +196,17 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         }
       }
     },
-    [backupEncryptPassword, logout, navigation]
+    [backupEncryptPassword, checkEncryptPassword, logout, navigation, setAccountMessage]
   );
 
   const pressResetEncryptKey = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
+      const checkUserPasswordResult = await checkUserPassword(password);
+      if (!checkUserPasswordResult.isOK) return;
       const { isOK } = await resetEncryptKey(password);
-      setIsLoading(false);
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailResetEncryptKey'));
       } else {
@@ -202,14 +215,18 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         setAccountFormState('backupEncryptPassword');
       }
     },
-    [resetEncryptKey, setAccountFormState]
+    [checkPassword, checkUserPassword, resetEncryptKey, setAccountFormState, setAccountMessage]
   );
 
   const pressDeleteUserAccount = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
+      const checkUserPasswordResult = await checkUserPassword(password);
+      if (!checkUserPasswordResult.isOK) return;
+
       const { isOK } = await deleteUserAccount(password);
-      setIsLoading(false);
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(t('Account.alert.FailDeleteUserAccount'));
       } else {
@@ -222,14 +239,17 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         }
       }
     },
-    [deleteUserAccount, logout, navigation]
+    [checkPassword, checkUserPassword, deleteUserAccount, logout, navigation, setAccountMessage]
   );
 
   const pressDeleteAllProjects = useCallback(
     async (password: string) => {
-      setIsLoading(true);
+      const checkPasswordResult = checkPassword(password);
+      if (!checkPasswordResult.isOK) return;
+      const checkUserPasswordResult = await checkUserPassword(password);
+      if (!checkUserPasswordResult.isOK) return;
       const { isOK, message } = await deleteAllProjects(password);
-      setIsLoading(false);
+      setAccountMessage('');
       if (!isOK) {
         await AlertAsync(message);
       } else {
@@ -237,7 +257,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         navigation.navigate('Home');
       }
     },
-    [deleteAllProjects, navigation]
+    [checkPassword, checkUserPassword, deleteAllProjects, navigation, setAccountMessage]
   );
 
   const changeResetForm = useCallback(() => {
