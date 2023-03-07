@@ -8,6 +8,7 @@ import { useProjects } from '../hooks/useProjects';
 import { validateMemberLicense, validateProjectLicense } from '../utils/Project';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
+import { ProjectEditContext } from '../contexts/ProjectEdit';
 
 export default function ProjectEditContainer({ navigation, route }: Props_ProjectEdit) {
   const {
@@ -152,30 +153,34 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   }, [isEdited, navigation]);
 
   return (
-    <ProjectEdit
-      project={targetProject}
-      isProjectOpen={isProjectOpen}
-      isEdited={isEdited}
-      isOwner={isOwner}
-      isOwnerAdmin={isOwnerAdmin}
-      isLoading={isLoading}
-      isNew={isNew}
-      createType={createType}
-      pickerValue={copiedProjectName ?? ''}
-      pickerItems={ownerProjectNames}
-      changeText={changeText}
-      changeCreateType={setCreateType}
-      changeDuplicateProjectName={setCopiedProjectName}
-      changeMemberText={changeMemberText}
-      changeAdmin={changeAdmin}
-      pressAddMember={pressAddMember}
-      pressDeleteMember={pressDeleteMember}
-      pressSaveProject={pressSaveProject}
-      pressOpenProject={pressOpenProject}
-      pressExportProject={pressExportProject}
-      pressDeleteProject={pressDeleteProject}
-      pressSettingProject={pressSettingProject}
-      gotoBack={gotoBack}
-    />
+    <ProjectEditContext.Provider
+      value={{
+        project: targetProject,
+        isProjectOpen,
+        isEdited,
+        isOwner,
+        isOwnerAdmin,
+        isLoading,
+        isNew,
+        createType,
+        pickerValue: copiedProjectName ?? '',
+        pickerItems: ownerProjectNames,
+        changeText,
+        changeCreateType: setCreateType,
+        changeDuplicateProjectName: setCopiedProjectName,
+        changeMemberText,
+        changeAdmin,
+        pressAddMember,
+        pressDeleteMember,
+        pressSaveProject,
+        pressOpenProject,
+        pressExportProject,
+        pressDeleteProject,
+        pressSettingProject,
+        gotoBack,
+      }}
+    >
+      <ProjectEdit />
+    </ProjectEditContext.Provider>
   );
 }

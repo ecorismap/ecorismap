@@ -1,26 +1,17 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import { ProjectType, UserType } from '../../types';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { RectButton2 } from '../atoms';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
+import { ProjectsContext } from '../../contexts/Projects';
 
-interface Props {
-  projects: ProjectType[];
-  user: UserType;
-  isLoading: boolean;
-  onReloadProjects: () => void;
-  pressAddProject: () => void;
-  gotoProject: (index: number) => void;
-  gotoBack: () => void;
-}
-
-export default function Projects(props: Props) {
-  const { projects, user, isLoading, onReloadProjects, pressAddProject, gotoProject, gotoBack } = props;
+export default function Projects() {
+  const { projects, user, isLoading, onReloadProjects, pressAddProject, gotoProject, gotoBack } =
+    useContext(ProjectsContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
