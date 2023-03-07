@@ -51,7 +51,7 @@ export interface UserType {
   photoURL: string | null;
 }
 
-export interface LogginUserType {
+export interface LoginUserType {
   uid: string;
   email: string;
   displayName: string;

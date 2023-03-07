@@ -439,7 +439,7 @@
       "errorDownload": "Map download failed. \nPlease check the network environment."
     },
     "message": {
-      "pleaseLogin": "Please login",
+      "pleaseLogin": "Please log in again.",
       "cannotUploadData": "Cannot upload because the layer settings have been updated.",
       "noCopyProject": "No project to copy",
       "unknownError": "Unknown error.",
