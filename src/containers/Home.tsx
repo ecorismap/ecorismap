@@ -529,49 +529,36 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [navigation, projectRegion]);
 
   const pressDownloadData = useCallback(async () => {
-    //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
-    const shouldPhotoDownload = false;
-    // if (Platform.OS !== 'web') {
-    //   //Webだと1枚ずつダウンロードになってしまうからダウンロードしない。
-    //   const ret = await ConfirmAsync('写真もダウンロードしますか？');
-    //   if (ret) shouldPhotoDownload = true;
-    // }
-    setIsLoading(true);
-    const { isOK, message } = await downloadData(shouldPhotoDownload);
-    setIsLoading(false);
-    if (!isOK) {
-      await AlertAsync(message);
-    } else {
+    try {
+      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
+      const shouldPhotoDownload = false;
+      setIsLoading(true);
+      await downloadData(shouldPhotoDownload);
+      setIsLoading(false);
       await AlertAsync(t('Home.alert.download'));
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
     }
   }, [downloadData]);
 
   const pressUploadData = useCallback(async () => {
-    //写真もアップロードするか聞く？
-
-    // const ret = await ConfirmAsync('写真もアップロードしますか？');
-    // if (!ret) shouldPhotoUpload = false;
-    if (project === undefined) return;
-    const { isOK: hasUploadLicense, message: licenseMessage } = validateStorageLicense(
-      project.license,
-      project.storage.count
-    );
-    if (!hasUploadLicense) {
-      if (Platform.OS === 'web') {
-        Alert.alert('', licenseMessage + t('Home.alert.uploadLicenseWeb'));
-      } else {
-        Alert.alert('', t('Home.alert.uploadLicense'));
+    try {
+      const storageLicenseResult = validateStorageLicense(project);
+      if (!storageLicenseResult.isOK) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+        } else {
+          Alert.alert('', t('Home.alert.uploadLicense'));
+        }
       }
-    }
-
-    setIsLoading(true);
-    const { isOK, message } = await uploadData(hasUploadLicense);
-    setIsLoading(false);
-    if (!isOK) {
-      await AlertAsync(message);
-      return;
-    } else {
+      setIsLoading(true);
+      await uploadData(storageLicenseResult.isOK);
+      setIsLoading(false);
       await AlertAsync(t('Home.alert.upload'));
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
     }
   }, [project, uploadData]);
 
@@ -595,17 +582,26 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [clearProject, tracking]);
 
   const pressSaveProjectSetting = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
-    if (!ret) return;
-    setIsLoading(true);
-    const { isOK, message } = await saveProjectSetting();
-    setIsLoading(false);
-    if (!isOK) {
-      await AlertAsync(message);
-    } else {
+    try {
+      const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
+      if (!ret) return;
+      const storageLicenseResult = validateStorageLicense(project);
+      if (!storageLicenseResult.isOK) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+        } else {
+          Alert.alert('', t('Home.alert.uploadLicense'));
+        }
+      }
+      setIsLoading(true);
+      await saveProjectSetting(storageLicenseResult.isOK);
+      setIsLoading(false);
       await AlertAsync(t('Home.alert.saveProject'));
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
     }
   }, [clearProject, navigation, project, saveProjectSetting]);
 
