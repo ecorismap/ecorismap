@@ -125,7 +125,7 @@ export type UseRepositoryReturnType = {
   }>;
   uploadData: (
     project_: ProjectType,
-    hasUploadLicense: boolean,
+    isLicenseOK: boolean,
     uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
   ) => Promise<{
     isOK: boolean;
@@ -190,7 +190,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const updateStoragePhoto = useCallback(
     async (
-      hasUploadLicense: boolean,
+      isLicenseOK: boolean,
       data: RecordType,
       project: ProjectType,
       layerId: string,
@@ -204,7 +204,7 @@ export const useRepository = (): UseRepositoryReturnType => {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
           if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
-            if (!hasUploadLicense) {
+            if (!isLicenseOK) {
               //ライセンス制限あればアップロードしない
               return photo;
             }
@@ -235,7 +235,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const updateStoragePhotos = useCallback(
     async (
-      hasUploadLicense: boolean,
+      isLicenseOK: boolean,
       data: RecordType[],
       project: ProjectType,
       layerId: string,
@@ -243,7 +243,7 @@ export const useRepository = (): UseRepositoryReturnType => {
     ) => {
       return await Promise.all(
         data.map((d: RecordType) => {
-          return updateStoragePhoto(hasUploadLicense, d, project, layerId, photoFields);
+          return updateStoragePhoto(isLicenseOK, d, project, layerId, photoFields);
         })
       );
     },
@@ -253,7 +253,7 @@ export const useRepository = (): UseRepositoryReturnType => {
   const uploadData = useCallback(
     async (
       project: ProjectType,
-      hasUploadLicense: boolean,
+      isLicenseOK: boolean,
       uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
     ) => {
       //ToDo バッチアップロード?
@@ -285,13 +285,7 @@ export const useRepository = (): UseRepositoryReturnType => {
         const isTemplate = uploadType === 'Template';
         const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
 
-        const updatedData = await updateStoragePhotos(
-          hasUploadLicense,
-          targetRecordSet,
-          project,
-          layer.id,
-          photoFields
-        );
+        const updatedData = await updateStoragePhotos(isLicenseOK, targetRecordSet, project, layer.id, photoFields);
         //データごと削除された写真をまとめて削除
         await Promise.all(
           photosToBeDeleted.map(async (photo) => {

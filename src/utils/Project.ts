@@ -101,7 +101,14 @@ export const validateMemberLicense = (projectLicense: License, memberCount: numb
   return { isOK: true, message: '' };
 };
 
-export const validateStorageLicense = (projectLicense: License, storageCount: number) => {
+export const validateStorageLicense = (project: ProjectType | undefined) => {
+  if (project === undefined)
+    return {
+      isOK: false,
+      message: t('utils.Project.message.validateUndefined'),
+    };
+  const projectLicense = project.license;
+  const storageCount = project.storage.count;
   if (!FUNC_CHECK_LICENSE) return { isOK: true, message: '' };
   if (projectLicense === 'Free' && storageCount >= 0.1) {
     return {
