@@ -11,7 +11,7 @@ import { formattedInputs } from '../utils/Format';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { getAllProjects } from '../lib/firebase/firestore';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { hasLoggedIn } from '../utils/Account';
+import { isLoggedIn } from '../utils/Account';
 import { createProjectsInitialState, setProjectsAction } from '../modules/projects';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
@@ -323,7 +323,7 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
   }, []);
 
   const deleteAllProjects = useCallback(async () => {
-    if (!hasLoggedIn(user)) {
+    if (!isLoggedIn(user)) {
       return { isOK: false, message: t('hooks.message.pleaseLogin') };
     }
 
@@ -355,7 +355,7 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
 
   const deleteUserAccount = useCallback(
     async (password: string) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         setAccountMessage(t('hooks.message.pleaseReLogin'));
         return { isOK: false };
       }
@@ -396,7 +396,7 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
       if (FUNC_LOGIN && Platform.OS === 'web') {
         await initFirebaseAuth();
       }
-      if (hasLoggedIn(user)) {
+      if (isLoggedIn(user)) {
         const { isOK, message: initUserMessage } = await e3kit.initializeUser(user.uid);
         if (!isOK) {
           console.log('useAccountError:', initUserMessage);

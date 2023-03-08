@@ -9,7 +9,7 @@ import { useRepository } from './useRepository';
 import { hasOpened, validateStorageLicense } from '../utils/Project';
 import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import * as projectStore from '../lib/firebase/firestore';
-import { hasLoggedIn } from '../utils/Account';
+import { isLoggedIn } from '../utils/Account';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 
@@ -89,7 +89,7 @@ export const useProject = (): UseProjectReturnType => {
   const syncPosition = useCallback(
     (shouldSync: boolean) => {
       if (project === undefined) return;
-      if (!hasLoggedIn(user) || !hasOpened(project.id)) {
+      if (!isLoggedIn(user) || !hasOpened(project.id)) {
         return;
       }
       if (shouldSync) {
