@@ -117,7 +117,12 @@
     "version": "バージョン",
     "distance": "距離",
     "customField": "カスタムフィールド",
-    "custom": "カスタム"
+    "custom": "カスタム",
+    "message": {
+      "failGetUids": "ユーザーIDの取得に失敗しました",
+      "failGetProjects": "プロジェクトの取得に失敗しました",
+      "cannotLoadProject": "読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。"
+    }
   },
   "Home": {
     "confirm": {

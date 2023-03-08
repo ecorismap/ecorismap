@@ -20,17 +20,16 @@ import {
 import sizeof from 'firestore-size';
 import { decryptEThree as dec, encryptEThree as enc } from '../virgilsecurity/e3kit';
 import firebase, { firestore, functions } from './firebase';
+import { t } from '../../i18n/config';
 
 export const getUidByEmail = async (email: string) => {
   try {
     const getUid = functions.httpsCallable('getUidByEmail');
     const { data } = await getUid({ email: email });
-    if (data === null) {
-      return { isOK: false, message: 'ユーザーIDの取得に失敗しました', uid: undefined };
-    }
-    return { isOK: true, message: '', uid: data as string };
+    if (data === null) throw new Error(t('common.message.failGetUids'));
+    return data as string;
   } catch {
-    return { isOK: false, message: 'ユーザーIDの取得に失敗しました', uid: undefined };
+    throw new Error(t('common.message.failGetUids'));
   }
 };
 
@@ -40,8 +39,7 @@ export const getUidsByEmails = async (emails: string[]) => {
     const { data } = await getUids({ emails: emails });
     return data as (string | null)[];
   } catch (e) {
-    console.log(e);
-    return undefined;
+    throw new Error(t('common.message.failGetUids'));
   }
 };
 
@@ -77,15 +75,13 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     });
     const projects = await Promise.all(result);
     if (projects.includes(undefined)) {
-      const message =
-        '読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。';
       const filteredProjects = projects.filter((v): v is ProjectType => v !== undefined);
-      return { isOK: true, message, projects: filteredProjects };
+      return { isOK: true, message: t('common.message.cannotLoadProject'), projects: filteredProjects };
     }
     return { isOK: true, message: '', projects: projects as ProjectType[] };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: 'プロジェクトの取得に失敗しました', projects: undefined };
+    throw new Error(t('common.message.failGetProjects'));
   }
 };
 

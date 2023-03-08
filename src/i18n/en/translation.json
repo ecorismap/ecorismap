@@ -101,7 +101,11 @@
     "point": "point",
     "track": "track",
     "polygon": "polygon",
-    "message": {},
+    "message": {
+      "failGetUids": "Failed to get user ID",
+      "failGetProjects": "Failed to get project",
+      "cannotLoadProject": "Some projects cannot be loaded. \nAsk the project owner to reset your account."
+    },
     "login": "Login",
     "manual": "manual",
     "issue": "defect report",
