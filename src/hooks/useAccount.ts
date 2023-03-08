@@ -9,7 +9,6 @@ import { AppState } from '../modules';
 import { AccountFormStateType, UserType } from '../types';
 import { formattedInputs } from '../utils/Format';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
-import { getAllProjects } from '../lib/firebase/firestore';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { isLoggedIn } from '../utils/Account';
 import { createProjectsInitialState, setProjectsAction } from '../modules/projects';
@@ -327,7 +326,11 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
       return { isOK: false, message: t('hooks.message.pleaseLogin') };
     }
 
-    const { isOK: isProjectsOK, message: getProjectsMessage, projects } = await getAllProjects(user.uid, true);
+    const {
+      isOK: isProjectsOK,
+      message: getProjectsMessage,
+      projects,
+    } = await projectStore.getAllProjects(user.uid, true);
     if (!isProjectsOK || projects === undefined) {
       return { isOK: false, message: getProjectsMessage };
     }
