@@ -14,7 +14,7 @@ import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet'
 import { useGPS } from './useGPS';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
-import { hasLoggedIn } from '../utils/Account';
+import { isLoggedIn } from '../utils/Account';
 import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
@@ -105,7 +105,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     async (gpsState_: LocationStateType) => {
       if (gpsState_ === 'off') {
         await stopGPS();
-        if (hasLoggedIn(user) && hasOpened(projectId)) {
+        if (isLoggedIn(user) && hasOpened(projectId)) {
           projectStore.deleteCurrentPosition(user.uid, projectId);
           setCurrentLocation(null);
         }
@@ -155,7 +155,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         }
 
         dispatch(editSettingsAction({ tracking: undefined }));
-        if (hasLoggedIn(user) && hasOpened(projectId)) {
+        if (isLoggedIn(user) && hasOpened(projectId)) {
           projectStore.deleteCurrentPosition(user.uid, projectId);
           setCurrentLocation(null);
         }

@@ -9,40 +9,38 @@ import { t } from '../i18n/config';
 import { Props_Projects } from '../routes';
 import { validateProjectLicense } from '../utils/Project';
 import { ProjectsContext } from '../contexts/Projects';
-import { AppState } from '../modules';
-import { useSelector } from 'react-redux';
-import { hasLoggedIn } from '../utils/Account';
 import { usePermission } from '../hooks/usePermission';
 
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
-  const user = useSelector((state: AppState) => state.user);
   const { isSettingProject } = usePermission();
-  const { isLoading, projects, getOwnerProjectsCount, fetchProjects, generateProject } = useProjects();
+  const { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } = useProjects();
   const { customerLicense } = usePurchasesWeb();
   const { closeData } = useScreen();
 
   const pressAddProject = useCallback(() => {
-    if (!hasLoggedIn(user)) {
-      Alert.alert('', t('hooks.message.pleaseLogin'));
-      return;
+    try {
+      if (isSettingProject) {
+        Alert.alert('', t('hooks.message.cannotAddProject'));
+        return;
+      }
+      const { isOK: licenseIsOK, message: licenseMessage } = validateProjectLicense(
+        customerLicense,
+        ownerProjectsCount()
+      );
+      if (!licenseIsOK) {
+        Alert.alert('', licenseMessage + t('Projects.alert.addProject'));
+        return;
+      }
+      navigation.navigate('ProjectEdit', {
+        previous: 'Projects',
+        project: generateProject(),
+        isNew: true,
+        createType: 'DEFAULT',
+      });
+    } catch (e: any) {
+      Alert.alert('error', e.message);
     }
-    if (isSettingProject) {
-      Alert.alert('', t('hooks.message.cannotAddProject'));
-      return;
-    }
-    const projectsCount = getOwnerProjectsCount(user);
-    const { isOK: licenseIsOK, message: licenseMessage } = validateProjectLicense(customerLicense, projectsCount);
-    if (!licenseIsOK) {
-      Alert.alert('', licenseMessage + t('Projects.alert.addProject'));
-      return;
-    }
-    navigation.navigate('ProjectEdit', {
-      previous: 'Projects',
-      project: generateProject(user),
-      isNew: true,
-      createType: 'DEFAULT',
-    });
-  }, [customerLicense, generateProject, getOwnerProjectsCount, isSettingProject, navigation, user]);
+  }, [customerLicense, generateProject, isSettingProject, navigation, ownerProjectsCount]);
 
   const gotoBack = useCallback(async () => {
     closeData();
@@ -57,15 +55,15 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   );
 
   const reloadProjects = useCallback(async () => {
-    if (!hasLoggedIn(user)) {
-      Alert.alert('', t('hooks.message.pleaseLogin'));
-      return;
+    try {
+      const { isOK, message } = await fetchProjects();
+      if (!isOK) {
+        await AlertAsync(message);
+      }
+    } catch (e: any) {
+      Alert.alert('error', e.message);
     }
-    const { isOK, message } = await fetchProjects(user);
-    if (!isOK) {
-      await AlertAsync(message);
-    }
-  }, [fetchProjects, user]);
+  }, [fetchProjects]);
 
   useEffect(() => {
     if (projects.length === 0 || route.params?.reload) {

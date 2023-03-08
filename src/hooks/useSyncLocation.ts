@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import dayjs from '../i18n/dayjs';
 import { decryptEThree as dec } from '../lib/virgilsecurity/e3kit';
-import { hasLoggedIn } from '../utils/Account';
+import { isLoggedIn } from '../utils/Account';
 import { hasOpened } from '../utils/Project';
 import { firestore } from '../lib/firebase/firebase';
 
@@ -56,7 +56,7 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
       //ログインしてて、プロジェクトに参加していて、シンクで、60秒経ってたら
 
       if (currentLocation === null) return;
-      if (hasLoggedIn(user) && hasOpened(projectId)) {
+      if (isLoggedIn(user) && hasOpened(projectId)) {
         if (isSynced && dayjs().diff(lastUploadTime.current) / (60 * 1000) > 0) {
           //console.log('$$$ upload pos $$$', coords);
           const { isOK, message } = await uploadCurrentPosition(user.uid, projectId!, {
@@ -76,7 +76,7 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
 
   useEffect(() => {
     if (isSynced === true && syncSubscriber.current === undefined) {
-      if (hasLoggedIn(user) && hasOpened(projectId)) {
+      if (isLoggedIn(user) && hasOpened(projectId)) {
         console.log('sync start');
         syncSubscriber.current = syncCurrentPosition(user.uid, projectId!);
       }

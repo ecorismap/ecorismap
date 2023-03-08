@@ -21,7 +21,7 @@ import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
-import { hasLoggedIn } from '../utils/Account';
+import { isLoggedIn } from '../utils/Account';
 import { createRecordSetFromTemplate, getTargetRecordSet } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
@@ -259,7 +259,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       //ToDo バッチアップロード?
       //firestore上の対象レイヤの自分のデータを一旦すべて削除
 
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const storeUpdatedAt = await projectStore.getSettingsUpdatedAt(project.id);
@@ -350,7 +350,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const uploadProjectSettings = useCallback(
     async (project_: ProjectType) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
@@ -372,7 +372,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const uploadDefaultProjectSettings = useCallback(
     async (project_: ProjectType) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
@@ -399,7 +399,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const uploadCurrentProjectSettingsAndData = useCallback(
     async (project_: ProjectType, isPhotoUpload: boolean) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK: projectOK, message: projectMessage } = await projectStore.uploadProjectSettings(
@@ -428,7 +428,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const copyProjectSettingsAndCommonData = useCallback(
     async (project: ProjectType, copiedProjectName: string, isPhotoUpload: boolean) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const copiedProject = projects.find((v: ProjectType) => v.name === copiedProjectName);
@@ -489,7 +489,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const updateProject = useCallback(
     async (project: ProjectType) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message } = await projectStore.updateProject(project);
@@ -658,7 +658,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const downloadPrivateData = useCallback(
     async (project_: ProjectType, shouldPhotoDownload: boolean) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, data } = await projectStore.downloadPrivateData(user.uid, project_.id);
@@ -681,7 +681,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const downloadTemplateData = useCallback(
     async (project_: ProjectType, shouldPhotoDownload: boolean, privateLayerIds: string[]) => {
-      if (!hasLoggedIn(user)) {
+      if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);

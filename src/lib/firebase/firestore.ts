@@ -520,3 +520,17 @@ export const deleteCurrentPosition = async (userId: string, projectId: string) =
 export const toDate = (timestamp: firebase.firestore.Timestamp) => {
   return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 100000);
 };
+
+export const updateLicense = async (project: ProjectType) => {
+  return await new Promise<{ isOK: boolean; message: string }>((resolve) => {
+    //@ts-ignore
+    const unsubscribe = firestore.doc(`projects/${project.id}`).onSnapshot(async (snapshot) => {
+      if (!snapshot.exists) return;
+      const license = snapshot.get('license');
+      if (license !== undefined && license !== 'Unknown') {
+        unsubscribe();
+        resolve({ isOK: true, message: '' });
+      }
+    });
+  });
+};
