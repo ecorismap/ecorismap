@@ -532,18 +532,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
     async function importExternalFiles() {
       const files = await getReceivedFiles();
-      if (files === undefined || files.length === 0) return;
-      const ext = getExt(files[0].name)?.toLowerCase();
-      if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) return;
-      if (files[0].size === undefined) {
+      if (files === undefined) return;
+      const file = files.find((f) => {
+        const ext = getExt(f.name)?.toLowerCase();
+        if (ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip') return true;
+      });
+      if (file === undefined) return;
+      if (file.size === undefined) {
         await AlertAsync(t('hooks.message.cannotGetFileSize'));
         return;
       }
-      if (files[0].size / 1024 > 1000) {
+      if (file.size / 1024 > 1000) {
         await AlertAsync(t('hooks.message.cannotImportData'));
         return;
       }
-      const { message } = await importGeoFile(files[0].uri, files[0].name);
+      const { message } = await importGeoFile(file.uri, file.name);
       if (message !== '') await AlertAsync(message);
       await deleteReceivedFiles(files);
     }
