@@ -81,7 +81,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressSvgView,
     moveSvgView,
     releaseSvgView,
-    releaseSvgInfoTool,
     savePoint,
     saveLine,
     savePolygon,
@@ -240,6 +239,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }, 1);
       }
       selectDrawTool(currentDrawTool);
+    } else {
+      unselectRecord();
     }
   }, [
     currentDrawTool,
@@ -251,6 +252,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     expandData,
     openData,
     navigation,
+    unselectRecord,
   ]);
 
   const onDrop = useCallback(
@@ -288,8 +290,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onReleaseSvgView = useCallback(
     async (event: GestureResponderEvent) => {
       if (isInfoTool(currentDrawTool)) {
-        const { hasDragged } = releaseSvgInfoTool(event);
-        if (hasDragged) return;
         if (isEditingRecord) {
           await AlertAsync(t('Home.alert.discardChanges'));
           return;
@@ -318,7 +318,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     },
     [
       currentDrawTool,
-      releaseSvgInfoTool,
       isEditingRecord,
       selectSingleFeature,
       openData,

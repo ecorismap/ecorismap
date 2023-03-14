@@ -41,7 +41,7 @@ export const Polygon = React.memo((props: Props) => {
           selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
         const polygonColor =
           selectedRecord !== undefined && feature.id === selectedRecord.record?.id
-            ? COLOR.YELLOW
+            ? COLOR.ALFAYELLOW
             : hex2rgba(color, 1 - transparency);
         const borderColor =
           selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
