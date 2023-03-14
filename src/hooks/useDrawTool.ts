@@ -49,7 +49,7 @@ import { MapRef } from 'react-map-gl';
 import { useDrawObjects } from './useDrawObjects';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isFreehandTool, isInfoTool, isPlotTool } from '../utils/General';
+import { isFreehandTool, isPlotTool } from '../utils/General';
 
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
@@ -95,9 +95,6 @@ export type UseDrawToolReturnType = {
   pressSvgView: (event: GestureResponderEvent) => void;
   moveSvgView: (event: GestureResponderEvent) => void;
   releaseSvgView: (event: GestureResponderEvent) => void;
-  releaseSvgInfoTool: (event: GestureResponderEvent) => {
-    hasDragged: boolean;
-  };
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -613,7 +610,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       ];
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'MOVE') {
         dragStartCenterPosition.current = {
           startX: pXY[0],
           startY: pXY[1],
@@ -675,7 +672,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       //console.log('##', gesture.numberActiveTouches);
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      if (currentDrawTool === 'MOVE' || isInfoTool(currentDrawTool)) {
+      if (currentDrawTool === 'MOVE') {
         const centerLatLon = currentCenterPosition(pXY);
         if (Platform.OS === 'web') {
           const mapView = (mapViewRef as MapRef).getMap();
@@ -708,25 +705,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
     },
     [currentCenterPosition, currentDrawTool, mapViewRef, moveSvgFreehandTool, moveSvgHisyouTool, moveSvgPlotTool]
-  );
-
-  const hasDragged = (pXY: Position) => {
-    if (Math.abs(dragStartCenterPosition.current.startX - pXY[0]) > 5) return true;
-    if (Math.abs(dragStartCenterPosition.current.startY - pXY[1]) > 5) return true;
-
-    return false;
-  };
-
-  const releaseSvgInfoTool = useCallback(
-    (event: GestureResponderEvent) => {
-      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-
-      showDrawLine();
-      setRedraw(uuidv4());
-      const dragged = hasDragged(pXY);
-      return { hasDragged: dragged };
-    },
-    [showDrawLine]
   );
 
   const releaseSvgView = useCallback(
@@ -894,7 +872,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     pressSvgView,
     moveSvgView,
     releaseSvgView,
-    releaseSvgInfoTool,
     selectSingleFeature,
     resetDrawTools,
     hideDrawLine,
