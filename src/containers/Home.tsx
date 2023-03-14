@@ -239,6 +239,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }, 1);
       }
       selectDrawTool(currentDrawTool);
+    } else {
+      unselectRecord();
     }
   }, [
     currentDrawTool,
@@ -250,6 +252,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     expandData,
     openData,
     navigation,
+    unselectRecord,
   ]);
 
   const onDrop = useCallback(
