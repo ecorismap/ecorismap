@@ -17,6 +17,7 @@ import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
+import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -52,6 +53,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetIndex
   );
   const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const user = useSelector((state: AppState) => state.user);
   const { unselectRecord } = useRecord();
   const { keyboardShown } = useKeyboard();
   const { hisyouLayerId } = useHisyouToolSetting();
@@ -158,11 +161,16 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         Alert.alert('', t('DataEdit.confirm.takePhoto'));
         return;
       }
-      const photo = await takePhoto(fieldName);
+      const folder =
+        projectId !== undefined
+          ? `${PHOTO_FOLDER}/${projectId}/${targetLayer.id}/${user.uid}`
+          : `${PHOTO_FOLDER}/LOCAL/${targetLayer.id}/OWNER`;
+      const photo = await takePhoto(folder);
+
       if (photo === undefined) return;
       addPhoto(fieldName, photo);
     },
-    [addPhoto]
+    [addPhoto, projectId, targetLayer.id, user.uid]
   );
 
   const pressPhoto = useCallback(
