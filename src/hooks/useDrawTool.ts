@@ -112,7 +112,7 @@ export type UseDrawToolReturnType = {
 
   hideDrawLine: () => void;
   showDrawLine: () => void;
-  toggleTerrainForWeb: (value: FeatureButtonType) => void;
+  toggleWebTerrainActive: (isActive: boolean) => void;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -821,11 +821,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(uuidv4());
   }, [currentDrawTool, mapRegion, mapSize, mapViewRef, resetDrawTools]);
 
-  const toggleTerrainForWeb = useCallback(
-    (value: FeatureButtonType) => {
+  const toggleWebTerrainActive = useCallback(
+    (isActive: boolean) => {
       if (Platform.OS !== 'web' || mapViewRef === null) return;
       const mapView = (mapViewRef as MapRef).getMap();
-      if (value === 'NONE') {
+      if (isActive) {
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       } else {
         //Terrainが有効の時やビューが回転していると、boundsが正確に取れなくてSVGのラインを正しく変換できないので無効にする。
@@ -876,6 +876,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     resetDrawTools,
     hideDrawLine,
     showDrawLine,
-    toggleTerrainForWeb,
+    toggleWebTerrainActive,
   } as const;
 };
