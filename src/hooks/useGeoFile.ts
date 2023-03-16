@@ -16,7 +16,7 @@ import { kml } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
 
 import { unzipFromUri } from '../utils/Zip';
-import { updateLayerIds } from '../utils/Layer';
+import { updateLayerActiveAndIds } from '../utils/Layer';
 import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { decodeUri } from '../utils/File.web';
 
@@ -147,7 +147,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const jsonFile = files.find((f) => getExt(f) === 'json' && !f.startsWith('__MACOS/'));
       if (jsonFile === undefined) throw 'invalid zip file';
       const jsonDecompressed = await loaded.files[jsonFile].async('text');
-      const importedLayer: LayerType = updateLayerIds(JSON.parse(jsonDecompressed) as LayerType);
+      const importedLayer: LayerType = updateLayerActiveAndIds(JSON.parse(jsonDecompressed) as LayerType);
 
       const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
       if (geojsonFile === undefined) throw 'invalid zip file';

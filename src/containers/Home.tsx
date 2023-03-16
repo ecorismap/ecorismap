@@ -90,7 +90,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     showDrawLine,
     hideDrawLine,
     resetDrawTools,
-    toggleTerrainForWeb,
+    toggleWebTerrainActive,
   } = useDrawTool(mapViewRef.current);
 
   const { addCurrentPoint } = usePointTool();
@@ -166,10 +166,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
-          toggleTerrainForWeb('NONE');
+          toggleWebTerrainActive(true);
         } else {
           setDrawTool(value);
-          toggleTerrainForWeb('LINE');
+          toggleWebTerrainActive(false);
+          await toggleHeadingUp(false);
           await runTutrial('INFOTOOL');
         }
       } else if (isSelectionTool(value)) {
@@ -208,7 +209,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       runTutrial,
       setDrawTool,
       showHisyouToolSetting,
-      toggleTerrainForWeb,
+      toggleHeadingUp,
+      toggleWebTerrainActive,
     ]
   );
 
@@ -331,13 +333,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /************** select button ************/
 
   const selectFeatureButton = useCallback(
-    (value: FeatureButtonType) => {
+    async (value: FeatureButtonType) => {
       setDrawTool('NONE');
-      toggleTerrainForWeb(value);
+      toggleWebTerrainActive(value === 'NONE');
       setFeatureButton(value);
       resetDrawTools();
+      await toggleHeadingUp(false);
     },
-    [resetDrawTools, setFeatureButton, setDrawTool, toggleTerrainForWeb]
+    [setDrawTool, toggleWebTerrainActive, setFeatureButton, resetDrawTools, toggleHeadingUp]
   );
 
   /**************** press ******************/
@@ -398,13 +401,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [stopDownloadTiles]);
 
   const pressCompass = useCallback(async () => {
-    if (headingUp === false && gpsState === 'off' && trackingState === 'off') {
-      // Alert.alert(t('Home.alert.compass'));
-      // return;
-      await toggleGPS('show');
-    }
+    if (isInfoTool(currentDrawTool)) return;
+    if (featureButton !== 'NONE') return;
+    if (headingUp === false && gpsState === 'off' && trackingState === 'off') await toggleGPS('show');
     await toggleHeadingUp(!headingUp);
-  }, [gpsState, headingUp, toggleGPS, toggleHeadingUp, trackingState]);
+  }, [currentDrawTool, featureButton, gpsState, headingUp, toggleGPS, toggleHeadingUp, trackingState]);
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
