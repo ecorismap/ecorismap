@@ -172,7 +172,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
             {
               heading: Math.abs((-1.0 * nearDegree(pos.trueHeading, DEGREE_INTERVAL)) % 360),
             },
-            { duration: 1 }
+            { duration: 300 }
           );
           setMagnetometer(pos);
         };
