@@ -139,8 +139,9 @@ export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'Public
   return targetLayers;
 };
 
-export function updateLayerIds(layer: LayerType) {
+export function updateLayerActiveAndIds(layer: LayerType) {
   const newLayer = cloneDeep(layer);
+  newLayer.active = false;
   newLayer.id = uuidv4();
   newLayer.field.forEach((f) => {
     f.id = uuidv4();
