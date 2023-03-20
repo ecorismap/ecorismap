@@ -33,16 +33,13 @@ export const Point = React.memo((props: Props) => {
               : feature.field[layer.label].toString()
             : '';
         const color = getColor(layer, feature);
-        const pointColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id
-            ? COLOR.YELLOW
-            : getColor(layer, feature);
-        const borderColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
+        const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
+        const pointColor = selected ? COLOR.YELLOW : getColor(layer, feature);
+        const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}
-            tracksViewChanges={true} //iosでラベル変更を表示に反映するため
+            tracksViewChanges={selected} //iosでラベル変更を表示に反映するため
             coordinate={feature.coords}
             opacity={0.8}
             anchor={{ x: 0.5, y: 0.8 }}
