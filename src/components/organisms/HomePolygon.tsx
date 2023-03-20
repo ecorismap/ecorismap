@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
@@ -37,14 +37,10 @@ export const Polygon = React.memo((props: Props) => {
             : '';
         const transparency = layer.colorStyle.transparency;
         const color = getColor(layer, feature);
-        const pointColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
-        const polygonColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id
-            ? COLOR.ALFAYELLOW
-            : hex2rgba(color, 1 - transparency);
-        const borderColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.BLACK : COLOR.WHITE;
+        const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
+        const pointColor = selected ? COLOR.YELLOW : color;
+        const polygonColor = selected ? COLOR.ALFAYELLOW : hex2rgba(color, 1 - transparency);
+        const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
 
         if (zoom >= 11) {
           return (
@@ -61,11 +57,7 @@ export const Polygon = React.memo((props: Props) => {
           );
         } else {
           return (
-            <Marker
-              key={feature.id}
-              coordinate={feature.centroid ?? feature.coords[0]}
-              tracksViewChanges={Platform.OS === 'ios' ? true : false}
-            >
+            <Marker key={feature.id} coordinate={feature.centroid ?? feature.coords[0]} tracksViewChanges={selected}>
               <View style={{ alignItems: 'center' }}>
                 {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
                 <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
