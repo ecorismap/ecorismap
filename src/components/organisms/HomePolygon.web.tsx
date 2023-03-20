@@ -24,9 +24,9 @@ export const Polygon = React.memo((props: Props) => {
       const colorExpression = [
         'case',
         ['boolean', ['feature-state', 'clicked'], false],
-        COLOR.YELLOW,
+        COLOR.ALFAYELLOW,
         ['boolean', ['feature-state', 'hover'], false],
-        COLOR.YELLOW,
+        COLOR.ALFAYELLOW,
         getColorRule(layer_, transparency, displayName),
       ];
 
