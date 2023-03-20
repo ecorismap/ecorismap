@@ -85,9 +85,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   ]);
 
   const pressAddData = useCallback(async () => {
-    if (isRunningProject) {
-      Alert.alert('', t('hooks.message.cannotInRunningProject'));
-    }
     if (!route.params.targetLayer.active) {
       Alert.alert('', t('hooks.message.noEditMode'));
       return;
@@ -101,7 +98,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       targetRecordSet: [],
       targetIndex: 0,
     });
-  }, [addRecord, isRunningProject, layer, navigation, route.params.targetLayer.active]);
+  }, [addRecord, layer, navigation, route.params.targetLayer.active]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
