@@ -35,8 +35,8 @@ export const Line = React.memo((props: Props) => {
               : feature.field[layer.label].toString()
             : '';
         const color = getColor(layer, feature);
-        const lineColor =
-          selectedRecord !== undefined && feature.id === selectedRecord.record?.id ? COLOR.YELLOW : color;
+        const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
+        const lineColor = selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
         return (
           <View key={feature.id}>
