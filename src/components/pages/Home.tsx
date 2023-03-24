@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Platform, Text } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
+import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -294,6 +294,20 @@ export default function HomeScreen() {
           })}
 
           {/************* TILE MAP ******************** */}
+          <PMTile
+            key={'1234'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+            urlTemplate={'https://map.ecoris.info/tiles/taiwa.pmtiles'}
+            flipY={false}
+            opacity={1}
+            minimumZ={14}
+            maximumZ={22}
+            zIndex={1000}
+            doubleTileSize={false}
+            maximumNativeZ={22}
+            //tileCachePath={`${TILE_FOLDER}/pmtiles`}
+            //tileCacheMaxAge={604800}
+            offlineMode={false}
+          />
           {tileMaps
             .slice(0)
             .reverse()
