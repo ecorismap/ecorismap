@@ -30,7 +30,7 @@
     "android:device": "emulator @Pixel_5_API_31 -no-snapshot-load & expo run:android",
     "ios": "expo run:ios",
     "web": "GENERATE_SOURCEMAP=false expo start --web",
-    "build:web": "expo build:web",
+    "build:web": "expo export:web",
     "test": "jest --detectOpenHandles --runInBand --forceExit",
     "testemu": "firebase emulators:exec 'yarn jest'",
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
