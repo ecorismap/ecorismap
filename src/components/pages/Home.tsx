@@ -29,7 +29,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { nearDegree } from '../../utils/General';
+import { getExt, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
@@ -294,39 +294,43 @@ export default function HomeScreen() {
           })}
 
           {/************* TILE MAP ******************** */}
-          <PMTile
-            key={'1234'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-            urlTemplate={'https://map.ecoris.info/tiles/taiwa.pmtiles'}
-            flipY={false}
-            opacity={1}
-            minimumZ={14}
-            maximumZ={22}
-            zIndex={1000}
-            doubleTileSize={false}
-            maximumNativeZ={22}
-            //tileCachePath={`${TILE_FOLDER}/pmtiles`}
-            //tileCacheMaxAge={604800}
-            offlineMode={false}
-          />
+
           {tileMaps
             .slice(0)
             .reverse()
             .map((tileMap: TileMapType, mapIndex: number) =>
               tileMap.visible && tileMap.url ? (
-                <UrlTile
-                  key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                  urlTemplate={tileMap.url}
-                  flipY={tileMap.flipY}
-                  opacity={1 - tileMap.transparency}
-                  minimumZ={tileMap.minimumZ}
-                  maximumZ={tileMap.maximumZ}
-                  zIndex={mapIndex}
-                  doubleTileSize={tileMap.highResolutionEnabled}
-                  maximumNativeZ={tileMap.overzoomThreshold}
-                  tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                  tileCacheMaxAge={604800}
-                  offlineMode={isOffline}
-                />
+                getExt(tileMap.url) === 'pmtiles' ? (
+                  <PMTile
+                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                    urlTemplate={tileMap.url}
+                    flipY={tileMap.flipY}
+                    opacity={1 - tileMap.transparency}
+                    minimumZ={tileMap.minimumZ}
+                    maximumZ={tileMap.maximumZ}
+                    zIndex={mapIndex}
+                    doubleTileSize={tileMap.highResolutionEnabled}
+                    maximumNativeZ={tileMap.overzoomThreshold}
+                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                    tileCacheMaxAge={604800}
+                    offlineMode={isOffline}
+                  />
+                ) : (
+                  <UrlTile
+                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                    urlTemplate={tileMap.url}
+                    flipY={tileMap.flipY}
+                    opacity={1 - tileMap.transparency}
+                    minimumZ={tileMap.minimumZ}
+                    maximumZ={tileMap.maximumZ}
+                    zIndex={mapIndex}
+                    doubleTileSize={tileMap.highResolutionEnabled}
+                    maximumNativeZ={tileMap.overzoomThreshold}
+                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                    tileCacheMaxAge={604800}
+                    offlineMode={isOffline}
+                  />
+                )
               ) : null
             )}
           {/************* download mode ******************** */}
