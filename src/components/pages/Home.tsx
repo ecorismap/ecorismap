@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Platform, Text } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
+import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -32,7 +32,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { nearDegree } from '../../utils/General';
+import { getExt, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
@@ -308,25 +308,43 @@ export default function HomeScreen() {
           })}
 
           {/************* TILE MAP ******************** */}
+
           {tileMaps
             .slice(0)
             .reverse()
             .map((tileMap: TileMapType, mapIndex: number) =>
               tileMap.visible && tileMap.url ? (
-                <UrlTile
-                  key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                  urlTemplate={tileMap.url}
-                  flipY={tileMap.flipY}
-                  opacity={1 - tileMap.transparency}
-                  minimumZ={tileMap.minimumZ}
-                  maximumZ={tileMap.maximumZ}
-                  zIndex={mapIndex}
-                  doubleTileSize={tileMap.highResolutionEnabled}
-                  maximumNativeZ={tileMap.overzoomThreshold}
-                  tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                  tileCacheMaxAge={604800}
-                  offlineMode={isOffline}
-                />
+                getExt(tileMap.url) === 'pmtiles' ? (
+                  <PMTile
+                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                    urlTemplate={tileMap.url}
+                    flipY={tileMap.flipY}
+                    opacity={1 - tileMap.transparency}
+                    minimumZ={tileMap.minimumZ}
+                    maximumZ={tileMap.maximumZ}
+                    zIndex={mapIndex}
+                    doubleTileSize={tileMap.highResolutionEnabled}
+                    maximumNativeZ={tileMap.overzoomThreshold}
+                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                    tileCacheMaxAge={604800}
+                    offlineMode={isOffline}
+                  />
+                ) : (
+                  <UrlTile
+                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                    urlTemplate={tileMap.url}
+                    flipY={tileMap.flipY}
+                    opacity={1 - tileMap.transparency}
+                    minimumZ={tileMap.minimumZ}
+                    maximumZ={tileMap.maximumZ}
+                    zIndex={mapIndex}
+                    doubleTileSize={tileMap.highResolutionEnabled}
+                    maximumNativeZ={tileMap.overzoomThreshold}
+                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                    tileCacheMaxAge={604800}
+                    offlineMode={isOffline}
+                  />
+                )
               ) : null
             )}
           {/************* download mode ******************** */}
