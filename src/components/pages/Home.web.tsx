@@ -40,6 +40,8 @@ import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
+import { getExt } from '../../utils/General';
+import * as pmtiles from 'pmtiles';
 
 export default function HomeScreen() {
   const {
@@ -83,6 +85,9 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
+
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
 
   // const hoverFeatureId = useRef<
   //   | {
@@ -323,7 +328,20 @@ export default function HomeScreen() {
       .reverse()
       .reduce((result: any, tileMap: TileMapType) => {
         if (tileMap.visible) {
-          if (tileMap.url) {
+          if (getExt(tileMap.url) === 'pmtiles') {
+            return {
+              ...result,
+              [tileMap.id]: {
+                type: 'raster',
+                url: 'pmtiles://' + tileMap.url,
+                minzoom: tileMap.minimumZ,
+                maxzoom: tileMap.maximumZ,
+                scheme: tileMap.flipY ? 'tms' : 'xyz',
+                tileSize: 256,
+                attribution: tileMap.attribution,
+              },
+            };
+          } else if (tileMap.url) {
             return {
               ...result,
               [tileMap.id]: {
