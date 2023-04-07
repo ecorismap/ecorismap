@@ -3,10 +3,10 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.1.11';
+export const VERSION = 'Version 0.2.0';
 
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
