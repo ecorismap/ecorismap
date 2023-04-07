@@ -8,7 +8,7 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
 
 export const LayerEditRadio = () => {
-  const { layer, editable, changePermission } = useContext(LayerEditContext);
+  const { layer, changePermission } = useContext(LayerEditContext);
   const permissionLabels = useMemo(() => Object.values(PERMISSIONTYPE), []);
   const permissionList = useMemo(() => Object.keys(PERMISSIONTYPE) as PermissionType[], []);
 
@@ -36,7 +36,7 @@ export const LayerEditRadio = () => {
               <CheckBox
                 key={index}
                 label={permissionLabels[index]}
-                disabled={!editable}
+                disabled={false}
                 width={200}
                 checked={checkedList[index]}
                 onCheck={() => onCheckList(index)}
