@@ -97,6 +97,7 @@
     "react-i18next": "^12.1.5",
     "react-map-gl": "^7.0.21",
     "react-native": "0.70.5",
+    "react-native-canvas": "^0.1.38",
     "react-native-date-picker": "^4.2.6",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.9.0",
