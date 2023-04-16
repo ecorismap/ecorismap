@@ -55,13 +55,13 @@ export type UseRecordReturnType = {
     record: RecordType | undefined;
   };
   updateRecord: (layer: LayerType, record: RecordType) => void;
-  getEditableLayerAndRecordSetWithCheck: (featureType: FeatureType) => {
+  getEditableLayerAndRecordSetWithCheck: (featureType: string) => {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
     recordSet: RecordType[] | undefined;
   };
-  getEditableLayerAndRecordSet: (type: FeatureType) => {
+  getEditableLayerAndRecordSet: (type: string) => {
     editingLayer: LayerType | undefined;
     editingRecordSet: RecordType[];
   };
@@ -149,7 +149,7 @@ export const useRecord = (): UseRecordReturnType => {
   const findLayer = useCallback((layerId: string) => layers.find((l) => l.id === layerId), [layers]);
 
   const getEditableLayerAndRecordSet = useCallback(
-    (type: FeatureType) => {
+    (type: string) => {
       let editingLayer: LayerType | undefined;
       let dataSet: DataType[] = [];
       if (type === 'POINT') {
@@ -230,7 +230,7 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const getEditableLayerAndRecordSetWithCheck = useCallback(
-    (featureType: FeatureType) => {
+    (featureType: string) => {
       const { editingLayer, editingRecordSet } = getEditableLayerAndRecordSet(featureType);
       if (editingLayer === undefined || editingRecordSet === undefined) {
         return {
