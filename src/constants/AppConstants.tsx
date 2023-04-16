@@ -183,6 +183,7 @@ export const HOME_FEATURE_BTN = {
   POINT: 'scatter-plot',
   LINE: 'chart-timeline-variant',
   POLYGON: 'pentagon-outline',
+  MEMO: 'image-edit',
   NONE: 'flower-tulip',
 } as const;
 

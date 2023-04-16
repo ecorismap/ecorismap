@@ -30,6 +30,7 @@ import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
+import { useMapMemo } from '../hooks/useMapMemo';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -92,6 +93,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     resetDrawTools,
     toggleWebTerrainActive,
   } = useDrawTool(mapViewRef.current);
+  const { gl, setGl, saveMapMemo } = useMapMemo(mapViewRef.current!);
 
   const { addCurrentPoint } = usePointTool();
   //現在位置、GPS関連
@@ -594,6 +596,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         screenState,
         isLoading,
         isTermsOfUseOpen,
+        gl,
         onRegionChangeMapView,
         onPressMapView,
         onDragMapView,
@@ -623,6 +626,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoBack,
         termsOfUseOK,
         termsOfUseCancel,
+        setGl,
+        saveMapMemo,
       }}
     >
       <Home />
