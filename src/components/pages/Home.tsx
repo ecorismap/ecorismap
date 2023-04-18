@@ -80,7 +80,7 @@ export default function HomeScreen() {
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
   const navigation = useNavigation();
-  const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
+  const { mapRegion, windowHeight, windowWidth, isLandscape, devicePixelRatio: dpr } = useWindow();
 
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
@@ -305,7 +305,7 @@ export default function HomeScreen() {
               urlTemplate={''}
               flipY={false}
               opacity={1}
-              tileSize={1090}
+              tileSize={2048}
               minimumZ={0}
               maximumZ={22}
               zIndex={100}

@@ -1177,11 +1177,6 @@
     "@babel/helper-validator-identifier" "^7.19.1"
     to-fast-properties "^2.0.0"
 
-"@bam.tech/react-native-image-resizer@^3.0.5":
-  version "3.0.5"
-  resolved "https://registry.yarnpkg.com/@bam.tech/react-native-image-resizer/-/react-native-image-resizer-3.0.5.tgz#6661ba020de156268f73bdc92fbb93ef86f88a13"
-  integrity sha512-u5QGUQGGVZiVCJ786k9/kd7pPRZ6eYfJCYO18myVCH8FbVI7J8b5GT2Svjj2x808DlWeqfaZOOzxPqo27XYvrQ==
-
 "@bcoe/v8-coverage@^0.2.3":
   version "0.2.3"
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
@@ -4224,11 +4219,6 @@
   version "2.4.1"
   resolved "https://registry.npmjs.org/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz"
   integrity sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==
-
-"@types/pako@^1.0.2":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@types/pako/-/pako-1.0.4.tgz#b4262aef92680a9331fcdb8420c69cf3dd98d3f3"
-  integrity sha512-Z+5bJSm28EXBSUJEgx29ioWeEEHUh6TiMkZHDhLwjc9wVFH+ressbkmX6waUZc5R3Gobn4Qu5llGxaoflZ+yhA==
 
 "@types/pako@^2.0.0":
   version "2.0.0"
@@ -7507,15 +7497,6 @@ fast-loops@^1.1.3:
   resolved "https://registry.npmjs.org/fast-loops/-/fast-loops-1.1.3.tgz"
   integrity sha512-8EZzEP0eKkEEVX+drtd9mtuQ+/QrlfW/5MlwcwK5Nds6EkZ/tRzEexkzUY2mIssnAyVLT+TKHuRXmFNNXYUd6g==
 
-fast-png@^6.1.0:
-  version "6.1.0"
-  resolved "https://registry.yarnpkg.com/fast-png/-/fast-png-6.1.0.tgz#c0abd3015346e16752acbe4ea74f1f0170b55b9e"
-  integrity sha512-v8e/40RKZbE1mALigoqBOkYnemCVSMmVlGSz8fawZAZg5UQ9OZeR00L++CPvrhIGm2F6TxV5u9lbWD0oOJHcCw==
-  dependencies:
-    "@types/pako" "^1.0.2"
-    iobuffer "^5.0.4"
-    pako "^2.0.4"
-
 fast-xml-parser@^3.21.1:
   version "3.21.1"
   resolved "https://registry.yarnpkg.com/fast-xml-parser/-/fast-xml-parser-3.21.1.tgz#152a1d51d445380f7046b304672dd55d15c9e736"
@@ -8558,11 +8539,6 @@ invariant@*, invariant@^2.2.4:
   integrity sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==
   dependencies:
     loose-envify "^1.0.0"
-
-iobuffer@^5.0.4:
-  version "5.3.2"
-  resolved "https://registry.yarnpkg.com/iobuffer/-/iobuffer-5.3.2.tgz#76d3fb907c655ad6fb7a73964bfca8b4e04f52fa"
-  integrity sha512-kO3CjNfLZ9t+tHxAMd+Xk4v3D/31E91rMs1dHrm7ikEQrlZ8mLDbQ4z3tZfDM48zOkReas2jx8MWSAmN9+c8Fw==
 
 ip-regex@^2.1.0:
   version "2.1.0"
