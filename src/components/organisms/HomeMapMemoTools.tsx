@@ -10,6 +10,7 @@ import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
+import { HomeMapMemoThicknessButton } from './HomeMapMemoThicknessButton';
 
 export const HomeMapMemoTools = () => {
   const {
@@ -73,7 +74,7 @@ export const HomeMapMemoTools = () => {
   return (
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <HomeLineToolButton
+        <HomeMapMemoThicknessButton
           disabled={isHisyouToolActive}
           isPositionRight={isPositionRight}
           currentDrawTool={currentDrawTool}

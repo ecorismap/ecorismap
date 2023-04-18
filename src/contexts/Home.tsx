@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, createContext } from 'react';
+import React, { createContext } from 'react';
 import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
 import MapView, { MapPressEvent, Region } from 'react-native-maps';
 import {
@@ -23,7 +23,6 @@ import { MapRef, ViewState } from 'react-map-gl';
 
 import { Position } from '@turf/turf';
 import * as Location from 'expo-location';
-import { ExpoWebGLRenderingContext } from 'expo-gl';
 
 export interface HomeContextType {
   pointDataSet: PointDataType[];
@@ -69,7 +68,7 @@ export interface HomeContextType {
   screenState: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
-  gl: ExpoWebGLRenderingContext | null;
+  visibleMapMemo: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (event: MapPressEvent) => void;
   onDragMapView: () => void;
@@ -99,8 +98,7 @@ export interface HomeContextType {
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
-  setGl: Dispatch<SetStateAction<ExpoWebGLRenderingContext | null>>;
-  saveMapMemo: () => void;
+  setVisibleMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const HomeContext = createContext({} as HomeContextType);
