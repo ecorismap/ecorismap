@@ -64,6 +64,7 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    visibleMapMemo,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -297,6 +298,24 @@ export default function HomeScreen() {
             );
           })}
 
+          {/************* MAP MEMO ******************** */}
+          {visibleMapMemo && (
+            <UrlTile
+              key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+              urlTemplate={''}
+              flipY={false}
+              opacity={1}
+              tileSize={1090}
+              minimumZ={0}
+              maximumZ={22}
+              zIndex={100}
+              doubleTileSize={false}
+              maximumNativeZ={22}
+              tileCachePath={`${TILE_FOLDER}/mapmemo`}
+              tileCacheMaxAge={604800}
+              offlineMode={true}
+            />
+          )}
           {/************* TILE MAP ******************** */}
 
           {tileMaps
@@ -325,14 +344,14 @@ export default function HomeScreen() {
                     urlTemplate={tileMap.url}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
-                    tileSize={tileMap.id === 'hillshademap' ? 512 : 256}
+                    tileSize={256}
                     minimumZ={tileMap.minimumZ}
                     maximumZ={tileMap.maximumZ}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={tileMap.id === 'hillshademap' ? 1 : 604800}
+                    tileCacheMaxAge={604800}
                     offlineMode={isOffline}
                   />
                 )
