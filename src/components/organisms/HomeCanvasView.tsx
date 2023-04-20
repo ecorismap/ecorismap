@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { GestureResponderEvent, PanResponder, PanResponderInstance, View } from 'react-native';
 import { TILE_FOLDER } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
@@ -78,16 +78,19 @@ export const CanvasView = () => {
       const imagePath = `${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}/${tile.y}`;
       FileSystem.getInfoAsync(imagePath).then((info) => {
         if (!info.exists) return;
-        console.log(tile.size);
-        return ImageManipulator.manipulateAsync(imagePath, [], {
+        console.log('loaded width', tile.size * dpr);
+        return ImageManipulator.manipulateAsync(imagePath, [{ resize: { width: tile.size, height: tile.size } }], {
           compress: 1,
           format: ImageManipulator.SaveFormat.PNG,
         }).then((image) => {
+          //const a = 512 / (dpr * tile.size);
+          //ctx!.scale(a, a);
           //@ts-ignore
           image.localUri = image.uri;
           //@ts-ignore
-          ctx.drawImage(image, (TILE_MAX_SIXE + tile.topLeftXY[0]) * dpr, (TILE_MAX_SIXE + tile.topLeftXY[1]) * dpr);
+          ctx.drawImage(image, TILE_MAX_SIXE + tile.topLeftXY[0], TILE_MAX_SIXE + tile.topLeftXY[1]);
           ctx.flush();
+          //ctx!.scale(1 / a, 1 / a);
         });
       });
     });
@@ -97,10 +100,7 @@ export const CanvasView = () => {
   };
 
   const saveMapMemo = useCallback(async () => {
-    //console.log(gl);
     if (!gl) return;
-    //const tiles = tilesForRegion(mapRegion);
-
     const makeDirPromise = tiles.map((tile) =>
       FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}`, {
         intermediates: true,
@@ -113,9 +113,9 @@ export const CanvasView = () => {
       const [x1, y1] = tile.bottomRightXY;
       const width = (x1 - x0) * dpr;
       const height = (y1 - y0) * dpr;
-      console.log('width:', width, 'height:', height);
       const x = (TILE_MAX_SIXE + x0) * dpr;
       const y = (TILE_MAX_SIXE + windowHeight - y1) * dpr; //GLViewの座標系は左下が原点なので、y座標を反転させてy1側を原点にする
+      console.log('saved width', width);
       return await GLView.takeSnapshotAsync(gl, {
         format: 'png',
         rect: {
@@ -125,10 +125,10 @@ export const CanvasView = () => {
           height,
         },
       }).then((glSnapshot) => {
-        ImageManipulator.manipulateAsync(glSnapshot.uri as string, [], {
+        ImageManipulator.manipulateAsync(glSnapshot.uri as string, [{ resize: { width: 512, height: 512 } }], {
           compress: 1,
           format: ImageManipulator.SaveFormat.PNG,
-        }).then((image) => {
+        }).then(async (image) => {
           FileSystem.moveAsync({
             from: image.uri as string,
             to: `${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}/${tile.y}`,
@@ -157,10 +157,7 @@ export const CanvasView = () => {
         },
         onPanResponderMove: (event: GestureResponderEvent) => {
           if (!ctx) return;
-          ctx.lineTo(
-            (event.nativeEvent.pageX + offset.current[0]) * dpr,
-            (event.nativeEvent.pageY + offset.current[1]) * dpr
-          );
+          ctx.lineTo(event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]);
           ctx.stroke();
           ctx.flush();
         },
@@ -170,11 +167,11 @@ export const CanvasView = () => {
           ctx.flush();
 
           await saveMapMemo();
-          setVisibleMapMemo(false);
+
           setVisibleMapMemo(true);
         },
       }),
-    [ctx, dpr, saveMapMemo, setVisibleMapMemo]
+    [ctx, saveMapMemo, setVisibleMapMemo]
   );
 
   const options: Expo2dContextOptions = {
@@ -188,14 +185,22 @@ export const CanvasView = () => {
     //@ts-ignore
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const ctx = new Expo2DContext(gl, options);
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = 'red';
+    ctx.scale(dpr, dpr);
     const regionTiles = await loadTileImage(ctx);
-    //console.log(regionTiles);
+
     setTiles(regionTiles);
     setCtx(ctx);
     setGl(gl);
+    setVisibleMapMemo(false);
   };
+
+  useEffect(() => {
+    return function cleanup() {
+      setVisibleMapMemo(true);
+    };
+  }, [ctx, setVisibleMapMemo]);
 
   return (
     <View
