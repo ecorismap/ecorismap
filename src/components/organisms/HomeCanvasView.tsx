@@ -21,7 +21,7 @@ export const CanvasView = () => {
 
   const offset = useRef([0, 0]);
   const { windowHeight, windowWidth, devicePixelRatio: dpr, mapRegion } = useWindow();
-  const TILE_MAX_SIXE = 512;
+  const TILE_MAX_SIXE = 256;
   const tilesForRegion = useCallback(
     (region: RegionType) => {
       const regionTiles: {
@@ -79,18 +79,19 @@ export const CanvasView = () => {
       FileSystem.getInfoAsync(imagePath).then((info) => {
         if (!info.exists) return;
         console.log('loaded width', tile.size * dpr);
-        return ImageManipulator.manipulateAsync(imagePath, [{ resize: { width: tile.size, height: tile.size } }], {
+        return ImageManipulator.manipulateAsync(imagePath, [], {
           compress: 1,
           format: ImageManipulator.SaveFormat.PNG,
         }).then((image) => {
-          //const a = 512 / (dpr * tile.size);
-          //ctx!.scale(a, a);
+          const b = tile.size / TILE_MAX_SIXE;
+          ctx!.scale(b, b);
+          // console.log(ctx.width);
           //@ts-ignore
           image.localUri = image.uri;
           //@ts-ignore
-          ctx.drawImage(image, TILE_MAX_SIXE + tile.topLeftXY[0], TILE_MAX_SIXE + tile.topLeftXY[1]);
+          ctx.drawImage(image, (TILE_MAX_SIXE + tile.topLeftXY[0]) / b, (TILE_MAX_SIXE + tile.topLeftXY[1]) / b);
           ctx.flush();
-          //ctx!.scale(1 / a, 1 / a);
+          ctx!.scale(1 / b, 1 / b);
         });
       });
     });
@@ -125,10 +126,14 @@ export const CanvasView = () => {
           height,
         },
       }).then((glSnapshot) => {
-        ImageManipulator.manipulateAsync(glSnapshot.uri as string, [{ resize: { width: 512, height: 512 } }], {
-          compress: 1,
-          format: ImageManipulator.SaveFormat.PNG,
-        }).then(async (image) => {
+        ImageManipulator.manipulateAsync(
+          glSnapshot.uri as string,
+          [{ resize: { width: TILE_MAX_SIXE, height: TILE_MAX_SIXE } }],
+          {
+            compress: 1,
+            format: ImageManipulator.SaveFormat.PNG,
+          }
+        ).then(async (image) => {
           FileSystem.moveAsync({
             from: image.uri as string,
             to: `${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}/${tile.y}`,
