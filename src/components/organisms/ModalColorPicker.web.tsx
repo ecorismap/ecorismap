@@ -1,14 +1,19 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import { SketchPicker } from 'react-color';
 import { t } from '../../i18n/config';
-import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-export const FeatureStyleModalColorPicker = () => {
-  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = useContext(LayerEditFeatureStyleContext);
+interface Props {
+  modalVisible: boolean;
+  pressSelectColorOK: (hue: number, sat: number, val: number) => void;
+  pressSelectColorCancel: () => void;
+}
+
+export const ModalColorPicker = (props: Props) => {
+  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = props;
   const [val, setVal] = useState({
     a: 0.74,
     h: 161.2987012987013,

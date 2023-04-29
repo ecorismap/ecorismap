@@ -1,38 +1,33 @@
 import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
-import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
-import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
+import { COLOR, MAPMEMOTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
-import { HomeLineToolButton } from './HomeLineToolButton';
-import { HomeSelectionToolButton } from './HomeSelectionToolButton';
-import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
-import { HomeMapMemoThicknessButton } from './HomeMapMemoThicknessButton';
+import { HomeMapMemoPenButton } from './HomeMapMemoPenButton';
+import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
 
 export const HomeMapMemoTools = () => {
   const {
     screenState,
-    isEditingDraw,
-    isEditingObject,
-    isSelectedDraw,
-    currentDrawTool,
-    currentLineTool,
-    selectDrawTool,
-    setLineTool,
-    pressUndoDraw,
-    pressSaveDraw,
-    pressDeleteDraw,
+    visibleMapMemo,
+    currentMapMemoTool,
+    currentPen,
+    currentEraser,
+    penColor,
+    selectMapMemoTool,
+    setPen,
+    setEraser,
+    setVisibleMapMemo,
+    setVisibleMapMemoColor,
+    pressClearMapMemo,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(
     () => Platform.OS !== 'web' && (screenState === 'opened' || isLandscape),
     [screenState, isLandscape]
   );
-
-  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const styles = StyleSheet.create({
     button: {
@@ -74,60 +69,60 @@ export const HomeMapMemoTools = () => {
   return (
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <HomeMapMemoThicknessButton
-          disabled={isHisyouToolActive}
+        <HomeMapMemoPenButton
+          disabled={!visibleMapMemo}
           isPositionRight={isPositionRight}
-          currentDrawTool={currentDrawTool}
-          currentLineTool={currentLineTool}
-          selectDrawTool={selectDrawTool}
-          setLineTool={setLineTool}
+          currentMapMemoTool={currentMapMemoTool}
+          currentPen={currentPen}
+          penColor={penColor}
+          selectMapMemoTool={selectMapMemoTool}
+          setPen={setPen}
         />
       </View>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <HomeSelectionToolButton
-          isEditing={isEditingDraw}
+        <HomeMapMemoEraserButton
+          disabled={!visibleMapMemo}
           isPositionRight={isPositionRight}
-          currentDrawTool={currentDrawTool}
-          selectDrawTool={selectDrawTool}
+          currentMapMemoTool={currentMapMemoTool}
+          currentEraser={currentEraser}
+          selectMapMemoTool={selectMapMemoTool}
+          setEraser={setEraser}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={DRAWTOOL.MOVE}
-          backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+          name={MAPMEMOTOOL.COLOR}
+          backgroundColor={visibleMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={false}
-          onPress={() => selectDrawTool('MOVE')}
+          disabled={!visibleMapMemo}
+          onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
-
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={DRAWTOOL.SAVE}
+          name={visibleMapMemo ? MAPMEMOTOOL.VISIBLE : MAPMEMOTOOL.HIDE}
+          backgroundColor={currentMapMemoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          borderRadius={10}
+          disabled={currentMapMemoTool !== 'NONE'}
+          onPress={() => setVisibleMapMemo(!visibleMapMemo)}
+        />
+      </View>
+      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <Button
+          name={MAPMEMOTOOL.DELETE}
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
           disabled={false}
-          onPress={pressSaveDraw}
+          onPress={pressClearMapMemo}
         />
       </View>
-
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={DRAWTOOL.UNDO}
-          backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          name={MAPMEMOTOOL.EXPORT}
+          backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!isEditingDraw}
-          onPress={pressUndoDraw}
-        />
-      </View>
-
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={DRAWTOOL.DELETE}
-          backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={isEditingDraw || !isSelectedDraw}
-          onPress={pressDeleteDraw}
+          disabled={false}
+          onPress={() => null}
         />
       </View>
     </View>

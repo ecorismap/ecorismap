@@ -40,6 +40,7 @@ export const COLOR = {
 
 export const TILE_FOLDER = `${FileSystem.documentDirectory}tiles`;
 export const PHOTO_FOLDER = `${FileSystem.documentDirectory}projects`;
+export const MAPMEMO_FOLDER = `${FileSystem.documentDirectory}mapmemo`;
 
 export const DEGREE_INTERVAL = 2;
 
@@ -177,6 +178,29 @@ export const DRAWTOOL = {
   DELETE: 'delete',
   NONE: 'none',
   ...HISYOUTOOL,
+} as const;
+
+export const PEN = {
+  PEN_THICK: 'circle',
+  PEN_MEDIUM: 'circle-medium',
+  PEN_THIN: 'circle-small',
+} as const;
+
+export const ERASER = {
+  ERASER_THICK: 'square',
+  ERASER_MEDIUM: 'square-medium',
+  ERASER_THIN: 'square-small',
+} as const;
+
+export const MAPMEMOTOOL = {
+  ...PEN,
+  ...ERASER,
+  VISIBLE: 'eye',
+  HIDE: 'eye-off-outline',
+  COLOR: 'palette-outline',
+  DELETE: 'delete',
+  EXPORT: 'database-export',
+  NONE: 'none',
 } as const;
 
 export const HOME_FEATURE_BTN = {
