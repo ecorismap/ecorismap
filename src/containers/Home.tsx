@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -93,7 +93,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     resetDrawTools,
     toggleWebTerrainActive,
   } = useDrawTool(mapViewRef.current);
-  const { visibleMapMemo, setVisibleMapMemo } = useMapMemo();
+  const {
+    visibleMapMemo,
+    refreshMapMemo,
+    visibleMapMemoColor,
+    currentMapMemoTool,
+    currentPen,
+    currentEraser,
+    penColor,
+    setMapMemoTool,
+    setVisibleMapMemo,
+    setPen,
+    setEraser,
+    setRefreshMapMemo,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    clearMapMemo,
+  } = useMapMemo();
 
   const { addCurrentPoint } = usePointTool();
   //現在位置、GPS関連
@@ -145,6 +161,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await toggleGPS('show');
     }
   }, [gpsState, toggleGPS]);
+
+  const selectMapMemoTool = useCallback(
+    (value: MapMemoToolType) => {
+      if (currentMapMemoTool === value) {
+        setMapMemoTool('NONE');
+      } else {
+        setMapMemoTool(value);
+      }
+    },
+    [currentMapMemoTool, setMapMemoTool]
+  );
 
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
@@ -555,6 +582,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pressClearMapMemo = useCallback(async () => {
+    if (Platform.OS === 'web') return;
+    const ret = await ConfirmAsync(t('Home.confirm.clearMapMemo'));
+    if (ret) {
+      await clearMapMemo();
+      await AlertAsync(t('Home.alert.clearMapMemo'));
+    }
+  }, [clearMapMemo]);
+
   return (
     <HomeContext.Provider
       value={{
@@ -596,7 +632,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         screenState,
         isLoading,
         isTermsOfUseOpen,
+        currentMapMemoTool,
         visibleMapMemo,
+        visibleMapMemoColor,
+        currentPen,
+        currentEraser,
+        refreshMapMemo,
+        penColor,
         onRegionChangeMapView,
         onPressMapView,
         onDragMapView,
@@ -620,13 +662,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoDraw,
         pressSaveDraw,
         pressDeleteDraw,
+        pressClearMapMemo,
         gotoMaps,
         gotoSettings,
         gotoLayers,
         gotoBack,
         termsOfUseOK,
         termsOfUseCancel,
+        selectMapMemoTool,
         setVisibleMapMemo,
+        setPen,
+        setEraser,
+        setRefreshMapMemo,
+        setVisibleMapMemoColor,
+        selectPenColor,
       }}
     >
       <Home />

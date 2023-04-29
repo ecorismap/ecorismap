@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { colorKit } from 'reanimated-color-picker';
 import { COLOR } from '../../constants/AppConstants';
@@ -7,7 +7,6 @@ import ColorPicker, { Panel2, BrightnessSlider, Swatches } from 'reanimated-colo
 
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
-import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
 const customSwatches = [
   COLOR.BLACK,
@@ -22,9 +21,14 @@ const customSwatches = [
   COLOR.GRAY3,
 ];
 
-export const FeatureStyleModalColorPicker = () => {
-  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = useContext(LayerEditFeatureStyleContext);
+interface Props {
+  modalVisible: boolean;
+  pressSelectColorOK: (hue: number, sat: number, val: number) => void;
+  pressSelectColorCancel: () => void;
+}
 
+export const ModalColorPicker = (props: Props) => {
+  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = props;
   const { windowWidth } = useWindow();
   const [hue, setHue] = useState(0.5);
   const [sat, setSat] = useState(0.5);

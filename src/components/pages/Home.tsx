@@ -3,7 +3,7 @@ import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR, DEGREE_INTERVAL, TILE_FOLDER } from '../../constants/AppConstants';
+import { COLOR, DEGREE_INTERVAL, MAPMEMO_FOLDER, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
@@ -34,6 +34,7 @@ import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { CanvasView } from '../organisms/HomeCanvasView';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
+import { ModalColorPicker } from '../organisms/ModalColorPicker';
 
 export default function HomeScreen() {
   const {
@@ -64,7 +65,10 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    currentMapMemoTool,
     visibleMapMemo,
+    refreshMapMemo,
+    visibleMapMemoColor,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -76,11 +80,13 @@ export default function HomeScreen() {
     pressDeleteTiles,
     pressGPS,
     gotoMaps,
+    setVisibleMapMemoColor,
+    selectPenColor,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
   const navigation = useNavigation();
-  const { mapRegion, windowHeight, windowWidth, isLandscape, devicePixelRatio: dpr } = useWindow();
+  const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
 
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
@@ -203,7 +209,12 @@ export default function HomeScreen() {
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool === 'FREEHAND_LINE' && <CanvasView />}
+        <ModalColorPicker
+          modalVisible={visibleMapMemoColor}
+          pressSelectColorOK={selectPenColor}
+          pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
+        />
+        {currentMapMemoTool !== 'NONE' && <CanvasView />}
         {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && featureButton !== 'MEMO' && (
           <SvgView />
         )}
@@ -299,19 +310,19 @@ export default function HomeScreen() {
           })}
 
           {/************* MAP MEMO ******************** */}
-          {visibleMapMemo && (
+          {refreshMapMemo && visibleMapMemo && (
             <UrlTile
               key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
               urlTemplate={''}
               flipY={false}
               opacity={1}
-              tileSize={256}
+              tileSize={512}
               minimumZ={0}
               maximumZ={22}
               zIndex={100}
               doubleTileSize={false}
               maximumNativeZ={22}
-              tileCachePath={`${TILE_FOLDER}/mapmemo`}
+              tileCachePath={MAPMEMO_FOLDER}
               tileCacheMaxAge={604800}
               offlineMode={true}
             />

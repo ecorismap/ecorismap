@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { GestureResponderEvent, PanResponder, PanResponderInstance, View } from 'react-native';
-import { TILE_FOLDER } from '../../constants/AppConstants';
+import { MAPMEMO_FOLDER } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 import { ExpoWebGLRenderingContext, GLView } from 'expo-gl';
@@ -11,27 +11,28 @@ import { latToTileY, lonToTileX, tileToLatLon } from '../../utils/Tile';
 import { latLonToXY } from '../../utils/Coords';
 import { RegionType } from '../../types';
 
+export interface TileType {
+  x: number;
+  y: number;
+  z: number;
+  topLeftXY: number[];
+  bottomRightXY: number[];
+  size: number;
+}
+
 export const CanvasView = () => {
-  const { mapViewRef, setVisibleMapMemo } = useContext(HomeContext);
+  const { mapViewRef, currentMapMemoTool, penColor, setRefreshMapMemo } = useContext(HomeContext);
   const [gl, setGl] = useState<ExpoWebGLRenderingContext | null>(null);
   const [ctx, setCtx] = useState<Expo2DContext | null>(null);
-  const [tiles, setTiles] = useState<
-    { x: number; y: number; z: number; topLeftXY: number[]; bottomRightXY: number[] }[]
-  >([]);
+  const [tiles, setTiles] = useState<TileType[]>([]);
 
   const offset = useRef([0, 0]);
+
   const { windowHeight, windowWidth, devicePixelRatio: dpr, mapRegion } = useWindow();
-  const TILE_MAX_SIXE = 256;
+  const TILE_MAX_SIXE = 512;
   const tilesForRegion = useCallback(
     (region: RegionType) => {
-      const regionTiles: {
-        x: number;
-        y: number;
-        z: number;
-        topLeftXY: number[];
-        bottomRightXY: number[];
-        size: number;
-      }[] = [];
+      const regionTiles: TileType[] = [];
       const { latitude, longitude, latitudeDelta, longitudeDelta, zoom } = region;
       const topLeftLat = latitude + latitudeDelta / 2;
       const topLeftLon = longitude - longitudeDelta / 2;
@@ -75,23 +76,18 @@ export const CanvasView = () => {
     const regionTiles = tilesForRegion(mapRegion);
 
     const loadImagePromise = regionTiles.map((tile) => {
-      const imagePath = `${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}/${tile.y}`;
+      const imagePath = `${MAPMEMO_FOLDER}/${tile.z}/${tile.x}/${tile.y}`;
       FileSystem.getInfoAsync(imagePath).then((info) => {
         if (!info.exists) return;
-        console.log('loaded width', tile.size * dpr);
         return ImageManipulator.manipulateAsync(imagePath, [], {
           compress: 1,
           format: ImageManipulator.SaveFormat.PNG,
         }).then((image) => {
-          const b = tile.size / TILE_MAX_SIXE;
-          ctx!.scale(b, b);
-          // console.log(ctx.width);
           //@ts-ignore
           image.localUri = image.uri;
           //@ts-ignore
-          ctx.drawImage(image, (TILE_MAX_SIXE + tile.topLeftXY[0]) / b, (TILE_MAX_SIXE + tile.topLeftXY[1]) / b);
+          ctx.drawImage(image, (TILE_MAX_SIXE + tile.topLeftXY[0]) * dpr, (TILE_MAX_SIXE + tile.topLeftXY[1]) * dpr);
           ctx.flush();
-          ctx!.scale(1 / b, 1 / b);
         });
       });
     });
@@ -100,23 +96,52 @@ export const CanvasView = () => {
     return regionTiles;
   };
 
+  const saveZoomoutImage = useCallback(async (tile: TileType) => {
+    if (tile.z === 0) {
+      console.log('Zoom level 0 reached, cannot zoom out further.');
+      return;
+    }
+    //tileの一つ上のズームレベルの画像を保存する
+    //画像は256*256の全面半透明のグレーで塗りつぶす
+    const zoomoutTile = { x: Math.floor(tile.x / 2), y: Math.floor(tile.y / 2), z: tile.z - 1 };
+    const imagePath = `${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}/${zoomoutTile.y}`;
+    const base64Image =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+    const image = await ImageManipulator.manipulateAsync(base64Image, [{ resize: { width: 512, height: 512 } }], {
+      compress: 1,
+      format: ImageManipulator.SaveFormat.PNG,
+    });
+    console.log(`${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}`);
+    await FileSystem.makeDirectoryAsync(`${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}`, {
+      intermediates: true,
+    });
+    await FileSystem.moveAsync({
+      from: image.uri as string,
+      to: imagePath,
+    });
+  }, []);
+
   const saveMapMemo = useCallback(async () => {
+    //console.log(gl);
     if (!gl) return;
+    //const tiles = tilesForRegion(mapRegion);
+
     const makeDirPromise = tiles.map((tile) =>
-      FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}`, {
+      FileSystem.makeDirectoryAsync(`${MAPMEMO_FOLDER}/${tile.z}/${tile.x}`, {
         intermediates: true,
       })
     );
     await Promise.all(makeDirPromise);
 
     const saveImagePromise = tiles.map(async (tile) => {
-      const [x0, y0] = tile.topLeftXY;
-      const [x1, y1] = tile.bottomRightXY;
-      const width = (x1 - x0) * dpr;
-      const height = (y1 - y0) * dpr;
+      const [x0] = tile.topLeftXY;
+      const [_, y1] = tile.bottomRightXY;
+      const width = tile.size * dpr;
+      const height = tile.size * dpr;
+      //console.log('width:', width, 'height:', height);
       const x = (TILE_MAX_SIXE + x0) * dpr;
       const y = (TILE_MAX_SIXE + windowHeight - y1) * dpr; //GLViewの座標系は左下が原点なので、y座標を反転させてy1側を原点にする
-      console.log('saved width', width);
       return await GLView.takeSnapshotAsync(gl, {
         format: 'png',
         rect: {
@@ -126,23 +151,65 @@ export const CanvasView = () => {
           height,
         },
       }).then((glSnapshot) => {
-        ImageManipulator.manipulateAsync(
-          glSnapshot.uri as string,
-          [{ resize: { width: TILE_MAX_SIXE, height: TILE_MAX_SIXE } }],
-          {
-            compress: 1,
-            format: ImageManipulator.SaveFormat.PNG,
-          }
-        ).then(async (image) => {
+        ImageManipulator.manipulateAsync(glSnapshot.uri as string, [], {
+          compress: 1,
+          format: ImageManipulator.SaveFormat.PNG,
+        }).then((image) => {
           FileSystem.moveAsync({
             from: image.uri as string,
-            to: `${TILE_FOLDER}/mapmemo/${tile.z}/${tile.x}/${tile.y}`,
+            to: `${MAPMEMO_FOLDER}/${tile.z}/${tile.x}/${tile.y}`,
           });
+          //saveZoomoutImage(tile);
         });
       });
     });
     await Promise.all(saveImagePromise);
-  }, [dpr, gl, tiles, windowHeight]);
+  }, [dpr, gl, saveZoomoutImage, tiles, windowHeight]);
+
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const setBlendMode = (gl: ExpoWebGLRenderingContext, eraser: boolean) => {
+    if (eraser) {
+      gl.blendEquation(gl.FUNC_REVERSE_SUBTRACT);
+      gl.blendFunc(gl.ONE, gl.ONE);
+    } else {
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    }
+  };
+
+  const setPenStyle = useCallback(() => {
+    if (ctx && gl) {
+      ctx.strokeStyle = penColor;
+      switch (currentMapMemoTool) {
+        case 'PEN_THICK':
+          ctx.lineWidth = 20;
+          setBlendMode(gl, false);
+          break;
+        case 'PEN_MEDIUM':
+          ctx.lineWidth = 10;
+          setBlendMode(gl, false);
+          break;
+        case 'PEN_THIN':
+          ctx.lineWidth = 5;
+          setBlendMode(gl, false);
+          break;
+        case 'ERASER_THICK':
+          ctx.lineWidth = 30;
+          setBlendMode(gl, true);
+          break;
+        case 'ERASER_MEDIUM':
+          ctx.lineWidth = 10;
+          setBlendMode(gl, true);
+          break;
+        case 'ERASER_THIN':
+          ctx.lineWidth = 5;
+          setBlendMode(gl, true);
+          break;
+        default:
+          break;
+      }
+    }
+  }, [ctx, currentMapMemoTool, gl, penColor]);
 
   const panResponder: PanResponderInstance = useMemo(
     () =>
@@ -151,18 +218,20 @@ export const CanvasView = () => {
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (event: GestureResponderEvent) => {
           if (!ctx) return;
-
+          setPenStyle();
           if (!event.nativeEvent.touches.length) return;
           offset.current = [
             event.nativeEvent.locationX - event.nativeEvent.pageX,
             event.nativeEvent.locationY - event.nativeEvent.pageY,
           ];
-
           ctx.beginPath();
         },
         onPanResponderMove: (event: GestureResponderEvent) => {
           if (!ctx) return;
-          ctx.lineTo(event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]);
+          ctx.lineTo(
+            (event.nativeEvent.pageX + offset.current[0]) * dpr,
+            (event.nativeEvent.pageY + offset.current[1]) * dpr
+          );
           ctx.stroke();
           ctx.flush();
         },
@@ -172,11 +241,9 @@ export const CanvasView = () => {
           ctx.flush();
 
           await saveMapMemo();
-
-          setVisibleMapMemo(true);
         },
       }),
-    [ctx, saveMapMemo, setVisibleMapMemo]
+    [ctx, dpr, saveMapMemo, setPenStyle]
   );
 
   const options: Expo2dContextOptions = {
@@ -190,22 +257,19 @@ export const CanvasView = () => {
     //@ts-ignore
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const ctx = new Expo2DContext(gl, options);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'red';
-    ctx.scale(dpr, dpr);
     const regionTiles = await loadTileImage(ctx);
-
+    setRefreshMapMemo(false);
+    //console.log('loadTileImage');
     setTiles(regionTiles);
     setCtx(ctx);
     setGl(gl);
-    setVisibleMapMemo(false);
   };
 
   useEffect(() => {
     return function cleanup() {
-      setVisibleMapMemo(true);
+      setRefreshMapMemo(true);
     };
-  }, [ctx, setVisibleMapMemo]);
+  }, [setRefreshMapMemo]);
 
   return (
     <View
