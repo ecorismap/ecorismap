@@ -316,7 +316,7 @@ export default function HomeScreen() {
               urlTemplate={''}
               flipY={false}
               opacity={1}
-              tileSize={512}
+              tileSize={256}
               minimumZ={0}
               maximumZ={22}
               zIndex={100}
