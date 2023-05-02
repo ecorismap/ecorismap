@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { GestureResponderEvent, PanResponder, PanResponderInstance, View } from 'react-native';
+import { GestureResponderEvent, PanResponder, PanResponderInstance, Platform, View } from 'react-native';
 import { MAPMEMO_FOLDER } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
@@ -140,7 +140,9 @@ export const CanvasView = () => {
   const saveMapMemo = useCallback(async () => {
     //console.log(gl);
     if (!gl) return;
-
+    //GLViewフォルダを作成しないと落ちる。
+    //takeSnapshotAsyncのバグ？
+    FileSystem.makeDirectoryAsync(`${FileSystem.cacheDirectory}GLView`, { intermediates: true });
     const makeDirPromise = tiles.map((tile) =>
       FileSystem.makeDirectoryAsync(`${MAPMEMO_FOLDER}/${tile.z}/${tile.x}`, {
         intermediates: true,
@@ -156,8 +158,7 @@ export const CanvasView = () => {
       const glViewXY = trans(x0, y1, scale);
       const x = glViewXY.x;
       const y = windowHeight * dpr - glViewXY.y; //GLViewの座標系は左下が原点なので、y座標を反転させてy1側を原点にする
-
-      return await GLView.takeSnapshotAsync(gl, {
+      const glSnapshot = await GLView.takeSnapshotAsync(gl, {
         format: 'png',
         rect: {
           x,
@@ -165,19 +166,18 @@ export const CanvasView = () => {
           width,
           height,
         },
-      }).then((glSnapshot) => {
-        ImageManipulator.manipulateAsync(glSnapshot.uri as string, [], {
-          compress: 1,
-          format: ImageManipulator.SaveFormat.PNG,
-        }).then((image) => {
-          FileSystem.moveAsync({
-            from: image.uri as string,
-            to: `${MAPMEMO_FOLDER}/${tile.z}/${tile.x}/${tile.y}`,
-          });
-          //saveZoomoutImage(tile);
-        });
       });
+      const image = await ImageManipulator.manipulateAsync(glSnapshot.uri as string, [], {
+        compress: 1,
+        format: ImageManipulator.SaveFormat.PNG,
+      });
+      await FileSystem.moveAsync({
+        from: image.uri as string,
+        to: `${MAPMEMO_FOLDER}/${tile.z}/${tile.x}/${tile.y}`,
+      });
+      //saveZoomoutImage(tile);
     });
+
     await Promise.all(saveImagePromise);
   }, [dpr, gl, scale, tiles, trans, windowHeight]);
 
@@ -235,16 +235,19 @@ export const CanvasView = () => {
           if (!ctx) return;
           setPenStyle();
           if (!event.nativeEvent.touches.length) return;
-          offset.current = [
-            event.nativeEvent.locationX - event.nativeEvent.pageX,
-            event.nativeEvent.locationY - event.nativeEvent.pageY,
-          ];
+          if (Platform.OS === 'android') {
+            //offsetがうまく取れないので、とりあえず固定値で
+            offset.current = [0, 15];
+          }
           ctx.beginPath();
         },
-        onPanResponderMove: (event: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        onPanResponderMove: (event: GestureResponderEvent) => {
           if (!ctx) return;
-          const glXY = trans(gestureState.moveX, gestureState.moveY + 15, scale);
-          console.log(event.nativeEvent.locationY, event.nativeEvent.pageY, gestureState.moveY, glXY.y);
+          const glXY = trans(
+            event.nativeEvent.pageX + offset.current[0],
+            event.nativeEvent.pageY + offset.current[1],
+            scale
+          );
 
           ctx.lineTo(glXY.x, glXY.y);
           ctx.stroke();
@@ -298,6 +301,7 @@ export const CanvasView = () => {
       {...panResponder.panHandlers}
     >
       <GLView
+        msaaSamples={0}
         style={{
           width: windowWidth,
           height: windowHeight,
