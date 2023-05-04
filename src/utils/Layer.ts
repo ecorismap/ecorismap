@@ -5,24 +5,24 @@ import { RecordType, LayerType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { hex2rgba } from './Color';
 
-export const getColor = (layer: LayerType, feature: RecordType) => {
+export const getColor = (layer: LayerType, feature: RecordType, transparency: number) => {
   const colorStyle = layer.colorStyle;
   let color = COLOR.WHITE;
   if (colorStyle.colorType === 'SINGLE') {
-    color = colorStyle.color;
+    color = hex2rgba(colorStyle.color, 1 - transparency);
   } else if (colorStyle.colorType === 'CATEGORIZED') {
     if (colorStyle.fieldName === '__CUSTOM') {
       const fieldNames = colorStyle.customFieldValue.split('|');
       const customValue = fieldNames.map((name) => feature.field[name]).join('|');
       const colorObj = colorStyle.colorList.find(({ value }) => value === customValue);
-      color = colorObj ? colorObj.color : colorStyle.color;
+      color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
     } else {
       const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
-      color = colorObj ? colorObj.color : colorStyle.color;
+      color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
     }
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
-    color = colorObj ? colorObj.color : colorStyle.color;
+    color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
   }
   return color;
 };
@@ -40,7 +40,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
   } else if (colorType === 'CATEGORIZED') {
     if (fieldName === '__CUSTOM') {
       const fieldNames = customFieldValue.split('|');
-      const defaultColor = COLOR.ALPHA;
+      const defaultColor = 'rgba(0,0,0,0)';
       const conditionalColors = colorList
         .map(({ value, color: c }) => {
           const colorValue = hex2rgba(c, 1 - transparency) ?? defaultColor;
@@ -50,7 +50,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
       const field = fieldNames.map((f) => [['get', f], '|']).flat();
       colorRule = ['match', ['concat', ...field], ...conditionalColors, defaultColor];
     } else {
-      const defaultColor = COLOR.ALPHA;
+      const defaultColor = 'rgba(0,0,0,0)';
 
       const conditionalColors = colorList
         .map(({ value, color: c }) => {
@@ -61,7 +61,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
       colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
     }
   } else if (colorType === 'USER') {
-    const defaultColor = COLOR.ALPHA;
+    const defaultColor = 'rgba(0,0,0,0)';
     const colorObj = colorList.find(({ value }) => value === displayName);
     colorRule = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) ?? defaultColor : defaultColor;
   }

@@ -32,7 +32,7 @@ export const Point = React.memo((props: Props) => {
               : feature.field[layer.label].toString()
             : '';
 
-        const labelColor = getColor(layer, feature);
+        const labelColor = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const color = selected ? COLOR.YELLOW : labelColor;
         const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
