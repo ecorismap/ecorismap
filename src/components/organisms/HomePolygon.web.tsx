@@ -3,7 +3,6 @@ import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl';
 import { RecordType, LayerType } from '../../types';
 import { generateGeoJson } from '../../utils/Geometry';
-import { COLOR } from '../../constants/AppConstants';
 import { getColorRule } from '../../utils/Layer';
 
 interface Props {
