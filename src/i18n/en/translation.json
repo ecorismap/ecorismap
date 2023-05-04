@@ -440,7 +440,8 @@
     "alert": {
       "completeDownload": "The map download is complete.",
       "pleaseActivate": "Please check your email and activate.",
-      "errorDownload": "Map download failed. \nPlease check the network environment."
+      "errorDownload": "Map download failed. \nPlease check the network environment.",
+      "dataSizeOver": "The data size exceeds 2MB. \nNot saved."
     },
     "message": {
       "pleaseLogin": "Please log in again.",
