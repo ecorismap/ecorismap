@@ -34,7 +34,7 @@ export const Line = React.memo((props: Props) => {
               ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
               : feature.field[layer.label].toString()
             : '';
-        const color = getColor(layer, feature);
+        const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
