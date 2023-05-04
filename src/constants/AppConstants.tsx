@@ -35,6 +35,7 @@ export const COLOR = {
   WHITE: '#FFF',
   ALFAWHITE: '#FFFFFF55',
   BLACK: '#000',
+  ALPHA: '#00000000',
   CAROUSEL_BACKGROUND: 'rgba(1, 1, 1, 0.1)',
 };
 
