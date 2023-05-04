@@ -18,8 +18,18 @@ const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<obj
   if (isLocationObject(data) && data.locations.length > 0) {
     const savedLocations = await getSavedLocations();
     const updatedLocations = updateLocations(savedLocations, data.locations);
-    await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify(updatedLocations));
-    locationEventsEmitter.emit('update', updatedLocations);
+    const updatedLocationsString = JSON.stringify(updatedLocations);
+    const dataSizeInBytes = new TextEncoder().encode(updatedLocationsString).length;
+    const dataSizeInMB = dataSizeInBytes / (1024 * 1024);
+
+    if (dataSizeInMB < 2) {
+      await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+      locationEventsEmitter.emit('update', updatedLocations);
+      console.log(dataSizeInMB);
+    } else {
+      console.warn('データサイズが2MBを超えています。保存されません。');
+      //AlertAsync(t('hooks.alert.dataSizeOver'));
+    }
   }
 };
 TaskManager.defineTask(TASK.FETCH_LOCATION, saveAndEmitLocation);
