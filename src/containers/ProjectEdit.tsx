@@ -54,8 +54,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     createProject,
     updateProject,
     downloadProjectSettings,
-    downloadAllData,
-    downloadPublicAndCommonData,
+    downloadAllPrivateData,
+    downloadPublicData,
     downloadCommonData,
     downloadPrivateData,
     downloadTemplateData,
@@ -63,38 +63,54 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const downloadDataForAdmin = useCallback(async () => {
     const shouldPhotoDownload = false;
-    const allDataResult = await downloadAllData(targetProject, shouldPhotoDownload);
-    if (!allDataResult.isOK) {
-      await AlertAsync(allDataResult.message);
-      return false;
-    }
-    return true;
-  }, [downloadAllData, targetProject]);
-
-  const downloadDataForSetting = useCallback(async () => {
-    const shouldPhotoDownload = false;
     const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload, []);
-    if (!templateDataResult.isOK) throw new Error(templateDataResult.message);
-  }, [downloadCommonData, downloadTemplateData, targetProject]);
 
-  const downloadDataForUser = useCallback(async () => {
-    const shouldPhotoDownload = false;
-    const publicAndCommonDataResult = await downloadPublicAndCommonData(targetProject, shouldPhotoDownload);
-    if (!publicAndCommonDataResult.isOK) throw new Error(publicAndCommonDataResult.message);
+    const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
+    if (!publicDataResult.isOK || publicDataResult.publicLayerIds === undefined)
+      throw new Error(publicDataResult.message);
 
-    const privateDataResult = await downloadPrivateData(targetProject, shouldPhotoDownload);
+    const privateDataResult = await downloadAllPrivateData(targetProject, shouldPhotoDownload);
     if (!privateDataResult.isOK || privateDataResult.privateLayerIds === undefined)
       throw new Error(privateDataResult.message);
 
     const downloadTemplateResult = await downloadTemplateData(
       targetProject,
       shouldPhotoDownload,
+      publicDataResult.publicLayerIds,
       privateDataResult.privateLayerIds
     );
     if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
-  }, [downloadPublicAndCommonData, downloadPrivateData, downloadTemplateData, targetProject]);
+  }, [downloadAllPrivateData, downloadCommonData, downloadPublicData, downloadTemplateData, targetProject]);
+
+  const downloadDataForSetting = useCallback(async () => {
+    const shouldPhotoDownload = false;
+    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
+    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
+    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload, [], []);
+    if (!templateDataResult.isOK) throw new Error(templateDataResult.message);
+  }, [downloadCommonData, downloadTemplateData, targetProject]);
+
+  const downloadDataForUser = useCallback(async () => {
+    const shouldPhotoDownload = false;
+    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
+    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
+
+    const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
+    if (!publicDataResult.isOK || publicDataResult.publicLayerIds === undefined)
+      throw new Error(publicDataResult.message);
+
+    const privateDataResult = await downloadPrivateData(targetProject, shouldPhotoDownload);
+    if (!privateDataResult.isOK || privateDataResult.privateLayerIds === undefined)
+      throw new Error(privateDataResult.message);
+    const downloadTemplateResult = await downloadTemplateData(
+      targetProject,
+      shouldPhotoDownload,
+      publicDataResult.publicLayerIds,
+      privateDataResult.privateLayerIds
+    );
+    if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
+  }, [downloadCommonData, targetProject, downloadPublicData, downloadPrivateData, downloadTemplateData]);
 
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {

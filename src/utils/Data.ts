@@ -220,10 +220,15 @@ export const getTargetRecordSet = (
     : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }));
 };
 
-export const createRecordSetFromTemplate = (dataSet: DataType[], user: UserType, privateLayerIds: string[]) => {
+export const createRecordSetFromTemplate = (
+  dataSet: DataType[],
+  user: UserType,
+  publicLayerIds: string[],
+  privateLayerIds: string[]
+) => {
   return dataSet
     .map((recordSet) => {
-      const alreadyHasData = privateLayerIds.find((id) => id === recordSet.layerId);
+      const alreadyHasData = [...publicLayerIds, ...privateLayerIds].find((id) => id === recordSet.layerId);
       if (alreadyHasData) return undefined;
       const updatedRecordSet = recordSet.data.map((d) => ({
         ...d,

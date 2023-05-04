@@ -132,6 +132,7 @@ export const getTargetLayers = (
       withCommonData = true;
       break;
     case 'Template':
+      withPublicData = true;
       withPrivateData = true;
       break;
   }

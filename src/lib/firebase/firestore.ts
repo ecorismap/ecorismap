@@ -449,6 +449,20 @@ export const downloadPrivateData = async (userId_: string, projectId: string) =>
   }
 };
 
+export const downloadAllPrivateData = async (userId_: string, projectId: string) => {
+  try {
+    const projectDataSet = await firestore
+      .collection(`projects/${projectId}/data`)
+      .where('permission', '==', 'PRIVATE')
+      .get();
+    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+    return { isOK: true, message: '', data: dataSet };
+  } catch (error) {
+    console.log(error);
+    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+  }
+};
+
 export const downloadTemplateData = async (userId_: string, projectId: string) => {
   try {
     const projectDataSet = await firestore

@@ -72,13 +72,6 @@ export type UseRepositoryReturnType = {
       }
     | undefined
   >[];
-  downloadAllData: (
-    project: ProjectType,
-    shouldPhotoDownload: boolean
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
   downloadPublicAndCommonData: (
     project: ProjectType,
     shouldPhotoDownload: boolean
@@ -99,8 +92,17 @@ export type UseRepositoryReturnType = {
   ) => Promise<{
     isOK: boolean;
     message: string;
+    publicLayerIds?: string[];
   }>;
   downloadPrivateData: (
+    project: ProjectType,
+    shouldPhotoDownload: boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+    privateLayerIds?: string[];
+  }>;
+  downloadAllPrivateData: (
     project: ProjectType,
     shouldPhotoDownload: boolean
   ) => Promise<{
@@ -111,6 +113,7 @@ export type UseRepositoryReturnType = {
   downloadTemplateData: (
     project_: ProjectType,
     shouldPhotoDownload: boolean,
+    publicLayerIds: string[],
     privateLayerIds: string[]
   ) => Promise<{
     isOK: boolean;
@@ -580,22 +583,6 @@ export const useRepository = (): UseRepositoryReturnType => {
     [downloadPhoto]
   );
 
-  const downloadAllData = useCallback(
-    async (project: ProjectType, shouldPhotoDownload: boolean) => {
-      const { isOK, message, data } = await projectStore.downloadAllData(project.id);
-      if (!isOK || data === undefined) {
-        return { isOK: false, message };
-      }
-      let updatedData = data;
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project);
-      }
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '' };
-    },
-    [dispatch, downloadPhotos, layers]
-  );
-
   const downloadPublicAndCommonData = useCallback(
     async (project_: ProjectType, shouldPhotoDownload: boolean) => {
       const { isOK, message, data } = await projectStore.downloadPublicAndCommonData(project_.id);
@@ -644,8 +631,9 @@ export const useRepository = (): UseRepositoryReturnType => {
       } else {
         updatedData = data;
       }
+      const publicLayerIds = updatedData.map((d) => d.layerId);
       dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '' };
+      return { isOK: true, message: '', publicLayerIds };
     },
     [dispatch, downloadPhotos, layers]
   );
@@ -673,8 +661,36 @@ export const useRepository = (): UseRepositoryReturnType => {
     [dispatch, downloadPhotos, layers, user]
   );
 
+  const downloadAllPrivateData = useCallback(
+    async (project_: ProjectType, shouldPhotoDownload: boolean) => {
+      if (!isLoggedIn(user)) {
+        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+      }
+      const { isOK, message, data } = await projectStore.downloadAllPrivateData(user.uid, project_.id);
+
+      if (!isOK || data === undefined) {
+        return { isOK: false, message };
+      }
+      let updatedData: DataType[];
+      if (shouldPhotoDownload) {
+        updatedData = await downloadPhotos(layers, data, project_);
+      } else {
+        updatedData = data;
+      }
+      const privateLayerIds = updatedData.map((d) => d.layerId);
+      dispatch(updateDataAction(updatedData));
+      return { isOK: true, message: '', privateLayerIds };
+    },
+    [dispatch, downloadPhotos, layers, user]
+  );
+
   const downloadTemplateData = useCallback(
-    async (project_: ProjectType, shouldPhotoDownload: boolean, privateLayerIds: string[]) => {
+    async (
+      project_: ProjectType,
+      shouldPhotoDownload: boolean,
+      publicLayerIds: string[],
+      privateLayerIds: string[]
+    ) => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
@@ -689,7 +705,8 @@ export const useRepository = (): UseRepositoryReturnType => {
       } else {
         updatedData = data;
       }
-      updatedData = createRecordSetFromTemplate(updatedData, user, privateLayerIds);
+
+      updatedData = createRecordSetFromTemplate(updatedData, user, publicLayerIds, privateLayerIds);
 
       dispatch(updateDataAction(updatedData));
       return { isOK: true, message: '' };
@@ -723,11 +740,11 @@ export const useRepository = (): UseRepositoryReturnType => {
     fetchAllData,
     fetchAllPhotos,
     downloadProjectSettings,
-    downloadAllData,
     downloadPublicAndCommonData,
     downloadCommonData,
     downloadPublicData,
     downloadPrivateData,
+    downloadAllPrivateData,
     downloadTemplateData,
     downloadPublicAndAllPrivateData,
     uploadData,
