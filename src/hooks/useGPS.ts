@@ -28,7 +28,7 @@ const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<obj
       console.log(dataSizeInMB);
     } else {
       console.warn('データサイズが2MBを超えています。保存されません。');
-      AlertAsync(t('hooks.alert.dataSizeOver'));
+      //AlertAsync(t('hooks.alert.dataSizeOver'));
     }
   }
 };
