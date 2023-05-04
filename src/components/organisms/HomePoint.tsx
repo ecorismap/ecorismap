@@ -32,9 +32,9 @@ export const Point = React.memo((props: Props) => {
               ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
               : feature.field[layer.label].toString()
             : '';
-        const color = getColor(layer, feature);
+        const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
-        const pointColor = selected ? COLOR.YELLOW : getColor(layer, feature);
+        const pointColor = selected ? COLOR.YELLOW : color;
         const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
         return (
           <Marker
