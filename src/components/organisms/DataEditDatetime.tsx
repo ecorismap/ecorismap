@@ -20,11 +20,11 @@ export const DataEditDatetime = (props: Props) => {
   const dateValue = useMemo(() => {
     if (value === '') return new Date();
     if (mode === 'time') {
-      return new Date(`2000/1/1 ${value}`);
+      return dayjs(`2000/1/1 ${value}`).toDate();
     } else if (mode === 'date') {
-      return new Date(value);
+      return dayjs(value).toDate();
     } else {
-      return new Date(value);
+      return dayjs(value).toDate();
     }
   }, [mode, value]);
 
@@ -50,7 +50,6 @@ export const DataEditDatetime = (props: Props) => {
         dateString = dayjs(dateTime).format('L');
       } else {
         dateString = dayjs(dateTime).format('L HH:mm');
-        //console.log(dateString);
       }
       onValueChange(dateString);
     },

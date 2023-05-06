@@ -34,7 +34,7 @@ export const DataEditTimeRange = (props: Props) => {
 
   const stringToDate = useCallback(
     (stringValue: string) => {
-      if (stringValue === '') return new Date();
+      if (stringValue === '') return null;
       if (mode === 'time') {
         return new Date(`2000/1/1 ${stringValue}`);
       } else if (mode === 'date') {
@@ -47,8 +47,8 @@ export const DataEditTimeRange = (props: Props) => {
   );
 
   const dateToString = useCallback(
-    (dateValue: Date | null) => {
-      if (dateValue === null) return;
+    (dateValue: Date | string | null) => {
+      if (dateValue === null || dateValue === '') return '';
       if (mode === 'time') {
         return dayjs(dateValue).format('HH:mm');
       } else if (mode === 'date') {
@@ -64,7 +64,7 @@ export const DataEditTimeRange = (props: Props) => {
   const dateValue2 = useMemo(() => stringToDate(value2), [stringToDate, value2]);
 
   const onDateChange = useCallback(
-    (dateTime: Date | null, id: number) => {
+    (dateTime: Date | string | null, id: number) => {
       const dateString = dateToString(dateTime);
       if (id === 1) {
         onValueChange(`${dateString}${t('common.ndash')}${value2}`);
