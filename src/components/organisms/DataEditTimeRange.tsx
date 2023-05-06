@@ -32,11 +32,11 @@ export const DataEditTimeRange = (props: Props) => {
     (stringValue: string) => {
       if (stringValue === '') return new Date();
       if (mode === 'time') {
-        return new Date(`2000/1/1 ${stringValue}`);
+        return dayjs(`2000/1/1 ${stringValue}`).toDate();
       } else if (mode === 'date') {
-        return new Date(stringValue);
+        return dayjs(stringValue).toDate();
       } else {
-        return new Date(stringValue);
+        return dayjs(stringValue).toDate();
       }
     },
     [mode]
@@ -58,8 +58,14 @@ export const DataEditTimeRange = (props: Props) => {
   const dateValue1 = useMemo(() => stringToDate(value1), [stringToDate, value1]);
   const dateValue2 = useMemo(() => stringToDate(value2), [stringToDate, value2]);
 
-  const dateValueString1 = useMemo(() => dateToString(dateValue1), [dateToString, dateValue1]);
-  const dateValueString2 = useMemo(() => dateToString(dateValue2), [dateToString, dateValue2]);
+  const dateValueString1 = useMemo(
+    () => (value1 === '' ? '' : dateToString(dateValue1)),
+    [dateToString, dateValue1, value1]
+  );
+  const dateValueString2 = useMemo(
+    () => (value2 === '' ? '' : dateToString(dateValue2)),
+    [dateToString, dateValue2, value2]
+  );
 
   const onDateChange = useCallback(
     (dateTime: Date, id: number) => {
