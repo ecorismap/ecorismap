@@ -20,9 +20,9 @@ interface Props {
 export const DataEditDatetime = (props: Props) => {
   const { name, value, mode, onValueChange } = props;
 
-  // console.log('###', value);
+  //console.log('###', value);
   const dateValue = useMemo(() => {
-    if (value === '') return new Date();
+    if (value === '') return null;
     if (mode === 'time') {
       return new Date(`2000/1/1 ${value}`);
     } else if (mode === 'date') {
@@ -48,7 +48,7 @@ export const DataEditDatetime = (props: Props) => {
     [mode, onValueChange]
   );
   // console.log(mode);
-  // console.log('###%%%', dateValue);
+  //console.log('###%%%', dateValue);
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
