@@ -4,11 +4,10 @@ import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
-import { DEGREE_INTERVAL, STORAGE } from '../constants/AppConstants';
+import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { useDispatch, useSelector } from 'react-redux';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { editSettingsAction } from '../modules/settings';
-import { getLineLength } from '../utils/Location';
+import { clearSavedLocations, getLineLength } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { useGPS } from './useGPS';
@@ -131,11 +130,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         const permission = await confirmLocationPermittion();
         if (permission === 'granted') {
           await moveCurrentPosition();
+          await clearSavedLocations();
           await startTracking();
         }
       } else if (trackingState_ === 'off') {
         await stopTracking();
-        await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify([]));
+        await clearSavedLocations();
         //記録のないトラックは削除
         if (tracking !== undefined) {
           const trackingRecord = findRecord(tracking.layerId, dataUser.uid, tracking.dataId, 'LINE');
