@@ -1,5 +1,6 @@
 import { LocationObject } from 'expo-location';
 import { updateLocations, isLocationObject, getLineLength, toLocationType } from '../Location';
+import { LocationType } from '../../types';
 
 describe('updateLocations', () => {
   const savedLocations = [
@@ -14,6 +15,7 @@ describe('updateLocations', () => {
       timestamp: 100,
     },
   ];
+  const savedLocations2: LocationType[] = [];
   const locations = [
     {
       coords: {
@@ -66,6 +68,22 @@ describe('updateLocations', () => {
       },
     ]);
   });
+
+  it('return locationa', () => {
+    expect(updateLocations(savedLocations2, locations)).toStrictEqual([
+      {
+        accuracy: 1,
+        altitude: 0,
+        altitudeAccuracy: 5,
+        heading: 0,
+        latitude: 35.5,
+        longitude: 135.5,
+        speed: 30,
+        timestamp: 101,
+      },
+    ]);
+  });
+
   it('return no change, because timestamp is old', () => {
     expect(updateLocations(savedLocations, locations2)).toStrictEqual([
       {
