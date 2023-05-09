@@ -10,7 +10,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..530efb1
+index 0000000..d12ef2d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/5450e76e757b21e1db1d745cf5e92e03/results.bin b/node_modules/react-native-maps/android/build/.transforms/5450e76e757b21e1db1d745cf5e92e03/results.bin
 new file mode 100644
@@ -28,404 +28,304 @@ index 0000000..5ff383e
 +o/debug
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/BufferPosition.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/BufferPosition.dex
 new file mode 100644
-index 0000000..ab60d2d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/BufferPosition.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Cache.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Cache.dex
 new file mode 100644
-index 0000000..b9c373a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Cache.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Compression.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Compression.dex
 new file mode 100644
-index 0000000..864994c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Compression.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Decompress.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Decompress.dex
 new file mode 100644
-index 0000000..d3a9e2e
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Decompress.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/DecompressFunc.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/DecompressFunc.dex
 new file mode 100644
-index 0000000..3e0fe40
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/DecompressFunc.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Entry.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Entry.dex
 new file mode 100644
-index 0000000..30f9970
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Entry.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/EtagMismatch.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/EtagMismatch.dex
 new file mode 100644
-index 0000000..54dcc47
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/EtagMismatch.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/FetchSource.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/FetchSource.dex
 new file mode 100644
-index 0000000..58df58a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/FetchSource.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Header.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Header.dex
 new file mode 100644
-index 0000000..aa3b0f0
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Header.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTiles.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTiles.dex
 new file mode 100644
-index 0000000..c546b13
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTiles.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTilesUtils.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTilesUtils.dex
 new file mode 100644
-index 0000000..d6b49fd
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/PMTilesUtils.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RangeResponse.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RangeResponse.dex
 new file mode 100644
-index 0000000..8ffca61
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RangeResponse.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RootDirData.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RootDirData.dex
 new file mode 100644
-index 0000000..f14b781
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/RootDirData.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCache.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCache.dex
 new file mode 100644
-index 0000000..c899dfb
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCache.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCacheValue.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCacheValue.dex
 new file mode 100644
-index 0000000..04b8714
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/SharedPromiseCacheValue.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Source.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Source.dex
 new file mode 100644
-index 0000000..d966e6c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/Source.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/TileType.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/TileType.dex
 new file mode 100644
-index 0000000..b6450e1
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/PMTiles/TileType.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCallout.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCallout.dex
 new file mode 100644
-index 0000000..c55a7ff
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCallout.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCalloutManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCalloutManager.dex
 new file mode 100644
-index 0000000..9f98afd
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCalloutManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircle.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircle.dex
 new file mode 100644
-index 0000000..d28c300
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircle.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircleManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircleManager.dex
 new file mode 100644
-index 0000000..701c4e7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapCircleManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapFeature.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapFeature.dex
 new file mode 100644
-index 0000000..44ebdfd
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapFeature.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.dex
 new file mode 100644
-index 0000000..2a59681
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.dex
 new file mode 100644
-index 0000000..ae0b55d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.dex
 new file mode 100644
-index 0000000..f2e9697
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.dex
 new file mode 100644
-index 0000000..359b629
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmap.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmap.dex
 new file mode 100644
-index 0000000..72ca529
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmap.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.dex
 new file mode 100644
-index 0000000..069ad9c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLiteManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLiteManager.dex
 new file mode 100644
-index 0000000..ce20932
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLiteManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.dex
 new file mode 100644
-index 0000000..0e19c0d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile.dex
 new file mode 100644
-index 0000000..be9f180
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTile.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.dex
 new file mode 100644
-index 0000000..d005732
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapManager.dex
 new file mode 100644
-index 0000000..dedde58
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$1.dex
 new file mode 100644
-index 0000000..ba019cc
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$2.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$2.dex
 new file mode 100644
-index 0000000..8f55015
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker$2.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker.dex
 new file mode 100644
-index 0000000..359dcb1
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarker.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.dex
 new file mode 100644
-index 0000000..96e5abb
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager.dex
 new file mode 100644
-index 0000000..0b7ba80
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapMarkerManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1$1.dex
 new file mode 100644
-index 0000000..45325a9
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1.dex
 new file mode 100644
-index 0000000..7d4d40f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$2.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$2.dex
 new file mode 100644
-index 0000000..f0a0c2c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$2.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$3.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$3.dex
 new file mode 100644
-index 0000000..0a8c3bf
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$3.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$4.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$4.dex
 new file mode 100644
-index 0000000..248e95a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$4.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$5.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$5.dex
 new file mode 100644
-index 0000000..2cef2b3
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$5.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$6.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$6.dex
 new file mode 100644
-index 0000000..5ceed4a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$6.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7$1.dex
 new file mode 100644
-index 0000000..89bbb67
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7.dex
 new file mode 100644
-index 0000000..466d83c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule$7.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule.dex
 new file mode 100644
-index 0000000..58fb427
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapModule.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlay.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlay.dex
 new file mode 100644
-index 0000000..07fa073
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlay.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlayManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlayManager.dex
 new file mode 100644
-index 0000000..ed8720c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapOverlayManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTile.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTile.dex
 new file mode 100644
-index 0000000..036168d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTile.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileManager.dex
 new file mode 100644
-index 0000000..5e13746
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.dex
 new file mode 100644
-index 0000000..5d5eec0
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygon.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygon.dex
 new file mode 100644
-index 0000000..667ca77
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygon.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygonManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygonManager.dex
 new file mode 100644
-index 0000000..18997f1
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolygonManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolyline.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolyline.dex
 new file mode 100644
-index 0000000..a687ebc
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolyline.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolylineManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolylineManager.dex
 new file mode 100644
-index 0000000..db229db
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapPolylineManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.dex
 new file mode 100644
-index 0000000..89b5194
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider.dex
 new file mode 100644
-index 0000000..bce4c20
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTile.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTile.dex
 new file mode 100644
-index 0000000..7e97451
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTile.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.dex
 new file mode 100644
-index 0000000..1b81433
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$1.dex
 new file mode 100644
-index 0000000..5981c1b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$10.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$10.dex
 new file mode 100644
-index 0000000..47baf5b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$10.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$11.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$11.dex
 new file mode 100644
-index 0000000..bab18bf
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$11.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$12.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$12.dex
 new file mode 100644
-index 0000000..7aaf7a1
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$12.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$13.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$13.dex
 new file mode 100644
-index 0000000..050e440
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$13.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$14.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$14.dex
 new file mode 100644
-index 0000000..b2da4b8
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$14.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$15.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$15.dex
 new file mode 100644
-index 0000000..bab2b18
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$15.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$16.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$16.dex
 new file mode 100644
-index 0000000..ab6c079
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$16.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$17.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$17.dex
 new file mode 100644
-index 0000000..0f8691f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$17.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$2.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$2.dex
 new file mode 100644
-index 0000000..4fd3788
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$2.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$3.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$3.dex
 new file mode 100644
-index 0000000..d03223a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$3.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$4.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$4.dex
 new file mode 100644
-index 0000000..12b7ba5
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$4.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$5.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$5.dex
 new file mode 100644
-index 0000000..ce0e905
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$5.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$6.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$6.dex
 new file mode 100644
-index 0000000..dedc077
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$6.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$7.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$7.dex
 new file mode 100644
-index 0000000..520650f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$7.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$8.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$8.dex
 new file mode 100644
-index 0000000..001540d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$8.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$9.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$9.dex
 new file mode 100644
-index 0000000..7f27b39
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView$9.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView.dex
 new file mode 100644
-index 0000000..bd123da
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapView.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.dex
 new file mode 100644
-index 0000000..2799688
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.dex
 new file mode 100644
-index 0000000..8b86302
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile.dex
 new file mode 100644
-index 0000000..a1bb025
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTile.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.dex
 new file mode 100644
-index 0000000..7b081a0
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/BuildConfig.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/BuildConfig.dex
 new file mode 100644
-index 0000000..cb7a7c9
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/BuildConfig.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FileUtil.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FileUtil.dex
 new file mode 100644
-index 0000000..b683597
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FileUtil.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$1.dex
 new file mode 100644
-index 0000000..17b8c6c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$2.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$2.dex
 new file mode 100644
-index 0000000..4c6381a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource$2.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource.dex
 new file mode 100644
-index 0000000..05eab55
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/FusedLocationSource.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReadable.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReadable.dex
 new file mode 100644
-index 0000000..13aca7e
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReadable.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader$1.dex
 new file mode 100644
-index 0000000..2910482
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader.dex
 new file mode 100644
-index 0000000..1f44944
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageReader.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageUtil.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageUtil.dex
 new file mode 100644
-index 0000000..b0c6379
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ImageUtil.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.dex
 new file mode 100644
-index 0000000..151a470
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/MapsPackage.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/MapsPackage.dex
 new file mode 100644
-index 0000000..919f175
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/MapsPackage.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/RegionChangeEvent.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/RegionChangeEvent.dex
 new file mode 100644
-index 0000000..df56483
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/RegionChangeEvent.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.dex
 new file mode 100644
-index 0000000..597c374
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewAttacherGroup.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewAttacherGroup.dex
 new file mode 100644
-index 0000000..cb8f719
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewAttacherGroup.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.dex
 new file mode 100644
-index 0000000..7aa28df
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker.dex b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker.dex
 new file mode 100644
-index 0000000..21f7414
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/debug/com/airbnb/android/react/maps/ViewChangesTracker.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/desugar_graph.bin b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/desugar_graph.bin
 new file mode 100644
-index 0000000..601f245
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/transformed/desugar_graph.bin differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java
 new file mode 100644
 index 0000000..53e11cf
@@ -503,7 +403,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..b7941b2
+index 0000000..c56b935
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2653,11 +2553,11 @@ index 0000000..9752a2d
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..b1d6522
+index 0000000..534fa34
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Tue Apr 18 11:19:33 JST 2023
++#Tue May 09 06:07:13 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..76baba1
@@ -2669,30 +2569,30 @@ index 0000000..76baba1
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 new file mode 100644
-index 0000000..c1d2b8d
+index 0000000..3f8929a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/jniLibs"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/jniLibs"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..61e8fa0
+index 0000000..a4b0bbd
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
-index 0000000..346171b
+index 0000000..f7e674b
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/assets"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/assets"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/BufferPosition.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/BufferPosition.class
 new file mode 100644
@@ -2928,7 +2828,7 @@ index 0000000..9808db0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class
 new file mode 100644
-index 0000000..852d9e1
+index 0000000..bff25a9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTile.class
 new file mode 100644
@@ -3166,403 +3066,304 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/BufferPosition.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/BufferPosition.class
 new file mode 100644
-index 0000000..92b7308
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/BufferPosition.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Cache.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Cache.class
 new file mode 100644
-index 0000000..58cf248
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Cache.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Compression.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Compression.class
 new file mode 100644
-index 0000000..1a0b22e
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Compression.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Decompress.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Decompress.class
 new file mode 100644
-index 0000000..6a700b2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Decompress.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/DecompressFunc.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/DecompressFunc.class
 new file mode 100644
-index 0000000..c369470
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/DecompressFunc.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Entry.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Entry.class
 new file mode 100644
-index 0000000..8c32f6f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Entry.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/EtagMismatch.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/EtagMismatch.class
 new file mode 100644
-index 0000000..aac2720
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/EtagMismatch.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/FetchSource.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/FetchSource.class
 new file mode 100644
-index 0000000..b05432a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/FetchSource.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Header.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Header.class
 new file mode 100644
-index 0000000..5d397a4
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Header.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTiles.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTiles.class
 new file mode 100644
-index 0000000..0a75596
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTiles.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTilesUtils.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTilesUtils.class
 new file mode 100644
-index 0000000..6ec0624
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/PMTilesUtils.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RangeResponse.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RangeResponse.class
 new file mode 100644
-index 0000000..f17e6a3
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RangeResponse.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RootDirData.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RootDirData.class
 new file mode 100644
-index 0000000..4d8a5ea
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/RootDirData.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCache.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCache.class
 new file mode 100644
-index 0000000..fa37909
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCache.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCacheValue.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCacheValue.class
 new file mode 100644
-index 0000000..2572bc0
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/SharedPromiseCacheValue.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Source.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Source.class
 new file mode 100644
-index 0000000..149dfb9
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/Source.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/TileType.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/TileType.class
 new file mode 100644
-index 0000000..38b32af
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/TileType.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
-index 0000000..fd8933c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCallout.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCalloutManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCalloutManager.class
 new file mode 100644
-index 0000000..8f6b462
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCalloutManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircle.class
 new file mode 100644
-index 0000000..f4324d2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircle.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircleManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircleManager.class
 new file mode 100644
-index 0000000..055810a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapCircleManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapFeature.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapFeature.class
 new file mode 100644
-index 0000000..b8d0011
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapFeature.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class
 new file mode 100644
-index 0000000..6b6998f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class
 new file mode 100644
-index 0000000..5503068
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.class
 new file mode 100644
-index 0000000..e9d6bd2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolyline.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class
 new file mode 100644
-index 0000000..24d632a
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmap.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmap.class
 new file mode 100644
-index 0000000..31202c8
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmap.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.class
 new file mode 100644
-index 0000000..7d6d3fb
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapHeatmapManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLiteManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLiteManager.class
 new file mode 100644
-index 0000000..06d13f5
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLiteManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class
 new file mode 100644
-index 0000000..79d1cc6
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile.class
 new file mode 100644
-index 0000000..3b764b9
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTile.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.class
 new file mode 100644
-index 0000000..3d47fdf
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapLocalTileManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapManager.class
 new file mode 100644
-index 0000000..8b17134
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$1.class
 new file mode 100644
-index 0000000..78de9db
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$2.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$2.class
 new file mode 100644
-index 0000000..c37340b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker.class
 new file mode 100644
-index 0000000..02efbcf
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarker.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class
 new file mode 100644
-index 0000000..2e6b80f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager.class
 new file mode 100644
-index 0000000..b26ed99
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapMarkerManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1$1.class
 new file mode 100644
-index 0000000..f18e0c7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1.class
 new file mode 100644
-index 0000000..019c3a3
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$2.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$2.class
 new file mode 100644
-index 0000000..9ea1eb4
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$3.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$3.class
 new file mode 100644
-index 0000000..cf23bbe
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$3.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$4.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$4.class
 new file mode 100644
-index 0000000..6428883
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$4.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$5.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$5.class
 new file mode 100644
-index 0000000..89f7b37
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$5.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$6.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$6.class
 new file mode 100644
-index 0000000..2ac1bbd
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$6.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7$1.class
 new file mode 100644
-index 0000000..4428bef
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7.class
 new file mode 100644
-index 0000000..2137dc8
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule$7.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule.class
 new file mode 100644
-index 0000000..f71d70d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapModule.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlay.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlay.class
 new file mode 100644
-index 0000000..34ebab7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlay.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlayManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlayManager.class
 new file mode 100644
-index 0000000..4102dc5
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapOverlayManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTile.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTile.class
 new file mode 100644
-index 0000000..24db0e2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTile.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileManager.class
 new file mode 100644
-index 0000000..de26c4f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..e8ee6e7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
-index 0000000..69cd636
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygon.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygonManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygonManager.class
 new file mode 100644
-index 0000000..cbb7ebe
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolygonManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolyline.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolyline.class
 new file mode 100644
-index 0000000..ee7cf0b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolyline.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolylineManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolylineManager.class
 new file mode 100644
-index 0000000..9f3f2fd
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapPolylineManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class
 new file mode 100644
-index 0000000..9521144
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider.class
 new file mode 100644
-index 0000000..5bbd863
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTile.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTile.class
 new file mode 100644
-index 0000000..97a60b4
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTile.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.class
 new file mode 100644
-index 0000000..aa5ed63
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapUrlTileManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$1.class
 new file mode 100644
-index 0000000..33be07c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$10.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$10.class
 new file mode 100644
-index 0000000..e9f1cd2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$10.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$11.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$11.class
 new file mode 100644
-index 0000000..e6b343f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$11.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$12.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$12.class
 new file mode 100644
-index 0000000..407a698
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$12.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$13.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$13.class
 new file mode 100644
-index 0000000..49ec3ad
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$13.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$14.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$14.class
 new file mode 100644
-index 0000000..0013835
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$14.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$15.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$15.class
 new file mode 100644
-index 0000000..8f27d70
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$15.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$16.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$16.class
 new file mode 100644
-index 0000000..6c2471f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$16.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$17.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$17.class
 new file mode 100644
-index 0000000..ae05557
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$17.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$2.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$2.class
 new file mode 100644
-index 0000000..7b9ab5c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$3.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$3.class
 new file mode 100644
-index 0000000..771eec3
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$3.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$4.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$4.class
 new file mode 100644
-index 0000000..e570b87
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$4.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$5.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$5.class
 new file mode 100644
-index 0000000..b0109f2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$5.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$6.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$6.class
 new file mode 100644
-index 0000000..92cab55
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$6.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$7.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$7.class
 new file mode 100644
-index 0000000..4511f56
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$7.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$8.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$8.class
 new file mode 100644
-index 0000000..4e76d00
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$8.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$9.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$9.class
 new file mode 100644
-index 0000000..1eea175
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView$9.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView.class
 new file mode 100644
-index 0000000..136b18c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapView.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class
 new file mode 100644
-index 0000000..c5ee55d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class
 new file mode 100644
-index 0000000..7677b2c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile.class
 new file mode 100644
-index 0000000..2effeca
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTile.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.class
 new file mode 100644
-index 0000000..c8024bb
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/AirMapWMSTileManager.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/BuildConfig.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/BuildConfig.class
 new file mode 100644
-index 0000000..66f7189
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/BuildConfig.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FileUtil.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FileUtil.class
 new file mode 100644
-index 0000000..028813b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FileUtil.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$1.class
 new file mode 100644
-index 0000000..6987b49
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$2.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$2.class
 new file mode 100644
-index 0000000..7431ba6
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource.class
 new file mode 100644
-index 0000000..8068231
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/FusedLocationSource.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReadable.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReadable.class
 new file mode 100644
-index 0000000..6c9194c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReadable.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader$1.class
 new file mode 100644
-index 0000000..b31addf
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader.class
 new file mode 100644
-index 0000000..1d6318f
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageReader.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageUtil.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageUtil.class
 new file mode 100644
-index 0000000..849f33d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ImageUtil.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.class
 new file mode 100644
-index 0000000..4acb857
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/LatLngBoundsUtils.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/MapsPackage.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/MapsPackage.class
 new file mode 100644
-index 0000000..4003a69
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/MapsPackage.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/RegionChangeEvent.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/RegionChangeEvent.class
 new file mode 100644
-index 0000000..325250c
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/RegionChangeEvent.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.class
 new file mode 100644
-index 0000000..e10053e
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/SizeReportingShadowNode.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewAttacherGroup.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewAttacherGroup.class
 new file mode 100644
-index 0000000..3c9b69d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewAttacherGroup.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.class
 new file mode 100644
-index 0000000..307742d
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker.class
 new file mode 100644
-index 0000000..7072844
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/airbnb/android/react/maps/ViewChangesTracker.class differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..2f66c69
+index 0000000..9e1661d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -5200,7 +5001,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..8db39dd
+index 0000000..a82a8b4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
@@ -5926,7 +5727,7 @@ index 0000000..0a76e52
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
-index 4f7acba..a45ff15 100644
+index 4f7acba..d9a5a47 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
 @@ -1,49 +1,51 @@
@@ -6031,7 +5832,7 @@ index 4f7acba..a45ff15 100644
        }
  
        try {
-@@ -85,147 +86,119 @@ public class AirMapTileProvider implements TileProvider {
+@@ -85,147 +86,120 @@ public class AirMapTileProvider implements TileProvider {
      }
    }
  
@@ -6157,6 +5958,7 @@ index 4f7acba..a45ff15 100644
 -			  }
 +        image = scaleLowerZoomTile(x, y, zoom, tryZoom);
 +        if (image != null) {
++          boolean success = writeTileImage(image, x, y, zoom);
 +          break;
 +        }
 +      }
@@ -6272,7 +6074,7 @@ index 4f7acba..a45ff15 100644
      byte[] data;
      Bitmap image = getNewBitmap();
      Canvas canvas = new Canvas(image);
-@@ -238,35 +211,44 @@ public class AirMapTileProvider implements TileProvider {
+@@ -238,35 +212,44 @@ public class AirMapTileProvider implements TileProvider {
      byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
      byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
  
@@ -6337,7 +6139,7 @@ index 4f7acba..a45ff15 100644
      image.eraseColor(Color.TRANSPARENT);
      return image;
    }
-@@ -279,12 +261,12 @@ public class AirMapTileProvider implements TileProvider {
+@@ -279,12 +262,12 @@ public class AirMapTileProvider implements TileProvider {
      try {
        bos.close();
      } catch (Exception e) {
@@ -6352,7 +6154,7 @@ index 4f7acba..a45ff15 100644
      int overZoomLevel = zoom - maximumZoom;
      int zoomFactor = 1 << overZoomLevel;
  
-@@ -294,197 +276,182 @@ public class AirMapTileProvider implements TileProvider {
+@@ -294,197 +277,183 @@ public class AirMapTileProvider implements TileProvider {
  
      int xOffset = x % zoomFactor;
      int yOffset = y % zoomFactor;
@@ -6383,10 +6185,11 @@ index 4f7acba..a45ff15 100644
 +    );
 +    Rect targetRect = new Rect(0, 0, this.tileSize * 2, this.tileSize * 2);
      canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
++    Bitmap scaledImage = Bitmap.createScaledBitmap(image, this.tileSize, this.tileSize, true);
++    data = bitmapToByteArray(scaledImage);
      sourceImage.recycle();
--
-     data = bitmapToByteArray(image);
-+
+ 
+-    data = bitmapToByteArray(image);
      image.recycle();
      return data;
 -	} 
