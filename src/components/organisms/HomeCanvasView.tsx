@@ -111,31 +111,54 @@ export const CanvasView = () => {
     return regionTiles;
   };
 
-  // const saveZoomoutImage = useCallback(async (tile: TileType) => {
-  //   if (tile.z === 0) {
-  //     console.log('Zoom level 0 reached, cannot zoom out further.');
-  //     return;
-  //   }
-  //   //tileの一つ上のズームレベルの画像を保存する
-  //   //画像は256*256の全面半透明のグレーで塗りつぶす
-  //   const zoomoutTile = { x: Math.floor(tile.x / 2), y: Math.floor(tile.y / 2), z: tile.z - 1 };
-  //   const imagePath = `${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}/${zoomoutTile.y}`;
-  //   const base64Image =
-  //     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const deleteZoominImage = useCallback(async (tile: TileType, level: number) => {
+    const tasks = [];
 
-  //   const image = await ImageManipulator.manipulateAsync(base64Image, [{ resize: { width: 512, height: 512 } }], {
-  //     compress: 1,
-  //     format: ImageManipulator.SaveFormat.PNG,
-  //   });
-  //   console.log(`${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}`);
-  //   await FileSystem.makeDirectoryAsync(`${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}`, {
-  //     intermediates: true,
-  //   });
-  //   await FileSystem.moveAsync({
-  //     from: image.uri as string,
-  //     to: imagePath,
-  //   });
-  // }, []);
+    for (let i = 1; i < level; i++) {
+      const scaleFactor = 2 ** i;
+      for (let x = tile.x * scaleFactor; x < tile.x * scaleFactor + scaleFactor; x++) {
+        for (let y = tile.y * scaleFactor; y < tile.y * scaleFactor + scaleFactor; y++) {
+          const zoominTile = { x, y, z: tile.z + i };
+          if (zoominTile.z > 22) {
+            console.log('Zoom level 22 reached, cannot zoom in further.');
+            break;
+          }
+          const imagePath = `${MAPMEMO_FOLDER}/${zoominTile.z}/${zoominTile.x}/${zoominTile.y}`;
+          tasks.push(
+            FileSystem.deleteAsync(imagePath, { idempotent: true }).then(() => {
+              //console.log(`Deleted ${imagePath}`);
+            })
+          );
+        }
+      }
+    }
+
+    await Promise.all(tasks);
+  }, []);
+
+  const deleteZoomoutImage = useCallback(async (tile: TileType, level: number) => {
+    const tasks = [];
+    for (let i = 1; i < level; i++) {
+      //tileの一つ上のズームレベルの画像を削除する
+      const scaleFactor = 2 ** i;
+      const zoomoutTile = {
+        x: Math.floor(tile.x / scaleFactor),
+        y: Math.floor(tile.y / scaleFactor),
+        z: tile.z - i,
+      };
+      if (zoomoutTile.z < 0) {
+        console.log('Zoom level 0 reached, cannot zoom out further.');
+        break;
+      }
+      const imagePath = `${MAPMEMO_FOLDER}/${zoomoutTile.z}/${zoomoutTile.x}/${zoomoutTile.y}`;
+      tasks.push(
+        FileSystem.deleteAsync(imagePath, { idempotent: true }).then(() => {
+          console.log(`Deleted ${imagePath}`);
+        })
+      );
+    }
+    await Promise.all(tasks);
+  }, []);
 
   const saveMapMemo = useCallback(async () => {
     //console.log(gl);
@@ -175,11 +198,13 @@ export const CanvasView = () => {
         from: image.uri as string,
         to: `${MAPMEMO_FOLDER}/${tile.z}/${tile.x}/${tile.y}`,
       });
-      //saveZoomoutImage(tile);
+
+      await deleteZoomoutImage(tile, 3);
+      await deleteZoominImage(tile, 3);
     });
 
     await Promise.all(saveImagePromise);
-  }, [dpr, gl, scale, tiles, trans, windowHeight]);
+  }, [deleteZoominImage, deleteZoomoutImage, dpr, gl, scale, tiles, trans, windowHeight]);
 
   // eslint-disable-next-line @typescript-eslint/no-shadow
   const setBlendMode = (gl: ExpoWebGLRenderingContext, eraser: boolean) => {
