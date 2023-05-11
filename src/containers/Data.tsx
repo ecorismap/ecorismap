@@ -32,7 +32,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     deleteRecords,
     generateExportGeoData,
   } = useData(route.params.targetLayer);
-  const { isMember, isRunningProject, isOwnerAdmin } = usePermission();
+  const { isMember, isOwnerAdmin } = usePermission();
   const { deleteRecordPhotos } = usePhoto();
 
   const pressExportData = useCallback(async () => {
@@ -48,9 +48,9 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (ret) {
-      if (isRunningProject) {
-        Alert.alert('', t('hooks.message.cannotInRunningProject'));
-      }
+      // if (isRunningProject) {
+      //   Alert.alert('', t('hooks.message.cannotInRunningProject'));
+      // }
       if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
         Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
         return;
@@ -74,15 +74,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
       });
     }
-  }, [
-    deleteRecordPhotos,
-    deleteRecords,
-    isRunningProject,
-    projectId,
-    route.params.targetLayer,
-    targetRecords,
-    tracking,
-  ]);
+  }, [deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer, targetRecords, tracking]);
 
   const pressAddData = useCallback(async () => {
     if (!route.params.targetLayer.active) {

@@ -8,6 +8,7 @@ import {
   DataFS,
   DataType,
   LocationType,
+  PermissionType,
   PositionFS,
   ProjectDataType,
   ProjectFS,
@@ -165,12 +166,13 @@ export const deleteAllData = async (projectId: string) => {
   }
 };
 
-export const deleteData = async (projectId: string, layerId: string, userId: string) => {
+export const deleteData = async (projectId: string, layerId: string, permission: PermissionType, userId: string) => {
   try {
     const querySnapshot = await firestore
       .collection(`projects/${projectId}/data`)
       .where('layerId', '==', layerId)
       .where('userId', '==', userId)
+      .where('permission', '==', permission)
       .get();
     if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
     const batch = firestore.batch();
