@@ -67,7 +67,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
 
     const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
-    if (!publicDataResult.isOK || publicDataResult.publicLayerIds === undefined)
+    if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
       throw new Error(publicDataResult.message);
 
     const privateDataResult = await downloadAllPrivateData(targetProject, shouldPhotoDownload);
@@ -77,7 +77,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     const downloadTemplateResult = await downloadTemplateData(
       targetProject,
       shouldPhotoDownload,
-      publicDataResult.publicLayerIds,
+      publicDataResult.publicOwnLayerIds,
       privateDataResult.privateLayerIds
     );
     if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
@@ -97,7 +97,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
 
     const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
-    if (!publicDataResult.isOK || publicDataResult.publicLayerIds === undefined)
+    if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
       throw new Error(publicDataResult.message);
 
     const privateDataResult = await downloadPrivateData(targetProject, shouldPhotoDownload);
@@ -106,7 +106,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     const downloadTemplateResult = await downloadTemplateData(
       targetProject,
       shouldPhotoDownload,
-      publicDataResult.publicLayerIds,
+      publicDataResult.publicOwnLayerIds,
       privateDataResult.privateLayerIds
     );
     if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);

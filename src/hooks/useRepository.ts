@@ -92,7 +92,7 @@ export type UseRepositoryReturnType = {
   ) => Promise<{
     isOK: boolean;
     message: string;
-    publicLayerIds?: string[];
+    publicOwnLayerIds?: string[];
   }>;
   downloadPrivateData: (
     project: ProjectType,
@@ -113,7 +113,7 @@ export type UseRepositoryReturnType = {
   downloadTemplateData: (
     project_: ProjectType,
     shouldPhotoDownload: boolean,
-    publicLayerIds: string[],
+    publicOwnLayerIds: string[],
     privateLayerIds: string[]
   ) => Promise<{
     isOK: boolean;
@@ -283,7 +283,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       for (const layer of targetLayers) {
         //自分のデータ削除
 
-        await projectStore.deleteData(project.id, layer.id, user.uid);
+        await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
         const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
@@ -631,11 +631,11 @@ export const useRepository = (): UseRepositoryReturnType => {
       } else {
         updatedData = data;
       }
-      const publicLayerIds = updatedData.map((d) => d.layerId);
+      const publicOwnLayerIds = updatedData.filter((d) => d.userId === user.uid).map((d) => d.layerId);
       dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '', publicLayerIds };
+      return { isOK: true, message: '', publicOwnLayerIds };
     },
-    [dispatch, downloadPhotos, layers]
+    [dispatch, downloadPhotos, layers, user.uid]
   );
 
   const downloadPrivateData = useCallback(
@@ -688,14 +688,14 @@ export const useRepository = (): UseRepositoryReturnType => {
     async (
       project_: ProjectType,
       shouldPhotoDownload: boolean,
-      publicLayerIds: string[],
+      publicOwnLayerIds: string[],
       privateLayerIds: string[]
     ) => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
-
+      console.log(data);
       if (!isOK || data === undefined) {
         return { isOK: false, message };
       }
@@ -706,8 +706,9 @@ export const useRepository = (): UseRepositoryReturnType => {
         updatedData = data;
       }
 
-      updatedData = createRecordSetFromTemplate(updatedData, user, publicLayerIds, privateLayerIds);
-
+      updatedData = createRecordSetFromTemplate(updatedData, user, publicOwnLayerIds, privateLayerIds);
+      console.log(updatedData.length);
+      console.log(updatedData[0]);
       dispatch(updateDataAction(updatedData));
       return { isOK: true, message: '' };
     },
