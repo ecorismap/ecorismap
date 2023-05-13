@@ -6,26 +6,13 @@ import { LocationObject } from 'expo-location';
 import * as turf from '@turf/helpers';
 
 export const clearSavedLocations = async () => {
-  try {
-    const keys = await AsyncStorage.getAllKeys();
-    const trackLogKeys = keys.filter((key) => key.includes(STORAGE.TRACKLOG));
-    await AsyncStorage.multiRemove(trackLogKeys);
-    await AsyncStorage.setItem(`${STORAGE.TRACKLOG}_0000`, JSON.stringify([]));
-  } catch (e) {
-    console.warn(e);
-  }
+  await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify([]));
 };
 
-export const getSavedLocations = async (): Promise<LocationType[][]> => {
+export const getSavedLocations = async (): Promise<LocationType[]> => {
   try {
-    const keys = await AsyncStorage.getAllKeys();
-    const trackLogKeys = keys.filter((key) => key.includes(STORAGE.TRACKLOG));
-    const items = await AsyncStorage.multiGet(trackLogKeys);
-    //console.log('keys', trackLogKeys);
-    //const names = items.map((item) => item[0]);
-    //console.log(names);
-    const locations = items.map((item) => JSON.parse(item[1] as string) as LocationType[]);
-    return locations;
+    const item = await AsyncStorage.getItem(STORAGE.TRACKLOG);
+    return item ? JSON.parse(item) : [];
   } catch (e) {
     return [];
   }

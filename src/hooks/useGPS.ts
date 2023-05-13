@@ -5,38 +5,30 @@ import { LocationHeadingObject, LocationSubscription } from 'expo-location';
 import { STORAGE, TASK } from '../constants/AppConstants';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Buffer } from 'buffer';
+
 import { getSavedLocations, isLocationObject, updateLocations } from '../utils/Location';
 
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
+//import { Buffer } from 'buffer';
 
 const locationEventsEmitter = new EventEmitter();
 const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
   if (isLocationObject(data) && data.locations.length > 0) {
-    //AsyncStorageに保存してある位置情報を取得して、新しい位置情報を追加する。
-    //位置情報は、2MBを超えると保存できないので、1.8MBを超える場合は新しいkeyを作成する。
-    //emitには全ての位置情報を渡す。
     const savedLocations = await getSavedLocations();
-    const num = savedLocations.length - 1;
-    //最大値に達したら、保存しない
-    if (num === 9999) return;
-    const lastLocations = savedLocations[num];
-    const updatedLocations = updateLocations(lastLocations, data.locations);
+    const updatedLocations = updateLocations(savedLocations, data.locations);
     const updatedLocationsString = JSON.stringify(updatedLocations);
-    const index = num.toString().padStart(4, '0');
-    await AsyncStorage.setItem(`${STORAGE.TRACKLOG}_${index}`, updatedLocationsString);
-    const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
-    // console.log(dataSizeInMB);
-    // console.log('num', num);
-    if (dataSizeInMB > 1.8) {
-      const newIndex = (num + 1).toString().padStart(4, '0');
-      await AsyncStorage.setItem(`${STORAGE.TRACKLOG}_${newIndex}`, JSON.stringify([]));
-    }
-    savedLocations[num] = updatedLocations;
-    locationEventsEmitter.emit('update', savedLocations.flat());
+    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+
+    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+    locationEventsEmitter.emit('update', updatedLocations);
+    //console.log(dataSizeInMB);
+    //if (dataSizeInMB > 2) {
+    //console.warn('データサイズが2MBを超えています。保存されません。');
+    //AlertAsync(t('hooks.alert.dataSizeOver'));
+    //}
   }
 };
 TaskManager.defineTask(TASK.FETCH_LOCATION, saveAndEmitLocation);
