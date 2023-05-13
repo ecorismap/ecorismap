@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
-import { ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useLayerEdit } from '../hooks/useLayerEdit';
 import { Props_LayerEdit } from '../routes';
 import { LayerType } from '../types';
@@ -10,6 +10,7 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
+import { usePermission } from '../hooks/usePermission';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -37,8 +38,13 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     route.params.itemValues,
     route.params.colorStyle
   );
+  const { isRunningProject } = usePermission();
 
   const pressSaveLayer = useCallback(() => {
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
+      return;
+    }
     if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
       Alert.alert('', t('hooks.message.cannotSaveInTracking'));
       return;
@@ -49,20 +55,24 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
       return;
     }
     saveLayer();
-  }, [route.params.targetLayer.id, saveLayer, targetLayer, tracking]);
+  }, [isRunningProject, route.params.targetLayer.id, saveLayer, targetLayer, tracking]);
 
   const pressDeleteLayer = useCallback(async () => {
+    if (isRunningProject) {
+      AlertAsync(t('hooks.message.cannotInRunningProject'));
+      return;
+    }
+    if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
+      Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+      return;
+    }
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
     if (ret) {
-      if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
-        return;
-      }
       deleteLayer();
       await deleteLayerPhotos();
       navigation.navigate('Layers');
     }
-  }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
+  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigation, route.params.targetLayer.id, tracking]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {
