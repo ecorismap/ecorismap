@@ -48,9 +48,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (ret) {
-      // if (isRunningProject) {
-      //   Alert.alert('', t('hooks.message.cannotInRunningProject'));
-      // }
       if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
         Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
         return;
@@ -59,15 +56,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         Alert.alert('', t('hooks.message.noEditMode'));
         return;
       }
-      // ToDo: アップロードできないなら削除できても良い？
-      // const hasOthersData = checkList.some(
-      //   (checked, i) =>
-      //     checked && allUserRecordSet[i].userId !== undefined && allUserRecordSet[i].userId !== dataUser.uid
-      // );
-
-      // if (hasOpened(projectId) && hasOthersData && !isOwnerAdmin) {
-      //   return { isOK: false, message: t('hooks.message.cannotDeleteOthers') };
-      // }
+      //他人のデータとコモンレイヤはアップロードできないからチェックもしない。
 
       deleteRecords();
       targetRecords.forEach((record) => {

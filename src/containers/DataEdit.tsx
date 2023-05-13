@@ -18,6 +18,7 @@ import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting
 import { pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { usePermission } from '../hooks/usePermission';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -58,11 +59,20 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const { unselectRecord } = useRecord();
   const { keyboardShown } = useKeyboard();
   const { hisyouLayerId } = useHisyouToolSetting();
+  const { isRunningProject } = usePermission();
   const isHisyouLayer = targetLayer.id === hisyouLayerId;
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
+    if (isRunningProject && targetLayer.permission === 'COMMON') {
+      Alert.alert('', t('hooks.message.lockProject'));
+      return;
+    }
+    if (isRunningProject && targetRecord.userId !== user.uid) {
+      Alert.alert('', t('hooks.message.cannotEditOthers'));
+      return;
+    }
     if (tracking !== undefined && tracking.dataId === targetRecord.id) {
       Alert.alert('', t('hooks.message.cannotEditInTracking'));
       return;
@@ -71,15 +81,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       Alert.alert('', t('hooks.message.noEditMode'));
       return;
     }
-    // if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid && !isOwnerAdmin) {
-    //   return { isOK: false, message: t('hooks.message.cannotEditOthers') };
-    // }
-    // if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-    //   return { isOK: false, message: t('hooks.message.lockProject') };
-    // }
-    // if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && !isOwnerAdmin) {
-    //   return { isOK: false, message: t('hooks.message.noPermissionToCommon') };
-    // }
+
     if (keyboardShown) {
       //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
       //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
@@ -100,11 +102,30 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (!isOK) {
       Alert.alert('', message);
     }
-  }, [isDecimal, isHisyouLayer, keyboardShown, latlon, saveData, targetLayer, targetRecord, tracking]);
+  }, [
+    isDecimal,
+    isHisyouLayer,
+    isRunningProject,
+    keyboardShown,
+    latlon,
+    saveData,
+    targetLayer,
+    targetRecord,
+    tracking,
+    user.uid,
+  ]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
+      if (isRunningProject && targetLayer.permission === 'COMMON') {
+        Alert.alert('', t('hooks.message.lockProject'));
+        return;
+      }
+      if (isRunningProject && targetRecord.userId !== user.uid) {
+        Alert.alert('', t('hooks.message.cannotEditOthers'));
+        return;
+      }
       if (tracking !== undefined && tracking.dataId === targetRecord.id) {
         Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
         return;
@@ -114,15 +135,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         return;
       }
 
-      // if (hasOpened(projectId) && targetRecord.userId !== dataUser.uid && !isOwnerAdmin) {
-      //   return { isOK: false, message: t('hooks.message.cannotEditOthers') };
-
-      // if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-      //   return { isOK: false, message: t('hooks.message.lockProject') };
-      // }
-      // if (targetLayer.permission === 'COMMON' && hasOpened(projectId) && !isOwnerAdmin) {
-      //   return { isOK: false, message: t('hooks.message.noPermissionToCommon') };
-      // }
       if (isEditingRecord) saveData();
       deleteRecord();
 
@@ -138,12 +150,15 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     closeData,
     deleteRecord,
     isEditingRecord,
+    isRunningProject,
     navigation,
     route.params.previous,
     saveData,
     targetLayer,
     targetRecord.id,
+    targetRecord.userId,
     tracking,
+    user.uid,
   ]);
 
   const pressPickPhoto = useCallback(

@@ -505,7 +505,7 @@
       "invalidEmail": "Invalid email address.",
       "invalidEmailOrPassword": "The email or password is incorrect.",
       "invalidFileType": "The file type is different.",
-      "lockProject": "Common layers cannot be edited when a project is open.",
+      "lockProject": "This layer cannot be edited.",
       "noActivate": "Your account has not been activated.",
       "noEditMode": "You are not in edit mode.",
       "noEditingLayer": "Not an edit layer.",
