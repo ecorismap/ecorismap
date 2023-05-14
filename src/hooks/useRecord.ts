@@ -22,6 +22,7 @@ import { getDefaultField } from '../utils/Data';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
+import { usePermission } from './usePermission';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -81,6 +82,13 @@ export type UseRecordReturnType = {
     coords: LocationType | LocationType[]
   ) => RecordType;
   isLayerEditable: (type: FeatureType, layer: LayerType) => boolean | undefined;
+  checkRecordEditable: (
+    targetLayer: LayerType,
+    feature?: RecordType
+  ) => {
+    isOK: boolean;
+    message: string;
+  };
 };
 
 export const useRecord = (): UseRecordReturnType => {
@@ -108,9 +116,7 @@ export const useRecord = (): UseRecordReturnType => {
         .flat() as PolygonDataType[]
   );
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
-  const role = useSelector((state: AppState) => state.settings.role);
-
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
+  const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
   const activeLineLayer = useMemo(() => layers.find((d) => d.active && d.type === 'LINE'), [layers]);
   const activePolygonLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POLYGON'), [layers]);
@@ -171,19 +177,24 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const checkRecordEditable = useCallback(
-    (editingLayer: LayerType, feature?: RecordType) => {
+    (targetLayer: LayerType, feature?: RecordType) => {
+      if (!targetLayer.active) {
+        return { isOK: false, message: t('hooks.message.noEditMode') };
+      }
       //データのチェックもする場合
       if (feature !== undefined) {
-        //パブリック、パーソナルデータでオーナー＆管理者だが自分以外のデータで調査モード
-        //ToDo 調査モード
-        const workInProgress = true;
-        if (editingLayer.permission !== 'COMMON' && isOwnerAdmin && workInProgress && dataUser.uid !== feature.userId) {
-          return { isOK: false, message: t('hooks.message.cannotEditOthersInWork') };
+        if (isRunningProject) {
+          if (targetLayer.permission === 'COMMON') {
+            return { isOK: false, message: t('hooks.message.cannotEditOthersInWork') };
+          }
+          if (dataUser.uid !== feature.userId) {
+            return { isOK: false, message: t('hooks.message.cannotEditOthersInWork') };
+          }
         }
       }
       return { isOK: true, message: '' };
     },
-    [dataUser.uid, isOwnerAdmin]
+    [dataUser.uid, isRunningProject]
   );
 
   const isLayerEditable = useCallback(
@@ -305,5 +316,6 @@ export const useRecord = (): UseRecordReturnType => {
     generateRecord,
     findLayer,
     isLayerEditable,
+    checkRecordEditable,
   } as const;
 };

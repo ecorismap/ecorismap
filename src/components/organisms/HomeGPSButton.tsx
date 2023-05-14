@@ -21,7 +21,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         marginHorizontal: 0,
         left: 9,
         position: 'absolute',
-        top: Platform.OS === 'ios' && !isLandscape && screenState !== 'opened' ? 207 : 177,
+        top: Platform.OS === 'ios' && !isLandscape && screenState !== 'opened' ? 207 : 180,
         zIndex: 101,
         elevation: 101,
       }}
