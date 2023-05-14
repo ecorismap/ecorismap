@@ -214,48 +214,78 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
-  const onPressMapView = useCallback(async () => {
-    if (currentDrawTool === 'ADD_LOCATION_POINT') {
-      if (Platform.OS === 'web') {
-        Alert.alert('', t('Home.alert.gpsWeb'));
-        return;
-      }
-      if (gpsState === 'off' && trackingState === 'off') {
-        Alert.alert('', t('Home.alert.gps'));
-        return;
-      }
+  const onPressMapView = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (currentDrawTool === 'ADD_LOCATION_POINT') {
+        if (Platform.OS === 'web') {
+          Alert.alert('', t('Home.alert.gpsWeb'));
+          return;
+        }
+        if (gpsState === 'off' && trackingState === 'off') {
+          Alert.alert('', t('Home.alert.gps'));
+          return;
+        }
 
-      const { isOK, message, layer, record } = await addCurrentPoint();
-      if (!isOK || layer === undefined || record === undefined) {
-        Alert.alert('', message);
+        const { isOK, message, layer, record } = await addCurrentPoint();
+        if (!isOK || layer === undefined || record === undefined) {
+          Alert.alert('', message);
+        } else {
+          screenState === 'closed' ? expandData() : openData();
+          setTimeout(function () {
+            navigation.navigate('DataEdit', {
+              previous: 'Data',
+              targetData: record,
+              targetLayer: layer,
+              targetRecordSet: [],
+              targetIndex: 0,
+            });
+          }, 1);
+        }
+        selectDrawTool(currentDrawTool);
+      } else if (isInfoTool(currentDrawTool)) {
+        if (isEditingRecord) {
+          await AlertAsync(t('Home.alert.discardChanges'));
+          return;
+        }
+
+        const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
+
+        if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
+          unselectRecord();
+          return;
+        }
+
+        openData();
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetData: { ...feature },
+          targetLayer: { ...layer },
+          targetRecordSet: recordSet,
+          targetIndex: recordIndex,
+        });
+
+        setTimeout(() => changeMapRegion(mapRegion, true), 300);
       } else {
-        screenState === 'closed' ? expandData() : openData();
-        setTimeout(function () {
-          navigation.navigate('DataEdit', {
-            previous: 'Data',
-            targetData: record,
-            targetLayer: layer,
-            targetRecordSet: [],
-            targetIndex: 0,
-          });
-        }, 1);
+        unselectRecord();
       }
-      selectDrawTool(currentDrawTool);
-    } else {
-      unselectRecord();
-    }
-  }, [
-    currentDrawTool,
-    gpsState,
-    trackingState,
-    addCurrentPoint,
-    selectDrawTool,
-    screenState,
-    expandData,
-    openData,
-    navigation,
-    unselectRecord,
-  ]);
+    },
+    [
+      currentDrawTool,
+      gpsState,
+      trackingState,
+      addCurrentPoint,
+      selectDrawTool,
+      screenState,
+      expandData,
+      openData,
+      navigation,
+      isEditingRecord,
+      selectSingleFeature,
+      unselectRecord,
+      changeMapRegion,
+      mapRegion,
+    ]
+  );
 
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
@@ -289,47 +319,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [importGeoFile, isRunningProject]
   );
 
-  const onReleaseSvgView = useCallback(
-    async (event: GestureResponderEvent) => {
-      if (isInfoTool(currentDrawTool)) {
-        if (isEditingRecord) {
-          await AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-
-        const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
-
-        if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
-          unselectRecord();
-          return;
-        }
-
-        openData();
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-          targetRecordSet: recordSet,
-          targetIndex: recordIndex,
-        });
-
-        setTimeout(() => changeMapRegion(mapRegion, true), 300);
-      } else {
-        releaseSvgView(event);
-      }
-    },
-    [
-      currentDrawTool,
-      isEditingRecord,
-      selectSingleFeature,
-      openData,
-      navigation,
-      unselectRecord,
-      changeMapRegion,
-      mapRegion,
-      releaseSvgView,
-    ]
-  );
   /************** select button ************/
 
   const selectFeatureButton = useCallback(
@@ -600,7 +589,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onDrop,
         onPressSvgView: pressSvgView,
         onMoveSvgView: moveSvgView,
-        onReleaseSvgView,
+        onReleaseSvgView: releaseSvgView,
         selectFeatureButton,
         selectDrawTool,
         setPointTool,

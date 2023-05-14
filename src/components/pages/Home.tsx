@@ -1,5 +1,13 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Platform,
+  Text,
+  PanResponderInstance,
+  PanResponder,
+  GestureResponderEvent,
+} from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 
 // @ts-ignore
@@ -185,6 +193,18 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
+  const panResponder: PanResponderInstance = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e: GestureResponderEvent) => {
+          onPressMapView(e);
+        },
+      }),
+    [onPressMapView]
+  );
+
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
@@ -201,7 +221,10 @@ export default function HomeScreen() {
         ]}
       >
         <Loading visible={isLoading} text="" />
-        {currentDrawTool !== 'NONE' && currentDrawTool !== 'ADD_LOCATION_POINT' && <SvgView />}
+        {currentDrawTool !== 'NONE' &&
+          currentDrawTool !== 'ADD_LOCATION_POINT' &&
+          currentDrawTool !== 'ALL_INFO' &&
+          currentDrawTool !== 'FEATURETYPE_INFO' && <SvgView />}
 
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
@@ -218,7 +241,6 @@ export default function HomeScreen() {
           moveOnMarkerPress={false}
           //@ts-ignore
           mapType={mapType}
-          onPress={onPressMapView}
           onPanDrag={onDragMapView}
           //@ts-ignore
           options={
@@ -232,6 +254,7 @@ export default function HomeScreen() {
               fullscreenControl: false,
             }
           }
+          {...panResponder.panHandlers}
         >
           {/************** Current Marker ****************** */}
           {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (

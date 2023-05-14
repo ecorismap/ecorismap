@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
-import MapView, { MapPressEvent, Region } from 'react-native-maps';
+import MapView, { Region } from 'react-native-maps';
 import {
   RecordType,
   LocationType,
@@ -69,7 +69,7 @@ export interface HomeContextType {
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
-  onPressMapView: (event: MapPressEvent) => void;
+  onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
   onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
