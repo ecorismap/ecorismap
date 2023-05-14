@@ -74,6 +74,7 @@ export default function HomeScreen() {
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
+    onDragEndPoint,
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressZoomIn,
@@ -222,6 +223,7 @@ export default function HomeScreen() {
       >
         <Loading visible={isLoading} text="" />
         {currentDrawTool !== 'NONE' &&
+          currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
           currentDrawTool !== 'ALL_INFO' &&
           currentDrawTool !== 'FEATURETYPE_INFO' && <SvgView />}
@@ -278,6 +280,8 @@ export default function HomeScreen() {
                   layer={layer!}
                   zoom={zoom}
                   selectedRecord={selectedRecord}
+                  draggable={currentDrawTool === 'MOVE_POINT'}
+                  onDragEndPoint={onDragEndPoint}
                 />
               )
             );

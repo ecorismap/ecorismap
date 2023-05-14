@@ -69,6 +69,7 @@ export default function HomeScreen() {
     gotoMaps,
     pressZoomIn,
     pressZoomOut,
+    onDragEndPoint,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -437,10 +438,13 @@ export default function HomeScreen() {
         }}
       >
         <Loading visible={isLoading} text="" />
+
         {currentDrawTool !== 'NONE' &&
+          currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
           currentDrawTool !== 'ALL_INFO' &&
           currentDrawTool !== 'FEATURETYPE_INFO' && <SvgView />}
+
         <div {...getRootProps({ className: 'dropzone' })}>
           <input {...getInputProps()} />
 
@@ -493,6 +497,8 @@ export default function HomeScreen() {
                       layer={layer!}
                       zoom={zoom}
                       selectedRecord={selectedRecord}
+                      onDragEndPoint={onDragEndPoint}
+                      draggable={currentDrawTool === 'MOVE_POINT'}
                     />
                   )
                 );
