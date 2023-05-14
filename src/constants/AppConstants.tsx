@@ -142,7 +142,7 @@ export const SelectedPhotoTemplate = {
 };
 
 export const POINTTOOL = {
-  PLOT_POINT: 'map-marker',
+  PLOT_POINT: 'map-marker-plus',
   ADD_LOCATION_POINT: 'map-marker-radius',
 } as const;
 
@@ -161,16 +161,14 @@ export const INFOTOOL = {
   FEATURETYPE_INFO: 'cursor-default-click-outline',
 } as const;
 
-export const SELECTIONTOOL = {
-  SELECT: 'select',
-} as const;
-
 export const DRAWTOOL = {
   ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
   ...INFOTOOL,
-  ...SELECTIONTOOL,
+  SELECT: 'select',
+  MOVE_POINT: 'map-marker-right',
+  DELETE_POINT: 'map-marker-remove',
   MOVE: 'cursor-move',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
