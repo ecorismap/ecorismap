@@ -621,7 +621,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         hideDrawLine();
         return;
       }
-      if (currentDrawTool === 'SELECT') {
+      if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
         // //選択解除
         editingObjectIndex.current = -1;
         drawLine.current = [];
@@ -683,7 +683,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         setRedraw(uuidv4());
         return;
       }
-      if (currentDrawTool === 'SELECT') {
+      if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
         selectLine.current = [...selectLine.current, pXY];
         setRedraw(uuidv4());
         return;
@@ -717,7 +717,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         showDrawLine();
         setRedraw(uuidv4());
       }
-      if (currentDrawTool === 'SELECT') {
+      if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
         selectEditableFeatures();
         setRedraw(uuidv4());
         return;
