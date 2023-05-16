@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
-import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
+import MapView, { Region } from 'react-native-maps';
 import { FeatureButtonType, DrawToolType, LayerType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -17,7 +17,6 @@ import { MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
-import { useWindow } from '../hooks/useWindow';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
 import { ModalHisyouToolSetting } from '../plugins/hisyoutool/ModalHisyouToolSetting';
 import { PLUGIN } from '../constants/AppConstants';
@@ -42,7 +41,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { screenState, openData, expandData, closeData } = useScreen();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
-  const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
@@ -285,8 +283,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-
-        setTimeout(() => changeMapRegion(mapRegion, true), 300);
       } else {
         unselectRecord();
       }
@@ -304,8 +300,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isEditingRecord,
       selectSingleFeature,
       unselectRecord,
-      changeMapRegion,
-      mapRegion,
     ]
   );
 
