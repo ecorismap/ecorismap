@@ -21,7 +21,6 @@ import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
-import { useWindow } from '../hooks/useWindow';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
 import { ModalHisyouToolSetting } from '../plugins/hisyoutool/ModalHisyouToolSetting';
 import { PLUGIN } from '../constants/AppConstants';
@@ -52,7 +51,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { screenState, openData, expandData, closeData } = useScreen();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
-  const { mapRegion } = useWindow();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
@@ -312,8 +310,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           targetRecordSet: recordSet,
           targetIndex: recordIndex,
         });
-
-        setTimeout(() => changeMapRegion(mapRegion, true), 300);
       } else {
         unselectRecord();
       }
@@ -331,8 +327,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isEditingRecord,
       selectSingleFeature,
       unselectRecord,
-      changeMapRegion,
-      mapRegion,
     ]
   );
 

@@ -14,11 +14,9 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
-import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
-import { usePermission } from '../hooks/usePermission';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -53,32 +51,17 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
-  const { unselectRecord } = useRecord();
+  const { unselectRecord, checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();
-  const { hisyouLayerId } = useHisyouToolSetting();
-  const { isRunningProject } = usePermission();
-  const isHisyouLayer = targetLayer.id === hisyouLayerId;
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
-    if (isRunningProject && targetLayer.permission === 'COMMON') {
-      Alert.alert('', t('hooks.message.lockProject'));
-      return;
-    }
-    if (isRunningProject && targetRecord.userId !== user.uid) {
-      Alert.alert('', t('hooks.message.cannotEditOthers'));
-      return;
-    }
-    if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-      Alert.alert('', t('hooks.message.cannotEditInTracking'));
-      return;
-    }
-    if (!targetLayer.active && !isHisyouLayer) {
-      Alert.alert('', t('hooks.message.noEditMode'));
+    const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
+    if (!isOK) {
+      Alert.alert('', message);
       return;
     }
 
@@ -98,40 +81,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       return;
     }
 
-    const { isOK, message } = saveData();
-    if (!isOK) {
-      Alert.alert('', message);
+    const result = saveData();
+    if (!result.isOK) {
+      Alert.alert('', result.message);
     }
-  }, [
-    isDecimal,
-    isHisyouLayer,
-    isRunningProject,
-    keyboardShown,
-    latlon,
-    saveData,
-    targetLayer,
-    targetRecord,
-    tracking,
-    user.uid,
-  ]);
+  }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
-      if (isRunningProject && targetLayer.permission === 'COMMON') {
-        Alert.alert('', t('hooks.message.lockProject'));
-        return;
-      }
-      if (isRunningProject && targetRecord.userId !== user.uid) {
-        Alert.alert('', t('hooks.message.cannotEditOthers'));
-        return;
-      }
-      if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
-        return;
-      }
-      if (!targetLayer.active) {
-        Alert.alert('', t('hooks.message.noEditMode'));
+      const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
+      if (!isOK) {
+        Alert.alert('', message);
         return;
       }
 
@@ -147,18 +108,15 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       }
     }
   }, [
+    checkRecordEditable,
     closeData,
     deleteRecord,
     isEditingRecord,
-    isRunningProject,
     navigation,
     route.params.previous,
     saveData,
     targetLayer,
-    targetRecord.id,
-    targetRecord.userId,
-    tracking,
-    user.uid,
+    targetRecord,
   ]);
 
   const pressPickPhoto = useCallback(
