@@ -14,7 +14,6 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
-import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { pickImage, takePhoto } from '../utils/Photo';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
@@ -50,25 +49,20 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
-  const { unselectRecord } = useRecord();
+  const { unselectRecord, checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();
-  const { hisyouLayerId } = useHisyouToolSetting();
-  const isHisyouLayer = targetLayer.id === hisyouLayerId;
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
   const pressSaveData = useCallback(() => {
-    if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-      Alert.alert('', t('hooks.message.cannotEditInTracking'));
+    const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
+    if (!isOK) {
+      Alert.alert('', message);
       return;
     }
-    if (!targetLayer.active && !isHisyouLayer) {
-      Alert.alert('', t('hooks.message.noEditMode'));
-      return;
-    }
+
     if (keyboardShown) {
       //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
       //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
@@ -85,21 +79,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       return;
     }
 
-    const { isOK, message } = saveData();
-    if (!isOK) {
-      Alert.alert('', message);
+    const result = saveData();
+    if (!result.isOK) {
+      Alert.alert('', result.message);
     }
-  }, [isDecimal, isHisyouLayer, keyboardShown, latlon, saveData, targetLayer, targetRecord, tracking]);
+  }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
-      if (tracking !== undefined && tracking.dataId === targetRecord.id) {
-        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
-        return;
-      }
-      if (!targetLayer.active) {
-        Alert.alert('', t('hooks.message.noEditMode'));
+      const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
+      if (!isOK) {
+        Alert.alert('', message);
         return;
       }
       if (isEditingRecord) saveData();
@@ -114,6 +105,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       }
     }
   }, [
+    checkRecordEditable,
     closeData,
     deleteRecord,
     isEditingRecord,
@@ -121,8 +113,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.previous,
     saveData,
     targetLayer,
-    targetRecord.id,
-    tracking,
+    targetRecord,
   ]);
 
   const pressPickPhoto = useCallback(
