@@ -12,10 +12,10 @@ import { DataContext } from '../contexts/Data';
 import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
 import { usePhoto } from '../hooks/usePhoto';
+import { useRecord } from '../hooks/useRecord';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
@@ -32,6 +32,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     deleteRecords,
     generateExportGeoData,
   } = useData(route.params.targetLayer);
+  const { checkRecordEditable } = useRecord();
   const { deleteRecordPhotos } = usePhoto();
   const { isMember } = usePermission();
 
@@ -47,21 +48,19 @@ export default function DataContainer({ navigation, route }: Props_Data) {
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
-    if (ret) {
-      if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+    if (!ret) return;
+    for (const record of targetRecords) {
+      const { isOK, message } = checkRecordEditable(route.params.targetLayer, record);
+      if (!isOK) {
+        Alert.alert('', message);
         return;
       }
-      if (!route.params.targetLayer.active) {
-        Alert.alert('', t('hooks.message.noEditMode'));
-        return;
-      }
-      deleteRecords();
-      targetRecords.forEach((record) => {
-        deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
-      });
     }
-  }, [deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer, targetRecords, tracking]);
+    deleteRecords();
+    targetRecords.forEach((record) => {
+      deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
+    });
+  }, [checkRecordEditable, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer, targetRecords]);
 
   const pressAddData = useCallback(async () => {
     if (!route.params.targetLayer.active) {
