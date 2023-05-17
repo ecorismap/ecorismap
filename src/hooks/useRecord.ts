@@ -23,7 +23,6 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
-import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -119,7 +118,6 @@ export const useRecord = (): UseRecordReturnType => {
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const { hisyouLayerId } = useHisyouToolSetting();
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
@@ -192,13 +190,13 @@ export const useRecord = (): UseRecordReturnType => {
       if (tracking !== undefined && tracking.dataId === feature?.id) {
         return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
       }
-      if (!targetLayer.active && targetLayer.id !== hisyouLayerId) {
+      if (!targetLayer.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [hisyouLayerId, isRunningProject, tracking, user.uid]
+    [isRunningProject, tracking, user.uid]
   );
 
   const isLayerEditable = useCallback(
