@@ -110,7 +110,7 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
                 latitude: region.latitude,
                 longitude: region.longitude,
               },
-              zoom: region.zoom,
+              zoom: region.zoom + 1,
             },
             { duration: 5 }
           );
