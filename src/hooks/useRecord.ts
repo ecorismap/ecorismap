@@ -184,7 +184,7 @@ export const useRecord = (): UseRecordReturnType => {
       if (isRunningProject && targetLayer.permission === 'COMMON') {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
-      if (isRunningProject && feature?.userId !== user.uid) {
+      if (isRunningProject && feature && feature.userId !== user.uid) {
         return { isOK: false, message: t('hooks.message.cannotEditOthers') };
       }
       if (tracking !== undefined && tracking.dataId === feature?.id) {
