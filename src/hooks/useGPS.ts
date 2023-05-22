@@ -12,14 +12,23 @@ import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
+//import { Buffer } from 'buffer';
 
 const locationEventsEmitter = new EventEmitter();
 const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
   if (isLocationObject(data) && data.locations.length > 0) {
     const savedLocations = await getSavedLocations();
     const updatedLocations = updateLocations(savedLocations, data.locations);
-    await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify(updatedLocations));
+    const updatedLocationsString = JSON.stringify(updatedLocations);
+    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+
+    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
     locationEventsEmitter.emit('update', updatedLocations);
+    //console.log(dataSizeInMB);
+    //if (dataSizeInMB > 2) {
+    //console.warn('データサイズが2MBを超えています。保存されません。');
+    //AlertAsync(t('hooks.alert.dataSizeOver'));
+    //}
   }
 };
 TaskManager.defineTask(TASK.FETCH_LOCATION, saveAndEmitLocation);

@@ -70,7 +70,7 @@ export const getInitialFieldValue = (
     case 'NUMBERRANGE':
       return `${t('common.ndash')}`;
     case 'DATETIME':
-      return '1970-01-01T00:00:00+09:00';
+      return '';
     case 'DATESTRING':
       return '';
     case 'TIMESTRING':

@@ -41,7 +41,7 @@ const zeroPadding = (num: string, length: number) => {
   return ('0000000000' + num).slice(-length);
 };
 
-export const hex2rgba = (hex: string, alpha = 1): string | undefined => {
+export const hex2rgba = (hex: string, alpha = 1) => {
   // ロングバージョンの場合（例：#FF0000）
   let r = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   let c: number[] = [];
@@ -57,9 +57,9 @@ export const hex2rgba = (hex: string, alpha = 1): string | undefined => {
       return 0x11 * parseInt(x, 16);
     });
   }
-  // 該当しない場合は、undefinedを返す.
+  // 該当しない場合は、透明を返す.
   if (c.length === 0) {
-    return undefined;
+    return 'rgba(0,0,0,0)';
   }
   return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
 };
