@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
-import MapView, { MapPressEvent, Region } from 'react-native-maps';
+import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
   LocationType,
@@ -21,6 +21,7 @@ import {
   PenType,
   MapMemoToolType,
   EraserType,
+  LayerType,
 } from '../types';
 import { MapRef, ViewState } from 'react-map-gl';
 
@@ -79,8 +80,9 @@ export interface HomeContextType {
   refreshMapMemo: boolean;
   penColor: string;
   onRegionChangeMapView: (region: Region | ViewState) => void;
-  onPressMapView: (event: MapPressEvent) => void;
+  onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
+  onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
   onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;

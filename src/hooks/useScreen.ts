@@ -20,6 +20,7 @@ export const useScreen = (): UseScreenReturnType => {
 
   const closeData = useCallback(() => {
     dispatch(editSettingsAction({ screenState: 'closed' }));
+    dispatch(editSettingsAction({ isEditingRecord: false }));
   }, [dispatch]);
 
   const expandData = useCallback(() => {

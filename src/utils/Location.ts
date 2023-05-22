@@ -5,6 +5,10 @@ import lineDistance from '@turf/line-distance';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/helpers';
 
+export const clearSavedLocations = async () => {
+  await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify([]));
+};
+
 export const getSavedLocations = async (): Promise<LocationType[]> => {
   try {
     const item = await AsyncStorage.getItem(STORAGE.TRACKLOG);

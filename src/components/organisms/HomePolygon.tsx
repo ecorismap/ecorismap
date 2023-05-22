@@ -5,7 +5,6 @@ import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { getColor } from '../../utils/Layer';
-import { hex2rgba } from '../../utils/Color';
 import dayjs from '../../i18n/dayjs';
 
 interface Props {
@@ -36,10 +35,10 @@ export const Polygon = React.memo((props: Props) => {
               : feature.field[layer.label].toString()
             : '';
         const transparency = layer.colorStyle.transparency;
-        const color = getColor(layer, feature);
+        const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const pointColor = selected ? COLOR.YELLOW : color;
-        const polygonColor = selected ? COLOR.ALFAYELLOW : hex2rgba(color, 1 - transparency);
+        const polygonColor = selected ? COLOR.ALFAYELLOW : getColor(layer, feature, transparency);
         const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
 
         if (zoom >= 11) {

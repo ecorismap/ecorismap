@@ -6,7 +6,6 @@ import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSett
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
-import { HomeSelectionToolButton } from './HomeSelectionToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
@@ -79,11 +78,53 @@ export const HomeDrawTools = () => {
         {featureButton === 'POINT' && (
           <View style={isPositionRight ? styles.buttonRight : styles.button}>
             <Button
+              id={'ADD_LOCATION_POINT'}
+              name={POINTTOOL.ADD_LOCATION_POINT}
+              disabled={isEditingDraw || isSelectedDraw}
+              backgroundColor={
+                isEditingDraw || isSelectedDraw
+                  ? COLOR.ALFAGRAY
+                  : currentDrawTool === 'ADD_LOCATION_POINT'
+                  ? COLOR.ALFARED
+                  : COLOR.ALFABLUE
+              }
+              borderRadius={10}
+              onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
+            />
+          </View>
+        )}
+        {featureButton === 'POINT' && (
+          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+            <Button
               id={'PLOT_POINT'}
               name={POINTTOOL.PLOT_POINT}
               backgroundColor={currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
               borderRadius={10}
               onPress={() => selectDrawTool('PLOT_POINT')}
+            />
+          </View>
+        )}
+        {featureButton === 'POINT' && (
+          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+            <Button
+              name={DRAWTOOL.MOVE_POINT}
+              backgroundColor={currentDrawTool === 'MOVE_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+              borderRadius={10}
+              disabled={false}
+              onPress={() => selectDrawTool('MOVE_POINT')}
+            />
+          </View>
+        )}
+        {featureButton === 'POINT' && (
+          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+            <Button
+              name={DRAWTOOL.DELETE_POINT}
+              backgroundColor={
+                currentDrawTool === 'DELETE_POINT' ? COLOR.ALFARED : isEditingDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE
+              }
+              borderRadius={10}
+              disabled={isEditingDraw}
+              onPress={() => selectDrawTool('DELETE_POINT')}
             />
           </View>
         )}
@@ -119,53 +160,62 @@ export const HomeDrawTools = () => {
         </View>
       )}
 
-      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
-        <HomeSelectionToolButton
-          isEditing={isEditingDraw}
-          isPositionRight={isPositionRight}
-          currentDrawTool={currentDrawTool}
-          selectDrawTool={selectDrawTool}
-        />
-      </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={DRAWTOOL.MOVE}
-          backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={false}
-          onPress={() => selectDrawTool('MOVE')}
-        />
-      </View>
-
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={DRAWTOOL.SAVE}
-          backgroundColor={!isEditingDraw || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={!isEditingDraw || isEditingObject}
-          onPress={pressSaveDraw}
-        />
-      </View>
-
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={DRAWTOOL.UNDO}
-          backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
-          borderRadius={10}
-          disabled={!isEditingDraw}
-          onPress={pressUndoDraw}
-        />
-      </View>
-
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={DRAWTOOL.DELETE}
-          backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={isEditingDraw || !isSelectedDraw}
-          onPress={pressDeleteDraw}
-        />
-      </View>
+      {featureButton !== 'POINT' && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={DRAWTOOL.SELECT}
+            backgroundColor={
+              currentDrawTool === 'SELECT' ? COLOR.ALFARED : isEditingDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE
+            }
+            borderRadius={10}
+            disabled={isEditingDraw}
+          />
+        </View>
+      )}
+      {featureButton !== 'POINT' && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={DRAWTOOL.MOVE}
+            backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+            borderRadius={10}
+            disabled={false}
+            onPress={() => selectDrawTool('MOVE')}
+          />
+        </View>
+      )}
+      {featureButton !== 'POINT' && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={DRAWTOOL.SAVE}
+            backgroundColor={!isEditingDraw || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            borderRadius={10}
+            disabled={!isEditingDraw || isEditingObject}
+            onPress={pressSaveDraw}
+          />
+        </View>
+      )}
+      {featureButton !== 'POINT' && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={DRAWTOOL.UNDO}
+            backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+            borderRadius={10}
+            disabled={!isEditingDraw}
+            onPress={pressUndoDraw}
+          />
+        </View>
+      )}
+      {featureButton !== 'POINT' && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={DRAWTOOL.DELETE}
+            backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            borderRadius={10}
+            disabled={isEditingDraw || !isSelectedDraw}
+            onPress={pressDeleteDraw}
+          />
+        </View>
+      )}
     </View>
   );
 };
