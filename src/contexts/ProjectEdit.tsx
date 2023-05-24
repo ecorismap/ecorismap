@@ -10,11 +10,8 @@ interface ProjectEditContextType {
   isOwnerAdmin: boolean;
   isEdited: boolean;
   isLoading: boolean;
-  pickerValue: string;
-  pickerItems: string[] | undefined;
   changeText: (name: string, value: string) => void;
   changeCreateType: (value: CreateProjectType) => void;
-  changeDuplicateProjectName: (itemValue: string, itemIndex: number) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
   pressAddMember: () => void;

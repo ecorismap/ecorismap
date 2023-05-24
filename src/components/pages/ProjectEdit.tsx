@@ -3,7 +3,6 @@ import { View, StyleSheet, ScrollView } from 'react-native';
 import { COLOR, CREATEPROJECTTYPE, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { ProjectEditButtons } from '../organisms/ProjectEditButtons';
-import { ProjectNamePicker } from '../organisms/ProjecEditProjectNamePicker';
 import { ProjectEditRadio } from '../organisms/ProjectEditRadio';
 import { ProjectEditMembers } from '../organisms/ProjectEditMembers';
 import { CreateProjectType } from '../../types';
@@ -24,10 +23,7 @@ export default function ProjectEditScreen() {
     isOwner,
     isOwnerAdmin,
     isLoading,
-    pickerValue,
-    pickerItems,
     changeText,
-    changeDuplicateProjectName,
     changeCreateType,
     changeMemberText,
     changeAdmin,
@@ -91,14 +87,6 @@ export default function ProjectEditScreen() {
             list={createTypeValueList}
             labels={createTypeLabels}
             onValueChange={changeCreateType}
-          />
-        )}
-        {createType === 'COPY' && pickerItems !== undefined && (
-          <ProjectNamePicker
-            label={t('common.copySource')}
-            value={pickerValue}
-            pickerItems={pickerItems}
-            onValueChange={changeDuplicateProjectName}
           />
         )}
         <EditString

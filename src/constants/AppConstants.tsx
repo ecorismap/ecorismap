@@ -105,7 +105,6 @@ export const COLORRAMP = {
 export const CREATEPROJECTTYPE = {
   DEFAULT: t('constants.createproject.default'),
   SAVE: t('constants.createproject.save'),
-  COPY: t('constants.createproject.copy'),
 } as const;
 
 export const PERMISSIONTYPE = {
