@@ -32,7 +32,6 @@ export type UseRepositoryReturnType = {
   createProject: (
     project: ProjectType,
     createType: CreateProjectType | undefined,
-    isPhotoUpload: boolean,
     copiedProjectName: string | undefined
   ) => Promise<{
     isOK: boolean;
@@ -394,37 +393,22 @@ export const useRepository = (): UseRepositoryReturnType => {
     [updatedAt, user]
   );
 
-  const uploadCurrentProjectSettingsAndData = useCallback(
-    async (project_: ProjectType, isPhotoUpload: boolean) => {
-      if (!isLoggedIn(user)) {
-        return { isOK: false, message: t('hooks.message.pleaseLogin') };
-      }
-      const { isOK: projectOK, message: projectMessage } = await projectStore.uploadProjectSettings(
-        project_.id,
-        user.uid,
-        {
-          layers,
-          tileMaps,
-          mapType,
-          mapRegion,
-          plugins,
-          updatedAt,
-        }
-      );
-      if (!projectOK) {
-        return { isOK: false, message: projectMessage };
-      }
-      const { isOK: dataOK, message: dataMessage } = await uploadData(project_, isPhotoUpload, 'All');
-      if (!dataOK) {
-        return { isOK: false, message: dataMessage };
-      }
+  const uploadCurrentProjectSettings = useCallback(
+    async (project_: ProjectType) => {
+      const projectSettingsResult = await uploadProjectSettings(project_);
+      if (!projectSettingsResult.isOK) return { isOK: false, message: projectSettingsResult.message };
+      const dataToRepositoryResult = await uploadData(project_, true, 'Common');
+      if (!dataToRepositoryResult.isOK) return { isOK: false, message: dataToRepositoryResult.message };
+      const uploadTemplateResult = await uploadData(project_, true, 'Template');
+      if (!uploadTemplateResult.isOK) return { isOK: false, message: uploadTemplateResult.message };
+
       return { isOK: true, message: '' };
     },
-    [layers, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadData, user]
+    [uploadData, uploadProjectSettings]
   );
 
-  const copyProjectSettingsAndCommonData = useCallback(
-    async (project: ProjectType, copiedProjectName: string, isPhotoUpload: boolean) => {
+  const copyProjectSettings = useCallback(
+    async (project: ProjectType, copiedProjectName: string) => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
@@ -443,7 +427,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       const { isOK: dataOK, message: dataMessage } = await projectStore.copyCommonData(
         copiedProject.id,
         project.id,
-        isPhotoUpload
+        false
       );
       if (!dataOK) {
         return { isOK: false, message: dataMessage };
@@ -455,12 +439,7 @@ export const useRepository = (): UseRepositoryReturnType => {
   );
 
   const createProject = useCallback(
-    async (
-      project: ProjectType,
-      createType: CreateProjectType | undefined,
-      isPhotoUpload: boolean,
-      copiedProjectName: string | undefined
-    ) => {
+    async (project: ProjectType, createType: CreateProjectType | undefined, copiedProjectName: string | undefined) => {
       const { isOK, message } = await projectStore.addProject(project);
       if (!isOK) return { isOK: false, message };
       dispatch(addProjectAction(project));
@@ -471,17 +450,17 @@ export const useRepository = (): UseRepositoryReturnType => {
           result = await uploadDefaultProjectSettings(project);
           break;
         case 'SAVE':
-          result = await uploadCurrentProjectSettingsAndData(project, isPhotoUpload);
+          result = await uploadCurrentProjectSettings(project);
           break;
         case 'COPY':
-          result = await copyProjectSettingsAndCommonData(project, copiedProjectName!, isPhotoUpload);
+          result = await copyProjectSettings(project, copiedProjectName!);
           break;
         default:
           result = { isOK: false, message: t('hooks.message.unknownError') };
       }
       return { isOK: result.isOK, message: result.message };
     },
-    [copyProjectSettingsAndCommonData, dispatch, uploadCurrentProjectSettingsAndData, uploadDefaultProjectSettings]
+    [copyProjectSettings, dispatch, uploadCurrentProjectSettings, uploadDefaultProjectSettings]
   );
 
   const updateProject = useCallback(
