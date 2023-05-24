@@ -91,6 +91,7 @@ export const DataEditTimeRange = (props: Props) => {
             open={open1}
             date={dateValue1}
             title={null}
+            textColor={COLOR.BLACK}
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen1(false);
@@ -114,6 +115,7 @@ export const DataEditTimeRange = (props: Props) => {
             open={open2}
             date={dateValue2}
             title={null}
+            textColor={COLOR.BLACK}
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen2(false);
