@@ -237,13 +237,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
       const e3kitGroupResult = await createE3kitGroup(project);
       if (!e3kitGroupResult.isOK || e3kitGroupResult.project === undefined) throw new Error(e3kitGroupResult.message);
-      const isPhotoUpload = true; //コモンデータの写真もあればコピーする
-      const createProjectResult = await createProject(
-        e3kitGroupResult.project,
-        createType,
-        isPhotoUpload,
-        copiedProjectName
-      );
+      const createProjectResult = await createProject(e3kitGroupResult.project, createType, copiedProjectName);
       if (!createProjectResult.isOK) throw new Error(createProjectResult.message);
       const updateLicenseResult = await updateLicense(e3kitGroupResult.project);
       if (!updateLicenseResult.isOK) throw new Error(updateLicenseResult.message);
