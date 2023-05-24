@@ -29,8 +29,6 @@ export type UseProjectEditReturnType = {
   originalProject: ProjectType;
   targetProject: ProjectType;
   createType: CreateProjectType | undefined;
-  ownerProjectNames: string[];
-  copiedProjectName: string | undefined;
   isEdited: boolean;
   projectRegion: RegionType;
   checkedProject: () => Promise<{
@@ -56,7 +54,6 @@ export type UseProjectEditReturnType = {
 
   startProjectSetting: () => void;
   setCreateType: (type: CreateProjectType) => void;
-  setCopiedProjectName: (itemValue: string) => void;
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
@@ -88,13 +85,7 @@ export const useProjectEdit = (
   );
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const isOwner = useMemo(() => role === 'OWNER', [role]);
-  const ownerProjectNames = useMemo(
-    () => projects.filter((p) => p.ownerUid === user.uid).map((p: ProjectType) => p.name),
-    [projects, user.uid]
-  );
-  const [copiedProjectName, setCopiedProjectName] = useState<string | undefined>(
-    ownerProjectNames.length > 0 ? ownerProjectNames[0] : undefined
-  );
+
   const { fetchAllPhotos } = useRepository();
 
   useEffect(() => {
@@ -314,8 +305,6 @@ export const useProjectEdit = (
     targetProject,
     originalProject,
     createType,
-    ownerProjectNames,
-    copiedProjectName,
     isEdited,
     projectRegion,
     checkedProject,
@@ -323,7 +312,6 @@ export const useProjectEdit = (
     generateExportProjectData,
     saveProject,
     startProjectSetting,
-    setCopiedProjectName,
     changeText,
     changeMemberText,
     changeAdmin,

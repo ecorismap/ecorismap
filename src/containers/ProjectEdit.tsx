@@ -26,13 +26,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     targetProject,
     originalProject,
     createType,
-    ownerProjectNames,
-    copiedProjectName,
     isEdited,
     checkedProject,
     saveProject,
     setCreateType,
-    setCopiedProjectName,
     changeText,
     changeMemberText,
     changeAdmin,
@@ -233,16 +230,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const saveNewProject = useCallback(
     async (project: ProjectType) => {
-      if (createType === 'COPY' && copiedProjectName === undefined) throw new Error(t('hooks.message.noCopyProject'));
-
       const e3kitGroupResult = await createE3kitGroup(project);
       if (!e3kitGroupResult.isOK || e3kitGroupResult.project === undefined) throw new Error(e3kitGroupResult.message);
-      const createProjectResult = await createProject(e3kitGroupResult.project, createType, copiedProjectName);
+      const createProjectResult = await createProject(e3kitGroupResult.project, createType);
       if (!createProjectResult.isOK) throw new Error(createProjectResult.message);
       const updateLicenseResult = await updateLicense(e3kitGroupResult.project);
       if (!updateLicenseResult.isOK) throw new Error(updateLicenseResult.message);
     },
-    [copiedProjectName, createE3kitGroup, createProject, createType]
+    [createE3kitGroup, createProject, createType]
   );
 
   const pressSaveProject = useCallback(async () => {
@@ -306,11 +301,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         isLoading,
         isNew,
         createType,
-        pickerValue: copiedProjectName ?? '',
-        pickerItems: ownerProjectNames,
         changeText,
         changeCreateType: setCreateType,
-        changeDuplicateProjectName: setCopiedProjectName,
         changeMemberText,
         changeAdmin,
         pressAddMember,

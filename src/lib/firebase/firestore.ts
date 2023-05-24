@@ -225,18 +225,6 @@ export const downloadProjectSettings = async (projectId: string) => {
   }
 };
 
-export const copyProjectSettings = async (fromProjectId: string, toProjectId: string, editorUid: string) => {
-  const { isOK: downloadOK, message: downloadMessage, data } = await downloadProjectSettings(fromProjectId);
-  if (!downloadOK || data === undefined) {
-    return { isOK: false, message: downloadMessage };
-  }
-  const { isOK: uploadOK, message: uploadMessage } = await uploadProjectSettings(toProjectId, editorUid, data);
-  if (!uploadOK) {
-    return { isOK: false, message: uploadMessage };
-  }
-  return { isOK: true, message: '' };
-};
-
 const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) => {
   const dataSet = await Promise.all(
     projectDataSet.docs.map(async (v: any) => {
@@ -477,32 +465,6 @@ export const downloadTemplateData = async (userId_: string, projectId: string) =
     console.log(error);
     return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
   }
-};
-
-export const copyCommonData = async (fromProjectId: string, toProjectId: string, isPhotoUpload: boolean) => {
-  //ToDo バッチ？
-  const { isOK: downloadOK, message: downloadMessage, data } = await downloadCommonData(fromProjectId);
-  if (!downloadOK || data === undefined) {
-    return { isOK: false, message: downloadMessage };
-  }
-
-  for (const { userId, ...d } of data) {
-    if (userId === undefined) {
-      return { isOK: false, message: 'コモンデータのコピーに失敗しました' };
-    }
-    if (isPhotoUpload) {
-      //ToDo 写真をstorage上でコピーして、URLを更新
-    }
-    const { isOK: uploadOK, message: uploadMessage } = await uploadData(toProjectId, {
-      userId,
-      ...d,
-      permission: 'COMMON',
-    });
-    if (!uploadOK) {
-      return { isOK: false, message: uploadMessage };
-    }
-  }
-  return { isOK: true, message: '' };
 };
 
 export const uploadCurrentPosition = async (

@@ -31,8 +31,7 @@ import { t } from '../i18n/config';
 export type UseRepositoryReturnType = {
   createProject: (
     project: ProjectType,
-    createType: CreateProjectType | undefined,
-    copiedProjectName: string | undefined
+    createType: CreateProjectType | undefined
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -142,7 +141,6 @@ export type UseRepositoryReturnType = {
 export const useRepository = (): UseRepositoryReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
-  const projects = useSelector((state: AppState) => state.projects);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const layers = useSelector((state: AppState) => state.layers);
   const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
@@ -407,39 +405,8 @@ export const useRepository = (): UseRepositoryReturnType => {
     [uploadData, uploadProjectSettings]
   );
 
-  const copyProjectSettings = useCallback(
-    async (project: ProjectType, copiedProjectName: string) => {
-      if (!isLoggedIn(user)) {
-        return { isOK: false, message: t('hooks.message.pleaseLogin') };
-      }
-      const copiedProject = projects.find((v: ProjectType) => v.name === copiedProjectName);
-      if (copiedProject === undefined) {
-        return { isOK: false, message: t('hooks.message.noCopyProject') };
-      }
-      const { isOK: settingsOK, message: settingsMessage } = await projectStore.copyProjectSettings(
-        copiedProject.id,
-        project.id,
-        user.uid
-      );
-      if (!settingsOK) {
-        return { isOK: false, message: settingsMessage };
-      }
-      const { isOK: dataOK, message: dataMessage } = await projectStore.copyCommonData(
-        copiedProject.id,
-        project.id,
-        false
-      );
-      if (!dataOK) {
-        return { isOK: false, message: dataMessage };
-      }
-      return { isOK: true, message: '' };
-    },
-
-    [projects, user]
-  );
-
   const createProject = useCallback(
-    async (project: ProjectType, createType: CreateProjectType | undefined, copiedProjectName: string | undefined) => {
+    async (project: ProjectType, createType: CreateProjectType | undefined) => {
       const { isOK, message } = await projectStore.addProject(project);
       if (!isOK) return { isOK: false, message };
       dispatch(addProjectAction(project));
@@ -452,15 +419,12 @@ export const useRepository = (): UseRepositoryReturnType => {
         case 'SAVE':
           result = await uploadCurrentProjectSettings(project);
           break;
-        case 'COPY':
-          result = await copyProjectSettings(project, copiedProjectName!);
-          break;
         default:
           result = { isOK: false, message: t('hooks.message.unknownError') };
       }
       return { isOK: result.isOK, message: result.message };
     },
-    [copyProjectSettings, dispatch, uploadCurrentProjectSettings, uploadDefaultProjectSettings]
+    [dispatch, uploadCurrentProjectSettings, uploadDefaultProjectSettings]
   );
 
   const updateProject = useCallback(
