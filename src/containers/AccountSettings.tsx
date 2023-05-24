@@ -63,7 +63,8 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.type === 'cancel') return;
     const ext = getExt(file.name)?.toLowerCase();
-    if (!(ext !== 'json')) {
+
+    if (ext !== 'json') {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
