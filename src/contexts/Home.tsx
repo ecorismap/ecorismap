@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
+import { GestureResponderEvent, PanResponderGestureState, PanResponderInstance } from 'react-native';
 import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
@@ -18,6 +18,9 @@ import {
   LineToolType,
   PolygonToolType,
   DrawLineType,
+  PenType,
+  MapMemoToolType,
+  EraserType,
   LayerType,
 } from '../types';
 import { MapRef, ViewState } from 'react-map-gl';
@@ -69,6 +72,15 @@ export interface HomeContextType {
   screenState: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
+  currentMapMemoTool: MapMemoToolType;
+  visibleMapMemo: boolean;
+  visibleMapMemoColor: boolean;
+  currentPen: PenType;
+  currentEraser: EraserType;
+  refreshMapMemo: boolean;
+  penColor: string;
+  penWidth: number;
+  mapMemoEditingLine: Position[];
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
@@ -88,6 +100,7 @@ export interface HomeContextType {
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;
+  pressClearMapMemo: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
@@ -99,6 +112,17 @@ export interface HomeContextType {
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
+  selectMapMemoTool: (value: MapMemoToolType) => void;
+  setVisibleMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
+  setPen: React.Dispatch<React.SetStateAction<PenType>>;
+  setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
+  setRefreshMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
+  selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
+  pressUndoMapMemo: () => void;
+  pressRedoMapMemo: () => void;
+  pressExportMapMemo: () => void;
+  panResponder: PanResponderInstance;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

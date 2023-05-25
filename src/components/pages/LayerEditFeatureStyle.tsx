@@ -4,7 +4,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
-import { FeatureStyleModalColorPicker } from '../organisms/FeatureStyleModalColorPicker';
+import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import Slider from '../atoms/Slider';
@@ -24,6 +24,7 @@ export default function LayerEditFeatureStyleScreen() {
     colorRamps,
     colorRampLabels,
     layerType,
+    modalVisible,
     changeCustomFieldValue,
     changeColorType,
     changeTransparency,
@@ -31,6 +32,8 @@ export default function LayerEditFeatureStyleScreen() {
     changeColorRamp,
     pressSelectSingleColor,
     gotoBack,
+    pressSelectColorOK,
+    pressSelectColorCancel,
   } = useContext(LayerEditFeatureStyleContext);
   const navigation = useNavigation();
 
@@ -108,7 +111,11 @@ export default function LayerEditFeatureStyleScreen() {
         )}
       </ScrollView>
 
-      <FeatureStyleModalColorPicker />
+      <ModalColorPicker
+        modalVisible={modalVisible}
+        pressSelectColorOK={pressSelectColorOK}
+        pressSelectColorCancel={pressSelectColorCancel}
+      />
     </View>
   );
 }

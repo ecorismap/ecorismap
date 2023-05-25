@@ -1,15 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-  Text,
-  PanResponderInstance,
-  PanResponder,
-  GestureResponderEvent,
-} from 'react-native';
+import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
-
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
 import { COLOR, DEGREE_INTERVAL, TILE_FOLDER } from '../../constants/AppConstants';
@@ -41,6 +32,9 @@ import { getExt, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
+import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
+import { ModalColorPicker } from '../organisms/ModalColorPicker';
+import { MapMemoView } from '../organisms/HomeMapMemoView';
 
 export default function HomeScreen() {
   const {
@@ -71,8 +65,10 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    visibleMapMemo,
+    refreshMapMemo,
+    visibleMapMemoColor,
     onRegionChangeMapView,
-    onPressMapView,
     onDragMapView,
     onDragEndPoint,
     pressDownloadTiles,
@@ -83,6 +79,9 @@ export default function HomeScreen() {
     pressDeleteTiles,
     pressGPS,
     gotoMaps,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    panResponder,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -194,18 +193,6 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
-  const panResponder: PanResponderInstance = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          onPressMapView(e);
-        },
-      }),
-    [onPressMapView]
-  );
-
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
@@ -222,6 +209,13 @@ export default function HomeScreen() {
         ]}
       >
         <Loading visible={isLoading} text="" />
+        <ModalColorPicker
+          modalVisible={visibleMapMemoColor}
+          withAlpha={true}
+          pressSelectColorOK={selectPenColor}
+          pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
+        />
+        {refreshMapMemo && visibleMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -320,6 +314,24 @@ export default function HomeScreen() {
             );
           })}
 
+          {/************* MAP MEMO ******************** */}
+          {/* {refreshMapMemo && visibleMapMemo && (
+            <UrlTile
+              key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+              urlTemplate={''}
+              flipY={false}
+              opacity={1}
+              tileSize={256}
+              minimumZ={0}
+              maximumZ={22}
+              zIndex={100}
+              doubleTileSize={false}
+              maximumNativeZ={22}
+              tileCachePath={MAPMEMO_FOLDER}
+              tileCacheMaxAge={604800}
+              offlineMode={true}
+            />
+          )} */}
           {/************* TILE MAP ******************** */}
 
           {tileMaps
@@ -348,6 +360,7 @@ export default function HomeScreen() {
                     urlTemplate={tileMap.url}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
+                    tileSize={256}
                     minimumZ={tileMap.minimumZ}
                     maximumZ={tileMap.maximumZ}
                     zIndex={mapIndex}
@@ -385,7 +398,10 @@ export default function HomeScreen() {
 
         {screenState !== 'expanded' && <HomeAttributionText bottom={8} attribution={attribution} />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+          <HomeDrawTools />
+        )}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
