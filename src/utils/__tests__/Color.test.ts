@@ -1,10 +1,10 @@
-import { hsv2rgb, hex2rgba, getRandomColor } from '../Color';
+import { hsv2hex, hex2rgba, getRandomColor } from '../Color';
 
-describe('hsv2rgb', () => {
+describe('hsv2hex', () => {
   it('return rgb value from hsv', () => {
-    expect(hsv2rgb(0, 0, 0)).toBe('#000000');
-    expect(hsv2rgb(0, 0, 1)).toBe('#ffffff');
-    expect(hsv2rgb(180, 0.5, 0.5)).toBe('#3f7f7f');
+    expect(hsv2hex(0, 0, 0)).toBe('#000000');
+    expect(hsv2hex(0, 0, 1)).toBe('#ffffff');
+    expect(hsv2hex(180, 0.5, 0.5)).toBe('#3f7f7f');
   });
 });
 

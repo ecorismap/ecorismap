@@ -10,7 +10,8 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d12ef2d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/41e89a3b991550f2b0b889a670d8c67e/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/5450e76e757b21e1db1d745cf5e92e03/results.bin b/node_modules/react-native-maps/android/build/.transforms/5450e76e757b21e1db1d745cf5e92e03/results.bin
 new file mode 100644
 index 0000000..1ed65e0
@@ -402,10 +403,12 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..e69de29
+index 0000000..c56b935
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
-index 0000000..e69de29
+index 0000000..48a2063
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
 index 0000000..9752a2d
@@ -2550,11 +2553,11 @@ index 0000000..9752a2d
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..4e3cea8
+index 0000000..534fa34
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Sat Mar 25 16:42:00 JST 2023
++#Tue May 09 06:07:13 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..76baba1
@@ -2566,328 +2569,427 @@ index 0000000..76baba1
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 new file mode 100644
-index 0000000..c1d2b8d
+index 0000000..3f8929a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugJniLibFolders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/jniLibs"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/jniLibs"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/jniLibs"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..61e8fa0
+index 0000000..a4b0bbd
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
-index 0000000..346171b
+index 0000000..f7e674b
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/assets"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/assets"/><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/build/intermediates/shader_assets/debug/out"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/assets"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/BufferPosition.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/BufferPosition.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d19f1fc
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/BufferPosition.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Cache.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Cache.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9c49e36
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Cache.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Compression.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Compression.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..372c1c5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Compression.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Decompress.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Decompress.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..bae50d6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Decompress.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/DecompressFunc.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/DecompressFunc.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f0db361
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/DecompressFunc.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Entry.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Entry.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..ca23964
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Entry.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/EtagMismatch.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/EtagMismatch.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..4d64152
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/EtagMismatch.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/FetchSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/FetchSource.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..5851539
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/FetchSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Header.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Header.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..c3c89a9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Header.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTiles.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTiles.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..2a9e439
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTiles.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTilesUtils.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTilesUtils.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..33925df
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/PMTilesUtils.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RangeResponse.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RangeResponse.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6f3aa93
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RangeResponse.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RootDirData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RootDirData.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..4aa7a90
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/RootDirData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCache.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCache.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1454a0a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCache.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCacheValue.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCacheValue.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..86a8584
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/SharedPromiseCacheValue.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Source.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Source.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..efd773a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/Source.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/TileType.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/TileType.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f7b71d2
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/TileType.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..b178a67
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCalloutManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCalloutManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..409fcb3
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCalloutManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircle.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8f29f08
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircleManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..30afa05
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCircleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapFeature.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapFeature.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..16d0771
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapFeature.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1b87606
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$AirMapGradientPolylineProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..98d05d7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline$MutPoint.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..e971ac8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolyline.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1a30597
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapGradientPolylineManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmap.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmap.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..fde046a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmap.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmapManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmapManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..362fd60
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapHeatmapManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLiteManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLiteManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0c87f8e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLiteManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d19f74f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile$AIRMapLocalTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..3bee429
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTileManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..ad0fdde
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapLocalTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9460c81
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..acabb6e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$2.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..fd2a0b7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..25d473f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarker.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..bb0a228
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager$AirMapMarkerSharedIcon.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..73e9f76
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapMarkerManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d097d5a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1f8f73c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$2.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..136c5a4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$3.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$3.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..644484a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$3.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$4.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$4.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..532bf9f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$4.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$5.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$5.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..7720af9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$5.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$6.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$6.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..7ba797a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$6.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..85ea7fc
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0b14a76
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule$7.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..424d2dd
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapModule.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlay.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlay.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6b38e38
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlay.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlayManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlayManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..fafbf55
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlayManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..313d6cd
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..906250b
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1d3ff8a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..898c7eb
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygonManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygonManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..a98058f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygonManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolyline.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolyline.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d89a9ea
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolyline.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolylineManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolylineManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d8e07af
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolylineManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9808db0
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider$AIRMapUrlTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..bff25a9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTile.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..91abaf5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTileManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0908c3e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapUrlTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..1e0e4de
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$10.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$10.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..239b1a9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$10.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$11.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$11.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..c8d5f5e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$11.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$12.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$12.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..91b7141
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$12.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$13.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$13.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..464fc73
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$13.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$14.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$14.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..e500331
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$14.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$15.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$15.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..7e3c36e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$15.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$16.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$16.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6204192
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$16.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$17.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$17.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9eba700
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$17.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$2.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..5240b90
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$3.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$3.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..4f8fc3b
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$3.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$4.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$4.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..2095ddc
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$4.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$5.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$5.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..88d84ce
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$5.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$6.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$6.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..2bc73d7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$6.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$7.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$7.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..fcb9be4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$7.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$8.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$8.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f227790
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$8.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$9.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$9.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f3c76f9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView$9.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..074581d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapView.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..7c92cd4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9f7b46f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile$AIRMapGSUrlTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..e808286
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTileManager.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..286d8a4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapWMSTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/BuildConfig.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/BuildConfig.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8ce2df4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/BuildConfig.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FileUtil.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FileUtil.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..2fdfadd
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FileUtil.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8a6331d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$2.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..3cc20ab
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d6a6d5b
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/FusedLocationSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReadable.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReadable.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8b1d3af
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReadable.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..e7bf859
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6116969
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageReader.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageUtil.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageUtil.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..2f495e8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ImageUtil.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/LatLngBoundsUtils.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/LatLngBoundsUtils.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..cf1775a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/LatLngBoundsUtils.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/MapsPackage.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/MapsPackage.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..5fb818f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/MapsPackage.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/RegionChangeEvent.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/RegionChangeEvent.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8660ec9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/RegionChangeEvent.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/SizeReportingShadowNode.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/SizeReportingShadowNode.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f1afeee
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/SizeReportingShadowNode.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewAttacherGroup.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewAttacherGroup.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9f684b6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewAttacherGroup.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker$1.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0601b71
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker.class
 new file mode 100644
-index 0000000..e69de29
+index 0000000..da72228
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/ViewChangesTracker.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/react-native-maps/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
 new file mode 100644
 index 0000000..78ac5b8
@@ -3261,7 +3363,8 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..e69de29
+index 0000000..9e1661d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
 index 0000000..22f1d37
@@ -4898,7 +5001,8 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..e69de29
+index 0000000..a82a8b4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
 index 0000000..4a6eb27
@@ -5623,229 +5727,281 @@ index 0000000..0a76e52
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
-index 4f7acba..05fe446 100644
+index 4f7acba..d9a5a47 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileProvider.java
-@@ -6,6 +6,7 @@ import android.util.Log;
- import java.util.concurrent.TimeUnit;
- import java.util.concurrent.Future;
- import java.util.List;
-+import java.util.Objects;
+@@ -1,49 +1,51 @@
+ package com.airbnb.android.react.maps;
  
+ import android.content.Context;
+-
+-import android.util.Log;
+-import java.util.concurrent.TimeUnit;
+-import java.util.concurrent.Future;
+-import java.util.List;
+-
  import android.graphics.Bitmap;
  import android.graphics.BitmapFactory;
-@@ -14,8 +15,12 @@ import android.graphics.Color;
+ import android.graphics.Canvas;
+ import android.graphics.Color;
  import android.graphics.Paint;
  import android.graphics.Rect;
- 
+-
+-import androidx.work.OneTimeWorkRequest;
+-import androidx.work.WorkManager;
+-import androidx.work.Data;
++import android.util.Log;
 +import androidx.annotation.NonNull;
- import androidx.work.OneTimeWorkRequest;
- import androidx.work.WorkManager;
+ import androidx.work.Constraints;
+-import androidx.work.NetworkType;
++import androidx.work.Data;
+ import androidx.work.ExistingWorkPolicy;
++import androidx.work.NetworkType;
++import androidx.work.OneTimeWorkRequest;
+ import androidx.work.Operation;
+ import androidx.work.WorkInfo;
+-
++import androidx.work.WorkManager;
 +import androidx.work.WorkRequest;
 +import androidx.work.Worker;
 +import androidx.work.WorkerParameters;
- import androidx.work.Data;
- import androidx.work.Constraints;
- import androidx.work.NetworkType;
-@@ -23,7 +28,10 @@ import androidx.work.ExistingWorkPolicy;
- import androidx.work.Operation;
- import androidx.work.WorkInfo;
- 
 +import com.google.android.gms.maps.GoogleMap;
  import com.google.android.gms.maps.model.Tile;
 +import com.google.android.gms.maps.model.TileOverlay;
 +import com.google.android.gms.maps.model.TileOverlayOptions;
  import com.google.android.gms.maps.model.TileProvider;
  import com.google.android.gms.maps.model.UrlTileProvider;
+-
+-import java.lang.System;
+-
+ import java.io.ByteArrayOutputStream;
+ import java.io.File;
+ import java.io.FileInputStream;
+ import java.io.FileOutputStream;
++import java.io.IOException;
+ import java.io.InputStream;
+ import java.io.OutputStream;
+-import java.io.IOException;
+-
++import java.lang.System;
+ import java.net.MalformedURLException;
+ import java.net.URL;
+ import java.net.URLConnection;
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.Future;
++import java.util.concurrent.TimeUnit;
  
-@@ -44,114 +52,113 @@ import java.net.URLConnection;
  public class AirMapTileProvider implements TileProvider {
  
- 	class AIRMapUrlTileProvider extends UrlTileProvider {
--    private String urlTemplate;
--
--    public AIRMapUrlTileProvider(int width, int height, String urlTemplate) {
--      super(width, height);
--      this.urlTemplate = urlTemplate;
--    }
--
--    @Override
--    public URL getTileUrl(int x, int y, int zoom) {
+-	class AIRMapUrlTileProvider extends UrlTileProvider {
++  class AIRMapUrlTileProvider extends UrlTileProvider {
++
+     private String urlTemplate;
+ 
+     public AIRMapUrlTileProvider(int width, int height, String urlTemplate) {
+@@ -53,23 +55,22 @@ public class AirMapTileProvider implements TileProvider {
+ 
+     @Override
+     public URL getTileUrl(int x, int y, int zoom) {
 -
 -      if (AirMapTileProvider.this.flipY) {
--        y = (1 << zoom) - y - 1;
--      }
--
++      if (AirMapTileProvider.this.flipY == true) {
+         y = (1 << zoom) - y - 1;
+       }
+ 
 -      String s = this.urlTemplate
 -          .replace("{x}", Integer.toString(x))
--          .replace("{y}", Integer.toString(y))
--          .replace("{z}", Integer.toString(zoom));
++      String s =
++        this.urlTemplate.replace("{x}", Integer.toString(x))
+           .replace("{y}", Integer.toString(y))
+           .replace("{z}", Integer.toString(zoom));
 -      URL url;
--
++      URL url = null;
+ 
 -      if(AirMapTileProvider.this.maximumZ > 0 && zoom > AirMapTileProvider.this.maximumZ) {
 -        return null;
--      }
--
++      if (AirMapTileProvider.this.maximumZ > 0 && zoom > AirMapTileProvider.this.maximumZ) {
++        return url;
+       }
+ 
 -      if(AirMapTileProvider.this.minimumZ > 0 && zoom < AirMapTileProvider.this.minimumZ) {
 -        return null;
--      }
--
--      try {
--        url = new URL(s);
--      } catch (MalformedURLException e) {
--        throw new AssertionError(e);
--      }
--      return url;
--    }
--
--    public void setUrlTemplate(String urlTemplate) {
--      this.urlTemplate = urlTemplate;
--    }
--  }
-+		private String urlTemplate;
-+
-+		public AIRMapUrlTileProvider(int width, int height, String urlTemplate) {
-+			super(width, height);
-+			this.urlTemplate = urlTemplate;
-+		}
-+
-+		@Override
-+		public URL getTileUrl(int x, int y, int zoom) {
-+
-+			if (AirMapTileProvider.this.flipY == true) {
-+				y = (1 << zoom) - y - 1;
-+			}
-+
-+			String s = this.urlTemplate.replace("{x}", Integer.toString(x)).replace("{y}", Integer.toString(y))
-+					.replace("{z}", Integer.toString(zoom));
-+			URL url = null;
-+
-+			if (AirMapTileProvider.this.maximumZ > 0 && zoom > AirMapTileProvider.this.maximumZ) {
-+				return url;
-+			}
-+
-+			if (AirMapTileProvider.this.minimumZ > 0 && zoom < AirMapTileProvider.this.minimumZ) {
-+				return url;
-+			}
-+
-+			try {
-+				url = new URL(s);
-+			} catch (MalformedURLException e) {
-+				throw new AssertionError(e);
-+			}
-+			return url;
-+		}
-+
-+		public void setUrlTemplate(String urlTemplate) {
-+			this.urlTemplate = urlTemplate;
-+		}
-+	}
++      if (AirMapTileProvider.this.minimumZ > 0 && zoom < AirMapTileProvider.this.minimumZ) {
++        return url;
+       }
  
- 	protected static final int BUFFER_SIZE = 16 * 1024;
- 	protected static final int TARGET_TILE_SIZE = 512;
- 	protected UrlTileProvider tileProvider;
- 	protected String urlTemplate;
- 	protected int tileSize;
--  protected boolean doubleTileSize;
-+	protected boolean doubleTileSize;
- 	protected int maximumZ;
--  protected int maximumNativeZ;
--  protected int minimumZ;
--  protected boolean flipY;
-+	protected int maximumNativeZ;
-+	protected int minimumZ;
-+	protected boolean flipY;
- 	protected String tileCachePath;
- 	protected int tileCacheMaxAge;
--  protected boolean offlineMode;
-+	protected boolean offlineMode;
- 	protected Context context;
- 	protected boolean customMode;
+       try {
+@@ -85,147 +86,120 @@ public class AirMapTileProvider implements TileProvider {
+     }
+   }
  
+-	protected static final int BUFFER_SIZE = 16 * 1024;
+-	protected static final int TARGET_TILE_SIZE = 512;
+-	protected UrlTileProvider tileProvider;
+-	protected String urlTemplate;
+-	protected int tileSize;
++  protected UrlTileProvider tileProvider;
++  protected String urlTemplate;
++  protected int tileSize;
+   protected boolean doubleTileSize;
+-	protected int maximumZ;
++  protected int maximumZ;
+   protected int maximumNativeZ;
+   protected int minimumZ;
+   protected boolean flipY;
+-	protected String tileCachePath;
+-	protected int tileCacheMaxAge;
++  protected String tileCachePath;
++  protected int tileCacheMaxAge;
+   protected boolean offlineMode;
+-	protected Context context;
+-	protected boolean customMode;
+-
 -	public AirMapTileProvider(int tileSizet, boolean doubleTileSize, String urlTemplate, 
 -    int maximumZ, int maximumNativeZ, int minimumZ, boolean flipY, String tileCachePath, 
 -    int tileCacheMaxAge, boolean offlineMode, Context context, boolean customMode) {
-+	public AirMapTileProvider(int tileSizet, boolean doubleTileSize, String urlTemplate, int maximumZ,
-+			int maximumNativeZ, int minimumZ, boolean flipY, String tileCachePath, int tileCacheMaxAge,
-+			boolean offlineMode, Context context, boolean customMode) {
- 		this.tileProvider = new AIRMapUrlTileProvider(tileSizet, tileSizet, urlTemplate);
+-		this.tileProvider = new AIRMapUrlTileProvider(tileSizet, tileSizet, urlTemplate);
+-
+-		this.tileSize = tileSizet;
++  protected Context context;
++  protected boolean customMode;
++  protected static final int BUFFER_SIZE = 16 * 1024;
++
++  public AirMapTileProvider(
++    int tileSizet,
++    boolean doubleTileSize,
++    String urlTemplate,
++    int maximumZ,
++    int maximumNativeZ,
++    int minimumZ,
++    boolean flipY,
++    String tileCachePath,
++    int tileCacheMaxAge,
++    boolean offlineMode,
++    Context context,
++    boolean customMode
++  ) {
++    this.tileProvider = new AIRMapUrlTileProvider(tileSizet, tileSizet, urlTemplate);
++
++    this.tileSize = tileSizet;
+     this.doubleTileSize = doubleTileSize;
+-		this.urlTemplate = urlTemplate;
+-		this.maximumZ = maximumZ;
++    this.urlTemplate = urlTemplate;
++    this.maximumZ = maximumZ;
+     this.maximumNativeZ = maximumNativeZ;
+-		this.minimumZ = minimumZ;
+-		this.flipY = flipY;
+-		this.tileCachePath = tileCachePath;
+-		this.tileCacheMaxAge = tileCacheMaxAge;
++    this.minimumZ = minimumZ;
++    this.flipY = flipY;
++    this.tileCachePath = tileCachePath;
++    this.tileCacheMaxAge = tileCacheMaxAge;
+     this.offlineMode = offlineMode;
+-		this.context = context;
+-		this.customMode = customMode;
+-	}
++    this.context = context;
++    this.customMode = customMode;
++  }
  
- 		this.tileSize = tileSizet;
--    this.doubleTileSize = doubleTileSize;
-+		this.doubleTileSize = doubleTileSize;
- 		this.urlTemplate = urlTemplate;
- 		this.maximumZ = maximumZ;
--    this.maximumNativeZ = maximumNativeZ;
-+		this.maximumNativeZ = maximumNativeZ;
- 		this.minimumZ = minimumZ;
- 		this.flipY = flipY;
- 		this.tileCachePath = tileCachePath;
- 		this.tileCacheMaxAge = tileCacheMaxAge;
--    this.offlineMode = offlineMode;
-+		this.offlineMode = offlineMode;
- 		this.context = context;
- 		this.customMode = customMode;
- 	}
- 
- 	@Override
- 	public Tile getTile(int x, int y, int zoom) {
+-	@Override
+-	public Tile getTile(int x, int y, int zoom) {
 -		if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
-+		if (!this.customMode)
-+			return this.tileProvider.getTile(x, y, zoom);
++  @Override
++  public Tile getTile(int x, int y, int zoom) {
++    //Log.d("urlTile", "getTile");
++    if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
  
- 		byte[] image = null;
- 		int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
- 		
- 		if (this.tileSize == 256 && this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
+-		byte[] image = null;
+-		int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
++    byte[] image = null;
++    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
+ 
+-		if (this.tileSize == 256 && this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
 -      Log.d("urlTile", "pullTilesFromHigherZoom");
-+			// Log.d("urlTile", "pullTilesFromHigherZoom");
- 			image = pullTilesFromHigherZoom(x, y, zoom);      
- 		} 
+-			image = pullTilesFromHigherZoom(x, y, zoom);      
+-		} 
++    if (this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
++      //Log.d("urlTile", "pullTilesFromHigherZoom");
++      image = pullTilesFromHigherZoom(x, y, zoom, true);
++    }
  
--    if (zoom > this.maximumNativeZ) {
+     if (zoom > this.maximumNativeZ) {
 -      Log.d("urlTile", "scaleLowerZoomTile");
-+		if (zoom > this.maximumNativeZ) {
-+			// Log.d("urlTile", "scaleLowerZoomTile");
- 			image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
- 		}
+-			image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
+-		}
++      //Log.d("urlTile", "scaleLowerZoomTile");
++      image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
++    }
  
--    if (image == null && zoom <= maximumZ) {
+     if (image == null && zoom <= maximumZ) {
 -      Log.d("urlTile", "getTileImage");
-+		if (image == null && zoom <= maximumZ) {
-+			// Log.d("urlTile", "getTileImage");
- 			image = getTileImage(x, y, zoom);
- 		}
+-			image = getTileImage(x, y, zoom);
+-		}
++      //Log.d("urlTile", "getTileImage");
++      image = getTileImage(x, y, zoom);
++    }
  
--    if (image == null && this.tileCachePath != null && this.offlineMode) {
+     if (image == null && this.tileCachePath != null && this.offlineMode) {
 -      Log.d("urlTile", "findLowerZoomTileForScaling");
--      int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1; 
++      //Log.d("urlTile", "findLowerZoomTileForScaling");
+       int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
 -      int minimumZoomToSearch = Math.max(this.minimumZ, zoom - 3);
--      for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
++      int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
+       for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
 -  			image = scaleLowerZoomTile(x, y, zoom, tryZoom);
 -	  		if (image != null) {
 -		  		break;
 -			  }
--      }
-+		if (image == null && this.tileCachePath != null && this.offlineMode) {
-+			 Log.d("urlTile", "findLowerZoomTileForScaling");
-+			int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
-+			int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
-+			for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
-+				image = scaleLowerZoomTile(x, y, zoom, tryZoom);
-+				if (image != null) {
-+					break;
-+				}
-+			}
- 		}
- 
- 		return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
-@@ -159,217 +166,142 @@ public class AirMapTileProvider implements TileProvider {
- 
- 	byte[] getTileImage(int x, int y, int zoom) {
- 		byte[] image = null;
++        image = scaleLowerZoomTile(x, y, zoom, tryZoom);
++        if (image != null) {
++          boolean success = writeTileImage(image, x, y, zoom);
++          break;
++        }
++      }
++    }
++
++    if (image == null && zoom >= minimumZ) {
++      //Log.d("urlTile", "pullTilesFromHigherZoom2");
++      image = pullTilesFromHigherZoom(x, y, zoom, false);
++      if (image != null && this.offlineMode) {
++        boolean success = writeTileImage(image, x, y, zoom);
++      }
++    }
++    return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
++  }
++
++  byte[] getTileImage(int x, int y, int zoom) {
++    byte[] image = null;
++    if (this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++
++      if (image != null && !this.offlineMode) {
++        boolean needRefresh = checkForRefresh(x, y, zoom);
++        if (needRefresh) {
++          image = null;
++        }
++      }
++    }
++    if (image == null && !this.offlineMode && this.tileCachePath != null) {
++      // Log.d("urlTile", "Normal fetch");
++      image = fetchTile(x, y, zoom);
++      if (image != null) {
++        boolean success = writeTileImage(image, x, y, zoom);
+       }
+-		}
 -
- 		if (this.tileCachePath != null) {
- 			image = readTileImage(x, y, zoom);
+-		return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
+-	}
+-
+-	byte[] getTileImage(int x, int y, int zoom) {
+-		byte[] image = null;
+-
+-		if (this.tileCachePath != null) {
+-			image = readTileImage(x, y, zoom);
 -			if (image != null) {
 -				Log.d("urlTile", "tile cache HIT for " + zoom +
 -					"/" + x + "/" + y);
@@ -5853,16 +6009,12 @@ index 4f7acba..05fe446 100644
 -				Log.d("urlTile", "tile cache MISS for " + zoom +
 -        	"/" + x + "/" + y);
 -			}
- 			if (image != null && !this.offlineMode) {
+-			if (image != null && !this.offlineMode) {
 -				checkForRefresh(x, y, zoom);
-+				boolean needRefresh = checkForRefresh(x, y, zoom);
-+				if (needRefresh) {
-+					image = null;
-+				}
- 			}
- 		}
+-			}
+-		}
 -
- 		if (image == null && !this.offlineMode && this.tileCachePath != null) {
+-		if (image == null && !this.offlineMode && this.tileCachePath != null) {
 -			String fileName = getTileFilename(x, y, zoom);
 -			Constraints constraints = new Constraints.Builder()
 -				.setRequiredNetworkType(NetworkType.CONNECTED)
@@ -5903,37 +6055,35 @@ index 4f7acba..05fe446 100644
 -			}
 -		} else if (image == null && !this.offlineMode) {
 -			Log.d("urlTile", "Normal fetch");
-+			// Log.d("urlTile", "Normal fetch");
- 			image = fetchTile(x, y, zoom);
+-			image = fetchTile(x, y, zoom);
 -			if (image == null) {
 -				Log.d("urlTile", "tile fetch TIMEOUT / FAIL for " + zoom +
 -					"/" + x + "/" + y);
-+			if (image != null) {
-+				boolean success = writeTileImage(image, x, y, zoom);
- 			}
- 		}
+-			}
+-		}
 -
- 		return image;
- 	}
+-		return image;
+-	}
+-
+-	byte[] pullTilesFromHigherZoom(int x, int y, int zoom) {
++    }
++    return image;
++  }
++
++  byte[] pullTilesFromHigherZoom(int x, int y, int zoom, boolean isDoubleSize) {
+     byte[] data;
+     Bitmap image = getNewBitmap();
+     Canvas canvas = new Canvas(image);
+@@ -238,35 +212,44 @@ public class AirMapTileProvider implements TileProvider {
+     byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
+     byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
  
- 	byte[] pullTilesFromHigherZoom(int x, int y, int zoom) {
--    byte[] data;
--    Bitmap image = getNewBitmap();
--    Canvas canvas = new Canvas(image);
--    Paint paint = new Paint();
--
--    x = x * 2;
--    y = y * 2;
--    byte[] leftTop = getTileImage(x, y, zoom + 1);
--    byte[] leftBottom = getTileImage(x, y + 1, zoom + 1);
--    byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
--    byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
--
 -    if (leftTop == null || leftBottom == null || rightTop == null || rightBottom == null) {
--      return null;
--    }
--
--    Bitmap bitmap;
++    if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
+       return null;
+     }
+ 
+     Bitmap bitmap;
 -
 -    bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
 -    canvas.drawBitmap(bitmap, 0, 0, paint);
@@ -5952,156 +6102,105 @@ index 4f7acba..05fe446 100644
 -    bitmap.recycle();
 -    
 -    data = bitmapToByteArray(image);
--    image.recycle();
--    return data;
--  }
--
--  Bitmap getNewBitmap() {
++    if (leftTop != null) {
++      bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
++      canvas.drawBitmap(bitmap, 0, 0, paint);
++      bitmap.recycle();
++    }
++    if (leftBottom != null) {
++      bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
++      canvas.drawBitmap(bitmap, 0, this.tileSize, paint);
++      bitmap.recycle();
++    }
++    if (rightTop != null) {
++      bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
++      canvas.drawBitmap(bitmap, this.tileSize, 0, paint);
++      bitmap.recycle();
++    }
++    if (rightBottom != null) {
++      bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
++      canvas.drawBitmap(bitmap, this.tileSize, this.tileSize, paint);
++      bitmap.recycle();
++    }
++    Bitmap scaledImage;
++    if (isDoubleSize) {
++      scaledImage = image;
++    } else {
++      scaledImage = Bitmap.createScaledBitmap(image, this.tileSize, this.tileSize, true);
++    }
++    data = bitmapToByteArray(scaledImage);
+     image.recycle();
+     return data;
+   }
+ 
+   Bitmap getNewBitmap() {
 -    Bitmap image = Bitmap.createBitmap(TARGET_TILE_SIZE, TARGET_TILE_SIZE, Bitmap.Config.ARGB_8888);
--    image.eraseColor(Color.TRANSPARENT);
--    return image;
--  }
--
--  byte[] bitmapToByteArray(Bitmap bm) {
--    ByteArrayOutputStream bos = new ByteArrayOutputStream();
--    bm.compress(Bitmap.CompressFormat.PNG, 100, bos);
--
--    byte[] data = bos.toByteArray();
--    try {
--      bos.close();
--    } catch (Exception e) {
++    Bitmap image = Bitmap.createBitmap(this.tileSize * 2, this.tileSize * 2, Bitmap.Config.ARGB_8888);
+     image.eraseColor(Color.TRANSPARENT);
+     return image;
+   }
+@@ -279,12 +262,12 @@ public class AirMapTileProvider implements TileProvider {
+     try {
+       bos.close();
+     } catch (Exception e) {
 -      e.printStackTrace();
--    }
--    return data;
--  }
-+		byte[] data;
-+		Bitmap image = getNewBitmap();
-+		Canvas canvas = new Canvas(image);
-+		Paint paint = new Paint();
-+
-+		x = x * 2;
-+		y = y * 2;
-+		byte[] leftTop = getTileImage(x, y, zoom + 1);
-+		byte[] leftBottom = getTileImage(x, y + 1, zoom + 1);
-+		byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
-+		byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
-+
-+		if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
-+			return null;
-+		}
-+
-+		Bitmap bitmap;
-+		if (leftTop != null) {
-+			bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
-+			canvas.drawBitmap(bitmap, 0, 0, paint);
-+			bitmap.recycle();
-+		}
-+		if (leftBottom != null) {
-+			bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
-+			canvas.drawBitmap(bitmap, 0, 256, paint);
-+			bitmap.recycle();
-+		}
-+		if (rightTop != null) {
-+			bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
-+			canvas.drawBitmap(bitmap, 256, 0, paint);
-+			bitmap.recycle();
-+		}
-+		if (rightBottom != null) {
-+			bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
-+			canvas.drawBitmap(bitmap, 256, 256, paint);
-+			bitmap.recycle();
-+		}
-+		data = bitmapToByteArray(image);
-+		image.recycle();
-+		return data;
-+	}
-+
-+	Bitmap getNewBitmap() {
-+		Bitmap image = Bitmap.createBitmap(TARGET_TILE_SIZE, TARGET_TILE_SIZE, Bitmap.Config.ARGB_8888);
-+		image.eraseColor(Color.TRANSPARENT);
-+		return image;
-+	}
-+
-+	byte[] bitmapToByteArray(Bitmap bm) {
-+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-+		bm.compress(Bitmap.CompressFormat.PNG, 100, bos);
-+
-+		byte[] data = bos.toByteArray();
-+		try {
-+			bos.close();
-+		} catch (Exception e) {
-+			// e.printStackTrace();
-+		}
-+		return data;
-+	}
++      // e.printStackTrace();
+     }
+     return data;
+   }
  
- 	byte[] scaleLowerZoomTile(int x, int y, int zoom, int maximumZoom) {
--    int overZoomLevel = zoom - maximumZoom;
--    int zoomFactor = 1 << overZoomLevel;
-+		int overZoomLevel = zoom - maximumZoom;
-+		int zoomFactor = 1 << overZoomLevel;
-     
--    int xParent = x >> overZoomLevel;
--    int yParent = y >> overZoomLevel;
--    int zoomParent = zoom - overZoomLevel;
-+		int xParent = x >> overZoomLevel;
-+		int yParent = y >> overZoomLevel;
-+		int zoomParent = zoom - overZoomLevel;
-     
--    int xOffset = x % zoomFactor;
--    int yOffset = y % zoomFactor;
-+		int xOffset = x % zoomFactor;
-+		;
-+		int yOffset = y % zoomFactor;
+-	byte[] scaleLowerZoomTile(int x, int y, int zoom, int maximumZoom) {
++  byte[] scaleLowerZoomTile(int x, int y, int zoom, int maximumZoom) {
+     int overZoomLevel = zoom - maximumZoom;
+     int zoomFactor = 1 << overZoomLevel;
  
--    byte[] data;
--    Bitmap image = getNewBitmap();
--    Canvas canvas = new Canvas(image);
--    Paint paint = new Paint();
-+		byte[] data;
-+		Bitmap image = getNewBitmap();
-+		Canvas canvas = new Canvas(image);
-+		Paint paint = new Paint();
+@@ -294,197 +277,183 @@ public class AirMapTileProvider implements TileProvider {
  
- 		data = getTileImage(xParent, yParent, zoomParent);
--    if (data == null) return null;
-+		if (data == null)
-+			return null;
-     
--    Bitmap sourceImage;
+     int xOffset = x % zoomFactor;
+     int yOffset = y % zoomFactor;
+-
+     byte[] data;
++
+     Bitmap image = getNewBitmap();
+     Canvas canvas = new Canvas(image);
+     Paint paint = new Paint();
++    data = getTileImage(xParent, yParent, zoomParent);
+ 
+-		data = getTileImage(xParent, yParent, zoomParent);
+     if (data == null) return null;
+-    
+     Bitmap sourceImage;
 -    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
-+		Bitmap sourceImage;
-+		sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
  
--    int subTileSize = this.tileSize / zoomFactor;
++    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
+     int subTileSize = this.tileSize / zoomFactor;
 -    Rect sourceRect = new Rect(xOffset * subTileSize, yOffset * subTileSize, xOffset * subTileSize + subTileSize , yOffset * subTileSize + subTileSize);
 -    Rect targetRect = new Rect(0,0,TARGET_TILE_SIZE, TARGET_TILE_SIZE);
--    canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
--    sourceImage.recycle();
-+		int subTileSize = this.tileSize / zoomFactor;
-+		Rect sourceRect = new Rect(xOffset * subTileSize, yOffset * subTileSize, xOffset * subTileSize + subTileSize,
-+				yOffset * subTileSize + subTileSize);
-+		Rect targetRect = new Rect(0, 0, TARGET_TILE_SIZE, TARGET_TILE_SIZE);
-+		canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
-+		sourceImage.recycle();
++
++    Rect sourceRect = new Rect(
++      xOffset * subTileSize,
++      yOffset * subTileSize,
++      xOffset * subTileSize + subTileSize,
++      yOffset * subTileSize + subTileSize
++    );
++    Rect targetRect = new Rect(0, 0, this.tileSize * 2, this.tileSize * 2);
+     canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
++    Bitmap scaledImage = Bitmap.createScaledBitmap(image, this.tileSize, this.tileSize, true);
++    data = bitmapToByteArray(scaledImage);
+     sourceImage.recycle();
  
 -    data = bitmapToByteArray(image);
--    image.recycle();
--    return data;
-+		data = bitmapToByteArray(image);
-+		image.recycle();
-+		return data;
- 	} 
- 
+     image.recycle();
+     return data;
+-	} 
+-
 -	void checkForRefresh(int x, int y, int zoom) {
 -		String fileName =  getTileFilename(x, y, zoom);
-+	boolean checkForRefresh(int x, int y, int zoom) {
-+		String fileName = getTileFilename(x, y, zoom);
- 		File file = new File(fileName);
- 		long lastModified = file.lastModified();
- 		long now = System.currentTimeMillis();
- 
- 		if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
+-		File file = new File(fileName);
+-		long lastModified = file.lastModified();
+-		long now = System.currentTimeMillis();
+-
+-		if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
 -      Log.d("urlTile", "Refreshing");
 -			Constraints constraints = new Constraints.Builder()
 -				.setRequiredNetworkType(NetworkType.CONNECTED)
@@ -6119,12 +6218,10 @@ index 4f7acba..05fe446 100644
 -				.build();
 -			WorkManager.getInstance(this.context.getApplicationContext())
 -			.enqueueUniqueWork(fileName, ExistingWorkPolicy.KEEP, tileRefreshWorkRequest);
-+			return true;
- 		}
-+		return false;
- 	}
- 
- 	byte[] fetchTile(int x, int y, int zoom) {
+-		}
+-	}
+-
+-	byte[] fetchTile(int x, int y, int zoom) {
 -		URL url = getTileUrl(x, y, zoom);
 -		ByteArrayOutputStream buffer = null;
 -		InputStream in = null;
@@ -6145,110 +6242,269 @@ index 4f7acba..05fe446 100644
 -			return buffer.toByteArray();
 -		} catch (IOException | OutOfMemoryError e) {
 -			e.printStackTrace();
-+		Tile tile = this.tileProvider.getTile(x, y, zoom);
-+		if (Objects.isNull(tile)) {
-+			// Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
- 			return null;
+-			return null;
 -		} finally {
 -			if (in != null) try { in.close(); } catch (Exception ignored) {}
 -			if (buffer != null) try { buffer.close(); } catch (Exception ignored) {}
- 		}
-+		return tile.data;
- 	}
- 	
- 	byte[] readTileImage(int x, int y, int zoom) {
-@@ -399,12 +331,23 @@ public class AirMapTileProvider implements TileProvider {
- 			}
- 
- 			return buffer.toByteArray();
+-		}
+-	}
+-	
+-	byte[] readTileImage(int x, int y, int zoom) {
+-		InputStream in = null;
+-		ByteArrayOutputStream buffer = null;
+-		String fileName = getTileFilename(x, y, zoom);
+-		if (fileName == null) {
+-			return null;
+-		}
+-
+-		File file = new File(fileName);
+-
+-		try {
+-			in = new FileInputStream(file);
+-			buffer = new ByteArrayOutputStream();
+-
+-			int nRead;
+-			byte[] data = new byte[BUFFER_SIZE];
+-
+-			while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
+-				buffer.write(data, 0, nRead);
+-			}
+-			buffer.flush();
+-
+-			if (this.tileCacheMaxAge == 0) {
+-				file.setLastModified(System.currentTimeMillis());
+-			}
+-
+-			return buffer.toByteArray();
 -		} catch (IOException | OutOfMemoryError e) {
-+		} catch (IOException e) {
-+			e.printStackTrace();
-+			return null;
-+		} catch (OutOfMemoryError e) {
- 			e.printStackTrace();
- 			return null;
- 		} finally {
+-			e.printStackTrace();
+-			return null;
+-		} finally {
 -			if (in != null) try { in.close(); } catch (Exception ignored) {}
 -			if (buffer != null) try { buffer.close(); } catch (Exception ignored) {}
-+			if (in != null)
-+				try {
-+					in.close();
-+				} catch (Exception ignored) {
-+				}
-+			if (buffer != null)
-+				try {
-+					buffer.close();
-+				} catch (Exception ignored) {
-+				}
- 		}
- 	}
- 
-@@ -422,11 +365,18 @@ public class AirMapTileProvider implements TileProvider {
- 			out.write(image);
- 
- 			return true;
+-		}
+-	}
+-
+-	boolean writeTileImage(byte[] image, int x, int y, int zoom) {
+-		OutputStream out = null;
+-		String fileName = getTileFilename(x, y, zoom);
+-		if (fileName == null) {
+-			return false;
+-		}
+-
+-		try {
+-			File file = new File(fileName);
+-			file.getParentFile().mkdirs();
+-			out = new FileOutputStream(file);
+-			out.write(image);
+-
+-			return true;
 -		} catch (IOException | OutOfMemoryError e) {
-+		} catch (IOException e) {
-+			e.printStackTrace();
-+			return false;
-+		} catch (OutOfMemoryError e) {
- 			e.printStackTrace();
- 			return false;
- 		} finally {
+-			e.printStackTrace();
+-			return false;
+-		} finally {
 -			if (out != null) try { out.close(); } catch (Exception ignored) {}
-+			if (out != null)
-+				try {
-+					out.close();
-+				} catch (Exception ignored) {
-+				}
- 		}
- 	}
- 
-@@ -434,8 +384,9 @@ public class AirMapTileProvider implements TileProvider {
- 		if (this.tileCachePath == null) {
- 			return null;
- 		}
+-		}
+-	}
+-
+-	String getTileFilename(int x, int y, int zoom) {
+-		if (this.tileCachePath == null) {
+-			return null;
+-		}
 -		return this.tileCachePath + '/' + zoom +
 -			"/" + x + "/" + y;
-+		String s = this.tileCachePath + '/' + Integer.toString(zoom) + "/" + Integer.toString(x) + "/"
-+				+ Integer.toString(y);
-+		return s;
- 	}
- 	
- 	protected URL getTileUrl(int x, int y, int zoom) {
-@@ -453,7 +404,7 @@ public class AirMapTileProvider implements TileProvider {
- 		this.tileSize = tileSize;
- 	}
+-	}
+-	
+-	protected URL getTileUrl(int x, int y, int zoom) {
+-		return this.tileProvider.getTileUrl(x, y, zoom);
+-	}
+-	
+-	public void setUrlTemplate(String urlTemplate) {
+-		this.urlTemplate = urlTemplate;
+-	}
+-
+-	public void setTileSize(int tileSize) {
+-		if (this.tileSize != tileSize) {
+-			this.tileProvider = new AIRMapUrlTileProvider(tileSize, tileSize, urlTemplate);
+-		}
+-		this.tileSize = tileSize;
+-	}
++  }
++
++  boolean checkForRefresh(int x, int y, int zoom) {
++    String fileName = getTileFilename(x, y, zoom);
++    File file = new File(fileName);
++    long lastModified = file.lastModified();
++    long now = System.currentTimeMillis();
++
++    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
++      return true;
++    }
++    return false;
++  }
++
++  byte[] fetchTile(int x, int y, int zoom) {
++    Tile tile = this.tileProvider.getTile(x, y, zoom);
++    if (Objects.isNull(tile)) {
++      // Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
++      return null;
++    }
++    return tile.data;
++  }
++
++  byte[] readTileImage(int x, int y, int zoom) {
++    InputStream in = null;
++    ByteArrayOutputStream buffer = null;
++    String fileName = getTileFilename(x, y, zoom);
++    if (fileName == null) {
++      return null;
++    }
++
++    File file = new File(fileName);
++
++    try {
++      in = new FileInputStream(file);
++      buffer = new ByteArrayOutputStream();
++
++      int nRead;
++      byte[] data = new byte[BUFFER_SIZE];
++
++      while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
++        buffer.write(data, 0, nRead);
++      }
++      buffer.flush();
++
++      if (this.tileCacheMaxAge == 0) {
++        file.setLastModified(System.currentTimeMillis());
++      }
++
++      return buffer.toByteArray();
++    } catch (IOException e) {
++      e.printStackTrace();
++      return null;
++    } catch (OutOfMemoryError e) {
++      e.printStackTrace();
++      return null;
++    } finally {
++      if (in != null) try {
++        in.close();
++      } catch (Exception ignored) {}
++      if (buffer != null) try {
++        buffer.close();
++      } catch (Exception ignored) {}
++    }
++  }
++
++  boolean writeTileImage(byte[] image, int x, int y, int zoom) {
++    OutputStream out = null;
++    String fileName = getTileFilename(x, y, zoom);
++    if (fileName == null) {
++      return false;
++    }
++
++    try {
++      File file = new File(fileName);
++      file.getParentFile().mkdirs();
++      out = new FileOutputStream(file);
++      out.write(image);
++
++      return true;
++    } catch (IOException e) {
++      e.printStackTrace();
++      return false;
++    } catch (OutOfMemoryError e) {
++      e.printStackTrace();
++      return false;
++    } finally {
++      if (out != null) try {
++        out.close();
++      } catch (Exception ignored) {}
++    }
++  }
++
++  String getTileFilename(int x, int y, int zoom) {
++    if (this.tileCachePath == null) {
++      return null;
++    }
++    String s =
++      this.tileCachePath + '/' + Integer.toString(zoom) + "/" + Integer.toString(x) + "/" + Integer.toString(y);
++    return s;
++  }
++
++  protected URL getTileUrl(int x, int y, int zoom) {
++    return this.tileProvider.getTileUrl(x, y, zoom);
++  }
++
++  public void setUrlTemplate(String urlTemplate) {
++    this.urlTemplate = urlTemplate;
++  }
++
++  public void setTileSize(int tileSize) {
++    if (this.tileSize != tileSize) {
++      this.tileProvider = new AIRMapUrlTileProvider(tileSize, tileSize, urlTemplate);
++    }
++    this.tileSize = tileSize;
++  }
  
--  public void setDoubleTileSize(boolean doubleTileSize) {
-+	public void setDoubleTileSize(boolean doubleTileSize) {
- 		this.doubleTileSize = doubleTileSize;
- 	}
+   public void setDoubleTileSize(boolean doubleTileSize) {
+-		this.doubleTileSize = doubleTileSize;
+-	}
++    this.doubleTileSize = doubleTileSize;
++  }
  
-@@ -461,7 +412,7 @@ public class AirMapTileProvider implements TileProvider {
- 		this.maximumZ = maximumZ;
- 	}
+-	public void setMaximumZ(int maximumZ) {
+-		this.maximumZ = maximumZ;
+-	}
++  public void setMaximumZ(int maximumZ) {
++    this.maximumZ = maximumZ;
++  }
  
--  public void setMaximumNativeZ(int maximumNativeZ) {
-+	public void setMaximumNativeZ(int maximumNativeZ) {
- 		this.maximumNativeZ = maximumNativeZ;
- 	}
+   public void setMaximumNativeZ(int maximumNativeZ) {
+-		this.maximumNativeZ = maximumNativeZ;
+-	}
++    this.maximumNativeZ = maximumNativeZ;
++  }
  
-@@ -481,10 +432,11 @@ public class AirMapTileProvider implements TileProvider {
- 		this.tileCacheMaxAge = tileCacheMaxAge;
- 	}
+-	public void setMinimumZ(int minimumZ) {
+-		this.minimumZ = minimumZ;
+-	}
++  public void setMinimumZ(int minimumZ) {
++    this.minimumZ = minimumZ;
++  }
  
--  public void setOfflineMode(boolean offlineMode) {
-+	public void setOfflineMode(boolean offlineMode) {
- 		this.offlineMode = offlineMode;
- 	}
+-	public void setFlipY(boolean flipY) {
+-		this.flipY = flipY;
+-	}
++  public void setFlipY(boolean flipY) {
++    this.flipY = flipY;
++  }
  
- 	public void setCustomMode() {
-+		this.customMode = customMode;
- 	}
+-	public void setTileCachePath(String tileCachePath) {
+-		this.tileCachePath = tileCachePath;
+-	}
++  public void setTileCachePath(String tileCachePath) {
++    this.tileCachePath = tileCachePath;
++  }
+ 
+-	public void setTileCacheMaxAge(int tileCacheMaxAge) {
+-		this.tileCacheMaxAge = tileCacheMaxAge;
+-	}
++  public void setTileCacheMaxAge(int tileCacheMaxAge) {
++    this.tileCacheMaxAge = tileCacheMaxAge;
++  }
+ 
+   public void setOfflineMode(boolean offlineMode) {
+-		this.offlineMode = offlineMode;
+-	}
++    this.offlineMode = offlineMode;
++  }
+ 
+-	public void setCustomMode() {
+-	}
++  public void setCustomMode() {
++    this.customMode = customMode;
++  }
  }
-\ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileWorker.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapTileWorker.java
 deleted file mode 100644
 index 8f2b387..0000000

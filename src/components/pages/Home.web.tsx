@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
-import { StyleSheet, View, Text, PanResponderInstance, PanResponder, GestureResponderEvent } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -38,6 +38,9 @@ import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
 import { getExt } from '../../utils/General';
 import * as pmtiles from 'pmtiles';
+import { MapMemoView } from '../organisms/HomeMapMemoView';
+import { ModalColorPicker } from '../organisms/ModalColorPicker';
+import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 
 export default function HomeScreen() {
   const {
@@ -61,15 +64,20 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    visibleMapMemo,
+    //refreshMapMemo,
+    visibleMapMemoColor,
     onRegionChangeMapView,
     onDrop,
-    onPressMapView,
     pressStopDownloadTiles,
     pressDeleteTiles,
     gotoMaps,
     pressZoomIn,
     pressZoomOut,
     onDragEndPoint,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    panResponder,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -286,18 +294,6 @@ export default function HomeScreen() {
   //   [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
   // );
 
-  const panResponder: PanResponderInstance = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          onPressMapView(e);
-        },
-      }),
-    [onPressMapView]
-  );
-
   const mapStyle: string | mapboxgl.Style = useMemo(() => {
     //console.log(tileMaps);
     const sources = tileMaps
@@ -438,7 +434,13 @@ export default function HomeScreen() {
         }}
       >
         <Loading visible={isLoading} text="" />
-
+        <ModalColorPicker
+          modalVisible={visibleMapMemoColor}
+          withAlpha={true}
+          pressSelectColorOK={selectPenColor}
+          pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
+        />
+        {visibleMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -553,7 +555,10 @@ export default function HomeScreen() {
           <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
         )}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && <HomeDrawTools />}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+          <HomeDrawTools />
+        )}
+        {screenState !== 'expanded' && !isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
         {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
       </View>
