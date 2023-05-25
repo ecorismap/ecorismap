@@ -87,6 +87,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     currentLineTool,
     currentPolygonTool,
     featureButton,
+    isDrawLineVisible,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -109,7 +110,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const {
     visibleMapMemo,
-    refreshMapMemo,
+    isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
     currentPen,
@@ -121,7 +122,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setVisibleMapMemo,
     setPen,
     setEraser,
-    setRefreshMapMemo,
+    setMapMemoVisible,
     setVisibleMapMemoColor,
     selectPenColor,
     clearMapMemo,
@@ -174,17 +175,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (region: Region | ViewState) => {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
-      setRefreshMapMemo(true);
+      setMapMemoVisible(true);
+      showDrawLine();
     },
-    [changeMapRegion, setRefreshMapMemo]
+    [changeMapRegion, setMapMemoVisible, showDrawLine]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-    refreshMapMemo && setRefreshMapMemo(false);
-  }, [gpsState, refreshMapMemo, setRefreshMapMemo, toggleGPS]);
+    isMapMemoVisible && setMapMemoVisible(false);
+    isDrawLineVisible && hideDrawLine();
+  }, [gpsState, hideDrawLine, isDrawLineVisible, isMapMemoVisible, setMapMemoVisible, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
@@ -560,18 +563,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [clearTiles, route.params?.tileMap]);
 
   const pressZoomIn = useCallback(() => {
-    setRefreshMapMemo(false);
+    setMapMemoVisible(false);
     hideDrawLine();
     zoomIn();
-    showDrawLine;
-  }, [hideDrawLine, setRefreshMapMemo, showDrawLine, zoomIn]);
+  }, [hideDrawLine, setMapMemoVisible, zoomIn]);
 
   const pressZoomOut = useCallback(() => {
-    setRefreshMapMemo(false);
+    setMapMemoVisible(false);
     hideDrawLine();
     zoomOut();
-    showDrawLine;
-  }, [hideDrawLine, setRefreshMapMemo, showDrawLine, zoomOut]);
+  }, [hideDrawLine, setMapMemoVisible, zoomOut]);
 
   /****************** goto ****************************/
 
@@ -749,7 +750,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         visibleMapMemoColor,
         currentPen,
         currentEraser,
-        refreshMapMemo,
+        isMapMemoVisible,
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
@@ -788,7 +789,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setVisibleMapMemo,
         setPen,
         setEraser,
-        setRefreshMapMemo,
+        setMapMemoVisible,
         setVisibleMapMemoColor,
         selectPenColor,
         pressUndoMapMemo,
