@@ -66,7 +66,7 @@ export default function HomeScreen() {
     screenState,
     isLoading,
     visibleMapMemo,
-    refreshMapMemo,
+    isMapMemoVisible,
     visibleMapMemoColor,
     onRegionChangeMapView,
     onDragMapView,
@@ -215,7 +215,7 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {refreshMapMemo && visibleMapMemo && <MapMemoView />}
+        {isMapMemoVisible && visibleMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -315,7 +315,7 @@ export default function HomeScreen() {
           })}
 
           {/************* MAP MEMO ******************** */}
-          {/* {refreshMapMemo && visibleMapMemo && (
+          {/* {isMapMemoVisible && visibleMapMemo && (
             <UrlTile
               key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
               urlTemplate={''}

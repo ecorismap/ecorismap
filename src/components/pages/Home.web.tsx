@@ -65,7 +65,7 @@ export default function HomeScreen() {
     screenState,
     isLoading,
     visibleMapMemo,
-    //refreshMapMemo,
+    //isMapMemoVisible,
     visibleMapMemoColor,
     onRegionChangeMapView,
     onDrop,
