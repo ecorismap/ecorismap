@@ -12284,10 +12284,10 @@ readline@^1.3.0:
   resolved "https://registry.npmjs.org/readline/-/readline-1.3.0.tgz"
   integrity sha512-k2d6ACCkiNYz222Fs/iNze30rRJ1iIicW7JuX/7/cozvih6YCkFZH+J6mAFDVgv0dRBaAyr4jDqC95R2y4IADg==
 
-reanimated-color-picker@^1.2.2:
-  version "1.2.2"
-  resolved "https://registry.yarnpkg.com/reanimated-color-picker/-/reanimated-color-picker-1.2.2.tgz#e5b3ad1e1bee450c8a9d0ad1c1949ee1e770d904"
-  integrity sha512-jkeJdInvjWJQL2jkCmfq4pZARSbZaKbJ8yb/uFg0jrLPxPqPPg7Pokk/yMAZltSu/JtB7ZJ1JR3qT+fuOvAOag==
+reanimated-color-picker@^2.3.0:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/reanimated-color-picker/-/reanimated-color-picker-2.3.0.tgz#d5a8a5d94c28d615f19f4faa0161c889fcb67074"
+  integrity sha512-xJZh/bkMmQn8+LygWUlZAoaVwHmhezex01yF9kwS2+WVbXqoHMFHYj4qbtpD4Ll9cduI96NzPIML0Zxnlhbj5Q==
 
 recast@^0.20.4:
   version "0.20.5"
@@ -12853,7 +12853,7 @@ set-value@^2.0.0, set-value@^2.0.1:
 
 setimmediate@^1.0.5:
   version "1.0.5"
-  resolved "https://registry.npmjs.org/setimmediate/-/setimmediate-1.0.5.tgz"
+  resolved "https://registry.yarnpkg.com/setimmediate/-/setimmediate-1.0.5.tgz#290cbb232e306942d7d7ea9b83732ab7856f8285"
   integrity sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==
 
 setprototypeof@1.1.0:

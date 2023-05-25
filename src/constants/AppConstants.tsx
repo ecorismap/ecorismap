@@ -185,9 +185,7 @@ export const PEN = {
 } as const;
 
 export const ERASER = {
-  ERASER_THICK: 'square',
-  ERASER_MEDIUM: 'square-medium',
-  ERASER_THIN: 'square-small',
+  ERASER: 'eraser',
 } as const;
 
 export const MAPMEMOTOOL = {
@@ -196,6 +194,8 @@ export const MAPMEMOTOOL = {
   VISIBLE: 'eye',
   HIDE: 'eye-off-outline',
   COLOR: 'palette-outline',
+  UNDO: 'undo-variant',
+  REDO: 'redo-variant',
   DELETE: 'delete',
   EXPORT: 'database-export',
   NONE: 'none',

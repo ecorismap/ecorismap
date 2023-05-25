@@ -26,7 +26,7 @@ interface LayerEditFeatureStyleContextType {
   pressReloadValue: () => void;
   pressSelectSingleColor: () => void;
   pressSelectValueColor: (index: number) => void;
-  pressSelectColorOK: (hue: number, sat: number, val: number) => void;
+  pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
   pressSelectColorCancel: () => void;
   gotoBack: () => void;
 }
