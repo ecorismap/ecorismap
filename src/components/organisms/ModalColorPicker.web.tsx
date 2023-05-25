@@ -8,17 +8,18 @@ import { t } from '../../i18n/config';
 
 interface Props {
   modalVisible: boolean;
-  pressSelectColorOK: (hue: number, sat: number, val: number) => void;
+  withAlpha: boolean;
+  pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
   pressSelectColorCancel: () => void;
 }
 
 export const ModalColorPicker = (props: Props) => {
-  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = props;
+  const { modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
   const [val, setVal] = useState({
-    a: 0.74,
-    h: 161.2987012987013,
-    s: 0.6695050558807878,
-    v: 0.45096,
+    a: 0.5,
+    h: 0,
+    s: 1,
+    v: 1,
   });
 
   return (
@@ -28,7 +29,7 @@ export const ModalColorPicker = (props: Props) => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`}</Text>
             <SketchPicker
-              disableAlpha={true}
+              disableAlpha={!withAlpha}
               color={val}
               onChangeComplete={(color: any) => {
                 //console.log(color);
@@ -39,7 +40,7 @@ export const ModalColorPicker = (props: Props) => {
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
-                onPress={() => pressSelectColorOK(val.h, val.s, val.v)}
+                onPress={() => pressSelectColorOK(val.h, val.s, val.v, val.a)}
               >
                 <Text>OK</Text>
               </TouchableOpacity>

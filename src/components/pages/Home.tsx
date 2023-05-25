@@ -1,17 +1,9 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import {
-  StyleSheet,
-  View,
-  Platform,
-  Text,
-  PanResponderInstance,
-  PanResponder,
-  GestureResponderEvent,
-} from 'react-native';
+import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR, DEGREE_INTERVAL, MAPMEMO_FOLDER, TILE_FOLDER } from '../../constants/AppConstants';
+import { COLOR, DEGREE_INTERVAL, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
@@ -40,9 +32,9 @@ import { getExt, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
-import { CanvasView } from '../organisms/HomeCanvasView';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
+import { MapMemoView } from '../organisms/HomeMapMemoView';
 
 export default function HomeScreen() {
   const {
@@ -73,12 +65,10 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
-    currentMapMemoTool,
     visibleMapMemo,
     refreshMapMemo,
     visibleMapMemoColor,
     onRegionChangeMapView,
-    onPressMapView,
     onDragMapView,
     onDragEndPoint,
     pressDownloadTiles,
@@ -91,6 +81,7 @@ export default function HomeScreen() {
     gotoMaps,
     setVisibleMapMemoColor,
     selectPenColor,
+    panResponder,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -202,18 +193,6 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
-  const panResponder: PanResponderInstance = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          onPressMapView(e);
-        },
-      }),
-    [onPressMapView]
-  );
-
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
@@ -232,11 +211,11 @@ export default function HomeScreen() {
         <Loading visible={isLoading} text="" />
         <ModalColorPicker
           modalVisible={visibleMapMemoColor}
+          withAlpha={true}
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {currentMapMemoTool !== 'NONE' && <CanvasView />}
-
+        {refreshMapMemo && visibleMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -336,7 +315,7 @@ export default function HomeScreen() {
           })}
 
           {/************* MAP MEMO ******************** */}
-          {refreshMapMemo && visibleMapMemo && (
+          {/* {refreshMapMemo && visibleMapMemo && (
             <UrlTile
               key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
               urlTemplate={''}
@@ -352,7 +331,7 @@ export default function HomeScreen() {
               tileCacheMaxAge={604800}
               offlineMode={true}
             />
-          )}
+          )} */}
           {/************* TILE MAP ******************** */}
 
           {tileMaps

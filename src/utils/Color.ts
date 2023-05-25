@@ -1,4 +1,4 @@
-export const hsv2rgb = (H: number, S: number, V: number): string => {
+export const hsv2rgba = (H: number, S: number, V: number, alpha?: number) => {
   //https://en.wikipedia.org/wiki/HSL_and_HSV#From_HSV
 
   const C = V * S;
@@ -8,6 +8,7 @@ export const hsv2rgb = (H: number, S: number, V: number): string => {
   let R = 0;
   let G = 0;
   let B = 0;
+
   if (Hp >= 0 && Hp < 1) {
     [R, G, B] = [C, X, 0];
   }
@@ -33,8 +34,31 @@ export const hsv2rgb = (H: number, S: number, V: number): string => {
   R = Math.floor(R * 255);
   G = Math.floor(G * 255);
   B = Math.floor(B * 255);
+  const A = alpha ? alpha : 1;
+  return { R, G, B, A };
+};
 
-  return '#' + zeroPadding(R.toString(16), 2) + zeroPadding(G.toString(16), 2) + zeroPadding(B.toString(16), 2);
+export const hex2qgis = (hex: string): string => {
+  const r = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  let c: string[] = [];
+  if (r) {
+    c = r.slice(1, 5).map((x) => x);
+  }
+
+  // RGBA to ARGB
+  return `#${c[3]}${c[0]}${c[1]}${c[2]}`;
+};
+
+export const hsv2hex = (H: number, S: number, V: number, alpha?: number): string => {
+  const { R, G, B, A } = hsv2rgba(H, S, V, alpha);
+
+  return (
+    '#' +
+    zeroPadding(R.toString(16), 2) +
+    zeroPadding(G.toString(16), 2) +
+    zeroPadding(B.toString(16), 2) +
+    zeroPadding(Math.floor(A * 255).toString(16), 2)
+  );
 };
 
 const zeroPadding = (num: string, length: number) => {

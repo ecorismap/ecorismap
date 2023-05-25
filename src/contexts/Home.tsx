@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { GestureResponderEvent, PanResponderGestureState } from 'react-native';
+import { GestureResponderEvent, PanResponderGestureState, PanResponderInstance } from 'react-native';
 import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
@@ -79,6 +79,8 @@ export interface HomeContextType {
   currentEraser: EraserType;
   refreshMapMemo: boolean;
   penColor: string;
+  penWidth: number;
+  mapMemoEditingLine: Position[];
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
@@ -116,7 +118,11 @@ export interface HomeContextType {
   setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
   setRefreshMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
-  selectPenColor: (hue: number, sat: number, val: number) => void;
+  selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
+  pressUndoMapMemo: () => void;
+  pressRedoMapMemo: () => void;
+  pressExportMapMemo: () => void;
+  panResponder: PanResponderInstance;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

@@ -22,6 +22,9 @@ export const HomeMapMemoTools = () => {
     setVisibleMapMemo,
     setVisibleMapMemoColor,
     pressClearMapMemo,
+    pressUndoMapMemo,
+    pressRedoMapMemo,
+    pressExportMapMemo,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(
@@ -101,10 +104,28 @@ export const HomeMapMemoTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={visibleMapMemo ? MAPMEMOTOOL.VISIBLE : MAPMEMOTOOL.HIDE}
-          backgroundColor={currentMapMemoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={currentMapMemoTool !== 'NONE'}
+          disabled={false}
           onPress={() => setVisibleMapMemo(!visibleMapMemo)}
+        />
+      </View>
+      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <Button
+          name={MAPMEMOTOOL.UNDO}
+          backgroundColor={visibleMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          borderRadius={10}
+          disabled={!visibleMapMemo}
+          onPress={pressUndoMapMemo}
+        />
+      </View>
+      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <Button
+          name={MAPMEMOTOOL.REDO}
+          backgroundColor={visibleMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          borderRadius={10}
+          disabled={!visibleMapMemo}
+          onPress={pressRedoMapMemo}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
@@ -122,7 +143,7 @@ export const HomeMapMemoTools = () => {
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
           disabled={false}
-          onPress={() => null}
+          onPress={pressExportMapMemo}
         />
       </View>
     </View>
