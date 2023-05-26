@@ -4,19 +4,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getUidsByEmails } from '../lib/firebase/firestore';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
-import {
-  CreateProjectType,
-  DataType,
-  ExportType,
-  ProjectSettingsType,
-  ProjectType,
-  RegionType,
-  VerifiedType,
-} from '../types';
-import { useRepository } from './useRepository';
+import { CreateProjectType, ProjectType, RegionType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
-import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
-import dayjs from '../i18n/dayjs';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
@@ -37,21 +26,7 @@ export type UseProjectEditReturnType = {
     project: ProjectType | undefined;
   }>;
   openProject: () => void;
-  generateExportProjectData: (
-    projectSettings: ProjectSettingsType,
-    dataSet: DataType[]
-  ) => Promise<{
-    exportData: {
-      data: string;
-      name: string;
-      type: ExportType | 'JSON' | 'PHOTO';
-      folder: string;
-    }[];
-    exportDataName: string;
-  }>;
-
   saveProject: (updatedProject: ProjectType) => void;
-
   startProjectSetting: () => void;
   setCreateType: (type: CreateProjectType) => void;
   changeText: (name: string, value: string) => void;
@@ -68,7 +43,6 @@ export const useProjectEdit = (
 ): UseProjectEditReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
-
   const projectRegion = useSelector((state: AppState) => state.settings.projectRegion);
   const currentProjectId = useSelector((state: AppState) => state.settings.projectId);
   const projects = useSelector((state: AppState) => state.projects);
@@ -86,56 +60,10 @@ export const useProjectEdit = (
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const isOwner = useMemo(() => role === 'OWNER', [role]);
 
-  const { fetchAllPhotos } = useRepository();
-
   useEffect(() => {
     setTargetProject(initialProject);
     setCreateType(initialCreateType);
   }, [initialCreateType, initialProject]);
-
-  const generateExportProjectData = useCallback(
-    async (projectSettings: ProjectSettingsType, dataSet: DataType[]) => {
-      //console.log(targetProject);
-      //自分が管理者のプロジェクトしかエクスポートできない。管理者以外はエクスポートボタン表示されない.
-
-      const exportData: { data: string; name: string; type: ExportType | 'JSON' | 'PHOTO'; folder: string }[] = [];
-      const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const settingsData = JSON.stringify({ projectSettings, dataSet });
-      const settingsDataName = `${targetProject.name}_${time}.json`;
-      exportData.push({ data: settingsData, name: settingsDataName, type: 'JSON', folder: '' });
-
-      for (const layer of projectSettings.layers) {
-        const records = dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
-        //GeoJSON
-        const geojson = generateGeoJson(records, layer.field, layer.type, layer.name);
-        const geojsonData = JSON.stringify(geojson);
-        const geojsonName = `${layer.name}_${time}.geojson`;
-        exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: `${layer.name}` });
-        //CSV
-        const csv = generateCSV(records, layer.field, layer.type);
-        const csvData = csv;
-        const csvName = `${layer.name}_${time}.csv`;
-        exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: `${layer.name}` });
-        //GPX
-        if (layer.type === 'POINT' || layer.type === 'LINE') {
-          const gpx = generateGPX(records, layer.type);
-          const gpxData = gpx;
-          const gpxName = `${layer.name}_${time}.gpx`;
-          exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: `${layer.name}` });
-        }
-        //Photo
-        const imagePromises = fetchAllPhotos(layer, records);
-        const photos = await Promise.all(imagePromises);
-        photos.forEach((photo) => {
-          photo !== undefined &&
-            exportData.push({ data: photo.data, name: photo.name, type: 'PHOTO', folder: `${layer.name}` });
-        });
-      }
-      const exportDataName = `${targetProject.name}_${time}`;
-      return { exportData, exportDataName };
-    },
-    [fetchAllPhotos, targetProject]
-  );
 
   const startProjectSetting = useCallback(() => {
     dispatch(editSettingsAction({ isSettingProject: true }));
@@ -309,7 +237,6 @@ export const useProjectEdit = (
     projectRegion,
     checkedProject,
     openProject,
-    generateExportProjectData,
     saveProject,
     startProjectSetting,
     changeText,
