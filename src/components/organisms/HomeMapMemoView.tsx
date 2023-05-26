@@ -48,6 +48,8 @@ export const MapMemoView = () => {
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         {drawLine.map(({ latlon, strokeColor, strokeWidth, zoom }, idx: number) => {
+          if (currentZoom > zoom + 2) return null;
+          if (currentZoom < zoom - 4) return null;
           if (!booleanIntersects(regionArea, turf.lineString(latlon))) return null;
           const xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef.current);
 
