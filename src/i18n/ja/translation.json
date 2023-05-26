@@ -264,7 +264,7 @@
       "clearTileCache": "地図のキャッシュとダウンロードファイルをクリアしますか？",
       "clearPhotoCache": "写真のキャッシュをクリアしますか？",
       "fileNew": "現在のデータをクリアしますか？",
-      "fileOpen": "データファイル(.ecorismap)を読み込みますか？現在のデータと設定は上書きされます。"
+      "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。"
     },
     "alert": {
       "saveDataToLocalStorage": "保存しました",

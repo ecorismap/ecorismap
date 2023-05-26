@@ -1,18 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DataType, EcorisMapFileType, ExportType, PhotoType, ProjectSettingsType } from '../types';
+import { DataType, EcorisMapFileType, ExportType, LayerType, PhotoType, SettingsType, TileMapType } from '../types';
 
 import { AppState } from '../modules';
 import { setLayersAction, createLayersInitialState } from '../modules/layers';
 import * as FileSystem from 'expo-file-system';
-//@ts-ignore
-import Base64 from 'Base64';
 import { Platform } from 'react-native';
 import { setDataSetAction, createDataSetInitialState } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { createSettingsInitialState, setSettingsAction } from '../modules/settings';
-import { resetDataSetUser } from '../utils/Data';
 import { t } from '../i18n/config';
 import { getExt } from '../utils/General';
 
@@ -20,27 +17,35 @@ import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
+import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
+import { useRepository } from './useRepository';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
-  importProject: (
-    uri: string,
-    name: string,
-    size: number | undefined
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-  }>;
   clearEcorisMap: () => Promise<{
     isOK: boolean;
     message: string;
   }>;
-  generateEcorisMapData: (includePhoto: boolean) => {
-    data: string;
-    name: string;
-    type: ExportType | 'JSON' | 'PHOTO';
-    folder: string;
-  }[];
+  generateEcorisMapData: (
+    data: {
+      dataSet: DataType[];
+      layers: LayerType[];
+      settings: SettingsType;
+      maps: TileMapType[];
+    },
+    option?: {
+      includePhoto: boolean;
+      fromProject: boolean;
+      includeGISData: boolean;
+    }
+  ) => Promise<
+    {
+      data: string;
+      name: string;
+      type: ExportType | 'JSON' | 'PHOTO';
+      folder: string;
+    }[]
+  >;
 
   openEcorisMapFile: (uri: string) => Promise<{
     isOK: boolean;
@@ -50,58 +55,67 @@ export type UseEcorisMapFileReturnType = {
 
 export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dispatch = useDispatch();
-
-  const layers = useSelector((state: AppState) => state.layers);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
   const settings = useSelector((state: AppState) => state.settings);
-  const maps = useSelector((state: AppState) => state.tileMaps);
   const [isLoading, setIsLoading] = useState(false);
-
-  const importProject = useCallback(
-    async (uri: string, name: string) => {
-      // if (tracking !== undefined) {
-      //   return { isOK: false, message: t('hooks.message.cannotInTracking') };
-      // }
-      // const file = await DocumentPicker.getDocumentAsync({});
-      // if (file.type === 'cancel') {
-      //   return { isOK: true, message: '' };
-      // }
-
-      const ext = name.split('.').pop();
-      if (ext !== 'json') {
-        return { isOK: false, message: t('hooks.message.invalidFileType') };
-      }
-
-      if (Platform.OS !== 'web') {
-        //呼び出し元でチェックしているけど、サポートするときのために残す
-        return { isOK: false, message: t('hooks.message.onlySupportWeb') };
-      }
-      const arr = uri.split(',');
-      const base64 = arr[arr.length - 1];
-      const json = decodeURIComponent(escape(Base64.atob(base64)));
-      const data: { projectSettings: ProjectSettingsType; dataSet: DataType[] } = JSON.parse(json);
-      const updatedDataSet = resetDataSetUser(data.dataSet);
-      dispatch(setDataSetAction(updatedDataSet));
-      dispatch(setLayersAction(data.projectSettings.layers));
-      dispatch(setTileMapsAction(data.projectSettings.tileMaps));
-      dispatch(setSettingsAction(createSettingsInitialState()));
-
-      return { isOK: true, message: '' };
-    },
-    [dispatch]
-  );
+  const { fetchAllPhotos } = useRepository();
 
   const generateEcorisMapData = useCallback(
-    (includePhoto: boolean) => {
+    async (
+      data: {
+        dataSet: DataType[];
+        layers: LayerType[];
+        settings: SettingsType;
+        maps: TileMapType[];
+      },
+      option?: { includePhoto: boolean; fromProject: boolean; includeGISData: boolean }
+    ) => {
       const exportData: { data: string; name: string; type: ExportType | 'JSON' | 'PHOTO'; folder: string }[] = [];
-      const savedData = JSON.stringify({ dataSet, layers, settings, maps });
+      const savedData = JSON.stringify(data);
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const savedDataName = `${time}.json`;
+      const savedDataName = `local_${time}.json`;
       exportData.push({ data: savedData, name: savedDataName, type: 'JSON', folder: '' });
 
-      if (includePhoto) {
-        for (const layer of layers) {
-          const records = dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
+      for (const layer of data.layers) {
+        //LayerSetting
+        const layerSetting = JSON.stringify(layer);
+        exportData.push({
+          data: layerSetting,
+          name: `${layer.name}_${time}.json`,
+          type: 'JSON',
+          folder: `${layer.id}`,
+        });
+        const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
+        if (option?.includeGISData) {
+          //GeoJSON
+          const geojson = generateGeoJson(records, layer.field, layer.type, layer.id);
+          const geojsonData = JSON.stringify(geojson);
+          const geojsonName = `${layer.name}_${time}.geojson`;
+          exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: `${layer.id}` });
+          //CSV
+          const csv = generateCSV(records, layer.field, layer.type);
+          const csvData = csv;
+          const csvName = `${layer.name}_${time}.csv`;
+          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: `${layer.id}` });
+          //GPX
+          if (layer.type === 'POINT' || layer.type === 'LINE') {
+            const gpx = generateGPX(records, layer.type);
+            const gpxData = gpx;
+            const gpxName = `${layer.name}_${time}.gpx`;
+            exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: `${layer.id}` });
+          }
+        }
+        //Photo
+        //fromProject
+        if (option?.includePhoto && option?.fromProject) {
+          const imagePromises = fetchAllPhotos(layer, records);
+          const photos = await Promise.all(imagePromises);
+          photos.forEach((photo) => {
+            photo !== undefined &&
+              exportData.push({ data: photo.data, name: photo.name, type: 'PHOTO', folder: `${layer.id}` });
+          });
+        }
+        //fromLocal
+        if (option?.includePhoto && option?.fromProject) {
           const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
           records.forEach((record) => {
             photoFields.forEach((photoField) => {
@@ -116,7 +130,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       }
       return exportData;
     },
-    [dataSet, layers, maps, settings]
+    [fetchAllPhotos]
   );
 
   async function importPhotos(
@@ -250,7 +264,6 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
   return {
     isLoading,
-    importProject,
     clearEcorisMap,
     generateEcorisMapData,
     openEcorisMapFile,

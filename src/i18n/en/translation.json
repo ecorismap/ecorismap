@@ -220,7 +220,7 @@
       "clearTileCache": "Clear map cache and download files?",
       "clearPhotoCache": "Clear photo cache?",
       "fileNew": "Clear current data?",
-      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
+      "fileOpen": "Load data file (.ecorismap or .zip)? \nCurrent data and settings will be overwritten."
     },
     "alert": {
       "saveDataToLocalStorage": "Saved.",

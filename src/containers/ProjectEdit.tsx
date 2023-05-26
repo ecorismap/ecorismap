@@ -16,6 +16,9 @@ import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
+import { cloneDeep } from 'lodash';
+import dayjs from '../i18n/dayjs';
+import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 
 export default function ProjectEditContainer({ navigation, route }: Props_ProjectEdit) {
   const {
@@ -35,11 +38,11 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     changeAdmin,
     addMember,
     deleteMember,
-    generateExportProjectData,
     openProject,
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.createType, route.params.isNew);
 
+  const settings = useSelector((state: AppState) => state.settings);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const [isLoading, setIsLoading] = useState(false);
   const { ownerProjectsCount } = useProjects();
@@ -57,6 +60,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     downloadPrivateData,
     downloadTemplateData,
   } = useRepository();
+  const { generateEcorisMapData } = useEcorisMapFile();
 
   const downloadDataForAdmin = useCallback(async () => {
     const shouldPhotoDownload = false;
@@ -183,11 +187,22 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         throw new Error(projectSettingsResult.message);
       const allDataResult = await fetchAllData(targetProject);
       if (!allDataResult.isOK || allDataResult.data === undefined) throw new Error(allDataResult.message);
+      const newSettings = cloneDeep(settings);
+      newSettings.mapRegion = projectSettingsResult.data.mapRegion;
+      newSettings.plugins = projectSettingsResult.data.plugins;
+      newSettings.mapType = projectSettingsResult.data.mapType;
 
-      const { exportData, exportDataName } = await generateExportProjectData(
-        projectSettingsResult.data,
-        allDataResult.data
-      );
+      const data = {
+        dataSet: allDataResult.data,
+        layers: projectSettingsResult.data.layers,
+        maps: projectSettingsResult.data.tileMaps,
+        settings: newSettings,
+      };
+      const includePhoto = true;
+      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: true, includeGISData: true });
+      const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+      const exportDataName = `${targetProject.name}_${time}`;
+
       const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
       if (!isOK) Alert.alert('', t('hooks.message.failExport'));
 
@@ -196,7 +211,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       Alert.alert('error', e.message);
     }
-  }, [fetchAllData, fetchProjectSettings, generateExportProjectData, targetProject]);
+  }, [fetchAllData, fetchProjectSettings, generateEcorisMapData, settings, targetProject]);
 
   const pressDeleteProject = useCallback(async () => {
     try {

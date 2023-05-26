@@ -15,7 +15,6 @@ export default function AccountSettings() {
     pressResetEncryptKey,
     pressDeleteUserAccount,
     pressUpgradeAccount,
-    pressImportProject,
     pressDeleteAllProjects,
     pressGotoHome,
   } = useContext(AccountSettingsContext);
@@ -84,14 +83,7 @@ export default function AccountSettings() {
             onPress={pressUpgradeAccount}
           />
         )}
-        {FUNC_PROJECT && Platform.OS === 'web' && (
-          <TextButton
-            name={ACCOUNT_SETTINGS_BTN.PROJECT_IMPORT}
-            text={t('AccountSettings.project_import.text')}
-            info={t('AccountSettings.project_import.info')}
-            onPress={pressImportProject}
-          />
-        )}
+
         {FUNC_PROJECT && Platform.OS === 'web' && (
           <TextButton
             name={ACCOUNT_SETTINGS_BTN.PROJECT_DELETE_ALL}
