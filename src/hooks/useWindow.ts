@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
+import { PixelRatio, Platform, useWindowDimensions } from 'react-native';
 import { useScreen } from './useScreen';
 import { RegionType } from '../types';
 import { useSelector } from 'react-redux';
@@ -14,6 +14,7 @@ export type UseWindowReturnType = {
     width: number;
     height: number;
   };
+  devicePixelRatio: number;
 };
 
 export const useWindow = (): UseWindowReturnType => {
@@ -25,6 +26,7 @@ export const useWindow = (): UseWindowReturnType => {
   let StatusBarHeight = 0;
   if (Platform.OS === 'android') StatusBarHeight = 24;
   const windowHeight = isLandscape ? window.height - StatusBarHeight : window.height;
+  const devicePixelRatio = PixelRatio.get();
 
   const mapSize = useMemo(() => {
     // if (Platform.OS === 'web' && mapViewRef.current && screenState) {
@@ -56,5 +58,6 @@ export const useWindow = (): UseWindowReturnType => {
     windowHeight,
     windowWidth,
     isLandscape,
+    devicePixelRatio,
   } as const;
 };

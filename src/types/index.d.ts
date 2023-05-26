@@ -20,8 +20,12 @@ import {
   POLYGONTOOL,
   DRAWTOOL,
   INFOTOOL,
+  PEN,
+  ERASER,
+  MAPMEMOTOOL,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
+import { MapMemoLineType } from '../components/organisms/HomeMapMemoView';
 
 export interface LocationType {
   latitude: number;
@@ -292,6 +296,17 @@ export interface SettingsType {
   mapList: TileMapItemType[];
 }
 
+export type MapMemoLineType = {
+  latlon: Position[];
+  strokeWidth: number;
+  strokeColor: string;
+  zoom: number;
+};
+
+export interface MapMemoType {
+  drawLine: MapMemoLineType[];
+}
+
 export interface RegionType {
   latitude: number;
   longitude: number;
@@ -355,6 +370,9 @@ export type DrawToolType = keyof typeof DRAWTOOL;
 export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
 
+export type MapMemoToolType = keyof typeof MAPMEMOTOOL;
+export type PenType = keyof typeof PEN;
+export type EraserType = keyof typeof ERASER;
 export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;

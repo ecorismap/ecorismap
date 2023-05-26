@@ -1,19 +1,25 @@
-import React, { useContext, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import { SketchPicker } from 'react-color';
 import { t } from '../../i18n/config';
-import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 
-export const FeatureStyleModalColorPicker = () => {
-  const { modalVisible, pressSelectColorOK, pressSelectColorCancel } = useContext(LayerEditFeatureStyleContext);
+interface Props {
+  modalVisible: boolean;
+  withAlpha: boolean;
+  pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
+  pressSelectColorCancel: () => void;
+}
+
+export const ModalColorPicker = (props: Props) => {
+  const { modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
   const [val, setVal] = useState({
-    a: 0.74,
-    h: 161.2987012987013,
-    s: 0.6695050558807878,
-    v: 0.45096,
+    a: 0.5,
+    h: 0,
+    s: 1,
+    v: 1,
   });
 
   return (
@@ -23,7 +29,7 @@ export const FeatureStyleModalColorPicker = () => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`}</Text>
             <SketchPicker
-              disableAlpha={true}
+              disableAlpha={!withAlpha}
               color={val}
               onChangeComplete={(color: any) => {
                 //console.log(color);
@@ -34,7 +40,7 @@ export const FeatureStyleModalColorPicker = () => {
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
-                onPress={() => pressSelectColorOK(val.h, val.s, val.v)}
+                onPress={() => pressSelectColorOK(val.h, val.s, val.v, val.a)}
               >
                 <Text>OK</Text>
               </TouchableOpacity>

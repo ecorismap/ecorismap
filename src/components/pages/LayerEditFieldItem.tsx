@@ -113,19 +113,20 @@ export default function LayerEditFieldItemScreen() {
               </View>
             </View>
           ))}
-        {itemFormat !== 'STRING' &&
-          itemFormat !== 'INTEGER' &&
-          itemFormat !== 'DECIMAL' &&
-          itemFormat !== 'REFERENCE' && <ListButtons />}
+        {itemFormat !== 'REFERENCE' && <ListButtons />}
       </ScrollView>
     </View>
   );
 }
 
 const ListButtons = () => {
-  const { itemFormat, pressAddValue } = useContext(LayerEditFieldItemContext);
-  const editable = true;
-  return (
+  const { itemFormat, itemValues, pressAddValue } = useContext(LayerEditFieldItemContext);
+  const editable =
+    ((itemFormat === 'STRING' || itemFormat === 'INTEGER' || itemFormat === 'DECIMAL') && itemValues.length < 1) ||
+    itemFormat === 'LIST' ||
+    itemFormat === 'CHECK' ||
+    itemFormat === 'RADIO';
+  return editable ? (
     <View style={styles.button}>
       <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => pressAddValue(false)} />
       {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
@@ -134,7 +135,7 @@ const ListButtons = () => {
         </TouchableOpacity>
       )}
     </View>
-  );
+  ) : null;
 };
 
 const styles = StyleSheet.create({

@@ -1,6 +1,7 @@
 export { default as Button } from './Button';
 export { default as Picker } from './Picker';
 export { default as RadioButton } from './RadioButton';
+export { default as CheckButton } from './CheckButton';
 export { default as RectButton } from './RectButton';
 export { default as RectButton2 } from './RectButton2';
 export { default as SmallButton } from './SmallButton';

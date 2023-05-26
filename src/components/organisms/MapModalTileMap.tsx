@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet, ScrollView } from 'react-native';
 
-import { COLOR } from '../../constants/AppConstants';
+import { COLOR, NAV_BTN } from '../../constants/AppConstants';
 import Slider from '../atoms/Slider';
 import { CheckBox } from '../molecules/CheckBox';
 import { formattedInputs } from '../../utils/Format';
-import { SmallButton } from '../atoms';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { MapsContext } from '../../contexts/Maps';
+import { SmallButton } from '../atoms';
 
 export const MapModalTileMap = React.memo(() => {
   //console.log('render ModalTileMap');
@@ -60,7 +60,7 @@ export const MapModalTileMap = React.memo(() => {
     },
     modalContents: {
       alignItems: 'center',
-      height: windowHeight * 0.6,
+      height: windowHeight * 0.5,
       width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
@@ -135,13 +135,7 @@ export const MapModalTileMap = React.memo(() => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('Maps.modal.title')}`}</Text>
             <View style={styles.modalHeaderButton}>
-              <SmallButton
-                name="delete"
-                onPress={() => {
-                  pressDeleteMap(tileMap());
-                }}
-                backgroundColor={COLOR.DARKRED}
-              />
+              <SmallButton name={NAV_BTN.CLOSE} onPress={pressEditMapCancel} backgroundColor={COLOR.GRAY1} />
             </View>
             <ScrollView>
               <TextInput
@@ -175,24 +169,6 @@ export const MapModalTileMap = React.memo(() => {
                 onSlidingComplete={(value) => setTransparency(value)}
               />
 
-              <Slider
-                label={t('common.minZoom')}
-                width={windowWidth * modalWidthScale}
-                initialValue={minimumZ}
-                step={1}
-                minimumValue={0}
-                maximumValue={22}
-                onSlidingComplete={(value) => setMinimumZ(value)}
-              />
-              <Slider
-                label={t('common.maxZoom')}
-                width={windowWidth * modalWidthScale}
-                initialValue={maximumZ}
-                step={1}
-                minimumValue={0}
-                maximumValue={22}
-                onSlidingComplete={(value) => setMaximumZ(value)}
-              />
               <Slider
                 label={t('common.fixZoom')}
                 width={windowWidth * modalWidthScale}
@@ -232,6 +208,12 @@ export const MapModalTileMap = React.memo(() => {
                 onPress={pressEditMapCancel}
               >
                 <Text>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
+                onPress={() => pressDeleteMap(tileMap())}
+              >
+                <Text style={{ color: COLOR.WHITE }}>{`${t('common.delete')}`}</Text>
               </TouchableOpacity>
             </View>
           </View>

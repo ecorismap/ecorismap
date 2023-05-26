@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { AppState as RNAppState, AppStateStatus, GestureResponderEvent, Platform } from 'react-native';
+import {
+  AppState as RNAppState,
+  AppStateStatus,
+  GestureResponderEvent,
+  Platform,
+  PanResponderInstance,
+  PanResponder,
+} from 'react-native';
 import MapView, { Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, LayerType, RecordType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -31,9 +38,10 @@ import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
-import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
+import { getReceivedFiles, deleteReceivedFiles, exportGeoFile } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
+import { useMapMemo } from '../hooks/useMapMemo';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -89,6 +97,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     currentLineTool,
     currentPolygonTool,
     featureButton,
+    isDrawLineVisible,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -108,6 +117,32 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     resetDrawTools,
     toggleWebTerrainActive,
   } = useDrawTool(mapViewRef.current);
+
+  const {
+    visibleMapMemo,
+    isMapMemoVisible,
+    visibleMapMemoColor,
+    currentMapMemoTool,
+    currentPen,
+    currentEraser,
+    penColor,
+    penWidth,
+    mapMemoEditingLine,
+    setMapMemoTool,
+    setVisibleMapMemo,
+    setPen,
+    setEraser,
+    setMapMemoVisible,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    clearMapMemo,
+    onPanResponderGrantMapMemo,
+    onPanResponderMoveMapMemo,
+    onPanResponderReleaseMapMemo,
+    pressUndoMapMemo,
+    pressRedoMapMemo,
+    generateExportMapMemo,
+  } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
   //現在位置、GPS関連
@@ -167,15 +202,30 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (region: Region | ViewState) => {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
+      setMapMemoVisible(true);
+      showDrawLine();
     },
-    [changeMapRegion]
+    [changeMapRegion, setMapMemoVisible, showDrawLine]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-  }, [gpsState, toggleGPS]);
+    isMapMemoVisible && setMapMemoVisible(false);
+    isDrawLineVisible && hideDrawLine();
+  }, [gpsState, hideDrawLine, isDrawLineVisible, isMapMemoVisible, setMapMemoVisible, toggleGPS]);
+
+  const selectMapMemoTool = useCallback(
+    (value: MapMemoToolType) => {
+      if (currentMapMemoTool === value) {
+        setMapMemoTool('NONE');
+      } else {
+        setMapMemoTool(value);
+      }
+    },
+    [currentMapMemoTool, setMapMemoTool]
+  );
 
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
@@ -564,16 +614,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [clearProject, isSettingProject, logout, navigation, tracking]);
 
   const pressZoomIn = useCallback(() => {
+    setMapMemoVisible(false);
     hideDrawLine();
     zoomIn();
-    showDrawLine;
-  }, [hideDrawLine, showDrawLine, zoomIn]);
+  }, [hideDrawLine, setMapMemoVisible, zoomIn]);
 
   const pressZoomOut = useCallback(() => {
+    setMapMemoVisible(false);
     hideDrawLine();
     zoomOut();
-    showDrawLine;
-  }, [hideDrawLine, showDrawLine, zoomOut]);
+  }, [hideDrawLine, setMapMemoVisible, zoomOut]);
 
   /******************* project buttons ************************** */
 
@@ -788,6 +838,48 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const pressClearMapMemo = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Home.confirm.clearMapMemo'));
+    if (ret) await clearMapMemo();
+  }, [clearMapMemo]);
+
+  const pressExportMapMemo = useCallback(async () => {
+    const { exportData, fileName } = generateExportMapMemo();
+    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+  }, [generateExportMapMemo]);
+
+  const panResponder: PanResponderInstance = useMemo(
+    () =>
+      PanResponder.create({
+        onShouldBlockNativeResponder: () => currentMapMemoTool !== 'NONE',
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (e: GestureResponderEvent) => {
+          if (currentMapMemoTool === 'NONE') {
+            onPressMapView(e);
+          } else {
+            onPanResponderGrantMapMemo(e);
+          }
+        },
+        onPanResponderMove: (event: GestureResponderEvent) => {
+          if (currentMapMemoTool === 'NONE') return;
+          onPanResponderMoveMapMemo(event);
+        },
+        onPanResponderRelease: () => {
+          if (currentMapMemoTool === 'NONE') return;
+          onPanResponderReleaseMapMemo();
+        },
+      }),
+    [
+      currentMapMemoTool,
+      onPanResponderGrantMapMemo,
+      onPanResponderMoveMapMemo,
+      onPanResponderReleaseMapMemo,
+      onPressMapView,
+    ]
+  );
+
   return (
     <HomeContext.Provider
       value={{
@@ -834,6 +926,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isSynced,
         isShowingProjectButtons,
         isSettingProject,
+        currentMapMemoTool,
+        visibleMapMemo,
+        visibleMapMemoColor,
+        currentPen,
+        currentEraser,
+        isMapMemoVisible,
+        penColor,
+        penWidth,
+        mapMemoEditingLine: mapMemoEditingLine.current,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -867,6 +968,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUploadData,
         pressSaveProjectSetting,
         pressDiscardProjectSetting,
+        pressClearMapMemo,
         gotoMaps,
         gotoSettings,
         gotoLayers,
@@ -876,6 +978,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoProjects,
         termsOfUseOK,
         termsOfUseCancel,
+        selectMapMemoTool,
+        setVisibleMapMemo,
+        setPen,
+        setEraser,
+        setMapMemoVisible,
+        setVisibleMapMemoColor,
+        selectPenColor,
+        pressUndoMapMemo,
+        pressRedoMapMemo,
+        pressExportMapMemo,
+        panResponder,
       }}
     >
       <Home />

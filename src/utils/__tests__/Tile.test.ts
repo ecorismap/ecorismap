@@ -1,5 +1,5 @@
 import { TileRegionType } from '../../types';
-import { tileGridForRegion } from '../Tile';
+import { latToTileY, lonToTileX, tileGridForRegion, tileToLatLon } from '../Tile';
 
 describe('tileGridForRegion', () => {
   const tileRegion: TileRegionType = {
@@ -27,5 +27,32 @@ describe('tileGridForRegion', () => {
       { x: 449, y: 202, z: 9 },
       { x: 449, y: 203, z: 9 },
     ]);
+  });
+});
+
+describe('lonToTileX', () => {
+  it('return tile x', () => {
+    expect(lonToTileX(134.43321973085403, 9)).toBe(447);
+    expect(lonToTileX(135.02348240464926, 9)).toBe(448);
+  });
+});
+
+describe('latToTileY', () => {
+  it('return tile y', () => {
+    expect(latToTileY(35.58172857314284, 9)).toBe(201);
+    expect(latToTileY(34.621287920331895, 9)).toBe(203);
+  });
+});
+
+describe('tileToLatLon', () => {
+  it('return lat lon', () => {
+    expect(tileToLatLon(447, 201, 9)).toStrictEqual({
+      lat: 35.58172857314284,
+      lon: 134.43321973085403,
+    });
+    expect(tileToLatLon(448, 203, 9)).toStrictEqual({
+      lat: 34.621287920331895,
+      lon: 135.02348240464926,
+    });
   });
 });

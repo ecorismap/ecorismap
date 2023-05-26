@@ -6,7 +6,7 @@ import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { cloneDeep } from 'lodash';
-import { getRandomColor, hsv2rgb } from '../utils/Color';
+import { getRandomColor, hsv2hex } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 
@@ -35,7 +35,7 @@ export type UseFeatureStyleReturnType = {
   addValue: () => void;
   deleteValue: (id: number) => void;
   reloadValue: () => void;
-  selectColor: (hue: number, sat: number, val: number) => void;
+  selectColor: (hue: number, sat: number, val: number, alpha: number) => void;
   selectColorCancel: () => void;
   saveColorStyle: () => void;
 };
@@ -220,9 +220,9 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   }, [allUserData, colorStyle, displayNames]);
 
   const selectColor = useCallback(
-    (hue: number, sat: number, val: number) => {
+    (hue: number, sat: number, val: number, alpha: number) => {
       setModalVisible(!modalVisible);
-      const rgb = hsv2rgb(hue, sat, val);
+      const rgb = hsv2hex(hue, sat, val, alpha);
 
       const newColorStyle = cloneDeep(colorStyle);
       if (colorListIndex.current === -1) {

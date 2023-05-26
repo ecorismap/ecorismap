@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform, FlatList } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
-import { SmallButton, RectButton2, RadioButton } from '../atoms';
+import { SmallButton, RectButton2, CheckButton } from '../atoms';
 import { MapsContext } from '../../contexts/Maps';
 
 export const MapItems = React.memo(() => {
@@ -17,7 +17,7 @@ export const MapItems = React.memo(() => {
         <View style={styles.tr}>
           <TouchableOpacity style={[styles.td, { flex: 6 }]} onPress={() => changeVisible(!item.visible, index!)}>
             <View style={[styles.td2, { flex: 2 }]}>
-              <RadioButton checked={item.visible} />
+              <CheckButton checked={item.visible} />
             </View>
             <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
               <Text>{item.name}</Text>
