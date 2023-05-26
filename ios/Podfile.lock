@@ -626,9 +626,6 @@ PODS:
     - React-Core
   - Expo (47.0.13):
     - ExpoModulesCore
-  - ExpoGL (12.4.0):
-    - ExpoModulesCore
-    - ReactCommon/turbomodule/core
   - ExpoImageManipulator (11.1.1):
     - EXImageLoader
     - ExpoModulesCore
@@ -1092,7 +1089,7 @@ PODS:
   - React-jsinspector (0.70.5)
   - React-logger (0.70.5):
     - glog
-  - react-native-date-picker (4.2.9):
+  - react-native-date-picker (4.2.13):
     - React-Core
   - react-native-get-random-values (1.8.0):
     - React-Core
@@ -1290,7 +1287,6 @@ DEPENDENCIES:
   - EXLocation (from `../node_modules/expo-location/ios`)
   - EXMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - Expo (from `../node_modules/expo`)
-  - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -1425,8 +1421,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-media-library/ios"
   Expo:
     :path: "../node_modules/expo"
-  ExpoGL:
-    :path: "../node_modules/expo-gl"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
@@ -1575,7 +1569,6 @@ SPEC CHECKSUMS:
   EXLocation: 7d08926d931f4fb619bfa25e73669f1e19b102c6
   EXMediaLibrary: b1c4f78878e45f6a359aff3a059e1660c41b73ab
   Expo: b9fa98bf260992312ee3c424400819fb9beadafe
-  ExpoGL: 8f8e40e494a462f33c1f513cf101bf7d6abe767e
   ExpoImageManipulator: 85ab87e9641b9d83108f8d603e0418c12fc19e2d
   ExpoImagePicker: ce37302446e70145bb413f0f74886441abdae022
   ExpoKeepAwake: 69b59d0a8d2b24de9f82759c39b3821fec030318
@@ -1634,7 +1627,7 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 31564fa6912459921568e8b0e49024285a4d584b
   React-jsinspector: badd81696361249893a80477983e697aab3c1a34
   React-logger: fdda34dd285bdb0232e059b19d9606fa0ec3bb9c
-  react-native-date-picker: c063a8967058c58a02d7d0e1d655f0453576fb0d
+  react-native-date-picker: 04e866ba4e7857f83abd504ad42e787f0f02ae00
   react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
   react-native-google-maps: f4cf51c3c6360eb4f945adc12dc89575ec3d944a
   react-native-maps: 7135a33610202745d08fdf151ce6b0d01952a99c
