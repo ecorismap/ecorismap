@@ -169,6 +169,7 @@ export const HomeDrawTools = () => {
             }
             borderRadius={10}
             disabled={isEditingDraw}
+            onPress={() => selectDrawTool('SELECT')}
           />
         </View>
       )}
