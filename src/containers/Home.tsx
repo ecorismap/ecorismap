@@ -119,7 +119,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useDrawTool(mapViewRef.current);
 
   const {
-    visibleMapMemo,
+    showMapMemo,
     isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -129,7 +129,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     setMapMemoTool,
-    setVisibleMapMemo,
+    setShowMapMemo,
     setPen,
     setEraser,
     setMapMemoVisible,
@@ -927,7 +927,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isShowingProjectButtons,
         isSettingProject,
         currentMapMemoTool,
-        visibleMapMemo,
+        showMapMemo,
         visibleMapMemoColor,
         currentPen,
         currentEraser,
@@ -979,7 +979,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         termsOfUseOK,
         termsOfUseCancel,
         selectMapMemoTool,
-        setVisibleMapMemo,
+        setShowMapMemo,
         setPen,
         setEraser,
         setMapMemoVisible,

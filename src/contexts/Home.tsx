@@ -79,7 +79,7 @@ export interface HomeContextType {
   isTermsOfUseOpen: boolean;
   isSettingProject: boolean;
   currentMapMemoTool: MapMemoToolType;
-  visibleMapMemo: boolean;
+  showMapMemo: boolean;
   visibleMapMemoColor: boolean;
   currentPen: PenType;
   currentEraser: EraserType;
@@ -131,7 +131,7 @@ export interface HomeContextType {
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
   selectMapMemoTool: (value: MapMemoToolType) => void;
-  setVisibleMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
   setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
   setMapMemoVisible: React.Dispatch<React.SetStateAction<boolean>>;
