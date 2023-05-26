@@ -66,7 +66,7 @@ export default function HomeScreen() {
     screenState,
     isLoading,
     visibleMapMemo,
-    refreshMapMemo,
+    isMapMemoVisible,
     visibleMapMemoColor,
     onRegionChangeMapView,
     onDragMapView,
@@ -215,7 +215,7 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {refreshMapMemo && visibleMapMemo && <MapMemoView />}
+        {isMapMemoVisible && visibleMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -314,24 +314,6 @@ export default function HomeScreen() {
             );
           })}
 
-          {/************* MAP MEMO ******************** */}
-          {/* {refreshMapMemo && visibleMapMemo && (
-            <UrlTile
-              key={'mapmemo'} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-              urlTemplate={''}
-              flipY={false}
-              opacity={1}
-              tileSize={256}
-              minimumZ={0}
-              maximumZ={22}
-              zIndex={100}
-              doubleTileSize={false}
-              maximumNativeZ={22}
-              tileCachePath={MAPMEMO_FOLDER}
-              tileCacheMaxAge={604800}
-              offlineMode={true}
-            />
-          )} */}
           {/************* TILE MAP ******************** */}
 
           {tileMaps
@@ -345,8 +327,8 @@ export default function HomeScreen() {
                     urlTemplate={tileMap.url}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
-                    minimumZ={tileMap.minimumZ}
-                    maximumZ={tileMap.maximumZ}
+                    minimumZ={0}
+                    maximumZ={22}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
@@ -361,8 +343,8 @@ export default function HomeScreen() {
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
                     tileSize={256}
-                    minimumZ={tileMap.minimumZ}
-                    maximumZ={tileMap.maximumZ}
+                    minimumZ={0}
+                    maximumZ={22}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}

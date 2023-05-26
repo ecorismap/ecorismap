@@ -62,6 +62,7 @@ export const SvgView = () => {
         height: '100%',
         width: '100%',
       }}
+      pointerEvents={currentDrawTool === 'MOVE' ? 'none' : 'auto'}
       {...panResponder.panHandlers}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
