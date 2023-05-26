@@ -16,7 +16,7 @@ import * as turf from '@turf/helpers';
 import dayjs from 'dayjs';
 
 export type UseMapMemoReturnType = {
-  visibleMapMemo: boolean;
+  showMapMemo: boolean;
   isMapMemoVisible: boolean;
   visibleMapMemoColor: boolean;
   currentMapMemoTool: MapMemoToolType;
@@ -28,7 +28,7 @@ export type UseMapMemoReturnType = {
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPen: Dispatch<SetStateAction<PenType>>;
   setEraser: Dispatch<SetStateAction<EraserType>>;
-  setVisibleMapMemo: Dispatch<SetStateAction<boolean>>;
+  setShowMapMemo: Dispatch<SetStateAction<boolean>>;
   setMapMemoVisible: Dispatch<SetStateAction<boolean>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
@@ -59,7 +59,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const drawLine = useSelector((state: AppState) => state.mapMemo.drawLine);
   const [history, setHistory] = useState<HistoryType[]>([]);
   const [future, setFuture] = useState<HistoryType[]>([]);
-  const [visibleMapMemo, setVisibleMapMemo] = useState(true);
+  const [showMapMemo, setShowMapMemo] = useState(true);
   const [isMapMemoVisible, setMapMemoVisible] = useState(true);
   const [penColor, setPenColor] = useState('#000000');
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
@@ -215,7 +215,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, [drawLine, mapMemoToGeoJson]);
 
   return {
-    visibleMapMemo,
+    showMapMemo,
     isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -224,7 +224,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penColor,
     penWidth,
     mapMemoEditingLine,
-    setVisibleMapMemo,
+    setShowMapMemo,
     setMapMemoTool,
     setPen,
     setEraser,

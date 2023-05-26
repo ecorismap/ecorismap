@@ -64,8 +64,8 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
-    visibleMapMemo,
-    //isMapMemoVisible,
+    showMapMemo,
+    isMapMemoVisible,
     visibleMapMemoColor,
     onRegionChangeMapView,
     onDrop,
@@ -440,7 +440,7 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {visibleMapMemo && <MapMemoView />}
+        {isMapMemoVisible && showMapMemo && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
