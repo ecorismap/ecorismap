@@ -4,7 +4,6 @@ import firebase from 'firebase/compat/app';
 import {
   COLORRAMP,
   COLORTYPE,
-  CREATEPROJECTTYPE,
   DATAFORMAT,
   EXPORTTYPE,
   FEATURETYPE,
@@ -407,7 +406,6 @@ export type GeoJsonFeatureType =
   | 'CENTROID'
   | 'LINEEND';
 
-export type CreateProjectType = keyof typeof CREATEPROJECTTYPE;
 export type FormatType = keyof typeof DATAFORMAT;
 export type ColorTypesType = keyof typeof COLORTYPE;
 export type ColorRampType = keyof typeof COLORRAMP;

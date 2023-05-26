@@ -28,11 +28,9 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     isNew,
     targetProject,
     originalProject,
-    createType,
     isEdited,
     checkedProject,
     saveProject,
-    setCreateType,
     changeText,
     changeMemberText,
     changeAdmin,
@@ -40,7 +38,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     deleteMember,
     openProject,
     startProjectSetting,
-  } = useProjectEdit(route.params.project, route.params.createType, route.params.isNew);
+  } = useProjectEdit(route.params.project, route.params.isNew);
 
   const settings = useSelector((state: AppState) => state.settings);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -247,12 +245,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     async (project: ProjectType) => {
       const e3kitGroupResult = await createE3kitGroup(project);
       if (!e3kitGroupResult.isOK || e3kitGroupResult.project === undefined) throw new Error(e3kitGroupResult.message);
-      const createProjectResult = await createProject(e3kitGroupResult.project, createType);
+      const createProjectResult = await createProject(e3kitGroupResult.project);
       if (!createProjectResult.isOK) throw new Error(createProjectResult.message);
       const updateLicenseResult = await updateLicense(e3kitGroupResult.project);
       if (!updateLicenseResult.isOK) throw new Error(updateLicenseResult.message);
     },
-    [createE3kitGroup, createProject, createType]
+    [createE3kitGroup, createProject]
   );
 
   const pressSaveProject = useCallback(async () => {
@@ -315,9 +313,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         isOwnerAdmin,
         isLoading,
         isNew,
-        createType,
         changeText,
-        changeCreateType: setCreateType,
         changeMemberText,
         changeAdmin,
         pressAddMember,

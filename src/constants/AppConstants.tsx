@@ -103,11 +103,6 @@ export const COLORRAMP = {
   // WhiteToRed: '赤から白',
 } as const;
 
-export const CREATEPROJECTTYPE = {
-  DEFAULT: t('constants.createproject.default'),
-  SAVE: t('constants.createproject.save'),
-} as const;
-
 export const PERMISSIONTYPE = {
   PRIVATE: t('constants.permission.private'),
   PUBLIC: t('constants.permission.public'),

@@ -1,14 +1,5 @@
 import { useCallback } from 'react';
-import {
-  CreateProjectType,
-  DataType,
-  LayerType,
-  PhotoType,
-  ProjectSettingsType,
-  ProjectType,
-  RecordType,
-  RegionType,
-} from '../types';
+import { DataType, LayerType, PhotoType, ProjectSettingsType, ProjectType, RecordType, RegionType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
@@ -29,10 +20,7 @@ import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 
 export type UseRepositoryReturnType = {
-  createProject: (
-    project: ProjectType,
-    createType: CreateProjectType | undefined
-  ) => Promise<{
+  createProject: (project: ProjectType) => Promise<{
     isOK: boolean;
     message: string;
   }>;
@@ -391,40 +379,15 @@ export const useRepository = (): UseRepositoryReturnType => {
     [updatedAt, user]
   );
 
-  const uploadCurrentProjectSettings = useCallback(
-    async (project_: ProjectType) => {
-      const projectSettingsResult = await uploadProjectSettings(project_);
-      if (!projectSettingsResult.isOK) return { isOK: false, message: projectSettingsResult.message };
-      const dataToRepositoryResult = await uploadData(project_, true, 'Common');
-      if (!dataToRepositoryResult.isOK) return { isOK: false, message: dataToRepositoryResult.message };
-      const uploadTemplateResult = await uploadData(project_, true, 'Template');
-      if (!uploadTemplateResult.isOK) return { isOK: false, message: uploadTemplateResult.message };
-
-      return { isOK: true, message: '' };
-    },
-    [uploadData, uploadProjectSettings]
-  );
-
   const createProject = useCallback(
-    async (project: ProjectType, createType: CreateProjectType | undefined) => {
+    async (project: ProjectType) => {
       const { isOK, message } = await projectStore.addProject(project);
       if (!isOK) return { isOK: false, message };
       dispatch(addProjectAction(project));
-
-      let result;
-      switch (createType) {
-        case 'DEFAULT':
-          result = await uploadDefaultProjectSettings(project);
-          break;
-        case 'SAVE':
-          result = await uploadCurrentProjectSettings(project);
-          break;
-        default:
-          result = { isOK: false, message: t('hooks.message.unknownError') };
-      }
+      const result = await uploadDefaultProjectSettings(project);
       return { isOK: result.isOK, message: result.message };
     },
-    [dispatch, uploadCurrentProjectSettings, uploadDefaultProjectSettings]
+    [dispatch, uploadDefaultProjectSettings]
   );
 
   const updateProject = useCallback(
