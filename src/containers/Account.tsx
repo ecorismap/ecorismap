@@ -99,8 +99,8 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     }
 
     if (Platform.OS === 'web') {
-      //navigation.navigate('Home');
-      window.open('https://ecoris-map.web.app', '_self');
+      navigation.navigate('Home');
+      //window.open('https://ecoris-map.web.app', '_self');
     } else {
       navigation.navigate('Home');
     }
