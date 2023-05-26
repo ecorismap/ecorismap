@@ -1,11 +1,9 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { COLOR, CREATEPROJECTTYPE, PROJECTEDIT_BTN } from '../../constants/AppConstants';
+import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { ProjectEditButtons } from '../organisms/ProjectEditButtons';
-import { ProjectEditRadio } from '../organisms/ProjectEditRadio';
 import { ProjectEditMembers } from '../organisms/ProjectEditMembers';
-import { CreateProjectType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { EditString } from '../molecules/EditString';
@@ -15,7 +13,6 @@ import { ProjectEditContext } from '../../contexts/ProjectEdit';
 
 export default function ProjectEditScreen() {
   const {
-    createType,
     isNew,
     isProjectOpen,
     project,
@@ -24,7 +21,6 @@ export default function ProjectEditScreen() {
     isOwnerAdmin,
     isLoading,
     changeText,
-    changeCreateType,
     changeMemberText,
     changeAdmin,
     pressAddMember,
@@ -74,21 +70,9 @@ export default function ProjectEditScreen() {
     });
   }, [headerLeftButton, headerRightButton, isEdited, isNew, isOwnerAdmin, navigation, pressSaveProject]);
 
-  const createTypeValueList = useMemo(() => Object.keys(CREATEPROJECTTYPE) as CreateProjectType[], []);
-  const createTypeLabels = useMemo(() => Object.values(CREATEPROJECTTYPE), []);
-
   return (
     <View style={styles.container}>
       <ScrollView>
-        {isNew && createType !== undefined && (
-          <ProjectEditRadio
-            name={t('common.preparation')}
-            value={createType}
-            list={createTypeValueList}
-            labels={createTypeLabels}
-            onValueChange={changeCreateType}
-          />
-        )}
         <EditString
           name={t('common.projectName')}
           value={project.name}

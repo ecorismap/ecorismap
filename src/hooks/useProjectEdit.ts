@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getUidsByEmails } from '../lib/firebase/firestore';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
-import { CreateProjectType, ProjectType, RegionType, VerifiedType } from '../types';
+import { ProjectType, RegionType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
@@ -17,7 +17,6 @@ export type UseProjectEditReturnType = {
   isNew: boolean;
   originalProject: ProjectType;
   targetProject: ProjectType;
-  createType: CreateProjectType | undefined;
   isEdited: boolean;
   projectRegion: RegionType;
   checkedProject: () => Promise<{
@@ -28,7 +27,6 @@ export type UseProjectEditReturnType = {
   openProject: () => void;
   saveProject: (updatedProject: ProjectType) => void;
   startProjectSetting: () => void;
-  setCreateType: (type: CreateProjectType) => void;
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
@@ -36,11 +34,7 @@ export type UseProjectEditReturnType = {
   deleteMember: (idx: number) => void;
 };
 
-export const useProjectEdit = (
-  initialProject: ProjectType,
-  initialCreateType: CreateProjectType | undefined,
-  isNew: boolean
-): UseProjectEditReturnType => {
+export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): UseProjectEditReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
   const projectRegion = useSelector((state: AppState) => state.settings.projectRegion);
@@ -48,7 +42,6 @@ export const useProjectEdit = (
   const projects = useSelector((state: AppState) => state.projects);
   const [targetProject, setTargetProject] = useState<ProjectType>(initialProject);
   const [originalProject, setOriginalProject] = useState<ProjectType>(initialProject);
-  const [createType, setCreateType] = useState<CreateProjectType | undefined>(initialCreateType);
 
   const [isEdited, setIsEdited] = useState(false);
   const isProjectOpen = useMemo(() => currentProjectId !== undefined, [currentProjectId]);
@@ -62,8 +55,7 @@ export const useProjectEdit = (
 
   useEffect(() => {
     setTargetProject(initialProject);
-    setCreateType(initialCreateType);
-  }, [initialCreateType, initialProject]);
+  }, [initialProject]);
 
   const startProjectSetting = useCallback(() => {
     dispatch(editSettingsAction({ isSettingProject: true }));
@@ -232,7 +224,6 @@ export const useProjectEdit = (
     isNew,
     targetProject,
     originalProject,
-    createType,
     isEdited,
     projectRegion,
     checkedProject,
@@ -242,7 +233,6 @@ export const useProjectEdit = (
     changeText,
     changeMemberText,
     changeAdmin,
-    setCreateType,
     addMember,
     deleteMember,
   } as const;

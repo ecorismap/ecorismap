@@ -1,8 +1,7 @@
 import { createContext } from 'react';
-import { CreateProjectType, ProjectType } from '../types';
+import { ProjectType } from '../types';
 
 interface ProjectEditContextType {
-  createType: CreateProjectType | undefined;
   isNew: boolean;
   isProjectOpen: boolean;
   project: ProjectType;
@@ -11,7 +10,6 @@ interface ProjectEditContextType {
   isEdited: boolean;
   isLoading: boolean;
   changeText: (name: string, value: string) => void;
-  changeCreateType: (value: CreateProjectType) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
   pressAddMember: () => void;
