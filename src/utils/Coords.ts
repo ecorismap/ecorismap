@@ -74,6 +74,7 @@ export const xyToLatLon = (
   mapViewRef: MapView | MapRef | null
 ): Position => {
   if (Platform.OS === 'web') {
+    if (!mapViewRef) return [0, 0];
     const mapView = (mapViewRef as MapRef).getMap();
     const latLon = mapView.unproject([xy[0], xy[1]]);
     return [latLon.lng, latLon.lat];
@@ -134,6 +135,7 @@ export const latLonToXY = (
   mapViewRef: MapView | MapRef | null
 ): Position => {
   if (Platform.OS === 'web') {
+    if (!mapViewRef) return [0, 0];
     const mapView = (mapViewRef as MapRef).getMap();
     const p = mapView.project([latlon[0], latlon[1]]);
     return [p.x, p.y];
