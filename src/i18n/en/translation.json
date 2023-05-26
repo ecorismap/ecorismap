@@ -561,7 +561,8 @@
       "uploadLicenseWeb": "Please upgrade to upload your photos.",
       "discardChanges": "The data is being edited. \nPlease save first.",
       "termsOfuse": "If you do not agree, please stop using it.",
-      "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen."
+      "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen.",
+      "clearMapMemo": "I deleted the map notes."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
@@ -572,7 +573,8 @@
       "drag": "Do you want to change the position?",
       "logout": "Do you want to log out?",
       "saveProject": "Do you want to save the project settings?",
-      "track": "Do you want to stop recording the track?"
+      "track": "Do you want to stop recording the track?",
+      "clearMapMemo": "Erase all map notes?"
     },
     "navigation": {
       "download": "Map download"

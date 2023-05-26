@@ -626,7 +626,10 @@ PODS:
     - React-Core
   - Expo (47.0.13):
     - ExpoModulesCore
-  - ExpoImageManipulator (11.0.0):
+  - ExpoGL (12.4.0):
+    - ExpoModulesCore
+    - ReactCommon/turbomodule/core
+  - ExpoImageManipulator (11.1.1):
     - EXImageLoader
     - ExpoModulesCore
   - ExpoImagePicker (14.0.3):
@@ -1287,6 +1290,7 @@ DEPENDENCIES:
   - EXLocation (from `../node_modules/expo-location/ios`)
   - EXMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - Expo (from `../node_modules/expo`)
+  - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoImageManipulator (from `../node_modules/expo-image-manipulator/ios`)
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -1421,6 +1425,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-media-library/ios"
   Expo:
     :path: "../node_modules/expo"
+  ExpoGL:
+    :path: "../node_modules/expo-gl"
   ExpoImageManipulator:
     :path: "../node_modules/expo-image-manipulator/ios"
   ExpoImagePicker:
@@ -1569,7 +1575,8 @@ SPEC CHECKSUMS:
   EXLocation: 7d08926d931f4fb619bfa25e73669f1e19b102c6
   EXMediaLibrary: b1c4f78878e45f6a359aff3a059e1660c41b73ab
   Expo: b9fa98bf260992312ee3c424400819fb9beadafe
-  ExpoImageManipulator: 5f3c1ab8dd81de11491b5051bb925abc91fe57e4
+  ExpoGL: 8f8e40e494a462f33c1f513cf101bf7d6abe767e
+  ExpoImageManipulator: 85ab87e9641b9d83108f8d603e0418c12fc19e2d
   ExpoImagePicker: ce37302446e70145bb413f0f74886441abdae022
   ExpoKeepAwake: 69b59d0a8d2b24de9f82759c39b3821fec030318
   ExpoLinearGradient: b40c2133ad57ae105b1b12a319e314463c817f6b
