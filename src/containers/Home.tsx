@@ -128,6 +128,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
+    changeColorTypeToIndivisual,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -189,9 +190,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setMapMemoTool('NONE');
       } else {
         setMapMemoTool(value);
+        if (value.includes('PEN')) {
+          const ret = changeColorTypeToIndivisual();
+          if (ret) Alert.alert(t('Home.alert.indivisualColor'));
+        }
       }
     },
-    [currentMapMemoTool, setMapMemoTool]
+    [changeColorTypeToIndivisual, currentMapMemoTool, setMapMemoTool]
   );
 
   const selectDrawTool = useCallback(

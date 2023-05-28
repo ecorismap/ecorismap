@@ -18,8 +18,9 @@ import { GestureResponderEvent } from 'react-native';
 import lineIntersect from '@turf/line-intersect';
 import * as turf from '@turf/helpers';
 import { addRecordsAction, setRecordSetAction } from '../modules/dataSet';
-import { hsv2hex } from '../utils/Color';
+import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
+import { updateLayerAction } from '../modules/layers';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
@@ -41,6 +42,7 @@ export type UseMapMemoReturnType = {
   onPanResponderReleaseMapMemo: () => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
+  changeColorTypeToIndivisual: () => boolean;
 };
 export type HistoryType = {
   operation: string;
@@ -53,7 +55,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const layers = useSelector((state: AppState) => state.layers);
   const [history, setHistory] = useState<HistoryType[]>([]);
   const [future, setFuture] = useState<HistoryType[]>([]);
-  const [penColor, setPenColor] = useState('#000000');
+  const [penColor, setPenColor] = useState('rgba(0,0,0,0.7)');
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
   const [currentMapMemoTool, setMapMemoTool] = useState<MapMemoToolType>('NONE');
   const [currentPen, setPen] = useState<PenType>('PEN_MEDIUM');
@@ -160,9 +162,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const selectPenColor = useCallback((hue: number, sat: number, val: number, alpha: number) => {
     setVisibleMapMemoColor(false);
-    const rgb = hsv2hex(hue, sat, val, alpha);
-
-    setPenColor(rgb);
+    const rgbaString = hsv2rgbaString(hue, sat, val, alpha);
+    setPenColor(rgbaString);
   }, []);
 
   const clearMapMemoHistory = useCallback(() => {
@@ -209,6 +210,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
   }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
 
+  const changeColorTypeToIndivisual = useCallback(() => {
+    if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVISUAL') return false;
+    const newLayer = {
+      ...activeMemoLayer,
+      colorStyle: { ...activeMemoLayer.colorStyle, colorType: 'INDIVISUAL' as const },
+    };
+    dispatch(updateLayerAction(newLayer));
+    return true;
+  }, [activeMemoLayer, dispatch]);
+
   return {
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -229,5 +240,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
+    changeColorTypeToIndivisual,
   } as const;
 };

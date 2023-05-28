@@ -31,7 +31,7 @@ import {
   Geometry,
 } from 'geojson';
 import { Position } from '@turf/turf';
-import { hex2qgis } from './Color';
+import { rgbaString2qgis } from './Color';
 
 export const Gpx2Data = (
   gpx: string,
@@ -352,12 +352,7 @@ const generateProperties = (record: RecordType, field: LayerType['field']) => {
         const photoIds = fieldValue.map((p) => p.name).join(',');
         return { [name]: photoIds };
       } else {
-        if (name === 'strokeColor') {
-          const qgisColor = hex2qgis(fieldValue as string);
-          return { [name]: fieldValue, qgisColor };
-        } else {
-          return { [name]: fieldValue };
-        }
+        return { [name]: fieldValue };
       }
     })
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
@@ -419,7 +414,7 @@ export const generateGeoJson = (
             _id: record.id,
             _strokeWidth: record.field._strokeWidth ?? '',
             _strokeColor: record.field._strokeColor ?? '',
-            _qgisColor: record.field._strokeColor ? hex2qgis(record.field._strokeColor as string) : '',
+            _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             _zoom: record.field._zoom ?? '',
           },
           geometry: {
