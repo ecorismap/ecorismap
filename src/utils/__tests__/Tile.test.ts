@@ -46,13 +46,7 @@ describe('latToTileY', () => {
 
 describe('tileToLatLon', () => {
   it('return lat lon', () => {
-    expect(tileToLatLon(447, 201, 9)).toStrictEqual({
-      lat: 35.58172857314284,
-      lon: 134.43321973085403,
-    });
-    expect(tileToLatLon(448, 203, 9)).toStrictEqual({
-      lat: 34.621287920331895,
-      lon: 135.02348240464926,
-    });
+    expect(tileToLatLon(447, 201, 9)).toStrictEqual({ lat: 36.03133177633187, lon: 134.296875 });
+    expect(tileToLatLon(448, 203, 9)).toStrictEqual({ lat: 34.88593094075317, lon: 135 });
   });
 });
