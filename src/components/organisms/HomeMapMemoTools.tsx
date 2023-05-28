@@ -11,20 +11,17 @@ import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
 export const HomeMapMemoTools = () => {
   const {
     screenState,
-    showMapMemo,
     currentMapMemoTool,
     currentPen,
     currentEraser,
     penColor,
+    editableMapMemo,
     selectMapMemoTool,
     setPen,
     setEraser,
-    setShowMapMemo,
     setVisibleMapMemoColor,
-    pressClearMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
-    pressExportMapMemo,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(
@@ -73,7 +70,7 @@ export const HomeMapMemoTools = () => {
     <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeMapMemoPenButton
-          disabled={!showMapMemo}
+          disabled={!editableMapMemo}
           isPositionRight={isPositionRight}
           currentMapMemoTool={currentMapMemoTool}
           currentPen={currentPen}
@@ -84,7 +81,7 @@ export const HomeMapMemoTools = () => {
       </View>
       <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
         <HomeMapMemoEraserButton
-          disabled={!showMapMemo}
+          disabled={!editableMapMemo}
           isPositionRight={isPositionRight}
           currentMapMemoTool={currentMapMemoTool}
           currentEraser={currentEraser}
@@ -95,55 +92,28 @@ export const HomeMapMemoTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.COLOR}
-          backgroundColor={showMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!showMapMemo}
+          disabled={!editableMapMemo}
           onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
-          name={showMapMemo ? MAPMEMOTOOL.VISIBLE : MAPMEMOTOOL.HIDE}
-          backgroundColor={COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={false}
-          onPress={() => setShowMapMemo(!showMapMemo)}
-        />
-      </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
           name={MAPMEMOTOOL.UNDO}
-          backgroundColor={showMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!showMapMemo}
+          disabled={!editableMapMemo}
           onPress={pressUndoMapMemo}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.REDO}
-          backgroundColor={showMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!showMapMemo}
+          disabled={!editableMapMemo}
           onPress={pressRedoMapMemo}
-        />
-      </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={MAPMEMOTOOL.DELETE}
-          backgroundColor={COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={false}
-          onPress={pressClearMapMemo}
-        />
-      </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
-        <Button
-          name={MAPMEMOTOOL.EXPORT}
-          backgroundColor={COLOR.ALFABLUE}
-          borderRadius={10}
-          disabled={false}
-          onPress={pressExportMapMemo}
         />
       </View>
     </View>

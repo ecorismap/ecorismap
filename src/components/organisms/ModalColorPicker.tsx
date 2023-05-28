@@ -41,7 +41,11 @@ export const ModalColorPicker = (props: Props) => {
     setHue(hsv.h);
     setSat(hsv.s / 100);
     setVal(hsv.v / 100);
-    if (withAlpha) setAlpha(hsv.a);
+    if (withAlpha) {
+      setAlpha(hsv.a);
+    } else {
+      setAlpha(1);
+    }
     //console.log(hsv.h, hsv.s / 100, hsv.v / 100, hsv.a);
   };
 

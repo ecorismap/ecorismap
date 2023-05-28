@@ -130,7 +130,7 @@ describe('getInitialFieldValue', () => {
     expect(getInitialFieldValue('SERIAL')).toStrictEqual(0);
     expect(getInitialFieldValue('INTEGER')).toStrictEqual(0);
     expect(getInitialFieldValue('DECIMAL')).toStrictEqual(0);
-    expect(getInitialFieldValue('DATETIME')).toStrictEqual('1970-01-01T00:00:00+09:00');
+    expect(getInitialFieldValue('DATETIME')).toStrictEqual('');
     expect(getInitialFieldValue('PHOTO')).toStrictEqual([]);
     expect(
       getInitialFieldValue('CHECK', [

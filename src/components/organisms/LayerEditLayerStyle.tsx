@@ -17,7 +17,7 @@ export const LayerStyle = () => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           <Text style={styles.title}>{`${t('common.style')}`}</Text>
-          {layer.type !== 'NONE' && (
+          {layer.type !== 'NONE' && layer.type !== 'MEMO' && (
             <TouchableOpacity style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
               {layer.type === 'POINT' && (
                 <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />

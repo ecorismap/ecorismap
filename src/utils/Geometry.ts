@@ -31,6 +31,7 @@ import {
   Geometry,
 } from 'geojson';
 import { Position } from '@turf/turf';
+import { rgbaString2qgis } from './Color';
 
 export const Gpx2Data = (
   gpx: string,
@@ -309,14 +310,14 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
       });
       break;
     case 'LINE':
-      data.forEach((line) => {
+      data.forEach((line, id) => {
         const time =
           line.field.time === undefined || line.field.time === '' ? undefined : dayjs(line.field.time as string);
         const trk = gpx.ele('trk');
-        trk.ele('name', line.field.name);
+        trk.ele('name', line.field.name ?? id.toString());
         //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
         trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
-        trk.ele('cmt', line.field.cmt);
+        trk.ele('cmt', line.field.cmt ?? '');
         const trkseg = trk.ele('trkseg');
         (line.coords as LocationType[]).forEach((coord) => {
           //console.log(dayjs.unix(coord.timestamp!).toISOString());
@@ -414,7 +415,15 @@ export const generateGeoJson = (
         const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
+          properties: {
+            ...properties,
+            _visible: record.visible,
+            _id: record.id,
+            _strokeWidth: record.field._strokeWidth ?? '',
+            _strokeColor: record.field._strokeColor ?? '',
+            _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
+            _zoom: record.field._zoom ?? '',
+          },
           geometry: {
             type: 'LineString',
             coordinates: coordinates,
