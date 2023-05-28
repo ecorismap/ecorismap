@@ -50,7 +50,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       await AlertAsync(t('hooks.message.cannotGetFileSize'));
       return;
     }
-    if (file.size / 1024 > 1000) {
+    if (file.size / 1024 > 100000) {
       await AlertAsync(t('hooks.message.cannotImportData'));
       return;
     }

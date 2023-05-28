@@ -3,7 +3,8 @@
     "colortype": {
       "single": "単色",
       "categorized": "カテゴリ",
-      "user": "ユーザー別"
+      "user": "ユーザー別",
+      "indivisual": "個別"
     },
     "colorramp": {
       "random": "ランダム"
@@ -35,7 +36,8 @@
       "point": "ポイント",
       "line": "ライン",
       "polygon": "ポリゴン",
-      "none": "なし"
+      "none": "なし",
+      "memo": "メモ"
     },
     "roletype": {
       "member": "メンバー",
@@ -117,7 +119,8 @@
     "version": "バージョン",
     "distance": "距離",
     "customField": "カスタムフィールド",
-    "custom": "カスタム"
+    "custom": "カスタム",
+    "memo": "メモ"
   },
   "Home": {
     "confirm": {
@@ -147,7 +150,8 @@
       "discardChanges": "データを編集中です。先に保存してください。",
       "termsOfuse": "同意しない場合は、利用を中止してください。",
       "offline": "ネットに未接続です。ダウンロードした地図を表示するには地図選択画面でオフラインモードに切り替えてください。",
-      "clearMapMemo": "地図のメモを消去しました。"
+      "clearMapMemo": "地図のメモを消去しました。",
+      "indivisualColor": "カラータイプを個別に変更しました。元に戻したい場合は、レイヤのスタイルから変更してください。"
     },
     "navigation": {
       "download": "地図のダウンロード"

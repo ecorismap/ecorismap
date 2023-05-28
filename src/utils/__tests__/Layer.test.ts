@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, updateLayerIds } from '../Layer';
+import { getColor, updateLayerActiveAndIds } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -42,7 +42,7 @@ describe('getColor', () => {
   };
 
   it('return single feature color', () => {
-    expect(getColor(layer, feature)).toBe('#ff0000');
+    expect(getColor(layer, feature, 0)).toBe('rgba(255, 0, 0, 1)');
   });
   it('return categorized feature color', () => {
     const layer2: LayerType = {
@@ -58,7 +58,7 @@ describe('getColor', () => {
       },
     };
 
-    expect(getColor(layer2, feature)).toBe('#00ff00');
+    expect(getColor(layer2, feature, 0)).toBe('rgba(0, 255, 0, 1)');
   });
   // it('return user feature color', () => {
   //   const layer3: LayerType = {
@@ -102,7 +102,7 @@ describe('test ecorismap', function () {
         { id: '1-2', name: 'cmt', format: 'STRING' },
       ],
     };
-    const newLayer = updateLayerIds(layer);
+    const newLayer = updateLayerActiveAndIds(layer);
     expect(newLayer.id).not.toEqual(layer.id);
     expect(newLayer.field[0].id).not.toEqual(layer.field[0].id);
     done();

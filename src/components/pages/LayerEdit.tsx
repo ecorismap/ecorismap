@@ -11,7 +11,7 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 
 export default function LayerEditScreen() {
   //console.log('render LayerEdit');
-  const { gotoBack } = useContext(LayerEditContext);
+  const { layer, gotoBack } = useContext(LayerEditContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -34,7 +34,7 @@ export default function LayerEditScreen() {
           <>
             <LayerName />
             <LayerStyle />
-            <LayerEditFieldTitle />
+            {layer.type !== 'MEMO' && <LayerEditFieldTitle />}
             <LayerEditFieldTable />
           </>
         )}

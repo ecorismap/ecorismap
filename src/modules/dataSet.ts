@@ -18,6 +18,7 @@ export function createDataSetInitialState(): DataType[] {
     { layerId: '0', userId: undefined, data: [] },
     { layerId: '1', userId: undefined, data: [] },
     { layerId: '2', userId: undefined, data: [] },
+    { layerId: '3', userId: undefined, data: [] },
   ];
 }
 

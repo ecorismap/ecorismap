@@ -101,6 +101,9 @@ const LayersItems = () => {
                   <PolygonView style={{ margin: 3, transform: [{ scale: 0.6 }] }} color={item.colorStyle.color} />
                 </TouchableOpacity>
               )}
+              {item.type === 'MEMO' && (
+                <LineView style={{ marginLeft: 10, transform: [{ scale: 0.6 }] }} color={COLOR.MAIN} />
+              )}
               {item.type === 'NONE' && (
                 <LineView style={{ marginLeft: 10, transform: [{ scale: 0.6 }] }} color={COLOR.MAIN} />
               )}
