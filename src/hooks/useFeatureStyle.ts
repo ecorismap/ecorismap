@@ -6,7 +6,7 @@ import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { cloneDeep } from 'lodash';
-import { getRandomColor, hsv2hex } from '../utils/Color';
+import { getRandomColor, hsv2rgbaString } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
 
@@ -216,13 +216,13 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   const selectColor = useCallback(
     (hue: number, sat: number, val: number, alpha: number) => {
       setModalVisible(!modalVisible);
-      const rgb = hsv2hex(hue, sat, val, alpha);
+      const rgbaString = hsv2rgbaString(hue, sat, val, alpha);
 
       const newColorStyle = cloneDeep(colorStyle);
       if (colorListIndex.current === -1) {
-        newColorStyle.color = rgb;
+        newColorStyle.color = rgbaString;
       } else {
-        newColorStyle.colorList[colorListIndex.current].color = rgb;
+        newColorStyle.colorList[colorListIndex.current].color = rgbaString;
       }
       setColorStyle(newColorStyle);
       setIsEdited(true);

@@ -560,7 +560,8 @@
       "discardChanges": "The data is being edited. \nPlease save first.",
       "termsOfuse": "If you do not agree, please stop using it.",
       "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen.",
-      "clearMapMemo": "I deleted the map notes."
+      "clearMapMemo": "I deleted the map notes.",
+      "indivisualColor": "Changed the color type individually. \nIf you want to undo it, change it from the layer style."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
