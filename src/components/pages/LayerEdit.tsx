@@ -9,11 +9,13 @@ import { LayerEditRadio } from '../organisms/LayerEditRadio';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { LayerEditContext } from '../../contexts/LayerEdit';
+import { usePermission } from '../../hooks/usePermission';
 
 export default function LayerEditScreen() {
   //console.log('render LayerEdit');
   const { gotoBack } = useContext(LayerEditContext);
   const navigation = useNavigation();
+  const { isClosedProject } = usePermission();
 
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
@@ -35,7 +37,7 @@ export default function LayerEditScreen() {
           <>
             <LayerName />
             <LayerStyle />
-            {FUNC_LOGIN && <LayerEditRadio />}
+            {FUNC_LOGIN && !isClosedProject && <LayerEditRadio />}
             <LayerEditFieldTitle />
             <LayerEditFieldTable />
           </>
