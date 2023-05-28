@@ -31,6 +31,7 @@ import {
   Geometry,
 } from 'geojson';
 import { Position } from '@turf/turf';
+import { hex2qgis } from './Color';
 
 export const Gpx2Data = (
   gpx: string,
@@ -354,7 +355,12 @@ const generateProperties = (record: RecordType, field: LayerType['field']) => {
         const photoIds = fieldValue.map((p) => p.name).join(',');
         return { [name]: photoIds };
       } else {
-        return { [name]: fieldValue };
+        if (name === 'strokeColor') {
+          const qgisColor = hex2qgis(fieldValue as string);
+          return { [name]: fieldValue, qgisColor };
+        } else {
+          return { [name]: fieldValue };
+        }
       }
     })
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
@@ -404,6 +410,7 @@ export const generateGeoJson = (
         return feature;
       });
       break;
+    case 'MEMO':
     case 'LINE':
       features = data.map((record) => {
         const properties = generateProperties(record, field);

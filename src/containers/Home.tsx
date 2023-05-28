@@ -110,7 +110,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useDrawTool(mapViewRef.current);
 
   const {
-    isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
     currentPen,
@@ -122,7 +121,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setMapMemoTool,
     setPen,
     setEraser,
-    setMapMemoVisible,
     setVisibleMapMemoColor,
     selectPenColor,
     onPanResponderGrantMapMemo,
@@ -174,19 +172,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (region: Region | ViewState) => {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
-      setMapMemoVisible(true);
       showDrawLine();
     },
-    [changeMapRegion, setMapMemoVisible, showDrawLine]
+    [changeMapRegion, showDrawLine]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-    isMapMemoVisible && setMapMemoVisible(false);
     isDrawLineVisible && hideDrawLine();
-  }, [gpsState, hideDrawLine, isDrawLineVisible, isMapMemoVisible, setMapMemoVisible, toggleGPS]);
+  }, [gpsState, hideDrawLine, isDrawLineVisible, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
@@ -563,16 +559,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [clearTiles, route.params?.tileMap]);
 
   const pressZoomIn = useCallback(() => {
-    setMapMemoVisible(false);
     hideDrawLine();
     zoomIn();
-  }, [hideDrawLine, setMapMemoVisible, zoomIn]);
+  }, [hideDrawLine, zoomIn]);
 
   const pressZoomOut = useCallback(() => {
-    setMapMemoVisible(false);
     hideDrawLine();
     zoomOut();
-  }, [hideDrawLine, setMapMemoVisible, zoomOut]);
+  }, [hideDrawLine, zoomOut]);
 
   /****************** goto ****************************/
 
@@ -739,7 +733,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         visibleMapMemoColor,
         currentPen,
         currentEraser,
-        isMapMemoVisible,
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
@@ -777,7 +770,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         selectMapMemoTool,
         setPen,
         setEraser,
-        setMapMemoVisible,
         setVisibleMapMemoColor,
         selectPenColor,
         pressUndoMapMemo,
