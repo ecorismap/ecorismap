@@ -8,6 +8,7 @@ import {
   LineDataType,
   LineRecordType,
   LocationType,
+  MapMemoDataType,
   PointDataType,
   PointRecordType,
   PolygonDataType,
@@ -30,6 +31,7 @@ export type UseRecordReturnType = {
   pointDataSet: PointDataType[];
   lineDataSet: LineDataType[];
   polygonDataSet: PolygonDataType[];
+  memoDataSet: MapMemoDataType[];
   selectedRecord:
     | {
         layerId: string;
@@ -115,6 +117,13 @@ export const useRecord = (): UseRecordReturnType => {
         .map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
         .flat() as PolygonDataType[]
   );
+  const memoDataSet = useSelector(
+    (state: AppState) =>
+      layers
+        .map((layer) => (layer.type === 'MEMO' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
+        .flat() as MapMemoDataType[]
+  );
+
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -306,6 +315,7 @@ export const useRecord = (): UseRecordReturnType => {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
+    memoDataSet,
     selectedRecord,
     addRecordWithCheck,
     findRecord,

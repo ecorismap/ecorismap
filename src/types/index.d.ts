@@ -25,7 +25,6 @@ import {
   MAPMEMOTOOL,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
-import { MapMemoLineType } from '../components/organisms/HomeMapMemoView';
 
 export interface LocationType {
   latitude: number;
@@ -65,7 +64,7 @@ export interface LogginUserType {
 export interface DataType {
   layerId: string;
   userId: string | undefined;
-  data: RecordType[];
+  data: RecordType[] | MapMemoRecordType[];
 }
 
 export interface ProjectDataType extends DataType {
@@ -88,6 +87,13 @@ export interface PolygonDataType {
   userId: string | undefined;
   data: PolygonRecordType[];
 }
+
+export interface MapMemoDataType {
+  layerId: string;
+  userId: string | undefined;
+  data: LineRecordType[];
+}
+
 export interface RecordType {
   id: string;
   userId: string | undefined;
@@ -132,6 +138,13 @@ export interface PolygonRecordType {
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
 }
+
+// export interface MapMemoRecordType extends RecordType {
+//   coords: Position[];
+//   strokeWidth: number;
+//   strokeColor: string;
+//   zoom: number;
+// }
 
 export interface TrackingType {
   layerId: string;
@@ -295,17 +308,6 @@ export interface SettingsType {
   mapList: TileMapItemType[];
 }
 
-export type MapMemoLineType = {
-  latlon: Position[];
-  strokeWidth: number;
-  strokeColor: string;
-  zoom: number;
-};
-
-export interface MapMemoType {
-  drawLine: MapMemoLineType[];
-}
-
 export interface RegionType {
   latitude: number;
   longitude: number;
@@ -404,7 +406,8 @@ export type GeoJsonFeatureType =
   | 'MULTILINE'
   | 'MULTIPOLYGON'
   | 'CENTROID'
-  | 'LINEEND';
+  | 'LINEEND'
+  | 'MEMO';
 
 export type CreateProjectType = keyof typeof CREATEPROJECTTYPE;
 export type FormatType = keyof typeof DATAFORMAT;

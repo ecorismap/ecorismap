@@ -35,7 +35,8 @@
       "point": "Point",
       "line": "Line",
       "polygon": "Polgon",
-      "none": "None"
+      "none": "None",
+      "memo": "memo"
     },
     "roletype": {
       "member": "Member",
@@ -167,7 +168,8 @@
     "version": "Ver.",
     "distance": "distance",
     "customField": "custom field",
-    "custom": "CUSTOM"
+    "custom": "CUSTOM",
+    "memo": "memo"
   },
   "firebase": {
     "message": {

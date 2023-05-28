@@ -96,6 +96,29 @@ export function createLayersInitialState(): LayerType[] {
         { id: '2-2', name: 'cmt', format: 'STRING' },
       ],
     },
+    {
+      id: '3',
+      name: t('common.memo'),
+      type: 'MEMO',
+      permission: 'PRIVATE',
+      colorStyle: {
+        colorType: 'SINGLE',
+        transparency: 0.2,
+        color: COLOR.RED,
+        fieldName: 'name',
+        customFieldValue: '',
+        colorRamp: 'RANDOM',
+        colorList: [],
+      },
+      label: '',
+      visible: true,
+      active: true,
+      field: [
+        { id: '3-0', name: 'strokeWidth', format: 'STRING' },
+        { id: '3-1', name: 'strokeColor', format: 'STRING' },
+        { id: '3-2', name: 'zoom', format: 'INTEGER' },
+      ],
+    },
   ];
 }
 

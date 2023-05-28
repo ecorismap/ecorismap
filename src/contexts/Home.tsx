@@ -22,6 +22,7 @@ import {
   MapMemoToolType,
   EraserType,
   LayerType,
+  MapMemoDataType,
 } from '../types';
 import { MapRef, ViewState } from 'react-map-gl';
 
@@ -32,6 +33,7 @@ export interface HomeContextType {
   pointDataSet: PointDataType[];
   lineDataSet: LineDataType[];
   polygonDataSet: PolygonDataType[];
+  memoDataSet: MapMemoDataType[];
   memberLocations: MemberLocationType[];
   mapType: MapType;
   tileMaps: TileMapType[];
@@ -73,7 +75,6 @@ export interface HomeContextType {
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
   currentMapMemoTool: MapMemoToolType;
-  showMapMemo: boolean;
   visibleMapMemoColor: boolean;
   currentPen: PenType;
   currentEraser: EraserType;
@@ -81,6 +82,7 @@ export interface HomeContextType {
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: Position[];
+  editableMapMemo: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
@@ -100,7 +102,6 @@ export interface HomeContextType {
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;
-  pressClearMapMemo: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
@@ -113,7 +114,6 @@ export interface HomeContextType {
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
   selectMapMemoTool: (value: MapMemoToolType) => void;
-  setShowMapMemo: React.Dispatch<React.SetStateAction<boolean>>;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
   setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
   setMapMemoVisible: React.Dispatch<React.SetStateAction<boolean>>;
@@ -121,7 +121,6 @@ export interface HomeContextType {
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
-  pressExportMapMemo: () => void;
   panResponder: PanResponderInstance;
 }
 
