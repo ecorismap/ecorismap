@@ -1,6 +1,5 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useMemo, useRef, useState } from 'react';
 import { EraserType, LineRecordType, MapMemoToolType, PenType } from '../types';
-import { hex2qgis, hsv2hex } from '../utils/Color';
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
@@ -12,11 +11,10 @@ import { MapRef } from 'react-map-gl';
 import { GestureResponderEvent } from 'react-native';
 import lineIntersect from '@turf/line-intersect';
 import * as turf from '@turf/helpers';
-import dayjs from 'dayjs';
 import { addRecordsAction, setRecordSetAction } from '../modules/dataSet';
+import { hsv2hex } from '../utils/Color';
 
 export type UseMapMemoReturnType = {
-  isMapMemoVisible: boolean;
   visibleMapMemoColor: boolean;
   currentMapMemoTool: MapMemoToolType;
   currentPen: PenType;
@@ -28,7 +26,6 @@ export type UseMapMemoReturnType = {
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPen: Dispatch<SetStateAction<PenType>>;
   setEraser: Dispatch<SetStateAction<EraserType>>;
-  setMapMemoVisible: Dispatch<SetStateAction<boolean>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   clearMapMemoHistory: () => void;
@@ -37,15 +34,6 @@ export type UseMapMemoReturnType = {
   onPanResponderReleaseMapMemo: () => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
-  generateExportMapMemo: () => {
-    exportData: {
-      data: string;
-      name: string;
-      type: 'GeoJSON';
-      folder: string;
-    }[];
-    fileName: string;
-  };
 };
 export type HistoryType = {
   operation: string;
@@ -58,7 +46,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const layers = useSelector((state: AppState) => state.layers);
   const [history, setHistory] = useState<HistoryType[]>([]);
   const [future, setFuture] = useState<HistoryType[]>([]);
-  const [isMapMemoVisible, setMapMemoVisible] = useState(true);
   const [penColor, setPenColor] = useState('#000000');
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
   const [currentMapMemoTool, setMapMemoTool] = useState<MapMemoToolType>('NONE');
@@ -214,46 +201,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
   }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
 
-  const mapMemoToGeoJson = useCallback((drawLine: LineRecordType[]) => {
-    const geojson = {
-      type: 'FeatureCollection',
-      name: 'mapMemo',
-      crs: {
-        type: 'name',
-        properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' },
-      },
-    };
-    const features = drawLine.map((record) => {
-      const feature = {
-        type: 'Feature',
-        properties: {
-          strokeColor: record.field.strokeColor,
-          qgisColor: hex2qgis(record.field.strokeColor as string),
-          strokeWidth: record.field.strokeWidth,
-          zoom: record.field.zoom,
-        },
-        geometry: {
-          type: 'LineString',
-          coordinates: record.coords,
-        },
-      };
-      return feature;
-    });
-    return { ...geojson, features: features };
-  }, []);
-
-  const generateExportMapMemo = useCallback(() => {
-    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const geojson = mapMemoToGeoJson(memoLines);
-    const geojsonData = JSON.stringify(geojson);
-    const geojsonName = `mapMemo_${time}.geojson`;
-    const exportData = [{ data: geojsonData, name: geojsonName, type: 'GeoJSON' as const, folder: '' }];
-    const fileName = `mapMemo_${time}`;
-    return { exportData, fileName };
-  }, [mapMemoToGeoJson, memoLines]);
-
   return {
-    isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
     currentPen,
@@ -265,7 +213,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setMapMemoTool,
     setPen,
     setEraser,
-    setMapMemoVisible,
     setVisibleMapMemoColor,
     selectPenColor,
     onPanResponderGrantMapMemo,
@@ -273,7 +220,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     onPanResponderReleaseMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
-    generateExportMapMemo,
     clearMapMemoHistory,
   } as const;
 };

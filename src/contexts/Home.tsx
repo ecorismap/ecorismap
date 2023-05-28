@@ -78,7 +78,6 @@ export interface HomeContextType {
   visibleMapMemoColor: boolean;
   currentPen: PenType;
   currentEraser: EraserType;
-  isMapMemoVisible: boolean;
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: Position[];
@@ -116,7 +115,6 @@ export interface HomeContextType {
   selectMapMemoTool: (value: MapMemoToolType) => void;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
   setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
-  setMapMemoVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   pressUndoMapMemo: () => void;
