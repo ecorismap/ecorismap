@@ -3,7 +3,8 @@
     "colortype": {
       "single": "Single",
       "categorized": "Categorized",
-      "user": "User"
+      "user": "User",
+      "indivisual": "Individual"
     },
     "colorramp": {
       "random": "Random"

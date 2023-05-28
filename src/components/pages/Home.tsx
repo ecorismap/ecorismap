@@ -41,7 +41,6 @@ export default function HomeScreen() {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    memoDataSet,
     isDownloadPage,
     downloadProgress,
     savedTileSize,
@@ -284,7 +283,7 @@ export default function HomeScreen() {
               )
             );
           })}
-          {[...lineDataSet, ...memoDataSet].map((d) => {
+          {lineDataSet.map((d) => {
             const layer = layers.find((v) => v.id === d.layerId);
             return (
               layer?.visible && (

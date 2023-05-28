@@ -3,7 +3,8 @@
     "colortype": {
       "single": "単色",
       "categorized": "カテゴリ",
-      "user": "ユーザー別"
+      "user": "ユーザー別",
+      "indivisual": "個別"
     },
     "colorramp": {
       "random": "ランダム"
