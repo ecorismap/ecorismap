@@ -51,7 +51,9 @@ export default function DataScreen() {
   useEffect(() => {
     navigation.setOptions({
       title: layer.name,
-
+      headerTitleStyle: {
+        fontSize: layer.name.length > 13 ? 10 : 15,
+      },
       headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
       headerRight: () => headerRightButton(),
     });

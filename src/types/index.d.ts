@@ -24,7 +24,6 @@ import {
   MAPMEMOTOOL,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
-import { MapMemoLineType } from '../components/organisms/HomeMapMemoView';
 
 export interface LocationType {
   latitude: number;
@@ -87,6 +86,7 @@ export interface PolygonDataType {
   userId: string | undefined;
   data: PolygonRecordType[];
 }
+
 export interface RecordType {
   id: string;
   userId: string | undefined;
@@ -293,17 +293,6 @@ export interface SettingsType {
   }[];
   mapListURL: string;
   mapList: TileMapItemType[];
-}
-
-export type MapMemoLineType = {
-  latlon: Position[];
-  strokeWidth: number;
-  strokeColor: string;
-  zoom: number;
-};
-
-export interface MapMemoType {
-  drawLine: MapMemoLineType[];
 }
 
 export interface RegionType {

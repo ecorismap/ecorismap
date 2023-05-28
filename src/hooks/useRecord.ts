@@ -115,6 +115,7 @@ export const useRecord = (): UseRecordReturnType => {
         .map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
         .flat() as PolygonDataType[]
   );
+
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
 
   const tracking = useSelector((state: AppState) => state.settings.tracking);

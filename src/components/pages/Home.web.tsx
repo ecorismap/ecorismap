@@ -74,8 +74,7 @@ export default function HomeScreen() {
     isSettingProject,
     projectName,
     pressProjectLabel,
-    showMapMemo,
-    isMapMemoVisible,
+    currentMapMemoTool,
     visibleMapMemoColor,
     onRegionChangeMapView,
     onDrop,
@@ -493,7 +492,10 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {isMapMemoVisible && showMapMemo && <MapMemoView />}
+        {(currentMapMemoTool === 'PEN_THIN' ||
+          currentMapMemoTool === 'PEN_MEDIUM' ||
+          currentMapMemoTool === 'PEN_THICK' ||
+          currentMapMemoTool === 'ERASER') && <MapMemoView />}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
