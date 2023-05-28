@@ -173,7 +173,6 @@ export const GeoJson2Data = (
           )
           .flat();
         break;
-      case 'MEMO':
       case 'LINE':
         importedData = geojson.features
           .filter((feature): feature is Feature<LineString> => feature.geometry?.type === 'LineString')
@@ -256,7 +255,6 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         ({ coords }) => `POINT(${(coords as LocationType).longitude} ${(coords as LocationType).latitude})`
       );
       break;
-    case 'MEMO':
     case 'LINE':
       geometries = dataSet.map(({ coords }) => {
         const linestring = (coords as LocationType[]).map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
@@ -310,7 +308,6 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
         wpt.ele('cmt', point.field.cmt);
       });
       break;
-    case 'MEMO':
     case 'LINE':
       data.forEach((line, id) => {
         const time =
@@ -410,14 +407,21 @@ export const generateGeoJson = (
         return feature;
       });
       break;
-    case 'MEMO':
     case 'LINE':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
         const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
         const feature = {
           type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
+          properties: {
+            ...properties,
+            _visible: record.visible,
+            _id: record.id,
+            _strokeWidth: record.field._strokeWidth ?? '',
+            _strokeColor: record.field._strokeColor ?? '',
+            _qgisColor: record.field._strokeColor ? hex2qgis(record.field._strokeColor as string) : '',
+            _zoom: record.field._zoom ?? '',
+          },
           geometry: {
             type: 'LineString',
             coordinates: coordinates,

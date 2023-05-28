@@ -64,7 +64,7 @@ export interface LogginUserType {
 export interface DataType {
   layerId: string;
   userId: string | undefined;
-  data: RecordType[] | MapMemoRecordType[];
+  data: RecordType[];
 }
 
 export interface ProjectDataType extends DataType {
@@ -86,12 +86,6 @@ export interface PolygonDataType {
   layerId: string;
   userId: string | undefined;
   data: PolygonRecordType[];
-}
-
-export interface MapMemoDataType {
-  layerId: string;
-  userId: string | undefined;
-  data: LineRecordType[];
 }
 
 export interface RecordType {
@@ -138,13 +132,6 @@ export interface PolygonRecordType {
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
 }
-
-// export interface MapMemoRecordType extends RecordType {
-//   coords: Position[];
-//   strokeWidth: number;
-//   strokeColor: string;
-//   zoom: number;
-// }
 
 export interface TrackingType {
   layerId: string;
@@ -406,8 +393,7 @@ export type GeoJsonFeatureType =
   | 'MULTILINE'
   | 'MULTIPOLYGON'
   | 'CENTROID'
-  | 'LINEEND'
-  | 'MEMO';
+  | 'LINEEND';
 
 export type CreateProjectType = keyof typeof CREATEPROJECTTYPE;
 export type FormatType = keyof typeof DATAFORMAT;

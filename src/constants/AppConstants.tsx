@@ -40,7 +40,6 @@ export const COLOR = {
 
 export const TILE_FOLDER = `${FileSystem.documentDirectory}tiles`;
 export const PHOTO_FOLDER = `${FileSystem.documentDirectory}projects`;
-export const MAPMEMO_FOLDER = `${FileSystem.documentDirectory}mapmemo`;
 
 export const DEGREE_INTERVAL = 2;
 
@@ -81,13 +80,13 @@ export const FEATURETYPE = {
   POINT: t('constants.featuretype.point'),
   LINE: t('constants.featuretype.line'),
   POLYGON: t('constants.featuretype.polygon'),
-  MEMO: t('constants.featuretype.memo'),
   NONE: t('constants.featuretype.none'),
 } as const;
 
 export const COLORTYPE = {
   SINGLE: t('constants.colortype.single'),
   CATEGORIZED: t('constants.colortype.categorized'),
+  INDIVISUAL: t('constants.colortype.indivisual'),
 } as const;
 
 export const COLORRAMP = {
@@ -195,8 +194,6 @@ export const MAPMEMOTOOL = {
   COLOR: 'palette-outline',
   UNDO: 'undo-variant',
   REDO: 'redo-variant',
-  DELETE: 'delete',
-  EXPORT: 'database-export',
   NONE: 'none',
 } as const;
 

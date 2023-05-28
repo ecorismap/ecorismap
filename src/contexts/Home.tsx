@@ -22,7 +22,6 @@ import {
   MapMemoToolType,
   EraserType,
   LayerType,
-  MapMemoDataType,
 } from '../types';
 import { MapRef, ViewState } from 'react-map-gl';
 
@@ -33,7 +32,6 @@ export interface HomeContextType {
   pointDataSet: PointDataType[];
   lineDataSet: LineDataType[];
   polygonDataSet: PolygonDataType[];
-  memoDataSet: MapMemoDataType[];
   memberLocations: MemberLocationType[];
   mapType: MapType;
   tileMaps: TileMapType[];

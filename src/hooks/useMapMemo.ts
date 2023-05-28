@@ -5,7 +5,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import { latLonObjectsToLatLonArray, xyArrayToLatLonArray, xyArrayToLatLonObjects } from '../utils/Coords';
+import {
+  latLonObjectsToLatLonArray,
+  simplify,
+  smoothingByBezier,
+  xyArrayToLatLonArray,
+  xyArrayToLatLonObjects,
+} from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { GestureResponderEvent } from 'react-native';
@@ -13,6 +19,7 @@ import lineIntersect from '@turf/line-intersect';
 import * as turf from '@turf/helpers';
 import { addRecordsAction, setRecordSetAction } from '../modules/dataSet';
 import { hsv2hex } from '../utils/Color';
+import { useRecord } from './useRecord';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
@@ -55,8 +62,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const mapMemoEditingLine = useRef<Position[]>([]);
   const offset = useRef([0, 0]);
   const dataSet = useSelector((state: AppState) => state.dataSet);
+
+  const { generateRecord } = useRecord();
   const activeMemoLayer = useMemo(
-    () => layers.find((layer) => layer.type === 'MEMO' && layer.active && layer.visible),
+    () => layers.find((layer) => layer.type === 'LINE' && layer.active && layer.visible),
     [layers]
   );
   const activeMemoRecordSet = useMemo(
@@ -100,27 +109,24 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, []);
 
   const onPanResponderReleaseMapMemo = useCallback(() => {
-    const lineLatLon = xyArrayToLatLonObjects(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
-    const lineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+    const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
+    const simplifiedXY = simplify(smoothedXY);
+    const lineLatLon = xyArrayToLatLonObjects(simplifiedXY, mapRegion, mapSize, mapViewRef);
+    const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
 
     if (lineLatLon.length === 1)
       lineLatLon.push({ longitude: lineLatLon[0].longitude + 0.0000001, latitude: lineLatLon[0].latitude + 0.0000001 });
 
     if (currentMapMemoTool.includes('PEN')) {
-      const newLine: LineRecordType = {
-        id: uuidv4(),
-        userId: undefined,
-        displayName: null,
-        visible: true,
-        redraw: true,
-        field: { strokeWidth: penWidth, strokeColor: penColor, zoom: mapRegion.zoom },
-        coords: lineLatLon,
-      };
+      const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon) as LineRecordType;
+      newRecord.field._strokeWidth = penWidth;
+      newRecord.field._strokeColor = penColor;
+      newRecord.field._zoom = mapRegion.zoom;
 
-      setHistory([...history, { operation: 'add', data: newLine }]);
+      setHistory([...history, { operation: 'add', data: newRecord }]);
       setFuture([]);
       mapMemoEditingLine.current = [];
-      dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: [newLine] }));
+      dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: [newRecord] }));
     } else if (currentMapMemoTool.includes('ERASER')) {
       const deleteLine = [] as { idx: number; line: LineRecordType }[];
       const newDrawLine = [] as LineRecordType[];
@@ -138,9 +144,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
     }
   }, [
+    activeMemoLayer,
     activeMemoRecordSet,
     currentMapMemoTool,
     dispatch,
+    generateRecord,
     history,
     mapRegion,
     mapSize,
