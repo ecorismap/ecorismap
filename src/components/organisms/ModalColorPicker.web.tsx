@@ -40,7 +40,10 @@ export const ModalColorPicker = (props: Props) => {
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
-                onPress={() => pressSelectColorOK(val.h, val.s, val.v, val.a)}
+                onPress={() => {
+                  const a = withAlpha ? val.a : 1;
+                  pressSelectColorOK(val.h, val.s, val.v, a);
+                }}
               >
                 <Text>OK</Text>
               </TouchableOpacity>

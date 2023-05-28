@@ -71,7 +71,7 @@ export const Line = React.memo((props: Props) => {
         type: 'line',
         paint: {
           'line-color': colorExpression,
-          'line-width': 2,
+          'line-width': ['coalesce', ['get', '_strokeWidth'], 2],
         },
         layout: {
           visibility: 'visible',
