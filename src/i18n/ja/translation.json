@@ -35,7 +35,8 @@
       "point": "ポイント",
       "line": "ライン",
       "polygon": "ポリゴン",
-      "none": "なし"
+      "none": "なし",
+      "memo": "メモ"
     },
     "roletype": {
       "member": "メンバー",
@@ -117,7 +118,8 @@
     "version": "バージョン",
     "distance": "距離",
     "customField": "カスタムフィールド",
-    "custom": "カスタム"
+    "custom": "カスタム",
+    "memo": "メモ"
   },
   "Home": {
     "confirm": {

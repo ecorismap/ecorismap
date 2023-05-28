@@ -34,7 +34,7 @@ import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
-import { getReceivedFiles, deleteReceivedFiles, exportGeoFile } from '../utils/File';
+import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 
@@ -69,6 +69,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
+    memoDataSet,
     selectedRecord,
     unselectRecord,
     addRecordWithCheck,
@@ -109,7 +110,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useDrawTool(mapViewRef.current);
 
   const {
-    showMapMemo,
     isMapMemoVisible,
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -118,20 +118,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     penColor,
     penWidth,
     mapMemoEditingLine,
+    editableMapMemo,
     setMapMemoTool,
-    setShowMapMemo,
     setPen,
     setEraser,
     setMapMemoVisible,
     setVisibleMapMemoColor,
     selectPenColor,
-    clearMapMemo,
     onPanResponderGrantMapMemo,
     onPanResponderMoveMapMemo,
     onPanResponderReleaseMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
-    generateExportMapMemo,
+    clearMapMemoHistory,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -393,9 +392,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       toggleWebTerrainActive(value === 'NONE');
       setFeatureButton(value);
       resetDrawTools();
+      clearMapMemoHistory();
       await toggleHeadingUp(false);
     },
-    [setDrawTool, toggleWebTerrainActive, setFeatureButton, resetDrawTools, toggleHeadingUp]
+    [setDrawTool, toggleWebTerrainActive, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
   );
 
   /**************** press ******************/
@@ -662,17 +662,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pressClearMapMemo = useCallback(async () => {
-    const ret = await ConfirmAsync(t('Home.confirm.clearMapMemo'));
-    if (ret) await clearMapMemo();
-  }, [clearMapMemo]);
-
-  const pressExportMapMemo = useCallback(async () => {
-    const { exportData, fileName } = generateExportMapMemo();
-    const isOK = await exportGeoFile(exportData, fileName, 'zip');
-    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
-  }, [generateExportMapMemo]);
-
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
@@ -710,6 +699,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pointDataSet,
         lineDataSet,
         polygonDataSet,
+        memoDataSet,
         isEditingDraw,
         isEditingObject,
         isSelectedDraw,
@@ -746,7 +736,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isLoading,
         isTermsOfUseOpen,
         currentMapMemoTool,
-        showMapMemo,
         visibleMapMemoColor,
         currentPen,
         currentEraser,
@@ -754,6 +743,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
+        editableMapMemo,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -778,7 +768,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoDraw,
         pressSaveDraw,
         pressDeleteDraw,
-        pressClearMapMemo,
         gotoMaps,
         gotoSettings,
         gotoLayers,
@@ -786,7 +775,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         termsOfUseOK,
         termsOfUseCancel,
         selectMapMemoTool,
-        setShowMapMemo,
         setPen,
         setEraser,
         setMapMemoVisible,
@@ -794,7 +782,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         selectPenColor,
         pressUndoMapMemo,
         pressRedoMapMemo,
-        pressExportMapMemo,
         panResponder,
       }}
     >

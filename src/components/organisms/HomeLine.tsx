@@ -43,8 +43,8 @@ export const Line = React.memo((props: Props) => {
             <Polyline
               tappable={false}
               coordinates={feature.coords as LatLng[]}
-              strokeColor={lineColor}
-              strokeWidth={1.5}
+              strokeColor={feature.field.strokeColor ?? lineColor}
+              strokeWidth={feature.field.strokeWidth ?? 2}
               zIndex={zIndex}
               onPress={() => onPressLine(layer, feature)}
             />

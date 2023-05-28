@@ -41,6 +41,7 @@ export default function HomeScreen() {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
+    memoDataSet,
     isDownloadPage,
     downloadProgress,
     savedTileSize,
@@ -65,7 +66,6 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
-    showMapMemo,
     isMapMemoVisible,
     visibleMapMemoColor,
     onRegionChangeMapView,
@@ -215,7 +215,12 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {isMapMemoVisible && showMapMemo && <MapMemoView />}
+        {memoDataSet.map((d) => {
+          const layer = layers.find((v) => v.id === d.layerId);
+          return layer
+            ? isMapMemoVisible && layer.visible && <MapMemoView key={`${d.layerId}-${d.userId}`} data={d.data} />
+            : null;
+        })}
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
           currentDrawTool !== 'ADD_LOCATION_POINT' &&
@@ -280,7 +285,7 @@ export default function HomeScreen() {
               )
             );
           })}
-          {lineDataSet.map((d) => {
+          {[...lineDataSet, ...memoDataSet].map((d) => {
             const layer = layers.find((v) => v.id === d.layerId);
             return (
               layer?.visible && (

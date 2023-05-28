@@ -172,6 +172,7 @@ export const GeoJson2Data = (
           )
           .flat();
         break;
+      case 'MEMO':
       case 'LINE':
         importedData = geojson.features
           .filter((feature): feature is Feature<LineString> => feature.geometry?.type === 'LineString')
@@ -254,6 +255,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         ({ coords }) => `POINT(${(coords as LocationType).longitude} ${(coords as LocationType).latitude})`
       );
       break;
+    case 'MEMO':
     case 'LINE':
       geometries = dataSet.map(({ coords }) => {
         const linestring = (coords as LocationType[]).map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
@@ -307,15 +309,16 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
         wpt.ele('cmt', point.field.cmt);
       });
       break;
+    case 'MEMO':
     case 'LINE':
-      data.forEach((line) => {
+      data.forEach((line, id) => {
         const time =
           line.field.time === undefined || line.field.time === '' ? undefined : dayjs(line.field.time as string);
         const trk = gpx.ele('trk');
-        trk.ele('name', line.field.name);
+        trk.ele('name', line.field.name ?? id.toString());
         //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
         trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
-        trk.ele('cmt', line.field.cmt);
+        trk.ele('cmt', line.field.cmt ?? '');
         const trkseg = trk.ele('trkseg');
         (line.coords as LocationType[]).forEach((coord) => {
           //console.log(dayjs.unix(coord.timestamp!).toISOString());

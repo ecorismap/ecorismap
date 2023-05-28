@@ -1,17 +1,21 @@
 import React, { useContext, useMemo } from 'react';
 import Svg, { Path } from 'react-native-svg';
-import { latLonArrayToXYArray, pointsToSvg } from '../../utils/Coords';
+import { latLonArrayToXYArray, latLonObjectsToLatLonArray, pointsToSvg } from '../../utils/Coords';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';
-import { AppState } from '../../modules';
 import { View } from 'react-native';
-import { useSelector } from 'react-redux';
 import booleanIntersects from '@turf/boolean-intersects';
 import * as turf from '@turf/helpers';
+import { LineRecordType } from '../../types';
 
 //React.Memoすると描画が更新されない
+interface Props {
+  data: LineRecordType[];
+}
 
-export const MapMemoView = () => {
+export const MapMemoView = React.memo((props: Props) => {
+  const { data } = props;
+
   const {
     mapViewRef,
     penColor,
@@ -23,7 +27,6 @@ export const MapMemoView = () => {
   } = useContext(HomeContext);
 
   const { mapSize, mapRegion } = useWindow();
-  const drawLine = useSelector((state: AppState) => state.mapMemo.drawLine);
 
   const regionArea = useMemo(() => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
@@ -34,6 +37,7 @@ export const MapMemoView = () => {
     return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
   }, [mapRegion]);
 
+  if (data === undefined) return null;
   return (
     <View
       style={{
@@ -47,15 +51,20 @@ export const MapMemoView = () => {
       {...panResponder.panHandlers}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
-        {drawLine.map(({ latlon, strokeColor, strokeWidth, zoom }, idx: number) => {
+        {/* {data.map(({ id, coords, field, visible }) => {
+          const strokeWidth = (field.strokeWidth as number) ?? 2;
+          const strokeColor = (field.strokeColor as string) ?? '#0000008b';
+          const zoom = (field.zoom as number) ?? currentZoom;
+          const latlonArray = latLonObjectsToLatLonArray(coords);
           if (currentZoom > zoom + 2) return null;
           if (currentZoom < zoom - 4) return null;
-          if (!booleanIntersects(regionArea, turf.lineString(latlon))) return null;
-          const xy = latLonArrayToXYArray(latlon, mapRegion, mapSize, mapViewRef.current);
+          if (!visible) return null;
+          if (!booleanIntersects(regionArea, turf.lineString(latlonArray))) return null;
+          const xy = latLonArrayToXYArray(latlonArray, mapRegion, mapSize, mapViewRef.current);
 
           return (
             <Path
-              key={`path${idx}`}
+              key={id}
               d={pointsToSvg(xy)}
               stroke={strokeColor}
               strokeWidth={strokeWidth * (currentZoom / zoom) ** 5}
@@ -64,7 +73,7 @@ export const MapMemoView = () => {
               fill={'none'}
             />
           );
-        })}
+        })} */}
 
         <Path
           d={pointsToSvg(mapMemoEditingLine)}
@@ -78,4 +87,4 @@ export const MapMemoView = () => {
       </Svg>
     </View>
   );
-};
+});

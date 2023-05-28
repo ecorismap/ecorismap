@@ -81,6 +81,7 @@ export const FEATURETYPE = {
   POINT: t('constants.featuretype.point'),
   LINE: t('constants.featuretype.line'),
   POLYGON: t('constants.featuretype.polygon'),
+  MEMO: t('constants.featuretype.memo'),
   NONE: t('constants.featuretype.none'),
 } as const;
 
@@ -191,8 +192,6 @@ export const ERASER = {
 export const MAPMEMOTOOL = {
   ...PEN,
   ...ERASER,
-  VISIBLE: 'eye',
-  HIDE: 'eye-off-outline',
   COLOR: 'palette-outline',
   UNDO: 'undo-variant',
   REDO: 'redo-variant',
