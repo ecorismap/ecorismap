@@ -125,6 +125,8 @@ const ListButtons = () => {
     ((itemFormat === 'STRING' || itemFormat === 'INTEGER' || itemFormat === 'DECIMAL') && itemValues.length < 1) ||
     itemFormat === 'LIST' ||
     itemFormat === 'CHECK' ||
+    itemFormat === 'TABLE' ||
+    itemFormat === 'LISTTABLE' ||
     itemFormat === 'RADIO';
   return editable ? (
     <View style={styles.button}>
