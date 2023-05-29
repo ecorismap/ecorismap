@@ -51,6 +51,7 @@ export type UseEcorisMapFileReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  createExportSettings: () => SettingsType;
 };
 
 export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
@@ -58,6 +59,25 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const settings = useSelector((state: AppState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
   const { fetchAllPhotos } = useRepository();
+
+  const createExportSettings = useCallback(() => {
+    return {
+      ...settings,
+      isSettingProject: false,
+      isSynced: false,
+      screenState: 'closed',
+      isEditingRecord: false,
+      role: undefined,
+      tileRegions: [],
+      projectId: undefined,
+      projectName: undefined,
+      memberLocation: [],
+      tracking: undefined,
+      selectedRecord: undefined,
+      plugins: {},
+      photosToBeDeleted: [],
+    } as SettingsType;
+  }, [settings]);
 
   const generateEcorisMapData = useCallback(
     async (
@@ -267,5 +287,6 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     clearEcorisMap,
     generateEcorisMapData,
     openEcorisMapFile,
+    createExportSettings,
   } as const;
 };
