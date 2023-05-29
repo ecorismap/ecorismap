@@ -9,7 +9,6 @@ import { ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
-import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
 import { usePhoto } from '../hooks/usePhoto';
 import { useRecord } from '../hooks/useRecord';
@@ -34,17 +33,18 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   } = useData(route.params.targetLayer);
   const { checkRecordEditable } = useRecord();
   const { deleteRecordPhotos } = usePhoto();
-  const { isMember } = usePermission();
+  //const { isMember } = usePermission();
 
   const pressExportData = useCallback(async () => {
-    if (isMember) {
-      Alert.alert('', t('Data.alert.exportData'));
-      return;
-    }
+    //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
+    // if (isMember) {
+    //   Alert.alert('', t('Data.alert.exportData'));
+    //   return;
+    // }
     const { exportData, fileName } = generateExportGeoData();
     const isOK = await exportGeoFile(exportData, fileName, 'zip');
     if (!isOK) Alert.alert('', t('hooks.message.failExport'));
-  }, [generateExportGeoData, isMember]);
+  }, [generateExportGeoData]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
