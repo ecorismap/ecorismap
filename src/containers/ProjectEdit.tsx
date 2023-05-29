@@ -16,7 +16,6 @@ import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
-import { cloneDeep } from 'lodash';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 
@@ -40,7 +39,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.isNew);
 
-  const settings = useSelector((state: AppState) => state.settings);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const [isLoading, setIsLoading] = useState(false);
   const { ownerProjectsCount } = useProjects();
@@ -58,7 +56,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     downloadPrivateData,
     downloadTemplateData,
   } = useRepository();
-  const { generateEcorisMapData } = useEcorisMapFile();
+  const { generateEcorisMapData, createExportSettings } = useEcorisMapFile();
 
   const downloadDataForAdmin = useCallback(async () => {
     const shouldPhotoDownload = false;
@@ -185,7 +183,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         throw new Error(projectSettingsResult.message);
       const allDataResult = await fetchAllData(targetProject);
       if (!allDataResult.isOK || allDataResult.data === undefined) throw new Error(allDataResult.message);
-      const newSettings = cloneDeep(settings);
+      const newSettings = createExportSettings();
       newSettings.mapRegion = projectSettingsResult.data.mapRegion;
       newSettings.plugins = projectSettingsResult.data.plugins;
       newSettings.mapType = projectSettingsResult.data.mapType;
@@ -209,7 +207,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       Alert.alert('error', e.message);
     }
-  }, [fetchAllData, fetchProjectSettings, generateEcorisMapData, settings, targetProject]);
+  }, [createExportSettings, fetchAllData, fetchProjectSettings, generateEcorisMapData, targetProject]);
 
   const pressDeleteProject = useCallback(async () => {
     try {
