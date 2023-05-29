@@ -12,7 +12,7 @@ export const DataEditPhoto = (props: Props) => {
   const { data, pressPhoto, pressTakePhoto, pressPickPhoto } = useContext(DataEditContext);
   const { fieldName } = props;
   //console.log('####', photos);
-
+  if (data.field[fieldName] === undefined) return null;
   return (
     <>
       <View style={styles.tr}>
