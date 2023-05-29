@@ -150,7 +150,9 @@ const DataTableComponent = React.memo(({ item, index, checked }: Props_DataTable
             onPress={() => gotoDataEdit(index)}
           >
             <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-              {format === 'DATETIME' && item.field[name] !== ''
+              {item.field[name] === undefined
+                ? ''
+                : format === 'DATETIME'
                 ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
                 : format === 'PHOTO'
                 ? `${(item.field[name] as PhotoType[]).length} pic`
