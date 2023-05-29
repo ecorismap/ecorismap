@@ -219,7 +219,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setMapMemoTool(value);
         if (value.includes('PEN')) {
           const ret = changeColorTypeToIndivisual();
-          if (ret) Alert.alert(t('Home.alert.indivisualColor'));
+          if (ret) Alert.alert('', t('Home.alert.indivisualColor'));
         }
       }
     },
