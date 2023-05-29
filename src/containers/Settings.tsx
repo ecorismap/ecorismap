@@ -20,23 +20,26 @@ import { usePermission } from '../hooks/usePermission';
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
-  const settings = useSelector((state: AppState) => state.settings);
   const maps = useSelector((state: AppState) => state.tileMaps);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile } = useEcorisMapFile();
+  const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
   const { isRunningProject } = usePermission();
 
   const pressFileSave = useCallback(async () => {
-    if (isRunningProject) {
-      //ToDo バックアップできた方がいいかも？もしくは裏で自動
-      await AlertAsync(t('hooks.message.cannotInRunningProject'));
+    // if (isRunningProject) {
+    //   //ToDo バックアップできた方がいいかも？もしくは裏で自動
+    //   await AlertAsync(t('hooks.message.cannotInRunningProject'));
+    //   return;
+    // }
+    if (tracking !== undefined) {
+      await AlertAsync(t('hooks.message.cannotLoadDataInTrackking'));
       return;
     }
     setIsFileSaveOpen(true);
-  }, [isRunningProject]);
+  }, [tracking]);
 
   const pressFileSaveCancel = useCallback(() => {
     setIsFileSaveOpen(false);
@@ -48,7 +51,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         await AlertAsync(t('hooks.message.inputCorrectFilename'));
         return;
       }
-      const data = { dataSet, layers, settings, maps };
+
+      const data = { dataSet, layers, settings: createExportSettings(), maps };
       const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false, includeGISData: false });
       const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
       if (!isOK) {
@@ -57,7 +61,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
 
       setIsFileSaveOpen(false);
     },
-    [dataSet, generateEcorisMapData, layers, maps, settings]
+    [createExportSettings, dataSet, generateEcorisMapData, layers, maps]
   );
 
   const pressFileOpen = useCallback(async () => {
