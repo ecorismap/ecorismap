@@ -40,10 +40,10 @@ export const Polygon = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
-        if (feature.coords.length === 0) return null;
         const zoom = (feature.field._zoom as number) ?? currentZoom;
         if (currentZoom > zoom + 2) return null;
         if (currentZoom < zoom - 4) return null;
+        if (feature.coords.length < 3) return null;
         if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
         const label =
