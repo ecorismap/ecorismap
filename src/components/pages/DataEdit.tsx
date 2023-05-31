@@ -67,7 +67,7 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flexDirection: 'row', flex: 1 }}>
+        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 35 }}>
           <HeaderRightButton
             name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
             backgroundColor={COLOR.GRAY0}
