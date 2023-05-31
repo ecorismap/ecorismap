@@ -73,6 +73,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     unselectRecord,
     addRecordWithCheck,
     checkRecordEditable,
+    calculateStorageSize,
   } = useRecord();
 
   const {
@@ -618,6 +619,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo]);
 
+  // useEffect(() => {
+  //   (async () => {
+  //     const size = await calculateStorageSize();
+  //     console.log('size', size, 'MB');
+  //     if (size > 15) {
+  //       Alert.alert('', t('Home.alert.storage'));
+  //     }
+  //   })();
+  // }, [calculateStorageSize]);
+
   useEffect(() => {
     return closeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -627,11 +638,25 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (Platform.OS === 'web') return;
 
     //起動時に読み込む場合
-    (async () => await importExternalFiles())();
+    (async () => {
+      await importExternalFiles();
+      const size = await calculateStorageSize();
+      console.log('size', size, 'MB');
+      if (size > 15) {
+        Alert.alert(`${Math.floor(size)}MB > 15MB`, t('Home.alert.storage'));
+      }
+    })();
 
     //バックグラウンド時に読み込む場合
     const subscription = RNAppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') await importExternalFiles();
+      if (nextAppState === 'active') {
+        await importExternalFiles();
+        const size = await calculateStorageSize();
+        console.log('size', size, 'MB');
+        if (size > 15) {
+          Alert.alert(`${Math.floor(size)}MB > 15MB`, t('Home.alert.storage'));
+        }
+      }
     });
     return () => {
       subscription.remove();
