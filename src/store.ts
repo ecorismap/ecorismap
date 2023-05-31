@@ -1,11 +1,11 @@
 import { legacy_createStore } from 'redux';
 import reducer from './modules/';
 import { persistStore, persistReducer } from 'redux-persist';
-import FilesystemStorage from 'redux-persist-filesystem-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const persistConfig = {
   key: 'root',
-  storage: FilesystemStorage,
+  storage: AsyncStorage,
 };
 
 const persistedReducer = persistReducer(persistConfig, reducer);
