@@ -23,6 +23,7 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -89,6 +90,7 @@ export type UseRecordReturnType = {
     isOK: boolean;
     message: string;
   };
+  calculateStorageSize: () => Promise<number>;
 };
 
 export const useRecord = (): UseRecordReturnType => {
@@ -301,6 +303,24 @@ export const useRecord = (): UseRecordReturnType => {
     [addRecord, generateRecord, getEditableLayerAndRecordSetWithCheck]
   );
 
+  const calculateStorageSize = useCallback(async () => {
+    const keys = await AsyncStorage.getAllKeys();
+    const stores = await AsyncStorage.multiGet(keys);
+
+    let totalSize = 0;
+    stores.map((result, i, store) => {
+      const key = store[i][0];
+      const value = store[i][1];
+      const currentSize = key.length + value!.length;
+      totalSize += currentSize;
+      //console.log(key, currentSize / 1024 / 1024);
+    });
+    //bytesをMBに変換
+    totalSize = totalSize / 1024 / 1024;
+    //console.log('Total size in MBytes:', totalSize);
+    return totalSize;
+  }, []);
+
   return {
     dataUser,
     projectId,
@@ -320,5 +340,6 @@ export const useRecord = (): UseRecordReturnType => {
     findLayer,
     isLayerEditable,
     checkRecordEditable,
+    calculateStorageSize,
   } as const;
 };
