@@ -70,20 +70,20 @@ public class MainApplication extends Application implements ReactApplication {
     ApplicationLifecycleDispatcher.onApplicationCreate(this);
   }
 
-  @Override
-  public void onConfigurationChanged(@NonNull Configuration newConfig) {
-    super.onConfigurationChanged(newConfig);
-    ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig);
-    try {
-      Field field = CursorWindow.class.getDeclaredField("sCursorWindowSize");
-      field.setAccessible(true);
-      field.set(null, 1024 * 1024 * 1024); //1GB
-    } catch (Exception e) {
-      if (BuildConfig.DEBUG) {
-        e.printStackTrace();
-      }
-    }
-  }
+  // @Override
+  // public void onConfigurationChanged(@NonNull Configuration newConfig) {
+  //   super.onConfigurationChanged(newConfig);
+  //   ApplicationLifecycleDispatcher.onConfigurationChanged(this, newConfig);
+  //   try {
+  //     Field field = CursorWindow.class.getDeclaredField("sCursorWindowSize");
+  //     field.setAccessible(true);
+  //     field.set(null, 1024 * 1024 * 1024); //1GB
+  //   } catch (Exception e) {
+  //     if (BuildConfig.DEBUG) {
+  //       e.printStackTrace();
+  //     }
+  //   }
+  // }
 
   /**
    * Loads Flipper in React Native templates. Call this in the onCreate method with something like
