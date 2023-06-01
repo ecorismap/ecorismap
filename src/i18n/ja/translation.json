@@ -124,7 +124,8 @@
       "failGetUids": "ユーザーIDの取得に失敗しました",
       "failGetProjects": "プロジェクトの取得に失敗しました",
       "cannotLoadProject": "読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。"
-    }
+    },
+    "EncryptPassword": "暗号化パスワード"
   },
   "Home": {
     "confirm": {
@@ -635,7 +636,8 @@
       "invalidPoint": "ポイントが不正なため保存できません。",
       "cannotEditCommon": "コモンレイヤは編集できません",
       "cannotInRunningProject": "プロジェクトを開いている時はできません。",
-      "cannotSaveInTracking": "トラックの記録中は変更できません。"
+      "cannotSaveInTracking": "トラックの記録中は変更できません。",
+      "encryptKeyFailed": "暗号化パスワードを確認してください"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

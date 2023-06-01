@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
@@ -10,13 +10,17 @@ import { Props_Projects } from '../routes';
 import { validateProjectLicense } from '../utils/Project';
 import { ProjectsContext } from '../contexts/Projects';
 import { usePermission } from '../hooks/usePermission';
+import { useAccount } from '../hooks/useAccount';
+import { Platform } from 'react-native';
 
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
+  const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
+  const [projectIndex, setProjectIndex] = useState(0);
   const { isSettingProject } = usePermission();
   const { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } = useProjects();
   const { customerLicense } = usePurchasesWeb();
   const { closeData } = useScreen();
-
+  const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
     try {
       if (isSettingProject) {
@@ -35,7 +39,6 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         previous: 'Projects',
         project: generateProject(),
         isNew: true,
-        createType: 'DEFAULT',
       });
     } catch (e: any) {
       Alert.alert('error', e.message);
@@ -65,6 +68,36 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     }
   }, [fetchProjects]);
 
+  const onPressGotoProject = useCallback(
+    async (index: number) => {
+      if (Platform.OS === 'web') {
+        gotoProject(index);
+      } else {
+        setProjectIndex(index);
+        setIsEncryptPasswordModalOpen(true);
+      }
+    },
+    [gotoProject]
+  );
+
+  const pressEncryptPasswordOK = useCallback(
+    async (value: string) => {
+      setIsEncryptPasswordModalOpen(false);
+      await cleanupEncryptKey();
+      const { isOK } = await restoreEncryptKey(value);
+      if (!isOK) {
+        Alert.alert('', t('hooks.message.encryptKeyFailed'));
+        return;
+      }
+      gotoProject(projectIndex);
+    },
+    [cleanupEncryptKey, gotoProject, projectIndex, restoreEncryptKey]
+  );
+
+  const pressEncryptPasswordCancel = useCallback(() => {
+    setIsEncryptPasswordModalOpen(false);
+  }, []);
+
   useEffect(() => {
     if (projects.length === 0 || route.params?.reload) {
       reloadProjects();
@@ -78,8 +111,11 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         projects,
         user,
         isLoading,
+        isEncryptPasswordModalOpen,
+        pressEncryptPasswordOK,
+        pressEncryptPasswordCancel,
         onReloadProjects: reloadProjects,
-        gotoProject,
+        gotoProject: onPressGotoProject,
         pressAddProject,
         gotoBack,
       }}
