@@ -8,10 +8,21 @@ import { RectButton2 } from '../atoms';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
+import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptPassword';
 
 export default function Projects() {
-  const { projects, user, isLoading, onReloadProjects, pressAddProject, gotoProject, gotoBack } =
-    useContext(ProjectsContext);
+  const {
+    projects,
+    user,
+    isLoading,
+    isEncryptPasswordModalOpen,
+    pressEncryptPasswordOK,
+    pressEncryptPasswordCancel,
+    onReloadProjects,
+    pressAddProject,
+    gotoProject,
+    gotoBack,
+  } = useContext(ProjectsContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -96,6 +107,11 @@ export default function Projects() {
       </ScrollView>
 
       <ProjectsButtons createProject={pressAddProject} reloadProjects={onReloadProjects} />
+      <ProjectsModalEncryptPassword
+        visible={isEncryptPasswordModalOpen}
+        pressOK={pressEncryptPasswordOK}
+        pressCancel={pressEncryptPasswordCancel}
+      />
     </View>
   );
 }

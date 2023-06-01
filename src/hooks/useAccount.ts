@@ -59,6 +59,7 @@ export type UseAccountReturnType = {
   changeEncryptPassword: (oldPassword: string, password: string) => Promise<{ isOK: boolean }>;
   registEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
   backupEncryptPassword: (password: string) => Promise<{ isOK: boolean }>;
+  cleanupEncryptKey: () => Promise<void>;
   restoreEncryptKey: (password: string) => Promise<{ isOK: boolean }>;
   resetEncryptKey: (password: string) => Promise<{
     isOK: boolean;
@@ -321,6 +322,10 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
     return { isOK: true };
   }, []);
 
+  const cleanupEncryptKey = useCallback(async () => {
+    await e3kit.cleanupEncryptKey();
+  }, []);
+
   const deleteAllProjects = useCallback(async () => {
     if (!isLoggedIn(user)) {
       return { isOK: false, message: t('hooks.message.pleaseLogin') };
@@ -449,6 +454,7 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
     changeEncryptPassword,
     registEncryptPassword,
     restoreEncryptKey,
+    cleanupEncryptKey,
     resetEncryptKey,
     deleteAllProjects,
   } as const;

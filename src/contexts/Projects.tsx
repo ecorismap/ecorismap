@@ -5,6 +5,9 @@ interface ProjectsContextType {
   projects: ProjectType[];
   user: UserType;
   isLoading: boolean;
+  isEncryptPasswordModalOpen: boolean;
+  pressEncryptPasswordOK: (value: string) => void;
+  pressEncryptPasswordCancel: () => void;
   onReloadProjects: () => void;
   pressAddProject: () => void;
   gotoProject: (index: number) => void;

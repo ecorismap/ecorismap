@@ -8,7 +8,6 @@ import { AppState } from '../modules';
 import {
   AccountFormStateType,
   ColorStyle,
-  CreateProjectType,
   LayerType,
   ProjectType,
   RecordType,
@@ -44,7 +43,6 @@ export type RootStackParamList = {
     previous: keyof RootStackParamList;
     project: ProjectType;
     isNew: boolean;
-    createType?: CreateProjectType;
   };
   SplitScreen: undefined;
   Maps: undefined;

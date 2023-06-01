@@ -174,7 +174,8 @@
     "distance": "distance",
     "customField": "custom field",
     "custom": "CUSTOM",
-    "memo": "memo"
+    "memo": "memo",
+    "EncryptPassword": "encrypted password"
   },
   "firebase": {
     "message": {
@@ -543,7 +544,8 @@
       "invalidPoint": "Can't save for invalid point.",
       "cannotEditCommon": "Common layers cannot be edited",
       "cannotInRunningProject": "Not possible when project is open",
-      "cannotSaveInTracking": "It cannot be changed while the track is being recorded."
+      "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
+      "encryptKeyFailed": "Check encryption password"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
