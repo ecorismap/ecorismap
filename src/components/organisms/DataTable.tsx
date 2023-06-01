@@ -11,11 +11,72 @@ import { SortOrderType } from '../../utils/Data';
 
 export const DataTable = React.memo(() => {
   //console.log(data[0]);
+  const { data, checkList, projectId, layer, gotoDataEdit, changeChecked, changeVisible } = useContext(DataContext);
+  //@ts-ignore
+  const renderItem = useCallback(
+    ({ item, index }: { item: RecordType; index: number }) => (
+      <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
+        <View style={[styles.td, { width: 50 }]}>
+          <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
+        </View>
+        <View style={[styles.td, { width: 60 }]}>
+          <Button
+            color={COLOR.GRAY4}
+            style={{ backgroundColor: COLOR.MAIN }}
+            borderRadius={0}
+            name={checkList[index] ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+            onPress={() => changeChecked(index, !checkList[index])}
+          />
+        </View>
+
+        {projectId !== undefined && (
+          <TouchableOpacity style={[styles.td, { flex: 2, width: 100 }]} onPress={() => gotoDataEdit(index)}>
+            <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+              {item.displayName}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {projectId === undefined && layer.field.length === 0 ? (
+          <View style={[styles.td, { width: 60 }]}>
+            <Button
+              color={COLOR.GRAY4}
+              style={{ backgroundColor: COLOR.MAIN }}
+              borderRadius={0}
+              name={'menu-right'}
+              onPress={() => gotoDataEdit(index)}
+            />
+          </View>
+        ) : (
+          layer.field.map(({ name, format }, field_index) => (
+            <TouchableOpacity
+              key={field_index}
+              style={[styles.td, { flex: 2, width: 120 }]}
+              onPress={() => gotoDataEdit(index)}
+            >
+              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                {item.field[name] === undefined
+                  ? ''
+                  : format === 'DATETIME'
+                  ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
+                  : format === 'PHOTO'
+                  ? `${(item.field[name] as PhotoType[]).length} pic`
+                  : format === 'REFERENCE'
+                  ? 'Reference'
+                  : `${item.field[name]}`}
+              </Text>
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+    ),
+    [changeChecked, changeVisible, checkList, gotoDataEdit, layer.field, projectId]
+  );
+  const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
       <DataTitle />
-      <DataItems />
+      <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />
     </View>
   );
 });
@@ -98,86 +159,6 @@ const DataTitle = React.memo(() => {
       )}
     </View>
   );
-});
-
-interface Props_DataTableComponent {
-  item: RecordType;
-  index: number;
-  checked: boolean;
-}
-
-const DataTableComponent = React.memo(({ item, index, checked }: Props_DataTableComponent) => {
-  const { projectId, layer, gotoDataEdit, changeChecked, changeVisible } = useContext(DataContext);
-  //console.log('render renderItems');
-  //console.log(item);
-  return (
-    <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
-      <View style={[styles.td, { width: 50 }]}>
-        <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
-      </View>
-      <View style={[styles.td, { width: 60 }]}>
-        <Button
-          color={COLOR.GRAY4}
-          style={{ backgroundColor: COLOR.MAIN }}
-          borderRadius={0}
-          name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-          onPress={() => changeChecked(index, !checked)}
-        />
-      </View>
-
-      {projectId !== undefined && (
-        <TouchableOpacity style={[styles.td, { flex: 2, width: 100 }]} onPress={() => gotoDataEdit(index)}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-            {item.displayName}
-          </Text>
-        </TouchableOpacity>
-      )}
-      {projectId === undefined && layer.field.length === 0 ? (
-        <View style={[styles.td, { width: 60 }]}>
-          <Button
-            color={COLOR.GRAY4}
-            style={{ backgroundColor: COLOR.MAIN }}
-            borderRadius={0}
-            name={'menu-right'}
-            onPress={() => gotoDataEdit(index)}
-          />
-        </View>
-      ) : (
-        layer.field.map(({ name, format }, field_index) => (
-          <TouchableOpacity
-            key={field_index}
-            style={[styles.td, { flex: 2, width: 120 }]}
-            onPress={() => gotoDataEdit(index)}
-          >
-            <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-              {item.field[name] === undefined
-                ? ''
-                : format === 'DATETIME'
-                ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                : format === 'PHOTO'
-                ? `${(item.field[name] as PhotoType[]).length} pic`
-                : format === 'REFERENCE'
-                ? 'Reference'
-                : `${item.field[name]}`}
-            </Text>
-          </TouchableOpacity>
-        ))
-      )}
-    </View>
-  );
-});
-
-const DataItems = React.memo(() => {
-  const { data, checkList } = useContext(DataContext);
-  //@ts-ignore
-  const renderItem = useCallback(
-    ({ item, index }: { item: RecordType; index: number }) => (
-      <DataTableComponent {...{ item, index, checked: checkList[index] }} />
-    ),
-    [checkList]
-  );
-  const keyExtractor = useCallback((item: RecordType) => item.id, []);
-  return <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />;
 });
 
 const styles = StyleSheet.create({
