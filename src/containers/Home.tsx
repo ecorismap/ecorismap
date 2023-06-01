@@ -190,6 +190,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (currentMapMemoTool === value) {
         setMapMemoTool('NONE');
       } else {
+        setDrawTool('NONE');
         setMapMemoTool(value);
         if (value.includes('PEN')) {
           const ret = changeColorTypeToIndivisual();
@@ -197,7 +198,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     },
-    [changeColorTypeToIndivisual, currentMapMemoTool, setMapMemoTool]
+    [changeColorTypeToIndivisual, currentMapMemoTool, setDrawTool, setMapMemoTool]
   );
 
   const selectDrawTool = useCallback(
@@ -225,6 +226,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           toggleWebTerrainActive(true);
         } else {
           setDrawTool(value);
+          setMapMemoTool('NONE');
           toggleWebTerrainActive(false);
           await toggleHeadingUp(false);
           await runTutrial('INFOTOOL');
@@ -278,6 +280,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       resetDrawTools,
       runTutrial,
       setDrawTool,
+      setMapMemoTool,
       showHisyouToolSetting,
       toggleHeadingUp,
       toggleWebTerrainActive,
