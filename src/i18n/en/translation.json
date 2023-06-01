@@ -195,11 +195,11 @@
       "info": "Input the URL of the map settings list."
     },
     "file_save": {
-      "text": "Save data to file",
+      "text": "Save data",
       "info": "Save the current data and settings to the file in ecorismap format."
     },
     "file_open": {
-      "text": "Load data file",
+      "text": "Load data",
       "info": "Load the saved data and settings from the ecorismap format file."
     },
     "mapcachedelete": {

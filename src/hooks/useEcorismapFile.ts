@@ -63,6 +63,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const createExportSettings = useCallback(() => {
     return {
       ...settings,
+      tutrials: { ...settings.tutrials, TERMS_OF_USE: false },
       isSettingProject: false,
       isSynced: false,
       screenState: 'closed',
@@ -231,7 +232,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       try {
         setIsLoading(true);
         const loaded = await unzipFromUri(uri);
-        const jsonFile = Object.keys(loaded.files).find((f) => getExt(f) === 'json');
+        const jsonFile = Object.keys(loaded.files).find((f) => {
+          return getExt(f) === 'json' && !f.includes('/');
+        });
+
         if (jsonFile === undefined) return;
         const decompressed = await loaded.files[jsonFile].async('text');
         const data = JSON.parse(decompressed) as EcorisMapFileType;
