@@ -70,7 +70,8 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const onPressGotoProject = useCallback(
     async (index: number) => {
-      if (Platform.OS === 'web') {
+      //暗号化パスワードのチェック。今は煩雑なのでオフにしている
+      if (true || Platform.OS === 'web') {
         gotoProject(index);
       } else {
         setProjectIndex(index);
