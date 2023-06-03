@@ -43,29 +43,27 @@ export const usePhoto = (): UsePhotoReturnType => {
     [dispatch, photosToBeDeleted]
   );
 
-  const deleteRecordPhotos = (
-    layer: LayerType,
-    record: RecordType,
-    projectId: string | undefined,
-    userId: string | undefined
-  ) => {
-    const photoFields = getPhotoFields(layer);
+  const deleteRecordPhotos = useCallback(
+    (layer: LayerType, record: RecordType, projectId: string | undefined, userId: string | undefined) => {
+      const photoFields = getPhotoFields(layer);
 
-    for (const { name } of photoFields) {
-      (record.field[name] as PhotoType[]).forEach((photo) => {
-        if (photo.uri) deleteLocalPhoto(photo.uri);
+      for (const { name } of photoFields) {
+        (record.field[name] as PhotoType[]).forEach((photo) => {
+          if (photo.uri) deleteLocalPhoto(photo.uri);
 
-        if (projectId !== undefined && userId !== undefined) {
-          addToBeDeletedPhoto({
-            projectId,
-            layerId: layer.id,
-            userId: userId,
-            photoId: photo.id,
-          });
-        }
-      });
-    }
-  };
+          if (projectId !== undefined && userId !== undefined) {
+            addToBeDeletedPhoto({
+              projectId,
+              layerId: layer.id,
+              userId: userId,
+              photoId: photo.id,
+            });
+          }
+        });
+      }
+    },
+    [addToBeDeletedPhoto]
+  );
 
   return {
     photosToBeDeleted,
