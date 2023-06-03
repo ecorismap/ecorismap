@@ -9,7 +9,7 @@ interface Props {
   style?: any;
   label?: string;
   selectedValue: string;
-  onValueChange: ((itemValue: ItemValue, itemIndex: number) => void) | undefined;
+  onValueChange: (itemValue: ItemValue, itemIndex: number) => void;
   itemLabelArray: string[];
   itemValueArray: string[];
   maxIndex: number;
@@ -34,7 +34,9 @@ const Picker = React.memo((props: Props) => {
           }
           enabled={enabled}
           selectedValue={selectedValue}
-          onValueChange={onValueChange}
+          onValueChange={(v, idx) => {
+            if (v !== selectedValue) onValueChange(v, idx);
+          }}
           mode="dropdown"
         >
           {itemValueArray.map((item, index) =>
