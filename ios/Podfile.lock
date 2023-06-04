@@ -1175,7 +1175,7 @@ PODS:
     - React-perflogger (= 0.70.9)
   - RNCAsyncStorage (1.18.1):
     - React-Core
-  - RNCPicker (2.4.8):
+  - RNCPicker (2.4.10):
     - React-Core
   - RNFBApp (17.3.1):
     - Firebase/CoreOnly (= 10.5.0)
@@ -1646,7 +1646,7 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: ed23be8c1e02b73e7e2f88ac7eaab8faf6961a38
   ReactCommon: 153bd73ed963731a8e3e7f03a747b353fed7363e
   RNCAsyncStorage: b90b71f45b8b97be43bc4284e71a6af48ac9f547
-  RNCPicker: 0bf8ef8f7800524f32d2bb2a8bcadd53eda0ecd1
+  RNCPicker: 0bc2f0a29abcca7b7ed44a2d036aac9ab6d25700
   RNFBApp: 6210da3d32c005190647805e6ced236d9be5520f
   RNFBAppCheck: 0eb60e6cc383d6af5825230875c760d68b9ec042
   RNFBAuth: 74c8d076916da0f08adcb750bfb599761c7c7e81
