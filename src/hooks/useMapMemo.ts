@@ -113,11 +113,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const onPanResponderReleaseMapMemo = useCallback(() => {
     const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
     const simplifiedXY = simplify(smoothedXY);
+    if (simplifiedXY.length === 0) {
+      setFuture([]);
+      mapMemoEditingLine.current = [];
+      return;
+    } else if (simplifiedXY.length === 1) {
+      simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
+    }
     const lineLatLon = xyArrayToLatLonObjects(simplifiedXY, mapRegion, mapSize, mapViewRef);
     const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
-
-    if (lineLatLon.length === 1)
-      lineLatLon.push({ longitude: lineLatLon[0].longitude + 0.0000001, latitude: lineLatLon[0].latitude + 0.0000001 });
 
     if (currentMapMemoTool.includes('PEN')) {
       const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon) as LineRecordType;
