@@ -39,10 +39,11 @@ export type UseMapMemoReturnType = {
   clearMapMemoHistory: () => void;
   onPanResponderGrantMapMemo: (event: GestureResponderEvent) => void;
   onPanResponderMoveMapMemo: (event: GestureResponderEvent) => void;
-  onPanResponderReleaseMapMemo: () => void;
+  onPanResponderReleaseMapMemo: (isPinch?: boolean) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   changeColorTypeToIndivisual: () => boolean;
+  clearMapMemoEditingLine: () => void;
 };
 export type HistoryType = {
   operation: string;
@@ -90,16 +91,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       : 1;
   }, [currentMapMemoTool]);
 
-  const onPanResponderGrantMapMemo = useCallback((event: GestureResponderEvent) => {
-    if (!event.nativeEvent.touches.length) return;
+  const clearMapMemoEditingLine = useCallback(() => {
+    mapMemoEditingLine.current = [];
+  }, []);
 
+  const onPanResponderGrantMapMemo = useCallback((event: GestureResponderEvent) => {
     offset.current = [
       event.nativeEvent.locationX - event.nativeEvent.pageX,
       event.nativeEvent.locationY - event.nativeEvent.pageY,
     ];
-    const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-
-    mapMemoEditingLine.current = [pXY];
   }, []);
 
   const onPanResponderMoveMapMemo = useCallback((event: GestureResponderEvent) => {
@@ -114,8 +114,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
     const simplifiedXY = simplify(smoothedXY);
     if (simplifiedXY.length === 0) {
+      clearMapMemoEditingLine();
       setFuture([]);
-      mapMemoEditingLine.current = [];
       return;
     } else if (simplifiedXY.length === 1) {
       simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
@@ -131,7 +131,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
       setHistory([...history, { operation: 'add', data: newRecord }]);
       setFuture([]);
-      mapMemoEditingLine.current = [];
+      clearMapMemoEditingLine();
       dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: [newRecord] }));
     } else if (currentMapMemoTool.includes('ERASER')) {
       const deleteLine = [] as { idx: number; line: LineRecordType }[];
@@ -146,12 +146,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       });
       setHistory([...history, { operation: 'remove', data: deleteLine }]);
       setFuture([]);
-      mapMemoEditingLine.current = [];
+      clearMapMemoEditingLine();
       dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
     }
   }, [
     activeMemoLayer,
     activeMemoRecordSet,
+    clearMapMemoEditingLine,
     currentMapMemoTool,
     dispatch,
     generateRecord,
@@ -245,5 +246,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     pressRedoMapMemo,
     clearMapMemoHistory,
     changeColorTypeToIndivisual,
+    clearMapMemoEditingLine,
   } as const;
 };

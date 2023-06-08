@@ -5,8 +5,7 @@ import { HomeContext } from '../../contexts/Home';
 import { View } from 'react-native';
 
 export const MapMemoView = React.memo(() => {
-  const { penColor, penWidth, mapMemoEditingLine, currentMapMemoTool, panResponder } = useContext(HomeContext);
-
+  const { penColor, penWidth, mapMemoEditingLine, currentMapMemoTool } = useContext(HomeContext);
   return (
     <View
       style={{
@@ -16,8 +15,7 @@ export const MapMemoView = React.memo(() => {
         height: '100%',
         width: '100%',
       }}
-      pointerEvents={currentMapMemoTool === 'NONE' ? 'none' : 'auto'}
-      {...panResponder.panHandlers}
+      pointerEvents={'none'}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Path
