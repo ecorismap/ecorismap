@@ -81,6 +81,7 @@ export default function HomeScreen() {
     setVisibleMapMemoColor,
     selectPenColor,
     panResponder,
+    isPinch,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -236,7 +237,7 @@ export default function HomeScreen() {
           showsCompass={false}
           rotateEnabled={false} //表示スピードに関係ある？
           pitchEnabled={false}
-          scrollEnabled={true}
+          scrollEnabled={isPinch || currentMapMemoTool === 'NONE'}
           moveOnMarkerPress={false}
           //@ts-ignore
           mapType={mapType}
