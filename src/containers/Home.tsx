@@ -395,13 +395,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const selectFeatureButton = useCallback(
     async (value: FeatureButtonType) => {
       setDrawTool('NONE');
+      setMapMemoTool('NONE');
       toggleWebTerrainActive(value === 'NONE');
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
       await toggleHeadingUp(false);
     },
-    [setDrawTool, toggleWebTerrainActive, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
+    [
+      setDrawTool,
+      setMapMemoTool,
+      toggleWebTerrainActive,
+      setFeatureButton,
+      resetDrawTools,
+      clearMapMemoHistory,
+      toggleHeadingUp,
+    ]
   );
 
   /**************** press ******************/

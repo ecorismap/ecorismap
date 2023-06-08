@@ -215,10 +215,7 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {(currentMapMemoTool === 'PEN_THIN' ||
-          currentMapMemoTool === 'PEN_MEDIUM' ||
-          currentMapMemoTool === 'PEN_THICK' ||
-          currentMapMemoTool === 'ERASER') && <MapMemoView />}
+        <MapMemoView />
 
         {currentDrawTool !== 'NONE' &&
           currentDrawTool !== 'MOVE_POINT' &&
