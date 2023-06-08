@@ -62,6 +62,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
+  const [isPinch, setIsPinch] = useState(false);
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -140,6 +141,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressRedoMapMemo,
     clearMapMemoHistory,
     changeColorTypeToIndivisual,
+    clearMapMemoEditingLine,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -868,7 +870,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
-        onShouldBlockNativeResponder: () => currentMapMemoTool !== 'NONE',
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
@@ -878,17 +879,29 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             onPanResponderGrantMapMemo(e);
           }
         },
-        onPanResponderMove: (event: GestureResponderEvent) => {
+        onPanResponderMove: (e: GestureResponderEvent, gesture) => {
           if (currentMapMemoTool === 'NONE') return;
-          onPanResponderMoveMapMemo(event);
+          if (isPinch) return;
+          if (gesture.numberActiveTouches === 2) {
+            clearMapMemoEditingLine();
+            setIsPinch(true);
+            return;
+          }
+          onPanResponderMoveMapMemo(e);
         },
         onPanResponderRelease: () => {
           if (currentMapMemoTool === 'NONE') return;
+          if (isPinch) {
+            setIsPinch(false);
+            return;
+          }
           onPanResponderReleaseMapMemo();
         },
       }),
     [
+      clearMapMemoEditingLine,
       currentMapMemoTool,
+      isPinch,
       onPanResponderGrantMapMemo,
       onPanResponderMoveMapMemo,
       onPanResponderReleaseMapMemo,
@@ -1000,6 +1013,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoMapMemo,
         pressRedoMapMemo,
         panResponder,
+        isPinch,
       }}
     >
       <Home />
