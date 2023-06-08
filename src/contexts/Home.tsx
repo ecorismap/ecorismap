@@ -118,6 +118,7 @@ export interface HomeContextType {
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   panResponder: PanResponderInstance;
+  isPinch: boolean;
 }
 
 export const HomeContext = createContext({} as HomeContextType);
