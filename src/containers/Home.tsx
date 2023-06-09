@@ -366,24 +366,33 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       const files = await importDropedFile(acceptedFiles);
       if (files.length > 0) {
+        let allOK = true;
         for (const file of files) {
           const ext = getExt(file.name)?.toLowerCase();
-          if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
+          if (
+            !(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip' || ext === 'csv')
+          ) {
             await AlertAsync(t('hooks.message.wrongExtension'));
+            allOK = false;
             continue;
           }
           if (file.size === undefined) {
             await AlertAsync(t('hooks.message.cannotGetFileSize'));
+            allOK = false;
             continue;
           }
           if (file.size / 1024 > 1000) {
             await AlertAsync(t('hooks.message.cannotImportData'));
+            allOK = false;
             continue;
           }
           const { isOK, message } = await importGeoFile(file.uri, file.name);
-          if (!isOK) await AlertAsync(`${file.name}:${message}`);
+          if (!isOK) {
+            await AlertAsync(`${file.name}:${message}`);
+            allOK = false;
+          }
         }
-        await AlertAsync(t('hooks.message.receiveFile'));
+        if (allOK) await AlertAsync(t('hooks.message.receiveFile'));
       }
     },
     [importGeoFile, isRunningProject]

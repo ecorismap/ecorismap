@@ -6,7 +6,7 @@ import { AppState } from '../modules';
 import { addLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system';
 
-import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson } from '../utils/Geometry';
+import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson, Csv2Data } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { addDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
@@ -53,6 +53,19 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const importGPX = useCallback(
     (gpx: string, featureType: FeatureType, importFileName: string) => {
       const data = Gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
+      if (data === undefined) return;
+      //console.log(recordSet[0].field);
+      if (data.recordSet.length > 0) {
+        dispatch(addLayerAction(data.layer));
+        dispatch(addDataAction([{ layerId: data.layer.id, userId: dataUser.uid, data: data.recordSet }]));
+      }
+    },
+    [dispatch, dataUser.displayName, dataUser.uid]
+  );
+
+  const importCsv = useCallback(
+    (csv: string, featureType: FeatureType, importFileName: string) => {
+      const data = Csv2Data(csv, featureType, importFileName, dataUser.uid, dataUser.displayName);
       if (data === undefined) return;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
@@ -139,6 +152,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [importGeoJson]
   );
 
+  const loadCsv = useCallback(
+    async (uri: string, name: string) => {
+      //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
+      const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      importCsv(csvStrings, 'NONE', name);
+    },
+    [importCsv]
+  );
+
   const loadZip = useCallback(
     async (uri: string, name: string) => {
       const loaded = await unzipFromUri(uri);
@@ -166,6 +188,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const ext = getExt(name)?.toLowerCase();
 
       switch (ext) {
+        case 'csv': {
+          await loadCsv(uri, name);
+          break;
+        }
         case 'zip': {
           await loadZip(uri, name);
           break;
@@ -190,7 +216,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           throw 'invalid extension';
       }
     },
-    [loadGeojson, loadGpx, loadKml, loadKmz, loadZip]
+    [loadCsv, loadGeojson, loadGpx, loadKml, loadKmz, loadZip]
   );
 
   const importGeoFile = useCallback(

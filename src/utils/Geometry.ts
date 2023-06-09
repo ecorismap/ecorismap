@@ -33,6 +33,48 @@ import {
 import { Position } from '@turf/turf';
 import { rgbaString2qgis } from './Color';
 
+export const Csv2Data = (
+  csv: string,
+  type: FeatureType,
+  fileName: string,
+  userId: string | undefined,
+  displayName: string | null
+) => {
+  try {
+    //console.log(type);
+    const layer: LayerType = createLayerFromCsv(csv, fileName, type);
+    const body = csv.split('\n').slice(1);
+
+    const importedData: RecordType[] = body.map((line) => {
+      const data = line.split(',');
+      //layer.fieldとdataの配列からfieldを作成
+      const fields = layer.field
+        .map((field, idx) => {
+          return { [field.name]: data[idx] };
+        })
+        .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+
+      return {
+        id: uuidv4(),
+        userId: userId,
+        displayName: displayName,
+        redraw: false,
+        visible: true,
+        coords: {
+          latitude: 0,
+          longitude: 0,
+        },
+        field: fields,
+      };
+    });
+
+    //csvから
+    return { layer: layer, recordSet: importedData };
+  } catch (e) {
+    return undefined;
+  }
+};
+
 export const Gpx2Data = (
   gpx: string,
   type: FeatureType,
@@ -629,6 +671,38 @@ function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | 
   const properties = geojson.features[0].properties;
   if (properties === null) return [];
   const fields = Object.keys(properties).map((fieldName) => ({
+    id: uuidv4(),
+    name: fieldName,
+    format: 'STRING' as FormatType,
+  }));
+  return fields;
+}
+
+export function createLayerFromCsv(csv: string, fileName: string, featureType: FeatureType): LayerType {
+  return {
+    id: uuidv4(),
+    name: sanitize(fileName),
+    type: featureType,
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.8,
+      color: COLOR.RED,
+      fieldName: '',
+      customFieldValue: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+    },
+    label: '',
+    visible: true,
+    active: false,
+    field: createAllStringFieldsFromCsv(csv),
+  };
+}
+
+function createAllStringFieldsFromCsv(csv: string) {
+  const csvFields = csv.split('\n')[0].split(',');
+  const fields = csvFields.map((fieldName) => ({
     id: uuidv4(),
     name: fieldName,
     format: 'STRING' as FormatType,
