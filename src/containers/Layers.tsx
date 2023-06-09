@@ -42,7 +42,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.type === 'cancel') return;
     const ext = getExt(file.name)?.toLowerCase();
-    if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip')) {
+    if (!(ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip' || ext === 'csv')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
