@@ -125,7 +125,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
   const [isDrawLineVisible, setDrawLineVisible] = useState(false);
-
+  const refreshDrawLine = useRef(true);
   const drawLine = useRef<DrawLineType[]>([]);
   const editingLineXY = useRef<Position[]>([]);
   const undoLine = useRef<UndoLineType[]>([]);
@@ -183,7 +183,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     mapViewRef
   );
   const { isHisyouToolActive } = useHisyouToolSetting();
-
   const convertPointFeatureToDrawLine = useCallback(
     (layerId: string, features: PointRecordType[]) => {
       features.forEach((record) => {
@@ -578,17 +577,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   ]);
 
   const hideDrawLine = useCallback(() => {
-    drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
+    refreshDrawLine.current = false;
     setDrawLineVisible(false);
   }, []);
 
   const showDrawLine = useCallback(() => {
-    drawLine.current.forEach(
-      (line, idx) =>
-        (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
-    );
-    setDrawLineVisible(true);
-  }, [mapRegion, mapSize, mapViewRef]);
+    //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
+    refreshDrawLine.current = true;
+  }, []);
 
   const pressSvgView = useCallback(
     (event: GestureResponderEvent) => {
@@ -776,12 +772,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
-    if (drawLine.current.length > 0 && isDrawLineVisible) {
-      drawLine.current.forEach(
-        (line, idx) =>
-          (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
-      );
-      setRedraw(uuidv4());
+    if (drawLine.current.length > 0 && refreshDrawLine.current) {
+      drawLine.current = drawLine.current.map((line) => {
+        return { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) };
+      });
+      setDrawLineVisible(true);
     }
   }, [isDrawLineVisible, mapRegion, mapSize, mapViewRef]);
 

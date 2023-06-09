@@ -1,11 +1,5 @@
-import React, { useContext, useMemo } from 'react';
-import {
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
-  PanResponderInstance,
-  View,
-} from 'react-native';
+import React, { useContext } from 'react';
+import { View } from 'react-native';
 
 import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
@@ -17,37 +11,9 @@ import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSett
 import { HomeContext } from '../../contexts/Home';
 import { HISYOUTOOL } from '../../plugins/hisyoutool/Constants';
 
-//React.Memoすると描画が更新されない
-export const SvgView = () => {
-  const {
-    drawLine,
-    editingLine,
-    selectLine,
-    currentDrawTool,
-    isEditingObject,
-    onPressSvgView,
-    onMoveSvgView,
-    onReleaseSvgView,
-  } = useContext(HomeContext);
+export const SvgView = React.memo(() => {
+  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject } = useContext(HomeContext);
   const { isHisyouToolActive } = useHisyouToolSetting();
-
-  const panResponder: PanResponderInstance = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onPressSvgView(e, gestureState);
-        },
-        onPanResponderMove: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onMoveSvgView(e, gestureState);
-        },
-        onPanResponderRelease: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-          onReleaseSvgView(e, gestureState);
-        },
-      }),
-    [onMoveSvgView, onPressSvgView, onReleaseSvgView]
-  );
 
   const editingStartStyle = '';
   const editingMidStyle = '';
@@ -62,8 +28,8 @@ export const SvgView = () => {
         height: '100%',
         width: '100%',
       }}
-      pointerEvents={currentDrawTool === 'MOVE' ? 'none' : 'auto'}
-      {...panResponder.panHandlers}
+      //タッチイベントを無効化。MapViewのタッチイベントを優先させるため
+      pointerEvents={'none'}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
@@ -158,7 +124,7 @@ export const SvgView = () => {
       </Svg>
     </View>
   );
-};
+});
 
 const LineDefs = () => {
   return (
