@@ -124,7 +124,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [currentPolygonTool, setPolygonTool] = useState<PolygonToolType>('PLOT_POLYGON');
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
-  const [isDrawLineVisible, setDrawLineVisible] = useState(false);
+  const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
   const drawLine = useRef<DrawLineType[]>([]);
   const editingLineXY = useRef<Position[]>([]);
@@ -257,7 +257,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectLine.current = [];
     undoLine.current = [];
     isEditingObject.current = false;
-    setRedraw(uuidv4());
+    setDrawLineVisible(true);
   }, [isEditingObject]);
 
   const savePoint = useCallback(() => {
@@ -395,7 +395,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {
       resetDrawTools();
-      setRedraw(uuidv4());
 
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
