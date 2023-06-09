@@ -577,18 +577,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   ]);
 
   const hideDrawLine = useCallback(() => {
-    //drawLine.current.forEach((line, idx) => (drawLine.current[idx] = { ...line, xy: [] }));
     refreshDrawLine.current = false;
     setDrawLineVisible(false);
   }, []);
 
   const showDrawLine = useCallback(() => {
-    // drawLine.current.forEach(
-    //   (line, idx) =>
-    //     (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
-    // );
+    //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
     refreshDrawLine.current = true;
-    //setDrawLineVisible(true);
   }, []);
 
   const pressSvgView = useCallback(
@@ -778,10 +773,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
     if (drawLine.current.length > 0 && refreshDrawLine.current) {
-      drawLine.current.forEach(
-        (line, idx) =>
-          (drawLine.current[idx] = { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) })
-      );
+      drawLine.current = drawLine.current.map((line) => {
+        return { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) };
+      });
       setDrawLineVisible(true);
     }
   }, [isDrawLineVisible, mapRegion, mapSize, mapViewRef]);
