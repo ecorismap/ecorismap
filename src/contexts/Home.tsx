@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { GestureResponderEvent, PanResponderGestureState, PanResponderInstance } from 'react-native';
+import { GestureResponderEvent, PanResponderInstance } from 'react-native';
 import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
@@ -85,9 +85,6 @@ export interface HomeContextType {
   onDragMapView: () => void;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
-  onPressSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
-  onMoveSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
-  onReleaseSvgView: (e: GestureResponderEvent, gestureState: PanResponderGestureState) => void;
   pressZoomIn: () => void;
   pressZoomOut: () => void;
   pressCompass: () => void;
@@ -119,6 +116,7 @@ export interface HomeContextType {
   pressRedoMapMemo: () => void;
   panResponder: PanResponderInstance;
   isPinch: boolean;
+  isDrawLineVisible: boolean;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

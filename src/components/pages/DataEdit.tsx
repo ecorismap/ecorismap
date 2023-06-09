@@ -300,20 +300,20 @@ export default function DataEditScreen() {
               const refField = list && list[1] && list[1].value;
               const primaryField = list && list[2] && list[2].value;
               const primaryKey = primaryField === '_id' ? data.id : primaryField && data.field[primaryField];
-              console.log(
-                'list',
-                list,
-                'refLayerId',
-                refLayerId,
-                'refLayer',
-                refLayer,
-                'refField',
-                refField,
-                'primaryField',
-                primaryField,
-                'primaryKey',
-                primaryKey
-              );
+              // console.log(
+              //   'list',
+              //   list,
+              //   'refLayerId',
+              //   refLayerId,
+              //   'refLayer',
+              //   refLayer,
+              //   'refField',
+              //   refField,
+              //   'primaryField',
+              //   primaryField,
+              //   'primaryKey',
+              //   primaryKey
+              // );
               return (
                 refLayer !== undefined &&
                 refField !== undefined &&

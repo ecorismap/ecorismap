@@ -82,6 +82,7 @@ export default function HomeScreen() {
     selectPenColor,
     panResponder,
     isPinch,
+    isDrawLineVisible,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -217,12 +218,7 @@ export default function HomeScreen() {
         />
         <MapMemoView />
 
-        {currentDrawTool !== 'NONE' &&
-          currentDrawTool !== 'MOVE_POINT' &&
-          currentDrawTool !== 'ADD_LOCATION_POINT' &&
-          currentDrawTool !== 'ALL_INFO' &&
-          currentDrawTool !== 'FEATURETYPE_INFO' && <SvgView />}
-
+        {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
           provider={PROVIDER_GOOGLE}
@@ -234,7 +230,11 @@ export default function HomeScreen() {
           showsCompass={false}
           rotateEnabled={false} //表示スピードに関係ある？
           pitchEnabled={false}
-          scrollEnabled={isPinch || currentMapMemoTool === 'NONE'}
+          scrollEnabled={
+            isPinch ||
+            (currentMapMemoTool === 'NONE' &&
+              (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
+          }
           moveOnMarkerPress={false}
           //@ts-ignore
           mapType={mapType}

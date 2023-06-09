@@ -175,17 +175,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (region: Region | ViewState) => {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
-      showDrawLine();
+      !isDrawLineVisible && showDrawLine();
     },
-    [changeMapRegion, showDrawLine]
+    [changeMapRegion, isDrawLineVisible, showDrawLine]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-    isDrawLineVisible && hideDrawLine();
-  }, [gpsState, hideDrawLine, isDrawLineVisible, toggleGPS]);
+  }, [gpsState, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
@@ -633,16 +632,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const size = await calculateStorageSize();
-  //     console.log('size', size, 'MB');
-  //     if (size > 15) {
-  //       Alert.alert('', t('Home.alert.storage'));
-  //     }
-  //   })();
-  // }, [calculateStorageSize]);
-
   useEffect(() => {
     return closeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -705,39 +694,56 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: (e: GestureResponderEvent) => {
-          if (currentMapMemoTool === 'NONE') {
-            onPressMapView(e);
-          } else {
+          if (currentDrawTool === 'MOVE') {
+            hideDrawLine();
+          } else if (currentDrawTool !== 'NONE') {
+            pressSvgView(e);
+          } else if (currentMapMemoTool !== 'NONE') {
             onPanResponderGrantMapMemo(e);
+          } else {
+            onPressMapView(e);
           }
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
-          if (currentMapMemoTool === 'NONE') return;
-          if (isPinch) return;
-          if (gesture.numberActiveTouches === 2) {
+          if (currentDrawTool === 'MOVE') {
+          } else if (isPinch) {
+          } else if (gesture.numberActiveTouches === 2) {
             clearMapMemoEditingLine();
+            hideDrawLine();
             setIsPinch(true);
-            return;
+          } else if (currentMapMemoTool !== 'NONE') {
+            onPanResponderMoveMapMemo(e);
+          } else if (currentDrawTool !== 'NONE') {
+            moveSvgView(e);
           }
-          onPanResponderMoveMapMemo(e);
         },
-        onPanResponderRelease: () => {
-          if (currentMapMemoTool === 'NONE') return;
-          if (isPinch) {
+        onPanResponderRelease: (e: GestureResponderEvent) => {
+          if (currentDrawTool === 'MOVE') {
+            showDrawLine();
+          } else if (isPinch) {
+            showDrawLine();
             setIsPinch(false);
-            return;
+          } else if (currentMapMemoTool !== 'NONE') {
+            onPanResponderReleaseMapMemo();
+          } else if (currentDrawTool !== 'NONE') {
+            onReleaseSvgView(e);
           }
-          onPanResponderReleaseMapMemo();
         },
       }),
     [
       clearMapMemoEditingLine,
+      currentDrawTool,
       currentMapMemoTool,
+      hideDrawLine,
       isPinch,
+      moveSvgView,
       onPanResponderGrantMapMemo,
       onPanResponderMoveMapMemo,
       onPanResponderReleaseMapMemo,
       onPressMapView,
+      onReleaseSvgView,
+      pressSvgView,
+      showDrawLine,
     ]
   );
 
@@ -795,9 +801,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onDragEndPoint,
         onDragMapView,
         onDrop,
-        onPressSvgView: pressSvgView,
-        onMoveSvgView: moveSvgView,
-        onReleaseSvgView,
         selectFeatureButton,
         selectDrawTool,
         setPointTool,
@@ -829,6 +832,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressRedoMapMemo,
         panResponder,
         isPinch,
+        isDrawLineVisible,
       }}
     >
       <Home />
