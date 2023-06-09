@@ -18,12 +18,10 @@ interface Props {
 export const DataEditReference = (props: Props) => {
   const { name, primaryKey, refLayer, refField, onPress, pressAddReferenceData } = props;
   const { allUserRecordSet, addRecord } = useData(refLayer);
-  console.log(allUserRecordSet);
   const data = useMemo(
     () => allUserRecordSet.filter((d) => d.field[refField] === primaryKey),
     [allUserRecordSet, primaryKey, refField]
   );
-  console.log(data);
   return (
     <View style={{ flexDirection: 'column', flex: 1 }}>
       <View style={styles.tr3}>
