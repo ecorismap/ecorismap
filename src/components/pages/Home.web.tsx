@@ -87,6 +87,8 @@ export default function HomeScreen() {
     setVisibleMapMemoColor,
     selectPenColor,
     panResponder,
+    isPinch,
+    isDrawLineVisible,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -492,15 +494,9 @@ export default function HomeScreen() {
           pressSelectColorOK={selectPenColor}
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
-        {(currentMapMemoTool === 'PEN_THIN' ||
-          currentMapMemoTool === 'PEN_MEDIUM' ||
-          currentMapMemoTool === 'PEN_THICK' ||
-          currentMapMemoTool === 'ERASER') && <MapMemoView />}
-        {currentDrawTool !== 'NONE' &&
-          currentDrawTool !== 'MOVE_POINT' &&
-          currentDrawTool !== 'ADD_LOCATION_POINT' &&
-          currentDrawTool !== 'ALL_INFO' &&
-          currentDrawTool !== 'FEATURETYPE_INFO' && <SvgView />}
+        <MapMemoView />
+
+        {isDrawLineVisible && <SvgView />}
 
         <div {...getRootProps({ className: 'dropzone' })}>
           <input {...getInputProps()} />
@@ -522,6 +518,11 @@ export default function HomeScreen() {
               //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
               //onClick={onClick}
               //onMouseMove={onMouseMove}
+              dragPan={
+                isPinch ||
+                (currentMapMemoTool === 'NONE' &&
+                  (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
+              }
               touchZoomRotate={featureButton === 'NONE'}
               dragRotate={featureButton === 'NONE'}
             >
