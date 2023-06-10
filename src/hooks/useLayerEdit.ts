@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ColorStyle, FeatureType, FormatType, LayerType, PermissionType } from '../types';
+import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 import { cloneDeep } from 'lodash';
@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, updateLayerAction } from '../modules/layers';
-import { getInitialFieldValue } from '../utils/Data';
+import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import sanitize from 'sanitize-filename';
 
 export type UseLayerEditReturnType = {
@@ -90,11 +90,7 @@ export const useLayerEdit = (
   }, [isStyleEdited, itemValues, fieldIndex]);
 
   const updateDataOfTheLayer = useCallback(
-    (
-      addedFields: { id: string; name: string; format: FormatType; list?: { value: string; isOther: boolean }[] }[],
-      changeFields: { id: string; name: string; format: FormatType; list?: { value: string; isOther: boolean }[] }[],
-      deletedFields: { id: string; name: string; format: string }[]
-    ) => {
+    (initialFields: FieldType[], addedFields: FieldType[], changeFields: FieldType[], deletedFields: FieldType[]) => {
       const updateDataSet = cloneDeep(dataSet);
       updateDataSet.forEach((userData) => {
         //既存のデータに追加フィールドの値を初期化
@@ -103,7 +99,11 @@ export const useLayerEdit = (
         );
         //更新されたフィールドの値を初期化
         userData.data.forEach((d) =>
-          changeFields.forEach(({ name, format, list }) => (d.field[name] = getInitialFieldValue(format, list)))
+          changeFields.forEach(({ id, name, format: changedFormat, list }) => {
+            const originalFormat = initialFields.find((f) => f.id === id)!.format;
+            const originalData = d.field[name];
+            d.field[name] = changeFieldValue(originalData, originalFormat, changedFormat, list);
+          })
         );
         //データのフィールドを削除
         userData.data.forEach((d) => {
@@ -132,7 +132,7 @@ export const useLayerEdit = (
     }
 
     //追加されたフィールドのデータを初期化し、削除されたフィールドをデータからも削除
-    updateDataOfTheLayer(addedFields, changedFields, deletedFields);
+    updateDataOfTheLayer(initialFields, addedFields, changedFields, deletedFields);
 
     if (isNewLayer) {
       dispatch(addLayerAction(targetLayer));

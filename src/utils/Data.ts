@@ -49,6 +49,49 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
   return { data: sortedData, idx };
 };
 
+export const changeFieldValue = (
+  originalData: string | number | PhotoType[],
+  originalFormat: FormatType,
+  changedFormat: FormatType,
+  list?: { value: string; isOther: boolean }[]
+): string | number | PhotoType[] => {
+  if (originalFormat === 'INTEGER' && changedFormat === 'STRING') {
+    return originalData.toString();
+  } else if (originalFormat === 'INTEGER' && changedFormat === 'DECIMAL') {
+    return originalData;
+  } else if (originalFormat === 'INTEGER' && changedFormat === 'SERIAL') {
+    return originalData;
+  } else if (originalFormat === 'SERIAL' && changedFormat === 'STRING') {
+    return originalData.toString();
+  } else if (originalFormat === 'SERIAL' && changedFormat === 'INTEGER') {
+    return originalData;
+  } else if (originalFormat === 'SERIAL' && changedFormat === 'DECIMAL') {
+    return originalData;
+  } else if (originalFormat === 'DECIMAL' && changedFormat === 'STRING') {
+    return originalData.toString();
+  } else if (originalFormat === 'DATETIME' && changedFormat === 'STRING') {
+    return originalData;
+  } else if (originalFormat === 'DATESTRING' && changedFormat === 'STRING') {
+    return originalData;
+  } else if (originalFormat === 'TIMESTRING' && changedFormat === 'STRING') {
+    return originalData;
+  } else if (originalFormat === 'TIMERANGE' && changedFormat === 'STRING') {
+    return originalData;
+  } else if (originalFormat === 'NUMBERRANGE' && changedFormat === 'STRING') {
+    return originalData;
+  } else if (originalFormat === 'STRING' && changedFormat === 'INTEGER') {
+    return parseInt(originalData as string, 10);
+  } else if (originalFormat === 'STRING' && changedFormat === 'DECIMAL') {
+    return parseFloat(originalData as string);
+  } else if (originalFormat === 'STRING' && changedFormat === 'SERIAL') {
+    return parseInt(originalData as string, 10);
+  } else if (originalFormat === 'STRING' && changedFormat === 'DATETIME') {
+    return originalData;
+  }
+
+  return getInitialFieldValue(changedFormat, list);
+};
+
 export const getInitialFieldValue = (
   format: FormatType,
   list?: { value: string; isOther: boolean }[]
