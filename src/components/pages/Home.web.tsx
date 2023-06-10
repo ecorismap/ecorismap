@@ -18,14 +18,11 @@ import { TileMapType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
-import mapboxgl, { AnyLayer } from 'mapbox-gl';
 import SplitScreen from '../../routes/split';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { maptilerKey } from '../../constants/APIKeys';
-import 'mapbox-gl/dist/mapbox-gl.css';
-//import mapStyle3D from '../../../style.json';
 import { useDropzone } from 'react-dropzone';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
@@ -41,6 +38,7 @@ import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
+import { AnyLayer } from 'react-map-gl/dist/esm/types';
 
 export default function HomeScreen() {
   const {
