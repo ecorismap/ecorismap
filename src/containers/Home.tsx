@@ -229,7 +229,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool(value);
           setMapMemoTool('NONE');
           toggleWebTerrainActive(false);
-          await toggleHeadingUp(false);
+          if (Platform.OS !== 'web') await toggleHeadingUp(false);
           await runTutrial('INFOTOOL');
         }
       } else if (value === 'SELECT') {
