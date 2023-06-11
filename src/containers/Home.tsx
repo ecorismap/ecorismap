@@ -229,7 +229,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool(value);
           setMapMemoTool('NONE');
           toggleWebTerrainActive(false);
-          await toggleHeadingUp(false);
+          if (Platform.OS !== 'web') await toggleHeadingUp(false);
           await runTutrial('INFOTOOL');
         }
       } else if (value === 'SELECT') {
@@ -328,7 +328,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           unselectRecord();
           return;
         }
-
         openData();
         navigation.navigate('DataEdit', {
           previous: 'Data',
@@ -705,9 +704,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onPanResponderGrant: (e: GestureResponderEvent) => {
           if (currentDrawTool === 'MOVE') {
             hideDrawLine();
-          } else if (currentDrawTool !== 'NONE') {
+          } else if (currentDrawTool !== 'NONE' && !currentDrawTool.includes('INFO')) {
             pressSvgView(e);
-          } else if (currentMapMemoTool !== 'NONE') {
+          } else if (currentMapMemoTool !== 'NONE' && !currentDrawTool.includes('INFO')) {
             onPanResponderGrantMapMemo(e);
           } else {
             onPressMapView(e);
