@@ -92,6 +92,7 @@ export default function HomeScreen() {
     panResponder,
     isPinch,
     isDrawLineVisible,
+    mapMemoEditingLine,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -239,6 +240,7 @@ export default function HomeScreen() {
           showsCompass={false}
           rotateEnabled={false} //表示スピードに関係ある？
           pitchEnabled={false}
+          zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
           scrollEnabled={
             isPinch ||
             (currentMapMemoTool === 'NONE' &&
