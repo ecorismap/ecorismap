@@ -3192,10 +3192,10 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/slider/-/slider-4.4.2.tgz#1fea0eb3ae31841fe87bd6c4fc67569066e9cf4b"
   integrity sha512-D9bv+3Vd2gairAhnRPAghwccgEmoM7g562pm8i4qB3Esrms5mggF81G3UvCyc0w3jjtFHh8dpQkfEoKiP0NW/Q==
 
-"@react-native-firebase/app-check@^17.3.1":
-  version "17.3.1"
-  resolved "https://registry.yarnpkg.com/@react-native-firebase/app-check/-/app-check-17.3.1.tgz#7cc1dbdf65f74ea7fffec3e9d50a043dcefb59c5"
-  integrity sha512-0Lmk1HFIqo5zmttvloGCjLpBqh6sR22nSrXNqF44zuMqfvtK7QNyvcC8sYiZZ818EeqR0f5L/TOZdt7ds6U/hA==
+"@react-native-firebase/app-check@^18.0.0":
+  version "18.0.0"
+  resolved "https://registry.yarnpkg.com/@react-native-firebase/app-check/-/app-check-18.0.0.tgz#8a69d5195b004f51a3dd647a2334daddc2004dcc"
+  integrity sha512-fMSxdiMRzp3MbAFtxN2Mkd34BmOoPRoDn/J97dLB2IVO7HWNgtv6Bi8+yrjQ5b5B+dJ7U9MJc8LjxL9k6cPyDQ==
 
 "@react-native-firebase/app@^17.3.1":
   version "17.3.1"
