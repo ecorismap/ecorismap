@@ -52,7 +52,7 @@
     "@react-native-community/hooks": "^3.0.0",
     "@react-native-community/slider": "^4.4.2",
     "@react-native-firebase/app": "^17.3.1",
-    "@react-native-firebase/app-check": "^17.3.1",
+    "@react-native-firebase/app-check": "^18.0.0",
     "@react-native-firebase/auth": "^17.3.1",
     "@react-native-firebase/firestore": "^17.3.1",
     "@react-native-firebase/functions": "^17.3.1",
