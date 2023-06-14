@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { hex2rgba } from './Color';
 
 export const getColor = (layer: LayerType, feature: RecordType, transparency: number) => {
+  //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
+  //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。
   const colorStyle = layer.colorStyle;
   let color = COLOR.WHITE;
   if (colorStyle.colorType === 'SINGLE') {
@@ -38,7 +40,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
   const customFieldValue = layer_.colorStyle.customFieldValue;
   const color = layer_.colorStyle.color;
   if (colorType === 'SINGLE') {
-    colorRule = hex2rgba(color, 1 - transparency) ?? 'rgb(255,0,0)';
+    colorRule = hex2rgba(color, 1 - transparency) ?? 'rgba(255,0,0,0)';
   } else if (colorType === 'CATEGORIZED') {
     if (fieldName === '__CUSTOM') {
       const fieldNames = customFieldValue.split('|');
