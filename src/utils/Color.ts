@@ -54,6 +54,17 @@ export const rgbaString2qgis = (rgbaString: string): string => {
   return `#${A}${R}${G}${B}`;
 };
 
+//rgbaStrinのtransparentを更新する
+export const rgbaString2rgbaString = (rgbaString: string, transparency: number): string => {
+  const r = rgbaString.match(/^rgba\((\d+),(\d+),(\d+),([\d\.]+)\)$/i);
+  let c: string[] = [];
+  if (r) {
+    c = r.slice(1, 5);
+  }
+
+  return `rgba(${c[0]},${c[1]},${c[2]},${transparency})`;
+};
+
 export const hsv2rgbaString = (H: number, S: number, V: number, alpha?: number) => {
   const { R, G, B, A } = hsv2rgba(H, S, V, alpha);
   return `rgba(${R},${G},${B},${A})`;
@@ -104,7 +115,7 @@ export const hex2rgba = (hex: string, alpha = 1) => {
   }
   // 該当しない場合は、そのまま返す。仕様変更でhexはrgbaになっている可能性があるため。
   if (c.length === 0) {
-    return hex;
+    return rgbaString2rgbaString(hex, alpha);
   }
   return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
 };
