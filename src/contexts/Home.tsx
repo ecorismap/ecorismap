@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { GestureResponderEvent, PanResponderInstance } from 'react-native';
+import { PanResponderInstance } from 'react-native';
 import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
@@ -81,7 +81,6 @@ export interface HomeContextType {
   mapMemoEditingLine: Position[];
   editableMapMemo: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
-  onPressMapView: (event: GestureResponderEvent) => void;
   onDragMapView: () => void;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
