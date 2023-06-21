@@ -315,74 +315,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
-  const onPressMapView = useCallback(
-    async (event: GestureResponderEvent) => {
-      if (currentDrawTool === 'ADD_LOCATION_POINT') {
-        if (Platform.OS === 'web') {
-          Alert.alert('', t('Home.alert.gpsWeb'));
-          return;
-        }
-        if (gpsState === 'off' && trackingState === 'off') {
-          Alert.alert('', t('Home.alert.gps'));
-          return;
-        }
-
-        const { isOK, message, layer, record } = await addCurrentPoint();
-        if (!isOK || layer === undefined || record === undefined) {
-          Alert.alert('', message);
-        } else {
-          screenState === 'closed' ? expandData() : openData();
-          setTimeout(function () {
-            navigation.navigate('DataEdit', {
-              previous: 'Data',
-              targetData: record,
-              targetLayer: layer,
-              targetRecordSet: [],
-              targetIndex: 0,
-            });
-          }, 1);
-        }
-        selectDrawTool(currentDrawTool);
-      } else if (isInfoTool(currentDrawTool)) {
-        if (isEditingRecord) {
-          await AlertAsync(t('Home.alert.discardChanges'));
-          return;
-        }
-
-        const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
-
-        if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
-          unselectRecord();
-          return;
-        }
-        openData();
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: { ...feature },
-          targetLayer: { ...layer },
-          targetRecordSet: recordSet,
-          targetIndex: recordIndex,
-        });
-      } else {
-        unselectRecord();
-      }
-    },
-    [
-      currentDrawTool,
-      gpsState,
-      trackingState,
-      addCurrentPoint,
-      selectDrawTool,
-      screenState,
-      expandData,
-      openData,
-      navigation,
-      isEditingRecord,
-      selectSingleFeature,
-      unselectRecord,
-    ]
-  );
-
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
       if (Platform.OS !== 'web') return;
@@ -873,20 +805,87 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const addLocationPoint = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('', t('Home.alert.gpsWeb'));
+      return;
+    }
+    if (gpsState === 'off' && trackingState === 'off') {
+      Alert.alert('', t('Home.alert.gps'));
+      return;
+    }
+
+    const { isOK, message, layer, record } = await addCurrentPoint();
+    if (!isOK || layer === undefined || record === undefined) {
+      Alert.alert('', message);
+    } else {
+      screenState === 'closed' ? expandData() : openData();
+      setTimeout(function () {
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetData: record,
+          targetLayer: layer,
+          targetRecordSet: [],
+          targetIndex: 0,
+        });
+      }, 1);
+    }
+    selectDrawTool(currentDrawTool);
+  }, [
+    addCurrentPoint,
+    currentDrawTool,
+    expandData,
+    gpsState,
+    navigation,
+    openData,
+    screenState,
+    selectDrawTool,
+    trackingState,
+  ]);
+
+  const getInfoOfFeature = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (isEditingRecord) {
+        await AlertAsync(t('Home.alert.discardChanges'));
+        return;
+      }
+
+      const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
+
+      if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
+        unselectRecord();
+        return;
+      }
+      openData();
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: { ...feature },
+        targetLayer: { ...layer },
+        targetRecordSet: recordSet,
+        targetIndex: recordIndex,
+      });
+    },
+    [isEditingRecord, navigation, openData, selectSingleFeature, unselectRecord]
+  );
+
   const panResponder: PanResponderInstance = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
+        onPanResponderGrant: async (e: GestureResponderEvent) => {
           if (currentDrawTool === 'MOVE') {
             hideDrawLine();
-          } else if (currentDrawTool !== 'NONE' && !currentDrawTool.includes('INFO')) {
+          } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
+            await addLocationPoint();
+          } else if (isInfoTool(currentDrawTool)) {
+            await getInfoOfFeature(e);
+          } else if (currentDrawTool !== 'NONE') {
             pressSvgView(e);
-          } else if (currentMapMemoTool !== 'NONE' && !currentDrawTool.includes('INFO')) {
+          } else if (currentMapMemoTool !== 'NONE') {
             onPanResponderGrantMapMemo(e);
           } else {
-            onPressMapView(e);
+            unselectRecord();
           }
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
@@ -916,19 +915,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         },
       }),
     [
+      addLocationPoint,
       clearMapMemoEditingLine,
       currentDrawTool,
       currentMapMemoTool,
+      getInfoOfFeature,
       hideDrawLine,
       isPinch,
       moveSvgView,
       onPanResponderGrantMapMemo,
       onPanResponderMoveMapMemo,
       onPanResponderReleaseMapMemo,
-      onPressMapView,
       onReleaseSvgView,
       pressSvgView,
       showDrawLine,
+      unselectRecord,
     ]
   );
 
@@ -987,7 +988,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         mapMemoEditingLine: mapMemoEditingLine.current,
         editableMapMemo,
         onRegionChangeMapView,
-        onPressMapView,
         onDragEndPoint,
         onDragMapView,
         onDrop,
