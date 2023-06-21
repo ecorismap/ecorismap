@@ -57,7 +57,14 @@ export const useProjects = (): UseProjectsReturnType => {
     if (!isOK || updatedProjects === undefined) {
       return { isOK: false, message };
     }
-    dispatch(setProjectsAction(updatedProjects));
+    //nameでソート
+
+    const sortedProjects = updatedProjects.sort((a, b) => {
+      if (a.name > b.name) return 1;
+      if (a.name < b.name) return -1;
+      return 0; //同じ場合
+    });
+    dispatch(setProjectsAction(sortedProjects));
     return { isOK: true, message };
   }, [dispatch, user]);
 
