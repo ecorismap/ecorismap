@@ -43,6 +43,7 @@
     "@emotion/react": "^11.8.2",
     "@emotion/styled": "^11.8.1",
     "@firebase/rules-unit-testing": "^2.0.7",
+    "@mapbox/geojsonhint": "^3.1.1",
     "@mui/lab": "^5.0.0-alpha.73",
     "@mui/material": "^5.5.1",
     "@mui/styled-engine-sc": "^5.4.2",
