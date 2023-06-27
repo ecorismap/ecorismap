@@ -19,6 +19,8 @@ import { unzipFromUri } from '../utils/Zip';
 import { updateLayerActiveAndIds } from '../utils/Layer';
 import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { decodeUri } from '../utils/File.web';
+//@ts-ignore
+import * as geojsonhint from '@mapbox/geojsonhint';
 
 export type UseGeoFileReturnType = {
   isLoading: boolean;
@@ -83,6 +85,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       importFileName: string,
       importedLayer?: LayerType
     ) => {
+      const errors = geojsonhint.hint(geojson);
+      if (errors.length > 0) {
+        throw new Error('invalid geojson');
+      }
       const layer =
         importedLayer === undefined
           ? createLayerFromGeoJson(geojson, importFileName, featureType)
@@ -228,7 +234,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         await loadFile(name, uri);
         return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
-        return { isOK: true, message: t('hooks.message.failReceiveFile') };
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       } finally {
         setIsLoading(false);
       }
