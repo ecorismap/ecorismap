@@ -52,6 +52,54 @@ const layers: LayerType[] = [
       { id: '0-3', name: 'photo', format: 'PHOTO' },
     ],
   },
+  {
+    id: '2',
+    name: 'none',
+    type: 'NONE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.2,
+      color: COLOR.RED,
+      fieldName: 'name',
+      customFieldValue: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+    },
+    label: 'name',
+    visible: true,
+    active: true,
+    field: [
+      { id: '0-0', name: 'name', format: 'SERIAL' },
+      { id: '0-1', name: 'time', format: 'DATETIME' },
+      { id: '0-2', name: 'cmt', format: 'STRING' },
+      { id: '0-3', name: 'photo', format: 'PHOTO' },
+    ],
+  },
+  {
+    id: '3',
+    name: 'none',
+    type: 'NONE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.2,
+      color: COLOR.RED,
+      fieldName: 'name',
+      customFieldValue: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+    },
+    label: 'name',
+    visible: true,
+    active: false,
+    field: [
+      { id: '0-0', name: 'name', format: 'SERIAL' },
+      { id: '0-1', name: 'time', format: 'DATETIME' },
+      { id: '0-2', name: 'cmt', format: 'STRING' },
+      { id: '0-3', name: 'photo', format: 'PHOTO' },
+    ],
+  },
 ];
 
 let mockDispatch = jest.fn();
@@ -103,6 +151,31 @@ describe('useLayers', () => {
       value: [
         { ...result.current.layers[0], active: false },
         { ...result.current.layers[1], active: true },
+        result.current.layers[2],
+        result.current.layers[3],
+      ],
+    });
+  });
+
+  test('編集ボタンを押してもNONEであれば同タイプの状態は変わらない', () => {
+    const { result } = renderHook(() => useLayers());
+
+    expect(result.current.layers[2].active).toBe(true);
+    expect(result.current.layers[3].active).toBe(false);
+    expect(result.current.layers[2].type).toBe('NONE');
+    expect(result.current.layers[3].type).toBe('NONE');
+
+    act(() => {
+      result.current.changeActiveLayer(3);
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'layers/set',
+      value: [
+        result.current.layers[0],
+        result.current.layers[1],
+        { ...result.current.layers[2], active: true },
+        { ...result.current.layers[3], active: true },
       ],
     });
   });
@@ -146,7 +219,7 @@ describe('useLayers', () => {
     });
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'layers/set',
-      value: [result.current.layers[1], result.current.layers[0]],
+      value: [result.current.layers[1], result.current.layers[0], result.current.layers[2], result.current.layers[3]],
     });
   });
 
