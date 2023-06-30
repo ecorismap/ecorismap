@@ -12,10 +12,9 @@ export const DataButton = () => {
   return (
     <>
       <View style={styles.button}>
-        {layer.type === 'NONE' ||
-          (layer.type === 'POINT' && (
-            <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
-          ))}
+        {(layer.type === 'NONE' || layer.type === 'POINT') && (
+          <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
+        )}
         {!exportDisabled && (
           <Button
             name={DATA_BTN.EXPORT}
