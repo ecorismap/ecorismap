@@ -12,7 +12,11 @@ interface Props {
   refLayer: LayerType;
   refField: string;
   onPress: (referenceData: RecordType, referenceLayer: LayerType) => void;
-  pressAddReferenceData: (referenceLayer: LayerType, addRecord: () => RecordType) => void;
+  pressAddReferenceData: (
+    referenceLayer: LayerType,
+    addRecord: () => RecordType,
+    fields: { [key: string]: string | number | PhotoType[] }
+  ) => void;
 }
 
 export const DataEditReference = (props: Props) => {
@@ -29,17 +33,16 @@ export const DataEditReference = (props: Props) => {
           <Text style={styles.title}>{name}</Text>
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
-          {refLayer.type === 'NONE' ||
-            (refLayer.type === 'POINT' && (
-              <Button
-                style={{
-                  backgroundColor: COLOR.GRAY3,
-                  padding: 0,
-                }}
-                name="plus"
-                onPress={() => pressAddReferenceData(refLayer, addRecord)}
-              />
-            ))}
+          {(refLayer.type === 'NONE' || refLayer.type === 'POINT') && (
+            <Button
+              style={{
+                backgroundColor: COLOR.GRAY3,
+                padding: 0,
+              }}
+              name="plus"
+              onPress={() => pressAddReferenceData(refLayer, addRecord, { [refField]: primaryKey })}
+            />
+          )}
         </View>
       </View>
       <DataTitle layer={refLayer} />

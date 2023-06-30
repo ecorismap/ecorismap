@@ -18,7 +18,7 @@ export type UseDataReturnType = {
   changeChecked: (index: number) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
-  addRecord: () => RecordType;
+  addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
   generateExportGeoData: () => {
     exportData: {
@@ -105,22 +105,25 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [checkList]
   );
 
-  const addRecord = useCallback(() => {
-    const id = uuidv4();
-    const field = getDefaultField(targetLayer, ownRecordSet, id);
+  const addRecord = useCallback(
+    (fields?: { [key: string]: string | number | PhotoType[] }) => {
+      const id = uuidv4();
+      const field = getDefaultField(targetLayer, ownRecordSet, id);
 
-    const newData: RecordType = {
-      id: id,
-      userId: dataUser.uid,
-      displayName: dataUser.displayName,
-      visible: true,
-      redraw: false,
-      coords: { latitude: 0, longitude: 0 },
-      field: field,
-    };
-    dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-    return newData;
-  }, [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]);
+      const newData: RecordType = {
+        id: id,
+        userId: dataUser.uid,
+        displayName: dataUser.displayName,
+        visible: true,
+        redraw: false,
+        coords: { latitude: 0, longitude: 0 },
+        field: { ...field, ...fields },
+      };
+      dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
+      return newData;
+    },
+    [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]
+  );
 
   const deleteRecords = useCallback(() => {
     dispatch(
