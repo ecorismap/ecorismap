@@ -155,7 +155,7 @@ export interface FieldType {
   id: string;
   name: string;
   format: FormatType;
-  list?: { value: string; isOther: boolean }[];
+  list?: { value: string; isOther: boolean; customFieldValue: string }[];
   defaultValue?: string | number;
 }
 

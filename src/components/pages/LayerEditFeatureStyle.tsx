@@ -92,6 +92,8 @@ export default function LayerEditFeatureStyleScreen() {
               <View style={styles.td}>
                 <TextInput
                   label={t('common.customField')}
+                  placeholder={'field1|field2'}
+                  placeholderTextColor={COLOR.GRAY3}
                   value={customFieldValue}
                   onChangeText={changeCustomFieldValue}
                   style={styles.input}
