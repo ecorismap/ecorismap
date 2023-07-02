@@ -166,6 +166,7 @@ export interface LayerType {
   permission: PermissionType;
   colorStyle: ColorStyle;
   label: string;
+  customLabel?: string;
   visible: boolean;
   active: boolean;
   field: FieldType[];
