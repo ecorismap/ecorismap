@@ -125,7 +125,9 @@
       "failGetProjects": "プロジェクトの取得に失敗しました",
       "cannotLoadProject": "読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。"
     },
-    "EncryptPassword": "暗号化パスワード"
+    "EncryptPassword": "暗号化パスワード",
+    "memo": "メモ",
+    "customLabel": "カスタムラベル"
   },
   "Home": {
     "confirm": {

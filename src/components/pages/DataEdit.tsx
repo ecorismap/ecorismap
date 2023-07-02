@@ -19,14 +19,14 @@ import { DataEditReference } from '../organisms/DataEditReference';
 import { useScreen } from '../../hooks/useScreen';
 import { DataEditRecordSelector } from '../organisms/DataEditRecordSelector';
 import { DataEditTable } from '../organisms/DataEditTable';
-import { useSelector } from 'react-redux';
-import { AppState } from '../../modules';
 import { DataEditListTable } from '../organisms/DataEditListTable';
 import { DataEditNumberRange } from '../organisms/DataEditNumberRange';
 import { DataEditString } from '../organisms/DataEditString';
 import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
 import { t } from '../../i18n/config';
 import { DataEditContext } from '../../contexts/DataEdit';
+import { useSelector } from 'react-redux';
+import { AppState } from '../../modules';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -51,7 +51,6 @@ export default function DataEditScreen() {
   const { screenState, expandData, openData } = useScreen();
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
-
   const headerLeftButtonzForDevice = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', flex: 3, justifyContent: 'center' }}>
@@ -297,33 +296,13 @@ export default function DataEditScreen() {
             case 'REFERENCE':
               const refLayerId = list && list[0] && list[0].value;
               const refLayer = layers.find((l) => l.id === refLayerId);
-              const refField = list && list[1] && list[1].value;
-              const primaryField = list && list[2] && list[2].value;
-              const primaryKey = primaryField === '_id' ? data.id : primaryField && data.field[primaryField];
-              // console.log(
-              //   'list',
-              //   list,
-              //   'refLayerId',
-              //   refLayerId,
-              //   'refLayer',
-              //   refLayer,
-              //   'refField',
-              //   refField,
-              //   'primaryField',
-              //   primaryField,
-              //   'primaryKey',
-              //   primaryKey
-              // );
               return (
-                refLayer !== undefined &&
-                refField !== undefined &&
-                primaryKey !== undefined && (
+                refLayer && (
                   <DataEditReference
                     key={index}
                     name={name}
-                    primaryKey={primaryKey}
+                    list={list}
                     refLayer={refLayer}
-                    refField={refField}
                     onPress={gotoReferenceData}
                     pressAddReferenceData={pressAddReferenceData}
                   />

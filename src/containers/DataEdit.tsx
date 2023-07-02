@@ -338,12 +338,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   );
 
   const pressAddReferenceData = useCallback(
-    async (referenceLayer: LayerType, addRecord: () => RecordType) => {
+    async (
+      referenceLayer: LayerType,
+      addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType,
+      fields: { [key: string]: string | number | PhotoType[] }
+    ) => {
       if (isEditingRecord) {
         Alert.alert('', '一旦変更を保存してください。');
         return;
       }
-      const referenceData = addRecord();
+      //参照データを追加して、referenceKeyを設定する
+      console.log(fields);
+      const referenceData = addRecord(fields);
 
       navigation.navigate('DataEdit', {
         previous: 'DataEdit',

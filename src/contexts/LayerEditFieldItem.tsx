@@ -9,6 +9,12 @@ interface LayerEditFieldItemContextType {
   refLayerNames: LayerType['name'][];
   refFieldNames: string[];
   primaryFieldNames: string[];
+  refFieldValues: string[];
+  primaryFieldValues: string[];
+  customFieldReference: string;
+  customFieldPrimary: string;
+  changeCustomFieldReference: (value: string) => void;
+  changeCustomFieldPrimary: (value: string) => void;
   changeValue: (index: number, value: string) => void;
   pressDeleteValue: (id: number) => void;
   pressAddValue: (other?: boolean) => void;

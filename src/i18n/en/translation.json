@@ -175,7 +175,8 @@
     "customField": "custom field",
     "custom": "CUSTOM",
     "memo": "memo",
-    "EncryptPassword": "encrypted password"
+    "EncryptPassword": "encrypted password",
+    "customLabel": "custom label"
   },
   "firebase": {
     "message": {
