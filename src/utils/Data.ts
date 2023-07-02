@@ -154,7 +154,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[]) =>
     case 'RADIO':
       return { [field.name]: field.list![0].value };
     case 'CHECK':
-      return { [field.name]: field.list![0].value };
+      return { [field.name]: '' };
     case 'DATETIME':
       return { [field.name]: dayjs().format() };
     case 'DATESTRING':

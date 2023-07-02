@@ -24,7 +24,11 @@ interface DataEditContextType {
   pressRemovePhoto: () => void;
   pressDownloadPhoto: () => void;
   pressDeleteData: () => void;
-  pressAddReferenceData: (referenceLayer: LayerType, addRecord: () => RecordType) => void;
+  pressAddReferenceData: (
+    referenceLayer: LayerType,
+    addRecord: () => RecordType,
+    fields: { [key: string]: string | number | PhotoType[] }
+  ) => void;
   gotoHomeAndJump: () => void;
   gotoGoogleMaps: () => void;
   gotoBack: () => void;

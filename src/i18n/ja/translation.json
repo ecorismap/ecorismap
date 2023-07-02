@@ -120,7 +120,8 @@
     "distance": "距離",
     "customField": "カスタムフィールド",
     "custom": "カスタム",
-    "memo": "メモ"
+    "memo": "メモ",
+    "customLabel": "カスタムラベル"
   },
   "Home": {
     "confirm": {

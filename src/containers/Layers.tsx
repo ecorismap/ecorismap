@@ -16,7 +16,7 @@ import { useGeoFile } from '../hooks/useGeoFile';
 import { getExt } from '../utils/General';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
-  const { layers, changeLabel, changeVisible, changeActiveLayer, changeLayerOrder } = useLayers();
+  const { layers, changeLabel, changeVisible, changeCustomLabel, changeActiveLayer, changeLayerOrder } = useLayers();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { expandData } = useScreen();
@@ -110,6 +110,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
         layers,
         changeVisible,
         changeLabel,
+        changeCustomLabel,
         changeActiveLayer,
         pressLayerOrder,
         gotoLayerEditForAdd,

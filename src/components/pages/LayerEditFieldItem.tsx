@@ -1,9 +1,9 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
-import { Button, Picker } from '../atoms';
+import { Button, Picker, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 
@@ -16,6 +16,12 @@ export default function LayerEditFieldItemScreen() {
     refLayerNames,
     refFieldNames,
     primaryFieldNames,
+    refFieldValues,
+    primaryFieldValues,
+    customFieldReference,
+    customFieldPrimary,
+    changeCustomFieldReference,
+    changeCustomFieldPrimary,
     changeValue,
     pressDeleteValue,
     gotoBack,
@@ -59,34 +65,67 @@ export default function LayerEditFieldItemScreen() {
       </View>
       <ScrollView>
         {itemFormat === 'REFERENCE' && (
-          <View style={styles.tr}>
-            <View style={[styles.td, { flex: 3 }]}>
-              <Picker
-                enabled={editable}
-                selectedValue={pickerValues[0]}
-                onValueChange={(itemValue) => changeValue(0, itemValue as string)}
-                itemLabelArray={refLayerNames}
-                itemValueArray={refLayerIds}
-                maxIndex={refLayerIds.length - 1}
-              />
-              <Picker
-                enabled={editable}
-                selectedValue={pickerValues[1]}
-                onValueChange={(itemValue) => changeValue(1, itemValue as string)}
-                itemLabelArray={refFieldNames}
-                itemValueArray={refFieldNames}
-                maxIndex={refFieldNames.length - 1}
-              />
-              <Picker
-                enabled={editable}
-                selectedValue={pickerValues[2]}
-                onValueChange={(itemValue) => changeValue(2, itemValue as string)}
-                itemLabelArray={primaryFieldNames}
-                itemValueArray={primaryFieldNames}
-                maxIndex={primaryFieldNames.length - 1}
-              />
+          <>
+            <View style={styles.tr}>
+              <View style={[styles.td, { flex: 3 }]}>
+                <Picker
+                  enabled={editable}
+                  selectedValue={pickerValues[0]}
+                  onValueChange={(itemValue) => changeValue(0, itemValue as string)}
+                  itemLabelArray={refLayerNames}
+                  itemValueArray={refLayerIds}
+                  maxIndex={refLayerIds.length - 1}
+                />
+                <Picker
+                  enabled={pickerValues[0] !== ''}
+                  selectedValue={pickerValues[1]}
+                  onValueChange={(itemValue) => changeValue(1, itemValue as string)}
+                  itemLabelArray={refFieldNames}
+                  itemValueArray={refFieldValues}
+                  maxIndex={refFieldNames.length - 1}
+                />
+                <Picker
+                  enabled={editable}
+                  selectedValue={pickerValues[2]}
+                  onValueChange={(itemValue) => changeValue(2, itemValue as string)}
+                  itemLabelArray={primaryFieldNames}
+                  itemValueArray={primaryFieldValues}
+                  maxIndex={primaryFieldNames.length - 1}
+                />
+              </View>
             </View>
-          </View>
+            <View style={styles.tr}>
+              <View style={[styles.td, { flex: 3 }]}>
+                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]} />
+                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
+                  {pickerValues[1] === '__CUSTOM' && (
+                    <TextInput
+                      label={t('common.customField')}
+                      placeholder={'field1|field2'}
+                      placeholderTextColor={COLOR.GRAY3}
+                      value={customFieldReference}
+                      onChangeText={changeCustomFieldReference}
+                      style={styles.input}
+                      editable={true}
+                    />
+                  )}
+                </View>
+                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
+                  {pickerValues[2] === '__CUSTOM' && (
+                    <TextInput
+                      label={t('common.customField')}
+                      placeholder={'field1|field2'}
+                      placeholderTextColor={COLOR.GRAY3}
+                      value={customFieldPrimary}
+                      onChangeText={changeCustomFieldPrimary}
+                      style={styles.input}
+                      editable={true}
+                    />
+                  )}
+                </View>
+              </View>
+            </View>
+          </>
         )}
 
         {itemFormat !== 'REFERENCE' &&
@@ -97,7 +136,7 @@ export default function LayerEditFieldItemScreen() {
                   style={styles.input}
                   value={item.value.toString()}
                   editable={editable && !item.isOther}
-                  onChangeText={(value) => changeValue(index, value)}
+                  onChangeText={(value: string) => changeValue(index, value)}
                 />
               </View>
               <View style={styles.td}>
@@ -152,6 +191,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   input: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 5,
     flex: 2,
     fontSize: 16,
     height: 40,
@@ -184,7 +225,7 @@ const styles = StyleSheet.create({
   },
   tr: {
     flexDirection: 'row',
-    height: 60,
+    height: 70,
   },
   tr3: {
     backgroundColor: COLOR.GRAY1,

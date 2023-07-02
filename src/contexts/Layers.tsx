@@ -5,6 +5,7 @@ interface LayersContextType {
   layers: LayerType[];
   changeVisible: (layer: LayerType) => void;
   changeLabel: (layer: LayerType, labelValue: string) => void;
+  changeCustomLabel: (layer: LayerType, labelValue: string) => void;
   changeActiveLayer: (index: number) => void;
   pressLayerOrder: (index: number) => void;
   gotoLayerEdit: (layer: LayerType) => void;
