@@ -2,20 +2,24 @@ import React, { useContext } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, FlatList, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
-import { Picker, PointView, LineView, PolygonView, RectButton2 } from '../atoms';
+import { Picker, PointView, LineView, PolygonView, RectButton2, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayersContext } from '../../contexts/Layers';
 
 export const LayersTable = () => {
+  const { layers } = useContext(LayersContext);
+  const hasCustomLabel = layers.some((layer) => layer.label === t('common.custom'));
+
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-      <LayersTitle />
-      <LayersItems />
+      <LayersTitle hasCustomLabel={hasCustomLabel} />
+      <LayersItems hasCustomLabel={hasCustomLabel} />
     </View>
   );
 };
 
-const LayersTitle = () => {
+const LayersTitle = (props: { hasCustomLabel: boolean }) => {
+  const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { flex: 2, width: 85 }]}>
@@ -31,6 +35,11 @@ const LayersTitle = () => {
       <View style={[styles.th, { flex: 5, width: 160 }]}>
         <Text>{`${t('common.label')}`}</Text>
       </View>
+      {hasCustomLabel && (
+        <View style={[styles.th, { flex: 5, width: 160 }]}>
+          <Text>{`${t('common.customLabel')}`}</Text>
+        </View>
+      )}
       {Platform.OS === 'web' ? (
         <>
           <View style={[styles.th, { flex: 3, width: 80, borderRightColor: COLOR.GRAY1 }]}>
@@ -47,17 +56,28 @@ const LayersTitle = () => {
   );
 };
 
-const LayersItems = () => {
+const LayersItems = (props: { hasCustomLabel: boolean }) => {
+  const { hasCustomLabel } = props;
   const {
     layers,
     changeVisible,
     changeLabel,
+    changeCustomLabel,
     changeActiveLayer,
     pressLayerOrder,
     gotoData,
     gotoLayerEdit,
     gotoColorStyle,
   } = useContext(LayersContext);
+
+  const [customLabel, setCustomLabel] = React.useState(
+    layers.reduce((obj, layer) => ({ ...obj, [layer.id]: layer.customLabel }), {}) as { [key: string]: string }
+  );
+
+  const handleCustomLabel = (id: string, value: string) => {
+    const newCustomLabel = { ...customLabel, [id]: value };
+    setCustomLabel(newCustomLabel);
+  };
 
   //console.log(layers);
   return (
@@ -66,7 +86,10 @@ const LayersItems = () => {
       keyExtractor={(item) => item.id}
       renderItem={({ item, index }) => {
         //ラベルの候補は、空白を追加し、Photoを抜く
-        const fieldNames = item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), ['']);
+        const fieldNames = [
+          ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), ['']),
+          t('common.custom'),
+        ];
 
         return (
           <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
@@ -141,6 +164,21 @@ const LayersItems = () => {
               />
             </View>
 
+            {hasCustomLabel && (
+              <View style={[styles.td, { flex: 5, width: 160 }]}>
+                {item.label === t('common.custom') && (
+                  <TextInput
+                    placeholder={'field1|field2'}
+                    placeholderTextColor={COLOR.GRAY3}
+                    value={customLabel[item.id]}
+                    onChangeText={(value: string) => handleCustomLabel(item.id, value)}
+                    onBlur={() => changeCustomLabel(item, customLabel[item.id])}
+                    style={styles.input}
+                    editable={true}
+                  />
+                )}
+              </View>
+            )}
             <View style={[styles.td, { flex: 3, width: 70, borderRightColor: COLOR.MAIN }]}>
               <RectButton2 name="table-cog" onPress={() => gotoLayerEdit(item)} />
             </View>
@@ -159,6 +197,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLOR.MAIN,
     flex: 1,
     padding: 0,
+  },
+  input: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 5,
+    flex: 1,
+    fontSize: 16,
+    marginVertical: 10,
+    paddingHorizontal: 10,
   },
   td: {
     alignItems: 'center',

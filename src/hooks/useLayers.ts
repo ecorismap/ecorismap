@@ -9,6 +9,7 @@ import { cloneDeep } from 'lodash';
 export type UseLayersReturnType = {
   layers: LayerType[];
   changeLabel: (layer: LayerType, labelValue: string) => void;
+  changeCustomLabel: (layer: LayerType, labelValue: string) => void;
   changeVisible: (layer: LayerType) => void;
   changeActiveLayer: (index: number) => void;
   changeLayerOrder: (index: number) => void;
@@ -22,6 +23,13 @@ export const useLayers = (): UseLayersReturnType => {
   const changeLabel = useCallback(
     (layer: LayerType, labelValue: string) => {
       dispatch(updateLayerAction({ ...layer, label: labelValue }));
+    },
+    [dispatch]
+  );
+
+  const changeCustomLabel = useCallback(
+    (layer: LayerType, labelValue: string) => {
+      dispatch(updateLayerAction({ ...layer, customLabel: labelValue }));
     },
     [dispatch]
   );
@@ -69,6 +77,7 @@ export const useLayers = (): UseLayersReturnType => {
   return {
     layers,
     changeLabel,
+    changeCustomLabel,
     changeVisible,
     changeActiveLayer,
     changeLayerOrder,
