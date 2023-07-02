@@ -31,7 +31,7 @@ export const Point = React.memo((props: Props) => {
             ? layer.customLabel
                 ?.split('|')
                 .map((f) => feature.field[f])
-                .join('|') || ''
+                .join(' ') || ''
             : layer.label === ''
             ? ''
             : feature.field[layer.label]
