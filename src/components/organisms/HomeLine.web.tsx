@@ -51,7 +51,7 @@ export const Line = React.memo((props: Props) => {
           // Do not add "|" after the last field
           if (index < fieldNames.length - 1) {
             //@ts-ignore
-            acc.push('|');
+            acc.push(' ');
           }
           return acc;
         }, []);
