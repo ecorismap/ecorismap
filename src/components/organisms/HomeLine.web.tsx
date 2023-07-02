@@ -5,6 +5,7 @@ import { RecordType, LayerType } from '../../types';
 import { generateGeoJson } from '../../utils/Geometry';
 import { COLOR } from '../../constants/AppConstants';
 import { getColorRule } from '../../utils/Layer';
+import { t } from '../../i18n/config';
 
 interface Props {
   data: RecordType[];
@@ -39,11 +40,31 @@ export const Line = React.memo((props: Props) => {
     (layer_: LayerType) => {
       const colorExpression = getColorExpression(layer_);
 
+      // Prepare the text-field based on the label value
+      let textField;
+      if (layer_.label === t('common.custom') && layer_.customLabel) {
+        // Split the customLabel into fields and create a Mapbox expression
+        const fieldNames = layer_.customLabel.split('|');
+        const fields = fieldNames.reduce((acc, field, index) => {
+          //@ts-ignore
+          acc.push(['get', field]);
+          // Do not add "|" after the last field
+          if (index < fieldNames.length - 1) {
+            //@ts-ignore
+            acc.push('|');
+          }
+          return acc;
+        }, []);
+        textField = ['concat', ...fields];
+      } else {
+        textField = ['get', layer_.label];
+      }
+
       return {
         id: `${layer_.id}_${userId}-label`,
         type: 'symbol',
         layout: {
-          'text-field': ['get', layer_.label],
+          'text-field': textField,
           'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
           //'text-radial-offset': 0.5,
           'text-size': 14,

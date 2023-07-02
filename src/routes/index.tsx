@@ -40,7 +40,7 @@ export type RootStackParamList = {
     previous?: keyof RootStackParamList;
     colorStyle?: ColorStyle;
     fieldIndex?: number;
-    itemValues?: { value: string; isOther: boolean }[];
+    itemValues?: { value: string; isOther: boolean; customFieldValue: string }[];
   };
   LayerEditFeatureStyle: {
     targetLayer: LayerType;

@@ -9,6 +9,7 @@ import { cloneDeep } from 'lodash';
 export type UseLayersReturnType = {
   layers: LayerType[];
   changeLabel: (layer: LayerType, labelValue: string) => void;
+  changeCustomLabel: (layer: LayerType, labelValue: string) => void;
   changeVisible: (layer: LayerType) => void;
   changeActiveLayer: (index: number) => void;
   changeLayerOrder: (index: number) => void;
@@ -26,6 +27,13 @@ export const useLayers = (): UseLayersReturnType => {
     [dispatch]
   );
 
+  const changeCustomLabel = useCallback(
+    (layer: LayerType, labelValue: string) => {
+      dispatch(updateLayerAction({ ...layer, customLabel: labelValue }));
+    },
+    [dispatch]
+  );
+
   const changeVisible = useCallback(
     (layer: LayerType) => {
       dispatch(updateLayerAction({ ...layer, visible: !layer.visible }));
@@ -35,11 +43,14 @@ export const useLayers = (): UseLayersReturnType => {
 
   const changeActiveLayer = useCallback(
     (index: number) => {
-      //自分がアクティブになる場合、同じタイプの他のものはfalseにする
+      //自分がアクティブになる場合、同じタイプの他のものはfalseにする。
+      //Noneは排他処理はしない
       const newlayers = cloneDeep(layers);
 
       if (layers[index].active) {
         newlayers[index].active = false;
+      } else if (layers[index].type === 'NONE') {
+        newlayers[index].active = true;
       } else {
         newlayers.forEach((item, idx) => {
           if (layers[index].type === item.type) {
@@ -66,6 +77,7 @@ export const useLayers = (): UseLayersReturnType => {
   return {
     layers,
     changeLabel,
+    changeCustomLabel,
     changeVisible,
     changeActiveLayer,
     changeLayerOrder,

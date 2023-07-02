@@ -37,7 +37,7 @@ export const useLayerEdit = (
   layer: LayerType,
   isStyleEdited: boolean,
   fieldIndex: number | undefined,
-  itemValues: { value: string; isOther: boolean }[] | undefined,
+  itemValues: { value: string; isOther: boolean; customFieldValue: string }[] | undefined,
   colorStyle: ColorStyle | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();

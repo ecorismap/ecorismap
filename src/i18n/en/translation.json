@@ -170,7 +170,8 @@
     "distance": "distance",
     "customField": "custom field",
     "custom": "CUSTOM",
-    "memo": "memo"
+    "memo": "memo",
+    "customLabel": "custom label"
   },
   "firebase": {
     "message": {
