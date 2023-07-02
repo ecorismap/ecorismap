@@ -11,6 +11,7 @@ import { useWindow } from '../../hooks/useWindow';
 import booleanIntersects from '@turf/boolean-intersects';
 import * as turf from '@turf/helpers';
 import { latLonObjectsToLatLonArray } from '../../utils/Coords';
+import { t } from '../../i18n/config';
 
 interface Props {
   data: LineRecordType[];
@@ -48,7 +49,12 @@ export const Line = React.memo((props: Props) => {
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
         const label =
-          layer.label === ''
+          layer.label === t('common.custom')
+            ? layer.customLabel
+                ?.split('|')
+                .map((f) => feature.field[f])
+                .join('|') || ''
+            : layer.label === ''
             ? ''
             : feature.field[layer.label]
             ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'

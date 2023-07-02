@@ -1,51 +1,89 @@
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useData } from '../../hooks/useData';
 import { LayerType, PhotoType, RecordType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { Button } from '../atoms';
+import { DataEditContext } from '../../contexts/DataEdit';
 
 interface Props {
   name: string;
-  primaryKey: string | number | PhotoType[];
+  list:
+    | {
+        value: string;
+        isOther: boolean;
+        customFieldValue: string;
+      }[]
+    | undefined;
   refLayer: LayerType;
-  refField: string;
   onPress: (referenceData: RecordType, referenceLayer: LayerType) => void;
-  pressAddReferenceData: (referenceLayer: LayerType, addRecord: () => RecordType) => void;
+  pressAddReferenceData: (
+    referenceLayer: LayerType,
+    addRecord: () => RecordType,
+    fields: { [key: string]: string | number | PhotoType[] }
+  ) => void;
 }
 
 export const DataEditReference = (props: Props) => {
-  const { name, primaryKey, refLayer, refField, onPress, pressAddReferenceData } = props;
-  const { allUserRecordSet, addRecord } = useData(refLayer);
-  const data = useMemo(
-    () => allUserRecordSet.filter((d) => d.field[refField] === primaryKey),
-    [allUserRecordSet, primaryKey, refField]
+  const { data } = useContext(DataEditContext);
+  const { name, list, refLayer, onPress, pressAddReferenceData } = props;
+
+  const refField = useMemo(
+    () =>
+      (list && list[1] && (list[1].value === '__CUSTOM' ? list[1].customFieldValue.split('|') : [list[1].value])) || [
+        '',
+      ],
+    [list]
   );
-  return (
+  const primaryField = useMemo(
+    () =>
+      (list && list[2] && (list[2].value === '__CUSTOM' ? list[2].customFieldValue.split('|') : [list[2].value])) || [
+        '',
+      ],
+    [list]
+  );
+  const primaryKey = useMemo(
+    () => (primaryField[0] === '_id' ? [data.id] : primaryField.map((f) => data.field[f])),
+    [data.field, data.id, primaryField]
+  );
+
+  const { allUserRecordSet, addRecord } = useData(refLayer);
+  const refData = useMemo(() => {
+    return allUserRecordSet.filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index]));
+  }, [allUserRecordSet, primaryKey, refField]);
+
+  const fields = useMemo(() => {
+    return refField.reduce((obj, f, index) => {
+      //@ts-ignore
+      obj[f] = primaryKey[index];
+      return obj;
+    }, {});
+  }, [primaryKey, refField]);
+
+  return refLayer && refField && primaryKey ? (
     <View style={{ flexDirection: 'column', flex: 1 }}>
       <View style={styles.tr3}>
         <View style={{ margin: 5, flex: 100, paddingHorizontal: 10 }}>
           <Text style={styles.title}>{name}</Text>
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
-          {refLayer.type === 'NONE' ||
-            (refLayer.type === 'POINT' && (
-              <Button
-                style={{
-                  backgroundColor: COLOR.GRAY3,
-                  padding: 0,
-                }}
-                name="plus"
-                onPress={() => pressAddReferenceData(refLayer, addRecord)}
-              />
-            ))}
+          {(refLayer.type === 'NONE' || refLayer.type === 'POINT') && (
+            <Button
+              style={{
+                backgroundColor: COLOR.GRAY3,
+                padding: 0,
+              }}
+              name="plus"
+              onPress={() => pressAddReferenceData(refLayer, addRecord, fields)}
+            />
+          )}
         </View>
       </View>
       <DataTitle layer={refLayer} />
-      <DataItems data={data} layer={refLayer} onPress={(index: number) => onPress(data[index], refLayer)} />
+      <DataItems data={refData} layer={refLayer} onPress={(index: number) => onPress(refData[index], refLayer)} />
     </View>
-  );
+  ) : null;
 };
 
 interface Props_DataTitle {
