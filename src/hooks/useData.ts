@@ -18,7 +18,7 @@ export type UseDataReturnType = {
   changeChecked: (index: number) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
-  addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
+  addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
   generateExportGeoData: () => {
     exportData: {
@@ -105,7 +105,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [checkList]
   );
 
-  const addRecord = useCallback(
+  const addDefaultRecord = useCallback(
     (fields?: { [key: string]: string | number | PhotoType[] }) => {
       const id = uuidv4();
       const field = getDefaultField(targetLayer, ownRecordSet, id);
@@ -193,7 +193,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     changeChecked,
     changeCheckedAll,
     changeOrder,
-    addRecord,
+    addDefaultRecord,
     deleteRecords,
     generateExportGeoData,
   } as const;

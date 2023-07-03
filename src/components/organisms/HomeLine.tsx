@@ -5,13 +5,12 @@ import { LineLabel } from '../atoms';
 import { getColor } from '../../utils/Layer';
 import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import dayjs from '../../i18n/dayjs';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';
 import booleanIntersects from '@turf/boolean-intersects';
 import * as turf from '@turf/helpers';
 import { latLonObjectsToLatLonArray } from '../../utils/Coords';
-import { t } from '../../i18n/config';
+import { generateLabel } from '../../hooks/useLayers';
 
 interface Props {
   data: LineRecordType[];
@@ -26,16 +25,16 @@ export const Line = React.memo((props: Props) => {
   //console.log('render Line');
   const { data, layer, zIndex, selectedRecord, onPressLine } = props;
   const { zoom: currentZoom } = useContext(HomeContext);
-  const { mapRegion } = useWindow();
+  //const { mapRegion } = useWindow();
 
-  const regionArea = useMemo(() => {
-    const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
-    const topleft = [longitude - longitudeDelta / 2, latitude + latitudeDelta / 2];
-    const topright = [longitude + longitudeDelta / 2, latitude + latitudeDelta / 2];
-    const bottomright = [longitude + longitudeDelta / 2, latitude - latitudeDelta / 2];
-    const bottomleft = [longitude - longitudeDelta / 2, latitude - latitudeDelta / 2];
-    return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
-  }, [mapRegion]);
+  // const regionArea = useMemo(() => {
+  //   const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
+  //   const topleft = [longitude - longitudeDelta / 2, latitude + latitudeDelta / 2];
+  //   const topright = [longitude + longitudeDelta / 2, latitude + latitudeDelta / 2];
+  //   const bottomright = [longitude + longitudeDelta / 2, latitude - latitudeDelta / 2];
+  //   const bottomleft = [longitude - longitudeDelta / 2, latitude - latitudeDelta / 2];
+  //   return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
+  // }, [mapRegion]);
 
   if (data === undefined) return null;
   return (
@@ -48,23 +47,12 @@ export const Line = React.memo((props: Props) => {
         // if (feature.coords.length < 2) return null;
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
-        const label =
-          layer.label === t('common.custom')
-            ? layer.customLabel
-                ?.split('|')
-                .map((f) => feature.field[f])
-                .join(' ') || ''
-            : layer.label === ''
-            ? ''
-            : feature.field[layer.label]
-            ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'
-              ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
-              : feature.field[layer.label].toString()
-            : '';
+        const label = generateLabel(layer, feature);
         const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = selected ? COLOR.YELLOW : color;
-        const labelPosition = feature.coords[feature.coords.length - 1];
+        const labelPosition = feature.coords.length > 0 ? feature.coords[feature.coords.length - 1] : null;
+
         return (
           <View key={feature.id}>
             <Polyline
@@ -75,7 +63,9 @@ export const Line = React.memo((props: Props) => {
               zIndex={zIndex}
               onPress={() => onPressLine(layer, feature)}
             />
-            <LineLabel coordinate={labelPosition} label={label} size={15} color={color} borderColor={COLOR.WHITE} />
+            {labelPosition && (
+              <LineLabel coordinate={labelPosition} label={label} size={15} color={color} borderColor={COLOR.WHITE} />
+            )}
           </View>
         );
       })}
