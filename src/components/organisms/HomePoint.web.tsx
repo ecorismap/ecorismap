@@ -5,8 +5,7 @@ import { RecordType, LayerType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { Marker, MarkerDragEvent } from 'react-map-gl';
 import { getColor } from '../../utils/Layer';
-import dayjs from '../../i18n/dayjs';
-import { t } from '../../i18n/config';
+import { generateLabel } from '../../hooks/useLayers';
 
 interface Props {
   data: RecordType[];
@@ -26,19 +25,7 @@ export const Point = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
-        const label =
-          layer.label === t('common.custom')
-            ? layer.customLabel
-                ?.split('|')
-                .map((f) => feature.field[f])
-                .join(' ') || ''
-            : layer.label === ''
-            ? ''
-            : feature.field[layer.label]
-            ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'
-              ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
-              : feature.field[layer.label].toString()
-            : '';
+        const label = generateLabel(layer, feature);
 
         const labelColor = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;

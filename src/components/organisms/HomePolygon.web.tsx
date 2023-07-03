@@ -45,9 +45,15 @@ export const Polygon = React.memo((props: Props) => {
         // Split the customLabel into fields and create a Mapbox expression
         const fieldNames = layer_.customLabel.split('|');
         const fields = fieldNames.reduce((acc, field, index) => {
-          //@ts-ignore
-          acc.push(['get', field]);
-          // Do not add "|" after the last field
+          const fieldName = field.trim(); // Remove leading and trailing whitespaces
+          if (fieldName.startsWith('"') || fieldName.startsWith("'")) {
+            //@ts-ignore
+            acc.push(fieldName.substring(1, fieldName.length - 1)); // Remove quotes
+          } else {
+            //@ts-ignore
+            acc.push(['get', fieldName]);
+          }
+          // Do not add " " after the last field
           if (index < fieldNames.length - 1) {
             //@ts-ignore
             acc.push(' ');
