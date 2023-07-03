@@ -5,12 +5,11 @@ import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { getColor } from '../../utils/Layer';
-import dayjs from '../../i18n/dayjs';
 import { useWindow } from '../../hooks/useWindow';
 import booleanIntersects from '@turf/boolean-intersects';
 import * as turf from '@turf/helpers';
 import { latLonObjectsToLatLonArray } from '../../utils/Coords';
-import { t } from '../../i18n/config';
+import { generateLabel } from '../../hooks/useLayers';
 
 interface Props {
   data: PolygonRecordType[];
@@ -44,22 +43,11 @@ export const Polygon = React.memo((props: Props) => {
         const zoom = (feature.field._zoom as number) ?? currentZoom;
         if (currentZoom > zoom + 2) return null;
         if (currentZoom < zoom - 4) return null;
-        // if (feature.coords.length < 3) return null;
+        if (feature.coords.length < 3) return null;
+
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
-        const label =
-          layer.label === t('common.custom')
-            ? layer.customLabel
-                ?.split('|')
-                .map((f) => feature.field[f])
-                .join(' ') || ''
-            : layer.label === ''
-            ? ''
-            : feature.field[layer.label]
-            ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'
-              ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
-              : feature.field[layer.label].toString()
-            : '';
+        const label = generateLabel(layer, feature);
         const transparency = layer.colorStyle.transparency;
         const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;

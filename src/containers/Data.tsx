@@ -28,7 +28,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeChecked,
     changeCheckedAll,
     changeOrder,
-    addRecord,
+    addDefaultRecord,
     deleteRecords,
     generateExportGeoData,
   } = useData(route.params.targetLayer);
@@ -68,8 +68,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       Alert.alert('', t('hooks.message.noEditMode'));
       return;
     }
-
-    const addedData = addRecord();
+    const addedData = addDefaultRecord();
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
@@ -77,7 +76,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       targetRecordSet: [],
       targetIndex: 0,
     });
-  }, [addRecord, layer, navigation, route.params.targetLayer.active]);
+  }, [addDefaultRecord, layer, navigation, route.params.targetLayer.active]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
