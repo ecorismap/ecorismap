@@ -48,7 +48,7 @@ export const DataEditReference = (props: Props) => {
     [data.field, data.id, primaryField]
   );
 
-  const { allUserRecordSet, addRecord } = useData(refLayer);
+  const { allUserRecordSet, addDefaultRecord } = useData(refLayer);
   const refData = useMemo(() => {
     return allUserRecordSet.filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index]));
   }, [allUserRecordSet, primaryKey, refField]);
@@ -75,7 +75,7 @@ export const DataEditReference = (props: Props) => {
                 padding: 0,
               }}
               name="plus"
-              onPress={() => pressAddReferenceData(refLayer, addRecord, fields)}
+              onPress={() => pressAddReferenceData(refLayer, addDefaultRecord, fields)}
             />
           )}
         </View>
