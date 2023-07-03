@@ -44,14 +44,15 @@ export const Line = React.memo((props: Props) => {
         const zoom = (feature.field._zoom as number) ?? currentZoom;
         if (currentZoom > zoom + 2) return null;
         if (currentZoom < zoom - 4) return null;
-        // if (feature.coords.length < 2) return null;
+        if (feature.coords.length < 2) return null;
+
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
         const label = generateLabel(layer, feature);
         const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = selected ? COLOR.YELLOW : color;
-        const labelPosition = feature.coords.length > 0 ? feature.coords[feature.coords.length - 1] : null;
+        const labelPosition = feature.coords[feature.coords.length - 1];
 
         return (
           <View key={feature.id}>
@@ -63,9 +64,7 @@ export const Line = React.memo((props: Props) => {
               zIndex={zIndex}
               onPress={() => onPressLine(layer, feature)}
             />
-            {labelPosition && (
-              <LineLabel coordinate={labelPosition} label={label} size={15} color={color} borderColor={COLOR.WHITE} />
-            )}
+            <LineLabel coordinate={labelPosition} label={label} size={15} color={color} borderColor={COLOR.WHITE} />
           </View>
         );
       })}
