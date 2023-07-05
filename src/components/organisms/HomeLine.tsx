@@ -1,9 +1,8 @@
 import React, { useContext, useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
-import { LayerType, LineRecordType, RecordType } from '../../types';
+import { LayerType, LineRecordType, LocationType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
 import { getColor } from '../../utils/Layer';
-import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';
@@ -55,19 +54,44 @@ export const Line = React.memo((props: Props) => {
         const labelPosition = feature.coords[feature.coords.length - 1];
 
         return (
-          <View key={feature.id}>
-            <Polyline
-              tappable={false}
-              coordinates={feature.coords as LatLng[]}
-              strokeColor={lineColor}
-              strokeWidth={(feature.field._strokeWidth as number) ?? 1.5}
-              zIndex={zIndex}
-              onPress={() => onPressLine(layer, feature)}
-            />
-            <LineLabel coordinate={labelPosition} label={label} size={15} color={color} borderColor={COLOR.WHITE} />
-          </View>
+          <PolylineComponent
+            key={feature.id}
+            label={label}
+            color={color}
+            lineColor={lineColor}
+            labelPosition={labelPosition}
+            zIndex={zIndex}
+            layer={layer}
+            feature={feature}
+            onPressLine={onPressLine}
+          />
         );
       })}
+    </>
+  );
+});
+
+const PolylineComponent = React.memo((props: any) => {
+  const { label, color, lineColor, labelPosition, zIndex, layer, feature, onPressLine } = props;
+  return (
+    <>
+      <Polyline
+        key={'polyline' + feature.id}
+        tappable={false}
+        coordinates={feature.coords as LatLng[]}
+        strokeColor={lineColor}
+        strokeWidth={(feature.field._strokeWidth as number) ?? 1.5}
+        zIndex={zIndex}
+        onPress={() => onPressLine(layer, feature)}
+      />
+      <LineLabel
+        key={'label' + feature.id}
+        coordinate={labelPosition}
+        label={label}
+        size={15}
+        color={color}
+        borderColor={COLOR.WHITE}
+      />
     </>
   );
 });
