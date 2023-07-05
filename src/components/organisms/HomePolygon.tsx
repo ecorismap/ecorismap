@@ -84,7 +84,7 @@ export const Polygon = React.memo((props: Props) => {
   );
 });
 
-const PolygonComponent = (props: any) => {
+const PolygonComponent = React.memo((props: any) => {
   const { label, color, featureColor, layer, zIndex, feature, onPressPolygon } = props;
   return (
     <>
@@ -103,4 +103,4 @@ const PolygonComponent = (props: any) => {
       <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid} label={label} size={15} color={color} />
     </>
   );
-};
+});
