@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
 
   tr: {
     flexDirection: 'row',
-    height: 75,
+    height: 79,
   },
   tr2: {
     flex: 1,
