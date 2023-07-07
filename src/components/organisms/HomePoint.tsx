@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
@@ -35,7 +35,7 @@ export const Point = React.memo((props: Props) => {
         return (
           <Marker
             key={`${feature.id}-${feature.redraw}`}
-            tracksViewChanges={selected} //iosでラベル変更を表示に反映するため
+            tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
             draggable={draggable}
             onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
             coordinate={feature.coords}
