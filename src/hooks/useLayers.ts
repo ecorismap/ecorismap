@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { LayerType, RecordType } from '../types';
 import { AppState } from '../modules';
-import { updateLayerAction, setLayersAction } from '../modules/layers';
-
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import dayjs from '../i18n/dayjs';
+
+import { updateLayerAction, setLayersAction } from '../modules/layers';
 
 export type UseLayersReturnType = {
   layers: LayerType[];
