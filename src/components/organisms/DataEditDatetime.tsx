@@ -64,10 +64,10 @@ export const DataEditDatetime = (props: Props) => {
           <Text style={styles.text}>{dateValueString}</Text>
           <DatePicker
             modal
+            theme={'light'}
             open={open}
             date={dateValue}
             title={null}
-            textColor="#000"
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen(false);
