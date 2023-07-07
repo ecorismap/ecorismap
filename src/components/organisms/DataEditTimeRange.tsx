@@ -89,8 +89,8 @@ export const DataEditTimeRange = (props: Props) => {
           <DatePicker
             modal
             open={open1}
-            theme={'light'}
             date={dateValue1}
+            theme="light"
             title={null}
             confirmText={'OK'}
             onConfirm={(date) => {
@@ -113,8 +113,8 @@ export const DataEditTimeRange = (props: Props) => {
           <DatePicker
             modal
             open={open2}
-            theme={'light'}
             date={dateValue2}
+            theme="light"
             title={null}
             confirmText={'OK'}
             onConfirm={(date) => {
