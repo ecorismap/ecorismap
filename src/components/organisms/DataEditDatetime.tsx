@@ -67,6 +67,7 @@ export const DataEditDatetime = (props: Props) => {
             open={open}
             date={dateValue}
             title={null}
+            textColor="#000"
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen(false);
