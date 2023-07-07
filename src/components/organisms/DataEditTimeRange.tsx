@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import DatePicker from 'react-native-date-picker';
 import dayjs from '../../i18n/dayjs';
@@ -91,6 +91,7 @@ export const DataEditTimeRange = (props: Props) => {
             open={open1}
             date={dateValue1}
             title={null}
+            textColor="#000"
             confirmText={'OK'}
             onConfirm={(date) => {
               setOpen1(false);
@@ -113,6 +114,7 @@ export const DataEditTimeRange = (props: Props) => {
             modal
             open={open2}
             date={dateValue2}
+            textColor="#000"
             title={null}
             confirmText={'OK'}
             onConfirm={(date) => {
@@ -148,10 +150,17 @@ const styles = StyleSheet.create({
     flex: 2,
     fontSize: 16,
     height: 40,
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingLeft: 10,
     paddingVertical: 0,
     textAlignVertical: 'center',
+    ...Platform.select({
+      ios: {
+        lineHeight: 40, // as same as height
+      },
+      android: {},
+    }),
   },
   title: {
     color: COLOR.GRAY3,
