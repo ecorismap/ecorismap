@@ -66,6 +66,7 @@ export const DataEditDatetime = (props: Props) => {
             modal
             theme={'light'}
             open={open}
+            theme="light"
             date={dateValue}
             title={null}
             confirmText={'OK'}
