@@ -24,6 +24,7 @@ export default function SplitScreen() {
         headerStyle: { backgroundColor: COLOR.MAIN },
         headerTitleStyle: { fontSize: 16 },
         headerTitleAlign: 'center',
+        animation: 'none',
       }}
     >
       <Stack.Screen name="Maps" component={Maps} options={{ title: t('Maps.navigation.title') }} />

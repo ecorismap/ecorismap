@@ -18,7 +18,7 @@ export const DataEditListTable = (props: Props_DataEditListTable) => {
   const data = useMemo(() => (value === '' ? [] : value.split(',').map((rowItem) => rowItem.split('|'))), [value]);
 
   const addValue = useCallback(() => {
-    const newValue = value === '' ? `${listItems[0].value}|` : value + ',' + `${listItems[0].value}|`;
+    const newValue = value === '' ? `${listItems[0].value}|` : `${listItems[0].value}|` + ',' + value;
     onChangeValue(name, newValue);
   }, [listItems, name, onChangeValue, value]);
 
