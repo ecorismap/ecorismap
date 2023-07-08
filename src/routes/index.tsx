@@ -114,6 +114,7 @@ export default function Routes() {
       <Stack.Navigator
         screenOptions={{
           headerTitleAlign: 'center',
+          animation: 'none',
         }}
       >
         {FUNC_LOGIN && user.uid === undefined && Platform.OS === 'web' ? (
