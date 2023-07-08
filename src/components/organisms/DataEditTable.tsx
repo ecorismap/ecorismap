@@ -16,7 +16,7 @@ export const DataEditTable = (props: Props_DataEditTable) => {
   const data = useMemo(() => (value === '' ? [[]] : value.split(',').map((rowItem) => rowItem.split('|'))), [value]);
 
   const addValue = useCallback(() => {
-    const newValue = value === '' ? '|'.repeat(list.length - 1) : value + ',' + '|'.repeat(list.length - 1);
+    const newValue = value === '' ? '|'.repeat(list.length - 1) : '|'.repeat(list.length - 1) + ',' + value;
     onChangeValue(name, newValue);
   }, [list.length, name, onChangeValue, value]);
 
