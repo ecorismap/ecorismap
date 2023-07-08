@@ -81,6 +81,7 @@ export default function Routes() {
       <Stack.Navigator
         screenOptions={{
           headerTitleAlign: 'center',
+          animation: 'none',
         }}
       >
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />

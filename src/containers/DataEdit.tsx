@@ -102,6 +102,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         navigation.navigate('Data', {
           targetLayer: { ...targetLayer },
         });
+      } else if (
+        route.params.previous === 'DataEdit' &&
+        route.params.mainLayer !== undefined &&
+        route.params.mainData !== undefined
+      ) {
+        navigation.navigate('DataEdit', {
+          previous: 'Data',
+          targetLayer: route.params.mainLayer,
+          targetData: route.params.mainData,
+          targetRecordSet: [],
+          targetIndex: 0,
+        });
       }
     }
   }, [
@@ -110,6 +122,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     deleteRecord,
     isEditingRecord,
     navigation,
+    route.params.mainData,
+    route.params.mainLayer,
     route.params.previous,
     saveData,
     targetLayer,
