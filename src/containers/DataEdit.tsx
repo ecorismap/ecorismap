@@ -362,7 +362,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         return;
       }
       //参照データを追加して、referenceKeyを設定する
-      console.log(fields);
+      //console.log(fields);
       const referenceData = addRecord(fields);
 
       navigation.navigate('DataEdit', {
