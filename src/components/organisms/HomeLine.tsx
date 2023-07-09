@@ -44,7 +44,7 @@ export const Line = React.memo((props: Props) => {
         if (currentZoom > zoom + 2) return null;
         if (currentZoom < zoom - 4) return null;
         if (feature.coords.length < 2) return null;
-        console.log(currentZoom, zoom);
+
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
         const label = generateLabel(layer, feature);
