@@ -54,6 +54,9 @@ export const Polygon = React.memo((props: Props) => {
         const pointColor = selected ? COLOR.YELLOW : color;
         const polygonColor = selected ? COLOR.ALFAYELLOW : getColor(layer, feature, transparency);
         const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
+        const strokeWidth = (feature.field._strokeWidth as number)
+          ? 2 ** (currentZoom - zoom) * (feature.field._strokeWidth as number)
+          : 1.5;
 
         if (currentZoom >= 11) {
           return (
@@ -62,6 +65,7 @@ export const Polygon = React.memo((props: Props) => {
               label={label}
               color={color}
               featureColor={polygonColor}
+              strokeWidth={strokeWidth}
               zIndex={zIndex}
               layer={layer}
               feature={feature}
@@ -85,7 +89,7 @@ export const Polygon = React.memo((props: Props) => {
 });
 
 const PolygonComponent = React.memo((props: any) => {
-  const { label, color, featureColor, layer, zIndex, feature, onPressPolygon } = props;
+  const { label, color, featureColor, strokeWidth, layer, zIndex, feature, onPressPolygon } = props;
   return (
     <>
       <Poly
@@ -96,7 +100,7 @@ const PolygonComponent = React.memo((props: any) => {
         holes={feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined}
         strokeColor={color}
         fillColor={featureColor}
-        strokeWidth={1.5}
+        strokeWidth={strokeWidth}
         zIndex={zIndex}
         onPress={() => onPressPolygon(layer, feature)}
       />
