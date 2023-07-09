@@ -3,11 +3,13 @@ import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR } from '../../constants/AppConstants';
+import { COLOR, FUNC_LOGIN, FUNC_MAPBOX } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
-import Map, { GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
+import HomeProjectLabel from '../organisms/HomeProjectLabel';
+import { HomeAccountButton } from '../organisms/HomeAccountButton';
+import Map, { GeolocateControl, MapRef, Layer, NavigationControl } from 'react-map-gl';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
@@ -20,6 +22,7 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { SvgView } from '../organisms/HomeSvgView';
 import SplitScreen from '../../routes/split';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
+import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { maptilerKey } from '../../constants/APIKeys';
@@ -29,6 +32,7 @@ import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
+import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
@@ -62,6 +66,12 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    isSynced,
+    memberLocations,
+    isShowingProjectButtons,
+    isSettingProject,
+    projectName,
+    pressProjectLabel,
     currentMapMemoTool,
     visibleMapMemoColor,
     onRegionChangeMapView,
@@ -180,6 +190,14 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
+  const mapboxdem = {
+    type: 'raster-dem',
+    url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+    tileSize: 512,
+    maxzoom: 14,
+  };
+
+  // 地理院のraster-dem
   const maptilerdem = {
     maxzoom: 12,
     minzoom: 0,
@@ -190,7 +208,7 @@ export default function HomeScreen() {
     type: 'raster-dem',
   };
 
-  const rasterdem = maptilerdem;
+  const rasterdem = FUNC_MAPBOX ? mapboxdem : maptilerdem;
 
   const onMapLoad = (evt: any) => {
     //最初のロードだけ呼ばれる
@@ -294,6 +312,25 @@ export default function HomeScreen() {
   // );
 
   const mapStyle: string | mapboxgl.Style = useMemo(() => {
+    if (FUNC_MAPBOX && tileMaps.find((tileMap) => tileMap.id === 'standard' && tileMap.visible)) {
+      return 'mapbox://styles/mapbox/outdoors-v11';
+    }
+
+    const source_streets = {
+      'mapbox-streets': {
+        type: 'vector',
+        url: 'mapbox://mapbox.mapbox-streets-v8',
+      },
+    };
+    const layer_streets: AnyLayer = {
+      id: 'water',
+      source: 'mapbox-streets',
+      'source-layer': 'water',
+      type: 'fill',
+      paint: {
+        'fill-color': '#00ffff',
+      },
+    };
     //console.log(tileMaps);
     const sources = tileMaps
       .slice(0)
@@ -327,33 +364,47 @@ export default function HomeScreen() {
               },
             };
           } else if (tileMap.id === 'hybrid') {
-            return {
-              ...result,
-              satellite: {
-                type: 'raster',
-                tiles: ['https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=' + maptilerKey],
-                minzoom: 0,
-                maxzoom: 24,
-                scheme: 'xyz',
-                tileSize: 512,
-                attribution:
-                  '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-              },
-            };
+            return FUNC_MAPBOX
+              ? {
+                  ...result,
+                  satellite: {
+                    type: 'raster',
+                    url: 'mapbox://mapbox.satellite',
+                    //tileSize: 256,
+                  },
+                }
+              : {
+                  ...result,
+                  satellite: {
+                    type: 'raster',
+                    tiles: ['https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=' + maptilerKey],
+                    minzoom: 0,
+                    maxzoom: 24,
+                    scheme: 'xyz',
+                    tileSize: 512,
+                    attribution:
+                      '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                  },
+                };
           } else if (tileMap.id === 'standard') {
-            return {
-              ...result,
-              standard: {
-                type: 'raster',
-                tiles: ['https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=' + maptilerKey],
-                minzoom: 0,
-                maxzoom: 24,
-                scheme: 'xyz',
-                tileSize: 512,
-                attribution:
-                  '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
-              },
-            };
+            return FUNC_MAPBOX
+              ? {
+                  ...result,
+                  ...source_streets,
+                }
+              : {
+                  ...result,
+                  standard: {
+                    type: 'raster',
+                    tiles: ['https://api.maptiler.com/maps/topo-v2/{z}/{x}/{y}.png?key=' + maptilerKey],
+                    minzoom: 0,
+                    maxzoom: 24,
+                    scheme: 'xyz',
+                    tileSize: 512,
+                    attribution:
+                      '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
+                  },
+                };
           }
         } else {
           return { ...result };
@@ -384,14 +435,16 @@ export default function HomeScreen() {
               paint: { 'raster-opacity': 1 },
             };
           } else if (tileMap.id === 'standard') {
-            return {
-              id: 'standard',
-              type: 'raster',
-              source: 'standard',
-              minzoom: 0,
-              maxzoom: 24,
-              paint: { 'raster-opacity': 1 },
-            };
+            return FUNC_MAPBOX
+              ? layer_streets
+              : {
+                  id: 'standard',
+                  type: 'raster',
+                  source: 'standard',
+                  minzoom: 0,
+                  maxzoom: 24,
+                  paint: { 'raster-opacity': 1 },
+                };
           }
         } else {
           return null;
@@ -448,11 +501,13 @@ export default function HomeScreen() {
 
           <View style={styles.map} {...panResponder.panHandlers}>
             <Map
-              mapLib={maplibregl}
+              mapLib={FUNC_MAPBOX ? undefined : maplibregl}
               ref={mapViewRef as React.MutableRefObject<MapRef>}
               {...mapRegion}
               style={{ width: '100%', height: '100%' }}
               mapStyle={mapStyle}
+              //mapStyle="mapbox://styles/mapbox/outdoors-v11"
+              //mapStyle={mapStyle3D}
               maxPitch={85}
               onMove={(e) => onRegionChangeMapView(e.viewState)}
               //mapboxAccessToken={mapboxToken}
@@ -481,6 +536,33 @@ export default function HomeScreen() {
                 position="top-left"
               />
 
+              {/* @ts-ignore */}
+              {FUNC_MAPBOX && (
+                <Layer
+                  {...{
+                    id: 'sky',
+                    type: 'sky',
+                    paint: {
+                      'sky-type': 'gradient',
+                      // the sky will be lightest in the center and get darker moving radially outward
+                      // this simulates the look of the sun just below the horizon
+                      'sky-gradient': [
+                        'interpolate',
+                        ['linear'],
+                        ['sky-radial-progress'],
+                        0.8,
+                        'rgba(135, 206, 235, 1.0)',
+                        1,
+                        'rgba(0,0,0,0.1)',
+                      ],
+                      'sky-gradient-center': [0, 0],
+                      'sky-gradient-radius': 90,
+                      'sky-opacity': ['interpolate', ['exponential', 0.1], ['zoom'], 5, 0, 22, 1],
+                    },
+                  }}
+                />
+              )}
+
               {/************** Current Marker ****************** */}
               {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
                 <CurrentMarker
@@ -488,7 +570,11 @@ export default function HomeScreen() {
                   //angle={magnetometer && northUp ? magnetometer!.trueHeading : 0}
                 />
               )}
-
+              {/************** Member Location ****************** */}
+              {isSynced &&
+                memberLocations.map((memberLocation) => (
+                  <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
+                ))}
               {/************** Point Line Polygon ****************** */}
               {pointDataSet.map((d) => {
                 const layer = layers.find((v) => v.id === d.layerId);
@@ -552,6 +638,16 @@ export default function HomeScreen() {
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
         )}
+        {projectName === undefined ||
+        (!isShowingProjectButtons && !isSettingProject) ||
+        screenState === 'expanded' ? null : (
+          <HomeProjectButtons />
+        )}
+        {projectName === undefined || isDownloadPage || screenState === 'expanded' ? null : (
+          <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
+        )}
+
+        {!FUNC_LOGIN || isDownloadPage || screenState === 'expanded' ? null : <HomeAccountButton />}
         {screenState !== 'expanded' && !isDownloadPage && (
           <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
         )}

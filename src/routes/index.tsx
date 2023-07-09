@@ -1,23 +1,49 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSelector } from 'react-redux';
 
-import { ColorStyle, LayerType, RecordType, RegionType, TileMapType } from '../types';
+import { AppState } from '../modules';
+import {
+  AccountFormStateType,
+  ColorStyle,
+  LayerType,
+  ProjectType,
+  RecordType,
+  RegionType,
+  TileMapType,
+} from '../types';
 import Home from '../containers/Home';
+import Account from '../containers/Account';
+import AccountSettings from '../containers/AccountSettings';
+import Purchases from '../containers/Purchases';
 import Settings from '../containers/Settings';
+import ProjectEdit from '../containers/ProjectEdit';
+import Projects from '../containers/Projects';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
 import Licenses from '../containers/Licenses';
+import { FUNC_LOGIN } from '../constants/AppConstants';
 
 export type RootStackParamList = {
+  Account: { accountFormState?: AccountFormStateType; message?: string };
   Home:
     | {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
       }
     | undefined;
+  AccountSettings: { previous: keyof RootStackParamList };
+  Purchases: undefined;
   Settings: { previous: keyof RootStackParamList };
   Licenses: { previous: keyof RootStackParamList };
+  Projects: { reload: boolean } | undefined;
+  ProjectEdit: {
+    previous: keyof RootStackParamList;
+    project: ProjectType;
+    isNew: boolean;
+  };
   SplitScreen: undefined;
   Maps: undefined;
   MapList: undefined;
@@ -57,9 +83,14 @@ export type RootStackParamList = {
 
 export type NavigationProp = NativeStackScreenProps<RootStackParamList>;
 
+export type Props_Account = NativeStackScreenProps<RootStackParamList, 'Account'>;
 export type Props_Home = NativeStackScreenProps<RootStackParamList, 'Home'>;
+export type Props_AccountSettings = NativeStackScreenProps<RootStackParamList, 'AccountSettings'>;
+export type Props_Purchases = NativeStackScreenProps<RootStackParamList, 'Purchases'>;
 export type Props_Settings = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 export type Props_Licenses = NativeStackScreenProps<RootStackParamList, 'Licenses'>;
+export type Props_Projects = NativeStackScreenProps<RootStackParamList, 'Projects'>;
+export type Props_ProjectEdit = NativeStackScreenProps<RootStackParamList, 'ProjectEdit'>;
 export type Props_Maps = NativeStackScreenProps<RootStackParamList, 'Maps'>;
 export type Props_MapList = NativeStackScreenProps<RootStackParamList, 'MapList'>;
 export type Props_Data = NativeStackScreenProps<RootStackParamList, 'Data'>;
@@ -72,6 +103,8 @@ export type Props_LayerEditFieldItem = NativeStackScreenProps<RootStackParamList
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Routes() {
+  const user = useSelector((state: AppState) => state.user);
+
   return (
     <NavigationContainer
       documentTitle={{
@@ -84,10 +117,29 @@ export default function Routes() {
           animation: 'none',
         }}
       >
-        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-        <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
-        <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
-        <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
+        {FUNC_LOGIN && user.uid === undefined && Platform.OS === 'web' ? (
+          <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
+        ) : (
+          <>
+            <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+            <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="AccountSettings"
+              component={AccountSettings}
+              options={{ title: t('AccountSettings.navigation.title') }}
+            />
+            <Stack.Screen name="Purchases" component={Purchases} options={{ title: t('Purchases.navigation.title') }} />
+            <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
+            <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
+            <Stack.Screen name="Projects" component={Projects} options={{ title: t('Projects.navigation.title') }} />
+            <Stack.Screen
+              name="ProjectEdit"
+              component={ProjectEdit}
+              options={{ title: t('ProjectEdit.navigation.title') }}
+            />
+            <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

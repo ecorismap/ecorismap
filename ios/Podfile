@@ -10,10 +10,12 @@ install! 'cocoapods',
   :deterministic_uuids => false
 
 target 'ecorismap' do
+  $static_framework = []
   use_expo_modules!
   config = use_native_modules!
 
-  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => :static
+  $RNFirebaseAsStaticFramework = true
 
   # Flags change depending on the env values.
   flags = get_default_flags()
@@ -33,6 +35,37 @@ target 'ecorismap' do
     # React Native Maps dependencies
     rn_maps_path = '../node_modules/react-native-maps'
     pod 'react-native-google-maps', :path => rn_maps_path
+    #pod 'Firebase/Analytics'
+
+    ####
+    #### https://github.com/react-native-maps/react-native-maps/issues/3597#issuecomment-1340367630
+    ####
+    
+    $static_framework += [
+      'react-native-maps',
+      'react-native-google-maps',
+      'Google-Maps-iOS-Utils',
+      'GoogleMaps',
+      'RNPermissions',
+      'Permission-LocationWhenInUse',
+      'Permission-Notifications',
+      'react-native-paste-input',
+      'vision-camera-code-scanner',
+      'VisionCamera'
+    ]
+  
+    
+      # ****** THIS IS THE MAGIC ******
+  pre_install do |installer|
+    Pod::Installer::Xcode::TargetValidator.send(:define_method, :verify_no_static_framework_transitive_dependencies) {}
+        installer.pod_targets.each do |pod|
+            if $static_framework.include?(pod.name)
+                def pod.build_type;
+                Pod::BuildType.static_library # >= 1.9
+            end
+        end
+    end
+  end
 
 
   post_install do |installer|

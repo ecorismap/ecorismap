@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
-import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
+import { FUNC_LOGIN, SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
@@ -22,6 +22,7 @@ export default function Settings() {
     pressFileSaveCancel,
     pressClearData,
     pressClearTileCache,
+    pressClearPhotoCache,
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
@@ -68,6 +69,16 @@ export default function Settings() {
             onPress={pressClearTileCache}
           />
         )}
+
+        {FUNC_LOGIN && Platform.OS !== 'web' && (
+          <TextButton
+            name={SETTINGS_BTN.PHOTO_CACHE_DELETE}
+            text={t('Settings.photocachedelete.text')}
+            info={t('Settings.photocachedelete.info')}
+            onPress={pressClearPhotoCache}
+          />
+        )}
+
         <TextButton
           name={SETTINGS_BTN.OSSLICENSE}
           text={t('Settings.OSSLicense.txt')}

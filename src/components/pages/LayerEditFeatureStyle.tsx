@@ -77,7 +77,7 @@ export default function LayerEditFeatureStyleScreen() {
           <SingleColorSelect value={colorStyle.color} onPressColorSelect={pressSelectSingleColor} />
         )}
 
-        {colorStyle.colorType === 'CATEGORIZED' && (
+        {(colorStyle.colorType === 'CATEGORIZED' || colorStyle.colorType === 'USER') && (
           <View>
             {colorStyle.colorType === 'CATEGORIZED' && (
               <SimplePicker

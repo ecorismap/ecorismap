@@ -19,9 +19,13 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
+import { useSyncLocation } from '../hooks/useSyncLocation';
+import { useAccount } from '../hooks/useAccount';
 import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool } from '../utils/General';
 import { MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
+import { useProject } from '../hooks/useProject';
+import { validateStorageLicense } from '../utils/Project';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
@@ -36,6 +40,7 @@ import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
+import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { useMapMemo } from '../hooks/useMapMemo';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
@@ -46,6 +51,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
+  const projectName = useSelector((state: AppState) => state.settings.projectName);
+  const user = useSelector((state: AppState) => state.user);
+  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
+
   const { screenState, openData, expandData, closeData } = useScreen();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
@@ -146,7 +156,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleTracking,
     toggleHeadingUp,
   } = useLocation(mapViewRef.current);
-
+  //現在位置の共有関連
+  const { uploadLocation } = useSyncLocation(projectId);
   const {
     visibleHisyouToolSetting,
     hisyouLayerId,
@@ -155,7 +166,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     showHisyouToolSetting,
   } = useHisyouToolSetting();
 
-  const [isLoading] = useState(false);
+  //Account関連
+  const { logout } = useAccount();
+  //Project Buttons関連
+  const {
+    isSettingProject,
+    isSynced,
+    project,
+    projectRegion,
+    downloadData,
+    uploadData,
+    syncPosition,
+    clearProject,
+    saveProjectSetting,
+  } = useProject();
+
+  const [isShowingProjectButtons, setIsShowingProjectButtons] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const attribution = useMemo(
     () =>
@@ -516,6 +543,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
   }, [clearTiles, route.params?.tileMap]);
 
+  const pressLogout = useCallback(async () => {
+    if (isSettingProject) {
+      const ret = await ConfirmAsync(t('Home.confirm.discardLogout'));
+      if (!ret) return;
+    } else {
+      const ret = await ConfirmAsync(t('Home.confirm.logout'));
+      if (!ret) return;
+    }
+    if (tracking !== undefined) {
+      Alert.alert('', t('hooks.message.finishTrackking'));
+      return;
+    }
+    if (Platform.OS === 'web') {
+      await e3kit.cleanupEncryptKey();
+      await logout();
+      clearProject();
+      navigation.navigate('Account', {});
+    } else {
+      await e3kit.cleanupEncryptKey();
+      await logout();
+      clearProject();
+      navigation.navigate('Home');
+    }
+  }, [clearProject, isSettingProject, logout, navigation, tracking]);
+
   const pressZoomIn = useCallback(() => {
     hideDrawLine();
     zoomIn();
@@ -526,7 +578,125 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     zoomOut();
   }, [hideDrawLine, zoomOut]);
 
+  /******************* project buttons ************************** */
+
+  const pressProjectLabel = useCallback(() => {
+    setIsShowingProjectButtons(!isShowingProjectButtons);
+  }, [isShowingProjectButtons]);
+
+  const pressJumpProject = useCallback(() => {
+    navigation.navigate('Home', {
+      jumpTo: projectRegion,
+    });
+  }, [navigation, projectRegion]);
+
+  const pressDownloadData = useCallback(async () => {
+    try {
+      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
+      const shouldPhotoDownload = false;
+      setIsLoading(true);
+      await downloadData(shouldPhotoDownload);
+      setIsLoading(false);
+      await AlertAsync(t('Home.alert.download'));
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
+    }
+  }, [downloadData]);
+
+  const pressUploadData = useCallback(async () => {
+    try {
+      const storageLicenseResult = validateStorageLicense(project);
+      if (!storageLicenseResult.isOK) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+        } else {
+          Alert.alert('', t('Home.alert.uploadLicense'));
+        }
+      }
+      setIsLoading(true);
+      await uploadData(storageLicenseResult.isOK);
+      setIsLoading(false);
+      await AlertAsync(t('Home.alert.upload'));
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
+    }
+  }, [project, uploadData]);
+
+  const pressSyncPosition = useCallback(() => {
+    if (isSynced === false) {
+      Alert.alert('', t('Home.alert.sync'));
+    }
+    syncPosition(!isSynced);
+  }, [isSynced, syncPosition]);
+
+  const pressCloseProject = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
+    if (ret) {
+      if (tracking !== undefined) {
+        Alert.alert('', t('hooks.message.finishTrackking'));
+        return;
+      }
+      clearProject();
+      setIsShowingProjectButtons(false);
+    }
+  }, [clearProject, tracking]);
+
+  const pressSaveProjectSetting = useCallback(async () => {
+    try {
+      const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
+      if (!ret) return;
+      const storageLicenseResult = validateStorageLicense(project);
+      if (!storageLicenseResult.isOK) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+        } else {
+          Alert.alert('', t('Home.alert.uploadLicense'));
+        }
+      }
+      setIsLoading(true);
+      await saveProjectSetting(storageLicenseResult.isOK);
+      setIsLoading(false);
+      await AlertAsync(t('Home.alert.saveProject'));
+      clearProject();
+      navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
+    }
+  }, [clearProject, navigation, project, saveProjectSetting]);
+
+  const pressDiscardProjectSetting = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Home.confirm.discardProject'));
+    if (ret) {
+      clearProject();
+      navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
+    }
+  }, [clearProject, navigation, project]);
   /****************** goto ****************************/
+
+  const gotoProjects = useCallback(async () => {
+    closeData();
+    setTimeout(() => navigation.navigate('Projects'), 1);
+  }, [closeData, navigation]);
+
+  const gotoAccount = useCallback(async () => {
+    closeData();
+    setTimeout(
+      () =>
+        navigation.navigate('AccountSettings', {
+          previous: 'Home',
+        }),
+      1
+    );
+  }, [closeData, navigation]);
+
+  const gotoLogin = useCallback(() => {
+    navigation.navigate('Account', {
+      accountFormState: 'loginUserAccount',
+    });
+  }, [navigation]);
 
   const gotoLayers = useCallback(async () => {
     if (isEditingRecord) {
@@ -571,6 +741,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo]);
+
+  useEffect(() => {
+    //Web版は自分の位置は共有しない。取得はする。
+    if (Platform.OS !== 'web') {
+      uploadLocation(currentLocation);
+    }
+  }, [currentLocation, uploadLocation]);
 
   useEffect(() => {
     return closeData();
@@ -797,6 +974,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         screenState,
         isLoading,
         isTermsOfUseOpen,
+        projectName,
+        user,
+        isSynced,
+        isShowingProjectButtons,
+        isSettingProject,
         currentMapMemoTool,
         visibleMapMemoColor,
         currentPen,
@@ -825,10 +1007,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoDraw,
         pressSaveDraw,
         pressDeleteDraw,
+        pressLogout,
+        pressProjectLabel,
+        pressJumpProject,
+        pressDownloadData,
+        pressSyncPosition,
+        pressCloseProject,
+        pressUploadData,
+        pressSaveProjectSetting,
+        pressDiscardProjectSetting,
         gotoMaps,
         gotoSettings,
         gotoLayers,
         gotoBack,
+        gotoAccount,
+        gotoLogin,
+        gotoProjects,
         termsOfUseOK,
         termsOfUseCancel,
         selectMapMemoTool,

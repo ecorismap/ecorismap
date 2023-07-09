@@ -103,7 +103,11 @@
     "point": "point",
     "track": "track",
     "polygon": "polygon",
-    "message": {},
+    "message": {
+      "failGetUids": "Failed to get user ID",
+      "failGetProjects": "Failed to get project",
+      "cannotLoadProject": "Some projects cannot be loaded. \nAsk the project owner to reset your account."
+    },
     "login": "Login",
     "manual": "manual",
     "issue": "defect report",
@@ -171,6 +175,7 @@
     "customField": "custom field",
     "custom": "CUSTOM",
     "memo": "memo",
+    "EncryptPassword": "encrypted password",
     "customLabel": "custom label"
   },
   "firebase": {
@@ -220,7 +225,7 @@
       "clearTileCache": "Clear map cache and download files?",
       "clearPhotoCache": "Clear photo cache?",
       "fileNew": "Clear current data?",
-      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
+      "fileOpen": "Load data file (.ecorismap or .zip)? \nCurrent data and settings will be overwritten."
     },
     "alert": {
       "saveDataToLocalStorage": "Saved.",
@@ -444,7 +449,7 @@
       "dataSizeOver": "The data size exceeds 2MB. \nNot saved."
     },
     "message": {
-      "pleaseLogin": "Please login",
+      "pleaseLogin": "Please log in again.",
       "cannotUploadData": "Cannot upload because the layer settings have been updated.",
       "noCopyProject": "No project to copy",
       "unknownError": "Unknown error.",
@@ -538,8 +543,10 @@
       "invalidPolygon": "Can't save for invalid line.",
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
+      "cannotEditCommon": "Common layers cannot be edited",
       "cannotInRunningProject": "Not possible when project is open",
-      "cannotSaveInTracking": "It cannot be changed while the track is being recorded."
+      "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
+      "encryptKeyFailed": "Check encryption password"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

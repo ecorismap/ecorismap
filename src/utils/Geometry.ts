@@ -13,7 +13,7 @@ import {
 } from '../types';
 import * as turf from '@turf/helpers';
 import simplify from '@turf/simplify';
-import { COLOR } from '../constants/AppConstants';
+import { COLOR, FUNC_LOGIN } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
@@ -268,8 +268,10 @@ export const GeoJson2Data = (
 };
 
 export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
-  const header = field.map((f) => f.name).join(',') + ',' + 'geometry';
-
+  const header = FUNC_LOGIN
+    ? 'displayName' + ',' + field.map((f) => f.name).join(',') + ',' + 'geometry'
+    : field.map((f) => f.name).join(',') + ',' + 'geometry';
+  //console.log(header);
   const properties = dataSet.map((record) => {
     const fieldCSV = field
       .map(({ name, format }) => {
@@ -283,8 +285,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
         }
       })
       .join(',');
-
-    return fieldCSV;
+    return FUNC_LOGIN ? (record.displayName === null ? '' : record.displayName) + ',' + fieldCSV : fieldCSV;
   });
 
   let geometries: string[];
@@ -398,7 +399,13 @@ const generateProperties = (record: RecordType, field: LayerType['field']) => {
       }
     })
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-
+  if (FUNC_LOGIN) {
+    if ('displayName' in record) {
+      properties.displayName === undefined
+        ? (properties.displayName = record.displayName as string)
+        : (properties.displayName_ = record.displayName as string);
+    }
+  }
   return properties;
 };
 

@@ -12,6 +12,7 @@ import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
 import { usePhoto } from '../hooks/usePhoto';
 import { useRecord } from '../hooks/useRecord';
+import { usePermission } from '../hooks/usePermission';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
@@ -31,9 +32,9 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     deleteRecords,
     generateExportGeoData,
   } = useData(route.params.targetLayer);
+  const { isOwnerAdmin } = usePermission();
   const { checkRecordEditable } = useRecord();
   const { deleteRecordPhotos } = usePhoto();
-  //const { isMember } = usePermission();
 
   const pressExportData = useCallback(async () => {
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
@@ -98,6 +99,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     <DataContext.Provider
       value={{
         projectId,
+        isOwnerAdmin,
         data,
         layer,
         isChecked,

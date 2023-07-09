@@ -18,6 +18,7 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
 import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
+import { useRepository } from './useRepository';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -57,6 +58,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dispatch = useDispatch();
   const settings = useSelector((state: AppState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
+  const { fetchAllPhotos } = useRepository();
 
   const createExportSettings = useCallback(() => {
     return {
@@ -124,7 +126,15 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           }
         }
         //Photo
-
+        //fromProject
+        if (option?.includePhoto && option?.fromProject) {
+          const imagePromises = fetchAllPhotos(layer, records);
+          const photos = await Promise.all(imagePromises);
+          photos.forEach((photo) => {
+            photo !== undefined &&
+              exportData.push({ data: photo.data, name: photo.name, type: 'PHOTO', folder: `${layer.id}` });
+          });
+        }
         //fromLocal
         if (option?.includePhoto && option?.fromProject) {
           const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
@@ -141,7 +151,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       }
       return exportData;
     },
-    []
+    [fetchAllPhotos]
   );
 
   async function importPhotos(

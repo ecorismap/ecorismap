@@ -64,6 +64,7 @@ export const DataEditDatetime = (props: Props) => {
           <Text style={styles.text}>{dateValueString}</Text>
           <DatePicker
             modal
+            theme={'light'}
             open={open}
             theme="light"
             date={dateValue}

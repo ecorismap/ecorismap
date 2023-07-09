@@ -1,5 +1,5 @@
 #import "AppDelegate.h"
-
+#import <Firebase.h>
 #import <React/RCTBridge.h>
 #import <React/RCTBundleURLProvider.h>
 #import <React/RCTRootView.h>
@@ -17,6 +17,7 @@
 #import <ReactCommon/RCTTurboModuleManager.h>
 
 #import <react/config/ReactNativeConfig.h>
+
 #import <GoogleMaps/GoogleMaps.h>
 
 static NSString *const kRNConcurrentRoot = @"concurrentRoot";
@@ -34,6 +35,7 @@ static NSString *const kRNConcurrentRoot = @"concurrentRoot";
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+  [FIRApp configure];
   NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps" ofType:@"plist"];
   NSDictionary *plistDictionary = [NSDictionary dictionaryWithContentsOfFile:filePath];
   NSString *mapsAPIKey = [plistDictionary objectForKey:@"APIKey"];
