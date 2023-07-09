@@ -111,8 +111,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   }, []);
 
   const onPanResponderReleaseMapMemo = useCallback(() => {
-    const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
-    const simplifiedXY = simplify(smoothedXY);
+    //const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
+    //const simplifiedXY = simplify(smoothedXY);
+    const simplifiedXY = mapMemoEditingLine.current;
     if (simplifiedXY.length === 0) {
       clearMapMemoEditingLine();
       setFuture([]);
