@@ -120,6 +120,12 @@
     "distance": "距離",
     "customField": "カスタムフィールド",
     "custom": "カスタム",
+    "message": {
+      "failGetUids": "ユーザーIDの取得に失敗しました",
+      "failGetProjects": "プロジェクトの取得に失敗しました",
+      "cannotLoadProject": "読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。"
+    },
+    "EncryptPassword": "暗号化パスワード",
     "memo": "メモ",
     "customLabel": "カスタムラベル"
   },
@@ -265,7 +271,7 @@
       "clearTileCache": "地図のキャッシュとダウンロードファイルをクリアしますか？",
       "clearPhotoCache": "写真のキャッシュをクリアしますか？",
       "fileNew": "現在のデータをクリアしますか？",
-      "fileOpen": "データファイル(.ecorismap)を読み込みますか？現在のデータと設定は上書きされます。"
+      "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。"
     },
     "alert": {
       "saveDataToLocalStorage": "保存しました",
@@ -536,7 +542,7 @@
       "dataSizeOver": "データサイズが2MBを超えています。保存されません。"
     },
     "message": {
-      "pleaseLogin": "ログインしてください。",
+      "pleaseLogin": "ログインし直してください。",
       "cannotUploadData": "レイヤの設定が更新されているのでアップロードできません。",
       "noCopyProject": "コピーするプロジェクトがありません。",
       "unknownError": "不明なエラーです。もう一度試してください",
@@ -630,8 +636,10 @@
       "invalidPolygon": "ポリゴンが不正なため保存できません。",
       "invalidLine": "ラインが不正なため保存できません。",
       "invalidPoint": "ポイントが不正なため保存できません。",
-      "cannotInRunningProject": "プロジェクトを開いている時はできません",
-      "cannotSaveInTracking": "トラックの記録中は変更できません。"
+      "cannotEditCommon": "コモンレイヤは編集できません",
+      "cannotInRunningProject": "プロジェクトを開いている時はできません。",
+      "cannotSaveInTracking": "トラックの記録中は変更できません。",
+      "encryptKeyFailed": "暗号化パスワードを確認してください"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

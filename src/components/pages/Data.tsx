@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { useScreen } from '../../hooks/useScreen';
 import { DataContext } from '../../contexts/Data';
+//import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
 
 export default function DataScreen() {
   //console.log('render Data');
@@ -68,6 +69,19 @@ export default function DataScreen() {
     navigation,
     openData,
   ]);
+
+  // useEffect(() => {
+  //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;
+  //   (async () => {
+  //     screenTrace = await perf().startScreenTrace('DataScreen');
+  //     screenTrace.start();
+  //   })();
+  //   return () => {
+  //     (async () => {
+  //       await screenTrace.stop();
+  //     })();
+  //   };
+  // }, []);
 
   return (
     <View style={styles.container}>

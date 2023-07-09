@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { DEFAULT_MAP_LIST_URL, TILE_FOLDER } from '../constants/AppConstants';
+import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
@@ -130,6 +130,19 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     }
   }, []);
 
+  const pressClearPhotoCache = useCallback(async () => {
+    if (Platform.OS === 'web') return;
+    const ret = await ConfirmAsync(t('Settings.confirm.clearPhotoCache'));
+    if (ret) {
+      const { uri } = await FileSystem.getInfoAsync(PHOTO_FOLDER);
+      if (uri) {
+        // console.log(uri);
+        await FileSystem.deleteAsync(uri);
+      }
+      await AlertAsync(t('Settings.alert.clearPhotoCache'));
+    }
+  }, []);
+
   const pressMapListURLOK = useCallback(
     (url: string) => {
       saveMapListURL(url);
@@ -183,6 +196,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         pressFileSaveCancel,
         pressClearData,
         pressClearTileCache,
+        pressClearPhotoCache,
         pressGotoManual,
         pressOSSLicense,
         pressVersion,

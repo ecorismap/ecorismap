@@ -3,7 +3,7 @@ import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR, DEGREE_INTERVAL, TILE_FOLDER } from '../../constants/AppConstants';
+import { COLOR, DEGREE_INTERVAL, FUNC_LOGIN, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
@@ -17,11 +17,14 @@ import { HomeAttributionText } from '../organisms/HomeAttributionText';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 
 import { HomeCompassButton } from '../organisms/HomeCompassButton';
+import { HomeAccountButton } from '../organisms/HomeAccountButton';
 
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
+import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
+import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import SplitScreen from '../../routes/split';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
@@ -31,6 +34,7 @@ import { AppState } from '../../modules';
 import { getExt, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
+import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
@@ -65,6 +69,11 @@ export default function HomeScreen() {
     selectedRecord,
     screenState,
     isLoading,
+    isSynced,
+    memberLocations,
+    isShowingProjectButtons,
+    projectName,
+    pressProjectLabel,
     currentMapMemoTool,
     visibleMapMemoColor,
     onRegionChangeMapView,
@@ -262,6 +271,11 @@ export default function HomeScreen() {
               angle={magnetometer && !headingUp ? nearDegree(magnetometer.trueHeading, DEGREE_INTERVAL) : 0}
             />
           )}
+          {/************** Member Location ****************** */}
+          {isSynced &&
+            memberLocations.map((memberLocation) => (
+              <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
+            ))}
 
           {/* 表示を正しく更新するには順番とzIndexが重要 */}
 
@@ -377,10 +391,15 @@ export default function HomeScreen() {
 
         <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
+        {isShowingProjectButtons && screenState !== 'expanded' && <HomeProjectButtons />}
+        {projectName === undefined || isDownloadPage || screenState === 'expanded' ? null : (
+          <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
+        )}
+
         <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
         <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
-
+        {!FUNC_LOGIN || isDownloadPage || screenState === 'expanded' ? null : <HomeAccountButton />}
         {screenState !== 'expanded' && <HomeAttributionText bottom={8} attribution={attribution} />}
         {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
         {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && (

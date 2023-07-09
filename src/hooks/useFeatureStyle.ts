@@ -48,7 +48,11 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
       .filter((v): v is RecordType[] => v !== false)
       .flat()
   );
-
+  const displayNames = useSelector((state: AppState) =>
+    state.dataSet
+      .map((d) => d.layerId === layer_.id && d.data.length > 0 && d.data[0].displayName)
+      .filter((v): v is string => v !== false)
+  );
   const [colorStyle, setColorStyle] = useState<ColorStyle>(layer_.colorStyle);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer_);
   const [isEdited, setIsEdited] = useState(isEdited_);
@@ -202,6 +206,8 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
           )
         );
       }
+    } else if (colorStyle.colorType === 'USER') {
+      valueList = displayNames;
     }
     const colorList = valueList.map(() => getRandomColor());
     const newColorStyle = cloneDeep(colorStyle);
@@ -211,7 +217,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     });
     setColorStyle(newColorStyle);
     setIsEdited(true);
-  }, [allUserData, colorStyle]);
+  }, [allUserData, colorStyle, displayNames]);
 
   const selectColor = useCallback(
     (hue: number, sat: number, val: number, alpha: number) => {

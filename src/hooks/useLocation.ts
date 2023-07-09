@@ -11,6 +11,9 @@ import { clearSavedLocations, getLineLength } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { useGPS } from './useGPS';
+import { hasOpened } from '../utils/Project';
+import * as projectStore from '../lib/firebase/firestore';
+import { isLoggedIn } from '../utils/Account';
 import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
@@ -101,6 +104,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     async (gpsState_: LocationStateType) => {
       if (gpsState_ === 'off') {
         await stopGPS();
+        if (isLoggedIn(user) && hasOpened(projectId)) {
+          projectStore.deleteCurrentPosition(user.uid, projectId);
+          setCurrentLocation(null);
+        }
       } else {
         if ((await confirmLocationPermittion()) !== 'granted') return;
         await startGPS();
@@ -111,7 +118,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       await toggleFollowMap(gpsState_);
       setGpsState(gpsState_);
     },
-    [confirmLocationPermittion, moveCurrentPosition, startGPS, stopGPS, toggleFollowMap]
+    [confirmLocationPermittion, moveCurrentPosition, projectId, startGPS, stopGPS, toggleFollowMap, user]
   );
 
   const toggleTracking = useCallback(
@@ -148,6 +155,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         }
 
         dispatch(editSettingsAction({ tracking: undefined }));
+        if (isLoggedIn(user) && hasOpened(projectId)) {
+          projectStore.deleteCurrentPosition(user.uid, projectId);
+          setCurrentLocation(null);
+        }
       }
       setTrackingState(trackingState_);
     },
@@ -157,9 +168,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       dispatch,
       findRecord,
       moveCurrentPosition,
+      projectId,
       startTracking,
       stopTracking,
       tracking,
+      user,
     ]
   );
 

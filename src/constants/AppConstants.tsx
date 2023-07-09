@@ -3,7 +3,14 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.2.0';
+export const VERSION = 'Version 0.2.0 Pro';
+export const FUNC_LOGIN = true;
+export const FUNC_PROJECT = true;
+export const FUNC_PURCHASE = false;
+export const FUNC_CHECK_LICENSE = false;
+export const FUNC_ENCRYPTION = true;
+export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
+export const FUNC_MAPBOX = false;
 
 export const PLUGIN = {
   HISYOUTOOL: false,
@@ -86,6 +93,7 @@ export const FEATURETYPE = {
 export const COLORTYPE = {
   SINGLE: t('constants.colortype.single'),
   CATEGORIZED: t('constants.colortype.categorized'),
+  ...(FUNC_LOGIN ? { USER: t('constants.colortype.user') } : {}),
   INDIVISUAL: t('constants.colortype.indivisual'),
 } as const;
 
@@ -93,12 +101,6 @@ export const COLORRAMP = {
   RANDOM: t('constants.colorramp.random'),
   // Spectral: 'スペクトラル',
   // WhiteToRed: '赤から白',
-} as const;
-
-export const CREATEPROJECTTYPE = {
-  DEFAULT: t('constants.createproject.default'),
-  SAVE: t('constants.createproject.save'),
-  COPY: t('constants.createproject.copy'),
 } as const;
 
 export const PERMISSIONTYPE = {

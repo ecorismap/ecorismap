@@ -15,6 +15,7 @@ import { AppState } from '../modules';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { pickImage, takePhoto } from '../utils/Photo';
+import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
@@ -32,11 +33,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     recordNumber,
     maxRecordNumber,
     photoFolder,
+    addPhoto,
+    updatePhoto,
+    selectPhoto,
+    removePhoto,
     changeRecord,
     saveData,
-    addPhoto,
-    removePhoto,
-    selectPhoto,
     deleteRecord,
     changeLatLonType,
     changeField,
@@ -93,6 +95,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         Alert.alert('', message);
         return;
       }
+
       if (isEditingRecord) saveData();
       deleteRecord();
 
@@ -176,7 +179,28 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     setPhotoEditorOpen(false);
   }, []);
 
-  const pressDownloadPhoto = useCallback(async () => {}, []);
+  const pressDownloadPhoto = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.downloadPhoto'));
+    if (ret) {
+      // if (!hasOpened(projectId)) {
+      //   Alert.alert('', t('hooks.message.openProject'));
+      //   return;
+      // }
+
+      const { url, key, name, fieldName, index } = selectedPhoto;
+      if (url === null || key === null) {
+        Alert.alert('', t('hooks.message.unkownURL'));
+        return;
+      }
+      const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, name, photoFolder);
+      if (!isOK || uri === null) {
+        Alert.alert('', message);
+        return;
+      }
+      updatePhoto(fieldName, index, uri);
+    }
+    setPhotoEditorOpen(false);
+  }, [photoFolder, selectedPhoto, updatePhoto]);
 
   const onChangeRecord = useCallback(
     async (value: number) => {
@@ -338,7 +362,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         return;
       }
       //参照データを追加して、referenceKeyを設定する
-      console.log(fields);
+      //console.log(fields);
       const referenceData = addRecord(fields);
 
       navigation.navigate('DataEdit', {

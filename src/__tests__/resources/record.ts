@@ -70,7 +70,7 @@ export const point_record: RecordType[] = [
     id: '1234',
     visible: true,
     userId: '1',
-    displayName: 'takayuki',
+    displayName: null,
     redraw: false,
   },
 ];

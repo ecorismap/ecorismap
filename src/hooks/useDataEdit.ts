@@ -50,6 +50,7 @@ export type UseDataEditReturnType = {
       name: string;
     }
   ) => void;
+  updatePhoto: (fieldName: string, index: number, uri: string) => void;
   removePhoto: (photo: SelectedPhotoType) => void;
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
@@ -192,9 +193,10 @@ export const useDataEdit = (
       }
     ) => {
       //console.log('$$$', uri);
-      const m = cloneDeep(targetRecord);
+      const updatedRecord = cloneDeep(targetRecord);
       const photoId = uuidv4();
-      (m.field[fieldName] as PhotoType[]).push({
+      const photoField = updatedRecord.field[fieldName] as PhotoType[];
+      photoField.push({
         id: photoId,
         name: photo.name,
         url: null,
@@ -206,11 +208,22 @@ export const useDataEdit = (
       } as PhotoType);
 
       //console.log(m.field[name]);
-      setTargetRecord(m);
+      setTargetRecord(updatedRecord);
       setIsEditingRecord(true);
       setTemporaryAddedPhotoList([...temporaryAddedPhotoList, { photoId, uri: photo.uri }]);
     },
     [setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
+  );
+
+  const updatePhoto = useCallback(
+    (fieldName: string, index: number, uri: string) => {
+      const updatedRecord = cloneDeep(targetRecord);
+      const photoField = updatedRecord.field[fieldName] as PhotoType[];
+      photoField[index].uri = uri;
+      setTargetRecord(updatedRecord);
+      setIsEditingRecord(true);
+    },
+    [targetRecord, setIsEditingRecord]
   );
 
   const saveData = useCallback(() => {
@@ -317,6 +330,7 @@ export const useDataEdit = (
     addPhoto,
     removePhoto,
     selectPhoto,
+    updatePhoto,
     changeRecord,
     deleteRecord,
     changeLatLonType,

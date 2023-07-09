@@ -35,6 +35,7 @@ export const useFieldList = (
   const [pickerValues, setPickerValues] = useState(['', '', '']);
   const [itemValues, setItemValues] = useState<{ value: string; isOther: boolean; customFieldValue: string }[]>([]);
   const [isEdited, setIsEdited] = useState(isEdited_);
+
   const [customFieldReference, setCustomFieldReference] = useState('');
   const [customFieldPrimary, setCustomFieldPrimary] = useState('');
 

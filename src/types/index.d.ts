@@ -4,7 +4,6 @@ import firebase from 'firebase/compat/app';
 import {
   COLORRAMP,
   COLORTYPE,
-  CREATEPROJECTTYPE,
   DATAFORMAT,
   EXPORTTYPE,
   FEATURETYPE,
@@ -54,7 +53,7 @@ export interface UserType {
   photoURL: string | null;
 }
 
-export interface LogginUserType {
+export interface LoginUserType {
   uid: string;
   email: string;
   displayName: string;
@@ -69,7 +68,7 @@ export interface DataType {
 
 export interface ProjectDataType extends DataType {
   userId: string;
-  permission: PermissionType;
+  permission: PermissionType | 'TEMPLATE';
 }
 
 export interface PointDataType {
@@ -260,6 +259,7 @@ export interface ProjectSettingsType {
   mapRegion: RegionType;
   layers: LayerType[];
   tileMaps: TileMapType[];
+  plugins: any;
 }
 
 export interface SettingsType {
@@ -332,7 +332,7 @@ export interface ProjectSettingsFS {
 export interface DataFS {
   userId: string;
   layerId: string;
-  permission: PermissionType;
+  permission: PermissionType | 'TEMPLATE';
   encdata: string[];
   encryptedAt: firebase.firestore.Timestamp;
 }
@@ -396,7 +396,6 @@ export type GeoJsonFeatureType =
   | 'CENTROID'
   | 'LINEEND';
 
-export type CreateProjectType = keyof typeof CREATEPROJECTTYPE;
 export type FormatType = keyof typeof DATAFORMAT;
 export type ColorTypesType = keyof typeof COLORTYPE;
 export type ColorRampType = keyof typeof COLORRAMP;
