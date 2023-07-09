@@ -44,7 +44,7 @@ export const Line = React.memo((props: Props) => {
         if (currentZoom > zoom + 2) return null;
         if (currentZoom < zoom - 4) return null;
         if (feature.coords.length < 2) return null;
-
+        console.log(currentZoom, zoom);
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
         const label = generateLabel(layer, feature);
@@ -52,6 +52,9 @@ export const Line = React.memo((props: Props) => {
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
+        const strokeWidth = (feature.field._strokeWidth as number)
+          ? 2 ** (currentZoom - zoom) * (feature.field._strokeWidth as number)
+          : 1.5;
 
         return (
           <PolylineComponent
@@ -59,6 +62,7 @@ export const Line = React.memo((props: Props) => {
             label={label}
             color={color}
             lineColor={lineColor}
+            strokeWidth={strokeWidth}
             labelPosition={labelPosition}
             zIndex={zIndex}
             layer={layer}
@@ -72,7 +76,7 @@ export const Line = React.memo((props: Props) => {
 });
 
 const PolylineComponent = React.memo((props: any) => {
-  const { label, color, lineColor, labelPosition, zIndex, layer, feature, onPressLine } = props;
+  const { label, color, lineColor, labelPosition, strokeWidth, zIndex, layer, feature, onPressLine } = props;
   return (
     <>
       <Polyline
@@ -80,7 +84,7 @@ const PolylineComponent = React.memo((props: any) => {
         tappable={false}
         coordinates={feature.coords as LatLng[]}
         strokeColor={lineColor}
-        strokeWidth={(feature.field._strokeWidth as number) ?? 1.5}
+        strokeWidth={strokeWidth}
         zIndex={zIndex}
         onPress={() => onPressLine(layer, feature)}
       />
