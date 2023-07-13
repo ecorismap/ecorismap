@@ -58,51 +58,54 @@ export default function Projects() {
               <Text>{`${t('common.owner')}`}</Text>
             </View>
           </View>
-          {isLoading && <Loading visible={isLoading} text="" />}
-          <FlatList
-            data={projects}
-            extraData={projects}
-            renderItem={({ item, index }) => (
-              <TouchableOpacity
-                key={index}
-                style={{
-                  flex: 1,
-                  height: 45,
-                  flexDirection: 'row',
-                }}
-                onPress={() => gotoProject(index)}
-              >
-                <View style={[styles.td, { flex: 3, width: 180 }]}>
-                  <Text
-                    adjustsFontSizeToFit={true}
-                    numberOfLines={2}
-                    onPress={() => gotoProject(index)}
-                    testID={`project-${index}`}
-                  >
-                    {item.name}
-                  </Text>
-                </View>
-                <View style={[styles.td, { flex: 2, width: 120 }]}>
-                  <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                    {item.abstract}
-                  </Text>
-                </View>
-                <View style={[styles.td, { flex: 2, width: 120 }]}>
-                  <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                    {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
-                  </Text>
-                </View>
-                <View style={[styles.td, { flex: 2, width: 120 }]}>
-                  <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                    {item.license ?? 'Free'}
-                  </Text>
-                </View>
-                <View style={[styles.td, { flex: 2, width: 100 }]}>
-                  {item.ownerUid === user.uid && <RectButton2 name={'star'} onPress={() => null} />}
-                </View>
-              </TouchableOpacity>
-            )}
-          />
+          {isLoading ? (
+            <Loading visible={isLoading} text="" />
+          ) : (
+            <FlatList
+              data={projects}
+              extraData={projects}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{
+                    flex: 1,
+                    height: 45,
+                    flexDirection: 'row',
+                  }}
+                  onPress={() => gotoProject(index)}
+                >
+                  <View style={[styles.td, { flex: 3, width: 180 }]}>
+                    <Text
+                      adjustsFontSizeToFit={true}
+                      numberOfLines={2}
+                      onPress={() => gotoProject(index)}
+                      testID={`project-${index}`}
+                    >
+                      {item.name}
+                    </Text>
+                  </View>
+                  <View style={[styles.td, { flex: 2, width: 120 }]}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                      {item.abstract}
+                    </Text>
+                  </View>
+                  <View style={[styles.td, { flex: 2, width: 120 }]}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                      {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
+                    </Text>
+                  </View>
+                  <View style={[styles.td, { flex: 2, width: 120 }]}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                      {item.license ?? 'Free'}
+                    </Text>
+                  </View>
+                  <View style={[styles.td, { flex: 2, width: 100 }]}>
+                    {item.ownerUid === user.uid && <RectButton2 name={'star'} onPress={() => null} />}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </View>
       </ScrollView>
 
