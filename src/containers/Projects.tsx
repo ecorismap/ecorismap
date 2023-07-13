@@ -101,8 +101,10 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   useEffect(() => {
     if (projects.length === 0 || route.params?.reload) {
-      reloadProjects();
-      navigation.setParams({ reload: undefined });
+      (async () => {
+        await reloadProjects();
+        navigation.setParams({ reload: undefined });
+      })();
     }
   }, [navigation, projects.length, reloadProjects, route.params?.reload]);
 
