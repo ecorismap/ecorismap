@@ -74,9 +74,18 @@ export const DataTable = React.memo(() => {
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
   return (
-    <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-      <DataTitle />
-      <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />
+    <View style={{ flexDirection: 'column', marginBottom: 10 }}>
+      <FlatList
+        data={data}
+        stickyHeaderIndices={[0]}
+        initialNumToRender={15}
+        extraData={data}
+        ListHeaderComponent={<DataTitle />}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        removeClippedSubviews={true}
+        disableVirtualization={true}
+      />
     </View>
   );
 });
