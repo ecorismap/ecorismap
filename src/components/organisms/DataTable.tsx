@@ -74,7 +74,7 @@ export const DataTable = React.memo(() => {
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
   return (
-    <View style={{ flexDirection: 'column', marginBottom: 10 }}>
+    <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
       <FlatList
         data={data}
         stickyHeaderIndices={[0]}
