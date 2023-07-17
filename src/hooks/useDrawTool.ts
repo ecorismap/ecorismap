@@ -416,8 +416,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             radius
           );
           //console.log(selectedFeature);
-          if (selectedFeature !== undefined) {
-            layer = findLayer(layerId);
+          if (selectedFeature !== undefined && selectedFeature.visible) {
+            const selectedLayer = findLayer(layerId);
+            if (!selectedLayer?.visible) continue;
+            layer = selectedLayer;
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
             feature = selectedFeature;
@@ -434,8 +436,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
             radius
           );
-          if (selectedFeature !== undefined) {
-            layer = findLayer(layerId);
+          if (selectedFeature !== undefined && selectedFeature.visible) {
+            const selectedLayer = findLayer(layerId);
+            if (!selectedLayer?.visible) continue;
+            layer = selectedLayer;
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
             feature = selectedFeature;
@@ -452,8 +456,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
             radius
           );
-          if (selectedFeature !== undefined) {
-            layer = findLayer(layerId);
+          if (selectedFeature !== undefined && selectedFeature.visible) {
+            const selectedLayer = findLayer(layerId);
+            if (!selectedLayer?.visible) continue;
+            layer = selectedLayer;
             recordSet = data;
             recordIndex = data.findIndex((d) => d.id === selectedFeature.id);
             feature = selectedFeature;
