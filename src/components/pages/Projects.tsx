@@ -62,6 +62,7 @@ export default function Projects() {
             <Loading visible={isLoading} text="" />
           ) : (
             <FlatList
+              initialNumToRender={projects.length}
               data={projects}
               extraData={projects}
               renderItem={({ item, index }) => (
