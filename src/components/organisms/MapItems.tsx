@@ -12,6 +12,7 @@ export const MapItems = React.memo(() => {
     <FlatList
       style={{ borderTopWidth: 1, borderColor: COLOR.GRAY2 }}
       data={maps}
+      initialNumToRender={maps.length}
       keyExtractor={(item) => item.id}
       renderItem={({ item, index }) => (
         <View style={styles.tr}>
