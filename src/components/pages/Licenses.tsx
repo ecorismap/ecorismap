@@ -24,6 +24,7 @@ export default function Licenses() {
   return (
     <FlatList
       data={packageNames}
+      initialNumToRender={packageNames.length}
       keyExtractor={(item) => item}
       renderItem={({ item }) => {
         return (

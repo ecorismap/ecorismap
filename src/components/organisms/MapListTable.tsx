@@ -40,7 +40,13 @@ export const MapListTable = React.memo(() => {
           </View>
         ))}
       </View>
-      <FlatList data={data} extraData={data} renderItem={renderItem} keyExtractor={keyExtractor} />
+      <FlatList
+        data={data}
+        initialNumToRender={data.length}
+        extraData={data}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+      />
     </View>
   );
 });

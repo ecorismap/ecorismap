@@ -55,6 +55,7 @@ export const LayerEditFieldTable = () => {
   return (
     <FlatList
       data={layer.field}
+      initialNumToRender={layer.field.length}
       keyExtractor={(item) => item.id}
       removeClippedSubviews={false}
       renderItem={({ item, index }) => {
