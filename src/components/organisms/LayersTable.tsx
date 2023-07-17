@@ -83,6 +83,7 @@ const LayersItems = (props: { hasCustomLabel: boolean }) => {
   return (
     <FlatList
       data={layers}
+      initialNumToRender={layers.length}
       keyExtractor={(item) => item.id}
       renderItem={({ item, index }) => {
         //ラベルの候補は、空白を追加し、Photoを抜く
