@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { v4 as uuidv4 } from 'uuid';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -9,7 +9,6 @@ import { editSettingsAction } from '../modules/settings';
 import { AppState } from '../modules';
 import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
-import { hasOpened } from '../utils/Project';
 import { csvToJsonArray, isMapListArray, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
 
@@ -42,16 +41,12 @@ export type UseMapsReturnType = {
 
 export const useMaps = (): UseMapsReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const role = useSelector((state: AppState) => state.settings.role);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
   const mapListURL = useSelector((state: AppState) => state.settings.mapListURL);
   const maps = useSelector((state: AppState) => state.tileMaps);
   const tileRegions = useSelector((state: AppState) => state.settings.tileRegions);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
-  const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
   const mapList = useSelector((state: AppState) => state.settings.mapList);
 
   const fetchMapList = useCallback(
@@ -144,57 +139,39 @@ export const useMaps = (): UseMapsReturnType => {
 
   const deleteMap = useCallback(
     async (deletedTileMap: TileMapType) => {
-      if (hasOpened(projectId) && !isOwnerAdmin) {
-        return { isOK: false, message: t('hooks.message.onlyAdminCanEdit') };
-      }
-      if (hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-        return { isOK: false, message: t('hooks.message.lockProject') };
-      }
       clearTiles(deletedTileMap);
       dispatch(deleteTileMapAction(deletedTileMap));
       setMapEditorOpen(false);
       return { isOK: true, message: '' };
     },
-    [clearTiles, dispatch, isSettingProject, isOwnerAdmin, projectId]
+    [clearTiles, dispatch]
   );
 
-  const openEditMap = useCallback(
-    (editTileMap: TileMapType | null) => {
-      if (editTileMap === null) {
-        if (hasOpened(projectId) && !isOwnerAdmin) {
-          return { isOK: false, message: t('hooks.message.onlyAdminCanEdit') };
-        }
-        if (hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-          return { isOK: false, message: t('hooks.message.lockProject') };
-        }
-      }
+  const openEditMap = useCallback((editTileMap: TileMapType | null) => {
+    let newTileMap: TileMapType;
+    if (editTileMap === null) {
+      newTileMap = {
+        id: uuidv4(),
+        name: '',
+        url: '',
+        attribution: '',
+        maptype: 'none',
+        visible: true,
+        transparency: 0,
+        overzoomThreshold: 18,
+        highResolutionEnabled: false,
+        minimumZ: 0,
+        maximumZ: 22,
+        flipY: false,
+      };
+    } else {
+      newTileMap = cloneDeep(editTileMap);
+    }
 
-      let newTileMap: TileMapType;
-      if (editTileMap === null) {
-        newTileMap = {
-          id: uuidv4(),
-          name: '',
-          url: '',
-          attribution: '',
-          maptype: 'none',
-          visible: true,
-          transparency: 0,
-          overzoomThreshold: 18,
-          highResolutionEnabled: false,
-          minimumZ: 0,
-          maximumZ: 22,
-          flipY: false,
-        };
-      } else {
-        newTileMap = cloneDeep(editTileMap);
-      }
-
-      setEditedMap(newTileMap);
-      setMapEditorOpen(true);
-      return { isOK: true, message: '' };
-    },
-    [isSettingProject, isOwnerAdmin, projectId]
-  );
+    setEditedMap(newTileMap);
+    setMapEditorOpen(true);
+    return { isOK: true, message: '' };
+  }, []);
 
   const closeEditMap = () => {
     setMapEditorOpen(false);
@@ -202,12 +179,6 @@ export const useMaps = (): UseMapsReturnType => {
 
   const saveMap = useCallback(
     (newTileMap: TileMapType) => {
-      if (hasOpened(projectId) && !isOwnerAdmin) {
-        return { isOK: false, message: t('hooks.message.onlyAdminCanEdit') };
-      }
-      if (hasOpened(projectId) && isOwnerAdmin && !isSettingProject) {
-        return { isOK: false, message: t('hooks.message.lockProject') };
-      }
       const newTileMaps = cloneDeep(maps);
       //新規だったら追加、編集だったら置き換え
       const index = newTileMaps.findIndex(({ id }) => id === newTileMap.id);
@@ -219,7 +190,7 @@ export const useMaps = (): UseMapsReturnType => {
       dispatch(setTileMapsAction(newTileMaps));
       setMapEditorOpen(false);
     },
-    [dispatch, isSettingProject, isOwnerAdmin, maps, projectId]
+    [dispatch, maps]
   );
 
   const saveMapListURL = useCallback(
