@@ -7,7 +7,7 @@ import { Button } from '../atoms';
 export const DataButton = () => {
   const { layer, projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
 
-  const exportDisabled = useMemo(() => projectId !== undefined, [projectId]);
+  const exportDisabled = useMemo(() => false && projectId !== undefined, [projectId]);
 
   return (
     <>
