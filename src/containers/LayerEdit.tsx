@@ -10,6 +10,7 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
+import { exportGeoFile } from '../utils/File';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -29,6 +30,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     changeFieldFormat,
     deleteField,
     addField,
+    generateExportLayer,
   } = useLayerEdit(
     route.params.targetLayer,
     route.params.isEdited,
@@ -62,6 +64,12 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
       navigation.navigate('Layers');
     }
   }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
+
+  const pressExportLayer = useCallback(async () => {
+    const { exportData, fileName } = generateExportLayer();
+    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+  }, [generateExportLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {
@@ -111,6 +119,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
         gotoLayerEditFeatureStyle,
         gotoLayerEditFieldItem,
         gotoBack,
+        pressExportLayer,
       }}
     >
       <LayerEdit />

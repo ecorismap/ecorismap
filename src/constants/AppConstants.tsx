@@ -255,6 +255,7 @@ export const LAYERS_BTN = {
 export const LAYEREDIT_BTN = {
   DELETE: 'delete',
   SAVE: 'content-save',
+  EXPORT: 'briefcase-download',
 } as const;
 
 export const PROJECTS_BTN = {
