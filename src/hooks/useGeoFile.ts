@@ -64,8 +64,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   );
 
   const importCsv = useCallback(
-    (csv: string, featureType: FeatureType, importFileName: string) => {
-      const data = Csv2Data(csv, featureType, importFileName, dataUser.uid, dataUser.displayName);
+    (csv: string, featureType: FeatureType, importFileName: string, importedLayer?: LayerType) => {
+      const data = Csv2Data(csv, featureType, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
       if (data === undefined) return;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
@@ -170,17 +170,24 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       if (jsonFile === undefined) throw 'invalid zip file';
       const jsonDecompressed = await loaded.files[jsonFile].async('text');
       const importedLayer: LayerType = updateLayerActiveAndIds(JSON.parse(jsonDecompressed) as LayerType);
-
-      const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
-      if (geojsonFile === undefined) throw 'invalid zip file';
-      const geojsonStrings = await loaded.files[geojsonFile].async('text');
-      const geojson = JSON.parse(geojsonStrings);
-      //ToDo 有効なgeojsonファイルかチェック
-      importGeoJson(geojson, importedLayer.type, name, importedLayer);
-      //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-      if (importedLayer.type !== 'NONE') importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+      if (importedLayer.type === 'NONE') {
+        const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
+        if (csvFile === undefined) throw 'invalid zip file';
+        const csvStrings = await loaded.files[csvFile].async('text');
+        const csv = JSON.parse(csvStrings);
+        importCsv(csv, importedLayer.type, name, importedLayer);
+      } else {
+        const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+        if (geojsonFile === undefined) throw 'invalid zip file';
+        const geojsonStrings = await loaded.files[geojsonFile].async('text');
+        const geojson = JSON.parse(geojsonStrings);
+        //ToDo 有効なgeojsonファイルかチェック
+        importGeoJson(geojson, importedLayer.type, name, importedLayer);
+        //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
+        importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+      }
     },
-    [importGeoJson]
+    [importCsv, importGeoJson]
   );
 
   const loadFile = useCallback(
