@@ -143,10 +143,12 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
     //GeoJSON
-    const geojson = generateGeoJson(targetRecords, targetLayer.field, targetLayer.type, targetLayer.name);
-    const geojsonData = JSON.stringify(geojson);
-    const geojsonName = `${targetLayer.name}_${time}.geojson`;
-    exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
+    if (targetLayer.type !== 'NONE') {
+      const geojson = generateGeoJson(targetRecords, targetLayer.field, targetLayer.type, targetLayer.name);
+      const geojsonData = JSON.stringify(geojson);
+      const geojsonName = `${targetLayer.name}_${time}.geojson`;
+      exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
+    }
     //CSV
     const csv = generateCSV(targetRecords, targetLayer.field, targetLayer.type);
     const csvData = csv;

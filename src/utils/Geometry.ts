@@ -421,17 +421,6 @@ export const generateGeoJson = (
   };
   let features;
   switch (type) {
-    case 'NONE':
-      features = data.map((record) => {
-        const properties = generateProperties(record, field);
-        const feature = {
-          type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
-          geometry: null,
-        };
-        return feature;
-      });
-      break;
     case 'POINT':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
