@@ -190,6 +190,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [importCsv, importGeoJson]
   );
 
+  const loadJson = useCallback(
+    async (uri: string) => {
+      const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const json = JSON.parse(jsonStrings);
+      dispatch(addLayerAction(json));
+    },
+    [dispatch]
+  );
+
   const loadFile = useCallback(
     async (name: string, uri: string) => {
       const ext = getExt(name)?.toLowerCase();
@@ -201,6 +210,10 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         }
         case 'zip': {
           await loadZip(uri, name);
+          break;
+        }
+        case 'json': {
+          await loadJson(uri);
           break;
         }
         case 'kml': {
@@ -223,7 +236,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           throw 'invalid extension';
       }
     },
-    [loadCsv, loadGeojson, loadGpx, loadKml, loadKmz, loadZip]
+    [loadCsv, loadGeojson, loadGpx, loadJson, loadKml, loadKmz, loadZip]
   );
 
   const importGeoFile = useCallback(
