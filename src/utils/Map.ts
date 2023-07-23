@@ -1,6 +1,6 @@
 import { MapRef, ViewState } from 'react-map-gl';
 import MapView, { Region } from 'react-native-maps';
-import { RegionType, TileMapItemType } from '../types';
+import { RegionType, TileMapItemType, TileMapType } from '../types';
 
 export const isMapView = (map: any): map is MapView => {
   return map && typeof map.animateCamera === 'function';
@@ -80,6 +80,16 @@ const isTileMapItem = (data: any): data is TileMapItemType => {
 };
 
 export const isMapListArray = (data: any): data is TileMapItemType[] => data.every((d: any) => isTileMapItem(d));
+export const isTileMapType = (data: any): data is TileMapType => {
+  const { id, mapType, visible, ...mapItem } = data;
+  return (
+    isTileMapItem(mapItem) &&
+    typeof id === 'string' &&
+    typeof mapType === 'string' &&
+    typeof visible === 'boolean' &&
+    ['standard', 'satellite', 'hybrid', 'terrain', 'none'].includes(mapType)
+  );
+};
 
 export const isValidMapListURL = (mapListURL: string) => {
   const pattern = /https:\/\/docs.google.com\/spreadsheets[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+output=csv/g;

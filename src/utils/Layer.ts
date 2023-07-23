@@ -163,3 +163,20 @@ export function updateLayerActiveAndIds(layer: LayerType) {
   });
   return newLayer;
 }
+
+export const isLayerType = (object: any): object is LayerType => {
+  return (
+    object !== null &&
+    typeof object === 'object' &&
+    typeof object.id === 'string' &&
+    typeof object.name === 'string' &&
+    typeof object.type === 'string' &&
+    typeof object.permission === 'string' &&
+    typeof object.colorStyle === 'object' && // You may want to perform a deeper check here
+    typeof object.label === 'string' &&
+    (object.customLabel === undefined || typeof object.customLabel === 'string') &&
+    typeof object.visible === 'boolean' &&
+    typeof object.active === 'boolean' &&
+    Array.isArray(object.field)
+  ); // You may want to perform a deeper check here
+};
