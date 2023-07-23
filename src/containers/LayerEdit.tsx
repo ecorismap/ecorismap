@@ -10,6 +10,9 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
+import { exportFile } from '../utils/File';
+import dayjs from 'dayjs';
+import sanitize from 'sanitize-filename';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -63,6 +66,14 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     }
   }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
 
+  const pressExportLayer = useCallback(async () => {
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const mapSettings = JSON.stringify(targetLayer);
+    const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
+    const isOK = await exportFile(mapSettings, fileName);
+    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+  }, [targetLayer]);
+
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {
       targetLayer: { ...targetLayer },
@@ -111,6 +122,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
         gotoLayerEditFeatureStyle,
         gotoLayerEditFieldItem,
         gotoBack,
+        pressExportLayer,
       }}
     >
       <LayerEdit />

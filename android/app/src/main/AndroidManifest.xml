@@ -52,11 +52,15 @@
         <data android:mimeType="application/zip" />
         <data android:mimeType="application/vnd.google-earth.kml+xml" />
         <data android:mimeType="application/vnd.google-earth.kmz" />
+        <data android:mimeType="application/json" />
+        <data android:mimeType="text/csv" />
         <data android:host="*" />
         <data android:pathPattern=".*\\.geojson" />   
         <data android:pathPattern=".*\\.gpx" />
         <data android:pathPattern=".*\\.kml" />
         <data android:pathPattern=".*\\.kmz" />
+        <data android:pathPattern=".*\\.csv" />
+        <data android:pathPattern=".*\\.json" />
       </intent-filter>
       <intent-filter>
         <action android:name="android.intent.action.SEND" />
@@ -68,6 +72,8 @@
         <data android:mimeType="application/gpx+xml" />
         <data android:mimeType="application/vnd.google-earth.kml+xml" />
         <data android:mimeType="application/vnd.google-earth.kmz" />
+        <data android:mimeType="application/json" />
+        <data android:mimeType="text/csv" />
       </intent-filter>
       <!-- bugfix https://github.com/expo/expo/issues/21444 -->
       <intent-filter>

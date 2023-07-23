@@ -32,17 +32,20 @@ import {
 } from 'geojson';
 import { Position } from '@turf/turf';
 import { rgbaString2qgis } from './Color';
+import { cloneDeep } from 'lodash';
 
 export const Csv2Data = (
   csv: string,
   type: FeatureType,
   fileName: string,
   userId: string | undefined,
-  displayName: string | null
+  displayName: string | null,
+  importedLayer?: LayerType
 ) => {
   try {
     //console.log(type);
-    const layer: LayerType = createLayerFromCsv(csv, fileName, type);
+    const layer = importedLayer === undefined ? createLayerFromCsv(csv, fileName, type) : cloneDeep(importedLayer);
+
     const body = csv.split('\n').slice(1);
 
     const importedData: RecordType[] = body.map((line) => {
@@ -418,17 +421,6 @@ export const generateGeoJson = (
   };
   let features;
   switch (type) {
-    case 'NONE':
-      features = data.map((record) => {
-        const properties = generateProperties(record, field);
-        const feature = {
-          type: 'Feature',
-          properties: { ...properties, _visible: record.visible, _id: record.id },
-          geometry: null,
-        };
-        return feature;
-      });
-      break;
     case 'POINT':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
