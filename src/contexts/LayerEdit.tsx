@@ -19,6 +19,7 @@ interface LayerEditContextType {
   gotoLayerEditFeatureStyle: () => void;
   gotoLayerEditFieldItem: (fieldIndex: number, fieldItem: LayerType['field'][0]) => void;
   gotoBack: () => void;
+  pressExportLayer: () => void;
 }
 
 export const LayerEditContext = createContext({} as LayerEditContextType);

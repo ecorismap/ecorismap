@@ -12,7 +12,7 @@ export default function Settings() {
     mapListURL,
     isMapListURLOpen,
     isFileSaveOpen,
-    pressMapListURLOpen,
+    //pressMapListURLOpen,
     pressMapListURLOK,
     pressMapListURLCancel,
     pressMapListURLReset,
@@ -54,12 +54,12 @@ export default function Settings() {
           info={t('Settings.file_new.info')}
           onPress={pressClearData}
         />
-        <TextButton
+        {/* <TextButton
           name={SETTINGS_BTN.MAP_LIST_URL}
           text={t('Settings.maplisturl.text')}
           info={t('Settings.maplisturl.info')}
           onPress={pressMapListURLOpen}
-        />
+        /> */}
         {Platform.OS !== 'web' && (
           <TextButton
             name={SETTINGS_BTN.MAP_CACHE_DELETE}
