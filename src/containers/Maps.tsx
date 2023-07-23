@@ -8,6 +8,11 @@ import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { Props_Maps } from '../routes';
 import { TileMapType } from '../types';
+import { exportFile } from '../utils/File';
+import { Alert } from 'react-native';
+import dayjs from 'dayjs';
+import * as DocumentPicker from 'expo-document-picker';
+import { getExt } from '../utils/General';
 
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -22,6 +27,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     changeVisible,
     changeMapOrder,
     toggleOnline,
+    importMapFile,
   } = useMaps();
   const { closeData } = useScreen();
   const { runTutrial } = useTutrial();
@@ -79,6 +85,26 @@ export default function MapContainer({ navigation }: Props_Maps) {
     closeEditMap();
   }, [closeEditMap]);
 
+  const pressImportMaps = useCallback(async () => {
+    const file = await DocumentPicker.getDocumentAsync({});
+    if (file.type === 'cancel') return;
+    const ext = getExt(file.name)?.toLowerCase();
+    if (!(ext === 'json')) {
+      await AlertAsync(t('hooks.message.wrongExtension'));
+      return;
+    }
+    const { message } = await importMapFile(file.uri);
+    if (message !== '') await AlertAsync(message);
+  }, [importMapFile]);
+
+  const pressExportMaps = useCallback(async () => {
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const mapSettings = JSON.stringify(maps);
+    const fileName = `maps_${time}.json`;
+    const isOK = await exportFile(mapSettings, fileName);
+    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+  }, [maps]);
+
   const gotoMapList = useCallback(() => {
     navigation.navigate('MapList');
   }, [navigation]);
@@ -99,6 +125,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
         pressEditMapOK,
         pressEditMapCancel,
         gotoMapList,
+        pressImportMaps,
+        pressExportMaps,
       }}
     >
       <Maps />
