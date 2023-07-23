@@ -20,18 +20,22 @@ export const Point = (props: Props) => {
   //console.log('render Point');
   const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
 
-  return data.map((feature) =>
-    feature.visible ? (
-      <PointComponent
-        key={`point-${feature.id}-${feature.redraw}`}
-        feature={feature}
-        selectedRecord={selectedRecord}
-        draggable={draggable}
-        onDragEndPoint={onDragEndPoint}
-        layer={layer}
-        zoom={zoom}
-      />
-    ) : null
+  return (
+    <>
+      {data.map((feature) =>
+        feature.visible ? (
+          <PointComponent
+            key={`point-${feature.id}-${feature.redraw}`}
+            feature={feature}
+            selectedRecord={selectedRecord}
+            draggable={draggable}
+            onDragEndPoint={onDragEndPoint}
+            layer={layer}
+            zoom={zoom}
+          />
+        ) : null
+      )}
+    </>
   );
 };
 

@@ -16,7 +16,7 @@ export const exportGeoFile = async (
     type: ExportType | 'PHOTO';
   }[],
   exportFileName: string,
-  ext: string
+  ext: 'zip' | 'ecorismap'
 ) => {
   const fileName = sanitize(exportFileName);
   const sourcePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
@@ -44,6 +44,20 @@ export const exportGeoFile = async (
       await RNFS.unlink(sourcePath);
       await RNFS.unlink(targetPath);
     }
+    return true;
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
+  //Memo: expoのSharingはキャンセルしたかどうか値を返さない.objectは常に{}
+};
+
+export const exportFile = async (data: string, fileName: string) => {
+  try {
+    const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
+    await RNFS.writeFile(sourcePath, data, 'utf8');
+    await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
+    await RNFS.unlink(sourcePath);
     return true;
   } catch (e) {
     console.log(e);

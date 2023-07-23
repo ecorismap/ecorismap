@@ -6,7 +6,7 @@ import { LayerEditContext } from '../../contexts/LayerEdit';
 import { Button } from '../atoms';
 
 export const LayerEditButton = () => {
-  const { isEdited, pressSaveLayer, pressDeleteLayer } = useContext(LayerEditContext);
+  const { isEdited, pressSaveLayer, pressDeleteLayer, pressExportLayer } = useContext(LayerEditContext);
   const editable = true;
   return (
     <View style={styles.buttonContainer}>
@@ -15,6 +15,13 @@ export const LayerEditButton = () => {
         backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEdited || !editable}
         onPress={pressDeleteLayer}
+      />
+
+      <Button
+        name={LAYEREDIT_BTN.EXPORT}
+        onPress={pressExportLayer}
+        backgroundColor={!isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+        disabled={isEdited}
       />
       <Button
         name={LAYEREDIT_BTN.SAVE}

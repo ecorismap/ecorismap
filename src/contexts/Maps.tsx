@@ -16,6 +16,8 @@ interface MapsContextType {
   pressEditMapOK: (newTileMap: TileMapType) => void;
   pressEditMapCancel: () => void;
   gotoMapList: () => void;
+  pressImportMaps: () => void;
+  pressExportMaps: () => void;
 }
 
 export const MapsContext = createContext({} as MapsContextType);

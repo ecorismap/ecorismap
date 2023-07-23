@@ -9,8 +9,9 @@ import { editSettingsAction } from '../modules/settings';
 import { AppState } from '../modules';
 import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
-import { csvToJsonArray, isMapListArray, isValidMapListURL } from '../utils/Map';
+import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
+import { decodeUri } from '../utils/File.web';
 
 export type UseMapsReturnType = {
   mapListURL: string;
@@ -37,6 +38,10 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   saveMapListURL: (url: string) => void;
+  importMapFile: (uri: string) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -200,6 +205,28 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
+  const importMapFile = useCallback(
+    async (uri: string) => {
+      try {
+        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+        const json = JSON.parse(jsonStrings);
+        if (Array.isArray(json)) {
+          const isValid = json.every((tileMap) => !isTileMapType(tileMap));
+          if (!isValid) {
+            return { isOK: false, message: t('hooks.message.invalidDataFormat') };
+          }
+        } else {
+          return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
+        }
+        dispatch(setTileMapsAction(json));
+        return { isOK: true, message: t('hooks.message.receiveFile') };
+      } catch (e: any) {
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      }
+    },
+    [dispatch]
+  );
+
   return {
     mapListURL,
     mapList,
@@ -216,5 +243,6 @@ export const useMaps = (): UseMapsReturnType => {
     saveMap,
     fetchMapList,
     saveMapListURL,
+    importMapFile,
   } as const;
 };

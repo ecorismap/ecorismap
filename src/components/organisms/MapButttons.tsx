@@ -5,12 +5,15 @@ import { MapsContext } from '../../contexts/Maps';
 import { Button } from '../atoms';
 
 export const MapButtons = React.memo(() => {
-  const { pressOpenEditMap, gotoMapList } = useContext(MapsContext);
+  const { pressOpenEditMap, gotoMapList, pressImportMaps, pressExportMaps } = useContext(MapsContext);
 
   return (
     <View style={styles.buttonContainer}>
-      <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} />
+      {/* <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} /> */}
+
+      <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} />
       <Button name={MAPS_BTN.MAP_ADD} onPress={() => pressOpenEditMap(null)} />
+      <Button name={MAPS_BTN.EXPORT} onPress={pressExportMaps} />
     </View>
   );
 });
