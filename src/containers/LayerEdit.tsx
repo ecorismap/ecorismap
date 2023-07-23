@@ -10,7 +10,9 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
-import { exportGeoFile } from '../utils/File';
+import { exportFile } from '../utils/File';
+import dayjs from 'dayjs';
+import sanitize from 'sanitize-filename';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -30,7 +32,6 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     changeFieldFormat,
     deleteField,
     addField,
-    generateExportLayer,
   } = useLayerEdit(
     route.params.targetLayer,
     route.params.isEdited,
@@ -66,10 +67,12 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
 
   const pressExportLayer = useCallback(async () => {
-    const { exportData, fileName } = generateExportLayer();
-    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const mapSettings = JSON.stringify(targetLayer);
+    const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
+    const isOK = await exportFile(mapSettings, fileName);
     if (!isOK) Alert.alert('', t('hooks.message.failExport'));
-  }, [generateExportLayer]);
+  }, [targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {

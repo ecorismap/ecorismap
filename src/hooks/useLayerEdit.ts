@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ColorStyle, ExportType, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
+import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 import { cloneDeep } from 'lodash';
@@ -13,7 +13,6 @@ import { addDataAction, deleteDataAction, updateDataAction } from '../modules/da
 import { addLayerAction, deleteLayerAction, updateLayerAction } from '../modules/layers';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import sanitize from 'sanitize-filename';
-import dayjs from 'dayjs';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
@@ -32,15 +31,6 @@ export type UseLayerEditReturnType = {
   changeFieldFormat: (index: number, itemValue: FormatType) => void;
   deleteField: (id: number) => void;
   addField: () => void;
-  generateExportLayer: () => {
-    exportData: {
-      data: string;
-      name: string;
-      type: ExportType | 'PHOTO';
-      folder: string;
-    }[];
-    fileName: string;
-  };
 };
 
 export const useLayerEdit = (
@@ -267,18 +257,6 @@ export const useLayerEdit = (
     setIsEdited(true);
   }, [targetLayer]);
 
-  const generateExportLayer = useCallback(() => {
-    const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
-    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-
-    //LayerSetting
-    const layerSetting = JSON.stringify(targetLayer);
-    exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
-
-    const fileName = `${targetLayer.name}_${time}`;
-    return { exportData, fileName };
-  }, [targetLayer]);
-
   return {
     targetLayer,
     isEdited,
@@ -296,6 +274,5 @@ export const useLayerEdit = (
     changeFieldFormat,
     deleteField,
     addField,
-    generateExportLayer,
   } as const;
 };
