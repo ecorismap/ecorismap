@@ -19,6 +19,7 @@ import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
 import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
 import { useRepository } from './useRepository';
+import sanitize from 'sanitize-filename';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -111,18 +112,18 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           const geojson = generateGeoJson(records, layer.field, layer.type, layer.id);
           const geojsonData = JSON.stringify(geojson);
           const geojsonName = `${layer.name}_${time}.geojson`;
-          exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: `${layer.id}` });
+          exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: sanitize(layer.name) });
           //CSV
           const csv = generateCSV(records, layer.field, layer.type);
           const csvData = csv;
           const csvName = `${layer.name}_${time}.csv`;
-          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: `${layer.id}` });
+          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: sanitize(layer.name) });
           //GPX
           if (layer.type === 'POINT' || layer.type === 'LINE') {
             const gpx = generateGPX(records, layer.type);
             const gpxData = gpx;
             const gpxName = `${layer.name}_${time}.gpx`;
-            exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: `${layer.id}` });
+            exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: sanitize(layer.name) });
           }
         }
         //Photo
@@ -142,7 +143,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             photoFields.forEach((photoField) => {
               (record.field[photoField.name] as PhotoType[]).forEach(({ uri, id }) => {
                 if (uri) {
-                  exportData.push({ data: uri, name: id, type: 'PHOTO', folder: layer.id });
+                  exportData.push({ data: uri, name: id, type: 'PHOTO', folder: sanitize(layer.name) });
                 }
               });
             });
