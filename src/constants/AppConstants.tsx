@@ -228,6 +228,8 @@ export const MAPS_BTN = {
   MAP_ADD: 'plus',
   ONLINE: 'wifi',
   OFFLINE: 'wifi-off',
+  EXPORT: 'briefcase-download',
+  IMPORT: 'database-import',
 } as const;
 
 export const MAPLIST_BTN = {
