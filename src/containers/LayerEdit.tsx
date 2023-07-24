@@ -14,6 +14,7 @@ import { usePermission } from '../hooks/usePermission';
 import { exportFile } from '../utils/File';
 import dayjs from 'dayjs';
 import sanitize from 'sanitize-filename';
+import { Platform } from 'react-native';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const tracking = useSelector((state: AppState) => state.settings.tracking);
@@ -82,7 +83,8 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     const mapSettings = JSON.stringify(targetLayer);
     const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
     const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+    //webではFileSaverのawaitが未対応のため
+    if (!isOK && Platform.OS !== 'web') await AlertAsync(t('hooks.message.failExport'));
   }, [targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
