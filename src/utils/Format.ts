@@ -277,7 +277,9 @@ export const formattedInputs = (
     }
     case 'members': {
       const emails = value.toString().split(',');
+
       const pattern =
+        // eslint-disable-next-line no-useless-escape
         /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
       for (let i = 0; i < emails.length; i++) {
         if (emails[i] !== '' && emails[i].match(pattern) == null) {
