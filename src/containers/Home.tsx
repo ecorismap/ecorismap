@@ -552,7 +552,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!ret) return;
     }
     if (tracking !== undefined) {
-      Alert.alert('', t('hooks.message.finishTrackking'));
+      await AlertAsync(t('hooks.message.finishTrackking'));
       return;
     }
     if (Platform.OS === 'web') {
@@ -609,9 +609,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const storageLicenseResult = validateStorageLicense(project);
       if (!storageLicenseResult.isOK) {
         if (Platform.OS === 'web') {
-          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+          await AlertAsync(storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
         } else {
-          Alert.alert('', t('Home.alert.uploadLicense'));
+          await AlertAsync(t('Home.alert.uploadLicense'));
         }
       }
       setIsLoading(true);
@@ -635,7 +635,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
     if (ret) {
       if (tracking !== undefined) {
-        Alert.alert('', t('hooks.message.finishTrackking'));
+        await AlertAsync(t('hooks.message.finishTrackking'));
         return;
       }
       clearProject();
@@ -650,9 +650,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const storageLicenseResult = validateStorageLicense(project);
       if (!storageLicenseResult.isOK) {
         if (Platform.OS === 'web') {
-          Alert.alert('', storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
+          await AlertAsync(storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
         } else {
-          Alert.alert('', t('Home.alert.uploadLicense'));
+          await AlertAsync(t('Home.alert.uploadLicense'));
         }
       }
       setIsLoading(true);

@@ -113,15 +113,15 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     async (isSetting: boolean) => {
       try {
         if (tracking !== undefined) {
-          Alert.alert('', t('hooks.message.finishTrackking'));
+          await AlertAsync(t('hooks.message.finishTrackking'));
           return;
         }
         const projectLicenseResult = validateProjectLicense(targetProject.license, ownerProjectsCount());
         if (!projectLicenseResult.isOK && isOwner) {
           if (Platform.OS === 'web') {
-            Alert.alert('', projectLicenseResult.message + t('ProjectEdit.alert.openProjectWeb'));
+            await AlertAsync(projectLicenseResult.message + t('ProjectEdit.alert.openProjectWeb'));
           } else {
-            Alert.alert('', t('ProjectEdit.alert.openProject'));
+            await AlertAsync(t('ProjectEdit.alert.openProject'));
           }
         }
         setIsLoading(true);
@@ -146,7 +146,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         });
       } catch (e: any) {
         setIsLoading(false);
-        Alert.alert('error', e.message);
+        await AlertAsync(e.message);
       }
     },
     [
@@ -168,7 +168,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const pressSettingProject = useCallback(async () => {
     await pressOpenProject(true);
     startProjectSetting();
-    Alert.alert('', t('ProjectEdit.alert.settingProject'));
+    await AlertAsync(t('ProjectEdit.alert.settingProject'));
   }, [pressOpenProject, startProjectSetting]);
 
   const pressExportProject = useCallback(async () => {
@@ -200,12 +200,12 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const exportDataName = `${targetProject.name}_${time}`;
 
       const isOK = await exportGeoFile(exportData, exportDataName, 'ecorismap');
-      if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+      if (!isOK) await AlertAsync(t('hooks.message.failExport'));
 
       setIsLoading(false);
     } catch (e: any) {
       setIsLoading(false);
-      Alert.alert('error', e.message);
+      await AlertAsync(e.message);
     }
   }, [createExportSettings, fetchAllData, fetchProjectSettings, generateEcorisMapData, targetProject]);
 
@@ -224,7 +224,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       navigation.navigate('Projects');
     } catch (e: any) {
       setIsLoading(false);
-      Alert.alert('error', e.message);
+      await AlertAsync(e.message);
     }
   }, [deleteE3kitGroup, deleteProject, navigation, targetProject]);
 
@@ -269,7 +269,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }
     } catch (e: any) {
       setIsLoading(false);
-      Alert.alert('error', e.message);
+      await AlertAsync(e.message);
     }
   }, [checkedProject, isNew, navigation, saveNewProject, saveUpdatedProject]);
 
