@@ -9,7 +9,6 @@ import { t } from '../i18n/config';
 import { Props_Maps } from '../routes';
 import { TileMapType } from '../types';
 import { exportFile } from '../utils/File';
-import { Alert } from 'react-native';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
@@ -102,7 +101,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     const mapSettings = JSON.stringify(maps);
     const fileName = `maps_${time}.json`;
     const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [maps]);
 
   const gotoMapList = useCallback(() => {

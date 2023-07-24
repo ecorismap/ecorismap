@@ -62,11 +62,11 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
 
   const pressDeleteLayer = useCallback(async () => {
     if (isRunningProject) {
-      AlertAsync(t('hooks.message.cannotInRunningProject'));
+      await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-      Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+      await AlertAsync(t('hooks.message.cannotDeleteInTracking'));
       return;
     }
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
@@ -82,7 +82,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     const mapSettings = JSON.stringify(targetLayer);
     const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
     const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {

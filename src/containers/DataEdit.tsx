@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Linking, Platform } from 'react-native';
 import { LayerType, LocationType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
-import { ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
@@ -92,7 +92,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (ret) {
       const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
       if (!isOK) {
-        Alert.alert('', message);
+        await AlertAsync(message);
         return;
       }
 
@@ -145,7 +145,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressTakePhoto = useCallback(
     async (fieldName: string) => {
       if (Platform.OS === 'web') {
-        Alert.alert('', t('DataEdit.confirm.takePhoto'));
+        await AlertAsync(t('DataEdit.confirm.takePhoto'));
         return;
       }
       const folder =
@@ -352,7 +352,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   );
 
   const pressAddReferenceData = useCallback(
-    async (
+    (
       referenceLayer: LayerType,
       addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType,
       fields: { [key: string]: string | number | PhotoType[] }
