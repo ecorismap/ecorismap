@@ -358,7 +358,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     undoDraw();
   }, [undoDraw]);
 
-  const pressSaveDraw = useCallback(async () => {
+  const pressSaveDraw = useCallback(() => {
     let result;
     if (featureButton === 'LINE') {
       result = saveLine();
@@ -394,7 +394,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const { isOK, message } = deleteDraw();
 
       if (!isOK) {
-        Alert.alert('', message);
+        await AlertAsync(message);
         return;
       }
       closeData();
@@ -415,7 +415,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (result === undefined) return;
         const { isOK, message, layer, recordSet } = result;
         if (!isOK) {
-          Alert.alert('', message);
+          await AlertAsync(message);
           return;
         }
         setDrawTool('NONE');
@@ -448,7 +448,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const { isOK, message } = checkRecordEditable(layer, feature);
       if (!isOK) {
         resetPointPosition(layer, feature);
-        Alert.alert('', message);
+        await AlertAsync(message);
         return;
       }
       updatePointPosition(layer, feature, coordinate);
@@ -472,7 +472,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('', t('Home.alert.trackWeb'));
+      await AlertAsync(t('Home.alert.trackWeb'));
       return;
     }
     //runTutrial('HOME_BTN_TRACK');
@@ -584,9 +584,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (async () => {
       await importExternalFiles();
       const size = await calculateStorageSize();
-      console.log('size', size, 'MB');
+      //console.log('size', size, 'MB');
       if (size > 15) {
-        Alert.alert(`${Math.floor(size)}MB > 15MB`, t('Home.alert.storage'));
+        await AlertAsync(`${Math.floor(size)}MB > 15MB \n ${t('Home.alert.storage')}`);
       }
     })();
 
@@ -595,9 +595,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (nextAppState === 'active') {
         await importExternalFiles();
         const size = await calculateStorageSize();
-        console.log('size', size, 'MB');
+        //console.log('size', size, 'MB');
         if (size > 15) {
-          Alert.alert(`${Math.floor(size)}MB > 15MB`, t('Home.alert.storage'));
+          await AlertAsync(`${Math.floor(size)}MB > 15MB \n ${t('Home.alert.storage')}`);
         }
       }
     });
@@ -639,17 +639,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const addLocationPoint = useCallback(async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('', t('Home.alert.gpsWeb'));
+      await AlertAsync(t('Home.alert.gpsWeb'));
       return;
     }
     if (gpsState === 'off' && trackingState === 'off') {
-      Alert.alert('', t('Home.alert.gps'));
+      await AlertAsync(t('Home.alert.gps'));
       return;
     }
 
     const { isOK, message, layer, record } = await addCurrentPoint();
     if (!isOK || layer === undefined || record === undefined) {
-      Alert.alert('', message);
+      await AlertAsync(message);
     } else {
       screenState === 'closed' ? expandData() : openData();
       setTimeout(function () {
