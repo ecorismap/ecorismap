@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useData } from '../hooks/useData';
 import { Props_Data } from '../routes';
-import { ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
@@ -43,7 +43,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     // }
     const { exportData, fileName } = generateExportGeoData();
     const isOK = await exportGeoFile(exportData, fileName, 'zip');
-    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [generateExportGeoData]);
 
   const pressDeleteData = useCallback(async () => {
@@ -52,7 +52,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     for (const record of targetRecords) {
       const { isOK, message } = checkRecordEditable(route.params.targetLayer, record);
       if (!isOK) {
-        Alert.alert('', message);
+        await AlertAsync(message);
         return;
       }
     }
@@ -62,7 +62,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     });
   }, [checkRecordEditable, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer, targetRecords]);
 
-  const pressAddData = useCallback(async () => {
+  const pressAddData = useCallback(() => {
     if (!route.params.targetLayer.active) {
       Alert.alert('', t('hooks.message.noEditMode'));
       return;
