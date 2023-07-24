@@ -87,7 +87,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
       await cleanupEncryptKey();
       const { isOK } = await restoreEncryptKey(value);
       if (!isOK) {
-        Alert.alert('', t('hooks.message.encryptKeyFailed'));
+        await AlertAsync(t('hooks.message.encryptKeyFailed'));
         return;
       }
       gotoProject(projectIndex);
