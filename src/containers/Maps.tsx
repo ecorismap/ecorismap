@@ -12,6 +12,7 @@ import { exportFile } from '../utils/File';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
+import { Platform } from 'react-native';
 
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -101,7 +102,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     const mapSettings = JSON.stringify(maps);
     const fileName = `maps_${time}.json`;
     const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+    if (!isOK && Platform.OS !== 'web') await AlertAsync(t('hooks.message.failExport'));
   }, [maps]);
 
   const gotoMapList = useCallback(() => {
