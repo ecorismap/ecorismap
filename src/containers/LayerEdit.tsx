@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
-import { ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useLayerEdit } from '../hooks/useLayerEdit';
 import { Props_LayerEdit } from '../routes';
 import { LayerType } from '../types';
@@ -57,7 +57,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
     if (ret) {
       if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-        Alert.alert('', t('hooks.message.cannotDeleteInTracking'));
+        await AlertAsync(t('hooks.message.cannotDeleteInTracking'));
         return;
       }
       deleteLayer();
@@ -71,7 +71,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     const mapSettings = JSON.stringify(targetLayer);
     const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
     const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK) Alert.alert('', t('hooks.message.failExport'));
+    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {

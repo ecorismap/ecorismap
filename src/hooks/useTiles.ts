@@ -4,11 +4,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
-import { ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
-import { Alert } from '../components/atoms/Alert';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
@@ -175,10 +174,10 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     //console.log('errorCoount', (errorCount / tiles.length) * 100);
     if ((errorCount / tiles.length) * 100 > 20) {
       removeTileRegion(id);
-      Alert.alert('', t('hooks.alert.errorDownload'));
+      await AlertAsync(t('hooks.alert.errorDownload'));
       return;
     }
-    Alert.alert('', t('hooks.alert.completeDownload'));
+    await AlertAsync(t('hooks.alert.completeDownload'));
   }, [addTileRegions, downloadArea, removeTileRegion, tileMap]);
 
   const clearTiles = useCallback(
