@@ -102,7 +102,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           data: layerSetting,
           name: `${layer.name}_${time}.json`,
           type: 'JSON',
-          folder: `${layer.id}`,
+          folder: sanitize(layer.name),
         });
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         if (option?.includeGISData) {
