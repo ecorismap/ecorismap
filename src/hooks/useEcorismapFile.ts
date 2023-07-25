@@ -254,11 +254,13 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //ToDo: データのサイズチェック。もともと書き出したものだからチェックいらない？
       dispatch(setDataSetAction(loaded.dataSet));
       dispatch(setLayersAction(loaded.layers));
-      dispatch(setSettingsAction(loaded.settings));
+      dispatch(
+        setSettingsAction({ ...settings, mapRegion: loaded.settings.mapRegion, mapType: loaded.settings.mapType })
+      );
       dispatch(setTileMapsAction(loaded.maps));
       return { isOK: true, message: '' };
     },
-    [dispatch, loadEcorisMapFile]
+    [dispatch, loadEcorisMapFile, settings]
   );
 
   const clearEcorisMap = useCallback(async () => {
