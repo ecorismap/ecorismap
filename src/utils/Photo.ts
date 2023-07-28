@@ -22,7 +22,10 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
   const newUri = folder + '/' + fileName;
   await FileSystem.copyAsync({ from: fileUri, to: newUri });
   if (options && options.copy) {
-    await MediaLibrary.createAssetAsync(newUri);
+    const res = await MediaLibrary.requestPermissionsAsync();
+    if (res.status === 'granted') {
+      await MediaLibrary.createAssetAsync(newUri);
+    }
   }
 
   return newUri;
