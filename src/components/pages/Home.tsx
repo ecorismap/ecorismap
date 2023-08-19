@@ -35,8 +35,7 @@ import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
-import { VectorPolygon } from '../organisms/HomeVectorPolygon';
-import { latToTileY, lonToTileX } from '../../utils/Tile';
+import { VectorTiles } from '../organisms/HomeVectorPolygon';
 
 export default function HomeScreen() {
   const {
@@ -197,28 +196,6 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
-  function getTiles(): { x: number; y: number; z: number }[] {
-    const minLon = mapRegion.longitude - mapRegion.longitudeDelta / 2;
-    const minLat = mapRegion.latitude - mapRegion.latitudeDelta / 2;
-    const maxLon = mapRegion.longitude + mapRegion.longitudeDelta / 2;
-    const maxLat = mapRegion.latitude + mapRegion.latitudeDelta / 2;
-    //console.log(minLon, minLat, maxLon, maxLat);
-    const minTileX = lonToTileX(minLon, zoom);
-    const maxTileX = lonToTileX(maxLon, zoom);
-    const minTileY = latToTileY(maxLat, zoom);
-    const maxTileY = latToTileY(minLat, zoom);
-    //console.log(minTileX, maxTileX, minTileY, maxTileY);
-    const tiles: { x: number; y: number; z: number }[] = [];
-
-    for (let x = minTileX; x <= maxTileX + 1; x++) {
-      for (let y = minTileY; y <= maxTileY + 1; y++) {
-        tiles.push({ x, y, z: zoom });
-      }
-    }
-    //console.log(tiles);
-    return tiles;
-  }
-
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
       <View style={dataStyle}>
@@ -342,9 +319,7 @@ export default function HomeScreen() {
           })}
 
           {/************ Vector Tile *****************/}
-          {getTiles().map((d, index) => {
-            return <VectorPolygon key={index} z={d.z} x={d.x} y={d.y} />;
-          })}
+          <VectorTiles url="https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1" zoom={zoom} />
 
           {/************* TILE MAP ******************** */}
 
