@@ -36,6 +36,7 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { VectorTiles } from '../organisms/HomeVectorPolygon';
+import { CanvasView } from '../organisms/HomeCanvasView';
 
 export default function HomeScreen() {
   const {
@@ -219,7 +220,7 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-
+        <CanvasView />
         {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
@@ -319,8 +320,22 @@ export default function HomeScreen() {
           })}
 
           {/************ Vector Tile *****************/}
-          <VectorTiles url="https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1" zoom={zoom} />
+          {/* <VectorTiles url="https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1" zoom={zoom} /> */}
 
+          <UrlTile
+            urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
+            flipY={false}
+            opacity={1}
+            tileSize={256}
+            minimumZ={0}
+            maximumZ={22}
+            zIndex={10}
+            doubleTileSize={false}
+            maximumNativeZ={22}
+            tileCachePath={`${TILE_FOLDER}/mapmemo`}
+            tileCacheMaxAge={604800}
+            offlineMode={isOffline}
+          />
           {/************* TILE MAP ******************** */}
 
           {tileMaps
