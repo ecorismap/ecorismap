@@ -36,7 +36,7 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { VectorTiles } from '../organisms/HomeVectorPolygon';
-import { CanvasView } from '../organisms/HomeCanvasView';
+import { VectorTiles2 } from '../organisms/HomeVectorTiles';
 
 export default function HomeScreen() {
   const {
@@ -199,6 +199,8 @@ export default function HomeScreen() {
 
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
+      <VectorTiles2 url="https://www.ecoris.co.jp/map/kitakami_h30.pmtiles" zoom={zoom} />
+
       <View style={dataStyle}>
         <SplitScreen />
       </View>
@@ -220,7 +222,7 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-        <CanvasView />
+
         {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
@@ -326,7 +328,7 @@ export default function HomeScreen() {
             urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
             flipY={false}
             opacity={1}
-            tileSize={256}
+            tileSize={512}
             minimumZ={0}
             maximumZ={22}
             zIndex={10}
@@ -334,7 +336,7 @@ export default function HomeScreen() {
             maximumNativeZ={22}
             tileCachePath={`${TILE_FOLDER}/mapmemo`}
             tileCacheMaxAge={604800}
-            offlineMode={isOffline}
+            offlineMode={true}
           />
           {/************* TILE MAP ******************** */}
 
