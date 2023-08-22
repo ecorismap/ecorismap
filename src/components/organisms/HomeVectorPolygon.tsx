@@ -84,7 +84,7 @@ const VectorPolygon = React.memo((prop: VectorPolygonProps) => {
         const fileContent = await FileSystem.readAsStringAsync(filePath);
         // if (x === 14 && y == 6) await exportFile(fileContent, `${z}_${x}_${y}.geojson`);
         setFeatures(JSON.parse(fileContent));
-        console.log(`hit ${z}/${x}/${y}.geojson`);
+        // console.log(`hit ${z}/${x}/${y}.geojson`);
       } else {
         const p = new PMTiles('https://www.ecoris.co.jp/map/kitakami_h30.pmtiles');
         //const meta = await p.getMetadata();
@@ -94,7 +94,7 @@ const VectorPolygon = React.memo((prop: VectorPolygonProps) => {
         if (a === undefined) return;
         const pbf = new Pbf(a.data);
         const layer = new VectorTile.VectorTile(pbf).layers[LAYER_NAME];
-        console.log(layer.feature(0));
+        // console.log(layer.feature(0));
         const features_ = layer
           ? Array.from({ length: layer.length }, (_, i) => layer.feature(i).toGeoJSON(x, y, z))
           : [];
