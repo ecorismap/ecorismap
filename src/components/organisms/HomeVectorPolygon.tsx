@@ -11,7 +11,7 @@ import { latToTileY, lonToTileX } from '../../utils/Tile';
 import { useWindow } from '../../hooks/useWindow';
 import * as FileSystem from 'expo-file-system';
 import { exportFile } from '../../utils/File';
-import { PMTiles } from './pmtiles';
+import { PMTiles } from '../../utils/pmtiles';
 
 interface Props {
   url: string;

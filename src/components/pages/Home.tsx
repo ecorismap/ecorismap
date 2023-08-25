@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text } from 'react-native';
+import { StyleSheet, View, Platform, Text, TextInput, Keyboard, ScrollView } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -69,6 +69,7 @@ export default function HomeScreen() {
     isLoading,
     currentMapMemoTool,
     visibleMapMemoColor,
+    vectorTileInfo,
     onRegionChangeMapView,
     onDragMapView,
     onDragEndPoint,
@@ -222,7 +223,25 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-
+        {vectorTileInfo && (
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, padding: 8 }}
+            style={{
+              position: 'absolute',
+              zIndex: 1000,
+              elevation: 1000,
+              top: vectorTileInfo.position[1] - 100,
+              left: vectorTileInfo.position[0],
+              width: 200,
+              height: 100,
+              backgroundColor: '#ffffff',
+              borderRadius: 5,
+              borderWidth: 1,
+            }}
+          >
+            <Text>{vectorTileInfo.properties}</Text>
+          </ScrollView>
+        )}
         {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
