@@ -80,6 +80,12 @@ export interface HomeContextType {
   penWidth: number;
   mapMemoEditingLine: Position[];
   editableMapMemo: boolean;
+  vectorTileInfo:
+    | {
+        position: Position;
+        properties: string;
+      }
+    | undefined;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onDragMapView: () => void;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;

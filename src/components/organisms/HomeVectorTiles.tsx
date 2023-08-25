@@ -6,9 +6,10 @@ import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { latToTileY, lonToTileX } from '../../utils/Tile';
 import { TILE_FOLDER } from '../../constants/AppConstants';
-import { PMTiles } from './pmtiles';
+import { PMTiles } from '../../utils/pmtiles';
 import Pbf from 'pbf';
 import VectorTile from '@mapbox/vector-tile';
+import { getRandomColor } from '../../utils/Color';
 
 interface Props {
   url: string;
@@ -84,11 +85,11 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
     async (tile: { x: number; y: number; z: number }) => {
       //`${MAPMEMO_FOLDER}/${z}/${x}/${y}`があれば読み込まない
       //なければpmtileから読み込む
-      const info = await FileSystem.getInfoAsync(`${MAPMEMO_FOLDER}/${z}/${x}/${y}`);
-      if (info.exists) {
-        console.log('hit', tile.z, tile.x, tile.y);
-        return;
-      }
+      // const info = await FileSystem.getInfoAsync(`${MAPMEMO_FOLDER}/${z}/${x}/${y}`);
+      // if (info.exists) {
+      //   console.log('hit', tile.z, tile.x, tile.y);
+      //   return;
+      // }
       const LAYER_NAME = '北上川H30';
       const a = await pmtile.getZxy(tile.z, tile.x, tile.y);
       if (a === undefined) return;
@@ -150,23 +151,37 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
 
       for (let i = 0; i < vt.length; i++) {
         const feature = vt.feature(i);
+        const type = feature.type;
+        const code = Number(feature.properties['基本分類C']);
+        //console.log(`rgba(${255 - code}, ${255 - code}, ${code}, 1)`);
+        //ctx.fillStyle = getRandomColor();
+
+        //console.log(feature.properties);
+        //console.log(feature.type);
         const coords = feature.loadGeometry();
         if (coords[0].length < 4) continue;
+        //console.log(coords.length);
+        if (type === 3) {
+          for (let j = 0; j < coords.length; j++) {
+            ctx.beginPath();
+            ctx.fillStyle = j === 0 ? '#ffffffff' : '#00000000';
+            for (let k = 0; k < coords[j].length; k++) {
+              const p = coords[j][k];
+              const extent = 4096;
 
-        ctx.beginPath();
-        for (let k = 0; k < coords[0].length; k++) {
-          const p = coords[0][k];
-          const extent = 4096;
-
-          const x = (p.x / extent) * 256 * dpr;
-          const y = (p.y / extent) * 256 * dpr;
-          if (k === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
+              const x = (p.x / extent) * 256 * dpr;
+              const y = (p.y / extent) * 256 * dpr;
+              if (k === 0) {
+                ctx.moveTo(x, y);
+              } else {
+                ctx.lineTo(x, y);
+              }
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
           }
         }
-        ctx.stroke();
       }
       ctx.flush();
       saveMapMemo(gl);

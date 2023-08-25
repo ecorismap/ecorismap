@@ -37,6 +37,12 @@ import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
+import { xyToLatLon } from '../utils/Coords';
+import { latToTileY, lonToTileX } from '../utils/Tile';
+import { useWindow } from '../hooks/useWindow';
+import { Position } from '@turf/turf';
+import { getVectorTileInfo } from '../utils/VectorTile';
+import { set } from 'lodash';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -51,6 +57,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+
+  const [vectorTileInfo, setVectorTileInfo] = useState<
+    | {
+        position: Position;
+        properties: string;
+      }
+    | undefined
+  >(undefined);
 
   const [isPinch, setIsPinch] = useState(false);
   //タイルのダウンロード関連
@@ -154,6 +168,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressHisyouToolSettingCancel,
     showHisyouToolSetting,
   } = useHisyouToolSetting();
+  const { mapSize, mapRegion } = useWindow();
 
   const [isLoading] = useState(false);
 
@@ -733,7 +748,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             moveSvgView(e);
           }
         },
-        onPanResponderRelease: (e: GestureResponderEvent) => {
+        onPanResponderRelease: async (e: GestureResponderEvent) => {
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
@@ -743,6 +758,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             onPanResponderReleaseMapMemo();
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
+          } else if (true) {
+            const position: Position = [e.nativeEvent.locationX, e.nativeEvent.locationY];
+            const latlon = xyToLatLon(position, mapRegion, mapSize, mapViewRef.current);
+            const tileX = lonToTileX(latlon[0], zoom);
+            const tileY = latToTileY(latlon[1], zoom);
+            const properties = await getVectorTileInfo(latlon, { x: tileX, y: tileY, z: zoom });
+            if (properties === undefined) {
+              setVectorTileInfo(undefined);
+            } else {
+              const str = Object.keys(properties)
+                .map((key) => `${key}:${properties[key]}`)
+                .join('\n');
+              setVectorTileInfo({ position, properties: str });
+            }
           }
         },
       }),
@@ -754,6 +783,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       getInfoOfFeature,
       hideDrawLine,
       isPinch,
+      mapRegion,
+      mapSize,
       moveSvgView,
       onPanResponderGrantMapMemo,
       onPanResponderMoveMapMemo,
@@ -762,6 +793,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressSvgView,
       showDrawLine,
       unselectRecord,
+      zoom,
     ]
   );
 
@@ -814,6 +846,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
         editableMapMemo,
+        vectorTileInfo,
         onRegionChangeMapView,
         onDragEndPoint,
         onDragMapView,
