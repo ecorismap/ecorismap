@@ -7,7 +7,7 @@ import {
   PanResponderInstance,
   PanResponder,
 } from 'react-native';
-import MapView, { Region } from 'react-native-maps';
+import MapView, { MapPressEvent, Region } from 'react-native-maps';
 import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -37,11 +37,11 @@ import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
-import { xyToLatLon } from '../utils/Coords';
 import { latToTileY, lonToTileX } from '../utils/Tile';
 import { useWindow } from '../hooks/useWindow';
 import { Position } from '@turf/turf';
 import { getVectorTileInfo } from '../utils/VectorTile';
+import { latLonToXY } from '../utils/Coords';
 import { set } from 'lodash';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
@@ -168,7 +168,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressHisyouToolSettingCancel,
     showHisyouToolSetting,
   } = useHisyouToolSetting();
-  const { mapSize, mapRegion } = useWindow();
+  const { mapSize, mapRegion, devicePixelRatio: dpr } = useWindow();
 
   const [isLoading] = useState(false);
 
@@ -195,10 +195,32 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion, isDrawLineVisible, showDrawLine]
   );
 
+  const onPressMapView = useCallback(
+    async (e: MapPressEvent) => {
+      // const position = [e.nativeEvent.position.x, e.nativeEvent.position.y];
+      // console.log('onPressMapView', position);
+      const latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
+      const position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
+      const tileX = lonToTileX(latlon[0], zoom);
+      const tileY = latToTileY(latlon[1], zoom);
+      const properties = await getVectorTileInfo(latlon, { x: tileX, y: tileY, z: zoom });
+      if (properties === undefined) {
+        setVectorTileInfo(undefined);
+      } else {
+        const str = Object.keys(properties)
+          .map((key) => `${key}:${properties[key]}`)
+          .join('\n');
+        setVectorTileInfo({ position, properties: str });
+      }
+    },
+    [mapRegion, mapSize, zoom]
+  );
+
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
+    setVectorTileInfo(undefined);
   }, [gpsState, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
@@ -758,20 +780,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             onPanResponderReleaseMapMemo();
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
-          } else if (true) {
-            const position: Position = [e.nativeEvent.locationX, e.nativeEvent.locationY];
-            const latlon = xyToLatLon(position, mapRegion, mapSize, mapViewRef.current);
-            const tileX = lonToTileX(latlon[0], zoom);
-            const tileY = latToTileY(latlon[1], zoom);
-            const properties = await getVectorTileInfo(latlon, { x: tileX, y: tileY, z: zoom });
-            if (properties === undefined) {
-              setVectorTileInfo(undefined);
-            } else {
-              const str = Object.keys(properties)
-                .map((key) => `${key}:${properties[key]}`)
-                .join('\n');
-              setVectorTileInfo({ position, properties: str });
-            }
           }
         },
       }),
@@ -783,8 +791,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       getInfoOfFeature,
       hideDrawLine,
       isPinch,
-      mapRegion,
-      mapSize,
       moveSvgView,
       onPanResponderGrantMapMemo,
       onPanResponderMoveMapMemo,
@@ -793,7 +799,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressSvgView,
       showDrawLine,
       unselectRecord,
-      zoom,
     ]
   );
 
@@ -848,6 +853,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         editableMapMemo,
         vectorTileInfo,
         onRegionChangeMapView,
+        onPressMapView,
         onDragEndPoint,
         onDragMapView,
         onDrop,
