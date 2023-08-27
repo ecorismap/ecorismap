@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, TextInput, Keyboard, ScrollView } from 'react-native';
+import { StyleSheet, View, Platform, Text, ScrollView } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -71,6 +71,7 @@ export default function HomeScreen() {
     visibleMapMemoColor,
     vectorTileInfo,
     onRegionChangeMapView,
+    onPressMapView,
     onDragMapView,
     onDragEndPoint,
     pressDownloadTiles,
@@ -234,7 +235,7 @@ export default function HomeScreen() {
               left: vectorTileInfo.position[0],
               width: 200,
               height: 100,
-              backgroundColor: '#ffffff',
+              backgroundColor: COLOR.WHITE,
               borderRadius: 5,
               borderWidth: 1,
             }}
@@ -263,6 +264,7 @@ export default function HomeScreen() {
           moveOnMarkerPress={false}
           //@ts-ignore
           mapType={mapType}
+          onPress={onPressMapView}
           onPanDrag={onDragMapView}
           //@ts-ignore
           options={
@@ -354,7 +356,7 @@ export default function HomeScreen() {
             doubleTileSize={false}
             maximumNativeZ={22}
             tileCachePath={`${TILE_FOLDER}/mapmemo`}
-            tileCacheMaxAge={604800}
+            tileCacheMaxAge={0}
             offlineMode={true}
           />
           {/************* TILE MAP ******************** */}

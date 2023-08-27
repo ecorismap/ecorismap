@@ -42,7 +42,7 @@ export const VectorTiles2 = (prop: Props) => {
         tiles.push({ x, y, z: zoom });
       }
     }
-    //console.log(tiles);
+    console.log(tiles.length);
     return tiles;
   }, [mapRegion.latitude, mapRegion.latitudeDelta, mapRegion.longitude, mapRegion.longitudeDelta, zoom]);
   const tiles = useMemo(() => getTiles(), [getTiles]);
@@ -98,7 +98,7 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
       const layer = new VectorTile.VectorTile(pbf).layers[LAYER_NAME];
       return layer;
     },
-    [pmtile, x, y, z]
+    [pmtile]
   );
 
   const saveMapMemo = useCallback(
@@ -144,8 +144,32 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
     [dpr, x, y, z]
   );
 
+  const getColorByCode = useCallback((code: number) => {
+    if (code < 10) {
+      return '#000000';
+    } else if (code === 28) {
+      return '#00FFFF';
+    } else if (code === 10) {
+      return '#FFFF00';
+    } else if (code < 20) {
+      return '#ff0000';
+    } else if (code < 30) {
+      return '#00ff00';
+    } else if (code < 40) {
+      return '#0000ff';
+    } else if (code < 50) {
+      return '#ffff00';
+    } else if (code < 60) {
+      return '#ff00ff';
+    } else if (code < 70) {
+      return '#00ffff';
+    } else {
+      return '#ffffff';
+    }
+  }, []);
+
   const writeVectorTile = useCallback(
-    (gl: ExpoWebGLRenderingContext, ctx: Expo2DContext, vt: VectorTile.VectorTileLayer) => {
+    async (gl: ExpoWebGLRenderingContext, ctx: Expo2DContext, vt: VectorTile.VectorTileLayer) => {
       console.log('write pbf', z, x, y);
       ctx.clearRect(0, 0, 256 * dpr, 256 * dpr);
 
@@ -153,9 +177,14 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
         const feature = vt.feature(i);
         const type = feature.type;
         const code = Number(feature.properties['基本分類C']);
+        //console.log(code);
         //console.log(`rgba(${255 - code}, ${255 - code}, ${code}, 1)`);
         //ctx.fillStyle = getRandomColor();
 
+        // ctx.fillStyle = 'blue';
+        // ctx.font = 'bold 70pt monospace';
+        // ctx.fillText('Calibri', 10, 100, 1000);
+        // ctx.flush();
         //console.log(feature.properties);
         //console.log(feature.type);
         const coords = feature.loadGeometry();
@@ -164,7 +193,7 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
         if (type === 3) {
           for (let j = 0; j < coords.length; j++) {
             ctx.beginPath();
-            ctx.fillStyle = j === 0 ? '#ffffffff' : '#00000000';
+            ctx.fillStyle = j === 0 ? getColorByCode(code) : '#00000000';
             for (let k = 0; k < coords[j].length; k++) {
               const p = coords[j][k];
               const extent = 4096;
@@ -186,7 +215,7 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
       ctx.flush();
       saveMapMemo(gl);
     },
-    [dpr, saveMapMemo, x, y, z]
+    [dpr, getColorByCode, saveMapMemo, x, y, z]
   );
 
   const options: Expo2dContextOptions = {
@@ -199,6 +228,8 @@ const VectorTileRenderer = React.memo((prop: VectorTileRendererProps) => {
     //@ts-ignore
 
     const ctx = new Expo2DContext(gl, options);
+    //await ctx.initializeText();
+    //ctx.font = 'bold 70px sans-serif';
     ctx.strokeStyle = 'blue';
     ctx.lineWidth = 3;
     gl.blendEquation(gl.FUNC_ADD);
