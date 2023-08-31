@@ -11,6 +11,9 @@ import * as FileSystem from 'expo-file-system';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
+import { getExt } from '../utils/General';
+import { PMTiles } from '../utils/pmtiles';
+import { Buffer } from 'buffer';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -80,9 +83,21 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     [dispatch, tileRegions]
   );
 
+  const fetchPMTiles = useCallback(async (pmtile: PMTiles, localLocation: string, z: number, x: number, y: number) => {
+    const a = await pmtile.getZxy(z, x, y).catch(() => {});
+    if (a === undefined) return;
+    const base64String = Buffer.from(a.data).toString('base64');
+    await FileSystem.writeAsStringAsync(localLocation, base64String, {
+      encoding: FileSystem.EncodingType.UTF8,
+    }).catch(() => {});
+  }, []);
+
   const downloadTiles = useCallback(async () => {
     const id = addTileRegions();
     if (tileMap === undefined || id === undefined) return;
+
+    const isPMTiles = getExt(tileMap.url) === 'pmtiles';
+    const pmtile = isPMTiles ? new PMTiles(tileMap.url) : undefined;
 
     setProgress('0');
     setIsDownloading(true);
@@ -124,7 +139,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     }
     await Promise.all(batch);
 
-    let batchDownload: Promise<void>[] = [];
+    let batchDownload: any = [];
     let errorCount = 0;
     d = 0;
 
@@ -140,26 +155,35 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           pause.current = false;
         }
       }
-      const fetchUrl = tileMap.url
-        .replace('{z}', tile.z.toString())
-        .replace('{x}', tile.x.toString())
-        .replace('{y}', tile.y.toString());
 
-      const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-      //console.log(fetchUrl, localLocation);
+      let tilePromise;
+      if (pmtile !== undefined) {
+        //console.log(tile.z, tile.x, tile.y);
+        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
+        tilePromise = fetchPMTiles(pmtile, localLocation, tile.z, tile.x, tile.y);
+      } else {
+        const fetchUrl = tileMap.url
+          .replace('{z}', tile.z.toString())
+          .replace('{x}', tile.x.toString())
+          .replace('{y}', tile.y.toString());
 
-      const tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-        .then(({ uri, status }) => {
-          if (status !== 200) {
-            FileSystem.deleteAsync(uri);
-            //console.log('A', uri);
+        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
+        //console.log(fetchUrl, localLocation);
+
+        tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
+          .then(({ uri, status }) => {
+            if (status !== 200) {
+              FileSystem.deleteAsync(uri);
+              //console.log('A', uri);
+              errorCount++;
+            }
+          })
+          .catch(() => {
             errorCount++;
-          }
-        })
-        .catch(() => {
-          errorCount++;
-          //console.error(error);
-        });
+            //console.error(error);
+          });
+      }
+
       batchDownload.push(tilePromise);
       if (batchDownload.length >= BATCH_SIZE) {
         d = d + BATCH_SIZE;
@@ -173,12 +197,12 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     setIsDownloading(false);
     //console.log('errorCoount', (errorCount / tiles.length) * 100);
     if ((errorCount / tiles.length) * 100 > 20) {
-      removeTileRegion(id);
+      //removeTileRegion(id);
       await AlertAsync(t('hooks.alert.errorDownload'));
       return;
     }
     await AlertAsync(t('hooks.alert.completeDownload'));
-  }, [addTileRegions, downloadArea, removeTileRegion, tileMap]);
+  }, [addTileRegions, downloadArea, fetchPMTiles, removeTileRegion, tileMap]);
 
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {

@@ -84,6 +84,7 @@ PODS:
     - GoogleMaps/Base
   - hermes-engine (0.70.12)
   - libevent (2.1.12)
+  - Protobuf (3.24.2)
   - RCT-Folly (2021.07.22.00):
     - boost
     - DoubleConversion
@@ -318,6 +319,11 @@ PODS:
     - Google-Maps-iOS-Utils (= 4.1.0)
     - GoogleMaps (= 7.3.0)
     - React-Core
+    - react-native-google-maps/NonARCFiles (= 1.4.0)
+  - react-native-google-maps/NonARCFiles (1.4.0):
+    - Google-Maps-iOS-Utils (= 4.1.0)
+    - GoogleMaps (= 7.3.0)
+    - React-Core
   - react-native-maps (1.4.0):
     - React-Core
   - react-native-safe-area-context (4.4.1):
@@ -477,6 +483,7 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
+  - Protobuf
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
   - RCTTypeSafety (from `../node_modules/react-native/Libraries/TypeSafety`)
@@ -530,6 +537,7 @@ SPEC REPOS:
     - Google-Maps-iOS-Utils
     - GoogleMaps
     - libevent
+    - Protobuf
     - SSZipArchive
 
 EXTERNAL SOURCES:
@@ -707,6 +715,7 @@ SPEC CHECKSUMS:
   GoogleMaps: a146f275ee429d14822178c7a841c03366ec92a1
   hermes-engine: 9ae9c0a1ad0ca69b7e3abc1533b6beb01a3ba4ef
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
+  Protobuf: de0b7ad27d01105fc191b77b003e74af6dbd2c2c
   RCT-Folly: 0080d0a6ebf2577475bda044aa59e2ca1f909cda
   RCTRequired: 1ec311d9574032834439a18d3bffcaa3b55109a7
   RCTTypeSafety: 711ee78f0aedbc3cd2870c4a838b1e332470d1fd
@@ -724,7 +733,7 @@ SPEC CHECKSUMS:
   React-logger: 00be0dc9dacb7b23f3ab4d78aadccb4b72f24b31
   react-native-date-picker: 04e866ba4e7857f83abd504ad42e787f0f02ae00
   react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
-  react-native-google-maps: f4cf51c3c6360eb4f945adc12dc89575ec3d944a
+  react-native-google-maps: 81583a8e8849a96760a4a7522265a37a4838f5bc
   react-native-maps: 7135a33610202745d08fdf151ce6b0d01952a99c
   react-native-safe-area-context: 99b24a0c5acd0d5dcac2b1a7f18c49ea317be99a
   react-native-slider: 33b8d190b59d4f67a541061bb91775d53d617d9d
@@ -754,6 +763,6 @@ SPEC CHECKSUMS:
   UMAppLoader: 354d71d2d2ce8d6c19fb13d72b9c8209b18a8c56
   Yoga: bb774af243598f7f860127c6e9ac7b62fb6519c4
 
-PODFILE CHECKSUM: d10f29c131bb48118e2b5fb42b52bc14f6d822b8
+PODFILE CHECKSUM: 166a4e3073788a3fdd1a9aa8c26f322dd3a6f28e
 
 COCOAPODS: 1.12.1

@@ -42,6 +42,7 @@ export type UseMapsReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  clearTileCache: () => Promise<void>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -102,6 +103,16 @@ export const useMaps = (): UseMapsReturnType => {
     },
     [dispatch, tileRegions]
   );
+
+  const clearTileCache = useCallback(async () => {
+    if (Platform.OS === 'web') return;
+
+    const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
+    if (uri) {
+      await FileSystem.deleteAsync(uri);
+      dispatch(editSettingsAction({ tileRegions: [] }));
+    }
+  }, [dispatch]);
 
   const changeVisible = useCallback(
     (visible: boolean, index: number) => {
@@ -244,5 +255,6 @@ export const useMaps = (): UseMapsReturnType => {
     fetchMapList,
     saveMapListURL,
     importMapFile,
+    clearTileCache,
   } as const;
 };
