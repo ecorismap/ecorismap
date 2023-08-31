@@ -37,12 +37,7 @@ import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
-import { latToTileY, lonToTileX } from '../utils/Tile';
-import { useWindow } from '../hooks/useWindow';
-import { Position } from '@turf/turf';
-import { getVectorTileInfo } from '../utils/VectorTile';
-import { latLonToXY } from '../utils/Coords';
-import { set } from 'lodash';
+import { useVectorTile } from '../hooks/useVectorTile';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -57,14 +52,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
-
-  const [vectorTileInfo, setVectorTileInfo] = useState<
-    | {
-        position: Position;
-        properties: string;
-      }
-    | undefined
-  >(undefined);
 
   const [isPinch, setIsPinch] = useState(false);
   //タイルのダウンロード関連
@@ -168,7 +155,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressHisyouToolSettingCancel,
     showHisyouToolSetting,
   } = useHisyouToolSetting();
-  const { mapSize, mapRegion, devicePixelRatio: dpr } = useWindow();
+
+  const { vectorTileInfo, getVectorTileInfo, closeVectorTileInfo } = useVectorTile();
 
   const [isLoading] = useState(false);
 
@@ -197,31 +185,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressMapView = useCallback(
     async (e: MapPressEvent) => {
-      // const position = [e.nativeEvent.position.x, e.nativeEvent.position.y];
-      // console.log('onPressMapView', position);
-      const latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
-      const position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
-      const tileX = lonToTileX(latlon[0], zoom);
-      const tileY = latToTileY(latlon[1], zoom);
-      const properties = await getVectorTileInfo(latlon, { x: tileX, y: tileY, z: zoom });
-      if (properties === undefined) {
-        setVectorTileInfo(undefined);
-      } else {
-        const str = Object.keys(properties)
-          .map((key) => `${key}:${properties[key]}`)
-          .join('\n');
-        setVectorTileInfo({ position, properties: str });
-      }
+      getVectorTileInfo(e, mapViewRef.current, zoom);
     },
-    [mapRegion, mapSize, zoom]
+    [getVectorTileInfo, zoom]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-    setVectorTileInfo(undefined);
-  }, [gpsState, toggleGPS]);
+    closeVectorTileInfo();
+  }, [closeVectorTileInfo, gpsState, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
@@ -549,7 +523,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressDeleteTiles = useCallback(async () => {
     if (route.params?.tileMap !== undefined) {
       const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
-      if (ret) clearTiles(route.params.tileMap);
+      if (ret) await clearTiles(route.params.tileMap);
     }
   }, [clearTiles, route.params?.tileMap]);
 
@@ -889,6 +863,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         panResponder,
         isPinch,
         isDrawLineVisible,
+        closeVectorTileInfo,
       }}
     >
       <Home />

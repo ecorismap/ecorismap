@@ -109,7 +109,7 @@
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.9.0",
     "react-native-get-random-values": "~1.8.0",
-    "react-native-maps": "^1.4.0",
+    "react-native-maps": "1.4.0",
     "react-native-reanimated": "^2.14.4",
     "react-native-safe-area-context": "4.4.1",
     "react-native-scale-bar": "^1.0.6",

@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, ScrollView } from 'react-native';
+import { StyleSheet, View, Platform, Text, ScrollView, TouchableOpacity } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -35,8 +35,7 @@ import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
-import { VectorTiles } from '../organisms/HomeVectorPolygon';
-import { VectorTiles2 } from '../organisms/HomeVectorTiles';
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const {
@@ -88,6 +87,7 @@ export default function HomeScreen() {
     isPinch,
     isDrawLineVisible,
     mapMemoEditingLine,
+    closeVectorTileInfo,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -201,7 +201,7 @@ export default function HomeScreen() {
 
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
-      <VectorTiles2 url="https://www.ecoris.co.jp/map/kitakami_h30.pmtiles" zoom={zoom} />
+      {/* <VectorTiles2 url="https://www.ecoris.co.jp/map/kitakami_h30.pmtiles" zoom={zoom} /> */}
 
       <View style={dataStyle}>
         <SplitScreen />
@@ -225,23 +225,55 @@ export default function HomeScreen() {
         />
         <MapMemoView />
         {vectorTileInfo && (
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1, padding: 8 }}
+          <View
             style={{
               position: 'absolute',
               zIndex: 1000,
               elevation: 1000,
-              top: vectorTileInfo.position[1] - 100,
-              left: vectorTileInfo.position[0],
-              width: 200,
-              height: 100,
-              backgroundColor: COLOR.WHITE,
-              borderRadius: 5,
-              borderWidth: 1,
+              top: vectorTileInfo.position[1] - 110,
+              left: vectorTileInfo.position[0] - 100,
             }}
           >
-            <Text>{vectorTileInfo.properties}</Text>
-          </ScrollView>
+            {/* クローズボタン */}
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                top: 5,
+                right: 5,
+                zIndex: 1001, // 吹き出しよりも上に表示
+              }}
+              onPress={closeVectorTileInfo} // クローズボタンが押されたときの動作
+            >
+              <FontAwesome name="close" size={24} color="black" />
+            </TouchableOpacity>
+            <ScrollView
+              contentContainerStyle={{ flexGrow: 1, padding: 8 }}
+              style={{
+                width: 200,
+                height: 100,
+                backgroundColor: COLOR.WHITE,
+                borderRadius: 5,
+              }}
+            >
+              <Text>{vectorTileInfo.properties}</Text>
+            </ScrollView>
+            <View
+              // eslint-disable-next-line react-native/no-color-literals
+              style={{
+                alignSelf: 'center',
+                width: 10,
+                height: 10,
+                backgroundColor: 'transparent',
+                borderStyle: 'solid',
+                borderLeftWidth: 10,
+                borderRightWidth: 10,
+                borderTopWidth: 10,
+                borderLeftColor: 'transparent',
+                borderRightColor: 'transparent',
+                borderTopColor: COLOR.WHITE, // 吹き出しと同じ背景色
+              }}
+            />
+          </View>
         )}
         {isDrawLineVisible && <SvgView />}
         <MapView
@@ -343,9 +375,9 @@ export default function HomeScreen() {
           })}
 
           {/************ Vector Tile *****************/}
-          {/* <VectorTiles url="https://cyberjapandata.gsi.go.jp/xyz/optimal_bvmap-v1" zoom={zoom} /> */}
+          {/* <VectorTiles url="https://www.ecoris.co.jp/map/kitakami_vt" zoom={zoom} /> */}
 
-          <UrlTile
+          {/* <UrlTile
             urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
             flipY={false}
             opacity={1}
@@ -358,7 +390,7 @@ export default function HomeScreen() {
             tileCachePath={`${TILE_FOLDER}/mapmemo`}
             tileCacheMaxAge={0}
             offlineMode={true}
-          />
+          /> */}
           {/************* TILE MAP ******************** */}
 
           {tileMaps
@@ -372,13 +404,14 @@ export default function HomeScreen() {
                     urlTemplate={tileMap.url}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
+                    tileSize={512}
                     minimumZ={0}
                     maximumZ={22}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={604800}
+                    tileCacheMaxAge={0}
                     offlineMode={isOffline}
                   />
                 ) : (

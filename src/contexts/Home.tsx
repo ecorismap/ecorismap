@@ -123,6 +123,7 @@ export interface HomeContextType {
   panResponder: PanResponderInstance;
   isPinch: boolean;
   isDrawLineVisible: boolean;
+  closeVectorTileInfo: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);
