@@ -3,28 +3,29 @@
     "id": "example-id",
     "type": "line",
     "source": "example-source",
-    "source-layer": "北上川H30",
+    "source-layer": "kitakami_h30",
     "minzoom": 0,
     "maxzoom": 24,
     "paint": {
-      "line-color": "#FFFFFF"
+      "line-color": "#FFFFFF",
+      "line-width": 1
     }
   },
   {
     "id": "example-id-label",
     "type": "symbol",
     "source": "example-source",
-    "source-layer": "北上川H30",
-    "minzoom": 0,
+    "source-layer": "kitakami_h30",
+    "minzoom": 16,
     "maxzoom": 24,
     "layout": {
-      "text-field": ["get", "基本分類C"],
+      "text-field": ["get", "群落表示C"],
       "text-size": 12,
       "text-font": ["Noto Sans CJK JP Regular"]
     },
     "paint": {
-      "text-color": "#000000",
-      "text-halo-color": "#FFFFFF",
+      "text-color": "#FFFFFF",
+      "text-halo-color": "#000000",
       "text-halo-width": 0.8
     }
   }

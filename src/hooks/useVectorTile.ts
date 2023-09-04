@@ -49,6 +49,8 @@ export const useVectorTile = (): UseVectorTileReturnType => {
       const tileY = latToTileY(latlon[1], zoom);
       const properties: { [key: string]: any }[] = [];
       for (const tileMap of tileMaps) {
+        if (!tileMap.visible || tileMap.url === '') continue;
+        //console.log(tileMap.name, tileX, tileY, zoom);
         const property = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
         if (property === undefined) continue;
         properties.push(property);
