@@ -1,0 +1,43 @@
+[
+  {
+    "id": "example-id",
+    "type": "line",
+    "source": "example-source",
+    "source-layer": "kuiL",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "paint": {
+      "line-color": "#FFFFFF"
+    }
+  },
+  {
+    "id": "example-id",
+    "type": "circle",
+    "source": "example-source",
+    "source-layer": "kuiP",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "paint": {
+      "circle-color": "#0000FF",
+      "circle-radius": 5
+    }
+  },
+  {
+    "id": "example-id-label",
+    "type": "symbol",
+    "source": "example-source",
+    "source-layer": "kuiP",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "layout": {
+      "text-field": ["get", "KYORISI"],
+      "text-size": 16,
+      "text-font": ["Noto Sans CJK JP Regular"]
+    },
+    "paint": {
+      "text-color": "#0000FF",
+      "text-halo-color": "#FFFFFF",
+      "text-halo-width": 0.8
+    }
+  }
+]
