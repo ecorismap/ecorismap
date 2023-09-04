@@ -170,7 +170,7 @@ export default function HomeScreen() {
       if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
         // 外部からレイヤーとそのスタイルを非同期に読み込む
         const url = tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
-        //console.log('url', url);
+        console.log('url', url);
         fetch(url)
           .then((response) => response.json())
           .then((layerStyles) => {
