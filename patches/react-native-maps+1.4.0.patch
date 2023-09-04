@@ -2571,7 +2571,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/ed9aa4c7744c507f3dcccae8c00d0e45/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/ed9aa4c7744c507f3dcccae8c00d0e45/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..0d20613
+index 0000000..a59cc75
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/ed9aa4c7744c507f3dcccae8c00d0e45/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java
 new file mode 100644
@@ -2731,7 +2731,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..1a57e9d
+index 0000000..6a3d54b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -7329,7 +7329,7 @@ index 0000000..906250b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..89ee5d9
+index 0000000..4f45d6f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -8354,7 +8354,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..67e7c7c
+index 0000000..d090bc0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -11629,7 +11629,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..1283b1c
+index 0000000..323a2d8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
@@ -11945,10 +11945,10 @@ index 0000000..c61300c
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..35e3d1e
+index 0000000..60804dc
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,727 @@
+@@ -0,0 +1,850 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -11960,6 +11960,7 @@ index 0000000..35e3d1e
 +import android.graphics.Color;
 +import android.graphics.Paint;
 +import android.graphics.Path;
++import android.graphics.PointF;
 +import android.graphics.Rect;
 +import android.graphics.Typeface;
 +import android.util.Log;
@@ -11985,6 +11986,7 @@ index 0000000..35e3d1e
 +import java.net.URLConnection;
 +import java.nio.ByteBuffer;
 +import java.nio.charset.StandardCharsets;
++import java.util.ArrayList;
 +import java.util.Base64;
 +import java.util.HashMap;
 +import java.util.Iterator;
@@ -12298,6 +12300,121 @@ index 0000000..35e3d1e
 +    return attributeDict;
 +  }
 +
++  public void drawPointInContext(Canvas canvas, List<Integer> geometryArray, int fillColor, String label) {
++    float cursorX = 0;
++    float cursorY = 0;
++    float scaleFactor = 512.0f / 4096.0f; // タイルのサイズ / extent
++
++    // 塗りつぶし用のペイントを定義
++    Paint fillPaint = new Paint();
++    fillPaint.setColor(fillColor);
++    fillPaint.setStyle(Paint.Style.FILL);
++
++    // テキスト用のペイントを定義
++    Paint textPaint = new Paint();
++    textPaint.setColor(Color.BLACK);
++    textPaint.setTextSize(16);
++    textPaint.setStyle(Paint.Style.FILL);
++    textPaint.setTextAlign(Paint.Align.CENTER);
++
++    int index = 0;
++
++    while (index < geometryArray.size()) {
++      int commandInteger = geometryArray.get(index++);
++      int commandId = commandInteger & 0x7; // lower 3 bits
++      int commandCount = commandInteger >> 3; // higher bits
++
++      for (int i = 0; i < commandCount; ++i) {
++        int dx = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
++        int dy = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
++        cursorX += dx;
++        cursorY += dy;
++
++        float scaledX = cursorX * scaleFactor;
++        float scaledY = cursorY * scaleFactor;
++
++        if (commandId == 1) { // MoveTo, this would mark the start of a point
++          // ポイントを描画（ここでは半径10の円としています）
++          canvas.drawCircle(scaledX, scaledY, 5, fillPaint);
++
++          // ポイントにラベルを付ける
++          canvas.drawText(label, scaledX, scaledY - 20, textPaint); // ラベルはポイントの少し上に配置
++        }
++      }
++    }
++  }
++
++  public void drawLineStringInContext(Canvas canvas, List<Integer> geometryArray, int lineColor, String label) {
++    float cursorX = 0;
++    float cursorY = 0;
++    float totalLength = 0;
++    float scaleFactor = 512.0f / 4096.0f;
++
++    Paint linePaint = new Paint();
++    linePaint.setColor(lineColor);
++    linePaint.setStyle(Paint.Style.STROKE);
++    linePaint.setStrokeWidth(3);
++
++    Paint textPaint = new Paint();
++    textPaint.setColor(Color.BLACK);
++    textPaint.setTextSize(16);
++    textPaint.setStyle(Paint.Style.FILL);
++    textPaint.setTextAlign(Paint.Align.CENTER);
++
++    Path path = new Path();
++    List<PointF> points = new ArrayList<>();
++    float[] lengths = new float[geometryArray.size() / 2]; // Approximate allocation
++    int lengthIndex = 0;
++
++    int index = 0;
++
++    while (index < geometryArray.size()) {
++      int commandInteger = geometryArray.get(index++);
++      int commandId = commandInteger & 0x7;
++      int commandCount = commandInteger >> 3;
++
++      for (int i = 0; i < commandCount; ++i) {
++        int dx = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
++        int dy = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
++        cursorX += dx;
++        cursorY += dy;
++
++        float scaledX = cursorX * scaleFactor;
++        float scaledY = cursorY * scaleFactor;
++
++        if (commandId == 2) { // LineTo
++          path.lineTo(scaledX, scaledY);
++          PointF lastPoint = points.isEmpty() ? new PointF(0, 0) : points.get(points.size() - 1);
++          float segmentLength = (float) Math.sqrt(
++            Math.pow(scaledX - lastPoint.x, 2) + Math.pow(scaledY - lastPoint.y, 2)
++          );
++          totalLength += segmentLength;
++          lengths[lengthIndex++] = totalLength;
++        } else if (commandId == 1) { // MoveTo
++          path.moveTo(scaledX, scaledY);
++        }
++        points.add(new PointF(scaledX, scaledY));
++      }
++    }
++
++    canvas.drawPath(path, linePaint);
++
++    // Find the midpoint along the length of the line
++    float midLength = totalLength / 2;
++    PointF labelPoint = new PointF();
++    for (int i = 1; i < lengthIndex; i++) {
++      if (lengths[i] >= midLength) {
++        float ratio = (midLength - lengths[i - 1]) / (lengths[i] - lengths[i - 1]);
++        labelPoint.x = points.get(i - 1).x + ratio * (points.get(i).x - points.get(i - 1).x);
++        labelPoint.y = points.get(i - 1).y + ratio * (points.get(i).y - points.get(i - 1).y);
++        break;
++      }
++    }
++
++    // Draw the label at the mid-point of the line
++    canvas.drawText(label, labelPoint.x, labelPoint.y, textPaint);
++  }
++
 +  public void drawPolygonInContext(Canvas canvas, List<Integer> geometryArray, int fillColor, String label) {
 +    float cursorX = 0;
 +    float cursorY = 0;
@@ -12425,7 +12542,13 @@ index 0000000..35e3d1e
 +            String key = "基本分類C";
 +            String labelToUse = getLabelToUse(attributes, key);
 +            int colorToUse = getColorToUse(attributes, key); // AndroidのColorクラスを使用する場合
-+            if (feature.getType() == VectorTile.Tile.GeomType.POLYGON) { // ポリゴンのみを処理
++            if (feature.getType() == VectorTile.Tile.GeomType.POINT) {
++              // ポイントの場合の処理
++              drawPointInContext(canvas, feature.getGeometryList(), colorToUse, labelToUse);
++            } else if (feature.getType() == VectorTile.Tile.GeomType.LINESTRING) {
++              // ラインストリングの場合の処理
++              drawLineStringInContext(canvas, feature.getGeometryList(), colorToUse, labelToUse);
++            } else if (feature.getType() == VectorTile.Tile.GeomType.POLYGON) { // ポリゴンのみを処理
 +              drawPolygonInContext(canvas, feature.getGeometryList(), colorToUse, labelToUse);
 +            }
 +          }
@@ -22551,10 +22674,10 @@ index 0000000..4d580f2
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..1803fd3
+index 0000000..8a7e56f
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,549 @@
+@@ -0,0 +1,662 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -22802,6 +22925,110 @@ index 0000000..1803fd3
 +  return randomColor;
 +}
 +
++- (void)drawPointInContext:(CGContextRef)context
++                geometries:(GPBUInt32Array *)geometryArray
++                 fillColor:(UIColor *)fillColor
++                     label:(NSString *)label {
++
++  NSUInteger index = 0;
++  float cursorX = 0;
++  float cursorY = 0;
++  float scaleFactor = 512.0 / 4096.0;
++
++  // 描画設定
++  CGContextSetFillColorWithColor(context, fillColor.CGColor);
++
++  while (index < geometryArray.count) {
++    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
++    uint32_t commandId = commandInteger & 0x7;
++    uint32_t commandCount = commandInteger >> 3;
++
++    if (commandId == 1) { // MoveTo
++      for (NSUInteger i = 0; i < commandCount; ++i) {
++        int32_t dx = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                               (-([geometryArray valueAtIndex:index - 1] & 1)));
++        int32_t dy = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                               (-([geometryArray valueAtIndex:index - 1] & 1)));
++
++        cursorX += dx;
++        cursorY += dy;
++
++        float scaledX = cursorX * scaleFactor;
++        float scaledY = cursorY * scaleFactor;
++
++        // 丸を描画（中心座標を考慮して調整）
++        CGContextFillEllipseInRect(
++            context, CGRectMake(scaledX - 5, scaledY - 5, 10.0, 10.0));
++      }
++    }
++  }
++}
++
++- (void)drawLineStringInContext:(CGContextRef)context
++                     geometries:(GPBUInt32Array *)geometryArray
++                      fillColor:(UIColor *)fillColor
++                          label:(NSString *)label {
++
++  NSUInteger index = 0;
++  float cursorX = 0;
++  float cursorY = 0;
++  float scaleFactor = 512.0 / 4096.0;
++
++  // 描画設定
++  CGContextSetStrokeColorWithColor(context, fillColor.CGColor);
++  CGContextSetLineWidth(context, 2);
++
++  CGContextBeginPath(context);
++
++  float totalX = 0;
++  float totalY = 0;
++  NSUInteger pointCount = 0;
++
++  while (index < geometryArray.count) {
++    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
++    uint32_t commandId = commandInteger & 0x7;
++    uint32_t commandCount = commandInteger >> 3;
++
++    switch (commandId) {
++    case 1: // MoveTo
++    case 2: // LineTo
++      for (NSUInteger i = 0; i < commandCount; ++i) {
++        int32_t dx = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                               (-([geometryArray valueAtIndex:index - 1] & 1)));
++        int32_t dy = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                               (-([geometryArray valueAtIndex:index - 1] & 1)));
++
++        cursorX += dx;
++        cursorY += dy;
++
++        float scaledX = cursorX * scaleFactor;
++        float scaledY = cursorY * scaleFactor;
++
++        if (commandId == 1) {
++          CGContextMoveToPoint(context, scaledX, scaledY);
++        } else if (commandId == 2) {
++          CGContextAddLineToPoint(context, scaledX, scaledY);
++        }
++
++        totalX += scaledX;
++        totalY += scaledY;
++        pointCount++;
++      }
++      break;
++    default:
++      break;
++    }
++  }
++
++  CGContextStrokePath(context); // ラインストリングを描画
++
++  // ラインストリングの中心点を計算
++  float centerX = totalX / pointCount;
++  float centerY = totalY / pointCount;
++
++  // ラベルを描画（上のポリゴンのコードを参考にして同様に描画できます）
++}
++
 +- (void)drawPolygonInContext:(CGContextRef)context
 +                  geometries:(GPBUInt32Array *)geometryArray
 +                   fillColor:(UIColor *)fillColor
@@ -22962,8 +23189,17 @@ index 0000000..1803fd3
 +      NSString *key = @"基本分類C";
 +      NSString *labelToUse = getLabelToUse(attributes, key);
 +      UIColor *colorToUse = getColorToUse(attributes, key);
-+
-+      if (feature.type == Tile_GeomType_Polygon) { // ポリゴンのみを処理
++      if (feature.type == Tile_GeomType_Point) {
++        [self drawPointInContext:context
++                      geometries:feature.geometryArray
++                       fillColor:colorToUse
++                           label:labelToUse];
++      } else if (feature.type == Tile_GeomType_Linestring) {
++        [self drawLineStringInContext:context
++                           geometries:feature.geometryArray
++                            fillColor:colorToUse
++                                label:labelToUse];
++      } else if (feature.type == Tile_GeomType_Polygon) { // ポリゴンのみを処理
 +        [self drawPolygonInContext:context
 +                        geometries:feature.geometryArray
 +                         fillColor:colorToUse

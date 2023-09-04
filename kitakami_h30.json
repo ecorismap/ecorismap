@@ -1,0 +1,31 @@
+[
+  {
+    "id": "example-id",
+    "type": "line",
+    "source": "example-source",
+    "source-layer": "北上川H30",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "paint": {
+      "line-color": "#FFFFFF"
+    }
+  },
+  {
+    "id": "example-id-label",
+    "type": "symbol",
+    "source": "example-source",
+    "source-layer": "北上川H30",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "layout": {
+      "text-field": ["get", "基本分類C"],
+      "text-size": 12,
+      "text-font": ["Noto Sans CJK JP Regular"]
+    },
+    "paint": {
+      "text-color": "#000000",
+      "text-halo-color": "#FFFFFF",
+      "text-halo-width": 0.8
+    }
+  }
+]

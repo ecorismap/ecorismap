@@ -23,7 +23,7 @@ import {
   EraserType,
   LayerType,
 } from '../types';
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
 import { Position } from '@turf/turf';
 import * as Location from 'expo-location';
@@ -87,7 +87,7 @@ export interface HomeContextType {
       }
     | undefined;
   onRegionChangeMapView: (region: Region | ViewState) => void;
-  onPressMapView: (e: MapPressEvent) => void;
+  onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;

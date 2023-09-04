@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -28,14 +28,14 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { getExt, nearDegree } from '../../utils/General';
+import { nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
-import { FontAwesome } from '@expo/vector-icons';
+import { HomePopup } from '../organisms/HomePopup';
 
 export default function HomeScreen() {
   const {
@@ -68,7 +68,6 @@ export default function HomeScreen() {
     isLoading,
     currentMapMemoTool,
     visibleMapMemoColor,
-    vectorTileInfo,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -87,7 +86,6 @@ export default function HomeScreen() {
     isPinch,
     isDrawLineVisible,
     mapMemoEditingLine,
-    closeVectorTileInfo,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -224,57 +222,7 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-        {vectorTileInfo && (
-          <View
-            style={{
-              position: 'absolute',
-              zIndex: 1000,
-              elevation: 1000,
-              top: vectorTileInfo.position[1] - 110,
-              left: vectorTileInfo.position[0] - 100,
-            }}
-          >
-            {/* クローズボタン */}
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                top: 5,
-                right: 5,
-                zIndex: 1001, // 吹き出しよりも上に表示
-              }}
-              onPress={closeVectorTileInfo} // クローズボタンが押されたときの動作
-            >
-              <FontAwesome name="close" size={24} color="black" />
-            </TouchableOpacity>
-            <ScrollView
-              contentContainerStyle={{ flexGrow: 1, padding: 8 }}
-              style={{
-                width: 200,
-                height: 100,
-                backgroundColor: COLOR.WHITE,
-                borderRadius: 5,
-              }}
-            >
-              <Text>{vectorTileInfo.properties}</Text>
-            </ScrollView>
-            <View
-              // eslint-disable-next-line react-native/no-color-literals
-              style={{
-                alignSelf: 'center',
-                width: 10,
-                height: 10,
-                backgroundColor: 'transparent',
-                borderStyle: 'solid',
-                borderLeftWidth: 10,
-                borderRightWidth: 10,
-                borderTopWidth: 10,
-                borderLeftColor: 'transparent',
-                borderRightColor: 'transparent',
-                borderTopColor: COLOR.WHITE, // 吹き出しと同じ背景色
-              }}
-            />
-          </View>
-        )}
+        <HomePopup />
         {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
@@ -398,10 +346,10 @@ export default function HomeScreen() {
             .reverse()
             .map((tileMap: TileMapType, mapIndex: number) =>
               tileMap.visible && tileMap.url ? (
-                getExt(tileMap.url) === 'pmtiles' ? (
+                tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
                   <PMTile
                     key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                    urlTemplate={tileMap.url}
+                    urlTemplate={tileMap.url.replace('pmtiles://', '')}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
                     tileSize={512}

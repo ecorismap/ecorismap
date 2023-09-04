@@ -1,10 +1,6 @@
 import { Position } from '@turf/turf';
 import { useCallback, useState } from 'react';
-import { latLonToXY } from '../utils/Coords';
 import { latToTileY, lonToTileX } from '../utils/Tile';
-import MapView, { MapPressEvent } from 'react-native-maps';
-import { useWindow } from './useWindow';
-import { MapRef } from 'react-map-gl';
 import { fetchVectorTileInfo } from '../utils/VectorTile';
 import { AppState } from '../modules';
 import { useSelector } from 'react-redux';
@@ -16,12 +12,24 @@ export type UseVectorTileReturnType = {
         properties: string;
       }
     | undefined;
-  getVectorTileInfo: (e: MapPressEvent, mapViewRef: MapView | MapRef | null, zoom: number) => Promise<void>;
+  getVectorTileInfo: (
+    latlon: number[],
+    zoom: number
+  ) => Promise<
+    {
+      [key: string]: any;
+    }[]
+  >;
+  openVectorTileInfo: (
+    properties: {
+      [key: string]: any;
+    }[],
+    position: Position
+  ) => void;
   closeVectorTileInfo: () => void;
 };
 
 export const useVectorTile = (): UseVectorTileReturnType => {
-  const { mapSize, mapRegion } = useWindow();
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const [vectorTileInfo, setVectorTileInfo] = useState<
     | {
@@ -36,32 +44,40 @@ export const useVectorTile = (): UseVectorTileReturnType => {
   }, []);
 
   const getVectorTileInfo = useCallback(
-    async (e: MapPressEvent, mapViewRef: MapView | MapRef | null, zoom: number) => {
-      const latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
-      const position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef);
+    async (latlon: number[], zoom: number) => {
       const tileX = lonToTileX(latlon[0], zoom);
       const tileY = latToTileY(latlon[1], zoom);
-      let properties: { [key: string]: any } | undefined;
+      const properties: { [key: string]: any }[] = [];
       for (const tileMap of tileMaps) {
-        properties = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
-        if (properties !== undefined) break;
+        const property = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
+        if (property === undefined) continue;
+        properties.push(property);
       }
-      if (properties === undefined) {
-        closeVectorTileInfo();
-      } else {
-        const str = Object.keys(properties)
-          //@ts-ignore
-          .map((key) => `${key}:${properties[key]}`)
-          .join('\n');
-        setVectorTileInfo({ position, properties: str });
-      }
+      return properties;
     },
-    [closeVectorTileInfo, mapRegion, mapSize, tileMaps]
+    [tileMaps]
   );
+
+  const openVectorTileInfo = useCallback((properties: { [key: string]: any }[], position: Position) => {
+    if (properties.length === 0) {
+      setVectorTileInfo(undefined);
+      return;
+    }
+    const propertiesStr = properties
+      .map((property) =>
+        Object.keys(property)
+          //@ts-ignore
+          .map((key) => `${key}:${property[key]}`)
+          .join('\n')
+      )
+      .join('\n-----------------------\n');
+    setVectorTileInfo({ position, properties: propertiesStr });
+  }, []);
 
   return {
     vectorTileInfo,
     getVectorTileInfo,
+    openVectorTileInfo,
     closeVectorTileInfo,
   } as const;
 };

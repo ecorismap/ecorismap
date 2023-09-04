@@ -20,7 +20,7 @@ import { Props_Home } from '../routes';
 import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool } from '../utils/General';
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
@@ -38,6 +38,9 @@ import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
+import { useWindow } from '../hooks/useWindow';
+import { latLonToXY } from '../utils/Coords';
+import { Position } from '@turf/turf';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -156,7 +159,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     showHisyouToolSetting,
   } = useHisyouToolSetting();
 
-  const { vectorTileInfo, getVectorTileInfo, closeVectorTileInfo } = useVectorTile();
+  const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
+  const { mapSize, mapRegion } = useWindow();
 
   const [isLoading] = useState(false);
 
@@ -179,23 +183,44 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
       !isDrawLineVisible && showDrawLine();
+      closeVectorTileInfo();
     },
-    [changeMapRegion, isDrawLineVisible, showDrawLine]
+    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
   );
 
   const onPressMapView = useCallback(
-    async (e: MapPressEvent) => {
-      getVectorTileInfo(e, mapViewRef.current, zoom);
+    async (event: MapPressEvent | MapLayerMouseEvent) => {
+      let latlon: number[];
+      let properties: { [key: string]: any }[];
+      let position: Position;
+      if (Platform.OS === 'web') {
+        const e = event as MapLayerMouseEvent;
+        const map = (mapViewRef.current as MapRef).getMap();
+        const features = map.queryRenderedFeatures([e.point.x, e.point.y]);
+        position = [e.point.x, e.point.y];
+        //@ts-ignore
+        properties = features ? features.map((f) => f.properties) : [];
+      } else {
+        const e = event as MapPressEvent;
+        latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
+        properties = await getVectorTileInfo(latlon, zoom);
+        position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
+      }
+      if (properties === undefined) {
+        closeVectorTileInfo();
+      } else {
+        //console.log(properties, position);
+        openVectorTileInfo(properties, position);
+      }
     },
-    [getVectorTileInfo, zoom]
+    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
   );
 
   const onDragMapView = useCallback(async () => {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-    closeVectorTileInfo();
-  }, [closeVectorTileInfo, gpsState, toggleGPS]);
+  }, [gpsState, toggleGPS]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
