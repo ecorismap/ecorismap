@@ -1,0 +1,32 @@
+[
+  {
+    "id": "example-id",
+    "type": "line",
+    "source": "example-source",
+    "source-layer": "kitakami_h30",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "paint": {
+      "line-color": "#FFF100",
+      "line-width": 1
+    }
+  },
+  {
+    "id": "example-id-label",
+    "type": "symbol",
+    "source": "example-source",
+    "source-layer": "kitakami_h30",
+    "minzoom": 16,
+    "maxzoom": 24,
+    "layout": {
+      "text-field": ["get", "群落表示C"],
+      "text-size": 12,
+      "text-font": ["Noto Sans CJK JP Regular"]
+    },
+    "paint": {
+      "text-color": "#FFFFFF",
+      "text-halo-color": "#000000",
+      "text-halo-width": 0.5
+    }
+  }
+]

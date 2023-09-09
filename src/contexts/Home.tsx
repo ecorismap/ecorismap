@@ -1,6 +1,6 @@
 import React, { createContext } from 'react';
 import { PanResponderInstance } from 'react-native';
-import MapView, { MarkerDragStartEndEvent, Region } from 'react-native-maps';
+import MapView, { MapPressEvent, MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
   RecordType,
   LocationType,
@@ -23,7 +23,7 @@ import {
   EraserType,
   LayerType,
 } from '../types';
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
 import { Position } from '@turf/turf';
 import * as Location from 'expo-location';
@@ -80,7 +80,14 @@ export interface HomeContextType {
   penWidth: number;
   mapMemoEditingLine: Position[];
   editableMapMemo: boolean;
+  vectorTileInfo:
+    | {
+        position: Position;
+        properties: string;
+      }
+    | undefined;
   onRegionChangeMapView: (region: Region | ViewState) => void;
+  onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   onDrop?: (<T extends File>(acceptedFiles: T[], fileRejections: any[], event: any) => void) | undefined;
@@ -116,6 +123,7 @@ export interface HomeContextType {
   panResponder: PanResponderInstance;
   isPinch: boolean;
   isDrawLineVisible: boolean;
+  closeVectorTileInfo: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);
