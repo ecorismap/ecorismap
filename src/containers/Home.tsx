@@ -7,7 +7,7 @@ import {
   PanResponderInstance,
   PanResponder,
 } from 'react-native';
-import MapView, { Region } from 'react-native-maps';
+import MapView, { MapPressEvent, Region } from 'react-native-maps';
 import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -22,7 +22,7 @@ import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
 import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool } from '../utils/General';
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
@@ -42,6 +42,10 @@ import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { useMapMemo } from '../hooks/useMapMemo';
+import { useVectorTile } from '../hooks/useVectorTile';
+import { useWindow } from '../hooks/useWindow';
+import { latLonToXY } from '../utils/Coords';
+import { Position } from '@turf/turf';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -183,6 +187,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const [isShowingProjectButtons, setIsShowingProjectButtons] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
+  const { mapSize, mapRegion } = useWindow();
+
+ 
 
   const attribution = useMemo(
     () =>
@@ -203,8 +211,37 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
       !isDrawLineVisible && showDrawLine();
+      closeVectorTileInfo();
     },
-    [changeMapRegion, isDrawLineVisible, showDrawLine]
+    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
+  );
+
+  const onPressMapView = useCallback(
+    async (event: MapPressEvent | MapLayerMouseEvent) => {
+      let latlon: number[];
+      let properties: { [key: string]: any }[];
+      let position: Position;
+      if (Platform.OS === 'web') {
+        const e = event as MapLayerMouseEvent;
+        const map = (mapViewRef.current as MapRef).getMap();
+        const features = map.queryRenderedFeatures([e.point.x, e.point.y]);
+        position = [e.point.x, e.point.y];
+        //@ts-ignore
+        properties = features ? features.map((f) => f.properties) : [];
+      } else {
+        const e = event as MapPressEvent;
+        latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
+        properties = await getVectorTileInfo(latlon, zoom);
+        position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
+      }
+      if (properties === undefined) {
+        closeVectorTileInfo();
+      } else {
+        //console.log(properties, position);
+        openVectorTileInfo(properties, position);
+      }
+    },
+    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -539,7 +576,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressDeleteTiles = useCallback(async () => {
     if (route.params?.tileMap !== undefined) {
       const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
-      if (ret) clearTiles(route.params.tileMap);
+      if (ret) await clearTiles(route.params.tileMap);
     }
   }, [clearTiles, route.params?.tileMap]);
 
@@ -910,7 +947,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             moveSvgView(e);
           }
         },
-        onPanResponderRelease: (e: GestureResponderEvent) => {
+        onPanResponderRelease: async (e: GestureResponderEvent) => {
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
@@ -996,7 +1033,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
         editableMapMemo,
+        vectorTileInfo,
         onRegionChangeMapView,
+        onPressMapView,
         onDragEndPoint,
         onDragMapView,
         onDrop,
@@ -1044,6 +1083,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         panResponder,
         isPinch,
         isDrawLineVisible,
+        closeVectorTileInfo,
       }}
     >
       <Home />

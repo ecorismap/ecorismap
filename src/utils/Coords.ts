@@ -718,3 +718,8 @@ export function checkRingsForSpikesPunctures(geom: Position[]) {
   }
   return false;
 }
+
+export function getMetersPerPixelAtZoomLevel(latitude: number, currentZoomLevel: number) {
+  const metersPerPx = (156543.03392 * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, currentZoomLevel);
+  return metersPerPx;
+}

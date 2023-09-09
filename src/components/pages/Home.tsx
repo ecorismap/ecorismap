@@ -31,7 +31,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { getExt, nearDegree } from '../../utils/General';
+import { nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
@@ -39,6 +39,7 @@ import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
+import { HomePopup } from '../organisms/HomePopup';
 
 export default function HomeScreen() {
   const {
@@ -77,6 +78,7 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     onRegionChangeMapView,
+    onPressMapView,
     onDragMapView,
     onDragEndPoint,
     pressDownloadTiles,
@@ -206,6 +208,8 @@ export default function HomeScreen() {
 
   return !restored ? null : (
     <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
+      {/* <VectorTiles2 url="https://www.ecoris.co.jp/map/kitakami_h30.pmtiles" zoom={zoom} /> */}
+
       <View style={dataStyle}>
         <SplitScreen />
       </View>
@@ -227,7 +231,7 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-
+        <HomePopup />
         {isDrawLineVisible && <SvgView />}
         <MapView
           ref={mapViewRef as React.MutableRefObject<MapView>}
@@ -249,6 +253,7 @@ export default function HomeScreen() {
           moveOnMarkerPress={false}
           //@ts-ignore
           mapType={mapType}
+          onPress={onPressMapView}
           onPanDrag={onDragMapView}
           //@ts-ignore
           options={
@@ -331,6 +336,23 @@ export default function HomeScreen() {
             );
           })}
 
+          {/************ Vector Tile *****************/}
+          {/* <VectorTiles url="https://www.ecoris.co.jp/map/kitakami_vt" zoom={zoom} /> */}
+
+          {/* <UrlTile
+            urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
+            flipY={false}
+            opacity={1}
+            tileSize={512}
+            minimumZ={0}
+            maximumZ={22}
+            zIndex={10}
+            doubleTileSize={false}
+            maximumNativeZ={22}
+            tileCachePath={`${TILE_FOLDER}/mapmemo`}
+            tileCacheMaxAge={0}
+            offlineMode={true}
+          /> */}
           {/************* TILE MAP ******************** */}
 
           {tileMaps
@@ -338,19 +360,20 @@ export default function HomeScreen() {
             .reverse()
             .map((tileMap: TileMapType, mapIndex: number) =>
               tileMap.visible && tileMap.url ? (
-                getExt(tileMap.url) === 'pmtiles' ? (
+                tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
                   <PMTile
                     key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                    urlTemplate={tileMap.url}
+                    urlTemplate={tileMap.url.replace('pmtiles://', '')}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
+                    tileSize={512}
                     minimumZ={0}
                     maximumZ={22}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={604800}
+                    tileCacheMaxAge={0}
                     offlineMode={isOffline}
                   />
                 ) : (
