@@ -83,27 +83,18 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     [dispatch, tileRegions]
   );
 
-  const fetchPMTiles = useCallback(async (pmtile: PMTiles, localLocation: string, z: number, x: number, y: number) => {
-    const a = await pmtile.getZxy(z, x, y).catch(() => {});
-    if (a === undefined) return;
-    const base64String = Buffer.from(a.data).toString('base64');
-    await FileSystem.writeAsStringAsync(localLocation, base64String, {
-      encoding: FileSystem.EncodingType.UTF8,
-    }).catch(() => {});
-  }, []);
-
   const downloadTiles = useCallback(async () => {
     const id = addTileRegions();
     if (tileMap === undefined || id === undefined) return;
 
-    const isPMTiles = getExt(tileMap.url) === 'pmtiles';
-    const pmtile = isPMTiles ? new PMTiles(tileMap.url) : undefined;
+    const isPMTiles = getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('mbtiles://');
+    const pmtile = isPMTiles ? new PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
 
     setProgress('0');
     setIsDownloading(true);
 
     const minZoom = 0;
-    const maxZoom = 16;
+    const maxZoom = isPMTiles ? 18 : 16;
 
     const tiles = tileGridForRegion(downloadArea, minZoom, maxZoom);
 
@@ -138,7 +129,6 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       }
     }
     await Promise.all(batch);
-
     let batchDownload: any = [];
     let errorCount = 0;
     d = 0;
@@ -160,7 +150,19 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       if (pmtile !== undefined) {
         //console.log(tile.z, tile.x, tile.y);
         const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-        tilePromise = fetchPMTiles(pmtile, localLocation, tile.z, tile.x, tile.y);
+        tilePromise = pmtile
+          .getZxy(tile.z, tile.x, tile.y)
+          .then(async (resp) => {
+            if (resp === undefined) return;
+            const base64String = Buffer.from(resp.data).toString('base64');
+            await FileSystem.writeAsStringAsync(localLocation, base64String, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+          })
+          .catch((e) => {
+            console.log(e);
+            //errorCount++;
+          });
       } else {
         const fetchUrl = tileMap.url
           .replace('{z}', tile.z.toString())
@@ -202,7 +204,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       return;
     }
     await AlertAsync(t('hooks.alert.completeDownload'));
-  }, [addTileRegions, downloadArea, fetchPMTiles, removeTileRegion, tileMap]);
+  }, [addTileRegions, downloadArea, removeTileRegion, tileMap]);
 
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {

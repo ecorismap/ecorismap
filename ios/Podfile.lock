@@ -733,7 +733,7 @@ SPEC CHECKSUMS:
   React-logger: 00be0dc9dacb7b23f3ab4d78aadccb4b72f24b31
   react-native-date-picker: 04e866ba4e7857f83abd504ad42e787f0f02ae00
   react-native-get-random-values: a6ea6a8a65dc93e96e24a11105b1a9c8cfe1d72a
-  react-native-google-maps: 81583a8e8849a96760a4a7522265a37a4838f5bc
+  react-native-google-maps: 24abf53d403fc1ef83af351c148b6fd1db3bd32e
   react-native-maps: 7135a33610202745d08fdf151ce6b0d01952a99c
   react-native-safe-area-context: 99b24a0c5acd0d5dcac2b1a7f18c49ea317be99a
   react-native-slider: 33b8d190b59d4f67a541061bb91775d53d617d9d

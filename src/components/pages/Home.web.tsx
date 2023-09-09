@@ -334,7 +334,7 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'vector',
-                url: tileMap.url,
+                url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
