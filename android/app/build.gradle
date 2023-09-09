@@ -175,6 +175,9 @@ android {
         }
     }
 
+//   configurations {
+//     implementation.exclude module:'protobuf-java'
+//   }
     if (isNewArchitectureEnabled()) {
         // We configure the CMake build only if you decide to opt-in for the New Architecture.
         externalNativeBuild {
