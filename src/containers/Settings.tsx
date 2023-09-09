@@ -2,8 +2,7 @@ import React, { useCallback, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { DEFAULT_MAP_LIST_URL, TILE_FOLDER } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system';
+import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
@@ -23,6 +22,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const maps = useSelector((state: AppState) => state.tileMaps);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
+  const { clearTileCache } = useMaps();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
@@ -122,13 +122,10 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     if (Platform.OS === 'web') return;
     const ret = await ConfirmAsync(t('Settings.confirm.clearTileCache'));
     if (ret) {
-      const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
-      if (uri) {
-        await FileSystem.deleteAsync(uri);
-      }
+      await clearTileCache();
       await AlertAsync(t('Settings.alert.clearTileCache'));
     }
-  }, []);
+  }, [clearTileCache]);
 
   const pressMapListURLOK = useCallback(
     (url: string) => {
