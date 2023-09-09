@@ -77,7 +77,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/6da9207d6569aa3f85d7c60b9f07c992/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/6da9207d6569aa3f85d7c60b9f07c992/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..10e5c32
+index 0000000..c1cc689
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/6da9207d6569aa3f85d7c60b9f07c992/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/results.bin b/node_modules/react-native-maps/android/build/.transforms/79ec74cbf846acf2cbd7f3479f1de7f6/results.bin
 new file mode 100644
@@ -2970,7 +2970,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..9f9517b
+index 0000000..358897f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -7432,7 +7432,7 @@ index 0000000..b9d6520
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class
 new file mode 100644
-index 0000000..898a0e9
+index 0000000..2eff05b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class
 new file mode 100644
@@ -7444,7 +7444,7 @@ index 0000000..c5637e2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..ef017ac
+index 0000000..94683bc
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
@@ -7588,27 +7588,27 @@ index 0000000..906250b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..78afb4e
+index 0000000..2ce06d4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..60aff79
+index 0000000..b4ed5ec
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..d740e2b
+index 0000000..f406d6b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..6948d33
+index 0000000..148834e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..d600c92
+index 0000000..cc49433
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..ce3233e
+index 0000000..8bfd807
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -8848,7 +8848,7 @@ index 0000000..a213f97
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/vector_tile/VectorTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..0beebb6
+index 0000000..5574de6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -12123,7 +12123,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..d57db9c
+index 0000000..693e6a1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
@@ -12439,10 +12439,10 @@ index 0000000..c61300c
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..21c8a47
+index 0000000..0d3f0a1
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,979 @@
+@@ -0,0 +1,1014 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -12591,22 +12591,24 @@ index 0000000..21c8a47
 +
 +  byte[] getTileImage(int x, int y, int zoom) {
 +    byte[] image = null;
++    //フェッチできなければ読み込む（画像の場合とは処理が逆！）
 +    if (this.tileCachePath != null) {
-+      image = readTileImage(x, y, zoom);
-+      if (image != null && !this.offlineMode) {
-+        boolean needRefresh = checkForRefresh(x, y, zoom);
-+        if (needRefresh) {
-+          image = null;
-+        }
-+      }
-+    }
-+    if (image == null && this.tileCachePath != null) {
 +      // Log.d("urlTile", "Normal fetch");
 +      image = fetchTile(x, y, zoom);
 +      if (image != null) {
 +        boolean success = writeTileImage(image, x, y, zoom);
 +      }
 +    }
++    if (image == null && this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++      // if (image != null && !this.offlineMode) {
++      //   boolean needRefresh = checkForRefresh(x, y, zoom);
++      //   if (needRefresh) {
++      //     image = null;
++      //   }
++      // }
++    }
++
 +    return image;
 +  }
 +
@@ -12926,42 +12928,51 @@ index 0000000..21c8a47
 +    float scaleFactor = 512.0f / 4096.0f; // タイルのサイズ / extent
 +
 +    while (index < geometryArray.size()) {
-+      if (index >= geometryArray.size()) {
-+        // Array index out of bounds, handle the error
-+        break;
-+      }
-+
 +      int commandInteger = geometryArray.get(index++);
 +      int commandId = commandInteger & 0x7; // lower 3 bits
 +      int commandCount = commandInteger >> 3; // higher bits
 +
-+      for (int i = 0; i < commandCount; ++i) {
-+        if (index + 1 >= geometryArray.size()) {
-+          // Array index out of bounds, handle the error
++      switch (commandId) {
++        case 1: // MoveTo
++          for (int i = 0; i < commandCount; ++i) {
++            int dx = (geometryArray.get(index++) >> 1) ^ -(geometryArray.get(index - 1) & 1);
++            int dy = (geometryArray.get(index++) >> 1) ^ -(geometryArray.get(index - 1) & 1);
++
++            cursorX += dx;
++            cursorY += dy;
++
++            float scaledX = cursorX * scaleFactor;
++            float scaledY = cursorY * scaleFactor;
++
++            path.moveTo(scaledX, scaledY);
++            totalX += scaledX;
++            totalY += scaledY;
++            pointCount++;
++          }
 +          break;
-+        }
++        case 2: // LineTo
++          for (int i = 0; i < commandCount; ++i) {
++            int dx = (geometryArray.get(index++) >> 1) ^ -(geometryArray.get(index - 1) & 1);
++            int dy = (geometryArray.get(index++) >> 1) ^ -(geometryArray.get(index - 1) & 1);
 +
-+        int dx = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
-+        int dy = ((geometryArray.get(index++) >> 1) ^ (-(geometryArray.get(index - 1) & 1)));
-+        cursorX += dx;
-+        cursorY += dy;
++            cursorX += dx;
++            cursorY += dy;
 +
-+        float scaledX = cursorX * scaleFactor;
-+        float scaledY = cursorY * scaleFactor;
++            float scaledX = cursorX * scaleFactor;
++            float scaledY = cursorY * scaleFactor;
 +
-+        if (commandId == 1) { // MoveTo
-+          path.moveTo(scaledX, scaledY);
-+        } else if (commandId == 2) { // LineTo
-+          path.lineTo(scaledX, scaledY);
-+        }
-+
-+        totalX += scaledX;
-+        totalY += scaledY;
-+        pointCount++;
-+      }
-+
-+      if (commandId == 7) { // ClosePath
-+        path.close();
++            path.lineTo(scaledX, scaledY);
++            totalX += scaledX;
++            totalY += scaledY;
++            pointCount++;
++          }
++          break;
++        case 7: // ClosePath
++          path.close();
++          break;
++        default:
++          // Unknown command, handle error
++          break;
 +      }
 +    }
 +
@@ -12983,11 +12994,12 @@ index 0000000..21c8a47
 +        String circleColor = styleLayer.paint.circleColor;
 +        circlePaint.setColor(Color.parseColor(circleColor));
 +        circlePaint.setStyle(Paint.Style.FILL);
++        float circleRadius = styleLayer.paint.circleRadius;
 +        List<PointData> points = (List<PointData>) feature.geometry;
 +        for (PointData point : points) {
 +          float scaledX = point.x;
 +          float scaledY = point.y;
-+          canvas.drawCircle(scaledX, scaledY, 5, circlePaint);
++          canvas.drawCircle(scaledX, scaledY, circleRadius, circlePaint);
 +        }
 +      }
 +    } else if ("line".equals(type)) {
@@ -13035,6 +13047,7 @@ index 0000000..21c8a47
 +        canvas.drawPath(polygon.path, strokePaint); // ストローク
 +      }
 +    } else if ("symbol".equals(type)) {
++      List<Rect> drawnTextBounds = new ArrayList<>();
 +      Paint textStrokePaint = new Paint();
 +      Paint textFillPaint = new Paint();
 +
@@ -13066,10 +13079,10 @@ index 0000000..21c8a47
 +        //String label = labelField;
 +        String labelColor = styleLayer.paint.textColor;
 +
-+        textStrokePaint.setColor(Color.parseColor(labelHaloColor)); // 縁取りの色は白です。
++        textStrokePaint.setColor(Color.parseColor(labelHaloColor));
 +        textStrokePaint.setTextSize(labelSize);
 +        textStrokePaint.setStyle(Paint.Style.STROKE);
-+        textStrokePaint.setStrokeWidth(labelHaloWidth); // 縁取りの太さを2に設定
++        textStrokePaint.setStrokeWidth(labelHaloWidth);
 +        textStrokePaint.setTextAlign(Paint.Align.CENTER);
 +
 +        textFillPaint.setColor(Color.parseColor(labelColor));
@@ -13077,8 +13090,30 @@ index 0000000..21c8a47
 +        textFillPaint.setStyle(Paint.Style.FILL);
 +        textFillPaint.setTextAlign(Paint.Align.CENTER);
 +
-+        canvas.drawText(label, X, Y, textStrokePaint);
-+        canvas.drawText(label, X, Y, textFillPaint);
++        Rect textBounds = new Rect();
++        textFillPaint.getTextBounds(label, 0, label.length(), textBounds);
++
++        float textWidth = textBounds.width();
++        float textHeight = textBounds.height();
++        float textX = X - textWidth / 2;
++        float textY = Y - textHeight / 2;
++
++        Rect newTextBounds = new Rect((int) textX, (int) textY, (int) (textX + textWidth), (int) (textY + textHeight));
++
++        boolean overlaps = false;
++        for (Rect existingBounds : drawnTextBounds) {
++          if (Rect.intersects(existingBounds, newTextBounds)) {
++            overlaps = true;
++            break;
++          }
++        }
++
++        if (!overlaps && textX >= 0 && textY >= 0 && textX + textWidth <= 512 && textY + textHeight <= 512) {
++          canvas.drawText(label, X, Y, textStrokePaint);
++          canvas.drawText(label, X, Y, textFillPaint);
++
++          drawnTextBounds.add(newTextBounds);
++        }
 +      }
 +    } else {
 +      return;
@@ -13121,12 +13156,12 @@ index 0000000..21c8a47
 +      byte[] pbfData = null;
 +      if (this.tileCachePath != null) {
 +        pbfData = readPbfData(x, y, zoom);
-+        if (pbfData != null && !this.offlineMode) {
-+          boolean needRefresh = checkForRefresh(x, y, zoom);
-+          if (needRefresh) {
-+            pbfData = null;
-+          }
-+        }
++        // if (pbfData != null && !this.offlineMode) {
++        //   boolean needRefresh = checkForRefresh(x, y, zoom);
++        //   if (needRefresh) {
++        //     pbfData = null;
++        //   }
++        // }
 +      }
 +      if (pbfData == null) {
 +        if (this.offlineMode) return null;
@@ -15820,10 +15855,10 @@ index 0000000..b43d333
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
 new file mode 100644
-index 0000000..0f2638d
+index 0000000..370f3cf
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,31 @@
 +package StyleLayer;
 +
 +import com.google.gson.annotations.SerializedName;
@@ -15841,6 +15876,9 @@ index 0000000..0f2638d
 +
 +  @SerializedName("circle-color")
 +  public String circleColor;
++
++  @SerializedName("circle-radius")
++  public float circleRadius;
 +
 +  @SerializedName("text-color")
 +  public String textColor;
@@ -15890,10 +15928,10 @@ index 0000000..5675b38
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..5d5ec2d
+index 0000000..6fbd424
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,112 @@
 +package VectorTileStyleManager;
 +
 +import StyleLayer.StyleLayer;
@@ -15944,17 +15982,19 @@ index 0000000..5d5ec2d
 +
 +  public CompletableFuture<String> loadStyleAsync() {
 +    return CompletableFuture.supplyAsync(() -> {
-+      Path path = Paths.get(localPath);
-+      if (Files.exists(path)) {
-+        try {
-+          return new String(Files.readAllBytes(path));
-+        } catch (IOException e) {
-+          throw new RuntimeException("Failed to read local file", e);
-+        }
-+      } else {
-+        try {
-+          return downloadAndSaveStyle();
-+        } catch (IOException e) {
++      try {
++        // まずダウンロードを試みる
++        return downloadAndSaveStyle();
++      } catch (IOException e) {
++        // ダウンロードに失敗した場合は、ローカルファイルを読む
++        Path path = Paths.get(localPath);
++        if (Files.exists(path)) {
++          try {
++            return new String(Files.readAllBytes(path));
++          } catch (IOException ex) {
++            throw new RuntimeException("Failed to read local file", ex);
++          }
++        } else {
 +          throw new RuntimeException("Failed to download and save style", e);
 +        }
 +      }
@@ -23227,10 +23267,10 @@ index 0000000..fe77eb4
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..857e3ad
+index 0000000..cbe252d
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,177 @@
+@@ -0,0 +1,181 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -23332,6 +23372,7 @@ index 0000000..857e3ad
 +  AIRGoogleMapPMTileOverlay *tile =
 +      [[AIRGoogleMapPMTileOverlay alloc] initWithURLTemplate:urlTemplate];
 +  //[tile setTemplate:urlTemplate];
++
 +  [tile setFlipY:_flipY];
 +  [tile setMaximumZ:_maximumZ];
 +  [tile setMinimumZ:_minimumZ];
@@ -23358,8 +23399,11 @@ index 0000000..857e3ad
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
++
 +  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
 +  [self.tileLayer clearTileCache];
++  [self.tileLayer setStyleManagerWithURLTemplate:self.urlTemplate
++                                   tileCachePath:_tileCachePath];
 +}
 +
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
@@ -23474,10 +23518,10 @@ index 0000000..397ceb7
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
 new file mode 100644
-index 0000000..4d580f2
+index 0000000..ae8319d
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,33 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -23487,11 +23531,18 @@ index 0000000..4d580f2
 +
 +#import <GoogleMaps/GoogleMaps.h>
 +#import "PMTiles/PMTiles.h"
-+#import "VectorTile.pbobjc.h"
++#import "VectorTile/VectorTile.pbobjc.h"
++#import "VectorTile/LineData.h"
++#import "VectorTile/PolygonData.h"
++#import "VectorTile/VectorSource.h"
++#import "VectorTile/StyleManager.h"
++
 +@interface AIRGoogleMapPMTileOverlay : GMSSyncTileLayer
-+- (id)initWithURLTemplate:(NSString *)URLTemplate;
++- (id)initWithURLTemplate:(NSString *)urlTemplate;
++- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
 +@property(nonatomic, strong) PMTiles *pmtiles;
-+@property(nonatomic, copy) NSString *template;
++@property(nonatomic, strong) StyleManager *styleManager;
++@property(nonatomic, copy) NSString *urlTemplate;
 +@property(nonatomic, assign) NSInteger maximumZ;
 +@property(nonatomic, assign) NSInteger minimumZ;
 +@property(nonatomic) NSInteger maximumNativeZ;
@@ -23506,10 +23557,10 @@ index 0000000..4d580f2
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..8a7e56f
+index 0000000..ceacbab
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,662 @@
+@@ -0,0 +1,828 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -23518,15 +23569,26 @@ index 0000000..8a7e56f
 +#ifdef HAVE_GOOGLE_MAPS
 +
 +#import "AIRGoogleMapPMTileOverlay.h"
++#import "VectorTile/UIColor+Hex.h"
 +
 +@implementation AIRGoogleMapPMTileOverlay
-+- (id)initWithURLTemplate:(NSString *)URLTemplate {
++- (id)initWithURLTemplate:(NSString *)urlTemplate {
++
 +  self = [super init];
-+  PMTiles *pmtiles = [[PMTiles alloc] initWithURL:URLTemplate];
++  PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
 +  self.pmtiles = pmtiles;
++
 +  return self;
 +}
 +
++- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate
++                         tileCachePath:(NSString *)tileCachePath {
++
++  StyleManager *styleManager =
++      [[StyleManager alloc] initWithURLTemplate:urlTemplate
++                                  tileCachePath:tileCachePath];
++  self.styleManager = styleManager;
++}
 +- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
 +  //   NSLog(@"zoomA %lf", self.map.camera.zoom);
 +  //   NSLog(@"zoomB %lf", floor(self.map.camera.zoom));
@@ -23565,7 +23627,7 @@ index 0000000..8a7e56f
 +  } else if (zoom <= self.maximumNativeZ - 1 && self.doubleTileSize) {
 +    drawType = 1;
 +  }
-+  // NSLog(@"drawType %d,%ld,%ld", drawType,zoom,self.maximumNativeZ);
++  // NSLog(@"drawType %d,%ld,%ld", drawType, zoom, self.maximumNativeZ);
 +  NSData *data;
 +  if (drawType == 0 || drawType == 1) {
 +    data = [self getTile:zoom x:x y:y];
@@ -23598,7 +23660,7 @@ index 0000000..8a7e56f
 +    y = (1 << zoom) - y - 1;
 +  }
 +
-+  NSString *urlXYZ = self.template;
++  NSString *urlXYZ = self.urlTemplate;
 +  urlXYZ = [urlXYZ
 +      stringByReplacingOccurrencesOfString:@"{x}"
 +                                withString:[NSString stringWithFormat:@"%ld",
@@ -23625,9 +23687,10 @@ index 0000000..8a7e56f
 +  NSString *url =
 +      self.offlineMode && self.tileCachePath ? tileCacheXYZ : urlXYZ;
 +  NSData *data;
-+  data = [self readTileImage:tileCacheFilePath];
++  data = [self fetchTile:zoom x:x y:y];
++
 +  if (!data) {
-+    data = [self fetchTile:zoom x:x y:y];
++    data = [self readTileImage:tileCacheFilePath];
 +    if (!data) {
 +      return nil;
 +    } else {
@@ -23653,7 +23716,7 @@ index 0000000..8a7e56f
 +                                  error:&error];
 +  // エラーチェック
 +  if (error) {
-+    NSLog(@"Failed to read file from URL: %@", url);
++    // NSLog(@"Failed to read file from URL: %@", url);
 +    return nil;
 +  }
 +  // Base64デコードを行い、NSDataを取得
@@ -23757,19 +23820,12 @@ index 0000000..8a7e56f
 +  return randomColor;
 +}
 +
-+- (void)drawPointInContext:(CGContextRef)context
-+                geometries:(GPBUInt32Array *)geometryArray
-+                 fillColor:(UIColor *)fillColor
-+                     label:(NSString *)label {
-+
-+  NSUInteger index = 0;
++- (NSMutableArray *)createMultiPointData:(GPBUInt32Array *)geometryArray {
++  NSMutableArray *points = [NSMutableArray array];
++  int index = 0;
 +  float cursorX = 0;
 +  float cursorY = 0;
-+  float scaleFactor = 512.0 / 4096.0;
-+
-+  // 描画設定
-+  CGContextSetFillColorWithColor(context, fillColor.CGColor);
-+
++  float scaleFactor = 512.0f / 4096.0f;
 +  while (index < geometryArray.count) {
 +    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
 +    uint32_t commandId = commandInteger & 0x7;
@@ -23788,99 +23844,92 @@ index 0000000..8a7e56f
 +        float scaledX = cursorX * scaleFactor;
 +        float scaledY = cursorY * scaleFactor;
 +
-+        // 丸を描画（中心座標を考慮して調整）
-+        CGContextFillEllipseInRect(
-+            context, CGRectMake(scaledX - 5, scaledY - 5, 10.0, 10.0));
++        NSValue *pointValue =
++            [NSValue valueWithCGPoint:CGPointMake(scaledX, scaledY)];
++        [points addObject:pointValue];
 +      }
 +    }
 +  }
++  return points;
 +}
 +
-+- (void)drawLineStringInContext:(CGContextRef)context
-+                     geometries:(GPBUInt32Array *)geometryArray
-+                      fillColor:(UIColor *)fillColor
-+                          label:(NSString *)label {
-+
++- (LineData *)createLinePath:(GPBUInt32Array *)geometryArray {
++  UIBezierPath *path = [UIBezierPath bezierPath];
++  NSMutableArray<NSValue *> *points = [NSMutableArray array];
 +  NSUInteger index = 0;
 +  float cursorX = 0;
 +  float cursorY = 0;
-+  float scaleFactor = 512.0 / 4096.0;
-+
-+  // 描画設定
-+  CGContextSetStrokeColorWithColor(context, fillColor.CGColor);
-+  CGContextSetLineWidth(context, 2);
-+
-+  CGContextBeginPath(context);
-+
-+  float totalX = 0;
-+  float totalY = 0;
-+  NSUInteger pointCount = 0;
++  float totalLength = 0;
++  float scaleFactor = 512.0f / 4096.0f;
 +
 +  while (index < geometryArray.count) {
 +    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
 +    uint32_t commandId = commandInteger & 0x7;
 +    uint32_t commandCount = commandInteger >> 3;
 +
-+    switch (commandId) {
-+    case 1: // MoveTo
-+    case 2: // LineTo
-+      for (NSUInteger i = 0; i < commandCount; ++i) {
-+        int32_t dx = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
-+                               (-([geometryArray valueAtIndex:index - 1] & 1)));
-+        int32_t dy = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
-+                               (-([geometryArray valueAtIndex:index - 1] & 1)));
++    for (NSUInteger i = 0; i < commandCount; ++i) {
++      int32_t dx = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                             (-([geometryArray valueAtIndex:index - 1] & 1)));
++      int32_t dy = (int32_t)(([geometryArray valueAtIndex:index++] >> 1) ^
++                             (-([geometryArray valueAtIndex:index - 1] & 1)));
 +
-+        cursorX += dx;
-+        cursorY += dy;
++      cursorX += dx;
++      cursorY += dy;
 +
-+        float scaledX = cursorX * scaleFactor;
-+        float scaledY = cursorY * scaleFactor;
++      float scaledX = cursorX * scaleFactor;
++      float scaledY = cursorY * scaleFactor;
 +
-+        if (commandId == 1) {
-+          CGContextMoveToPoint(context, scaledX, scaledY);
-+        } else if (commandId == 2) {
-+          CGContextAddLineToPoint(context, scaledX, scaledY);
-+        }
-+
-+        totalX += scaledX;
-+        totalY += scaledY;
-+        pointCount++;
++      if (commandId == 2) { // LineTo
++        [path addLineToPoint:CGPointMake(scaledX, scaledY)];
++      } else if (commandId == 1) { // MoveTo
++        [path moveToPoint:CGPointMake(scaledX, scaledY)];
 +      }
-+      break;
-+    default:
++
++      [points
++          addObject:[NSValue valueWithCGPoint:CGPointMake(scaledX, scaledY)]];
++    }
++  }
++
++  // Compute the midpoint along the length of the line
++  float midLength = totalLength / 2;
++  CGPoint labelPoint = CGPointMake(0, 0);
++  float lengths[geometryArray.count / 2]; // Approximate allocation
++  NSUInteger lengthIndex = 0;
++
++  for (NSUInteger i = 1; i < lengthIndex; i++) {
++    float segmentLength =
++        hypotf(points[i].CGPointValue.x - points[i - 1].CGPointValue.x,
++               points[i].CGPointValue.y - points[i - 1].CGPointValue.y);
++    totalLength += segmentLength;
++    lengths[lengthIndex++] = totalLength;
++
++    if (lengths[i] >= midLength) {
++      float ratio =
++          (midLength - lengths[i - 1]) / (lengths[i] - lengths[i - 1]);
++      labelPoint.x =
++          points[i - 1].CGPointValue.x +
++          ratio * (points[i].CGPointValue.x - points[i - 1].CGPointValue.x);
++      labelPoint.y =
++          points[i - 1].CGPointValue.y +
++          ratio * (points[i].CGPointValue.y - points[i - 1].CGPointValue.y);
 +      break;
 +    }
 +  }
 +
-+  CGContextStrokePath(context); // ラインストリングを描画
-+
-+  // ラインストリングの中心点を計算
-+  float centerX = totalX / pointCount;
-+  float centerY = totalY / pointCount;
-+
-+  // ラベルを描画（上のポリゴンのコードを参考にして同様に描画できます）
++  return [[LineData alloc] initWithPath:path
++                                centerX:labelPoint.x
++                                centerY:labelPoint.y];
 +}
 +
-+- (void)drawPolygonInContext:(CGContextRef)context
-+                  geometries:(GPBUInt32Array *)geometryArray
-+                   fillColor:(UIColor *)fillColor
-+                       label:(NSString *)label { // ラベルを追加
++- (PolygonData *)createPolygonPath:(GPBUInt32Array *)geometryArray {
++  UIBezierPath *path = [UIBezierPath bezierPath];
 +  NSUInteger index = 0;
++  NSUInteger pointCount = 0;
 +  float cursorX = 0;
 +  float cursorY = 0;
-+
 +  float scaleFactor = 512.0 / 4096.0; // タイルのサイズ / extent
-+
-+  // 描画設定
-+  CGContextSetFillColorWithColor(context, fillColor.CGColor);
-+  CGContextSetStrokeColorWithColor(context, [UIColor blackColor].CGColor);
-+  CGContextSetLineWidth(context, 2);
-+
-+  CGContextBeginPath(context); // 新しいパスの描画を始める
-+
 +  float totalX = 0;
 +  float totalY = 0;
-+  NSUInteger pointCount = 0;
 +
 +  while (index < geometryArray.count) {
 +    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
@@ -23901,8 +23950,8 @@ index 0000000..8a7e56f
 +        float scaledX = cursorX * scaleFactor;
 +        float scaledY = cursorY * scaleFactor;
 +
-+        CGContextMoveToPoint(context, scaledX, scaledY);
-+
++        // CGContextMoveToPoint(context, scaledX, scaledY);
++        [path moveToPoint:CGPointMake(scaledX, scaledY)];
 +        totalX += scaledX;
 +        totalY += scaledY;
 +        pointCount++;
@@ -23921,8 +23970,8 @@ index 0000000..8a7e56f
 +
 +        float scaledX = cursorX * scaleFactor;
 +        float scaledY = cursorY * scaleFactor;
-+
-+        CGContextAddLineToPoint(context, scaledX, scaledY);
++        [path addLineToPoint:CGPointMake(scaledX, scaledY)];
++        // CGContextAddLineToPoint(context, scaledX, scaledY);
 +
 +        totalX += scaledX;
 +        totalY += scaledY;
@@ -23931,7 +23980,8 @@ index 0000000..8a7e56f
 +      break;
 +
 +    case 7: // ClosePath
-+      CGContextClosePath(context);
++            // CGContextClosePath(context);
++      [path closePath];
 +      break;
 +
 +    default:
@@ -23940,41 +23990,174 @@ index 0000000..8a7e56f
 +    }
 +  }
 +
-+  // 塗りつぶしとストロークを行う
-+  CGContextDrawPath(context, kCGPathEOFillStroke);
-+
 +  // ポリゴンの中心点を計算
 +  float centerX = totalX / pointCount;
 +  float centerY = totalY / pointCount;
 +
-+  NSMutableParagraphStyle *style = [[NSMutableParagraphStyle alloc] init];
-+  [style setAlignment:NSTextAlignmentCenter];
++  return [[PolygonData alloc] initWithPath:path
++                                   centerX:centerX
++                                   centerY:centerY];
++}
 +
-+  NSMutableAttributedString *attributedString =
-+      [[NSMutableAttributedString alloc] initWithString:label];
-+  [attributedString addAttribute:NSParagraphStyleAttributeName
-+                           value:style
-+                           range:NSMakeRange(0, [label length])];
-+  [attributedString addAttribute:NSFontAttributeName
-+                           value:[UIFont boldSystemFontOfSize:16]
-+                           range:NSMakeRange(0, [label length])];
-+  [attributedString addAttribute:NSForegroundColorAttributeName
-+                           value:[UIColor blackColor]
-+                           range:NSMakeRange(0, [label length])];
-+  [attributedString addAttribute:NSStrokeWidthAttributeName
-+                           value:[NSNumber numberWithFloat:-2.0]
-+                           range:NSMakeRange(0, [label length])];
-+  [attributedString addAttribute:NSStrokeColorAttributeName
-+                           value:[UIColor whiteColor]
-+                           range:NSMakeRange(0, [label length])];
++- (VectorSource *)getVectorSource:(NSString *)layerName
++                      fromSources:(NSArray *)sources {
++  for (VectorSource *source in sources) {
++    if ([source.name isEqualToString:layerName]) {
++      return source;
++    }
++  }
++  return nil; // または適当な例外を投げる
++}
 +
-+  // テキストのサイズを計算
-+  CGSize textSize = [attributedString size];
-+  CGFloat textX = centerX - textSize.width / 2.0;
-+  CGFloat textY = centerY - textSize.height / 2.0;
++- (void)applyStyleToContext:(CGContextRef)context
++             withStyleLayer:(NSDictionary *)styleLayer
++                  andSource:(VectorSource *)source {
 +
-+  // テキストを描画
-+  [attributedString drawAtPoint:CGPointMake(textX, textY)];
++  NSString *type = styleLayer[@"type"];
++
++  if ([type isEqualToString:@"circle"]) {
++    // 描画設定 for circle
++    for (FeatureData *feature in source.features) {
++      NSString *hexString = styleLayer[@"paint"][@"circle-color"];
++      UIColor *circleColor = [UIColor colorWithHexString:hexString];
++      CGFloat circleRadius =
++          [styleLayer[@"paint"][@"circle-radius"] floatValue];
++
++      CGContextSetFillColorWithColor(context, circleColor.CGColor);
++
++      for (NSValue *pointValue in feature
++               .geometry) { // feature.geometryはNSMutableArrayと仮定
++        CGPoint point = [pointValue CGPointValue];
++        // 描画
++        CGContextFillEllipseInRect(
++            context, CGRectMake(point.x - circleRadius, point.y - circleRadius,
++                                circleRadius * 2, circleRadius * 2));
++      }
++    }
++  } else if ([type isEqualToString:@"line"]) {
++    for (FeatureData *feature in source.features) {
++      UIBezierPath *path = nil;
++      if ([feature.geometry isKindOfClass:[LineData class]]) {
++        LineData *lineData = (LineData *)feature.geometry;
++        path = lineData.path;
++      } else if ([feature.geometry isKindOfClass:[PolygonData class]]) {
++        PolygonData *polygonData = (PolygonData *)feature.geometry;
++        path = polygonData.path;
++      } else {
++        return;
++      }
++
++      NSString *hexString = styleLayer[@"paint"][@"line-color"];
++      UIColor *lineColor = [UIColor colorWithHexString:hexString];
++      // UIColor *lineColor = [UIColor blackColor];
++      CGFloat lineWidth = [styleLayer[@"paint"][@"line-width"] floatValue];
++
++      CGContextSetStrokeColorWithColor(context, lineColor.CGColor);
++      CGContextSetLineWidth(context, lineWidth);
++
++      CGContextAddPath(context, path.CGPath);
++      CGContextDrawPath(context, kCGPathStroke);
++    }
++
++  } else if ([type isEqualToString:@"fill"]) {
++    // 描画設定 for fill
++    for (FeatureData *feature in source.features) {
++      // feature.geometryは多角形のパス（PolygonData）であると仮定
++      PolygonData *polygonData = feature.geometry;
++
++      if (![polygonData isKindOfClass:[PolygonData class]]) {
++        return;
++      }
++
++      // 色設定
++      NSString *hexString = styleLayer[@"paint"][@"fill-color"];
++      UIColor *fillColor = [UIColor colorWithHexString:hexString];
++      CGContextSetFillColorWithColor(context, fillColor.CGColor);
++
++      // 描画
++      CGContextAddPath(context, polygonData.path.CGPath);
++      CGContextDrawPath(context, kCGPathEOFillStroke);
++    }
++
++    // 描画設定 for symbol
++  } else if ([type isEqualToString:@"symbol"]) {
++    // 既に描画されたラベルの位置を保存する配列
++    NSMutableArray<NSValue *> *drawnLabelsRects = [NSMutableArray array];
++
++    CGFloat labelSize = [styleLayer[@"layout"][@"text-size"] floatValue];
++    UIColor *labelHaloColor =
++        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-halo-color"]];
++    CGFloat labelHaloWidth =
++        [styleLayer[@"paint"][@"text-halo-width"] floatValue];
++    UIColor *labelColor =
++        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-color"]];
++    NSString *labelField = styleLayer[@"layout"][@"text-field"][1];
++
++    for (FeatureData *feature in source.features) {
++      NSDictionary *attributes = feature.attributes;
++      float X = 0;
++      float Y = 0;
++
++      if ([feature.geometry isKindOfClass:[NSArray class]]) {
++        NSArray<NSValue *> *multiPoints =
++            (NSArray<NSValue *> *)feature.geometry;
++        CGPoint firstPoint = [multiPoints[0] CGPointValue];
++        X = firstPoint.x;
++        Y = firstPoint.y;
++      } else if ([feature.geometry isKindOfClass:[LineData class]]) {
++        LineData *line = (LineData *)feature.geometry;
++        X = line.centerX;
++        Y = line.centerY;
++      } else if ([feature.geometry isKindOfClass:[PolygonData class]]) {
++        PolygonData *polygon = (PolygonData *)feature.geometry;
++        X = polygon.centerX;
++        Y = polygon.centerY;
++      }
++
++      NSString *label = attributes[labelField] ?: @"";
++      CGSize labelSizeCalc = [label sizeWithAttributes:@{
++        NSFontAttributeName : [UIFont systemFontOfSize:labelSize]
++      }];
++
++      CGRect newLabelRect =
++          CGRectMake(X, Y, labelSizeCalc.width, labelSizeCalc.height);
++
++      BOOL shouldDraw = YES;
++      for (NSValue *rectValue in drawnLabelsRects) {
++        CGRect existingRect = [rectValue CGRectValue];
++        if (CGRectIntersectsRect(existingRect, newLabelRect)) {
++          shouldDraw = NO;
++          break;
++        }
++      }
++
++      if (shouldDraw) {
++        if (X + labelSizeCalc.width <= 512 && Y + labelSizeCalc.height <= 512 &&
++            X - labelSizeCalc.width >= 0 && Y - labelSizeCalc.height >= 0) {
++
++          CGContextSetLineWidth(context, labelHaloWidth);
++          CGContextSetStrokeColorWithColor(context, labelHaloColor.CGColor);
++          CGContextSetTextDrawingMode(context, kCGTextStroke);
++          [label drawAtPoint:CGPointMake(X, Y)
++              withAttributes:@{
++                NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
++                NSForegroundColorAttributeName : labelHaloColor
++              }];
++
++          CGContextSetTextDrawingMode(context, kCGTextFill);
++          [label drawAtPoint:CGPointMake(X, Y)
++              withAttributes:@{
++                NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
++                NSForegroundColorAttributeName : labelColor
++              }];
++
++          [drawnLabelsRects addObject:[NSValue valueWithCGRect:newLabelRect]];
++        }
++      }
++    }
++  } else {
++    return;
++  }
 +}
 +
 +- (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
@@ -24013,31 +24196,63 @@ index 0000000..8a7e56f
 +    NSLog(@"Failed to decode Tile: %@", error);
 +    return nil;
 +  }
-+  CGContextRef context = [self createTransparentImageContext];
 +
++  NSMutableArray *sources = [NSMutableArray array];
 +  for (Tile_Layer *layer in decodedTile.layersArray) {
++    NSMutableArray *features = [NSMutableArray array];
 +    for (Tile_Feature *feature in layer.featuresArray) {
 +      NSDictionary *attributes = getFeatureAttributes(layer, feature);
-+      NSString *key = @"基本分類C";
-+      NSString *labelToUse = getLabelToUse(attributes, key);
-+      UIColor *colorToUse = getColorToUse(attributes, key);
++
++      id geometry = nil;
++
 +      if (feature.type == Tile_GeomType_Point) {
-+        [self drawPointInContext:context
-+                      geometries:feature.geometryArray
-+                       fillColor:colorToUse
-+                           label:labelToUse];
++        geometry = [self createMultiPointData:feature.geometryArray];
 +      } else if (feature.type == Tile_GeomType_Linestring) {
-+        [self drawLineStringInContext:context
-+                           geometries:feature.geometryArray
-+                            fillColor:colorToUse
-+                                label:labelToUse];
-+      } else if (feature.type == Tile_GeomType_Polygon) { // ポリゴンのみを処理
-+        [self drawPolygonInContext:context
-+                        geometries:feature.geometryArray
-+                         fillColor:colorToUse
-+                             label:labelToUse];
++        geometry = [self createLinePath:feature.geometryArray];
++      } else if (feature.type == Tile_GeomType_Polygon) {
++        geometry = [self createPolygonPath:feature.geometryArray];
 +      }
++
++      if (geometry != nil) {
++        FeatureData *featureData =
++            [[FeatureData alloc] initWithAttributes:attributes
++                                           geometry:geometry];
++        [features addObject:featureData];
++      }
++
++      // NSString *key = @"基本分類C";
++      // NSString *labelToUse = getLabelToUse(attributes, key);
++      // UIColor *colorToUse = getColorToUse(attributes, key);
 +    }
++    if (features.count > 0) {
++      // NSLog(@"!!create source: %@", layer.name);
++      VectorSource *newSource = [[VectorSource alloc] initWithName:layer.name
++                                                          features:features];
++      [sources addObject:newSource];
++    }
++  }
++
++  CGContextRef context = [self createTransparentImageContext];
++  NSArray *styleLayers = [self.styleManager getStyleLayers];
++
++  for (NSDictionary *styleLayer in [self.styleManager getStyleLayers]) {
++    NSString *sourceLayer = styleLayer
++        [@"source-layer"]; // JSONで"source-layer"となっているので、これを指定
++    // NSLog(@"sourceLayer %@", sourceLayer);
++    VectorSource *source = [self getVectorSource:sourceLayer
++                                     fromSources:sources];
++
++    if (source == nil)
++      continue;
++    NSNumber *minzoom = styleLayer[@"minzoom"];
++    NSNumber *maxzoom = styleLayer[@"maxzoom"];
++
++    if ([minzoom doubleValue] > zoom || [maxzoom doubleValue] < zoom)
++      continue;
++
++    [self applyStyleToContext:context
++               withStyleLayer:styleLayer
++                    andSource:source];
 +  }
 +
 +  // 描画したイメージを取得
@@ -24073,7 +24288,7 @@ index 0000000..8a7e56f
 +                              error:&error];
 +    if (error) {
 +      NSLog(@"Directory creation Error: %@", error.localizedDescription);
-+      return;
++      error = nil;
 +    }
 +  }
 +
@@ -24088,7 +24303,7 @@ index 0000000..8a7e56f
 +    return;
 +  }
 +
-+  NSLog(@"tileCache SAVED tile %@", [pbfCacheFilePath path]);
++  // NSLog(@"tileCache SAVED tile %@", [pbfCacheFilePath path]);
 +}
 +
 +- (void)writeTileImage:(NSURL *)tileCacheFileDirectory
@@ -24154,12 +24369,14 @@ index 0000000..8a7e56f
 +                           y:(NSUInteger)y
 +                        minZ:(NSInteger)minZ {
 +  // NSLog(@"#$#$#$#$#$ %ld,%ld,%ld,%ld", tryZ,x,y,minZ);
-+  NSData *Data = [self getTile:tryZ x:x y:y];
-+  if (Data) {
++  if (tryZ <= minZ) {
++    return [self getTile:tryZ x:x y:y];
 +
-+    return Data;
-+  } else if (tryZ >= minZ) {
-+    Data = [self drawOverZoomTile:(tryZ - 1) x:(x / 2) y:(y / 2) minZ:minZ];
++  } else if (tryZ > minZ) {
++    NSData *Data = [self drawOverZoomTile:(tryZ - 1)
++                                        x:(x / 2)
++                                        y:(y / 2)
++                                     minZ:minZ];
 +    BOOL leftColumn = x % 2 == 0;
 +    BOOL topRow = y % 2 == 0;
 +    return [self getHalfTile:Data leftColumn:1 - leftColumn topRow:1 - topRow];
@@ -24451,7 +24668,7 @@ index c9beb39..d218183 100644
  #endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h
 new file mode 100644
-index 0000000..49d34ee
+index 0000000..5043e41
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.h
 @@ -0,0 +1,23 @@
@@ -24465,16 +24682,16 @@ index 0000000..49d34ee
 +#import <GoogleMaps/GoogleMaps.h>
 +
 +@interface AIRGoogleMapUrlTileOverlay : GMSSyncTileLayer
-+@property (nonatomic, copy) NSString *template;
-+@property (nonatomic, assign) NSInteger maximumZ;
-+@property (nonatomic, assign) NSInteger minimumZ;
-+@property (nonatomic) NSInteger maximumNativeZ;
-+@property (nonatomic, assign) NSInteger tileSize;
-+@property (nonatomic) NSInteger doubleTileSize;
-+@property (nonatomic, assign) BOOL flipY;
-+@property (nonatomic, assign) BOOL offlineMode;
-+@property (nonatomic, copy) NSString *tileCachePath;
-+@property (nonatomic, assign) NSInteger tileCacheMaxAge;
++@property(nonatomic, copy) NSString *template;
++@property(nonatomic, assign) NSInteger maximumZ;
++@property(nonatomic, assign) NSInteger minimumZ;
++@property(nonatomic) NSInteger maximumNativeZ;
++@property(nonatomic, assign) NSInteger tileSize;
++@property(nonatomic) NSInteger doubleTileSize;
++@property(nonatomic, assign) BOOL flipY;
++@property(nonatomic, assign) BOOL offlineMode;
++@property(nonatomic, copy) NSString *tileCachePath;
++@property(nonatomic, assign) NSInteger tileCacheMaxAge;
 +@end
 +
 +#endif
@@ -25826,11 +26043,432 @@ index 0000000..7a5b940
 +
 +@end
 \ No newline at end of file
-diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.h
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h
+new file mode 100644
+index 0000000..9bbdcc7
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h
+@@ -0,0 +1,10 @@
++#import <Foundation/Foundation.h>
++
++@interface FeatureData : NSObject
++
++@property(nonatomic, strong) NSDictionary<NSString *, NSString *> *attributes;
++@property(nonatomic, strong) id geometry;
++
++- (instancetype)initWithAttributes:(NSDictionary<NSString *, NSString *> *)attributes geometry:(id)geometry;
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m
+new file mode 100644
+index 0000000..7a2eb28
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m
+@@ -0,0 +1,16 @@
++#import "FeatureData.h"
++
++@implementation FeatureData
++
++- (instancetype)initWithAttributes:
++                    (NSDictionary<NSString *, NSString *> *)attributes
++                          geometry:(id)geometry {
++  self = [super init];
++  if (self) {
++    _attributes = attributes;
++    _geometry = geometry;
++  }
++  return self;
++}
++
++@end
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.h
+new file mode 100644
+index 0000000..c4f077a
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.h
+@@ -0,0 +1,14 @@
++#import <Foundation/Foundation.h>
++#import <UIKit/UIKit.h>
++
++@interface LineData : NSObject
++
++@property(nonatomic, strong) UIBezierPath *path;
++@property(nonatomic, assign) float centerX;
++@property(nonatomic, assign) float centerY;
++
++- (instancetype)initWithPath:(UIBezierPath *)path
++                     centerX:(float)centerX
++                     centerY:(float)centerY;
++
++@end
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.m
+new file mode 100644
+index 0000000..8373d8b
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/LineData.m
+@@ -0,0 +1,18 @@
++#import "LineData.h"
++
++@implementation LineData
++
++- (instancetype)initWithPath:(UIBezierPath *)path
++                     centerX:(float)centerX
++                     centerY:(float)centerY {
++  self = [super
++      init]; // Now super works, because it refers to NSObject's init method
++  if (self) {
++    _path = path; // Assuming you've declared these in the header (.h) file
++    _centerX = centerX;
++    _centerY = centerY;
++  }
++  return self;
++}
++
++@end
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.h
+new file mode 100644
+index 0000000..e44e917
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.h
+@@ -0,0 +1,12 @@
++// PolygonData.h
++#import <UIKit/UIKit.h>
++
++@interface PolygonData : NSObject
++
++@property(nonatomic, strong) UIBezierPath *path;
++@property(nonatomic, assign) float centerX;
++@property(nonatomic, assign) float centerY;
++
++- (instancetype)initWithPath:(UIBezierPath *)path centerX:(float)centerX centerY:(float)centerY;
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.m
+new file mode 100644
+index 0000000..9c2efc4
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/PolygonData.m
+@@ -0,0 +1,18 @@
++// PolygonData.m
++#import "PolygonData.h"
++
++@implementation PolygonData
++
++- (instancetype)initWithPath:(UIBezierPath *)path
++                     centerX:(float)centerX
++                     centerY:(float)centerY {
++  self = [super init];
++  if (self) {
++    _path = path;
++    _centerX = centerX;
++    _centerY = centerY;
++  }
++  return self;
++}
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
+new file mode 100644
+index 0000000..134726f
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
+@@ -0,0 +1,11 @@
++#import <Foundation/Foundation.h>
++
++@interface StyleManager : NSObject
++
++// イニシャライザ
++- (instancetype)initWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
++
++// スタイルレイヤー情報を返す
++- (NSArray *)getStyleLayers;
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
+new file mode 100644
+index 0000000..cdc206d
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
+@@ -0,0 +1,176 @@
++#import "StyleManager.h"
++#import <Foundation/Foundation.h>
++
++@implementation StyleManager {
++  NSURL *_urlTemplate;
++  NSURL *_localPath;
++  NSURL *_tileCachePath;
++  NSArray *_styleLayers;
++}
++
++- (instancetype)initWithURLTemplate:(NSString *)urlTemplate
++                      tileCachePath:(NSString *)tileCachePath {
++  self = [super init];
++  if (self) {
++    _urlTemplate =
++        [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
++    if (tileCachePath) {
++      _localPath =
++          [NSURL URLWithString:[NSString stringWithFormat:@"%@/style.json",
++                                                          tileCachePath]];
++      _tileCachePath = [NSURL URLWithString:tileCachePath];
++    }
++    // NSLog(@"!!_urlTemplate: %@", _urlTemplate);
++    // NSLog(@"!!_localPath: %@", _localPath);
++    // NSLog(@"!!_tileCachePath: %@", _tileCachePath);
++    [self loadStyle];
++  }
++  return self;
++}
++
++- (void)loadStyle {
++  NSError *error;
++  NSString *style = nil;
++  style = [self downloadAndSaveStyleWithUrlTemplate:_urlTemplate
++                                      tileCachePath:_tileCachePath
++                                          localPath:_localPath
++                                              error:&error];
++
++  if (error) {
++    NSLog(@"Failed to download style JSON: %@", [error localizedDescription]);
++    style = [NSString stringWithContentsOfFile:_localPath
++                                      encoding:NSUTF8StringEncoding
++                                         error:&error];
++    if (!style) {
++      NSLog(@"Failed to load style JSON: %@", [error localizedDescription]);
++      return;
++    } else {
++      error = nil;
++    }
++  }
++
++  NSData *data = [style dataUsingEncoding:NSUTF8StringEncoding];
++  NSArray *parsedStyleLayers =
++      [NSJSONSerialization JSONObjectWithData:data
++                                      options:kNilOptions
++                                        error:&error];
++  //   for (NSDictionary *layer in parsedStyleLayers) {
++  //     NSLog(@"layer: %@", layer);
++  //   }
++  if (error) {
++    NSLog(@"JSON parsing error: %@", [error localizedDescription]);
++  } else {
++    _styleLayers = parsedStyleLayers;
++  }
++}
++
++- (NSString *)changeExtensionToJson:(NSString *)url {
++  return [url stringByReplacingOccurrencesOfString:@"\\.[^.]+$"
++                                        withString:@".json"
++                                           options:NSRegularExpressionSearch
++                                             range:NSMakeRange(0, url.length)];
++}
++
++- (NSString *)downloadAndSaveStyleWithUrlTemplate:(NSURL *)urlTemplate
++                                    tileCachePath:(NSURL *)tileCachePath
++                                        localPath:(NSURL *)localPath
++                                            error:(NSError **)error {
++  NSString *styleData = [self downloadStyleJsonFromUrl:urlTemplate];
++  // NSLog(@"styleData: %@", styleData);
++  if (styleData) {
++    [self writeStyleData:tileCachePath
++        withStyleCacheFilePath:localPath
++                 withStyleData:styleData];
++
++    return styleData;
++  } else {
++    if (error) {
++
++      *error = [NSError
++          errorWithDomain:@"YourErrorDomain"
++                     code:100
++                 userInfo:@{
++                   NSLocalizedDescriptionKey : @"Failed to download style JSON"
++                 }];
++    }
++    return nil;
++  }
++}
++
++- (void)writeStyleData:(NSURL *)tileCacheFileDirectory
++    withStyleCacheFilePath:(NSURL *)styleCacheFilePath
++             withStyleData:(NSString *)styleData {
++
++  //   NSLog(@"tileCacheFileDirectory: %@", tileCacheFileDirectory);
++  //   NSLog(@"styleCacheFilePath: %@", styleCacheFilePath);
++  //   NSLog(@"styleData: %@", styleData);
++  NSError *error;
++
++  if (![[NSFileManager defaultManager]
++          fileExistsAtPath:[tileCacheFileDirectory path]]) {
++    [[NSFileManager defaultManager]
++              createDirectoryAtPath:[tileCacheFileDirectory path]
++        withIntermediateDirectories:YES
++                         attributes:nil
++                              error:&error];
++    if (error) {
++      NSLog(@"ディレクトリ作成エラー: %@", error.localizedDescription);
++      return;
++    }
++  }
++
++  [styleData writeToFile:[styleCacheFilePath path]
++              atomically:YES
++                encoding:NSUTF8StringEncoding
++                   error:&error];
++
++  if (error) {
++    NSLog(@"ファイル書き込みエラー: %@", error.localizedDescription);
++    return;
++  }
++
++  // NSLog(@"tileCache 保存完了: %@", [styleCacheFilePath path]);
++}
++
++- (NSString *)downloadStyleJsonFromUrl:(NSURL *)url {
++  __block NSString *responseString = nil;
++
++  NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
++  [request setHTTPMethod:@"GET"];
++  [request setCachePolicy:NSURLRequestReloadIgnoringLocalCacheData];
++  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
++
++  NSURLSessionDataTask *task = [[NSURLSession sharedSession]
++      dataTaskWithRequest:request
++        completionHandler:^(NSData *data, NSURLResponse *response,
++                            NSError *error) {
++          if (error) {
++            NSLog(@"Failed to download style JSON: %@",
++                  error.localizedDescription);
++          } else {
++            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
++
++            if (httpResponse.statusCode == 200) {
++              responseString =
++                  [[NSString alloc] initWithData:data
++                                        encoding:NSUTF8StringEncoding];
++            } else {
++              NSLog(@"Bad response code: %ld", (long)httpResponse.statusCode);
++            }
++          }
++
++          dispatch_semaphore_signal(semaphore);
++        }];
++
++  [task resume];
++
++  dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
++
++  return responseString;
++}
++
++- (NSArray *)getStyleLayers {
++  return _styleLayers;
++}
++
++@end
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h
+new file mode 100644
+index 0000000..ea61c9c
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h
+@@ -0,0 +1,9 @@
++// UIColor+Hex.h
++#import <UIKit/UIKit.h>
++
++@interface UIColor (Hex)
++
+++ (UIColor *)colorWithHexString:(NSString *)hexString;
+++ (UIColor *)colorWithHexString:(NSString *)hexString alpha:(CGFloat)alpha;
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.m
+new file mode 100644
+index 0000000..80a2663
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.m
+@@ -0,0 +1,32 @@
++// UIColor+Hex.m
++#import "UIColor+Hex.h"
++
++@implementation UIColor (Hex)
++
+++ (UIColor *)colorWithHexString:(NSString *)hexString {
++  return [self colorWithHexString:hexString alpha:1.0];
++}
++
+++ (UIColor *)colorWithHexString:(NSString *)hexString alpha:(CGFloat)alpha {
++  unsigned int hex = 0;
++
++  // '#'を取り除く
++  NSString *cleanString = [hexString stringByReplacingOccurrencesOfString:@"#"
++                                                               withString:@""];
++
++  // NSScannerを使って16進数の解釈
++  NSScanner *scanner = [NSScanner scannerWithString:cleanString];
++  [scanner scanHexInt:&hex];
++
++  return [self colorFromHex:hex withAlpha:alpha];
++}
++
+++ (UIColor *)colorFromHex:(unsigned int)hexValue withAlpha:(CGFloat)alpha {
++  CGFloat red = ((CGFloat)((hexValue & 0xFF0000) >> 16)) / 255.0;
++  CGFloat green = ((CGFloat)((hexValue & 0x00FF00) >> 8)) / 255.0;
++  CGFloat blue = ((CGFloat)((hexValue & 0x0000FF))) / 255.0;
++
++  return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
++}
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.h
+new file mode 100644
+index 0000000..48a559e
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.h
+@@ -0,0 +1,11 @@
++#import <Foundation/Foundation.h>
++#import "FeatureData.h"
++
++@interface VectorSource : NSObject
++
++@property(nonatomic, strong) NSString *name;
++@property(nonatomic, strong) NSArray<FeatureData *> *features;
++
++- (instancetype)initWithName:(NSString *)name features:(NSArray<FeatureData *> *)features;
++
++@end
+\ No newline at end of file
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.m
+new file mode 100644
+index 0000000..eabd444
+--- /dev/null
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorSource.m
+@@ -0,0 +1,15 @@
++#import "VectorSource.h"
++
++@implementation VectorSource
++
++- (instancetype)initWithName:(NSString *)name
++                    features:(NSArray<FeatureData *> *)features {
++  self = [super init];
++  if (self) {
++    _name = name;
++    _features = features;
++  }
++  return self;
++}
++
++@end
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.h
 new file mode 100644
 index 0000000..f95b7db
 --- /dev/null
-+++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.h
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.h
 @@ -0,0 +1,230 @@
 +// Generated by the protocol buffer compiler.  DO NOT EDIT!
 +// clang-format off
@@ -26062,11 +26700,11 @@ index 0000000..f95b7db
 +// @@protoc_insertion_point(global_scope)
 +
 +// clang-format on
-diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.m
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m
 new file mode 100644
 index 0000000..5595147
 --- /dev/null
-+++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile.pbobjc.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m
 @@ -0,0 +1,464 @@
 +// Generated by the protocol buffer compiler.  DO NOT EDIT!
 +// clang-format off
@@ -27264,7 +27902,7 @@ index b752130..2c74fd6 100644
  Object.defineProperty(exports, "WMSTile", { enumerable: true, get: function () { return __importDefault(MapWMSTile_1).default; } });
  Object.defineProperty(exports, "MapWMSTile", { enumerable: true, get: function () { return MapWMSTile_1.MapWMSTile; } });
 diff --git a/node_modules/react-native-maps/react-native-google-maps.podspec b/node_modules/react-native-maps/react-native-google-maps.podspec
-index ab7cd27..2622a6d 100644
+index ab7cd27..0feec8c 100644
 --- a/node_modules/react-native-maps/react-native-google-maps.podspec
 +++ b/node_modules/react-native-maps/react-native-google-maps.podspec
 @@ -18,4 +18,9 @@ Pod::Spec.new do |s|
@@ -27273,7 +27911,7 @@ index ab7cd27..2622a6d 100644
    s.dependency 'Google-Maps-iOS-Utils', '4.1.0'
 +
 +  s.subspec 'NonARCFiles' do |ss|
-+    ss.source_files = "ios/AirGoogleMaps/VectorTile.pbobjc.m"
++    ss.source_files = "ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m"
 +    ss.compiler_flags = '-fno-objc-arc'
 +  end
  end

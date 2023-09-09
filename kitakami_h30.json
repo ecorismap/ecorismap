@@ -7,7 +7,7 @@
     "minzoom": 0,
     "maxzoom": 24,
     "paint": {
-      "line-color": "#FFFFFF",
+      "line-color": "#FFF100",
       "line-width": 1
     }
   },
@@ -26,7 +26,7 @@
     "paint": {
       "text-color": "#FFFFFF",
       "text-halo-color": "#000000",
-      "text-halo-width": 0.8
+      "text-halo-width": 0.5
     }
   }
 ]

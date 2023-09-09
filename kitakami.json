@@ -12,6 +12,18 @@
     }
   },
   {
+    "id": "example-id",
+    "type": "circle",
+    "source": "example-source",
+    "source-layer": "kuiP",
+    "minzoom": 14,
+    "maxzoom": 24,
+    "paint": {
+      "circle-color": "#0000FF",
+      "circle-radius": 3
+    }
+  },
+  {
     "id": "example-id-label",
     "type": "symbol",
     "source": "example-source",
