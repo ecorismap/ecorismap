@@ -37,12 +37,12 @@ import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
-import { getExt } from '../../utils/General';
 import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { AnyLayer } from 'react-map-gl/dist/esm/types';
+import { HomePopup } from '../organisms/HomePopup';
 
 export default function HomeScreen() {
   const {
@@ -87,6 +87,7 @@ export default function HomeScreen() {
     panResponder,
     isPinch,
     isDrawLineVisible,
+    onPressMapView,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -169,6 +170,34 @@ export default function HomeScreen() {
       ),
     [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
   );
+
+  useEffect(() => {
+    if (!mapViewRef.current) return;
+    const map = (mapViewRef.current as MapRef).getMap();
+
+    for (const tileMap of tileMaps) {
+      //console.log(tileMap);
+      if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
+        // 外部からレイヤーとそのスタイルを非同期に読み込む
+        const url = tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
+        console.log('url', url);
+        fetch(url)
+          .then((response) => response.json())
+          .then((layerStyles) => {
+            layerStyles.forEach((layerStyle: any, index: number) => {
+              layerStyle.id = `${tileMap.id}_${index}`;
+              layerStyle.source = tileMap.id;
+              //console.log(layerStyle);
+              map.addLayer(layerStyle);
+            });
+          })
+          .catch((error) => {
+            console.log('!!!!', error);
+          });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapViewRef.current, tileMaps]);
 
   useEffect(() => {
     if (isPointRecordType(selectedRecord?.record)) return;
@@ -337,16 +366,16 @@ export default function HomeScreen() {
       .reverse()
       .reduce((result: any, tileMap: TileMapType) => {
         if (tileMap.visible) {
-          if (getExt(tileMap.url) === 'pmtiles') {
+          if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
             return {
               ...result,
               [tileMap.id]: {
-                type: 'raster',
-                url: 'pmtiles://' + tileMap.url,
+                type: 'vector',
+                url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
-                tileSize: 256,
+                tileSize: 512,
                 attribution: tileMap.attribution,
               },
             };
@@ -416,7 +445,9 @@ export default function HomeScreen() {
       .reverse()
       .map((tileMap: TileMapType) => {
         if (tileMap.visible) {
-          if (tileMap.url) {
+          if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
+            return null;
+          } else if (tileMap.url) {
             return {
               id: tileMap.id,
               type: 'raster',
@@ -493,7 +524,7 @@ export default function HomeScreen() {
           pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
         />
         <MapMemoView />
-
+        <HomePopup />
         {isDrawLineVisible && <SvgView />}
 
         <div {...getRootProps({ className: 'dropzone' })}>
@@ -514,7 +545,7 @@ export default function HomeScreen() {
               onLoad={onMapLoad}
               cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
               //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
-              //onClick={onClick}
+              onClick={onPressMapView}
               //onMouseMove={onMouseMove}
               dragPan={
                 isPinch ||

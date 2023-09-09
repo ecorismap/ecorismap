@@ -23,6 +23,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const maps = useSelector((state: AppState) => state.tileMaps);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
+  const { clearTileCache } = useMaps();
   const { mapListURL, saveMapListURL } = useMaps();
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
@@ -122,13 +123,10 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     if (Platform.OS === 'web') return;
     const ret = await ConfirmAsync(t('Settings.confirm.clearTileCache'));
     if (ret) {
-      const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
-      if (uri) {
-        await FileSystem.deleteAsync(uri);
-      }
+      await clearTileCache();
       await AlertAsync(t('Settings.alert.clearTileCache'));
     }
-  }, []);
+  }, [clearTileCache]);
 
   const pressClearPhotoCache = useCallback(async () => {
     if (Platform.OS === 'web') return;

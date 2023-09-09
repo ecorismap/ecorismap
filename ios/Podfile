@@ -35,6 +35,7 @@ target 'ecorismap' do
     # React Native Maps dependencies
     rn_maps_path = '../node_modules/react-native-maps'
     pod 'react-native-google-maps', :path => rn_maps_path
+    pod 'Protobuf'
     #pod 'Firebase/Analytics'
 
     ####
@@ -67,6 +68,7 @@ target 'ecorismap' do
     end
   end
 
+   
 
   post_install do |installer|
     react_native_post_install(
