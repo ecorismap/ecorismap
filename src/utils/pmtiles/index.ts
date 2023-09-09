@@ -1,7 +1,6 @@
 import pako from 'pako';
 //import v2 from './v2';
 //export * from './adapters';
-//import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
 
 export interface BufferPosition {
