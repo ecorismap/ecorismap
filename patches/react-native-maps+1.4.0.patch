@@ -29,8 +29,7 @@ index 0000000..28bb879
 +o/classes.jar
 diff --git a/node_modules/react-native-maps/android/build/.transforms/31348ec77c8a305d026865bed6f8467e/transformed/classes.jar b/node_modules/react-native-maps/android/build/.transforms/31348ec77c8a305d026865bed6f8467e/transformed/classes.jar
 new file mode 100644
-index 0000000..49adbe3
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/31348ec77c8a305d026865bed6f8467e/transformed/classes.jar differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/59c943fee1804fabd103d9f8dae117d4/results.bin b/node_modules/react-native-maps/android/build/.transforms/59c943fee1804fabd103d9f8dae117d4/results.bin
 new file mode 100644
 index 0000000..28bb879
@@ -40,7 +39,7 @@ index 0000000..28bb879
 +o/classes.jar
 diff --git a/node_modules/react-native-maps/android/build/.transforms/59c943fee1804fabd103d9f8dae117d4/transformed/classes.jar b/node_modules/react-native-maps/android/build/.transforms/59c943fee1804fabd103d9f8dae117d4/transformed/classes.jar
 new file mode 100644
-index 0000000..70feddc
+index 0000000..baf9105
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/59c943fee1804fabd103d9f8dae117d4/transformed/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/7e2e2e190c6e798c918c9ce80dc77481/results.bin b/node_modules/react-native-maps/android/build/.transforms/7e2e2e190c6e798c918c9ce80dc77481/results.bin
 new file mode 100644
@@ -51,7 +50,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/7e2e2e190c6e798c918c9ce80dc77481/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/7e2e2e190c6e798c918c9ce80dc77481/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..e69aa37
+index 0000000..abfae12
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/7e2e2e190c6e798c918c9ce80dc77481/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java
 new file mode 100644
@@ -130,7 +129,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..5aba57d
+index 0000000..47a68ac
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2280,11 +2279,11 @@ index 0000000..9752a2d
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..8284720
+index 0000000..232893d
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Sat Sep 09 17:20:37 JST 2023
++#Sun Sep 10 15:38:18 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..76baba1
@@ -2305,12 +2304,12 @@ index 0000000..474e646
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..a4b0bbd
+index 0000000..61e8fa0
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/expo/android/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
@@ -2571,7 +2570,7 @@ index 0000000..da6ecac
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..409e97a
+index 0000000..34036a5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -2901,7 +2900,7 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..9bbd293
+index 0000000..ab97351
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -4539,7 +4538,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..00a1f07
+index 0000000..b954546
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
@@ -18367,14 +18366,14 @@ index b752130..2c74fd6 100644
  Object.defineProperty(exports, "WMSTile", { enumerable: true, get: function () { return __importDefault(MapWMSTile_1).default; } });
  Object.defineProperty(exports, "MapWMSTile", { enumerable: true, get: function () { return MapWMSTile_1.MapWMSTile; } });
 diff --git a/node_modules/react-native-maps/react-native-google-maps.podspec b/node_modules/react-native-maps/react-native-google-maps.podspec
-index ab7cd27..0feec8c 100644
+index ab7cd27..44e53a7 100644
 --- a/node_modules/react-native-maps/react-native-google-maps.podspec
 +++ b/node_modules/react-native-maps/react-native-google-maps.podspec
 @@ -18,4 +18,9 @@ Pod::Spec.new do |s|
    s.dependency 'React-Core'
    s.dependency 'GoogleMaps', '7.3.0'
    s.dependency 'Google-Maps-iOS-Utils', '4.1.0'
-+
++  s.dependency 'Protobuf'
 +  s.subspec 'NonARCFiles' do |ss|
 +    ss.source_files = "ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m"
 +    ss.compiler_flags = '-fno-objc-arc'
