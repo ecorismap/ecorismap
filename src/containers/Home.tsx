@@ -190,8 +190,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion } = useWindow();
 
- 
-
   const attribution = useMemo(
     () =>
       tileMaps
