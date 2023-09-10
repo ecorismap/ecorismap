@@ -221,6 +221,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     const newLayer = {
       ...activeMemoLayer,
       colorStyle: { ...activeMemoLayer.colorStyle, colorType: 'INDIVISUAL' as const },
+      label: '',
     };
     dispatch(updateLayerAction(newLayer));
     return true;
