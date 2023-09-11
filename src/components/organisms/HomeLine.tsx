@@ -67,6 +67,7 @@ export const Line = React.memo((props: Props) => {
             zIndex={zIndex}
             layer={layer}
             feature={feature}
+            tappable={false}
             onPressLine={onPressLine}
           />
         );

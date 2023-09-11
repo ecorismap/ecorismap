@@ -94,7 +94,7 @@ const PolygonComponent = React.memo((props: any) => {
     <>
       <Poly
         key={'poly' + feature.id}
-        tappable={true} //ボタンの種類でtrueにしても良い
+        tappable={false}
         coordinates={feature.coords as LatLng[]}
         //Firestoreがネストした配列を受け付けないため、表示するときに一元から二次元配列に変換する
         holes={feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined}
