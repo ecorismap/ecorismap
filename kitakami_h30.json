@@ -8,7 +8,7 @@
     "maxzoom": 24,
     "paint": {
       "line-color": "#FFF100",
-      "line-width": 1
+      "line-width": 2
     }
   },
   {
@@ -20,7 +20,7 @@
     "maxzoom": 24,
     "layout": {
       "text-field": ["get", "群落表示C"],
-      "text-size": 12,
+      "text-size": 14,
       "text-font": ["Noto Sans CJK JP Regular"]
     },
     "paint": {
