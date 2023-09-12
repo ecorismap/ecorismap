@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..6108ff9
+index 0000000..0b644af
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java
 new file mode 100644
@@ -108,7 +108,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..47a68ac
+index 0000000..caeecbd
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2258,11 +2258,11 @@ index 0000000..9752a2d
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..60c1aca
+index 0000000..8398822
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Sun Sep 10 08:18:47 JST 2023
++#Mon Sep 11 22:15:03 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..76baba1
@@ -2283,12 +2283,12 @@ index 0000000..474e646
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..9d2348c
+index 0000000..61e8fa0
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/android/app/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/android/app/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
@@ -2385,7 +2385,7 @@ index 0000000..c5637e2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..94683bc
+index 0000000..63ed9fe
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
@@ -2529,27 +2529,27 @@ index 0000000..906250b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..a4db057
+index 0000000..e0c6f53
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..5b91da3
+index 0000000..b65e748
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..5febd41
+index 0000000..c121d04
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..eac9427
+index 0000000..7595ca1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..da6ecac
+index 0000000..1bc4c1c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..34036a5
+index 0000000..20119f4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -2879,7 +2879,7 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..ab97351
+index 0000000..c9acf16
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -4517,7 +4517,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..b954546
+index 0000000..8b459f5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
@@ -4830,10 +4830,10 @@ index 0000000..c61300c
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..0d3f0a1
+index 0000000..d2cd5e2
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,1014 @@
+@@ -0,0 +1,1020 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -4982,24 +4982,24 @@ index 0000000..0d3f0a1
 +
 +  byte[] getTileImage(int x, int y, int zoom) {
 +    byte[] image = null;
-+    //フェッチできなければ読み込む（画像の場合とは処理が逆！）
 +    if (this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++      if (image != null) {
++        //System.out.println("##read from cache" + zoom + "/" + x + "/" + y);
++        boolean needRefresh = checkForRefresh(x, y, zoom);
++        if (needRefresh) {
++          image = null;
++        }
++      }
++    }
++    if (image == null && this.tileCachePath != null) {
 +      // Log.d("urlTile", "Normal fetch");
 +      image = fetchTile(x, y, zoom);
 +      if (image != null) {
 +        boolean success = writeTileImage(image, x, y, zoom);
++        //System.out.println("##fetch:" + zoom + "/" + x + "/" + y);
 +      }
 +    }
-+    if (image == null && this.tileCachePath != null) {
-+      image = readTileImage(x, y, zoom);
-+      // if (image != null && !this.offlineMode) {
-+      //   boolean needRefresh = checkForRefresh(x, y, zoom);
-+      //   if (needRefresh) {
-+      //     image = null;
-+      //   }
-+      // }
-+    }
-+
 +    return image;
 +  }
 +
@@ -5108,8 +5108,14 @@ index 0000000..0d3f0a1
 +    File file = new File(fileName);
 +    long lastModified = file.lastModified();
 +    long now = System.currentTimeMillis();
++    long styleLastUpdatedTime = styleManager.getLastUpdatedTime();
 +
++    if (styleLastUpdatedTime > lastModified) {
++      //System.out.println("##style updated");
++      return true;
++    }
 +    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
++      //System.out.println("##cache expired");
 +      return true;
 +    }
 +    return false;
@@ -5394,7 +5400,7 @@ index 0000000..0d3f0a1
 +        }
 +      }
 +    } else if ("line".equals(type)) {
-+      System.out.println("!!applyStyle: " + source.name);
++      //System.out.println("!!applyStyle: " + source.name);
 +      Paint linePaint = new Paint();
 +      for (FeatureData feature : source.features) {
 +        Map<String, String> attributes = feature.attributes;
@@ -5589,14 +5595,14 @@ index 0000000..0d3f0a1
 +            }
 +          }
 +          if (features.size() > 0) {
-+            System.out.println("!!create source: " + layer.getName());
++            //System.out.println("!!create source: " + layer.getName());
 +            VectorSource newSource = new VectorSource(layer.getName(), features);
 +            sources.add(newSource);
 +          }
 +        }
 +      } catch (InvalidProtocolBufferException e) {
 +        e.printStackTrace();
-+        System.err.println("!!create source error: " + e.getMessage());
++        //System.err.println("!!create source error: " + e.getMessage());
 +        // エラーハンドリングのロジック
 +      }
 +      Bitmap image = Bitmap.createBitmap(tileSize, tileSize, Bitmap.Config.ARGB_8888);
@@ -5614,7 +5620,7 @@ index 0000000..0d3f0a1
 +    } catch (Exception e) {
 +      // CompletableFuture#get()の例外処理
 +      //e.printStackTrace();
-+      System.err.println("!!An error occurred: " + e.getMessage());
++      //System.err.println("!!An error occurred: " + e.getMessage());
 +      return null;
 +    }
 +  }
@@ -8319,10 +8325,10 @@ index 0000000..5675b38
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..6fbd424
+index 0000000..dd6c779
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,132 @@
 +package VectorTileStyleManager;
 +
 +import StyleLayer.StyleLayer;
@@ -8347,7 +8353,7 @@ index 0000000..6fbd424
 +
 +  private String urlTemplate;
 +  private String localPath;
-+
++  private long lastUpdatedTime; // long型で記録
 +  private List<StyleLayer> styleLayers; // ダウンロードしたスタイル情報を保存
 +
 +  public VectorTileStyleManager(String urlTemplate, String tileCachePath) {
@@ -8381,6 +8387,7 @@ index 0000000..6fbd424
 +        Path path = Paths.get(localPath);
 +        if (Files.exists(path)) {
 +          try {
++            lastUpdatedTime = path.toFile().lastModified();
 +            return new String(Files.readAllBytes(path));
 +          } catch (IOException ex) {
 +            throw new RuntimeException("Failed to read local file", ex);
@@ -8398,11 +8405,26 @@ index 0000000..6fbd424
 +
 +  public String downloadAndSaveStyle() throws IOException {
 +    String style = downloadStyleJson(urlTemplate);
-+    try {
-+      Files.write(Paths.get(localPath), style.getBytes());
-+    } catch (FileAlreadyExistsException e) {
-+      // ファイルがすでに存在する場合の処理（オプション）
++    Path path = Paths.get(localPath);
++
++    if (Files.exists(path)) {
++      // すでにファイルが存在する場合、内容を比較
++      String existingStyle = new String(Files.readAllBytes(path));
++
++      if (!existingStyle.equals(style)) {
++        // 異なる場合は新しい内容で上書き
++        Files.write(path, style.getBytes());
++        lastUpdatedTime = System.currentTimeMillis();
++      } else {
++        // 同じ場合は更新しない
++        lastUpdatedTime = path.toFile().lastModified();
++      }
++    } else {
++      // ファイルが存在しない場合、新しく書き込み
++      Files.write(path, style.getBytes());
++      lastUpdatedTime = System.currentTimeMillis();
 +    }
++
 +    return style;
 +  }
 +
@@ -8433,6 +8455,10 @@ index 0000000..6fbd424
 +
 +  public List<StyleLayer> getStyleLayers() {
 +    return this.styleLayers;
++  }
++
++  public long getLastUpdatedTime() {
++    return lastUpdatedTime;
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/vector_tile/VectorTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/vector_tile/VectorTile.java
@@ -14000,10 +14026,10 @@ index 0000000..ae8319d
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..ceacbab
+index 0000000..953c7e9
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,828 @@
+@@ -0,0 +1,871 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -14130,17 +14156,28 @@ index 0000000..ceacbab
 +  NSString *url =
 +      self.offlineMode && self.tileCachePath ? tileCacheXYZ : urlXYZ;
 +  NSData *data;
-+  data = [self fetchTile:zoom x:x y:y];
 +
++  data = [self readTileImage:tileCacheFilePath];
++  if (data) {
++    // NSLog(@"read from cache %d %d %d", zoom, x, y);
++    if ([self doesFileNeedRefresh:tileCacheFilePath
++                       withMaxAge:self.tileCacheMaxAge]) {
++      data = nil;
++      // NSLog(@"!cache expired");
++    }
++  }
 +  if (!data) {
-+    data = [self readTileImage:tileCacheFilePath];
++    data = [self fetchTile:zoom x:x y:y];
++
 +    if (!data) {
 +      return nil;
 +    } else {
++      // NSLog(@"fetch from url %d %d %d", zoom, x, y);
 +      if (self.tileCachePath) {
 +        [self writeTileImage:tileCacheFileDirectory
 +            withTileCacheFilePath:tileCacheFilePath
 +                     withTileData:data];
++        // NSLog(@"write to cache");
 +      }
 +      return data;
 +    }
@@ -14827,6 +14864,38 @@ index 0000000..ceacbab
 +  } else {
 +    return nil;
 +  }
++}
++
++- (BOOL)doesFileNeedRefresh:(NSURL *)tileCacheFilePath
++                 withMaxAge:(NSInteger)tileCacheMaxAge {
++  NSError *error;
++  NSFileManager *fileManager = [NSFileManager defaultManager];
++  NSDictionary *fileAttributes =
++      [fileManager attributesOfItemAtPath:[tileCacheFilePath path]
++                                    error:&error];
++  long long _lastUpdatedTime = [self.styleManager getLastUpdatedTime];
++
++  if (fileAttributes) {
++    NSDate *modificationDate = fileAttributes[NSFileModificationDate];
++    if (_lastUpdatedTime > 0) {
++      // NSLog(@"tileCacheFilePath %@", [tileCacheFilePath path]);
++      //  NSLog(@"%ld   %ld", _lastUpdatedTime,
++      //        (long long)[modificationDate timeIntervalSince1970]);
++      if (_lastUpdatedTime >
++          (long long)[modificationDate timeIntervalSince1970]) {
++        // NSLog(@"!#!# style updated");
++        return YES;
++      }
++    }
++    if (modificationDate) {
++      if (-1 * (int)modificationDate.timeIntervalSinceNow > tileCacheMaxAge) {
++        // NSLog(@"!#!# cache expired");
++        return YES;
++      }
++    }
++  }
++
++  return NO;
 +}
 +
 +@end
@@ -16615,10 +16684,10 @@ index 0000000..9c2efc4
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
 new file mode 100644
-index 0000000..134726f
+index 0000000..b4b5532
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +#import <Foundation/Foundation.h>
 +
 +@interface StyleManager : NSObject
@@ -16628,15 +16697,16 @@ index 0000000..134726f
 +
 +// スタイルレイヤー情報を返す
 +- (NSArray *)getStyleLayers;
++- (long long)getLastUpdatedTime;
 +
 +@end
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..cdc206d
+index 0000000..3a5eacd
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,198 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -16645,6 +16715,7 @@ index 0000000..cdc206d
 +  NSURL *_localPath;
 +  NSURL *_tileCachePath;
 +  NSArray *_styleLayers;
++  long long _lastUpdatedTime; // 最終更新時間（ミリ秒）
 +}
 +
 +- (instancetype)initWithURLTemplate:(NSString *)urlTemplate
@@ -16684,6 +16755,13 @@ index 0000000..cdc206d
 +      NSLog(@"Failed to load style JSON: %@", [error localizedDescription]);
 +      return;
 +    } else {
++      NSFileManager *fileManager = [NSFileManager defaultManager];
++      NSDictionary *fileAttributes =
++          [fileManager attributesOfItemAtPath:[_localPath path] error:nil];
++      NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
++      _lastUpdatedTime =
++          (long long)([fileModificationDate timeIntervalSince1970] * 1000.0);
++
 +      error = nil;
 +    }
 +  }
@@ -16740,35 +16818,46 @@ index 0000000..cdc206d
 +    withStyleCacheFilePath:(NSURL *)styleCacheFilePath
 +             withStyleData:(NSString *)styleData {
 +
-+  //   NSLog(@"tileCacheFileDirectory: %@", tileCacheFileDirectory);
-+  //   NSLog(@"styleCacheFilePath: %@", styleCacheFilePath);
-+  //   NSLog(@"styleData: %@", styleData);
 +  NSError *error;
++  NSFileManager *fileManager = [NSFileManager defaultManager];
 +
-+  if (![[NSFileManager defaultManager]
-+          fileExistsAtPath:[tileCacheFileDirectory path]]) {
-+    [[NSFileManager defaultManager]
-+              createDirectoryAtPath:[tileCacheFileDirectory path]
-+        withIntermediateDirectories:YES
-+                         attributes:nil
-+                              error:&error];
++  if (![fileManager fileExistsAtPath:[tileCacheFileDirectory path]]) {
++    [fileManager createDirectoryAtPath:[tileCacheFileDirectory path]
++           withIntermediateDirectories:YES
++                            attributes:nil
++                                 error:&error];
 +    if (error) {
 +      NSLog(@"ディレクトリ作成エラー: %@", error.localizedDescription);
 +      return;
 +    }
 +  }
 +
-+  [styleData writeToFile:[styleCacheFilePath path]
-+              atomically:YES
-+                encoding:NSUTF8StringEncoding
-+                   error:&error];
++  NSString *existingStyle =
++      [NSString stringWithContentsOfFile:[styleCacheFilePath path]
++                                encoding:NSUTF8StringEncoding
++                                   error:&error];
 +
-+  if (error) {
-+    NSLog(@"ファイル書き込みエラー: %@", error.localizedDescription);
-+    return;
++  if (existingStyle && [existingStyle isEqualToString:styleData]) {
++    // ファイルが変更されていない場合は、既存のファイルの最後の修正日を取得
++    NSDictionary *fileAttributes =
++        [fileManager attributesOfItemAtPath:[styleCacheFilePath path]
++                                      error:nil];
++    NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
++    _lastUpdatedTime =
++        (long long)([fileModificationDate timeIntervalSince1970]);
++  } else {
++    [styleData writeToFile:[styleCacheFilePath path]
++                atomically:YES
++                  encoding:NSUTF8StringEncoding
++                     error:&error];
++
++    if (error) {
++      NSLog(@"ファイル書き込みエラー: %@", error.localizedDescription);
++      return;
++    }
++
++    _lastUpdatedTime = (long long)([[NSDate date] timeIntervalSince1970]);
 +  }
-+
-+  // NSLog(@"tileCache 保存完了: %@", [styleCacheFilePath path]);
 +}
 +
 +- (NSString *)downloadStyleJsonFromUrl:(NSURL *)url {
@@ -16811,7 +16900,10 @@ index 0000000..cdc206d
 +- (NSArray *)getStyleLayers {
 +  return _styleLayers;
 +}
-+
++// 最終更新時間を取得するメソッドを追加
++- (long long)getLastUpdatedTime {
++  return _lastUpdatedTime;
++}
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h
 new file mode 100644
