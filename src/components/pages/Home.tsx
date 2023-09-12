@@ -359,7 +359,7 @@ export default function HomeScreen() {
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={0}
+                    tileCacheMaxAge={604800}
                     offlineMode={isOffline}
                   />
                 ) : (
