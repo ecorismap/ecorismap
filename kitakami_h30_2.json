@@ -7,8 +7,19 @@
     "minzoom": 0,
     "maxzoom": 24,
     "paint": {
-      "line-color": "#FFF100",
+      "line-color": "#FFFFFF",
       "line-width": 2
+    }
+  },
+  {
+    "id": "example-id",
+    "type": "fill",
+    "source": "example-source",
+    "source-layer": "kitakami_h30",
+    "minzoom": 0,
+    "maxzoom": 24,
+    "paint": {
+      "fill-color": "#00FF00"
     }
   },
   {

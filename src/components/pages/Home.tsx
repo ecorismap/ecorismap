@@ -350,16 +350,17 @@ export default function HomeScreen() {
                   <PMTile
                     key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
                     urlTemplate={tileMap.url.replace('pmtiles://', '')}
+                    styleURL={tileMap.styleURL}
                     flipY={tileMap.flipY}
                     opacity={1 - tileMap.transparency}
-                    tileSize={512}
+                    //tileSize={256} rasterは256、vectorは512で固定
                     minimumZ={0}
                     maximumZ={22}
                     zIndex={mapIndex}
                     doubleTileSize={tileMap.highResolutionEnabled}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={0}
+                    tileCacheMaxAge={604800}
                     offlineMode={isOffline}
                   />
                 ) : (
