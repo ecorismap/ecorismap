@@ -371,12 +371,12 @@ export default function HomeScreen() {
             return {
               ...result,
               [tileMap.id]: {
-                type: 'vector',
+                type: tileMap.styleURL ? 'vector' : 'raster',
                 url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
-                tileSize: 512,
+                tileSize: tileMap.styleURL ? 512 : 256,
                 attribution: tileMap.attribution,
               },
             };
@@ -446,7 +446,11 @@ export default function HomeScreen() {
       .reverse()
       .map((tileMap: TileMapType) => {
         if (tileMap.visible) {
-          if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
+          if (
+            tileMap.url &&
+            (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) &&
+            tileMap.styleURL
+          ) {
             return null;
           } else if (tileMap.url) {
             return {
