@@ -195,6 +195,7 @@ export type TrackingStateType = 'on' | 'off';
 export interface TileMapItemType {
   name: string;
   url: string;
+  styleURL?: string;
   attribution: string;
   transparency: number;
   overzoomThreshold: number;
