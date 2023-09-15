@@ -22,6 +22,7 @@ export const MapModalTileMap = React.memo(() => {
 
   const [tileName, setTileName] = useState('');
   const [tileURL, setTileURL] = useState('');
+  const [styleURL, setStyleURL] = useState<string | undefined>('');
   const [attribution, setAttribution] = useState('');
   const [transparency, setTransparency] = useState(0);
   const [minimumZ, setMinimumZ] = useState(0);
@@ -36,6 +37,7 @@ export const MapModalTileMap = React.memo(() => {
   useEffect(() => {
     setTileName(data.name);
     setTileURL(data.url);
+    setStyleURL(data.styleURL);
     setAttribution(data.attribution);
     setTransparency(data.transparency);
     setMinimumZ(data.minimumZ);
@@ -119,6 +121,7 @@ export const MapModalTileMap = React.memo(() => {
       ...data,
       name: tileName,
       url: tileURL,
+      styleURL: styleURL,
       attribution: attribution,
       transparency: transparency,
       overzoomThreshold: overzoomThreshold,
@@ -145,6 +148,7 @@ export const MapModalTileMap = React.memo(() => {
                 value={tileName}
                 onChangeText={(text) => setTileName(text)}
               />
+
               <TextInput
                 style={styles.modalTextInput}
                 placeholder=" https://example/{z}/{x}/{y}.png"
@@ -152,6 +156,15 @@ export const MapModalTileMap = React.memo(() => {
                 value={tileURL}
                 onChangeText={(text) => setTileURL(text)}
               />
+              {tileURL && tileURL.includes('pmtiles') && (
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder=" (Optional) https://example/style.json "
+                  placeholderTextColor={COLOR.GRAY4}
+                  value={styleURL}
+                  onChangeText={(text) => setStyleURL(text)}
+                />
+              )}
               <TextInput
                 style={styles.modalTextInput}
                 placeholder={t('common.sourceName')}
@@ -178,23 +191,24 @@ export const MapModalTileMap = React.memo(() => {
                 maximumValue={22}
                 onSlidingComplete={(value) => setOverzoomThreshold(value)}
               />
-
-              <View style={{ flexDirection: 'row' }}>
-                <CheckBox
-                  style={{ backgroundColor: COLOR.WHITE }}
-                  label={t('common.highResolution')}
-                  width={windowWidth * modalWidthScale * 0.5}
-                  checked={highResolutionEnabled!}
-                  onCheck={(checked) => setHighResolutionEnabled(checked)}
-                />
-                <CheckBox
-                  style={{ backgroundColor: COLOR.WHITE }}
-                  label={t('common.Yaxis')}
-                  width={windowWidth * modalWidthScale * 0.5}
-                  checked={flipY!}
-                  onCheck={(checked) => setFlipY(checked)}
-                />
-              </View>
+              {tileURL && !tileURL.includes('pmtiles') && (
+                <View style={{ flexDirection: 'row' }}>
+                  <CheckBox
+                    style={{ backgroundColor: COLOR.WHITE }}
+                    label={t('common.highResolution')}
+                    width={windowWidth * modalWidthScale * 0.5}
+                    checked={highResolutionEnabled!}
+                    onCheck={(checked) => setHighResolutionEnabled(checked)}
+                  />
+                  <CheckBox
+                    style={{ backgroundColor: COLOR.WHITE }}
+                    label={t('common.Yaxis')}
+                    width={windowWidth * modalWidthScale * 0.5}
+                    checked={flipY!}
+                    onCheck={(checked) => setFlipY(checked)}
+                  />
+                </View>
+              )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity

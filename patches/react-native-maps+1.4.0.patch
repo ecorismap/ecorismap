@@ -13752,10 +13752,10 @@ index 8a4215c..2063278 100644
  #endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
 new file mode 100644
-index 0000000..fe77eb4
+index 0000000..2e4bf83
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,31 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -13771,6 +13771,7 @@ index 0000000..fe77eb4
 +
 +@property(nonatomic, strong) AIRGoogleMapPMTileOverlay *tileLayer;
 +@property(nonatomic, copy) NSString *urlTemplate;
++@property(nonatomic, copy) NSString *styleURL;
 +@property(nonatomic, assign) int zIndex;
 +@property(nonatomic, assign) float opacity;
 +@property(nonatomic, assign) BOOL doubleTileSize;
@@ -13788,10 +13789,10 @@ index 0000000..fe77eb4
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..cbe252d
+index 0000000..215d714
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,201 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -13905,7 +13906,20 @@ index 0000000..cbe252d
 +  [tile setOfflineMode:_offlineMode];
 +  [tile setTileCachePath:_tileCachePath];
 +  [tile setTileCacheMaxAge:_tileCacheMaxAge];
++  [tile setStyleURL:_styleURL];
 +  _tileLayer = tile;
++  [self updateTileLayerStyleManager];
++}
++
++- (void)setStyleURL:(NSString *)styleURL {
++
++  _styleURL = styleURL;
++  if (self.tileLayer) {
++
++    self.tileLayer.styleURL = [NSURL URLWithString:_styleURL];
++    [self.tileLayer clearTileCache];
++    [self updateTileLayerStyleManager];
++  }
 +}
 +
 +- (void)setOfflineMode:(BOOL)offlineMode {
@@ -13920,11 +13934,9 @@ index 0000000..cbe252d
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+
 +  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
 +  [self.tileLayer clearTileCache];
-+  [self.tileLayer setStyleManagerWithURLTemplate:self.urlTemplate
-+                                   tileCachePath:_tileCachePath];
++  [self updateTileLayerStyleManager];
 +}
 +
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
@@ -13935,6 +13947,15 @@ index 0000000..cbe252d
 +  }
 +}
 +
++- (void)updateTileLayerStyleManager {
++
++  if (_urlTemplate && _tileCachePath) {
++
++    [self.tileLayer setStyleManagerWithURLTemplate:_urlTemplate
++                                     tileCachePath:_tileCachePath
++                                          styleURL:_styleURL];
++  }
++}
 +@end
 +
 +// - (GMSTileURLConstructor)_getTileURLConstructor
@@ -13995,10 +14016,10 @@ index 0000000..da08699
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m
 new file mode 100644
-index 0000000..397ceb7
+index 0000000..af41089
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,39 @@
 +//
 +//  AIRGoogleMapPMTileManager.m
 +//
@@ -14033,16 +14054,17 @@ index 0000000..397ceb7
 +RCT_EXPORT_VIEW_PROPERTY(offlineMode, BOOL)
 +RCT_EXPORT_VIEW_PROPERTY(tileCachePath, NSString)
 +RCT_EXPORT_VIEW_PROPERTY(tileCacheMaxAge, NSInteger)
++RCT_EXPORT_VIEW_PROPERTY(styleURL, NSString)
 +
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
 new file mode 100644
-index 0000000..ae8319d
+index 0000000..4051136
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,35 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -14060,10 +14082,11 @@ index 0000000..ae8319d
 +
 +@interface AIRGoogleMapPMTileOverlay : GMSSyncTileLayer
 +- (id)initWithURLTemplate:(NSString *)urlTemplate;
-+- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
++- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath styleURL:(NSString *)styleURL;
 +@property(nonatomic, strong) PMTiles *pmtiles;
 +@property(nonatomic, strong) StyleManager *styleManager;
 +@property(nonatomic, copy) NSString *urlTemplate;
++@property(nonatomic, copy) NSString *styleURL;
 +@property(nonatomic, assign) NSInteger maximumZ;
 +@property(nonatomic, assign) NSInteger minimumZ;
 +@property(nonatomic) NSInteger maximumNativeZ;
@@ -14073,15 +14096,16 @@ index 0000000..ae8319d
 +@property(nonatomic, assign) BOOL offlineMode;
 +@property(nonatomic, copy) NSString *tileCachePath;
 +@property(nonatomic, assign) NSInteger tileCacheMaxAge;
++@property(nonatomic, assign) NSInteger tileType;
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..953c7e9
+index 0000000..9a58e45
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,871 @@
+@@ -0,0 +1,886 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -14098,16 +14122,27 @@ index 0000000..953c7e9
 +  self = [super init];
 +  PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
 +  self.pmtiles = pmtiles;
-+
++  headerv3 header = [pmtiles fetchHeader];
++  self.tileType = header.tile_type;
++  if (header.tile_type == 1) {
++    self.tileSize = 512;
++  } else {
++    self.tileSize = 256;
++  }
 +  return self;
 +}
 +
 +- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate
-+                         tileCachePath:(NSString *)tileCachePath {
++                         tileCachePath:(NSString *)tileCachePath
++                              styleURL:(NSString *)styleURL {
++  // NSLog(@"setStyleManagerWithURLTemplate");
++  // NSLog(@"urlTemplate %@", urlTemplate);
++  // NSLog(@"tileCachePath %@", tileCachePath);
 +
 +  StyleManager *styleManager =
 +      [[StyleManager alloc] initWithURLTemplate:urlTemplate
-+                                  tileCachePath:tileCachePath];
++                                  tileCachePath:tileCachePath
++                                       styleURL:styleURL];
 +  self.styleManager = styleManager;
 +}
 +- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
@@ -14219,7 +14254,11 @@ index 0000000..953c7e9
 +    }
 +  }
 +  if (!data) {
-+    data = [self fetchTile:zoom x:x y:y];
++    if (self.tileType == 1) {
++      data = [self fetchTile2:zoom x:x y:y];
++    } else {
++      data = [self fetchTile:zoom x:x y:y];
++    }
 +
 +    if (!data) {
 +      return nil;
@@ -14274,12 +14313,6 @@ index 0000000..953c7e9
 +    return data;
 +  }
 +}
-+
-+// - (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
-+//   NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
-+
-+//   return data;
-+// }
 +
 +- (CGContextRef)createTransparentImageContext {
 +  // 透明な512x512の画像を生成
@@ -14693,6 +14726,12 @@ index 0000000..953c7e9
 +}
 +
 +- (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++  NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
++
++  return data;
++}
++
++- (NSData *)fetchTile2:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
 +  NSError *error;
 +
 +  NSURL *tileCacheFileDirectory =
@@ -15750,10 +15789,10 @@ index 0000000..900ea88
 +} headerv3;
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
 new file mode 100644
-index 0000000..535abe9
+index 0000000..2c7ec5f
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
 +// pmtiles.h
 +
 +#import "FetchSource.h"
@@ -15766,20 +15805,23 @@ index 0000000..535abe9
 +@property(nonatomic, strong) FetchSource *fetchSource;
 +@property(nonatomic, strong) SharedCache *sharedCache;
 +
-+typedef struct {
++typedef struct
++{
 +  uint8_t z;
 +  uint32_t x;
 +  uint32_t y;
 +} ZXY;
 +
-+typedef struct {
++typedef struct
++{
 +  uint64_t tile_id;
 +  uint64_t offset;
 +  uint32_t length;
 +  uint32_t run_length;
 +} EntryV3;
 +
-+typedef struct {
++typedef struct
++{
 +  uint8_t z;
 +  uint32_t x;
 +  uint32_t y;
@@ -15820,6 +15862,7 @@ index 0000000..535abe9
 +
 +- (instancetype)initWithURL:(NSString *)urlString;
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y;
++- (headerv3)fetchHeader;
 +
 +@end
 +
@@ -15838,10 +15881,10 @@ index 0000000..535abe9
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
 new file mode 100644
-index 0000000..735f340
+index 0000000..daa21a4
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
-@@ -0,0 +1,470 @@
+@@ -0,0 +1,474 @@
 +#import "PMTiles.h"
 +#import "Decompress.h"
 +#import "FetchSource.h"
@@ -16234,6 +16277,10 @@ index 0000000..735f340
 +  [data appendBytes:&header.center_lat_e7 length:sizeof(header.center_lat_e7)];
 +
 +  return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
++}
++
++- (headerv3)fetchHeader {
++  return [self.sharedCache getHeaderWithSource:self.fetchSource];
 +}
 +
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y {
@@ -16795,7 +16842,7 @@ index 0000000..9c2efc4
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
 new file mode 100644
-index 0000000..b4b5532
+index 0000000..d1895ec
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
 @@ -0,0 +1,12 @@
@@ -16804,7 +16851,7 @@ index 0000000..b4b5532
 +@interface StyleManager : NSObject
 +
 +// イニシャライザ
-+- (instancetype)initWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
++- (instancetype)initWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath styleURL:(NSString *)styleURL;
 +
 +// スタイルレイヤー情報を返す
 +- (NSArray *)getStyleLayers;
@@ -16814,10 +16861,10 @@ index 0000000..b4b5532
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..3a5eacd
+index 0000000..b8bcb69
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,207 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -16830,11 +16877,19 @@ index 0000000..3a5eacd
 +}
 +
 +- (instancetype)initWithURLTemplate:(NSString *)urlTemplate
-+                      tileCachePath:(NSString *)tileCachePath {
++                      tileCachePath:(NSString *)tileCachePath
++                           styleURL:(NSString *)styleURL {
 +  self = [super init];
 +  if (self) {
-+    _urlTemplate =
-+        [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
++    // styleURLがある場合は、styleURLをそのまま使う
++    // NSLog(@"!!styleURL: %@", styleURL);
++    if (styleURL) {
++      _urlTemplate = [NSURL URLWithString:styleURL];
++    } else {
++      _urlTemplate =
++          [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
++    }
++
 +    if (tileCachePath) {
 +      _localPath =
 +          [NSURL URLWithString:[NSString stringWithFormat:@"%@/style.json",
@@ -16946,7 +17001,7 @@ index 0000000..3a5eacd
 +  NSString *existingStyle =
 +      [NSString stringWithContentsOfFile:[styleCacheFilePath path]
 +                                encoding:NSUTF8StringEncoding
-+                                   error:&error];
++                                   error:nil];
 +
 +  if (existingStyle && [existingStyle isEqualToString:styleData]) {
 +    // ファイルが変更されていない場合は、既存のファイルの最後の修正日を取得
@@ -16957,6 +17012,7 @@ index 0000000..3a5eacd
 +    _lastUpdatedTime =
 +        (long long)([fileModificationDate timeIntervalSince1970]);
 +  } else {
++    NSLog(@"ファイル書き込み: %@", [styleCacheFilePath path]);
 +    [styleData writeToFile:[styleCacheFilePath path]
 +                atomically:YES
 +                  encoding:NSUTF8StringEncoding
@@ -18302,10 +18358,10 @@ index 63d305c..bcfdcf2 100644
  @end
 diff --git a/node_modules/react-native-maps/lib/MapPMTile.d.ts b/node_modules/react-native-maps/lib/MapPMTile.d.ts
 new file mode 100644
-index 0000000..530592a
+index 0000000..607c50c
 --- /dev/null
 +++ b/node_modules/react-native-maps/lib/MapPMTile.d.ts
-@@ -0,0 +1,136 @@
+@@ -0,0 +1,139 @@
 +import * as React from 'react';
 +import { ProviderContext, NativeComponent, MapManagerCommand, UIManagerCommand } from './decorateMapComponent';
 +import { ViewProps } from 'react-native';
@@ -18420,7 +18476,10 @@ index 0000000..530592a
 +     * @platform Android: Supported
 +     */
 +    urlTemplate: string;
-+
++    /**
++    * @platform iOS: Google Maps only
++    * @platform Android: Supported
++    * */
 +    styleURL?: string;
 +    /**
 +     * The order in which this tile overlay is drawn with respect to other overlays.

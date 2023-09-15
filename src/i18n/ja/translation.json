@@ -121,7 +121,8 @@
     "customField": "カスタムフィールド",
     "custom": "カスタム",
     "memo": "メモ",
-    "customLabel": "カスタムラベル"
+    "customLabel": "カスタムラベル",
+    "vector": "ベクタ"
   },
   "Home": {
     "confirm": {
