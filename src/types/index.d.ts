@@ -196,6 +196,7 @@ export interface TileMapItemType {
   name: string;
   url: string;
   styleURL?: string;
+  isVector?: boolean;
   attribution: string;
   transparency: number;
   overzoomThreshold: number;
