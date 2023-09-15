@@ -176,7 +176,8 @@
     "custom": "CUSTOM",
     "memo": "memo",
     "EncryptPassword": "encrypted password",
-    "customLabel": "custom label"
+    "customLabel": "custom label",
+    "vectortile": "vector tiles"
   },
   "firebase": {
     "message": {
