@@ -122,7 +122,8 @@
     "custom": "カスタム",
     "memo": "メモ",
     "customLabel": "カスタムラベル",
-    "vector": "ベクタ"
+    "vector": "ベクタ",
+    "vectortile": "ベクタタイル"
   },
   "Home": {
     "confirm": {

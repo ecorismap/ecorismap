@@ -171,7 +171,8 @@
     "customField": "custom field",
     "custom": "CUSTOM",
     "memo": "memo",
-    "customLabel": "custom label"
+    "customLabel": "custom label",
+    "vectortile": "vector tiles"
   },
   "firebase": {
     "message": {
