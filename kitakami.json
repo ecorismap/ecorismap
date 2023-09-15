@@ -32,7 +32,7 @@
     "maxzoom": 24,
     "layout": {
       "text-field": ["get", "KYORISI"],
-      "text-size": 16,
+      "text-size": 23,
       "text-font": ["Noto Sans CJK JP Regular"]
     },
     "paint": {
