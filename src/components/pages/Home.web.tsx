@@ -177,7 +177,10 @@ export default function HomeScreen() {
 
     for (const tileMap of tileMaps) {
       //console.log(tileMap);
-      if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
+      if (
+        tileMap.url &&
+        (tileMap.url.startsWith('pmtiles://') || (tileMap.url.includes('.pmtiles') && tileMap.isVector))
+      ) {
         // 外部からレイヤーとそのスタイルを非同期に読み込む
 
         const url = tileMap.styleURL ?? tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
@@ -371,12 +374,12 @@ export default function HomeScreen() {
             return {
               ...result,
               [tileMap.id]: {
-                type: tileMap.styleURL ? 'vector' : 'raster',
+                type: tileMap.isVector ? 'vector' : 'raster',
                 url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
-                scheme: tileMap.flipY ? 'tms' : 'xyz',
-                tileSize: tileMap.styleURL ? 512 : 256,
+                scheme: 'xyz',
+                tileSize: tileMap.isVector ? 512 : 256,
                 attribution: tileMap.attribution,
               },
             };
@@ -449,7 +452,7 @@ export default function HomeScreen() {
           if (
             tileMap.url &&
             (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) &&
-            tileMap.styleURL
+            tileMap.isVector
           ) {
             return null;
           } else if (tileMap.url) {

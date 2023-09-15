@@ -128,7 +128,8 @@
     "EncryptPassword": "暗号化パスワード",
     "memo": "メモ",
     "customLabel": "カスタムラベル",
-    "vector": "ベクタ"
+    "vector": "ベクタ",
+    "vectortile": "ベクタタイル"
   },
   "Home": {
     "confirm": {
