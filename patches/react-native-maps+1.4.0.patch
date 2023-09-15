@@ -129,7 +129,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..47a68ac
+index 0000000..0861d4b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2402,11 +2402,11 @@ index 0000000..7e4f8f0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class
 new file mode 100644
-index 0000000..c5637e2
+index 0000000..5628ebf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..94683bc
+index 0000000..6f22efa
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
@@ -2542,35 +2542,35 @@ index 0000000..fafbf55
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapOverlayManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class
 new file mode 100644
-index 0000000..313d6cd
+index 0000000..da0a410
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class
 new file mode 100644
-index 0000000..906250b
+index 0000000..ebba8cf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..a4db057
+index 0000000..3fda29c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..5b91da3
+index 0000000..a7f74bf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..5febd41
+index 0000000..9d9e7ae
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..eac9427
+index 0000000..701018f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..da6ecac
+index 0000000..e98688b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..34036a5
+index 0000000..4f8605d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -2900,7 +2900,7 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..ab97351
+index 0000000..dc4b413
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -4538,33 +4538,32 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..b954546
+index 0000000..56dcf3b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
-index 0000000..4a6eb27
+index 0000000..1744c14
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
-@@ -0,0 +1,207 @@
+@@ -0,0 +1,229 @@
 +package com.airbnb.android.react.maps;
 +
-+import android.util.Log;
-+
 +import android.content.Context;
-+
++import android.util.Log;
 +import com.google.android.gms.maps.GoogleMap;
 +import com.google.android.gms.maps.model.TileOverlay;
 +import com.google.android.gms.maps.model.TileOverlayOptions;
-+
 +import java.net.MalformedURLException;
 +import java.net.URL;
 +
 +public class AirMapPMTile extends AirMapFeature {
++
 +  protected TileOverlayOptions tileOverlayOptions;
 +  protected TileOverlay tileOverlay;
 +  protected AirMapPMTileProvider tileProvider;
 +
 +  protected String urlTemplate;
++  protected String styleURL;
 +  protected float zIndex;
 +  protected float maximumZ;
 +  protected float maximumNativeZ = 100;
@@ -4594,6 +4593,16 @@ index 0000000..4a6eb27
 +    }
 +  }
 +
++  public void setStyleURL(String styleURL) {
++    this.styleURL = styleURL;
++    if (tileProvider != null) {
++      tileProvider.setStyleURL(styleURL);
++    }
++    if (tileOverlay != null) {
++      tileOverlay.clearTileCache();
++    }
++  }
++
 +  public void setZIndex(float zIndex) {
 +    this.zIndex = zIndex;
 +    if (tileOverlay != null) {
@@ -4604,7 +4613,7 @@ index 0000000..4a6eb27
 +  public void setMaximumZ(float maximumZ) {
 +    this.maximumZ = maximumZ;
 +    if (tileProvider != null) {
-+      tileProvider.setMaximumZ((int)maximumZ);
++      tileProvider.setMaximumZ((int) maximumZ);
 +    }
 +    if (tileOverlay != null) {
 +      tileOverlay.clearTileCache();
@@ -4614,7 +4623,7 @@ index 0000000..4a6eb27
 +  public void setMaximumNativeZ(float maximumNativeZ) {
 +    this.maximumNativeZ = maximumNativeZ;
 +    if (tileProvider != null) {
-+      tileProvider.setMaximumNativeZ((int)maximumNativeZ);
++      tileProvider.setMaximumNativeZ((int) maximumNativeZ);
 +    }
 +    setCustomTileProviderMode();
 +    if (tileOverlay != null) {
@@ -4625,7 +4634,7 @@ index 0000000..4a6eb27
 +  public void setMinimumZ(float minimumZ) {
 +    this.minimumZ = minimumZ;
 +    if (tileProvider != null) {
-+      tileProvider.setMinimumZ((int)minimumZ);
++      tileProvider.setMinimumZ((int) minimumZ);
 +    }
 +    if (tileOverlay != null) {
 +      tileOverlay.clearTileCache();
@@ -4656,7 +4665,7 @@ index 0000000..4a6eb27
 +  public void setTileSize(float tileSize) {
 +    this.tileSize = tileSize;
 +    if (tileProvider != null) {
-+      tileProvider.setTileSize((int)tileSize);
++      tileProvider.setTileSize((int) tileSize);
 +    }
 +    if (tileOverlay != null) {
 +      tileOverlay.clearTileCache();
@@ -4665,7 +4674,7 @@ index 0000000..4a6eb27
 +
 +  public void setTileCachePath(String tileCachePath) {
 +    if (tileCachePath == null || tileCachePath.isEmpty()) return;
-+    
++
 +    try {
 +      URL url = new URL(tileCachePath);
 +      this.tileCachePath = url.getPath();
@@ -4687,7 +4696,7 @@ index 0000000..4a6eb27
 +  public void setTileCacheMaxAge(float tileCacheMaxAge) {
 +    this.tileCacheMaxAge = tileCacheMaxAge;
 +    if (tileProvider != null) {
-+      tileProvider.setTileCacheMaxAge((int)tileCacheMaxAge);
++      tileProvider.setTileCacheMaxAge((int) tileCacheMaxAge);
 +    }
 +    if (tileOverlay != null) {
 +      tileOverlay.clearTileCache();
@@ -4707,7 +4716,7 @@ index 0000000..4a6eb27
 +  public void setOpacity(float opacity) {
 +    this.opacity = opacity;
 +    if (tileOverlay != null) {
-+        tileOverlay.setTransparency(1 - opacity);
++      tileOverlay.setTransparency(1 - opacity);
 +    }
 +  }
 +
@@ -4724,16 +4733,29 @@ index 0000000..4a6eb27
 +    if (tileProvider != null) {
 +      tileProvider.setCustomMode();
 +    }
-+  } 
++  }
 +
 +  protected TileOverlayOptions createTileOverlayOptions() {
 +    Log.d("urlTile ", "creating TileProvider");
 +    TileOverlayOptions options = new TileOverlayOptions();
 +    options.zIndex(zIndex);
 +    options.transparency(1 - this.opacity);
-+    this.tileProvider = new AirMapPMTileProvider((int)this.tileSize, this.doubleTileSize, this.urlTemplate, 
-+      (int)this.maximumZ, (int)this.maximumNativeZ, (int)this.minimumZ, this.flipY, this.tileCachePath, 
-+      (int)this.tileCacheMaxAge, this.offlineMode, this.context, this.customTileProviderNeeded);
++    this.tileProvider =
++      new AirMapPMTileProvider(
++        (int) this.tileSize,
++        this.doubleTileSize,
++        this.urlTemplate,
++        this.styleURL,
++        (int) this.maximumZ,
++        (int) this.maximumNativeZ,
++        (int) this.minimumZ,
++        this.flipY,
++        this.tileCachePath,
++        (int) this.tileCacheMaxAge,
++        this.offlineMode,
++        this.context,
++        this.customTileProviderNeeded
++      );
 +    options.tileProvider(this.tileProvider);
 +    return options;
 +  }
@@ -4755,10 +4777,10 @@ index 0000000..4a6eb27
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileManager.java
 new file mode 100644
-index 0000000..c61300c
+index 0000000..cac9be5
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileManager.java
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,95 @@
 +package com.airbnb.android.react.maps;
 +
 +import android.content.Context;
@@ -4792,6 +4814,11 @@ index 0000000..c61300c
 +  @ReactProp(name = "urlTemplate")
 +  public void setUrlTemplate(AirMapPMTile view, String urlTemplate) {
 +    view.setUrlTemplate(urlTemplate);
++  }
++
++  @ReactProp(name = "styleURL")
++  public void setStyleURL(AirMapPMTile view, String styleURL) {
++    view.setStyleURL(styleURL);
 +  }
 +
 +  @ReactProp(name = "zIndex", defaultFloat = -1.0f)
@@ -4851,10 +4878,10 @@ index 0000000..c61300c
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..0d3f0a1
+index 0000000..8bdbca4
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,1014 @@
+@@ -0,0 +1,1040 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -4920,6 +4947,7 @@ index 0000000..0d3f0a1
 +  protected static final int BUFFER_SIZE = 16 * 1024;
 +  protected static final int TARGET_TILE_SIZE = 512;
 +  protected String urlTemplate;
++  protected String styleURL;
 +  protected int tileSize;
 +  protected boolean doubleTileSize;
 +  protected int maximumZ;
@@ -4933,11 +4961,13 @@ index 0000000..0d3f0a1
 +  protected boolean customMode;
 +  protected PMTiles pmtiles;
 +  protected VectorTileStyleManager styleManager;
++  protected int tileType;
 +
 +  public AirMapPMTileProvider(
 +    int tileSizet,
 +    boolean doubleTileSize,
 +    String urlTemplate,
++    String styleURL,
 +    int maximumZ,
 +    int maximumNativeZ,
 +    int minimumZ,
@@ -4951,6 +4981,7 @@ index 0000000..0d3f0a1
 +    this.tileSize = tileSizet;
 +    this.doubleTileSize = doubleTileSize;
 +    this.urlTemplate = urlTemplate;
++    this.styleURL = styleURL;
 +    this.maximumZ = maximumZ;
 +    this.maximumNativeZ = maximumNativeZ;
 +    this.minimumZ = minimumZ;
@@ -4961,7 +4992,14 @@ index 0000000..0d3f0a1
 +    this.context = context;
 +    this.customMode = customMode;
 +    this.pmtiles = new PMTiles(urlTemplate, null, null);
-+    this.styleManager = new VectorTileStyleManager(urlTemplate, tileCachePath);
++
++    this.pmtiles.getHeader()
++      .thenAccept(header -> {
++        this.tileType = header.getTileType();
++        this.tileSize = this.tileType == 1 ? 512 : 256;
++      });
++
++    this.styleManager = new VectorTileStyleManager(urlTemplate, tileCachePath, styleURL);
 +  }
 +
 +  @Override
@@ -5003,24 +5041,24 @@ index 0000000..0d3f0a1
 +
 +  byte[] getTileImage(int x, int y, int zoom) {
 +    byte[] image = null;
-+    //フェッチできなければ読み込む（画像の場合とは処理が逆！）
 +    if (this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++      if (image != null) {
++        //System.out.println("##read from cache" + zoom + "/" + x + "/" + y);
++        boolean needRefresh = checkForRefresh(x, y, zoom);
++        if (needRefresh) {
++          image = null;
++        }
++      }
++    }
++    if (image == null && this.tileCachePath != null) {
 +      // Log.d("urlTile", "Normal fetch");
 +      image = fetchTile(x, y, zoom);
 +      if (image != null) {
 +        boolean success = writeTileImage(image, x, y, zoom);
++        //System.out.println("##fetch:" + zoom + "/" + x + "/" + y);
 +      }
 +    }
-+    if (image == null && this.tileCachePath != null) {
-+      image = readTileImage(x, y, zoom);
-+      // if (image != null && !this.offlineMode) {
-+      //   boolean needRefresh = checkForRefresh(x, y, zoom);
-+      //   if (needRefresh) {
-+      //     image = null;
-+      //   }
-+      // }
-+    }
-+
 +    return image;
 +  }
 +
@@ -5129,8 +5167,14 @@ index 0000000..0d3f0a1
 +    File file = new File(fileName);
 +    long lastModified = file.lastModified();
 +    long now = System.currentTimeMillis();
++    long styleLastUpdatedTime = styleManager.getLastUpdatedTime();
 +
++    if (styleLastUpdatedTime > lastModified) {
++      //System.out.println("##style updated");
++      return true;
++    }
 +    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
++      //System.out.println("##cache expired");
 +      return true;
 +    }
 +    return false;
@@ -5415,7 +5459,7 @@ index 0000000..0d3f0a1
 +        }
 +      }
 +    } else if ("line".equals(type)) {
-+      System.out.println("!!applyStyle: " + source.name);
++      //System.out.println("!!applyStyle: " + source.name);
 +      Paint linePaint = new Paint();
 +      for (FeatureData feature : source.features) {
 +        Map<String, String> attributes = feature.attributes;
@@ -5610,14 +5654,14 @@ index 0000000..0d3f0a1
 +            }
 +          }
 +          if (features.size() > 0) {
-+            System.out.println("!!create source: " + layer.getName());
++            //System.out.println("!!create source: " + layer.getName());
 +            VectorSource newSource = new VectorSource(layer.getName(), features);
 +            sources.add(newSource);
 +          }
 +        }
 +      } catch (InvalidProtocolBufferException e) {
 +        e.printStackTrace();
-+        System.err.println("!!create source error: " + e.getMessage());
++        //System.err.println("!!create source error: " + e.getMessage());
 +        // エラーハンドリングのロジック
 +      }
 +      Bitmap image = Bitmap.createBitmap(tileSize, tileSize, Bitmap.Config.ARGB_8888);
@@ -5635,7 +5679,7 @@ index 0000000..0d3f0a1
 +    } catch (Exception e) {
 +      // CompletableFuture#get()の例外処理
 +      //e.printStackTrace();
-+      System.err.println("!!An error occurred: " + e.getMessage());
++      //System.err.println("!!An error occurred: " + e.getMessage());
 +      return null;
 +    }
 +  }
@@ -5663,7 +5707,12 @@ index 0000000..0d3f0a1
 +  }
 +
 +  byte[] fetchTile(int x, int y, int zoom) {
-+    Tile tile = getPMTile2(x, y, zoom);
++    Tile tile = null;
++    if (this.tileType == 1) {
++      tile = getPMTile2(x, y, zoom);
++    } else {
++      tile = getPMTile(x, y, zoom);
++    }
 +    if (Objects.isNull(tile)) {
 +      // Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
 +      return null;
@@ -5827,6 +5876,10 @@ index 0000000..0d3f0a1
 +
 +  public void setUrlTemplate(String urlTemplate) {
 +    this.urlTemplate = urlTemplate;
++  }
++
++  public void setStyleURL(String styleURL) {
++    this.styleURL = styleURL;
 +  }
 +
 +  public void setTileSize(int tileSize) {
@@ -8340,10 +8393,10 @@ index 0000000..5675b38
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..6fbd424
+index 0000000..f9ed966
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,112 @@
+@@ -0,0 +1,137 @@
 +package VectorTileStyleManager;
 +
 +import StyleLayer.StyleLayer;
@@ -8368,22 +8421,27 @@ index 0000000..6fbd424
 +
 +  private String urlTemplate;
 +  private String localPath;
-+
++  private long lastUpdatedTime; // long型で記録
 +  private List<StyleLayer> styleLayers; // ダウンロードしたスタイル情報を保存
 +
-+  public VectorTileStyleManager(String urlTemplate, String tileCachePath) {
-+    this.urlTemplate = changeExtensionToJson(urlTemplate);
++  public VectorTileStyleManager(String urlTemplate, String tileCachePath, String styleURL) {
++    System.out.println("##styleURL: " + styleURL);
++    if (styleURL != null) {
++      this.urlTemplate = styleURL;
++    } else {
++      this.urlTemplate = changeExtensionToJson(urlTemplate);
++    }
 +    if (tileCachePath != null) {
 +      this.localPath = tileCachePath + "/style.json";
 +    }
 +
++    System.out.println("##localPath: " + this.localPath);
 +    loadStyleAsync()
 +      .thenAccept(style -> {
 +        Gson gson = new Gson();
 +        Type listType = new TypeToken<List<StyleLayer>>() {}.getType();
 +        this.styleLayers = gson.fromJson(style, listType);
-+
-+        System.out.println("loadedStyle: " + this.styleLayers);
++        //System.out.println("loadedStyle: " + this.styleLayers);
 +        // 他の処理（例えばスタイルの適用など）
 +      })
 +      .exceptionally(e -> {
@@ -8402,6 +8460,7 @@ index 0000000..6fbd424
 +        Path path = Paths.get(localPath);
 +        if (Files.exists(path)) {
 +          try {
++            lastUpdatedTime = path.toFile().lastModified();
 +            return new String(Files.readAllBytes(path));
 +          } catch (IOException ex) {
 +            throw new RuntimeException("Failed to read local file", ex);
@@ -8419,11 +8478,26 @@ index 0000000..6fbd424
 +
 +  public String downloadAndSaveStyle() throws IOException {
 +    String style = downloadStyleJson(urlTemplate);
-+    try {
-+      Files.write(Paths.get(localPath), style.getBytes());
-+    } catch (FileAlreadyExistsException e) {
-+      // ファイルがすでに存在する場合の処理（オプション）
++    Path path = Paths.get(localPath);
++
++    if (Files.exists(path)) {
++      // すでにファイルが存在する場合、内容を比較
++      String existingStyle = new String(Files.readAllBytes(path));
++
++      if (!existingStyle.equals(style)) {
++        // 異なる場合は新しい内容で上書き
++        Files.write(path, style.getBytes());
++        lastUpdatedTime = System.currentTimeMillis();
++      } else {
++        // 同じ場合は更新しない
++        lastUpdatedTime = path.toFile().lastModified();
++      }
++    } else {
++      // ファイルが存在しない場合、新しく書き込み
++      Files.write(path, style.getBytes());
++      lastUpdatedTime = System.currentTimeMillis();
 +    }
++
 +    return style;
 +  }
 +
@@ -8454,6 +8528,10 @@ index 0000000..6fbd424
 +
 +  public List<StyleLayer> getStyleLayers() {
 +    return this.styleLayers;
++  }
++
++  public long getLastUpdatedTime() {
++    return lastUpdatedTime;
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/vector_tile/VectorTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/vector_tile/VectorTile.java
@@ -13695,10 +13773,10 @@ index 8a4215c..2063278 100644
  #endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
 new file mode 100644
-index 0000000..fe77eb4
+index 0000000..2e4bf83
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
-@@ -0,0 +1,30 @@
+@@ -0,0 +1,31 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -13714,6 +13792,7 @@ index 0000000..fe77eb4
 +
 +@property(nonatomic, strong) AIRGoogleMapPMTileOverlay *tileLayer;
 +@property(nonatomic, copy) NSString *urlTemplate;
++@property(nonatomic, copy) NSString *styleURL;
 +@property(nonatomic, assign) int zIndex;
 +@property(nonatomic, assign) float opacity;
 +@property(nonatomic, assign) BOOL doubleTileSize;
@@ -13731,10 +13810,10 @@ index 0000000..fe77eb4
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
 new file mode 100644
-index 0000000..cbe252d
+index 0000000..215d714
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.m
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,201 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -13848,7 +13927,20 @@ index 0000000..cbe252d
 +  [tile setOfflineMode:_offlineMode];
 +  [tile setTileCachePath:_tileCachePath];
 +  [tile setTileCacheMaxAge:_tileCacheMaxAge];
++  [tile setStyleURL:_styleURL];
 +  _tileLayer = tile;
++  [self updateTileLayerStyleManager];
++}
++
++- (void)setStyleURL:(NSString *)styleURL {
++
++  _styleURL = styleURL;
++  if (self.tileLayer) {
++
++    self.tileLayer.styleURL = [NSURL URLWithString:_styleURL];
++    [self.tileLayer clearTileCache];
++    [self updateTileLayerStyleManager];
++  }
 +}
 +
 +- (void)setOfflineMode:(BOOL)offlineMode {
@@ -13863,11 +13955,9 @@ index 0000000..cbe252d
 +  if (!tileCachePath)
 +    return;
 +  _tileCachePath = tileCachePath;
-+
 +  self.tileLayer.tileCachePath = [NSURL URLWithString:_tileCachePath];
 +  [self.tileLayer clearTileCache];
-+  [self.tileLayer setStyleManagerWithURLTemplate:self.urlTemplate
-+                                   tileCachePath:_tileCachePath];
++  [self updateTileLayerStyleManager];
 +}
 +
 +- (void)setTileCacheMaxAge:(NSInteger)tileCacheMaxAge {
@@ -13878,6 +13968,15 @@ index 0000000..cbe252d
 +  }
 +}
 +
++- (void)updateTileLayerStyleManager {
++
++  if (_urlTemplate && _tileCachePath) {
++
++    [self.tileLayer setStyleManagerWithURLTemplate:_urlTemplate
++                                     tileCachePath:_tileCachePath
++                                          styleURL:_styleURL];
++  }
++}
 +@end
 +
 +// - (GMSTileURLConstructor)_getTileURLConstructor
@@ -13938,10 +14037,10 @@ index 0000000..da08699
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m
 new file mode 100644
-index 0000000..397ceb7
+index 0000000..af41089
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileManager.m
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,39 @@
 +//
 +//  AIRGoogleMapPMTileManager.m
 +//
@@ -13976,16 +14075,17 @@ index 0000000..397ceb7
 +RCT_EXPORT_VIEW_PROPERTY(offlineMode, BOOL)
 +RCT_EXPORT_VIEW_PROPERTY(tileCachePath, NSString)
 +RCT_EXPORT_VIEW_PROPERTY(tileCacheMaxAge, NSInteger)
++RCT_EXPORT_VIEW_PROPERTY(styleURL, NSString)
 +
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
 new file mode 100644
-index 0000000..ae8319d
+index 0000000..4051136
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.h
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,35 @@
 +//
 +//  AIRGoogleMapPMTile.h
 +//
@@ -14003,10 +14103,11 @@ index 0000000..ae8319d
 +
 +@interface AIRGoogleMapPMTileOverlay : GMSSyncTileLayer
 +- (id)initWithURLTemplate:(NSString *)urlTemplate;
-+- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
++- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath styleURL:(NSString *)styleURL;
 +@property(nonatomic, strong) PMTiles *pmtiles;
 +@property(nonatomic, strong) StyleManager *styleManager;
 +@property(nonatomic, copy) NSString *urlTemplate;
++@property(nonatomic, copy) NSString *styleURL;
 +@property(nonatomic, assign) NSInteger maximumZ;
 +@property(nonatomic, assign) NSInteger minimumZ;
 +@property(nonatomic) NSInteger maximumNativeZ;
@@ -14016,15 +14117,16 @@ index 0000000..ae8319d
 +@property(nonatomic, assign) BOOL offlineMode;
 +@property(nonatomic, copy) NSString *tileCachePath;
 +@property(nonatomic, assign) NSInteger tileCacheMaxAge;
++@property(nonatomic, assign) NSInteger tileType;
 +@end
 +
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..ceacbab
+index 0000000..9a58e45
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,828 @@
+@@ -0,0 +1,886 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -14041,16 +14143,27 @@ index 0000000..ceacbab
 +  self = [super init];
 +  PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
 +  self.pmtiles = pmtiles;
-+
++  headerv3 header = [pmtiles fetchHeader];
++  self.tileType = header.tile_type;
++  if (header.tile_type == 1) {
++    self.tileSize = 512;
++  } else {
++    self.tileSize = 256;
++  }
 +  return self;
 +}
 +
 +- (void)setStyleManagerWithURLTemplate:(NSString *)urlTemplate
-+                         tileCachePath:(NSString *)tileCachePath {
++                         tileCachePath:(NSString *)tileCachePath
++                              styleURL:(NSString *)styleURL {
++  // NSLog(@"setStyleManagerWithURLTemplate");
++  // NSLog(@"urlTemplate %@", urlTemplate);
++  // NSLog(@"tileCachePath %@", tileCachePath);
 +
 +  StyleManager *styleManager =
 +      [[StyleManager alloc] initWithURLTemplate:urlTemplate
-+                                  tileCachePath:tileCachePath];
++                                  tileCachePath:tileCachePath
++                                       styleURL:styleURL];
 +  self.styleManager = styleManager;
 +}
 +- (UIImage *)tileForX:(NSUInteger)x y:(NSUInteger)y zoom:(NSUInteger)zoom {
@@ -14151,17 +14264,32 @@ index 0000000..ceacbab
 +  NSString *url =
 +      self.offlineMode && self.tileCachePath ? tileCacheXYZ : urlXYZ;
 +  NSData *data;
-+  data = [self fetchTile:zoom x:x y:y];
 +
++  data = [self readTileImage:tileCacheFilePath];
++  if (data) {
++    // NSLog(@"read from cache %d %d %d", zoom, x, y);
++    if ([self doesFileNeedRefresh:tileCacheFilePath
++                       withMaxAge:self.tileCacheMaxAge]) {
++      data = nil;
++      // NSLog(@"!cache expired");
++    }
++  }
 +  if (!data) {
-+    data = [self readTileImage:tileCacheFilePath];
++    if (self.tileType == 1) {
++      data = [self fetchTile2:zoom x:x y:y];
++    } else {
++      data = [self fetchTile:zoom x:x y:y];
++    }
++
 +    if (!data) {
 +      return nil;
 +    } else {
++      // NSLog(@"fetch from url %d %d %d", zoom, x, y);
 +      if (self.tileCachePath) {
 +        [self writeTileImage:tileCacheFileDirectory
 +            withTileCacheFilePath:tileCacheFilePath
 +                     withTileData:data];
++        // NSLog(@"write to cache");
 +      }
 +      return data;
 +    }
@@ -14206,12 +14334,6 @@ index 0000000..ceacbab
 +    return data;
 +  }
 +}
-+
-+// - (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
-+//   NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
-+
-+//   return data;
-+// }
 +
 +- (CGContextRef)createTransparentImageContext {
 +  // 透明な512x512の画像を生成
@@ -14625,6 +14747,12 @@ index 0000000..ceacbab
 +}
 +
 +- (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++  NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
++
++  return data;
++}
++
++- (NSData *)fetchTile2:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
 +  NSError *error;
 +
 +  NSURL *tileCacheFileDirectory =
@@ -14848,6 +14976,38 @@ index 0000000..ceacbab
 +  } else {
 +    return nil;
 +  }
++}
++
++- (BOOL)doesFileNeedRefresh:(NSURL *)tileCacheFilePath
++                 withMaxAge:(NSInteger)tileCacheMaxAge {
++  NSError *error;
++  NSFileManager *fileManager = [NSFileManager defaultManager];
++  NSDictionary *fileAttributes =
++      [fileManager attributesOfItemAtPath:[tileCacheFilePath path]
++                                    error:&error];
++  long long _lastUpdatedTime = [self.styleManager getLastUpdatedTime];
++
++  if (fileAttributes) {
++    NSDate *modificationDate = fileAttributes[NSFileModificationDate];
++    if (_lastUpdatedTime > 0) {
++      // NSLog(@"tileCacheFilePath %@", [tileCacheFilePath path]);
++      //  NSLog(@"%ld   %ld", _lastUpdatedTime,
++      //        (long long)[modificationDate timeIntervalSince1970]);
++      if (_lastUpdatedTime >
++          (long long)[modificationDate timeIntervalSince1970]) {
++        // NSLog(@"!#!# style updated");
++        return YES;
++      }
++    }
++    if (modificationDate) {
++      if (-1 * (int)modificationDate.timeIntervalSinceNow > tileCacheMaxAge) {
++        // NSLog(@"!#!# cache expired");
++        return YES;
++      }
++    }
++  }
++
++  return NO;
 +}
 +
 +@end
@@ -15513,84 +15673,116 @@ index 0000000..9f3ef17
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
 new file mode 100644
-index 0000000..6859c81
+index 0000000..a888aa5
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/FetchSource.m
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,96 @@
 +#import "FetchSource.h"
 +
 +@implementation FetchSource
 +
 +- (instancetype)initWithURL:(NSString *)url {
-+    self = [super init];
-+    if (self) {
-+        self.url = url;
-+    }
-+    return self;
++  self = [super init];
++  if (self) {
++    self.url = url;
++  }
++  return self;
 +}
 +
 +- (NSString *)getKey {
-+    return self.url;
++  return self.url;
 +}
 +
 +- (void)getBytesWithOffset:(NSUInteger)offset
 +                    length:(NSUInteger)length
 +                    signal:(NSProgress *)signal
-+                completion:(void (^)(NSDictionary *rangeResponse, NSError *error))completion {
-+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.url]];
-+    [request setValue:[NSString stringWithFormat:@"bytes=%lu-%lu", (unsigned long)offset, (unsigned long)(offset + length - 1)] forHTTPHeaderField:@"Range"];
-+    
-+    if (signal) {
-+        [request setAllowsCellularAccess:NO];
-+        [signal addObserver:self
-+                 forKeyPath:@"cancelled"
-+                    options:NSKeyValueObservingOptionNew
-+                    context:nil];
-+    }
-+    
-+    NSURLSessionDataTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-+        if (error) {
++                completion:(void (^)(NSDictionary *rangeResponse,
++                                     NSError *error))completion {
++  NSMutableURLRequest *request =
++      [NSMutableURLRequest requestWithURL:[NSURL URLWithString:self.url]];
++  [request setValue:[NSString
++                        stringWithFormat:@"bytes=%lu-%lu",
++                                         (unsigned long)offset,
++                                         (unsigned long)(offset + length - 1)]
++      forHTTPHeaderField:@"Range"];
++
++  if (signal) {
++    [signal addObserver:self
++             forKeyPath:@"cancelled"
++                options:NSKeyValueObservingOptionNew
++                context:nil];
++  }
++
++  NSURLSessionDataTask *dataTask = [[NSURLSession sharedSession]
++      dataTaskWithRequest:request
++        completionHandler:^(NSData *data, NSURLResponse *response,
++                            NSError *error) {
++          if (error) {
 +            completion(nil, error);
 +            return;
-+        }
-+        
-+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
-+        if (httpResponse.statusCode >= 300) {
-+            completion(nil, [NSError errorWithDomain:@"FetchSourceErrorDomain" code:httpResponse.statusCode userInfo:@{NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Bad response code: %ld", (long)httpResponse.statusCode]}]);
++          }
++
++          NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
++          if (httpResponse.statusCode >= 300) {
++            completion(
++                nil,
++                [NSError
++                    errorWithDomain:@"FetchSourceErrorDomain"
++                               code:httpResponse.statusCode
++                           userInfo:@{
++                             NSLocalizedDescriptionKey : [NSString
++                                 stringWithFormat:@"Bad response code: %ld",
++                                                  (long)httpResponse.statusCode]
++                           }]);
 +            return;
-+        }
-+        
-+        NSString *contentLength = httpResponse.allHeaderFields[@"Content-Length"];
-+        if (httpResponse.statusCode == 200 && (!contentLength || contentLength.integerValue > length)) {
++          }
++
++          NSString *contentLength =
++              httpResponse.allHeaderFields[@"Content-Length"];
++          if (httpResponse.statusCode == 200 &&
++              (!contentLength || contentLength.integerValue > length)) {
 +            if (signal) {
-+                [signal removeObserver:self forKeyPath:@"cancelled"];
++              [signal removeObserver:self forKeyPath:@"cancelled"];
 +            }
-+            completion(nil, [NSError errorWithDomain:@"FetchSourceErrorDomain" code:0 userInfo:@{NSLocalizedDescriptionKey: @"Server returned no content-length header or content-length exceeding request. Check that your storage backend supports HTTP Byte Serving."}]);
++            completion(nil,
++                       [NSError
++                           errorWithDomain:@"FetchSourceErrorDomain"
++                                      code:0
++                                  userInfo:@{
++                                    NSLocalizedDescriptionKey :
++                                        @"Server returned no content-length "
++                                        @"header or content-length exceeding "
++                                        @"request. Check that your storage "
++                                        @"backend supports HTTP Byte Serving."
++                                  }]);
 +            return;
-+        }
-+        
-+        NSDictionary *rangeResponse = @{
-+            @"data": data,
-+            @"etag": httpResponse.allHeaderFields[@"ETag"] ?: [NSNull null],
-+            @"cacheControl": httpResponse.allHeaderFields[@"Cache-Control"] ?: [NSNull null],
-+            @"expires": httpResponse.allHeaderFields[@"Expires"] ?: [NSNull null],
-+        };
-+        completion(rangeResponse, nil);
-+    }];
-+    
-+    [dataTask resume];
++          }
++
++          NSDictionary *rangeResponse = @{
++            @"data" : data,
++            @"etag" : httpResponse.allHeaderFields[@"ETag"] ?: [NSNull null],
++            @"cacheControl" : httpResponse.allHeaderFields[@"Cache-Control"]
++                ?: [NSNull null],
++            @"expires" : httpResponse.allHeaderFields[@"Expires"]
++                ?: [NSNull null],
++          };
++          completion(rangeResponse, nil);
++        }];
++
++  [dataTask resume];
 +}
 +
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/Header.h b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/Header.h
 new file mode 100644
-index 0000000..2cea399
+index 0000000..900ea88
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/Header.h
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,29 @@
 +#import <Foundation/Foundation.h>
 +
-+typedef struct {
++typedef struct
++{
 +  uint64_t root_dir_offset;
 +  uint64_t root_dir_bytes;
 +  uint64_t json_metadata_offset;
@@ -15618,10 +15810,10 @@ index 0000000..2cea399
 +} headerv3;
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
 new file mode 100644
-index 0000000..535abe9
+index 0000000..2c7ec5f
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.h
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,86 @@
 +// pmtiles.h
 +
 +#import "FetchSource.h"
@@ -15634,20 +15826,23 @@ index 0000000..535abe9
 +@property(nonatomic, strong) FetchSource *fetchSource;
 +@property(nonatomic, strong) SharedCache *sharedCache;
 +
-+typedef struct {
++typedef struct
++{
 +  uint8_t z;
 +  uint32_t x;
 +  uint32_t y;
 +} ZXY;
 +
-+typedef struct {
++typedef struct
++{
 +  uint64_t tile_id;
 +  uint64_t offset;
 +  uint32_t length;
 +  uint32_t run_length;
 +} EntryV3;
 +
-+typedef struct {
++typedef struct
++{
 +  uint8_t z;
 +  uint32_t x;
 +  uint32_t y;
@@ -15688,6 +15883,7 @@ index 0000000..535abe9
 +
 +- (instancetype)initWithURL:(NSString *)urlString;
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y;
++- (headerv3)fetchHeader;
 +
 +@end
 +
@@ -15706,10 +15902,10 @@ index 0000000..535abe9
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
 new file mode 100644
-index 0000000..4d589f9
+index 0000000..daa21a4
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/PMTiles.m
-@@ -0,0 +1,464 @@
+@@ -0,0 +1,474 @@
 +#import "PMTiles.h"
 +#import "Decompress.h"
 +#import "FetchSource.h"
@@ -16104,16 +16300,26 @@ index 0000000..4d589f9
 +  return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 +}
 +
++- (headerv3)fetchHeader {
++  return [self.sharedCache getHeaderWithSource:self.fetchSource];
++}
++
 +- (NSData *)getTileWithZ:(uint8_t)z x:(uint32_t)x y:(uint32_t)y {
 +  uint64_t tileID = [PMTiles zxyToTileID:z x:x y:y];
 +  headerv3 header = [self.sharedCache getHeaderWithSource:self.fetchSource];
++  if (header.tile_entries_count == 0) {
++    NSLog(@"Error fetching header");
++    return nil;
++  }
 +  uint64_t dirOffset = header.root_dir_offset;
 +  uint32_t dirLength = header.root_dir_bytes;
 +  for (int depth = 0; depth <= 3; depth++) {
 +    NSData *dirData = [self.sharedCache getDirectoryWithSource:self.fetchSource
 +                                                        offset:dirOffset
 +                                                        length:dirLength];
-+
++    if (dirData == nil) {
++      return nil;
++    }
 +    NSData *decompressedData =
 +        [Decompress decompress:dirData compression:header.internal_compression];
 +
@@ -16199,10 +16405,10 @@ index 0000000..ecd49d1
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m
 new file mode 100644
-index 0000000..a7d14c3
+index 0000000..77fbdd7
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/PMTiles/SharedCache.m
-@@ -0,0 +1,80 @@
+@@ -0,0 +1,101 @@
 +#import "SharedCache.h"
 +#import "PMTiles.h"
 +@implementation SharedCache
@@ -16216,13 +16422,17 @@ index 0000000..a7d14c3
 +- (headerv3)getHeaderWithSource:(FetchSource *)source {
 +  if (!self.isHeaderSet) {
 +    self.header = [self fetchHeaderWithSource:source];
++    if (self.header.tile_entries_count == 0) {
++      NSLog(@"Error fetching header");
++      return (headerv3){0};
++    }
 +    self.isHeaderSet = YES;
 +  }
 +  return self.header;
 +}
 +
 +- (headerv3)fetchHeaderWithSource:(FetchSource *)source {
-+
++  __block NSError *fetchError = nil;
 +  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 +  __block headerv3 header;
 +  [source getBytesWithOffset:0
@@ -16231,6 +16441,7 @@ index 0000000..a7d14c3
 +                  completion:^(NSDictionary *rangeResponse, NSError *error) {
 +                    if (error) {
 +                      NSLog(@"Error: %@", error.localizedDescription);
++                      fetchError = error;
 +                    } else {
 +                      header =
 +                          [PMTiles deserializeHeader:rangeResponse[@"data"]];
@@ -16240,6 +16451,11 @@ index 0000000..a7d14c3
 +
 +  // 結果が返ってくるまで待機
 +  dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
++  if (fetchError) {
++    // ここでエラーを処理（ログ出力やnilを返すなど）
++    NSLog(@"Error fetching tile: %@", [fetchError localizedDescription]);
++    return (headerv3){0};
++  }
 +  return header;
 +}
 +
@@ -16263,17 +16479,28 @@ index 0000000..a7d14c3
 +
 +  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 +  __block NSDictionary *rangeResponseResult;
++  __block NSError *fetchError = nil;
++
 +  [source getBytesWithOffset:offset
 +                      length:length
 +                      signal:[NSProgress new]
 +                  completion:^(NSDictionary *rangeResponse, NSError *error) {
-+                    if (!error)
++                    if (error) {
++                      fetchError = error;
++                    } else {
 +                      rangeResponseResult = [rangeResponse copy];
++                    }
 +                    dispatch_semaphore_signal(semaphore);
 +                  }];
 +
 +  // 結果が返ってくるまで待機
 +  dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
++
++  if (fetchError) {
++    // ここでエラーを処理（ログ出力やnilを返すなど）
++    NSLog(@"Error fetching tile: %@", [fetchError localizedDescription]);
++    return nil;
++  }
 +  NSData *tileData = rangeResponseResult[@"data"];
 +  // 取得したデータを処理する
 +  //   NSLog(@"ETag: %@", rangeResponseResult[@"etag"]);
@@ -16636,28 +16863,29 @@ index 0000000..9c2efc4
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
 new file mode 100644
-index 0000000..134726f
+index 0000000..d1895ec
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.h
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +#import <Foundation/Foundation.h>
 +
 +@interface StyleManager : NSObject
 +
 +// イニシャライザ
-+- (instancetype)initWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath;
++- (instancetype)initWithURLTemplate:(NSString *)urlTemplate tileCachePath:(NSString *)tileCachePath styleURL:(NSString *)styleURL;
 +
 +// スタイルレイヤー情報を返す
 +- (NSArray *)getStyleLayers;
++- (long long)getLastUpdatedTime;
 +
 +@end
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..cdc206d
+index 0000000..b8bcb69
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,207 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -16666,14 +16894,23 @@ index 0000000..cdc206d
 +  NSURL *_localPath;
 +  NSURL *_tileCachePath;
 +  NSArray *_styleLayers;
++  long long _lastUpdatedTime; // 最終更新時間（ミリ秒）
 +}
 +
 +- (instancetype)initWithURLTemplate:(NSString *)urlTemplate
-+                      tileCachePath:(NSString *)tileCachePath {
++                      tileCachePath:(NSString *)tileCachePath
++                           styleURL:(NSString *)styleURL {
 +  self = [super init];
 +  if (self) {
-+    _urlTemplate =
-+        [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
++    // styleURLがある場合は、styleURLをそのまま使う
++    // NSLog(@"!!styleURL: %@", styleURL);
++    if (styleURL) {
++      _urlTemplate = [NSURL URLWithString:styleURL];
++    } else {
++      _urlTemplate =
++          [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
++    }
++
 +    if (tileCachePath) {
 +      _localPath =
 +          [NSURL URLWithString:[NSString stringWithFormat:@"%@/style.json",
@@ -16705,6 +16942,13 @@ index 0000000..cdc206d
 +      NSLog(@"Failed to load style JSON: %@", [error localizedDescription]);
 +      return;
 +    } else {
++      NSFileManager *fileManager = [NSFileManager defaultManager];
++      NSDictionary *fileAttributes =
++          [fileManager attributesOfItemAtPath:[_localPath path] error:nil];
++      NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
++      _lastUpdatedTime =
++          (long long)([fileModificationDate timeIntervalSince1970] * 1000.0);
++
 +      error = nil;
 +    }
 +  }
@@ -16761,35 +17005,47 @@ index 0000000..cdc206d
 +    withStyleCacheFilePath:(NSURL *)styleCacheFilePath
 +             withStyleData:(NSString *)styleData {
 +
-+  //   NSLog(@"tileCacheFileDirectory: %@", tileCacheFileDirectory);
-+  //   NSLog(@"styleCacheFilePath: %@", styleCacheFilePath);
-+  //   NSLog(@"styleData: %@", styleData);
 +  NSError *error;
++  NSFileManager *fileManager = [NSFileManager defaultManager];
 +
-+  if (![[NSFileManager defaultManager]
-+          fileExistsAtPath:[tileCacheFileDirectory path]]) {
-+    [[NSFileManager defaultManager]
-+              createDirectoryAtPath:[tileCacheFileDirectory path]
-+        withIntermediateDirectories:YES
-+                         attributes:nil
-+                              error:&error];
++  if (![fileManager fileExistsAtPath:[tileCacheFileDirectory path]]) {
++    [fileManager createDirectoryAtPath:[tileCacheFileDirectory path]
++           withIntermediateDirectories:YES
++                            attributes:nil
++                                 error:&error];
 +    if (error) {
 +      NSLog(@"ディレクトリ作成エラー: %@", error.localizedDescription);
 +      return;
 +    }
 +  }
 +
-+  [styleData writeToFile:[styleCacheFilePath path]
-+              atomically:YES
-+                encoding:NSUTF8StringEncoding
-+                   error:&error];
++  NSString *existingStyle =
++      [NSString stringWithContentsOfFile:[styleCacheFilePath path]
++                                encoding:NSUTF8StringEncoding
++                                   error:nil];
 +
-+  if (error) {
-+    NSLog(@"ファイル書き込みエラー: %@", error.localizedDescription);
-+    return;
++  if (existingStyle && [existingStyle isEqualToString:styleData]) {
++    // ファイルが変更されていない場合は、既存のファイルの最後の修正日を取得
++    NSDictionary *fileAttributes =
++        [fileManager attributesOfItemAtPath:[styleCacheFilePath path]
++                                      error:nil];
++    NSDate *fileModificationDate = fileAttributes[NSFileModificationDate];
++    _lastUpdatedTime =
++        (long long)([fileModificationDate timeIntervalSince1970]);
++  } else {
++    NSLog(@"ファイル書き込み: %@", [styleCacheFilePath path]);
++    [styleData writeToFile:[styleCacheFilePath path]
++                atomically:YES
++                  encoding:NSUTF8StringEncoding
++                     error:&error];
++
++    if (error) {
++      NSLog(@"ファイル書き込みエラー: %@", error.localizedDescription);
++      return;
++    }
++
++    _lastUpdatedTime = (long long)([[NSDate date] timeIntervalSince1970]);
 +  }
-+
-+  // NSLog(@"tileCache 保存完了: %@", [styleCacheFilePath path]);
 +}
 +
 +- (NSString *)downloadStyleJsonFromUrl:(NSURL *)url {
@@ -16832,7 +17088,10 @@ index 0000000..cdc206d
 +- (NSArray *)getStyleLayers {
 +  return _styleLayers;
 +}
-+
++// 最終更新時間を取得するメソッドを追加
++- (long long)getLastUpdatedTime {
++  return _lastUpdatedTime;
++}
 +@end
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/UIColor+Hex.h
 new file mode 100644
@@ -18120,10 +18379,10 @@ index 63d305c..bcfdcf2 100644
  @end
 diff --git a/node_modules/react-native-maps/lib/MapPMTile.d.ts b/node_modules/react-native-maps/lib/MapPMTile.d.ts
 new file mode 100644
-index 0000000..75b0cc9
+index 0000000..607c50c
 --- /dev/null
 +++ b/node_modules/react-native-maps/lib/MapPMTile.d.ts
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,139 @@
 +import * as React from 'react';
 +import { ProviderContext, NativeComponent, MapManagerCommand, UIManagerCommand } from './decorateMapComponent';
 +import { ViewProps } from 'react-native';
@@ -18238,6 +18497,11 @@ index 0000000..75b0cc9
 +     * @platform Android: Supported
 +     */
 +    urlTemplate: string;
++    /**
++    * @platform iOS: Google Maps only
++    * @platform Android: Supported
++    * */
++    styleURL?: string;
 +    /**
 +     * The order in which this tile overlay is drawn with respect to other overlays.
 +     * An overlay with a larger z-index is drawn over overlays with smaller z-indices.

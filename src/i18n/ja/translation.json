@@ -127,7 +127,8 @@
     },
     "EncryptPassword": "暗号化パスワード",
     "memo": "メモ",
-    "customLabel": "カスタムラベル"
+    "customLabel": "カスタムラベル",
+    "vector": "ベクタ"
   },
   "Home": {
     "confirm": {
