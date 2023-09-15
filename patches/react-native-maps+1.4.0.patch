@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..9150d59
+index 0000000..b33291f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/9843bee335ec674ec1c6d13a86cede46/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/airbnb/android/react/maps/BuildConfig.java
 new file mode 100644
@@ -108,7 +108,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..0861d4b
+index 0000000..50db568
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2258,11 +2258,11 @@ index 0000000..9752a2d
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..8398822
+index 0000000..60c1aca
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Mon Sep 11 22:15:03 JST 2023
++#Sun Sep 10 08:18:47 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..76baba1
@@ -2283,12 +2283,12 @@ index 0000000..474e646
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 new file mode 100644
-index 0000000..61e8fa0
+index 0000000..9d2348c
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/mergeDebugShaders/merger.xml
 @@ -0,0 +1,2 @@
 +<?xml version="1.0" encoding="utf-8"?>
-+<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/debug/shaders"/></dataSet></merger>
++<merger version="3"><dataSet config="main" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/android/app/src/main/shaders"/></dataSet><dataSet config="debug" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/android/app/src/debug/shaders"/></dataSet></merger>
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/packageDebugAssets/merger.xml
 new file mode 100644
@@ -2373,7 +2373,7 @@ index 0000000..b9d6520
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class
 new file mode 100644
-index 0000000..2eff05b
+index 0000000..f970ddf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class
 new file mode 100644
@@ -2381,11 +2381,11 @@ index 0000000..7e4f8f0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class
 new file mode 100644
-index 0000000..5628ebf
+index 0000000..67c7c3e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..6f22efa
+index 0000000..b7584ae
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
@@ -2529,7 +2529,7 @@ index 0000000..ebba8cf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..3fda29c
+index 0000000..da6280e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class
 new file mode 100644
@@ -2545,11 +2545,11 @@ index 0000000..701018f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..e98688b
+index 0000000..21da04e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..4f8605d
+index 0000000..26ea7b1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -2879,7 +2879,7 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..dc4b413
+index 0000000..556d3a8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -4517,7 +4517,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..56dcf3b
+index 0000000..31caeac
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
@@ -4857,10 +4857,10 @@ index 0000000..cac9be5
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..8bdbca4
+index 0000000..508b851
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,1040 @@
+@@ -0,0 +1,1067 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -5419,7 +5419,7 @@ index 0000000..8bdbca4
 +
 +  public void applyStyle(Canvas canvas, StyleLayer styleLayer, VectorSource source) {
 +    String type = styleLayer.type;
-+
++    System.out.println("!!applyStyle: " + type);
 +    if ("circle".equals(type)) {
 +      Paint circlePaint = new Paint();
 +
@@ -5467,9 +5467,36 @@ index 0000000..8bdbca4
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof PolygonData)) return;
 +        PolygonData polygon = (PolygonData) feature.geometry;
-+        String fillColor = styleLayer.paint.fillColor;
-+        String lineColor = styleLayer.paint.lineColor;
 +
++        String lineColor = styleLayer.paint.lineColor != null ? styleLayer.paint.lineColor : "#000000";
++        String fillColor = "#ffffff";
++        System.out.println("!!Fill color is: " + styleLayer.paint.fillColor);
++        if (styleLayer.paint.fillColor instanceof String) {
++          fillColor = (String) styleLayer.paint.fillColor;
++          System.out.println("Fill color is a single value: " + fillColor);
++        } else if (styleLayer.paint.fillColor instanceof List) {
++          List<?> fillColors = (List<?>) styleLayer.paint.fillColor;
++          if (fillColors.size() > 0 && "match".equals(fillColors.get(0))) {
++            List<?> conditions = fillColors.subList(3, fillColors.size() - 1);
++            List<?> getFieldList = (List<?>) fillColors.get(1);
++            String field = (String) getFieldList.get(1); // 注：適切なチェックが必要
++            String value = feature.attributes.getOrDefault(field, "");
++
++            fillColor = (String) fillColors.get(fillColors.size() - 1); // Default color
++
++            for (int i = 0; i < conditions.size(); i += 2) {
++              String key = (String) conditions.get(i);
++              if (key.equals(value)) {
++                fillColor = (String) conditions.get(i + 1);
++                break;
++              }
++            }
++
++            System.out.println("Fill color based on attribute is: " + fillColor);
++          }
++        } else {
++          System.out.println("Unsupported fill color format");
++        }
 +        fillPaint.setColor(Color.parseColor(fillColor));
 +        fillPaint.setStyle(Paint.Style.FILL);
 +
@@ -8299,7 +8326,7 @@ index 0000000..b43d333
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
 new file mode 100644
-index 0000000..370f3cf
+index 0000000..b997c3a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
 @@ -0,0 +1,31 @@
@@ -8310,7 +8337,7 @@ index 0000000..370f3cf
 +public class PaintStyle {
 +
 +  @SerializedName("fill-color")
-+  public String fillColor;
++  public Object fillColor;
 +
 +  @SerializedName("line-color")
 +  public String lineColor;
@@ -8372,10 +8399,10 @@ index 0000000..5675b38
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..f9ed966
+index 0000000..177d864
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,137 @@
+@@ -0,0 +1,139 @@
 +package VectorTileStyleManager;
 +
 +import StyleLayer.StyleLayer;
@@ -8405,22 +8432,24 @@ index 0000000..f9ed966
 +
 +  public VectorTileStyleManager(String urlTemplate, String tileCachePath, String styleURL) {
 +    System.out.println("##styleURL: " + styleURL);
-+    if (styleURL != null) {
-+      this.urlTemplate = styleURL;
++    if (styleURL != null && !styleURL.trim().isEmpty()) {
++      this.urlTemplate = styleURL.trim();
 +    } else {
 +      this.urlTemplate = changeExtensionToJson(urlTemplate);
 +    }
-+    if (tileCachePath != null) {
-+      this.localPath = tileCachePath + "/style.json";
++
++    if (tileCachePath != null && !tileCachePath.trim().isEmpty()) {
++      this.localPath = tileCachePath.trim() + "/style.json";
 +    }
 +
 +    System.out.println("##localPath: " + this.localPath);
++    System.out.println("##urlTemplate: " + this.urlTemplate);
 +    loadStyleAsync()
 +      .thenAccept(style -> {
 +        Gson gson = new Gson();
 +        Type listType = new TypeToken<List<StyleLayer>>() {}.getType();
 +        this.styleLayers = gson.fromJson(style, listType);
-+        //System.out.println("loadedStyle: " + this.styleLayers);
++        System.out.println("##loadedStyle: " + this.styleLayers);
 +        // 他の処理（例えばスタイルの適用など）
 +      })
 +      .exceptionally(e -> {
@@ -16861,10 +16890,10 @@ index 0000000..d1895ec
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..b8bcb69
+index 0000000..d09b895
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,207 @@
+@@ -0,0 +1,214 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -16883,18 +16912,25 @@ index 0000000..b8bcb69
 +  if (self) {
 +    // styleURLがある場合は、styleURLをそのまま使う
 +    // NSLog(@"!!styleURL: %@", styleURL);
-+    if (styleURL) {
-+      _urlTemplate = [NSURL URLWithString:styleURL];
++    NSString *trimmedStyleURL =
++        [styleURL stringByTrimmingCharactersInSet:[NSCharacterSet
++                                                      whitespaceCharacterSet]];
++    NSString *trimmedTileCachePath = [tileCachePath
++        stringByTrimmingCharactersInSet:[NSCharacterSet
++                                            whitespaceCharacterSet]];
++
++    if (trimmedStyleURL && ![trimmedStyleURL isEqualToString:@""]) {
++      _urlTemplate = [NSURL URLWithString:trimmedStyleURL];
 +    } else {
 +      _urlTemplate =
 +          [NSURL URLWithString:[self changeExtensionToJson:urlTemplate]];
 +    }
 +
-+    if (tileCachePath) {
-+      _localPath =
-+          [NSURL URLWithString:[NSString stringWithFormat:@"%@/style.json",
-+                                                          tileCachePath]];
-+      _tileCachePath = [NSURL URLWithString:tileCachePath];
++    if (trimmedTileCachePath && ![trimmedTileCachePath isEqualToString:@""]) {
++      _localPath = [NSURL
++          URLWithString:[NSString stringWithFormat:@"%@/style.json",
++                                                   trimmedTileCachePath]];
++      _tileCachePath = [NSURL URLWithString:trimmedTileCachePath];
 +    }
 +    // NSLog(@"!!_urlTemplate: %@", _urlTemplate);
 +    // NSLog(@"!!_localPath: %@", _localPath);

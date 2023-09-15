@@ -23,6 +23,7 @@ export const MapModalTileMap = React.memo(() => {
   const [tileName, setTileName] = useState('');
   const [tileURL, setTileURL] = useState('');
   const [styleURL, setStyleURL] = useState<string | undefined>('');
+  const [isVector, setIsVector] = useState(true);
   const [attribution, setAttribution] = useState('');
   const [transparency, setTransparency] = useState(0);
   const [minimumZ, setMinimumZ] = useState(0);
@@ -38,6 +39,7 @@ export const MapModalTileMap = React.memo(() => {
     setTileName(data.name);
     setTileURL(data.url);
     setStyleURL(data.styleURL);
+    setIsVector(data.isVector ?? true);
     setAttribution(data.attribution);
     setTransparency(data.transparency);
     setMinimumZ(data.minimumZ);
@@ -62,7 +64,7 @@ export const MapModalTileMap = React.memo(() => {
     },
     modalContents: {
       alignItems: 'center',
-      height: windowHeight * 0.5,
+      height: windowHeight * 0.55,
       width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
@@ -122,6 +124,7 @@ export const MapModalTileMap = React.memo(() => {
       name: tileName,
       url: tileURL,
       styleURL: styleURL,
+      isVector: isVector,
       attribution: attribution,
       transparency: transparency,
       overzoomThreshold: overzoomThreshold,
@@ -156,15 +159,6 @@ export const MapModalTileMap = React.memo(() => {
                 value={tileURL}
                 onChangeText={(text) => setTileURL(text)}
               />
-              {tileURL && tileURL.includes('pmtiles') && (
-                <TextInput
-                  style={styles.modalTextInput}
-                  placeholder=" (Optional) https://example/style.json "
-                  placeholderTextColor={COLOR.GRAY4}
-                  value={styleURL}
-                  onChangeText={(text) => setStyleURL(text)}
-                />
-              )}
               <TextInput
                 style={styles.modalTextInput}
                 placeholder={t('common.sourceName')}
@@ -208,6 +202,24 @@ export const MapModalTileMap = React.memo(() => {
                     onCheck={(checked) => setFlipY(checked)}
                   />
                 </View>
+              )}
+              {tileURL && tileURL.includes('pmtiles') && (
+                <CheckBox
+                  style={{ backgroundColor: COLOR.WHITE }}
+                  label={t('common.vectortile')}
+                  width={windowWidth * modalWidthScale * 0.5}
+                  checked={isVector}
+                  onCheck={(checked) => setIsVector(checked)}
+                />
+              )}
+              {tileURL && tileURL.includes('pmtiles') && isVector && (
+                <TextInput
+                  style={styles.modalTextInput}
+                  placeholder="Style URL (Optional)"
+                  placeholderTextColor={COLOR.GRAY4}
+                  value={styleURL}
+                  onChangeText={(text) => setStyleURL(text)}
+                />
               )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
