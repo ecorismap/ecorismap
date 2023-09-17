@@ -20,7 +20,9 @@
     "maxzoom": 24,
     "paint": {
       "circle-color": "#0000FF",
-      "circle-radius": 3
+      "circle-radius": 3,
+      "circle-stroke-width": 1,
+      "circle-stroke-color": "#FFFFFF"
     }
   },
   {

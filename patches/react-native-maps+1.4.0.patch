@@ -129,7 +129,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..50db568
+index 0000000..77b14e5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2394,7 +2394,7 @@ index 0000000..b9d6520
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class
 new file mode 100644
-index 0000000..f970ddf
+index 0000000..977756b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class
 new file mode 100644
@@ -2402,11 +2402,11 @@ index 0000000..7e4f8f0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class
 new file mode 100644
-index 0000000..67c7c3e
+index 0000000..3579f82
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..b7584ae
+index 0000000..6c42810
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapCallout.class
 new file mode 100644
@@ -2550,27 +2550,27 @@ index 0000000..ebba8cf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..da6280e
+index 0000000..1fbccf0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..a7f74bf
+index 0000000..583df6d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..9d9e7ae
+index 0000000..6120a41
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..701018f
+index 0000000..b59c73a
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..21da04e
+index 0000000..0245098
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class
 new file mode 100644
-index 0000000..26ea7b1
+index 0000000..6b67e32
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/airbnb/android/react/maps/AirMapPolygon.class
 new file mode 100644
@@ -2900,7 +2900,7 @@ index 0000000..a7f4f07
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..556d3a8
+index 0000000..4a60843
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -4538,7 +4538,7 @@ index 0000000..c684e0e
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..31caeac
+index 0000000..218ed23
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTile.java
 new file mode 100644
@@ -4878,10 +4878,10 @@ index 0000000..cac9be5
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
 new file mode 100644
-index 0000000..508b851
+index 0000000..6bf75f9
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/AirMapPMTileProvider.java
-@@ -0,0 +1,1067 @@
+@@ -0,0 +1,1123 @@
 +package com.airbnb.android.react.maps;
 +
 +import PMTiles.PMTiles;
@@ -5168,15 +5168,18 @@ index 0000000..508b851
 +    long lastModified = file.lastModified();
 +    long now = System.currentTimeMillis();
 +    long styleLastUpdatedTime = styleManager.getLastUpdatedTime();
-+
-+    if (styleLastUpdatedTime > lastModified) {
-+      //System.out.println("##style updated");
++    // System.out.println(
++    //   "##!" + x + "/" + y + "/" + zoom + ", " + styleLastUpdatedTime + ", " + lastModified + ", " + now
++    // );
++    if (styleLastUpdatedTime > lastModified || styleLastUpdatedTime == 0) {
++      //System.out.println("##!style updated" + x + "/" + y + "/" + zoom);
 +      return true;
 +    }
 +    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
 +      //System.out.println("##cache expired");
 +      return true;
 +    }
++    //System.out.println("##!not update " + x + "/" + y + "/" + zoom);
 +    return false;
 +  }
 +
@@ -5438,24 +5441,63 @@ index 0000000..508b851
 +    return new PolygonData(path, centerX, centerY);
 +  }
 +
++  private String computeDynamicColor(List<?> colors, Map<String, String> attributes) {
++    if (colors.size() > 0 && "match".equals(colors.get(0))) {
++      List<?> conditions = colors.subList(2, colors.size() - 1);
++      List<?> getFieldList = (List<?>) colors.get(1);
++      String field = (String) getFieldList.get(1);
++      String value = attributes.getOrDefault(field, "");
++      String defaultColor = (String) colors.get(colors.size() - 1);
++
++      for (int i = 0; i < conditions.size(); i += 2) {
++        String key = (String) conditions.get(i);
++        if (key.equals(value)) {
++          return (String) conditions.get(i + 1);
++        }
++      }
++      return defaultColor;
++    }
++    return null;
++  }
++
 +  public void applyStyle(Canvas canvas, StyleLayer styleLayer, VectorSource source) {
 +    String type = styleLayer.type;
-+    System.out.println("!!applyStyle: " + type);
++    //System.out.println("!!applyStyle: " + type);
 +    if ("circle".equals(type)) {
 +      Paint circlePaint = new Paint();
++      Paint circleOutlinePaint = new Paint(); // 追加：アウトライン用のPaint
 +
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof List<?>)) return;
 +        Map<String, String> attributes = feature.attributes;
-+        String circleColor = styleLayer.paint.circleColor;
++        String circleColor = "#ff0000";
++        if (styleLayer.paint.circleColor instanceof String) {
++          circleColor = (String) styleLayer.paint.circleColor;
++        } else if (styleLayer.paint.circleColor instanceof List<?>) {
++          String dynamicColor = computeDynamicColor((List<?>) styleLayer.paint.circleColor, attributes);
++          if (dynamicColor != null) {
++            circleColor = dynamicColor;
++          }
++        }
++
 +        circlePaint.setColor(Color.parseColor(circleColor));
 +        circlePaint.setStyle(Paint.Style.FILL);
-+        float circleRadius = styleLayer.paint.circleRadius;
++        String outlineColor = circleColor;
++        if (styleLayer.paint.circleStrokeColor != null && styleLayer.paint.circleStrokeColor instanceof String) {
++          outlineColor = (String) styleLayer.paint.circleStrokeColor;
++        }
++        float strokeWidth = (Float) styleLayer.paint.circleStrokeWidth == null ? 0 : styleLayer.paint.circleStrokeWidth;
++        circleOutlinePaint.setColor(Color.parseColor(outlineColor));
++        circleOutlinePaint.setStyle(Paint.Style.STROKE);
++        circleOutlinePaint.setStrokeWidth(strokeWidth); // アウトラインの太さ
++
++        float circleRadius = (Float) styleLayer.paint.circleRadius == null ? 5 : styleLayer.paint.circleRadius;
 +        List<PointData> points = (List<PointData>) feature.geometry;
 +        for (PointData point : points) {
 +          float scaledX = point.x;
 +          float scaledY = point.y;
 +          canvas.drawCircle(scaledX, scaledY, circleRadius, circlePaint);
++          canvas.drawCircle(scaledX, scaledY, circleRadius, circleOutlinePaint); // アウトラインを描画
 +        }
 +      }
 +    } else if ("line".equals(type)) {
@@ -5474,8 +5516,16 @@ index 0000000..508b851
 +          return;
 +        }
 +
-+        String lineColor = styleLayer.paint.lineColor;
-+        float lineWidth = styleLayer.paint.lineWidth;
++        String lineColor = "#ff0000";
++        if (styleLayer.paint.lineColor instanceof String) {
++          lineColor = (String) styleLayer.paint.lineColor;
++        } else if (styleLayer.paint.lineColor instanceof List) {
++          String dynamicColor = computeDynamicColor((List<?>) styleLayer.paint.lineColor, attributes);
++          if (dynamicColor != null) {
++            lineColor = dynamicColor;
++          }
++        }
++        float lineWidth = (Float) styleLayer.paint.lineWidth == null ? 1 : styleLayer.paint.lineWidth;
 +
 +        linePaint.setColor(Color.parseColor(lineColor));
 +        linePaint.setStyle(Paint.Style.STROKE);
@@ -5488,42 +5538,31 @@ index 0000000..508b851
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof PolygonData)) return;
 +        PolygonData polygon = (PolygonData) feature.geometry;
-+
-+        String lineColor = styleLayer.paint.lineColor != null ? styleLayer.paint.lineColor : "#000000";
-+        String fillColor = "#ffffff";
-+        System.out.println("!!Fill color is: " + styleLayer.paint.fillColor);
++        Map<String, String> attributes = feature.attributes;
++        String fillColor = "#ffffffff";
 +        if (styleLayer.paint.fillColor instanceof String) {
 +          fillColor = (String) styleLayer.paint.fillColor;
-+          System.out.println("Fill color is a single value: " + fillColor);
 +        } else if (styleLayer.paint.fillColor instanceof List) {
-+          List<?> fillColors = (List<?>) styleLayer.paint.fillColor;
-+          if (fillColors.size() > 0 && "match".equals(fillColors.get(0))) {
-+            List<?> conditions = fillColors.subList(3, fillColors.size() - 1);
-+            List<?> getFieldList = (List<?>) fillColors.get(1);
-+            String field = (String) getFieldList.get(1); // 注：適切なチェックが必要
-+            String value = feature.attributes.getOrDefault(field, "");
-+
-+            fillColor = (String) fillColors.get(fillColors.size() - 1); // Default color
-+
-+            for (int i = 0; i < conditions.size(); i += 2) {
-+              String key = (String) conditions.get(i);
-+              if (key.equals(value)) {
-+                fillColor = (String) conditions.get(i + 1);
-+                break;
-+              }
-+            }
-+
-+            System.out.println("Fill color based on attribute is: " + fillColor);
++          String dynamicColor = computeDynamicColor((List<?>) styleLayer.paint.fillColor, attributes);
++          if (dynamicColor != null) {
++            fillColor = dynamicColor;
 +          }
-+        } else {
-+          System.out.println("Unsupported fill color format");
 +        }
++
 +        fillPaint.setColor(Color.parseColor(fillColor));
++
++        float fillOpacity = (Float) styleLayer.paint.fillOpacity == null ? 1f : styleLayer.paint.fillOpacity;
++        fillPaint.setAlpha((int) (fillOpacity * 255)); // Set fill opacity for fillPaint only, after setting the color
++
 +        fillPaint.setStyle(Paint.Style.FILL);
 +
-+        strokePaint.setColor(Color.parseColor(lineColor));
++        String outlineColor = fillColor;
++        if (styleLayer.paint.fillOutlineColor != null && styleLayer.paint.fillOutlineColor instanceof String) {
++          outlineColor = (String) styleLayer.paint.fillOutlineColor;
++        }
++        strokePaint.setColor(Color.parseColor(outlineColor));
 +        strokePaint.setStyle(Paint.Style.STROKE);
-+        strokePaint.setStrokeWidth(2);
++        strokePaint.setStrokeWidth(1);
 +
 +        // Draw the path
 +        canvas.drawPath(polygon.path, fillPaint); // 塗りつぶし
@@ -5553,25 +5592,37 @@ index 0000000..508b851
 +          Y = polygon.centerY;
 +        }
 +
-+        int labelSize = styleLayer.layout.textSize;
-+        String labelHaloColor = styleLayer.paint.textHaloColor;
-+        float labelHaloWidth = styleLayer.paint.textHaloWidth;
++        int labelSize = (Integer) styleLayer.layout.textSize == null ? 16 : styleLayer.layout.textSize;
++        String labelHaloColor = styleLayer.paint.textHaloColor != null &&
++          styleLayer.paint.textHaloColor instanceof String
++          ? styleLayer.paint.textHaloColor
++          : "#FFFFFF";
++
++        float labelHaloWidth = (Float) styleLayer.paint.textHaloWidth == null ? 0 : styleLayer.paint.textHaloWidth;
 +        String labelField = styleLayer.layout.textField.get(1);
 +        if (attributes == null) continue;
 +        String label = attributes.getOrDefault(labelField, "");
-+        //String label = labelField;
-+        String labelColor = styleLayer.paint.textColor;
++
++        String labelColor = "#000000";
++        if (styleLayer.paint.textColor instanceof String) {
++          labelColor = (String) styleLayer.paint.textColor;
++        } else if (styleLayer.paint.textColor instanceof List) {
++          String dynamicColor = computeDynamicColor((List<?>) styleLayer.paint.textColor, attributes);
++          if (dynamicColor != null) {
++            labelColor = dynamicColor;
++          }
++        }
++
++        textFillPaint.setColor(Color.parseColor(labelColor));
++        textFillPaint.setTextSize(labelSize);
++        textFillPaint.setStyle(Paint.Style.FILL);
++        textFillPaint.setTextAlign(Paint.Align.CENTER);
 +
 +        textStrokePaint.setColor(Color.parseColor(labelHaloColor));
 +        textStrokePaint.setTextSize(labelSize);
 +        textStrokePaint.setStyle(Paint.Style.STROKE);
 +        textStrokePaint.setStrokeWidth(labelHaloWidth);
 +        textStrokePaint.setTextAlign(Paint.Align.CENTER);
-+
-+        textFillPaint.setColor(Color.parseColor(labelColor));
-+        textFillPaint.setTextSize(labelSize);
-+        textFillPaint.setStyle(Paint.Style.FILL);
-+        textFillPaint.setTextAlign(Paint.Align.CENTER);
 +
 +        Rect textBounds = new Rect();
 +        textFillPaint.getTextBounds(label, 0, label.length(), textBounds);
@@ -5687,7 +5738,7 @@ index 0000000..508b851
 +          }
 +        }
 +      } catch (InvalidProtocolBufferException e) {
-+        e.printStackTrace();
++        //e.printStackTrace();
 +        //System.err.println("!!create source error: " + e.getMessage());
 +        // エラーハンドリングのロジック
 +      }
@@ -5697,7 +5748,12 @@ index 0000000..508b851
 +      for (StyleLayer styleLayer : styleManager.getStyleLayers()) {
 +        VectorSource source = getVectorSource(styleLayer.sourceLayer, sources);
 +        if (source == null) continue;
-+        if (styleLayer.minzoom > zoom || styleLayer.maxzoom < zoom) continue;
++
++        double actualMinzoom = (Integer) styleLayer.minzoom != null ? styleLayer.minzoom : 0;
++        double actualMaxzoom = (Integer) styleLayer.maxzoom != null ? styleLayer.maxzoom : 22;
++
++        if (actualMinzoom > zoom || actualMaxzoom < zoom) continue;
++
 +        applyStyle(canvas, styleLayer, source);
 +      }
 +      byte[] tileImage = bitmapToByteArray(image);
@@ -8347,10 +8403,10 @@ index 0000000..b43d333
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
 new file mode 100644
-index 0000000..b997c3a
+index 0000000..9169367
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/PaintStyle.java
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,43 @@
 +package StyleLayer;
 +
 +import com.google.gson.annotations.SerializedName;
@@ -8360,20 +8416,32 @@ index 0000000..b997c3a
 +  @SerializedName("fill-color")
 +  public Object fillColor;
 +
++  @SerializedName("fill-outline-color")
++  public String fillOutlineColor;
++
++  @SerializedName("fill-opacity")
++  public float fillOpacity;
++
 +  @SerializedName("line-color")
-+  public String lineColor;
++  public Object lineColor;
 +
 +  @SerializedName("line-width")
 +  public float lineWidth;
 +
 +  @SerializedName("circle-color")
-+  public String circleColor;
++  public Object circleColor;
 +
 +  @SerializedName("circle-radius")
 +  public float circleRadius;
 +
++  @SerializedName("circle-stroke-color")
++  public String circleStrokeColor;
++
++  @SerializedName("circle-stroke-width")
++  public float circleStrokeWidth;
++
 +  @SerializedName("text-color")
-+  public String textColor;
++  public Object textColor;
 +
 +  @SerializedName("text-halo-color")
 +  public String textHaloColor;
@@ -8420,10 +8488,10 @@ index 0000000..5675b38
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..177d864
+index 0000000..48f6df5
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/airbnb/android/react/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,139 @@
+@@ -0,0 +1,142 @@
 +package VectorTileStyleManager;
 +
 +import StyleLayer.StyleLayer;
@@ -8448,11 +8516,11 @@ index 0000000..177d864
 +
 +  private String urlTemplate;
 +  private String localPath;
-+  private long lastUpdatedTime; // long型で記録
++  private long lastUpdatedTime = 0; // long型で記録
 +  private List<StyleLayer> styleLayers; // ダウンロードしたスタイル情報を保存
 +
 +  public VectorTileStyleManager(String urlTemplate, String tileCachePath, String styleURL) {
-+    System.out.println("##styleURL: " + styleURL);
++    // System.out.println("##styleURL: " + styleURL);
 +    if (styleURL != null && !styleURL.trim().isEmpty()) {
 +      this.urlTemplate = styleURL.trim();
 +    } else {
@@ -8463,19 +8531,22 @@ index 0000000..177d864
 +      this.localPath = tileCachePath.trim() + "/style.json";
 +    }
 +
-+    System.out.println("##localPath: " + this.localPath);
-+    System.out.println("##urlTemplate: " + this.urlTemplate);
++    // System.out.println("##localPath: " + this.localPath);
++    // System.out.println("##urlTemplate: " + this.urlTemplate);
 +    loadStyleAsync()
 +      .thenAccept(style -> {
++        // 正常にスタイルがロードされたときの処理
 +        Gson gson = new Gson();
 +        Type listType = new TypeToken<List<StyleLayer>>() {}.getType();
 +        this.styleLayers = gson.fromJson(style, listType);
-+        System.out.println("##loadedStyle: " + this.styleLayers);
-+        // 他の処理（例えばスタイルの適用など）
 +      })
-+      .exceptionally(e -> {
-+        System.out.println("Error loading style: " + e.getMessage());
-+        return null;
++      .whenComplete((result, exception) -> {
++        if (exception != null) {
++          // エラーが発生した場合の処理
++          System.out.println("Error loading style: " + exception.getMessage());
++          this.styleLayers = new ArrayList<>();
++        }
++        // ここには、正常ケースとエラーケースの両方で実行される処理を書くこともできます。
 +      });
 +  }
 +
@@ -14152,10 +14223,10 @@ index 0000000..4051136
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..9a58e45
+index 0000000..90a502b
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,886 @@
+@@ -0,0 +1,1003 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -14624,6 +14695,27 @@ index 0000000..9a58e45
 +  return nil; // または適当な例外を投げる
 +}
 +
++- (NSString *)computeDynamicColor:(NSArray *)colors
++                       attributes:(NSDictionary *)attributes {
++  if (colors.count > 0 && [colors[0] isEqualToString:@"match"]) {
++    NSArray *conditions =
++        [colors subarrayWithRange:NSMakeRange(2, colors.count - 3)];
++    NSArray *getFieldList = colors[1];
++    NSString *field = getFieldList[1];
++    NSString *value = attributes[field] ? attributes[field] : @"";
++    NSString *defaultColor = colors.lastObject;
++
++    for (int i = 0; i < conditions.count; i += 2) {
++      NSString *key = conditions[i];
++      if ([key isEqualToString:value]) {
++        return conditions[i + 1];
++      }
++    }
++    return defaultColor;
++  }
++  return nil;
++}
++
 +- (void)applyStyleToContext:(CGContextRef)context
 +             withStyleLayer:(NSDictionary *)styleLayer
 +                  andSource:(VectorSource *)source {
@@ -14631,27 +14723,69 @@ index 0000000..9a58e45
 +  NSString *type = styleLayer[@"type"];
 +
 +  if ([type isEqualToString:@"circle"]) {
-+    // 描画設定 for circle
++    // Drawing settings for circle
 +    for (FeatureData *feature in source.features) {
-+      NSString *hexString = styleLayer[@"paint"][@"circle-color"];
-+      UIColor *circleColor = [UIColor colorWithHexString:hexString];
++      NSDictionary *attributes = feature.attributes;
++      NSDictionary *paint =
++          styleLayer[@"paint"]; // Explicitly define the paint dictionary
++      NSString *circleColor = @"#ff0000"; // Default circle color
++
++      if ([paint[@"circle-color"] isKindOfClass:[NSString class]]) {
++        circleColor = paint[@"circle-color"];
++      } else if ([paint[@"circle-color"] isKindOfClass:[NSArray class]]) {
++        NSString *dynamicColor =
++            [self computeDynamicColor:paint[@"circle-color"]
++                           attributes:attributes];
++        if (dynamicColor) {
++          circleColor = dynamicColor;
++        }
++      }
++
++      UIColor *fillColor = [UIColor
++          colorWithHexString:circleColor]; // Now using the existing method
++      CGContextSetFillColorWithColor(context, fillColor.CGColor);
++
++      NSString *outlineColor = circleColor; // Default to circleColor
++      if (paint[@"circle-stroke-color"] &&
++          [paint[@"circle-stroke-color"] isKindOfClass:[NSString class]]) {
++        outlineColor = paint[@"circle-stroke-color"];
++      }
++
++      CGFloat strokeWidth = paint[@"circle-stroke-width"]
++                                ? [paint[@"circle-stroke-width"] floatValue]
++                                : 0;
++      UIColor *strokeColor = [UIColor
++          colorWithHexString:outlineColor]; // Now using the existing method
++      CGContextSetStrokeColorWithColor(context, strokeColor.CGColor);
++      CGContextSetLineWidth(context, strokeWidth);
++
 +      CGFloat circleRadius =
-+          [styleLayer[@"paint"][@"circle-radius"] floatValue];
++          paint[@"circle-radius"] ? [paint[@"circle-radius"] floatValue] : 5;
 +
-+      CGContextSetFillColorWithColor(context, circleColor.CGColor);
-+
-+      for (NSValue *pointValue in feature
-+               .geometry) { // feature.geometryはNSMutableArrayと仮定
++      // Using NSValue to wrap CGPoint as PointData type is not shown
++      NSArray<NSValue *> *points = (NSArray<NSValue *> *)feature.geometry;
++      for (NSValue *pointValue in points) {
 +        CGPoint point = [pointValue CGPointValue];
-+        // 描画
-+        CGContextFillEllipseInRect(
-+            context, CGRectMake(point.x - circleRadius, point.y - circleRadius,
-+                                circleRadius * 2, circleRadius * 2));
++        float scaledX = point.x;
++        float scaledY = point.y;
++
++        CGRect circleRect =
++            CGRectMake(scaledX - circleRadius, scaledY - circleRadius,
++                       circleRadius * 2, circleRadius * 2);
++        CGContextFillEllipseInRect(context, circleRect); // Draw the circle
++
++        if (strokeWidth > 0) {
++          CGContextStrokeEllipseInRect(context, circleRect); // Draw the outline
++        }
 +      }
 +    }
 +  } else if ([type isEqualToString:@"line"]) {
 +    for (FeatureData *feature in source.features) {
++      NSDictionary *attributes = feature.attributes;
++      NSDictionary *paint =
++          styleLayer[@"paint"]; // Explicitly define the paint dictionary
 +      UIBezierPath *path = nil;
++
 +      if ([feature.geometry isKindOfClass:[LineData class]]) {
 +        LineData *lineData = (LineData *)feature.geometry;
 +        path = lineData.path;
@@ -14659,57 +14793,105 @@ index 0000000..9a58e45
 +        PolygonData *polygonData = (PolygonData *)feature.geometry;
 +        path = polygonData.path;
 +      } else {
-+        return;
++        continue; // Skip to the next iteration if geometry is neither LineData
++                  // nor PolygonData
 +      }
 +
-+      NSString *hexString = styleLayer[@"paint"][@"line-color"];
-+      UIColor *lineColor = [UIColor colorWithHexString:hexString];
-+      // UIColor *lineColor = [UIColor blackColor];
-+      CGFloat lineWidth = [styleLayer[@"paint"][@"line-width"] floatValue];
++      NSString *lineColor = @"#ff0000"; // Default line color is red
++      if ([paint[@"line-color"] isKindOfClass:[NSString class]]) {
++        lineColor = paint[@"line-color"];
++      } else if ([paint[@"line-color"] isKindOfClass:[NSArray class]]) {
++        NSString *dynamicColor = [self computeDynamicColor:paint[@"line-color"]
++                                                attributes:attributes];
++        if (dynamicColor) {
++          lineColor = dynamicColor;
++        }
++      }
 +
-+      CGContextSetStrokeColorWithColor(context, lineColor.CGColor);
++      CGFloat lineWidth = paint[@"line-width"]
++                              ? [paint[@"line-width"] floatValue]
++                              : 1.0; // Default line width is 1
++
++      CGContextRef context = UIGraphicsGetCurrentContext();
++      CGContextSetStrokeColorWithColor(
++          context, [UIColor colorWithHexString:lineColor]
++                       .CGColor); // Use existing colorWithHexString method
 +      CGContextSetLineWidth(context, lineWidth);
 +
 +      CGContextAddPath(context, path.CGPath);
 +      CGContextDrawPath(context, kCGPathStroke);
 +    }
-+
 +  } else if ([type isEqualToString:@"fill"]) {
-+    // 描画設定 for fill
 +    for (FeatureData *feature in source.features) {
-+      // feature.geometryは多角形のパス（PolygonData）であると仮定
-+      PolygonData *polygonData = feature.geometry;
++      NSDictionary *attributes = feature.attributes;
++      NSDictionary *paint =
++          styleLayer[@"paint"]; // Explicitly define the paint dictionary
 +
-+      if (![polygonData isKindOfClass:[PolygonData class]]) {
-+        return;
++      if (![feature.geometry isKindOfClass:[PolygonData class]]) {
++        continue; // Skip to the next iteration if geometry is not PolygonData
 +      }
 +
-+      // 色設定
-+      NSString *hexString = styleLayer[@"paint"][@"fill-color"];
-+      UIColor *fillColor = [UIColor colorWithHexString:hexString];
++      PolygonData *polygonData = (PolygonData *)feature.geometry;
++
++      NSString *fillColorString =
++          @"#ffffffff"; // Default fill color is white with full opacity
++      if ([paint[@"fill-color"] isKindOfClass:[NSString class]]) {
++        fillColorString = paint[@"fill-color"];
++      } else if ([paint[@"fill-color"] isKindOfClass:[NSArray class]]) {
++        NSString *dynamicColor = [self computeDynamicColor:paint[@"fill-color"]
++                                                attributes:attributes];
++        if (dynamicColor) {
++          fillColorString = dynamicColor;
++        }
++      }
++
++      UIColor *fillColor = [UIColor colorWithHexString:fillColorString];
++
++      CGFloat fillOpacity = paint[@"fill-opacity"]
++                                ? [paint[@"fill-opacity"] floatValue]
++                                : 1.0; // Default fill opacity is 1
++
++      CGContextRef context = UIGraphicsGetCurrentContext();
++
 +      CGContextSetFillColorWithColor(context, fillColor.CGColor);
++      CGContextSetStrokeColorWithColor(context, fillColor.CGColor);
 +
-+      // 描画
++      CGContextSetLineWidth(context, 1.0); // Default stroke width is 1
++
++      NSString *outlineColorString = fillColorString;
++      if (paint[@"fill-outline-color"] &&
++          [paint[@"fill-outline-color"] isKindOfClass:[NSString class]]) {
++        outlineColorString = paint[@"fill-outline-color"];
++      }
++
++      UIColor *outlineColor = [UIColor colorWithHexString:outlineColorString];
++      CGContextSetStrokeColorWithColor(context, outlineColor.CGColor);
++
 +      CGContextAddPath(context, polygonData.path.CGPath);
++      CGContextSetAlpha(context, fillOpacity);
 +      CGContextDrawPath(context, kCGPathEOFillStroke);
++      CGContextSetAlpha(context, 1);
 +    }
-+
-+    // 描画設定 for symbol
 +  } else if ([type isEqualToString:@"symbol"]) {
 +    // 既に描画されたラベルの位置を保存する配列
 +    NSMutableArray<NSValue *> *drawnLabelsRects = [NSMutableArray array];
 +
-+    CGFloat labelSize = [styleLayer[@"layout"][@"text-size"] floatValue];
++    CGFloat labelSize =
++        [styleLayer[@"layout"][@"text-size"] floatValue] ?: 16.0;
 +    UIColor *labelHaloColor =
-+        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-halo-color"]];
++        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-halo-color"]]
++            ?: [UIColor whiteColor];
 +    CGFloat labelHaloWidth =
-+        [styleLayer[@"paint"][@"text-halo-width"] floatValue];
-+    UIColor *labelColor =
-+        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-color"]];
++        [styleLayer[@"paint"][@"text-halo-width"] floatValue] ?: 0.0;
 +    NSString *labelField = styleLayer[@"layout"][@"text-field"][1];
++
++    UIColor *labelColor =
++        [UIColor colorWithHexString:styleLayer[@"paint"][@"text-color"]]
++            ?: [UIColor blackColor];
 +
 +    for (FeatureData *feature in source.features) {
 +      NSDictionary *attributes = feature.attributes;
++
 +      float X = 0;
 +      float Y = 0;
 +
@@ -14730,12 +14912,17 @@ index 0000000..9a58e45
 +      }
 +
 +      NSString *label = attributes[labelField] ?: @"";
++
 +      CGSize labelSizeCalc = [label sizeWithAttributes:@{
 +        NSFontAttributeName : [UIFont systemFontOfSize:labelSize]
 +      }];
 +
-+      CGRect newLabelRect =
-+          CGRectMake(X, Y, labelSizeCalc.width, labelSizeCalc.height);
++      float textWidth = labelSizeCalc.width;
++      float textHeight = labelSizeCalc.height;
++      float textX = X - textWidth / 2;
++      float textY = Y - textHeight / 2;
++
++      CGRect newLabelRect = CGRectMake(textX, textY, textWidth, textHeight);
 +
 +      BOOL shouldDraw = YES;
 +      for (NSValue *rectValue in drawnLabelsRects) {
@@ -14746,28 +14933,25 @@ index 0000000..9a58e45
 +        }
 +      }
 +
-+      if (shouldDraw) {
-+        if (X + labelSizeCalc.width <= 512 && Y + labelSizeCalc.height <= 512 &&
-+            X - labelSizeCalc.width >= 0 && Y - labelSizeCalc.height >= 0) {
++      if (shouldDraw && textX >= 0 && textY >= 0 && textX + textWidth <= 512 &&
++          textY + textHeight <= 512) {
++        CGContextSetLineWidth(context, labelHaloWidth);
++        CGContextSetStrokeColorWithColor(context, labelHaloColor.CGColor);
++        CGContextSetTextDrawingMode(context, kCGTextStroke);
++        [label drawAtPoint:CGPointMake(X, Y)
++            withAttributes:@{
++              NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
++              NSForegroundColorAttributeName : labelHaloColor
++            }];
 +
-+          CGContextSetLineWidth(context, labelHaloWidth);
-+          CGContextSetStrokeColorWithColor(context, labelHaloColor.CGColor);
-+          CGContextSetTextDrawingMode(context, kCGTextStroke);
-+          [label drawAtPoint:CGPointMake(X, Y)
-+              withAttributes:@{
-+                NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
-+                NSForegroundColorAttributeName : labelHaloColor
-+              }];
++        CGContextSetTextDrawingMode(context, kCGTextFill);
++        [label drawAtPoint:CGPointMake(X, Y)
++            withAttributes:@{
++              NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
++              NSForegroundColorAttributeName : labelColor
++            }];
 +
-+          CGContextSetTextDrawingMode(context, kCGTextFill);
-+          [label drawAtPoint:CGPointMake(X, Y)
-+              withAttributes:@{
-+                NSFontAttributeName : [UIFont systemFontOfSize:labelSize],
-+                NSForegroundColorAttributeName : labelColor
-+              }];
-+
-+          [drawnLabelsRects addObject:[NSValue valueWithCGRect:newLabelRect]];
-+        }
++        [drawnLabelsRects addObject:[NSValue valueWithCGRect:newLabelRect]];
 +      }
 +    }
 +  } else {
@@ -14857,8 +15041,7 @@ index 0000000..9a58e45
 +  NSArray *styleLayers = [self.styleManager getStyleLayers];
 +
 +  for (NSDictionary *styleLayer in [self.styleManager getStyleLayers]) {
-+    NSString *sourceLayer = styleLayer
-+        [@"source-layer"]; // JSONで"source-layer"となっているので、これを指定
++    NSString *sourceLayer = styleLayer[@"source-layer"];
 +    // NSLog(@"sourceLayer %@", sourceLayer);
 +    VectorSource *source = [self getVectorSource:sourceLayer
 +                                     fromSources:sources];
@@ -14868,7 +15051,11 @@ index 0000000..9a58e45
 +    NSNumber *minzoom = styleLayer[@"minzoom"];
 +    NSNumber *maxzoom = styleLayer[@"maxzoom"];
 +
-+    if ([minzoom doubleValue] > zoom || [maxzoom doubleValue] < zoom)
++    // nilの場合のデフォルト値をセット
++    double actualMinzoom = (minzoom != nil) ? [minzoom doubleValue] : 0;
++    double actualMaxzoom = (maxzoom != nil) ? [maxzoom doubleValue] : 22;
++
++    if (actualMinzoom > zoom || actualMaxzoom < zoom)
 +      continue;
 +
 +    [self applyStyleToContext:context
@@ -15018,16 +15205,17 @@ index 0000000..9a58e45
 +
 +  if (fileAttributes) {
 +    NSDate *modificationDate = fileAttributes[NSFileModificationDate];
-+    if (_lastUpdatedTime > 0) {
-+      // NSLog(@"tileCacheFilePath %@", [tileCacheFilePath path]);
-+      //  NSLog(@"%ld   %ld", _lastUpdatedTime,
-+      //        (long long)[modificationDate timeIntervalSince1970]);
-+      if (_lastUpdatedTime >
-+          (long long)[modificationDate timeIntervalSince1970]) {
-+        // NSLog(@"!#!# style updated");
-+        return YES;
-+      }
++
++    // NSLog(@"tileCacheFilePath %@", [tileCacheFilePath path]);
++    //  NSLog(@"%ld   %ld", _lastUpdatedTime,
++    //        (long long)[modificationDate timeIntervalSince1970]);
++    if (_lastUpdatedTime >
++            (long long)[modificationDate timeIntervalSince1970] ||
++        _lastUpdatedTime == 0) {
++      // NSLog(@"!#!# style updated");
++      return YES;
 +    }
++
 +    if (modificationDate) {
 +      if (-1 * (int)modificationDate.timeIntervalSinceNow > tileCacheMaxAge) {
 +        // NSLog(@"!#!# cache expired");
@@ -16911,10 +17099,10 @@ index 0000000..d1895ec
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..d09b895
+index 0000000..bb148ea
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,215 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -16953,6 +17141,7 @@ index 0000000..d09b895
 +                                                   trimmedTileCachePath]];
 +      _tileCachePath = [NSURL URLWithString:trimmedTileCachePath];
 +    }
++    _lastUpdatedTime = 0;
 +    // NSLog(@"!!_urlTemplate: %@", _urlTemplate);
 +    // NSLog(@"!!_localPath: %@", _localPath);
 +    // NSLog(@"!!_tileCachePath: %@", _tileCachePath);
@@ -17069,7 +17258,7 @@ index 0000000..d09b895
 +    _lastUpdatedTime =
 +        (long long)([fileModificationDate timeIntervalSince1970]);
 +  } else {
-+    NSLog(@"ファイル書き込み: %@", [styleCacheFilePath path]);
++    // NSLog(@"ファイル書き込み: %@", [styleCacheFilePath path]);
 +    [styleData writeToFile:[styleCacheFilePath path]
 +                atomically:YES
 +                  encoding:NSUTF8StringEncoding
