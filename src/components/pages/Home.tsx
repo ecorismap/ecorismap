@@ -348,16 +348,20 @@ export default function HomeScreen() {
               tileMap.visible && tileMap.url ? (
                 tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
                   <PMTile
-                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                    key={
+                      Platform.OS === 'ios'
+                        ? `${tileMap.id}-${isOffline}-${tileMap.styleURL}`
+                        : `${tileMap.id}-${tileMap.styleURL}`
+                    } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
                     urlTemplate={tileMap.url.replace('pmtiles://', '')}
                     styleURL={tileMap.styleURL}
-                    flipY={tileMap.flipY}
+                    flipY={false}
                     opacity={1 - tileMap.transparency}
                     //tileSize={256} rasterは256、vectorは512で固定
                     minimumZ={0}
                     maximumZ={22}
                     zIndex={mapIndex}
-                    doubleTileSize={tileMap.highResolutionEnabled}
+                    doubleTileSize={false}
                     maximumNativeZ={tileMap.overzoomThreshold}
                     tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
                     tileCacheMaxAge={604800}
