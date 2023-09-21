@@ -99,8 +99,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
-index 0000000..e77c1b0
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/expo-location/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
 index 0000000..2672e11
@@ -2242,84 +2241,64 @@ index 0000000..2b167b9
 \ No newline at end of file
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class
 new file mode 100644
-index 0000000..aee9bb6
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationActivityResultListener.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class
 new file mode 100644
-index 0000000..0d3fc7b
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class
 new file mode 100644
-index 0000000..a0ac817
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class
 new file mode 100644
-index 0000000..fc0d1c6
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationHelpers.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class
 new file mode 100644
-index 0000000..ce578fb
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class
 new file mode 100644
-index 0000000..4b1644b
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule$OnResultListener.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class
 new file mode 100644
-index 0000000..0b90296
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationModule.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class
 new file mode 100644
-index 0000000..682f8cd
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationPackage.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class
 new file mode 100644
-index 0000000..e15aa78
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/LocationRequestCallbacks.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class
 new file mode 100644
-index 0000000..dbc4dfd
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationBackgroundUnauthorizedException.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class
 new file mode 100644
-index 0000000..7db6f58
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationRequestRejectedException.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class
 new file mode 100644
-index 0000000..ca26b59
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationSettingsUnsatisfiedException.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class
 new file mode 100644
-index 0000000..fceb3d7
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnauthorizedException.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class
 new file mode 100644
-index 0000000..282ff3a
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/exceptions/LocationUnavailableException.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class
 new file mode 100644
-index 0000000..67e1d94
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class
 new file mode 100644
-index 0000000..b33a405
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/GeofencingTaskConsumer.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class
 new file mode 100644
-index 0000000..bea9700
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class
 new file mode 100644
-index 0000000..f1f748f
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$2.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class
 new file mode 100644
-index 0000000..8be8a2d
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer$3.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class
 new file mode 100644
-index 0000000..f42a706
-Binary files /dev/null and b/node_modules/expo-location/android/build/intermediates/javac/debug/classes/expo/modules/location/taskConsumers/LocationTaskConsumer.class differ
+index 0000000..e69de29
 diff --git a/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/expo-location/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
 new file mode 100644
 index 0000000..78ac5b8
