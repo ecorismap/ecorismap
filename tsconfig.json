@@ -4,7 +4,5 @@
     "module": "esnext",
     "strict": true
   },
-  "exclude": [
-    "cypress"
-  ]
+  "exclude": ["cypress"]
 }
