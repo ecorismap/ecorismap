@@ -4,7 +4,7 @@
   "extends": [
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:react/recommended",
-    "@react-native-community",
+    "@react-native",
     "plugin:react-native/all",
     // "plugin:jest/recommended",
     "plugin:cypress/recommended",
