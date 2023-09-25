@@ -39,6 +39,7 @@ import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { AnyLayer } from 'react-map-gl/dist/esm/types';
 import { HomePopup } from '../organisms/HomePopup';
+import { isMapMemoDrawTool } from '../../utils/General';
 
 export default function HomeScreen() {
   const {
@@ -75,8 +76,9 @@ export default function HomeScreen() {
     setVisibleMapMemoColor,
     selectPenColor,
     panResponder,
-    isPinch,
     isDrawLineVisible,
+    mapMemoEditingLine,
+    isPinch,
     onPressMapView,
   } = useContext(HomeContext);
   //console.log('render Home');
@@ -502,6 +504,7 @@ export default function HomeScreen() {
               //onMouseMove={onMouseMove}
               dragPan={
                 isPinch ||
+                (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
                 (currentMapMemoTool === 'NONE' &&
                   (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
               }

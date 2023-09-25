@@ -28,7 +28,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { nearDegree } from '../../utils/General';
+import { isMapMemoDrawTool, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
@@ -238,6 +238,7 @@ export default function HomeScreen() {
           zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
           scrollEnabled={
             isPinch ||
+            (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
             (currentMapMemoTool === 'NONE' &&
               (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
           }

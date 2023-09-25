@@ -19,7 +19,16 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
-import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool } from '../utils/General';
+import {
+  getExt,
+  isEraserTool,
+  isInfoTool,
+  isLineTool,
+  isMapMemoDrawTool,
+  isPenTool,
+  isPointTool,
+  isPolygonTool,
+} from '../utils/General';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
@@ -193,6 +202,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       let latlon: number[];
       let properties: { [key: string]: any }[];
       let position: Position;
+      if (isMapMemoDrawTool(currentMapMemoTool)) return;
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
         const map = (mapViewRef.current as MapRef).getMap();
@@ -757,9 +767,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
+          //@ts-ignore
+          const isPencilTouch = !!e.nativeEvent.altitudeAngle;
+          const USE_PENCIL = true;
           if (currentDrawTool === 'MOVE') {
           } else if (isPinch) {
-          } else if (gesture.numberActiveTouches === 2) {
+          } else if (
+            gesture.numberActiveTouches === 2 ||
+            (USE_PENCIL && isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch)
+          ) {
             clearMapMemoEditingLine();
             hideDrawLine();
             setIsPinch(true);
@@ -886,7 +902,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoMapMemo,
         pressRedoMapMemo,
         panResponder,
-        isPinch,
         isDrawLineVisible,
         closeVectorTileInfo,
       }}
