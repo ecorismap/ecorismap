@@ -42,6 +42,7 @@
     "@date-io/date-fns": "^2.13.1",
     "@emotion/react": "^11.8.2",
     "@emotion/styled": "^11.8.1",
+    "@gorhom/bottom-sheet": "^4",
     "@mapbox/vector-tile": "^1.3.1",
     "@mui/lab": "^5.0.0-alpha.73",
     "@mui/material": "^5.5.1",
