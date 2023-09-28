@@ -99,7 +99,7 @@ export default function HomeScreen() {
       isLandscape
         ? {
             height: windowHeight - navigationHeaderHeight,
-            width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : '0%',
+            width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : 0,
           }
         : {
             width: windowWidth - navigationHeaderHeight,
@@ -108,7 +108,7 @@ export default function HomeScreen() {
                 ? windowHeight - navigationHeaderHeight
                 : screenState === 'opened'
                 ? windowHeight / 2
-                : '0%',
+                : 0,
           },
     [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
   );
@@ -118,13 +118,13 @@ export default function HomeScreen() {
       isLandscape
         ? {
             height: windowHeight - navigationHeaderHeight,
-            width: screenState === 'expanded' ? '0%' : screenState === 'opened' ? windowWidth / 2 : windowWidth,
+            width: screenState === 'expanded' ? 0 : screenState === 'opened' ? windowWidth / 2 : windowWidth,
           }
         : {
             width: windowWidth,
             height:
               screenState === 'expanded'
-                ? '0%'
+                ? 0
                 : screenState === 'opened'
                 ? windowHeight / 2
                 : windowHeight - navigationHeaderHeight,

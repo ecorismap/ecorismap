@@ -76,16 +76,16 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
       const file = await DocumentPicker.getDocumentAsync({});
-      if (file.type === 'cancel') {
+      if (file.assets === null) {
         return;
       }
-      const ext = getExt(file.name);
+      const ext = getExt(file.assets[0].name);
       if (!(ext?.toLowerCase() === 'ecorismap' || ext?.toLowerCase() === 'zip')) {
         await AlertAsync(t('hooks.message.wrongExtension'));
         return;
       }
 
-      const { isOK, message } = await openEcorisMapFile(file.uri);
+      const { isOK, message } = await openEcorisMapFile(file.assets[0].uri);
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {

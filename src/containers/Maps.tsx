@@ -87,13 +87,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressImportMaps = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
-    if (file.type === 'cancel') return;
-    const ext = getExt(file.name)?.toLowerCase();
+    if (file.assets === null) return;
+    const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (!(ext === 'json')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const { message } = await importMapFile(file.uri);
+    const { message } = await importMapFile(file.assets[0].uri);
     if (message !== '') await AlertAsync(message);
   }, [importMapFile]);
 
