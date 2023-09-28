@@ -102,7 +102,8 @@ export async function getReceivedFiles() {
     const files = await FileSystem.readDirectoryAsync(dirPath);
     const filesPromise = files.map(async (name) => {
       const uri = dirPath + encodeURI(name);
-      const size = (await FileSystem.getInfoAsync(uri)).size;
+      const info = await FileSystem.getInfoAsync(uri);
+      const size = info.exists ? info.size : -1;
       return { name, uri, size };
     });
     return await Promise.all(filesPromise);

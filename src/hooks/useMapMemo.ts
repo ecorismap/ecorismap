@@ -5,13 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  latLonObjectsToLatLonArray,
-  simplify,
-  smoothingByBezier,
-  xyArrayToLatLonArray,
-  xyArrayToLatLonObjects,
-} from '../utils/Coords';
+import { latLonObjectsToLatLonArray, xyArrayToLatLonArray, xyArrayToLatLonObjects } from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { GestureResponderEvent } from 'react-native';

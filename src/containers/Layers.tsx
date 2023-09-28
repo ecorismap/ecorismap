@@ -40,8 +40,8 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       return;
     }
     const file = await DocumentPicker.getDocumentAsync({});
-    if (file.type === 'cancel') return;
-    const ext = getExt(file.name)?.toLowerCase();
+    if (file.assets === null) return;
+    const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (
       !(
         ext === 'gpx' ||
@@ -56,15 +56,15 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    if (file.size === undefined) {
+    if (file.assets[0].size === undefined) {
       await AlertAsync(t('hooks.message.cannotGetFileSize'));
       return;
     }
-    if (file.size / 1024 > 100000) {
+    if (file.assets[0].size / 1024 > 100000) {
       await AlertAsync(t('hooks.message.cannotImportData'));
       return;
     }
-    const { message } = await importGeoFile(file.uri, file.name);
+    const { message } = await importGeoFile(file.assets[0].uri, file.assets[0].name);
     if (message !== '') await AlertAsync(message);
   }, [importGeoFile, isRunningProject, runTutrial]);
 
