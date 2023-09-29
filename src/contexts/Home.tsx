@@ -1,4 +1,4 @@
-import React, { createContext } from 'react';
+import React, { RefObject, createContext } from 'react';
 import { PanResponderInstance } from 'react-native';
 import MapView, { MapPressEvent, MarkerDragStartEndEvent, Region } from 'react-native-maps';
 import {
@@ -27,6 +27,7 @@ import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
 import { Position } from '@turf/turf';
 import * as Location from 'expo-location';
+import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 
 export interface HomeContextType {
   pointDataSet: PointDataType[];
@@ -69,7 +70,6 @@ export interface HomeContextType {
         record: RecordType;
       }
     | undefined;
-  screenState: 'opened' | 'closed' | 'expanded';
   isLoading: boolean;
   isTermsOfUseOpen: boolean;
   currentMapMemoTool: MapMemoToolType;
@@ -124,6 +124,8 @@ export interface HomeContextType {
   isPinch: boolean;
   isDrawLineVisible: boolean;
   closeVectorTileInfo: () => void;
+  bottomSheetRef: RefObject<BottomSheetMethods>;
+  onCloseBottomSheet: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

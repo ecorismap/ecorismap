@@ -1,11 +1,12 @@
 import React, { useCallback, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { TileMapItemType } from '../../types';
 import { t } from '../../i18n/config';
 import { MapListContext } from '../../contexts/MapList';
+import { FlatList } from 'react-native-gesture-handler';
 
 export const MapListTable = React.memo(() => {
   const { data, addMap } = useContext(MapListContext);

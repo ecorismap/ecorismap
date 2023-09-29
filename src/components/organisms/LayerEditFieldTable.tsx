@@ -1,11 +1,12 @@
 import React, { useMemo, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 
 import { COLOR, DATAFORMAT } from '../../constants/AppConstants';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
 import { FormatType } from '../../types';
 import { Button, Picker, RectButton2 } from '../atoms';
+import { FlatList } from 'react-native-gesture-handler';
 
 export const LayerEditFieldTitle = () => {
   const { pressAddField } = useContext(LayerEditContext);

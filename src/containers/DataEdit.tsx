@@ -6,7 +6,6 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
 import { Props_DataEdit } from '../routes';
 import { Alert } from '../components/atoms/Alert';
-import { useScreen } from '../hooks/useScreen';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
@@ -21,7 +20,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   //console.log(route.params.targetData);
   const [isPhotoViewOpen, setPhotoEditorOpen] = useState(false);
 
-  const { screenState, closeData } = useScreen();
   const {
     targetRecord,
     targetLayer,
@@ -51,7 +49,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   );
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
-  const { unselectRecord, checkRecordEditable } = useRecord();
+  const { checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
@@ -96,9 +94,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (isEditingRecord) saveData();
       deleteRecord();
 
-      if (route.params.previous === 'Home') {
-        closeData();
-      } else if (route.params.previous === 'Data') {
+      if (route.params.previous === 'Data') {
         navigation.navigate('Data', {
           targetLayer: { ...targetLayer },
         });
@@ -118,7 +114,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [
     checkRecordEditable,
-    closeData,
     deleteRecord,
     isEditingRecord,
     navigation,
@@ -210,22 +205,17 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       }
     }
-    if (screenState === 'expanded') closeData();
 
-    setTimeout(
-      () =>
-        navigation.navigate('Home', {
-          jumpTo: {
-            latitude: coord.latitude,
-            longitude: coord.longitude,
-            latitudeDelta: 0.001, //デタラメな値だが,changeMapRegionで計算しなおす。svgの変換で正しい値が必要
-            longitudeDelta: 0.001,
-            zoom: 15,
-          },
-        }),
-      500
-    );
-  }, [closeData, screenState, navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
+    navigation.navigate('Home', {
+      jumpTo: {
+        latitude: coord.latitude,
+        longitude: coord.longitude,
+        latitudeDelta: 0.001, //デタラメな値だが,changeMapRegionで計算しなおす。svgの変換で正しい値が必要
+        longitudeDelta: 0.001,
+        zoom: 15,
+      },
+    });
+  }, [navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;
@@ -284,8 +274,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           targetRecordSet: [],
           targetIndex: 0,
         });
-      } else {
-        closeData();
       }
     };
     if (isEditingRecord) {
@@ -299,7 +287,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [
     cancelUpdate,
-    closeData,
     isEditingRecord,
     navigation,
     route.params.mainData,
@@ -354,19 +341,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     [isEditingRecord, navigation, targetLayer, targetRecord]
   );
 
-  const onClose = useCallback(async () => {
-    if (isEditingRecord) {
-      const ret = await ConfirmAsync(t('DataEdit.confirm.close'));
-      if (ret) {
-        cancelUpdate();
-        closeData();
-      }
-    } else {
-      closeData();
-    }
-    unselectRecord();
-  }, [cancelUpdate, closeData, isEditingRecord, unselectRecord]);
-
   return (
     <DataEditContext.Provider
       value={{
@@ -397,7 +371,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         gotoGoogleMaps,
         gotoBack,
         gotoReferenceData,
-        onClose,
       }}
     >
       <DataEdit />

@@ -5,7 +5,9 @@ import { HomeContext } from '../../contexts/Home';
 import { View } from 'react-native';
 
 export const MapMemoView = React.memo(() => {
-  const { penColor, penWidth, mapMemoEditingLine, currentMapMemoTool } = useContext(HomeContext);
+  const { penColor, penWidth, mapMemoEditingLine, currentMapMemoTool, zoom: currentZoom } = useContext(HomeContext);
+  //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
+
   return (
     <View
       style={{
@@ -24,8 +26,8 @@ export const MapMemoView = React.memo(() => {
           stroke={currentMapMemoTool === 'ERASER' ? 'white' : penColor}
           strokeWidth={currentMapMemoTool === 'ERASER' ? 10 : penWidth}
           strokeDasharray={'none'}
-          strokeLinecap="round"
-          strokeLinejoin="round"
+          // strokeLinecap="round"
+          // strokeLinejoin="round"
           fill={'none'}
         />
       </Svg>

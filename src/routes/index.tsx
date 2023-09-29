@@ -4,10 +4,8 @@ import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navig
 
 import { ColorStyle, LayerType, RecordType, RegionType, TileMapType } from '../types';
 import Home from '../containers/Home';
-import Settings from '../containers/Settings';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
-import Licenses from '../containers/Licenses';
 
 export type RootStackParamList = {
   Home:
@@ -85,8 +83,6 @@ export default function Routes() {
         }}
       >
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-        <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
-        <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
         <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
       </Stack.Navigator>
     </NavigationContainer>

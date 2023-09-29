@@ -79,13 +79,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 35,
-    zIndex: 100,
+    // zIndex: 0,
   },
   buttonContainerLandscape: {
     alignItems: 'flex-end',
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 20,
-    zIndex: 100,
+    // zIndex: 0,
   },
 });

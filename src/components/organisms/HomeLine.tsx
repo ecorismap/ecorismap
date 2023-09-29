@@ -86,6 +86,8 @@ const PolylineComponent = React.memo((props: any) => {
         coordinates={feature.coords as LatLng[]}
         strokeColor={lineColor}
         strokeWidth={strokeWidth}
+        // lineCap="round"
+        // lineJoin="round"
         zIndex={zIndex}
         onPress={() => onPressLine(layer, feature)}
       />
