@@ -76,9 +76,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
       const file = await DocumentPicker.getDocumentAsync({});
-      if (file.assets === null) {
-        return;
-      }
+      if (file.assets === null) return;
+
       const ext = getExt(file.assets[0].name);
       if (!(ext?.toLowerCase() === 'ecorismap' || ext?.toLowerCase() === 'zip')) {
         await AlertAsync(t('hooks.message.wrongExtension'));

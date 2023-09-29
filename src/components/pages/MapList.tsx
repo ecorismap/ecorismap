@@ -1,12 +1,13 @@
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { MapListButtons } from '../organisms/MapListButtons';
 import { MapListTable } from '../organisms/MapListTable';
 import { t } from '../../i18n/config';
 import { MapListContext } from '../../contexts/MapList';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function MapListScreen() {
   //console.log('render Maps');

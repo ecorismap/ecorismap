@@ -7,7 +7,6 @@ describe('modules/settings', () => {
     tutrials: TUTRIALS,
     isSettingProject: false,
     isSynced: false,
-    screenState: 'closed',
     isEditingRecord: false,
     isOffline: false,
     updatedAt: new Date('2000/1/1'),

@@ -28,7 +28,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { nearDegree } from '../../utils/General';
+import { isMapMemoDrawTool, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
@@ -36,6 +36,9 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BottomSheet from '@gorhom/bottom-sheet';
+import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
 
 export default function HomeScreen() {
   const {
@@ -64,7 +67,6 @@ export default function HomeScreen() {
     featureButton,
     currentDrawTool,
     selectedRecord,
-    screenState,
     isLoading,
     currentMapMemoTool,
     visibleMapMemoColor,
@@ -86,6 +88,8 @@ export default function HomeScreen() {
     isPinch,
     isDrawLineVisible,
     mapMemoEditingLine,
+    bottomSheetRef,
+    onCloseBottomSheet,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -94,51 +98,12 @@ export default function HomeScreen() {
 
   const navigationHeaderHeight = isDownloadPage ? 56 : 0;
 
-  const dataStyle = useMemo(
-    () =>
-      isLandscape
-        ? {
-            height: windowHeight - navigationHeaderHeight,
-            width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : 0,
-          }
-        : {
-            width: windowWidth - navigationHeaderHeight,
-            height:
-              screenState === 'expanded'
-                ? windowHeight - navigationHeaderHeight
-                : screenState === 'opened'
-                ? windowHeight / 2
-                : 0,
-          },
-    [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
-  );
-
-  const mapStyle = useMemo(
-    () =>
-      isLandscape
-        ? {
-            height: windowHeight - navigationHeaderHeight,
-            width: screenState === 'expanded' ? 0 : screenState === 'opened' ? windowWidth / 2 : windowWidth,
-          }
-        : {
-            width: windowWidth,
-            height:
-              screenState === 'expanded'
-                ? 0
-                : screenState === 'opened'
-                ? windowHeight / 2
-                : windowHeight - navigationHeaderHeight,
-          },
-    [screenState, isLandscape, navigationHeaderHeight, windowHeight, windowWidth]
-  );
-
   const styles = StyleSheet.create({
     container: {
       alignItems: 'center',
       flex: 1,
       justifyContent: 'center',
     },
-
     headerRight: {
       alignItems: 'center',
       flexDirection: 'row',
@@ -182,6 +147,18 @@ export default function HomeScreen() {
     [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize, styles.headerRight]
   );
 
+  const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
+  const animatedIndex = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      height: interpolate(
+        animatedIndex.value,
+        [0, 1, 2],
+        [(windowHeight - 20) / 10, (windowHeight - 20) / 2, windowHeight - 20]
+      ),
+    };
+  });
+
   useEffect(() => {
     //console.log('#useeffect3');
     if (isDownloadPage) {
@@ -198,134 +175,130 @@ export default function HomeScreen() {
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
   return !restored ? null : (
-    <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
-      {/* <VectorTiles2 url="https://www.ecoris.co.jp/map/kitakami_h30.pmtiles" zoom={zoom} /> */}
-
-      <View style={dataStyle}>
-        <SplitScreen />
-      </View>
-      <View
-        style={[
-          {
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
+        <View
+          style={{
             justifyContent: 'flex-end',
             zIndex: 0,
             elevation: 0,
-          },
-          mapStyle,
-        ]}
-      >
-        <Loading visible={isLoading} text="" />
-        <ModalColorPicker
-          modalVisible={visibleMapMemoColor}
-          withAlpha={true}
-          pressSelectColorOK={selectPenColor}
-          pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
-        />
-        <MapMemoView />
-        <HomePopup />
-        {isDrawLineVisible && <SvgView />}
-        <MapView
-          ref={mapViewRef as React.MutableRefObject<MapView>}
-          provider={PROVIDER_GOOGLE}
-          style={styles.map}
-          initialRegion={mapRegion}
-          onRegionChangeComplete={onRegionChangeMapView}
-          showsUserLocation={false}
-          showsMyLocationButton={false}
-          showsCompass={false}
-          rotateEnabled={false} //表示スピードに関係ある？
-          pitchEnabled={false}
-          zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
-          scrollEnabled={
-            isPinch ||
-            (currentMapMemoTool === 'NONE' &&
-              (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
-          }
-          moveOnMarkerPress={false}
-          //@ts-ignore
-          mapType={mapType}
-          onPress={onPressMapView}
-          onPanDrag={onDragMapView}
-          //@ts-ignore
-          options={
-            Platform.OS === 'web' && {
-              zoomControlOptions: {
-                //@ts-ignore
-                position: window.google.maps.ControlPosition.LEFT_TOP,
-              },
-              mapTypeControl: true,
-              streetViewControl: false,
-              fullscreenControl: false,
-            }
-          }
-          {...panResponder.panHandlers}
+            height: windowHeight - navigationHeaderHeight,
+            width: windowWidth,
+          }}
         >
-          {/************** Current Marker ****************** */}
-          {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-            <CurrentMarker
-              currentLocation={currentLocation}
-              angle={magnetometer && !headingUp ? nearDegree(magnetometer.trueHeading, DEGREE_INTERVAL) : 0}
-            />
-          )}
+          <Loading visible={isLoading} text="" />
+          <ModalColorPicker
+            modalVisible={visibleMapMemoColor}
+            withAlpha={true}
+            pressSelectColorOK={selectPenColor}
+            pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
+          />
+          <MapMemoView />
+          <HomePopup />
+          {isDrawLineVisible && <SvgView />}
+          <MapView
+            ref={mapViewRef as React.MutableRefObject<MapView>}
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={mapRegion}
+            onRegionChangeComplete={onRegionChangeMapView}
+            showsUserLocation={false}
+            showsMyLocationButton={false}
+            showsCompass={false}
+            rotateEnabled={false} //表示スピードに関係ある？
+            pitchEnabled={false}
+            zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
+            scrollEnabled={
+              isPinch ||
+              (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
+              (currentMapMemoTool === 'NONE' &&
+                (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
+            }
+            moveOnMarkerPress={false}
+            //@ts-ignore
+            mapType={mapType}
+            onPress={onPressMapView}
+            onPanDrag={onDragMapView}
+            //@ts-ignore
+            options={
+              Platform.OS === 'web' && {
+                zoomControlOptions: {
+                  //@ts-ignore
+                  position: window.google.maps.ControlPosition.LEFT_TOP,
+                },
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: false,
+              }
+            }
+            {...panResponder.panHandlers}
+          >
+            {/************** Current Marker ****************** */}
+            {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
+              <CurrentMarker
+                currentLocation={currentLocation}
+                angle={magnetometer && !headingUp ? nearDegree(magnetometer.trueHeading, DEGREE_INTERVAL) : 0}
+              />
+            )}
 
-          {/* 表示を正しく更新するには順番とzIndexが重要 */}
+            {/* 表示を正しく更新するには順番とzIndexが重要 */}
 
-          {/************** Point Line Polygon ****************** */}
+            {/************** Point Line Polygon ****************** */}
 
-          {pointDataSet.map((d) => {
-            const layer = layers.find((v) => v.id === d.layerId);
-            return (
-              layer?.visible && (
-                <Point
-                  key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
-                  layer={layer!}
-                  zoom={zoom}
-                  selectedRecord={selectedRecord}
-                  draggable={currentDrawTool === 'MOVE_POINT'}
-                  onDragEndPoint={onDragEndPoint}
-                />
-              )
-            );
-          })}
-          {lineDataSet.map((d) => {
-            const layer = layers.find((v) => v.id === d.layerId);
-            return (
-              layer?.visible && (
-                <Line
-                  key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
-                  layer={layer!}
-                  zoom={zoom}
-                  onPressLine={() => null}
-                  zIndex={101}
-                  selectedRecord={selectedRecord}
-                />
-              )
-            );
-          })}
+            {pointDataSet.map((d) => {
+              const layer = layers.find((v) => v.id === d.layerId);
+              return (
+                layer?.visible && (
+                  <Point
+                    key={`${d.layerId}-${d.userId}`}
+                    data={d.data}
+                    layer={layer!}
+                    zoom={zoom}
+                    selectedRecord={selectedRecord}
+                    draggable={currentDrawTool === 'MOVE_POINT'}
+                    onDragEndPoint={onDragEndPoint}
+                  />
+                )
+              );
+            })}
+            {lineDataSet.map((d) => {
+              const layer = layers.find((v) => v.id === d.layerId);
+              return (
+                layer?.visible && (
+                  <Line
+                    key={`${d.layerId}-${d.userId}`}
+                    data={d.data}
+                    layer={layer!}
+                    zoom={zoom}
+                    onPressLine={() => null}
+                    zIndex={101}
+                    selectedRecord={selectedRecord}
+                  />
+                )
+              );
+            })}
 
-          {polygonDataSet.map((d) => {
-            const layer = layers.find((v) => v.id === d.layerId);
-            return (
-              layer?.visible && (
-                <Polygon
-                  key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
-                  layer={layer!}
-                  zoom={zoom}
-                  onPressPolygon={() => null}
-                  zIndex={100}
-                  selectedRecord={selectedRecord}
-                />
-              )
-            );
-          })}
+            {polygonDataSet.map((d) => {
+              const layer = layers.find((v) => v.id === d.layerId);
+              return (
+                layer?.visible && (
+                  <Polygon
+                    key={`${d.layerId}-${d.userId}`}
+                    data={d.data}
+                    layer={layer!}
+                    zoom={zoom}
+                    onPressPolygon={() => null}
+                    zIndex={100}
+                    selectedRecord={selectedRecord}
+                  />
+                )
+              );
+            })}
 
-          {/************ Vector Tile *****************/}
-          {/* <VectorTiles url="https://www.ecoris.co.jp/map/kitakami_vt" zoom={zoom} /> */}
+            {/************ Vector Tile *****************/}
+            {/* <VectorTiles url="https://www.ecoris.co.jp/map/kitakami_vt" zoom={zoom} /> */}
 
-          {/* <UrlTile
+            {/* <UrlTile
             urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
             flipY={false}
             opacity={1}
@@ -339,85 +312,97 @@ export default function HomeScreen() {
             tileCacheMaxAge={0}
             offlineMode={true}
           /> */}
-          {/************* TILE MAP ******************** */}
+            {/************* TILE MAP ******************** */}
 
-          {tileMaps
-            .slice(0)
-            .reverse()
-            .map((tileMap: TileMapType, mapIndex: number) =>
-              tileMap.visible && tileMap.url ? (
-                tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
-                  <PMTile
-                    key={
-                      Platform.OS === 'ios'
-                        ? `${tileMap.id}-${isOffline}-${tileMap.styleURL}`
-                        : `${tileMap.id}-${tileMap.styleURL}`
-                    } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                    urlTemplate={tileMap.url.replace('pmtiles://', '')}
-                    styleURL={tileMap.styleURL}
-                    flipY={false}
-                    opacity={1 - tileMap.transparency}
-                    //tileSize={256} rasterは256、vectorは512で固定
-                    minimumZ={0}
-                    maximumZ={22}
-                    zIndex={mapIndex}
-                    doubleTileSize={false}
-                    maximumNativeZ={tileMap.overzoomThreshold}
-                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={604800}
-                    offlineMode={isOffline}
-                  />
-                ) : (
-                  <UrlTile
-                    key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                    urlTemplate={tileMap.url}
-                    flipY={tileMap.flipY}
-                    opacity={1 - tileMap.transparency}
-                    tileSize={256}
-                    minimumZ={0}
-                    maximumZ={22}
-                    zIndex={mapIndex}
-                    doubleTileSize={tileMap.highResolutionEnabled}
-                    maximumNativeZ={tileMap.overzoomThreshold}
-                    tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                    tileCacheMaxAge={604800}
-                    offlineMode={isOffline}
-                  />
-                )
-              ) : null
+            {tileMaps
+              .slice(0)
+              .reverse()
+              .map((tileMap: TileMapType, mapIndex: number) =>
+                tileMap.visible && tileMap.url ? (
+                  tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
+                    <PMTile
+                      key={
+                        Platform.OS === 'ios'
+                          ? `${tileMap.id}-${isOffline}-${tileMap.styleURL}`
+                          : `${tileMap.id}-${tileMap.styleURL}`
+                      } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                      urlTemplate={tileMap.url.replace('pmtiles://', '')}
+                      styleURL={tileMap.styleURL}
+                      flipY={false}
+                      opacity={1 - tileMap.transparency}
+                      //tileSize={256} rasterは256、vectorは512で固定
+                      minimumZ={0}
+                      maximumZ={22}
+                      zIndex={mapIndex}
+                      doubleTileSize={false}
+                      maximumNativeZ={tileMap.overzoomThreshold}
+                      tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                      tileCacheMaxAge={604800}
+                      offlineMode={isOffline}
+                    />
+                  ) : (
+                    <UrlTile
+                      key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                      urlTemplate={tileMap.url}
+                      flipY={tileMap.flipY}
+                      opacity={1 - tileMap.transparency}
+                      tileSize={256}
+                      minimumZ={0}
+                      maximumZ={22}
+                      zIndex={mapIndex}
+                      doubleTileSize={tileMap.highResolutionEnabled}
+                      maximumNativeZ={tileMap.overzoomThreshold}
+                      tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                      tileCacheMaxAge={604800}
+                      offlineMode={isOffline}
+                    />
+                  )
+                ) : null
+              )}
+            {/************* download mode ******************** */}
+            {isDownloadPage && (
+              <DownloadArea
+                zoom={zoom}
+                downloading={isDownloading}
+                downloadArea={downloadArea}
+                savedArea={savedArea}
+                onPress={pressDownloadTiles}
+              />
             )}
-          {/************* download mode ******************** */}
-          {isDownloadPage && (
-            <DownloadArea
-              zoom={zoom}
-              downloading={isDownloading}
-              downloadArea={downloadArea}
-              savedArea={savedArea}
-              onPress={pressDownloadTiles}
-            />
+          </MapView>
+          {mapRegion && (
+            <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
+              <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
+            </View>
           )}
-        </MapView>
-        {mapRegion && screenState !== 'expanded' && (
-          <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
-            <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
-          </View>
-        )}
 
-        <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+          <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
-        <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
+          <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
 
-        <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
+          <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
-        {screenState !== 'expanded' && <HomeAttributionText bottom={8} attribution={attribution} />}
-        {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
-          <HomeDrawTools />
-        )}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
-        {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
-        {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {<HomeAttributionText bottom={8} attribution={attribution} />}
+          {!isDownloadPage && <HomeCommonTools />}
+          {!isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
+          {!isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!isDownloadPage && <HomeButtons />}
+          {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+        </View>
       </View>
-    </View>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        animatedIndex={animatedIndex}
+        onClose={onCloseBottomSheet}
+        style={{ width: isLandscape ? '50%' : '100%' }}
+      >
+        <Animated.View style={animatedStyle}>
+          <SplitScreen />
+        </Animated.View>
+      </BottomSheet>
+    </GestureHandlerRootView>
   );
 }
