@@ -67,7 +67,6 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       tutrials: { ...settings.tutrials, TERMS_OF_USE: false },
       isSettingProject: false,
       isSynced: false,
-      screenState: 'closed',
       isEditingRecord: false,
       role: undefined,
       tileRegions: [],

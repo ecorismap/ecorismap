@@ -91,6 +91,7 @@ export type UseRecordReturnType = {
     message: string;
   };
   calculateStorageSize: () => Promise<number>;
+  setIsEditingRecord: (value: boolean) => void;
 };
 
 export const useRecord = (): UseRecordReturnType => {
@@ -321,6 +322,13 @@ export const useRecord = (): UseRecordReturnType => {
     return totalSize;
   }, []);
 
+  const setIsEditingRecord = useCallback(
+    (value: boolean) => {
+      dispatch(editSettingsAction({ isEditingRecord: value }));
+    },
+    [dispatch]
+  );
+
   return {
     dataUser,
     projectId,
@@ -341,5 +349,6 @@ export const useRecord = (): UseRecordReturnType => {
     isLayerEditable,
     checkRecordEditable,
     calculateStorageSize,
+    setIsEditingRecord,
   } as const;
 };

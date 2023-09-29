@@ -224,7 +224,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     if (tileMap === undefined) return;
     (async () => {
       const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap.id}`, { size: true });
-      const size = info.size === undefined ? '0' : (info.size / 1048576).toFixed(2);
+      const size = info.exists ? (info.size / 1048576).toFixed(2) : '0';
       setTileSize(size);
     })();
   }, [isDownloading, tileMap]);

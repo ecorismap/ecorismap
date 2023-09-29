@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
-import { useScreen } from '../hooks/useScreen';
 import { useProjects } from '../hooks/useProjects';
 import { usePurchasesWeb } from '../hooks/usePurchasesWeb';
 import { t } from '../i18n/config';
@@ -19,7 +18,6 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   const { isSettingProject } = usePermission();
   const { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } = useProjects();
   const { customerLicense } = usePurchasesWeb();
-  const { closeData } = useScreen();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
     try {
@@ -46,9 +44,8 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, [customerLicense, generateProject, isSettingProject, navigation, ownerProjectsCount]);
 
   const gotoBack = useCallback(async () => {
-    closeData();
     navigation.navigate('Home');
-  }, [closeData, navigation]);
+  }, [navigation]);
 
   const gotoProject = useCallback(
     (index: number) => {

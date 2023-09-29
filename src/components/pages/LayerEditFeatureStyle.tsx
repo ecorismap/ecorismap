@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
@@ -11,6 +11,7 @@ import Slider from '../atoms/Slider';
 import { t } from '../../i18n/config';
 import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 import { TextInput } from '../atoms';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function LayerEditFeatureStyleScreen() {
   const {

@@ -5,7 +5,7 @@ import { MapsContext } from '../../contexts/Maps';
 import { Button } from '../atoms';
 
 export const MapButtons = React.memo(() => {
-  const { pressOpenEditMap, gotoMapList, pressImportMaps, pressExportMaps } = useContext(MapsContext);
+  const { pressOpenEditMap, pressImportMaps, pressExportMaps } = useContext(MapsContext);
 
   return (
     <View style={styles.buttonContainer}>

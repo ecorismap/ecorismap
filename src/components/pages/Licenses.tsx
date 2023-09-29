@@ -1,7 +1,8 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { LicensesContext } from '../../contexts/Licenses';
+import { FlatList } from 'react-native-gesture-handler';
 
 export default function Licenses() {
   const { packageNames, pressPackageName } = useContext(LicensesContext);

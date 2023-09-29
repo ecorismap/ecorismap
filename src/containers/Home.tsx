@@ -21,11 +21,10 @@ import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
-import { getExt, isInfoTool, isLineTool, isPointTool, isPolygonTool } from '../utils/General';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
-import { useScreen } from '../hooks/useScreen';
 import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
+import { getExt, isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../utils/General';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { isHisyouTool } from '../plugins/hisyoutool/utils';
@@ -46,10 +45,13 @@ import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
 import { latLonToXY } from '../utils/Coords';
 import { Position } from '@turf/turf';
+import BottomSheet from '@gorhom/bottom-sheet';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const mapType = useSelector((state: AppState) => state.settings.mapType);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
@@ -60,7 +62,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const tracking = useSelector((state: AppState) => state.settings.tracking);
 
-  const { screenState, openData, expandData, closeData } = useScreen();
+  const routeName = getFocusedRouteNameFromRoute(route);
+
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -89,6 +92,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     addRecordWithCheck,
     checkRecordEditable,
     calculateStorageSize,
+    setIsEditingRecord,
   } = useRecord();
 
   const {
@@ -204,6 +208,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   /*************** onXXXXMapView *********************/
 
+  const onCloseBottomSheet = useCallback(async () => {
+    if (isEditingRecord && routeName === 'DataEdit') {
+      const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
+      if (ret) {
+        setIsEditingRecord(false);
+        //ToDo 写真の削除処理はどうする？
+      } else {
+        bottomSheetRef.current?.snapToIndex(2);
+      }
+    }
+  }, [isEditingRecord, routeName, setIsEditingRecord]);
+
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
       //console.log('onRegionChangeMapView', region);
@@ -219,6 +235,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       let latlon: number[];
       let properties: { [key: string]: any }[];
       let position: Position;
+      if (isMapMemoDrawTool(currentMapMemoTool)) return;
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
         const map = (mapViewRef.current as MapRef).getMap();
@@ -239,7 +256,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         openVectorTileInfo(properties, position);
       }
     },
-    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+    [closeVectorTileInfo, currentMapMemoTool, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -436,18 +453,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //console.log(isOK, message, layer, recordSet);
     setDrawTool('NONE');
     if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-      openData();
-      setTimeout(function () {
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: recordSet[0],
-          targetLayer: layer,
-          targetRecordSet: recordSet,
-          targetIndex: 0,
-        });
-      }, 1);
+      bottomSheetRef.current?.snapToIndex(2);
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: recordSet[0],
+        targetLayer: layer,
+        targetRecordSet: recordSet,
+        targetIndex: 0,
+      });
     }
-  }, [featureButton, navigation, openData, saveLine, savePolygon, setDrawTool]);
+  }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
 
   const pressDeleteDraw = useCallback(async () => {
     if (drawLine.current.length === 0) return;
@@ -459,9 +474,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(message);
         return;
       }
-      closeData();
+      bottomSheetRef.current?.close();
     }
-  }, [closeData, deleteDraw, drawLine]);
+  }, [deleteDraw, drawLine]);
 
   const onReleaseSvgView = useCallback(
     async (e: GestureResponderEvent) => {
@@ -482,20 +497,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
         setDrawTool('NONE');
         if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-          openData();
-          setTimeout(function () {
-            navigation.navigate('DataEdit', {
-              previous: 'Data',
-              targetData: recordSet[0],
-              targetLayer: layer,
-              targetRecordSet: recordSet,
-              targetIndex: 0,
-            });
-          }, 1);
+          bottomSheetRef.current?.snapToIndex(2);
+          navigation.navigate('DataEdit', {
+            previous: 'Data',
+            targetData: recordSet[0],
+            targetLayer: layer,
+            targetRecordSet: recordSet,
+            targetIndex: 0,
+          });
         }
       }
     },
-    [currentDrawTool, featureButton, navigation, openData, pressDeleteDraw, releaseSvgView, savePoint, setDrawTool]
+    [currentDrawTool, featureButton, navigation, pressDeleteDraw, releaseSvgView, savePoint, setDrawTool]
   );
 
   const onDragEndPoint = useCallback(
@@ -712,20 +725,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /****************** goto ****************************/
 
   const gotoProjects = useCallback(async () => {
-    closeData();
-    setTimeout(() => navigation.navigate('Projects'), 1);
-  }, [closeData, navigation]);
+    navigation.navigate('Projects');
+  }, [navigation]);
 
   const gotoAccount = useCallback(async () => {
-    closeData();
-    setTimeout(
-      () =>
-        navigation.navigate('AccountSettings', {
-          previous: 'Home',
-        }),
-      1
-    );
-  }, [closeData, navigation]);
+    navigation.navigate('AccountSettings', {
+      previous: 'Home',
+    });
+  }, [navigation]);
 
   const gotoLogin = useCallback(() => {
     navigation.navigate('Account', {
@@ -738,30 +745,26 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-    expandData();
+    bottomSheetRef.current?.snapToIndex(2);
     navigation.navigate('Layers');
-  }, [isEditingRecord, expandData, navigation]);
+  }, [isEditingRecord, navigation]);
 
   const gotoMaps = useCallback(async () => {
     if (isEditingRecord) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-    expandData();
+    bottomSheetRef.current?.snapToIndex(2);
     navigation.setParams({ tileMap: undefined });
     navigation.navigate('Maps');
-  }, [expandData, isEditingRecord, navigation]);
+  }, [isEditingRecord, navigation]);
 
   const gotoSettings = useCallback(async () => {
-    closeData();
-    setTimeout(
-      () =>
-        navigation.navigate('Settings', {
-          previous: 'Home',
-        }),
-      1
-    );
-  }, [closeData, navigation]);
+    bottomSheetRef.current?.snapToIndex(2);
+    navigation.navigate('Settings', {
+      previous: 'Home',
+    });
+  }, [navigation]);
 
   const gotoBack = useCallback(() => navigation.navigate('Maps'), [navigation]);
 
@@ -772,6 +775,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       //console.log(route.params.jumpTo);
       changeMapRegion({ ...route.params.jumpTo, zoom }, true);
       navigation.setParams({ jumpTo: undefined });
+      bottomSheetRef.current?.snapToIndex(1);
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -785,14 +789,25 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [currentLocation, uploadLocation]);
 
   useEffect(() => {
-    return closeData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (route.params?.tileMap != null) {
+      //BUG: close()が効かない
+      bottomSheetRef.current?.snapToIndex(0);
+      //bottomSheetRef.current?.close();
+    }
+  });
+
+  useEffect(() => {
+    return bottomSheetRef.current?.close();
   }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
     //起動時に読み込む場合
+
+    //編集中にアプリを落とした場合に再起動時に編集を破棄する
+    setIsEditingRecord(false);
+
     (async () => {
       await importExternalFiles();
       const size = await calculateStorageSize();
@@ -863,29 +878,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);
     } else {
-      screenState === 'closed' ? expandData() : openData();
-      setTimeout(function () {
-        navigation.navigate('DataEdit', {
-          previous: 'Data',
-          targetData: record,
-          targetLayer: layer,
-          targetRecordSet: [],
-          targetIndex: 0,
-        });
-      }, 1);
+      bottomSheetRef.current?.snapToIndex(2);
+
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: record,
+        targetLayer: layer,
+        targetRecordSet: [],
+        targetIndex: 0,
+      });
     }
     selectDrawTool(currentDrawTool);
-  }, [
-    addCurrentPoint,
-    currentDrawTool,
-    expandData,
-    gpsState,
-    navigation,
-    openData,
-    screenState,
-    selectDrawTool,
-    trackingState,
-  ]);
+  }, [addCurrentPoint, currentDrawTool, gpsState, navigation, selectDrawTool, trackingState]);
 
   const getInfoOfFeature = useCallback(
     async (event: GestureResponderEvent) => {
@@ -900,7 +904,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         unselectRecord();
         return;
       }
-      openData();
+      bottomSheetRef.current?.snapToIndex(1);
       navigation.navigate('DataEdit', {
         previous: 'Data',
         targetData: { ...feature },
@@ -909,7 +913,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         targetIndex: recordIndex,
       });
     },
-    [isEditingRecord, navigation, openData, selectSingleFeature, unselectRecord]
+    [isEditingRecord, navigation, selectSingleFeature, unselectRecord]
   );
 
   const panResponder: PanResponderInstance = useMemo(
@@ -933,9 +937,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
+          //@ts-ignore
+          const isPencilTouch = !!e.nativeEvent.altitudeAngle;
+          const USE_PENCIL = false;
           if (currentDrawTool === 'MOVE') {
           } else if (isPinch) {
-          } else if (gesture.numberActiveTouches === 2) {
+          } else if (
+            gesture.numberActiveTouches === 2 ||
+            (USE_PENCIL && isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch)
+          ) {
             clearMapMemoEditingLine();
             hideDrawLine();
             setIsPinch(true);
@@ -1015,7 +1025,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentLineTool,
         currentPolygonTool,
         selectedRecord,
-        screenState,
         isLoading,
         isTermsOfUseOpen,
         projectName,
@@ -1079,9 +1088,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoMapMemo,
         pressRedoMapMemo,
         panResponder,
-        isPinch,
         isDrawLineVisible,
+        isPinch,
         closeVectorTileInfo,
+        bottomSheetRef,
+        onCloseBottomSheet,
       }}
     >
       <Home />

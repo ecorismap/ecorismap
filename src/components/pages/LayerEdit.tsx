@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { usePermission } from '../../hooks/usePermission';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function LayerEditScreen() {
   //console.log('render LayerEdit');
@@ -30,19 +31,13 @@ export default function LayerEditScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={[{}]}
-        keyExtractor={() => ''}
-        renderItem={() => (
-          <>
-            <LayerName />
-            <LayerStyle />
-            {FUNC_LOGIN && !isClosedProject && <LayerEditRadio />}
-            <LayerEditFieldTitle />
-            <LayerEditFieldTable />
-          </>
-        )}
-      />
+      <ScrollView>
+        <LayerName />
+        <LayerStyle />
+        {FUNC_LOGIN && !isClosedProject && <LayerEditRadio />}
+        <LayerEditFieldTitle />
+        <LayerEditFieldTable />
+      </ScrollView>
       <LayerEditButton />
     </View>
   );

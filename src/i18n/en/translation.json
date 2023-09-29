@@ -92,7 +92,7 @@
       "removePhoto": "Do you want to delete the photo?",
       "downloadPhoto": "Do you want to download photos?",
       "changeRecord": "Do you want to discard your changes?",
-      "gotoBack": "Would you like to discard your changes and return?",
+      "gotoBack": "Do you want to discard your changes?",
       "close": "Do you want to discard your changes?"
     },
     "alert": {
