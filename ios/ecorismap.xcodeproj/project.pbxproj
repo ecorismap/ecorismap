@@ -151,7 +151,6 @@
 				39DEA8E65B5779DE369D3220 /* [CP] Check Pods Manifest.lock */,
 				FD10A7F022414F080027D42C /* Start Packager */,
 				FBC148EFF6B7B7C6F7A78BD9 /* [Expo] Configure project */,
-				FBC148EFF6B7B7C6F7A78BD9 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
