@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
@@ -8,6 +8,7 @@ import { RecordType, PhotoType, FormatType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
 import { SortOrderType } from '../../utils/Data';
+import { FlatList } from 'react-native-gesture-handler';
 
 export const DataTable = React.memo(() => {
   //console.log(data[0]);
@@ -75,17 +76,21 @@ export const DataTable = React.memo(() => {
 
   return (
     <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-      <FlatList
-        data={data}
-        stickyHeaderIndices={[0]}
-        initialNumToRender={15}
-        extraData={data}
-        ListHeaderComponent={<DataTitle />}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        removeClippedSubviews={true}
-        disableVirtualization={true}
-      />
+      {data.length !== 0 ? (
+        <FlatList
+          data={data}
+          stickyHeaderIndices={[0]}
+          initialNumToRender={15}
+          extraData={data}
+          ListHeaderComponent={<DataTitle />}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          removeClippedSubviews={true}
+          disableVirtualization={true}
+        />
+      ) : (
+        <DataTitle />
+      )}
     </View>
   );
 });

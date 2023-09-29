@@ -10,7 +10,6 @@ import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
 
 export const HomeMapMemoTools = () => {
   const {
-    screenState,
     currentMapMemoTool,
     currentPen,
     currentEraser,
@@ -24,10 +23,7 @@ export const HomeMapMemoTools = () => {
     pressRedoMapMemo,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
-  const isPositionRight = useMemo(
-    () => Platform.OS !== 'web' && (screenState === 'opened' || isLandscape),
-    [screenState, isLandscape]
-  );
+  const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
   const styles = StyleSheet.create({
     button: {
@@ -41,7 +37,7 @@ export const HomeMapMemoTools = () => {
       marginHorizontal: 0,
       position: 'absolute',
       top: Platform.OS === 'ios' ? 360 : 330,
-      zIndex: 101,
+      // zIndex: 101,
     },
     buttonContainerRight: {
       elevation: 101,
@@ -49,7 +45,7 @@ export const HomeMapMemoTools = () => {
       position: 'absolute',
       right: 10,
       top: 70,
-      zIndex: 101,
+      // zIndex: 101,
     },
     buttonRight: {
       alignSelf: 'flex-end',

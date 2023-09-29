@@ -1,11 +1,12 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
 import { SettingsModalFileSave } from '../organisms/SettingsModalFileSave';
 import { SettingsModalMapListURL } from '../organisms/SettingsModalMapListURL';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function Settings() {
   const {
