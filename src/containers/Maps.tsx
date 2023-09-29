@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
 import { MapsContext } from '../contexts/Maps';
-import { useScreen } from '../hooks/useScreen';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
@@ -29,7 +28,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     toggleOnline,
     importMapFile,
   } = useMaps();
-  const { closeData } = useScreen();
+
   const { runTutrial } = useTutrial();
 
   const pressToggleOnline = useCallback(async () => {
@@ -56,12 +55,11 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressDownloadMap = useCallback(
     (item: TileMapType) => {
-      closeData();
       navigation.navigate('Home', {
         tileMap: item,
       });
     },
-    [closeData, navigation]
+    [navigation]
   );
 
   const pressOpenEditMap = useCallback(
@@ -87,13 +85,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressImportMaps = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
-    if (file.type === 'cancel') return;
-    const ext = getExt(file.name)?.toLowerCase();
+    if (file.assets === null) return;
+    const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (!(ext === 'json')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const { message } = await importMapFile(file.uri);
+    const { message } = await importMapFile(file.assets[0].uri);
     if (message !== '') await AlertAsync(message);
   }, [importMapFile]);
 

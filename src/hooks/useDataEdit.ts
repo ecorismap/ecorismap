@@ -19,7 +19,6 @@ import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
-import { editSettingsAction } from '../modules/settings';
 import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { v4 as uuidv4 } from 'uuid';
@@ -85,7 +84,7 @@ export const useDataEdit = (
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
   const { deleteRecordPhotos } = usePhoto();
-  const { selectRecord } = useRecord();
+  const { selectRecord, setIsEditingRecord } = useRecord();
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -113,13 +112,6 @@ export const useDataEdit = (
       setLatLon(newLatLon);
     }
   }, [layer, layer.id, layer.type, record, recordIndex, recordSet, selectRecord]);
-
-  const setIsEditingRecord = useCallback(
-    (value: boolean) => {
-      dispatch(editSettingsAction({ isEditingRecord: value }));
-    },
-    [dispatch]
-  );
 
   const changeRecord = useCallback(
     (value: number) => {

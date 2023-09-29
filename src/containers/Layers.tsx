@@ -6,7 +6,6 @@ import { TEMPLATE_LAYER } from '../modules/layers';
 import { useLayers } from '../hooks/useLayers';
 import { Props_Layers } from '../routes';
 import { AlertAsync } from '../components/molecules/AlertAsync';
-import { useScreen } from '../hooks/useScreen';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { LayersContext } from '../contexts/Layers';
@@ -19,7 +18,6 @@ export default function LayerContainer({ navigation }: Props_Layers) {
   const { layers, changeLabel, changeVisible, changeCustomLabel, changeActiveLayer, changeLayerOrder } = useLayers();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
-  const { expandData } = useScreen();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(
@@ -40,8 +38,8 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       return;
     }
     const file = await DocumentPicker.getDocumentAsync({});
-    if (file.type === 'cancel') return;
-    const ext = getExt(file.name)?.toLowerCase();
+    if (file.assets === null) return;
+    const ext = getExt(file.assets[0].name)?.toLowerCase();
     if (
       !(
         ext === 'gpx' ||
@@ -56,15 +54,15 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    if (file.size === undefined) {
+    if (file.assets[0].size === undefined) {
       await AlertAsync(t('hooks.message.cannotGetFileSize'));
       return;
     }
-    if (file.size / 1024 > 100000) {
+    if (file.assets[0].size / 1024 > 100000) {
       await AlertAsync(t('hooks.message.cannotImportData'));
       return;
     }
-    const { message } = await importGeoFile(file.uri, file.name);
+    const { message } = await importGeoFile(file.assets[0].uri, file.assets[0].name);
     if (message !== '') await AlertAsync(message);
   }, [importGeoFile, isRunningProject, runTutrial]);
 
@@ -73,24 +71,22 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    expandData();
     navigation.navigate('LayerEdit', {
       previous: 'Layers',
       targetLayer: { ...TEMPLATE_LAYER, id: uuidv4() },
       isEdited: true,
     });
-  }, [expandData, isRunningProject, navigation]);
+  }, [isRunningProject, navigation]);
 
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {
-      expandData();
       navigation.navigate('LayerEdit', {
         previous: 'Layers',
         targetLayer: { ...layer },
         isEdited: false,
       });
     },
-    [expandData, navigation]
+    [navigation]
   );
 
   const gotoData = useCallback(
@@ -104,14 +100,13 @@ export default function LayerContainer({ navigation }: Props_Layers) {
 
   const gotoColorStyle = useCallback(
     (layer: LayerType) => {
-      expandData();
       navigation.navigate('LayerEditFeatureStyle', {
         targetLayer: { ...layer },
         isEdited: false,
         previous: 'Layers',
       });
     },
-    [expandData, navigation]
+    [navigation]
   );
 
   return (

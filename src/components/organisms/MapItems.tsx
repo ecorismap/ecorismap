@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Platform, FlatList } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 import { SmallButton, RectButton2, CheckButton } from '../atoms';
 import { MapsContext } from '../../contexts/Maps';
+import { FlatList } from 'react-native-gesture-handler';
 
 export const MapItems = React.memo(() => {
   const { maps, changeMapOrder, changeVisible, pressDownloadMap, pressOpenEditMap } = useContext(MapsContext);

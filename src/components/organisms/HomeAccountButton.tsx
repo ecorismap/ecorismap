@@ -4,12 +4,10 @@ import { Button, SelectionalButton } from '../atoms';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';
-import { useScreen } from '../../hooks/useScreen';
 
 export const HomeAccountButton = () => {
   const { user, gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(HomeContext);
   const { isLandscape } = useWindow();
-  const { screenState } = useScreen();
   const [valid, setValid] = useState(true);
 
   const initial = useMemo(() => {
@@ -30,7 +28,7 @@ export const HomeAccountButton = () => {
       marginHorizontal: 0,
       position: 'absolute',
       right: 9,
-      top: Platform.OS === 'ios' && !isLandscape && screenState !== 'opened' ? 40 : 20,
+      top: Platform.OS === 'ios' && !isLandscape ? 40 : 20,
       zIndex: 101,
     },
     icon: {

@@ -3,7 +3,6 @@ import { View, StyleSheet, Text, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
-import { useScreen } from '../../hooks/useScreen';
 
 interface Props {
   zoom: number;
@@ -17,21 +16,20 @@ export const HomeZoomButton = React.memo((props: Props) => {
   //console.log('render ZoomButton');
   const { zoom, left, zoomIn, zoomOut } = props;
   const { isLandscape } = useWindow();
-  const { screenState } = useScreen();
 
   const styles = StyleSheet.create({
     buttonContainer: {
       alignItems: 'center',
       backgroundColor: COLOR.ALFABLUE2,
       borderRadius: 10,
-      elevation: 100,
+      // elevation: 100,
       height: 95,
       justifyContent: 'space-between',
       left: left,
       position: 'absolute',
-      top: Platform.OS === 'ios' && !isLandscape && screenState !== 'opened' ? 90 : 70,
+      top: Platform.OS === 'ios' && !isLandscape ? 90 : 70,
       width: 36,
-      zIndex: 100,
+      // zIndex: 100,
     },
   });
 

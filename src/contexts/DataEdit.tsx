@@ -33,6 +33,5 @@ interface DataEditContextType {
   gotoGoogleMaps: () => void;
   gotoBack: () => void;
   gotoReferenceData: (referenceData: RecordType, referenceLayer: LayerType) => void;
-  onClose: () => void;
 }
 export const DataEditContext = createContext({} as DataEditContextType);

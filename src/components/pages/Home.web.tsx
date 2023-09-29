@@ -43,6 +43,10 @@ import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { AnyLayer } from 'react-map-gl/dist/esm/types';
 import { HomePopup } from '../organisms/HomePopup';
+import { isMapMemoDrawTool } from '../../utils/General';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import BottomSheet from '@gorhom/bottom-sheet';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 export default function HomeScreen() {
   const {
@@ -64,7 +68,6 @@ export default function HomeScreen() {
     featureButton,
     currentDrawTool,
     selectedRecord,
-    screenState,
     isLoading,
     isSynced,
     memberLocations,
@@ -85,17 +88,30 @@ export default function HomeScreen() {
     setVisibleMapMemoColor,
     selectPenColor,
     panResponder,
-    isPinch,
     isDrawLineVisible,
+    mapMemoEditingLine,
+    isPinch,
     onPressMapView,
+    bottomSheetRef,
+    onCloseBottomSheet,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
-  const { mapRegion, windowWidth, isLandscape } = useWindow();
+  const { mapRegion, windowWidth, isLandscape, windowHeight } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
-
+  const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
+  const animatedIndex = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      height: interpolate(
+        animatedIndex.value,
+        [0, 1, 2],
+        [(windowHeight - 20) / 10, (windowHeight - 20) / 2, windowHeight - 20]
+      ),
+    };
+  });
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -505,168 +521,133 @@ export default function HomeScreen() {
   }, [tileMaps]);
   //console.log(mapRegion);
   return !restored ? null : (
-    <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
-      <View
-        style={{
-          display: screenState === 'closed' ? 'none' : 'flex',
-          height: '100%',
-          width: screenState === 'expanded' ? windowWidth : screenState === 'opened' ? windowWidth / 2 : '0%',
-        }}
-      >
-        <SplitScreen />
-      </View>
-      <View
-        style={{
-          height: '100%',
-          width: screenState === 'expanded' ? 0 : screenState === 'opened' ? windowWidth / 2 : windowWidth,
-          justifyContent: 'flex-end',
-          zIndex: 0,
-          elevation: 0,
-        }}
-      >
-        <Loading visible={isLoading} text="" />
-        <ModalColorPicker
-          modalVisible={visibleMapMemoColor}
-          withAlpha={true}
-          pressSelectColorOK={selectPenColor}
-          pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
-        />
-        <MapMemoView />
-        <HomePopup />
-        {isDrawLineVisible && <SvgView />}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
+        <View
+          style={{
+            height: '100%',
+            width: windowWidth,
+            justifyContent: 'flex-end',
+            zIndex: 0,
+            elevation: 0,
+          }}
+        >
+          <Loading visible={isLoading} text="" />
+          <ModalColorPicker
+            modalVisible={visibleMapMemoColor}
+            withAlpha={true}
+            pressSelectColorOK={selectPenColor}
+            pressSelectColorCancel={() => setVisibleMapMemoColor(false)}
+          />
+          <MapMemoView />
+          <HomePopup />
+          {isDrawLineVisible && <SvgView />}
 
-        <div {...getRootProps({ className: 'dropzone' })}>
-          <input {...getInputProps()} />
+          <div {...getRootProps({ className: 'dropzone' })}>
+            <input {...getInputProps()} />
 
-          <View style={styles.map} {...panResponder.panHandlers}>
-            <Map
-              mapLib={FUNC_MAPBOX ? undefined : maplibregl}
-              ref={mapViewRef as React.MutableRefObject<MapRef>}
-              {...mapRegion}
-              style={{ width: '100%', height: '100%' }}
-              mapStyle={mapStyle}
-              //mapStyle="mapbox://styles/mapbox/outdoors-v11"
-              //mapStyle={mapStyle3D}
-              maxPitch={85}
-              onMove={(e) => onRegionChangeMapView(e.viewState)}
-              //mapboxAccessToken={mapboxToken}
-              onLoad={onMapLoad}
-              cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
-              //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
-              onClick={onPressMapView}
-              //onMouseMove={onMouseMove}
-              dragPan={
-                isPinch ||
-                (currentMapMemoTool === 'NONE' &&
-                  (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
-              }
-              touchZoomRotate={featureButton === 'NONE'}
-              dragRotate={featureButton === 'NONE'}
-            >
-              <HomeZoomLevel zoom={zoom} top={20} left={10} />
-              <NavigationControl
-                style={{ position: 'absolute', top: 50, left: 0 }}
-                position="top-left"
-                visualizePitch={true}
-              />
-              <GeolocateControl
-                style={{ position: 'absolute', top: 160, left: 0 }}
-                trackUserLocation={true}
-                position="top-left"
-              />
-
-              {/* @ts-ignore */}
-              {FUNC_MAPBOX && (
-                <Layer
-                  {...{
-                    id: 'sky',
-                    type: 'sky',
-                    paint: {
-                      'sky-type': 'gradient',
-                      // the sky will be lightest in the center and get darker moving radially outward
-                      // this simulates the look of the sun just below the horizon
-                      'sky-gradient': [
-                        'interpolate',
-                        ['linear'],
-                        ['sky-radial-progress'],
-                        0.8,
-                        'rgba(135, 206, 235, 1.0)',
-                        1,
-                        'rgba(0,0,0,0.1)',
-                      ],
-                      'sky-gradient-center': [0, 0],
-                      'sky-gradient-radius': 90,
-                      'sky-opacity': ['interpolate', ['exponential', 0.1], ['zoom'], 5, 0, 22, 1],
-                    },
-                  }}
+            <View style={styles.map} {...panResponder.panHandlers}>
+              <Map
+                mapLib={maplibregl}
+                ref={mapViewRef as React.MutableRefObject<MapRef>}
+                {...mapRegion}
+                style={{ width: '100%', height: '100%' }}
+                mapStyle={mapStyle}
+                maxPitch={85}
+                onMove={(e) => onRegionChangeMapView(e.viewState)}
+                //mapboxAccessToken={mapboxToken}
+                onLoad={onMapLoad}
+                cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
+                //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
+                onClick={onPressMapView}
+                //onMouseMove={onMouseMove}
+                dragPan={
+                  isPinch ||
+                  (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
+                  (currentMapMemoTool === 'NONE' &&
+                    (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
+                }
+                touchZoomRotate={featureButton === 'NONE'}
+                dragRotate={featureButton === 'NONE'}
+              >
+                <HomeZoomLevel zoom={zoom} top={20} left={10} />
+                <NavigationControl
+                  style={{ position: 'absolute', top: 50, left: 0 }}
+                  position="top-left"
+                  visualizePitch={true}
                 />
-              )}
-
-              {/************** Current Marker ****************** */}
-              {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-                <CurrentMarker
-                  currentLocation={currentLocation}
-                  //angle={magnetometer && northUp ? magnetometer!.trueHeading : 0}
+                <GeolocateControl
+                  style={{ position: 'absolute', top: 160, left: 0 }}
+                  trackUserLocation={true}
+                  position="top-left"
                 />
-              )}
-              {/************** Member Location ****************** */}
-              {isSynced &&
-                memberLocations.map((memberLocation) => (
-                  <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
-                ))}
-              {/************** Point Line Polygon ****************** */}
-              {pointDataSet.map((d) => {
-                const layer = layers.find((v) => v.id === d.layerId);
-                return (
-                  layer!.visible && (
-                    <Point
-                      key={`${d.layerId}-${d.userId}`}
-                      data={d.data}
-                      layer={layer!}
-                      zoom={zoom}
-                      selectedRecord={selectedRecord}
-                      onDragEndPoint={onDragEndPoint}
-                      draggable={currentDrawTool === 'MOVE_POINT'}
-                    />
-                  )
-                );
-              })}
-              {lineDataSet.map((d) => {
-                const layer = layers.find((v) => v.id === d.layerId);
-                return (
-                  layer!.visible && (
-                    <Line
-                      key={`${d.layerId}-${d.userId}`}
-                      data={d.data}
-                      layer={layer!}
-                      zoom={zoom}
-                      onPressLine={() => null}
-                      zIndex={101}
-                      selectedRecord={selectedRecord}
-                    />
-                  )
-                );
-              })}
+                {/************** Member Location ****************** */}
+                {isSynced &&
+                  memberLocations.map((memberLocation) => (
+                    <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
+                  ))}
 
-              {polygonDataSet.map((d) => {
-                const layer = layers.find((v) => v.id === d.layerId);
-                return (
-                  layer!.visible && (
-                    <Polygon
-                      key={`${d.layerId}-${d.userId}`}
-                      data={d.data}
-                      layer={layer!}
-                      zoom={zoom}
-                      onPressPolygon={() => null}
-                      zIndex={100}
-                    />
-                  )
-                );
-              })}
-            </Map>
-          </View>
-        </div>
-        {mapRegion && screenState !== 'expanded' && (
+                {/************** Current Marker ****************** */}
+                {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
+                  <CurrentMarker
+                    currentLocation={currentLocation}
+                    //angle={magnetometer && northUp ? magnetometer!.trueHeading : 0}
+                  />
+                )}
+
+                {/************** Point Line Polygon ****************** */}
+                {pointDataSet.map((d) => {
+                  const layer = layers.find((v) => v.id === d.layerId);
+                  return (
+                    layer!.visible && (
+                      <Point
+                        key={`${d.layerId}-${d.userId}`}
+                        data={d.data}
+                        layer={layer!}
+                        zoom={zoom}
+                        selectedRecord={selectedRecord}
+                        onDragEndPoint={onDragEndPoint}
+                        draggable={currentDrawTool === 'MOVE_POINT'}
+                      />
+                    )
+                  );
+                })}
+                {lineDataSet.map((d) => {
+                  const layer = layers.find((v) => v.id === d.layerId);
+                  return (
+                    layer!.visible && (
+                      <Line
+                        key={`${d.layerId}-${d.userId}`}
+                        data={d.data}
+                        layer={layer!}
+                        zoom={zoom}
+                        onPressLine={() => null}
+                        zIndex={101}
+                        selectedRecord={selectedRecord}
+                      />
+                    )
+                  );
+                })}
+
+                {polygonDataSet.map((d) => {
+                  const layer = layers.find((v) => v.id === d.layerId);
+                  return (
+                    layer!.visible && (
+                      <Polygon
+                        key={`${d.layerId}-${d.userId}`}
+                        data={d.data}
+                        layer={layer!}
+                        zoom={zoom}
+                        onPressPolygon={() => null}
+                        zIndex={100}
+                      />
+                    )
+                  );
+                })}
+              </Map>
+            </View>
+          </div>
+
           <View
             style={{
               left: 50,
@@ -676,29 +657,44 @@ export default function HomeScreen() {
           >
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
-        )}
-        {projectName === undefined ||
-        (!isShowingProjectButtons && !isSettingProject) ||
-        screenState === 'expanded' ? null : (
-          <HomeProjectButtons />
-        )}
-        {projectName === undefined || isDownloadPage || screenState === 'expanded' ? null : (
-          <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
-        )}
 
-        {!FUNC_LOGIN || isDownloadPage || screenState === 'expanded' ? null : <HomeAccountButton />}
-        {screenState !== 'expanded' && !isDownloadPage && (
-          <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
-        )}
-        {screenState !== 'expanded' && !isDownloadPage && <HomeCommonTools />}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
-          <HomeDrawTools />
-        )}
-        {screenState !== 'expanded' && !isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
-        {screenState !== 'expanded' && !isDownloadPage && <HomeButtons />}
-        {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {projectName === undefined || (!isShowingProjectButtons && !isSettingProject && <HomeProjectButtons />)}
+          {projectName === undefined || isDownloadPage ? null : (
+            <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
+          )}
+
+          {!FUNC_LOGIN || isDownloadPage ? null : <HomeAccountButton />}
+          <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+
+          {isShowingProjectButtons && <HomeProjectButtons />}
+          {projectName === undefined || isDownloadPage ? null : (
+            <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
+          )}
+
+          {!FUNC_LOGIN || isDownloadPage ? null : <HomeAccountButton />}
+
+          {!isDownloadPage && <HomeCommonTools />}
+          {!isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
+          {!isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!isDownloadPage && <HomeButtons />}
+          {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+        </View>
       </View>
-    </View>
+
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        animatedIndex={animatedIndex}
+        onClose={onCloseBottomSheet}
+        style={{ width: '50%' }}
+      >
+        <Animated.View style={animatedStyle}>
+          <SplitScreen />
+        </Animated.View>
+      </BottomSheet>
+    </GestureHandlerRootView>
   );
 }
 

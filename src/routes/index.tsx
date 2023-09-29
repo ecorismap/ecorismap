@@ -18,12 +18,10 @@ import Home from '../containers/Home';
 import Account from '../containers/Account';
 import AccountSettings from '../containers/AccountSettings';
 import Purchases from '../containers/Purchases';
-import Settings from '../containers/Settings';
 import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
-import Licenses from '../containers/Licenses';
 import { FUNC_LOGIN } from '../constants/AppConstants';
 
 export type RootStackParamList = {
@@ -129,8 +127,6 @@ export default function Routes() {
               options={{ title: t('AccountSettings.navigation.title') }}
             />
             <Stack.Screen name="Purchases" component={Purchases} options={{ title: t('Purchases.navigation.title') }} />
-            <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
-            <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
             <Stack.Screen name="Projects" component={Projects} options={{ title: t('Projects.navigation.title') }} />
             <Stack.Screen
               name="ProjectEdit"

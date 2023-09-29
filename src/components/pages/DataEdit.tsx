@@ -1,8 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 
-import { COLOR, NAV_BTN } from '../../constants/AppConstants';
-import HeaderRightButton from '../molecules/HeaderRightButton';
 import { DataEditModalPhotoView } from '../organisms/DataEditModalPhotoView';
 import { DataEditButtons } from '../organisms/DataEditButtons';
 import { DataEditPhoto } from '../organisms/DataEditPhoto';
@@ -16,7 +14,6 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { DataEditDatetime } from '../organisms/DataEditDatetime';
 import { DataEditReference } from '../organisms/DataEditReference';
-import { useScreen } from '../../hooks/useScreen';
 import { DataEditRecordSelector } from '../organisms/DataEditRecordSelector';
 import { DataEditTable } from '../organisms/DataEditTable';
 import { DataEditListTable } from '../organisms/DataEditListTable';
@@ -27,6 +24,7 @@ import { t } from '../../i18n/config';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -45,10 +43,8 @@ export default function DataEditScreen() {
     pressAddReferenceData,
     gotoBack,
     gotoReferenceData,
-    onClose,
   } = useContext(DataEditContext);
 
-  const { screenState, expandData, openData } = useScreen();
   const navigation = useNavigation();
   const layers = useSelector((state: AppState) => state.layers);
   const headerLeftButtonzForDevice = useCallback(
@@ -66,27 +62,10 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 35 }}>
-          <HeaderRightButton
-            name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
-            backgroundColor={COLOR.GRAY0}
-            onPress={screenState === 'opened' ? expandData : openData}
-            borderRadius={5}
-            size={21}
-            color={COLOR.BLACK}
-          />
-          <HeaderRightButton
-            name={NAV_BTN.CLOSE}
-            backgroundColor={COLOR.GRAY0}
-            onPress={onClose}
-            borderRadius={5}
-            size={21}
-            color={COLOR.BLACK}
-          />
-        </View>
+        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 35 }} />
       </View>
     ),
-    [expandData, gotoBack, maxRecordNumber, onChangeRecord, onClose, openData, recordNumber, screenState]
+    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
   );
 
   const headerTitleButton = useCallback(
@@ -112,29 +91,6 @@ export default function DataEditScreen() {
     [gotoBack]
   );
 
-  const headerRightButton = useCallback(() => {
-    return (
-      <View style={{ flexDirection: 'row' }}>
-        <HeaderRightButton
-          name={screenState === 'opened' ? NAV_BTN.EXPAND : NAV_BTN.COLLAPSE}
-          backgroundColor={COLOR.GRAY0}
-          onPress={screenState === 'opened' ? expandData : openData}
-          borderRadius={5}
-          size={21}
-          color={COLOR.BLACK}
-        />
-        <HeaderRightButton
-          name={NAV_BTN.CLOSE}
-          backgroundColor={COLOR.GRAY0}
-          onPress={onClose}
-          borderRadius={5}
-          size={21}
-          color={COLOR.BLACK}
-        />
-      </View>
-    );
-  }, [expandData, screenState, onClose, openData]);
-
   useEffect(() => {
     //デバイスだとheaderTitleにbackButtonが表示されてしまうバグ？のためheaderLeftだけで処理する
     //Selectorをセンタリングするのが目的
@@ -142,14 +98,14 @@ export default function DataEditScreen() {
       navigation.setOptions({
         headerTitle: () => headerTitleButton(),
         headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-        headerRight: () => headerRightButton(),
+        // headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({
         headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButtonzForDevice(props),
       });
     }
-  }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
+  }, [headerLeftButton, headerLeftButtonzForDevice, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <KeyboardAvoidingView style={styles.container} behavior={'padding'} enabled keyboardVerticalOffset={10}>
