@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
@@ -8,6 +8,7 @@ import { LayerEditButton } from '../organisms/LayerEditButton';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { LayerEditContext } from '../../contexts/LayerEdit';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function LayerEditScreen() {
   //console.log('render LayerEdit');
@@ -27,18 +28,12 @@ export default function LayerEditScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={[{}]}
-        keyExtractor={() => ''}
-        renderItem={() => (
-          <>
-            <LayerName />
-            <LayerStyle />
-            <LayerEditFieldTitle />
-            <LayerEditFieldTable />
-          </>
-        )}
-      />
+      <ScrollView>
+        <LayerName />
+        <LayerStyle />
+        <LayerEditFieldTitle />
+        <LayerEditFieldTable />
+      </ScrollView>
       <LayerEditButton />
     </View>
   );

@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import Maps from '../components/pages/Maps';
 import { MapsContext } from '../contexts/Maps';
-import { useScreen } from '../hooks/useScreen';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
@@ -29,7 +28,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     toggleOnline,
     importMapFile,
   } = useMaps();
-  const { closeData } = useScreen();
+
   const { runTutrial } = useTutrial();
 
   const pressToggleOnline = useCallback(async () => {
@@ -56,12 +55,11 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressDownloadMap = useCallback(
     (item: TileMapType) => {
-      closeData();
       navigation.navigate('Home', {
         tileMap: item,
       });
     },
-    [closeData, navigation]
+    [navigation]
   );
 
   const pressOpenEditMap = useCallback(

@@ -20,14 +20,14 @@ export const HomeZoomButton = React.memo((props: Props) => {
       alignItems: 'center',
       //backgroundColor: COLOR.ALFABLUE2,
       borderRadius: 10,
-      elevation: 100,
+      //elevation: 100,
       height: 50,
       justifyContent: 'space-between',
       left: left,
       position: 'absolute',
       top: top,
       width: 36,
-      zIndex: 100,
+      //zIndex: 100,
     },
   });
 

@@ -12,7 +12,6 @@ import { HomeContext } from '../../contexts/Home';
 
 export const HomeDrawTools = () => {
   const {
-    screenState,
     isEditingDraw,
     isEditingObject,
     isSelectedDraw,
@@ -28,10 +27,7 @@ export const HomeDrawTools = () => {
     pressDeleteDraw,
   } = useContext(HomeContext);
   const { isLandscape } = useWindow();
-  const isPositionRight = useMemo(
-    () => Platform.OS !== 'web' && (screenState === 'opened' || isLandscape),
-    [screenState, isLandscape]
-  );
+  const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
   const { isHisyouToolActive } = useHisyouToolSetting();
 
@@ -42,20 +38,20 @@ export const HomeDrawTools = () => {
       width: 36,
     },
     buttonContainer: {
-      elevation: 101,
+      // elevation: 101,
       left: 9,
       marginHorizontal: 0,
       position: 'absolute',
       top: Platform.OS === 'ios' ? 360 : 330,
-      zIndex: 101,
+      // zIndex: 101,
     },
     buttonContainerRight: {
-      elevation: 101,
+      // elevation: 101,
       marginHorizontal: 0,
       position: 'absolute',
       right: 10,
       top: 70,
-      zIndex: 101,
+      // zIndex: 101,
     },
     buttonRight: {
       alignSelf: 'flex-end',

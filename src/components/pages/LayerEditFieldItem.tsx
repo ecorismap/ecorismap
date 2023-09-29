@@ -1,11 +1,12 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, Picker, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function LayerEditFieldItemScreen() {
   const {
