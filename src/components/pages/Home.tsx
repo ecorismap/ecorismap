@@ -210,7 +210,7 @@ export default function HomeScreen() {
             zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
             scrollEnabled={
               isPinch ||
-              (isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
+              (false && isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
               (currentMapMemoTool === 'NONE' &&
                 (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
             }
@@ -395,6 +395,7 @@ export default function HomeScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
+        animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         style={{ width: isLandscape ? '50%' : '100%' }}
