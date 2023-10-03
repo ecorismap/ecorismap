@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
@@ -7,10 +7,15 @@ import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import { clearSavedLocations, getLineLength } from '../utils/Location';
+import {
+  clearSavedLocations,
+  getLineLength,
+  getSavedLocations,
+  isLocationObject,
+  updateLocations,
+} from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
-import { useGPS } from './useGPS';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -18,6 +23,34 @@ import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
+import { LocationHeadingObject, LocationSubscription } from 'expo-location';
+import { STORAGE, TASK } from '../constants/AppConstants';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { EventEmitter } from 'fbemitter';
+import * as TaskManager from 'expo-task-manager';
+import { AlertAsync } from '../components/molecules/AlertAsync';
+
+const locationEventsEmitter = new EventEmitter();
+const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
+  //console.log('saveAndEmitLocation');
+  if (isLocationObject(data) && data.locations.length > 0) {
+    const savedLocations = await getSavedLocations();
+    const updatedLocations = updateLocations(savedLocations, data.locations);
+    const updatedLocationsString = JSON.stringify(updatedLocations);
+    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+
+    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+    //console.log('update', updatedLocations);
+    locationEventsEmitter.emit('update', updatedLocations);
+    //console.log(dataSizeInMB);
+    //if (dataSizeInMB > 2) {
+    //console.warn('データサイズが2MBを超えています。保存されません。');
+    //AlertAsync(t('hooks.alert.dataSizeOver'));
+    //}
+  }
+};
+TaskManager.defineTask(TASK.FETCH_LOCATION, saveAndEmitLocation);
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -25,13 +58,20 @@ export type UseLocationReturnType = {
   trackingState: TrackingStateType;
   headingUp: boolean;
   magnetometer: Location.LocationHeadingObject | null;
-  toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
+  toggleHeadingUp: (headingUp_: boolean) => void;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
 };
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
+  const [magnetometer, setMagnetometer] = useState<LocationHeadingObject | null>(null);
+
+  const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
+  const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
+  const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>((pos) => setMagnetometer(pos));
+  const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
+
   const projectId = useSelector((state: AppState) => state.settings.projectId);
   const user = useSelector((state: AppState) => state.user);
   const dataUser = useMemo(
@@ -45,39 +85,129 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
   const { findRecord } = useRecord();
 
-  const {
-    locationEventsEmitter,
-    magnetometer,
-    setMagnetometer,
-    setHeadingUpFunction,
-    setFollowMapFunction,
-    confirmLocationPermittion,
-    startGPS,
-    stopGPS,
-    startTracking,
-    stopTracking,
-  } = useGPS();
+  const confirmLocationPermittion = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        await AlertAsync(t('hooks.message.permitAccessGPS'));
+      }
+      return status;
+    } catch (e: any) {
+      // eslint-disable-next-line no-console
+      console.log(e.message);
+    }
+  }, []);
 
-  const moveCurrentPosition = useCallback(async () => {
-    if (mapViewRef === null || !isMapView(mapViewRef)) return;
-    const location = await Location.getLastKnownPositionAsync();
-    if (location !== null) {
-      mapViewRef.animateCamera(
+  const startGPS = useCallback(async () => {
+    if ((await confirmLocationPermittion()) !== 'granted') return;
+    //GPSもトラッキングもOFFの場合
+    if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+      gpsSubscriber.current = await Location.watchPositionAsync(
         {
-          center: {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          },
+          accuracy: Location.Accuracy.Highest,
+          distanceInterval: 1,
         },
-        { duration: 5 }
+        (pos) => updateGpsPosition.current(pos)
       );
     }
-  }, [mapViewRef]);
+    if (headingSubscriber.current === undefined) {
+      headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        updateHeading.current(pos);
+      });
+    }
+  }, [confirmLocationPermittion]);
 
-  const toggleFollowMap = useCallback(
+  const stopGPS = useCallback(async () => {
+    if (gpsSubscriber.current !== undefined) {
+      gpsSubscriber.current.remove();
+      gpsSubscriber.current = undefined;
+    }
+    if (headingSubscriber.current !== undefined) {
+      headingSubscriber.current.remove();
+      headingSubscriber.current = undefined;
+    }
+  }, []);
+
+  const stopTracking = useCallback(async () => {
+    try {
+      if (await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION)) {
+        await Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+
+        if (headingSubscriber.current !== undefined) {
+          headingSubscriber.current.remove();
+          headingSubscriber.current = undefined;
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    } finally {
+      dispatch(editSettingsAction({ tracking: undefined }));
+      if (isLoggedIn(user) && hasOpened(projectId)) {
+        projectStore.deleteCurrentPosition(user.uid, projectId);
+        setCurrentLocation(null);
+      }
+    }
+  }, [dispatch, projectId, user]);
+
+  const startTracking = useCallback(async () => {
+    if ((await confirmLocationPermittion()) !== 'granted') return;
+    if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+      await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
+        //accuracy: Location.Accuracy.BestForNavigation,
+        accuracy: Location.Accuracy.High,
+        distanceInterval: 2,
+        timeInterval: 2000,
+        pausesUpdatesAutomatically: false,
+        deferredUpdatesDistance: 2,
+        deferredUpdatesInterval: 2000,
+        //deferredUpdatesDistance: 100,
+        //deferredUpdatesInterval: 1000 * 60,
+        ////activityType: 3,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: 'EcorisMap',
+          notificationBody: t('hooks.notification.inTracking'),
+        },
+      });
+    }
+    if (headingSubscriber.current === undefined) {
+      headingSubscriber.current = await Location.watchHeadingAsync((pos) => updateHeading.current(pos));
+    }
+  }, [confirmLocationPermittion]);
+
+  const moveCurrentPosition = useCallback(async () => {
+    //console.log('moveCurrentPosition');
+    if ((await confirmLocationPermittion()) !== 'granted') return;
+    // console.log('moveCurrentPosition2');
+
+    const location = await Location.getLastKnownPositionAsync();
+    // console.log('moveCurrentPosition3', location);
+    if (location === null) return;
+    setCurrentLocation(location.coords);
+    if (mapViewRef === null || !isMapView(mapViewRef)) return;
+    mapViewRef.animateCamera(
+      {
+        center: location.coords,
+      },
+      { duration: 5 }
+    );
+    //console.log('moveCurrentPosition4', location.coords);
+  }, [confirmLocationPermittion, mapViewRef]);
+
+  const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
+      setGpsState(gpsState_);
+      if (gpsState_ === 'off') {
+        await stopGPS();
+        if (isLoggedIn(user) && hasOpened(projectId)) {
+          projectStore.deleteCurrentPosition(user.uid, projectId);
+          setCurrentLocation(null);
+        }
+        return;
+      }
       if (gpsState_ === 'follow') {
-        const followMapFunc = (pos: Location.LocationObject) => {
+        await moveCurrentPosition();
+        updateGpsPosition.current = (pos: Location.LocationObject) => {
           (mapViewRef as MapView).animateCamera(
             {
               center: {
@@ -89,36 +219,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           );
           setCurrentLocation(pos.coords);
         };
-        await setFollowMapFunction(followMapFunc);
       } else if (gpsState_ === 'show') {
-        const followMapFunc = (pos: Location.LocationObject) => {
+        updateGpsPosition.current = (pos: Location.LocationObject) => {
           setCurrentLocation(pos.coords);
         };
-        await setFollowMapFunction(followMapFunc);
       }
+      await startGPS();
     },
-    [mapViewRef, setFollowMapFunction]
-  );
-
-  const toggleGPS = useCallback(
-    async (gpsState_: LocationStateType) => {
-      if (gpsState_ === 'off') {
-        await stopGPS();
-        if (isLoggedIn(user) && hasOpened(projectId)) {
-          projectStore.deleteCurrentPosition(user.uid, projectId);
-          setCurrentLocation(null);
-        }
-      } else {
-        if ((await confirmLocationPermittion()) !== 'granted') return;
-        await startGPS();
-        if (gpsState_ === 'follow') {
-          await moveCurrentPosition();
-        }
-      }
-      await toggleFollowMap(gpsState_);
-      setGpsState(gpsState_);
-    },
-    [confirmLocationPermittion, moveCurrentPosition, projectId, startGPS, stopGPS, toggleFollowMap, user]
+    [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, user]
   );
 
   const toggleTracking = useCallback(
@@ -127,12 +235,9 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
-        const permission = await confirmLocationPermittion();
-        if (permission === 'granted') {
-          await moveCurrentPosition();
-          await clearSavedLocations();
-          await startTracking();
-        }
+        await moveCurrentPosition();
+        await clearSavedLocations();
+        await startTracking();
       } else if (trackingState_ === 'off') {
         await stopTracking();
         await clearSavedLocations();
@@ -153,33 +258,16 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
             );
           }
         }
-
-        dispatch(editSettingsAction({ tracking: undefined }));
-        if (isLoggedIn(user) && hasOpened(projectId)) {
-          projectStore.deleteCurrentPosition(user.uid, projectId);
-          setCurrentLocation(null);
-        }
       }
       setTrackingState(trackingState_);
     },
-    [
-      confirmLocationPermittion,
-      dataUser.uid,
-      dispatch,
-      findRecord,
-      moveCurrentPosition,
-      projectId,
-      startTracking,
-      stopTracking,
-      tracking,
-      user,
-    ]
+    [dataUser.uid, dispatch, findRecord, moveCurrentPosition, startTracking, stopTracking, tracking]
   );
 
   const toggleHeadingUp = useCallback(
-    async (headingUp_: boolean) => {
+    (headingUp_: boolean) => {
       if (headingUp_) {
-        const headingFunc = (pos: Location.LocationHeadingObject) => {
+        updateHeading.current = (pos: Location.LocationHeadingObject) => {
           //console.log(pos)
           (mapViewRef as MapView).animateCamera(
             {
@@ -189,17 +277,15 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           );
           setMagnetometer(pos);
         };
-        await setHeadingUpFunction(headingFunc);
       } else {
-        const headingFunc = (pos: Location.LocationHeadingObject) => setMagnetometer(pos);
-        await setHeadingUpFunction(headingFunc);
+        updateHeading.current = (pos: Location.LocationHeadingObject) => setMagnetometer(pos);
         (mapViewRef as MapView).animateCamera({
           heading: 0,
         });
       }
       setHeadingUp(headingUp_);
     },
-    [mapViewRef, setHeadingUpFunction, setMagnetometer]
+    [mapViewRef, setMagnetometer]
   );
 
   const updateTrackLog = useCallback(
@@ -241,7 +327,37 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       //console.log('clean locationEventsEmitter');
       eventSubscription && eventSubscription.remove();
     };
-  }, [locationEventsEmitter, updateTrackLog]);
+  }, [updateTrackLog]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    (async () => {
+      //kill後の起動時にログ取得中なら終了させる。なぜかエラーになるがtry catchする
+
+      const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
+      if (hasStarted) {
+        //再起動時にトラックを止めるならこちら
+        //await stopTracking();
+
+        //console.log('### start tracking ');
+        setTrackingState('on');
+        await toggleGPS('follow');
+      }
+    })();
+
+    return () => {
+      if (gpsSubscriber.current !== undefined) {
+        gpsSubscriber.current.remove();
+        gpsSubscriber.current = undefined;
+      }
+      if (headingSubscriber.current !== undefined) {
+        headingSubscriber.current.remove();
+        headingSubscriber.current = undefined;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     currentLocation,
