@@ -17,9 +17,12 @@ interface Props {
 const Slider = React.memo((props: Props) => {
   const { style, label, width, initialValue, step, minimumValue, maximumValue, labelColor, onSlidingComplete } = props;
   const [sliderValue, setSliderValue] = useState(0);
+  const [sliderWidth, setSliderWidth] = useState('99.99%');
 
   useEffect(() => {
     setSliderValue(initialValue);
+    //web版のバグ？のため、このような処理を行う。
+    setSliderWidth('60%');
   }, [initialValue, width]);
 
   return (
@@ -35,7 +38,8 @@ const Slider = React.memo((props: Props) => {
     >
       <Text style={{ width: 80, fontSize: 12, color: labelColor }}>{label}</Text>
       <RNSlider
-        style={{ height: 48, width: '60%' }}
+        // @ts-ignore
+        style={{ height: 48, width: sliderWidth }}
         value={initialValue}
         step={step}
         minimumValue={minimumValue}

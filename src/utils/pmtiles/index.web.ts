@@ -782,6 +782,7 @@ export class PMTiles {
       const entry = findTile(directory, tile_id);
       if (entry) {
         if (entry.runLength > 0) {
+          ///console.log(header.tileDataOffset + entry.offset, entry.length);
           const resp = await this.source.getBytes(header.tileDataOffset + entry.offset, entry.length, signal);
           if (header.etag && header.etag !== resp.etag) {
             throw new EtagMismatch(resp.etag);
