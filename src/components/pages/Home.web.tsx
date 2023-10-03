@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useContext } from 'react';
+import React, { useCallback, useEffect, useMemo, useContext, useState } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 
 // @ts-ignore
@@ -8,7 +8,7 @@ import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import Map, { GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
-import maplibregl from 'maplibre-gl';
+import maplibregl, { LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
@@ -37,12 +37,13 @@ import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
-import { AnyLayer } from 'react-map-gl/dist/esm/types';
 import { HomePopup } from '../organisms/HomePopup';
 import { isMapMemoDrawTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { schemeSet3 } from 'd3-scale-chromatic';
+import { PMTiles } from '../../utils/pmtiles';
 
 export default function HomeScreen() {
   const {
@@ -102,6 +103,7 @@ export default function HomeScreen() {
       ),
     };
   });
+
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -177,33 +179,118 @@ export default function HomeScreen() {
     [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
   );
 
+  const vectorStyle = async (file: PMTiles) => {
+    const metadata = await file.getMetadata();
+    const header = await file.getHeader();
+    let layers: LayerSpecification[] = [];
+    const baseOpacity = 0.7;
+    if (metadata.type !== 'baselayer') {
+      layers = [];
+    }
+
+    let vector_layers: LayerSpecification[];
+    if (metadata.json) {
+      const j = JSON.parse(metadata.json);
+      vector_layers = j.vector_layers;
+    } else {
+      vector_layers = metadata.vector_layers;
+    }
+
+    if (vector_layers) {
+      for (const [i, layer] of vector_layers.entries()) {
+        layers.push({
+          id: layer.id + '_fill',
+          type: 'fill',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'fill-color': schemeSet3[i % 12],
+            'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], baseOpacity, baseOpacity - 0.15],
+            'fill-outline-color': [
+              'case',
+              ['boolean', ['feature-state', 'hover'], false],
+              'hsl(0,100%,90%)',
+              'rgba(0,0,0,0.2)',
+            ],
+          },
+          filter: ['==', ['geometry-type'], 'Polygon'],
+        });
+        layers.push({
+          id: layer.id + '_stroke',
+          type: 'line',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'line-color': schemeSet3[i % 12],
+            'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0.5],
+          },
+          filter: ['==', ['geometry-type'], 'LineString'],
+        });
+        layers.push({
+          id: layer.id + '_point',
+          type: 'circle',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'circle-color': schemeSet3[i % 12],
+            'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 6, 5],
+          },
+          filter: ['==', ['geometry-type'], 'Point'],
+        });
+      }
+    }
+
+    return { styles: layers, header: header };
+  };
+
   useEffect(() => {
     if (!mapViewRef.current) return;
     const map = (mapViewRef.current as MapRef).getMap();
 
     for (const tileMap of tileMaps) {
       //console.log(tileMap);
-      if (
-        tileMap.url &&
-        (tileMap.url.startsWith('pmtiles://') || (tileMap.url.includes('.pmtiles') && tileMap.isVector))
-      ) {
-        // 外部からレイヤーとそのスタイルを非同期に読み込む
+      try {
+        if (
+          tileMap.url &&
+          (tileMap.url.startsWith('pmtiles://') || (tileMap.url.includes('.pmtiles') && tileMap.isVector))
+        ) {
+          (async () => {
+            const pmtile = new PMTiles(tileMap.url.replace('pmtiles://', ''));
+            const { styles, header } = await vectorStyle(pmtile);
 
-        const url = tileMap.styleURL ?? tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
-        //console.log('url', url);
-        fetch(url)
-          .then((response) => response.json())
-          .then((layerStyles) => {
+            let layerStyles;
+            const url = tileMap.styleURL ?? tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
+            const response = await fetch(url);
+            let hasStyleJson = false;
+            if (response.ok) {
+              const json = await response.json();
+              if (json) {
+                layerStyles = json;
+                hasStyleJson = true;
+              } else {
+                layerStyles = styles;
+              }
+            } else {
+              layerStyles = styles;
+            }
             layerStyles.forEach((layerStyle: any, index: number) => {
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
               //console.log(layerStyle);
+
+              if (!hasStyleJson) {
+                const source = map.getSource(tileMap.id) as mapboxgl.VectorSource;
+                source.minzoom = header.minZoom;
+                source.maxzoom = header.maxZoom;
+              }
               map.addLayer(layerStyle);
             });
-          })
-          .catch((error) => {
-            console.log('!!!!', error);
-          });
+          })();
+
+          // 外部からレイヤーとそのスタイルを非同期に読み込む
+        }
+      } catch (e) {
+        console.log(e);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -342,8 +429,7 @@ export default function HomeScreen() {
   //   [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
   // );
 
-  const mapStyle: string | mapboxgl.Style = useMemo(() => {
-    //console.log(tileMaps);
+  const mapStyle: string | mapboxgl.Style | undefined = useMemo(() => {
     const sources = tileMaps
       .slice(0)
       .reverse()

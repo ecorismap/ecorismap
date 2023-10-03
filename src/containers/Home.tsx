@@ -283,7 +283,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool(value);
           setMapMemoTool('NONE');
           toggleWebTerrainActive(false);
-          if (Platform.OS !== 'web') await toggleHeadingUp(false);
+          if (Platform.OS !== 'web') toggleHeadingUp(false);
           await runTutrial('INFOTOOL');
         }
       } else if (value === 'SELECT') {
@@ -386,14 +386,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /************** select button ************/
 
   const selectFeatureButton = useCallback(
-    async (value: FeatureButtonType) => {
+    (value: FeatureButtonType) => {
       setDrawTool('NONE');
       setMapMemoTool('NONE');
       toggleWebTerrainActive(value === 'NONE');
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
-      await toggleHeadingUp(false);
+      toggleHeadingUp(false);
     },
     [
       setDrawTool,
@@ -517,7 +517,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (isInfoTool(currentDrawTool)) return;
     if (featureButton !== 'NONE') return;
     if (headingUp === false && gpsState === 'off' && trackingState === 'off') await toggleGPS('show');
-    await toggleHeadingUp(!headingUp);
+    toggleHeadingUp(!headingUp);
   }, [currentDrawTool, featureButton, gpsState, headingUp, toggleGPS, toggleHeadingUp, trackingState]);
 
   const pressTracking = useCallback(async () => {
