@@ -194,6 +194,7 @@ export const MAPMEMOTOOL = {
   COLOR: 'palette-outline',
   UNDO: 'undo-variant',
   REDO: 'redo-variant',
+  PENCIL_LOCK: 'pencil-lock',
   NONE: 'none',
 } as const;
 
