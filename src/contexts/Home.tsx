@@ -92,6 +92,8 @@ export interface HomeContextType {
         properties: string;
       }
     | undefined;
+  isPencilModeActive: boolean;
+  isPencilTouch: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
@@ -144,6 +146,7 @@ export interface HomeContextType {
   closeVectorTileInfo: () => void;
   bottomSheetRef: RefObject<BottomSheetMethods>;
   onCloseBottomSheet: () => void;
+  togglePencilMode: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

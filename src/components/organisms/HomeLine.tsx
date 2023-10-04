@@ -23,7 +23,7 @@ interface Props {
 export const Line = React.memo((props: Props) => {
   //console.log('render Line');
   const { data, layer, zIndex, selectedRecord, onPressLine } = props;
-  const { zoom: currentZoom } = useContext(HomeContext);
+  // const { zoom: currentZoom } = useContext(HomeContext);
   //const { mapRegion } = useWindow();
 
   // const regionArea = useMemo(() => {
@@ -40,7 +40,7 @@ export const Line = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
-        const zoom = (feature.field._zoom as number) ?? currentZoom;
+        //const zoom = (feature.field._zoom as number) ?? currentZoom;
         // if (currentZoom > zoom + 2) return null;
         // if (currentZoom < zoom - 4) return null;
         if (feature.coords.length < 2) return null;
@@ -52,9 +52,7 @@ export const Line = React.memo((props: Props) => {
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
-        const strokeWidth = (feature.field._strokeWidth as number)
-          ? 2 ** (currentZoom - zoom) * (feature.field._strokeWidth as number)
-          : 1.5;
+        const strokeWidth = (feature.field._strokeWidth as number) ?? 1.5;
 
         return (
           <PolylineComponent

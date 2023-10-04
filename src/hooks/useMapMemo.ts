@@ -25,6 +25,7 @@ export type UseMapMemoReturnType = {
   penWidth: number;
   mapMemoEditingLine: MutableRefObject<Position[]>;
   editableMapMemo: boolean;
+  isPencilModeActive: boolean;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPen: Dispatch<SetStateAction<PenType>>;
   setEraser: Dispatch<SetStateAction<EraserType>>;
@@ -38,6 +39,7 @@ export type UseMapMemoReturnType = {
   pressRedoMapMemo: () => void;
   changeColorTypeToIndivisual: () => boolean;
   clearMapMemoEditingLine: () => void;
+  togglePencilMode: () => void;
 };
 export type HistoryType = {
   operation: string;
@@ -56,6 +58,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [currentPen, setPen] = useState<PenType>('PEN_MEDIUM');
   const [currentEraser, setEraser] = useState<EraserType>('ERASER');
   const [, setRedraw] = useState('');
+  const [isPencilModeActive, setPencilModeActive] = useState(false);
   const mapMemoEditingLine = useRef<Position[]>([]);
   const offset = useRef([0, 0]);
   const dataSet = useSelector((state: AppState) => state.dataSet);
@@ -221,6 +224,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     return true;
   }, [activeMemoLayer, dispatch]);
 
+  const togglePencilMode = useCallback(() => {
+    setPencilModeActive(!isPencilModeActive);
+  }, [isPencilModeActive]);
+
   return {
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -230,6 +237,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penWidth,
     mapMemoEditingLine,
     editableMapMemo,
+    isPencilModeActive,
     setMapMemoTool,
     setPen,
     setEraser,
@@ -243,5 +251,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoHistory,
     changeColorTypeToIndivisual,
     clearMapMemoEditingLine,
+    togglePencilMode,
   } as const;
 };

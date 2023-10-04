@@ -7,6 +7,8 @@ import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 import { HomeMapMemoPenButton } from './HomeMapMemoPenButton';
 import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isTablet } from 'react-native-device-info';
 
 export const HomeMapMemoTools = () => {
   const {
@@ -15,13 +17,17 @@ export const HomeMapMemoTools = () => {
     currentEraser,
     penColor,
     editableMapMemo,
+    isPencilModeActive,
     selectMapMemoTool,
     setPen,
     setEraser,
     setVisibleMapMemoColor,
     pressUndoMapMemo,
     pressRedoMapMemo,
+    togglePencilMode,
   } = useContext(HomeContext);
+
+  const insets = useSafeAreaInsets();
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
@@ -33,7 +39,7 @@ export const HomeMapMemoTools = () => {
     },
     buttonContainer: {
       elevation: 101,
-      left: 9,
+      left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
       top: Platform.OS === 'ios' ? 360 : 330,
@@ -43,7 +49,7 @@ export const HomeMapMemoTools = () => {
       elevation: 101,
       marginHorizontal: 0,
       position: 'absolute',
-      right: 10,
+      right: 10 + insets.right,
       top: 70,
       // zIndex: 101,
     },
@@ -94,6 +100,16 @@ export const HomeMapMemoTools = () => {
           onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
+      {Platform.OS === 'ios' && isTablet() && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={MAPMEMOTOOL.PENCIL_LOCK}
+            backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+            borderRadius={10}
+            onPress={togglePencilMode}
+          />
+        </View>
+      )}
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.UNDO}
