@@ -9,6 +9,7 @@ import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const HomeDrawTools = () => {
   const {
@@ -26,6 +27,7 @@ export const HomeDrawTools = () => {
     pressSaveDraw,
     pressDeleteDraw,
   } = useContext(HomeContext);
+  const insets = useSafeAreaInsets();
   const { isLandscape } = useWindow();
   const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
@@ -39,7 +41,7 @@ export const HomeDrawTools = () => {
     },
     buttonContainer: {
       // elevation: 101,
-      left: 9,
+      left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
       top: Platform.OS === 'ios' ? 360 : 330,
@@ -49,7 +51,7 @@ export const HomeDrawTools = () => {
       // elevation: 101,
       marginHorizontal: 0,
       position: 'absolute',
-      right: 10,
+      right: 10 + insets.right,
       top: 70,
       // zIndex: 101,
     },

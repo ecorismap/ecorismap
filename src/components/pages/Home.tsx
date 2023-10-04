@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text } from 'react-native';
+import { StyleSheet, View, Platform, Text, TouchableOpacity } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -39,6 +39,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const {
@@ -94,9 +95,10 @@ export default function HomeScreen() {
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
 
-  const navigationHeaderHeight = isDownloadPage ? 56 : 0;
+  const navigationHeaderHeight = useMemo(() => (isDownloadPage ? 56 : 0), [isDownloadPage]);
 
   const styles = StyleSheet.create({
     container: {
@@ -154,10 +156,51 @@ export default function HomeScreen() {
       height: interpolate(
         animatedIndex.value,
         [0, 1, 2],
-        [(windowHeight - 20) / 10, (windowHeight - 20) / 2, windowHeight - 20]
+        [
+          (windowHeight - 20 - insets.top) / 10 - insets.bottom,
+          (windowHeight - 20 - insets.top) / 2 - insets.bottom,
+          windowHeight - 20 - insets.top - insets.bottom,
+        ]
       ),
     };
   });
+
+  const customHandle = useCallback(() => {
+    return (
+      <View
+        style={{
+          height: 25,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: COLOR.GRAY4,
+            borderRadius: 2.5,
+            width: 30,
+            height: 4,
+            alignSelf: 'center',
+          }}
+        />
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: -4,
+            width: 24,
+            height: 25,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => bottomSheetRef.current?.close()}
+        >
+          <Text style={{ fontSize: 24, color: COLOR.GRAY4 }}>×</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [bottomSheetRef]);
 
   useEffect(() => {
     //console.log('#useeffect3');
@@ -390,6 +433,7 @@ export default function HomeScreen() {
           {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
         </View>
       </View>
+
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
@@ -398,7 +442,8 @@ export default function HomeScreen() {
         animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
-        style={{ width: isLandscape ? '50%' : '100%' }}
+        handleComponent={customHandle}
+        style={{ paddingTop: insets.top, width: isLandscape ? '50%' : '100%' }}
       >
         <Animated.View style={animatedStyle}>
           <SplitScreen />

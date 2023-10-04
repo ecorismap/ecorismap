@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   zoom: number;
@@ -16,6 +17,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
   //console.log('render ZoomButton');
   const { zoom, left, zoomIn, zoomOut } = props;
   const { isLandscape } = useWindow();
+  const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
     buttonContainer: {
@@ -25,7 +27,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
       // elevation: 100,
       height: 95,
       justifyContent: 'space-between',
-      left: left,
+      left: left + insets.left,
       position: 'absolute',
       top: Platform.OS === 'ios' && !isLandscape ? 90 : 70,
       width: 36,
