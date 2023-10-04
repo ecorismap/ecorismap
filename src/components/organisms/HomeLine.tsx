@@ -10,6 +10,8 @@ import booleanIntersects from '@turf/boolean-intersects';
 import * as turf from '@turf/helpers';
 import { latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { generateLabel } from '../../hooks/useLayers';
+import { AppState } from '../../modules';
+import { useSelector } from 'react-redux';
 
 interface Props {
   data: LineRecordType[];
@@ -23,6 +25,7 @@ interface Props {
 export const Line = React.memo((props: Props) => {
   //console.log('render Line');
   const { data, layer, zIndex, selectedRecord, onPressLine } = props;
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
   // const { zoom: currentZoom } = useContext(HomeContext);
   //const { mapRegion } = useWindow();
 
@@ -50,9 +53,9 @@ export const Line = React.memo((props: Props) => {
         const label = generateLabel(layer, feature);
         const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
-        const lineColor = selected ? COLOR.YELLOW : color;
+        const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
-        const strokeWidth = (feature.field._strokeWidth as number) ?? 1.5;
+        const strokeWidth = tracking?.dataId === feature.id ? 4 : (feature.field._strokeWidth as number) ?? 1.5;
 
         return (
           <PolylineComponent
