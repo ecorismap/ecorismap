@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -78,6 +78,7 @@ export default function HomeScreen() {
     pressProjectLabel,
     currentMapMemoTool,
     visibleMapMemoColor,
+    penColor,
     onRegionChangeMapView,
     onDrop,
     pressStopDownloadTiles,
@@ -252,6 +253,43 @@ export default function HomeScreen() {
 
     return { styles: layers, header: header };
   };
+
+  const customHandle = useCallback(() => {
+    return (
+      <View
+        style={{
+          height: 25,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: COLOR.GRAY4,
+            borderRadius: 2.5,
+            width: 30,
+            height: 4,
+            alignSelf: 'center',
+          }}
+        />
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: -4,
+            width: 24,
+            height: 25,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => bottomSheetRef.current?.close()}
+        >
+          <Text style={{ fontSize: 24, color: COLOR.GRAY4 }}>×</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [bottomSheetRef]);
 
   useEffect(() => {
     if (!mapViewRef.current) return;
@@ -585,6 +623,7 @@ export default function HomeScreen() {
         >
           <Loading visible={isLoading} text="" />
           <ModalColorPicker
+            color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
             pressSelectColorOK={selectPenColor}
@@ -606,7 +645,6 @@ export default function HomeScreen() {
                 mapStyle={mapStyle}
                 maxPitch={85}
                 onMove={(e) => onRegionChangeMapView(e.viewState)}
-                //mapboxAccessToken={mapboxToken}
                 onLoad={onMapLoad}
                 cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
@@ -739,6 +777,7 @@ export default function HomeScreen() {
         enablePanDownToClose
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
+        handleComponent={customHandle}
         style={{ width: '50%' }}
       >
         <Animated.View style={animatedStyle}>
