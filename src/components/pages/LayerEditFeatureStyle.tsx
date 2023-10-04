@@ -115,6 +115,7 @@ export default function LayerEditFeatureStyleScreen() {
       </ScrollView>
 
       <ModalColorPicker
+        color={colorStyle.color}
         modalVisible={modalVisible}
         pressSelectColorOK={pressSelectColorOK}
         pressSelectColorCancel={pressSelectColorCancel}

@@ -71,6 +71,7 @@ export default function HomeScreen() {
     isLoading,
     currentMapMemoTool,
     visibleMapMemoColor,
+    penColor,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -91,6 +92,8 @@ export default function HomeScreen() {
     mapMemoEditingLine,
     bottomSheetRef,
     onCloseBottomSheet,
+    isPencilModeActive,
+    isPencilTouch,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -231,6 +234,7 @@ export default function HomeScreen() {
         >
           <Loading visible={isLoading} text="" />
           <ModalColorPicker
+            color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
             pressSelectColorOK={selectPenColor}
@@ -253,7 +257,7 @@ export default function HomeScreen() {
             zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
             scrollEnabled={
               isPinch ||
-              (false && isMapMemoDrawTool(currentMapMemoTool) && mapMemoEditingLine.length === 0) ||
+              (isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch) ||
               (currentMapMemoTool === 'NONE' &&
                 (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
             }

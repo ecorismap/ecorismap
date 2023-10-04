@@ -8,6 +8,7 @@ import { HomeContext } from '../../contexts/Home';
 import { HomeMapMemoPenButton } from './HomeMapMemoPenButton';
 import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isTablet } from 'react-native-device-info';
 
 export const HomeMapMemoTools = () => {
   const {
@@ -16,12 +17,14 @@ export const HomeMapMemoTools = () => {
     currentEraser,
     penColor,
     editableMapMemo,
+    isPencilModeActive,
     selectMapMemoTool,
     setPen,
     setEraser,
     setVisibleMapMemoColor,
     pressUndoMapMemo,
     pressRedoMapMemo,
+    togglePencilMode,
   } = useContext(HomeContext);
 
   const insets = useSafeAreaInsets();
@@ -97,6 +100,16 @@ export const HomeMapMemoTools = () => {
           onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
+      {Platform.OS === 'ios' && isTablet() && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={MAPMEMOTOOL.PENCIL_LOCK}
+            backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+            borderRadius={10}
+            onPress={togglePencilMode}
+          />
+        </View>
+      )}
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.UNDO}

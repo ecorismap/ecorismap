@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import ColorPicker, { Panel2, BrightnessSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
@@ -21,6 +21,7 @@ const customSwatches = [
 ];
 
 interface Props {
+  color?: string;
   modalVisible: boolean;
   withAlpha?: boolean;
   pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
@@ -28,26 +29,37 @@ interface Props {
 }
 
 export const ModalColorPicker = (props: Props) => {
-  const { modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
+  const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
   const { windowWidth } = useWindow();
   const [hue, setHue] = useState(0);
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
   const [alpha, setAlpha] = useState(0.5);
 
-  const onSelectColor = ({ hex }: { hex: string }) => {
-    // do something with the selected color.
-    const hsv = colorKit.HSV(hex).object();
-    setHue(hsv.h);
-    setSat(hsv.s / 100);
-    setVal(hsv.v / 100);
-    if (withAlpha) {
-      setAlpha(hsv.a);
-    } else {
-      setAlpha(1);
+  const defaultColor = useMemo(() => color ?? '#FF0000', [color]);
+
+  const onSelectColor = useCallback(
+    ({ hex }: { hex: string }) => {
+      // do something with the selected color.
+      const hsv = colorKit.HSV(hex).object();
+      setHue(hsv.h);
+      setSat(hsv.s / 100);
+      setVal(hsv.v / 100);
+      if (withAlpha) {
+        setAlpha(hsv.a);
+      } else {
+        setAlpha(1);
+      }
+      //console.log(hsv.h, hsv.s / 100, hsv.v / 100, hsv.a);
+    },
+    [withAlpha]
+  );
+
+  useEffect(() => {
+    if (color !== undefined) {
+      onSelectColor({ hex: color });
     }
-    //console.log(hsv.h, hsv.s / 100, hsv.v / 100, hsv.a);
-  };
+  }, [color, onSelectColor]);
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
@@ -56,7 +68,7 @@ export const ModalColorPicker = (props: Props) => {
           <View style={[styles.modalContents, { width: windowWidth * 0.6, height: 370 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`} </Text>
             <ColorPicker
-              value={'#ff000080'}
+              value={defaultColor}
               sliderThickness={20}
               thumbSize={25}
               thumbShape="circle"

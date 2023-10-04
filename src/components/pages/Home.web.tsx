@@ -68,6 +68,7 @@ export default function HomeScreen() {
     isLoading,
     currentMapMemoTool,
     visibleMapMemoColor,
+    penColor,
     onRegionChangeMapView,
     onDrop,
     pressStopDownloadTiles,
@@ -604,6 +605,7 @@ export default function HomeScreen() {
         >
           <Loading visible={isLoading} text="" />
           <ModalColorPicker
+            color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
             pressSelectColorOK={selectPenColor}
