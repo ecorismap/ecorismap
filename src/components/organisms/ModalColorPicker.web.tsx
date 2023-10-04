@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore
 import { SketchPicker } from 'react-color';
 import { t } from '../../i18n/config';
-
+import { colorKit } from 'reanimated-color-picker';
 interface Props {
+  color?: string;
   modalVisible: boolean;
   withAlpha: boolean;
   pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
@@ -14,13 +15,21 @@ interface Props {
 }
 
 export const ModalColorPicker = (props: Props) => {
-  const { modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
+  const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
+
   const [val, setVal] = useState({
     a: 0.5,
     h: 0,
     s: 1,
     v: 1,
   });
+
+  useEffect(() => {
+    if (color !== undefined) {
+      const hsv = colorKit.HSV(color).object();
+      setVal({ a: hsv.a, h: hsv.h, s: hsv.s / 100, v: hsv.v / 100 });
+    }
+  }, [color]);
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
@@ -31,9 +40,9 @@ export const ModalColorPicker = (props: Props) => {
             <SketchPicker
               disableAlpha={!withAlpha}
               color={val}
-              onChangeComplete={(color: any) => {
+              onChangeComplete={(color_: any) => {
                 //console.log(color);
-                setVal(color.hsv);
+                setVal(color_.hsv);
               }}
             />
 

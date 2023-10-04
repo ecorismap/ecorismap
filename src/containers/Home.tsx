@@ -47,6 +47,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const isPencilTouch = useRef(false);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const mapType = useSelector((state: AppState) => state.settings.mapType);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline);
@@ -128,6 +129,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     penWidth,
     mapMemoEditingLine,
     editableMapMemo,
+    isPencilModeActive,
     setMapMemoTool,
     setPen,
     setEraser,
@@ -141,6 +143,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     clearMapMemoHistory,
     changeColorTypeToIndivisual,
     clearMapMemoEditingLine,
+    togglePencilMode,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -393,7 +396,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
-      toggleHeadingUp(false);
+      toggleWebTerrainActive(false);
+      if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
     [
       setDrawTool,
@@ -753,6 +757,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: async (e: GestureResponderEvent) => {
+          //@ts-ignore
+          isPencilTouch.current = !!e.nativeEvent.altitudeAngle;
           if (currentDrawTool === 'MOVE') {
             hideDrawLine();
           } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
@@ -762,6 +768,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           } else if (currentDrawTool !== 'NONE') {
             pressSvgView(e);
           } else if (currentMapMemoTool !== 'NONE') {
+            if (!isPencilTouch.current && isPencilModeActive) return;
             onPanResponderGrantMapMemo(e);
           } else {
             unselectRecord();
@@ -769,18 +776,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
           //@ts-ignore
-          const isPencilTouch = !!e.nativeEvent.altitudeAngle;
-          const USE_PENCIL = false;
+
           if (currentDrawTool === 'MOVE') {
           } else if (isPinch) {
-          } else if (
-            gesture.numberActiveTouches === 2 ||
-            (USE_PENCIL && isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch)
-          ) {
+          } else if (gesture.numberActiveTouches === 2) {
             clearMapMemoEditingLine();
             hideDrawLine();
             setIsPinch(true);
-          } else if (currentMapMemoTool !== 'NONE') {
+          } else if (isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch.current) {
+            //指による移動
+          } else if (isMapMemoDrawTool(currentMapMemoTool)) {
             onPanResponderMoveMapMemo(e);
           } else if (currentDrawTool !== 'NONE') {
             moveSvgView(e);
@@ -797,6 +802,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
           }
+          isPencilTouch.current = false;
         },
       }),
     [
@@ -806,6 +812,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentMapMemoTool,
       getInfoOfFeature,
       hideDrawLine,
+      isPencilModeActive,
       isPinch,
       moveSvgView,
       onPanResponderGrantMapMemo,
@@ -867,6 +874,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         mapMemoEditingLine: mapMemoEditingLine.current,
         editableMapMemo,
         vectorTileInfo,
+        isPencilModeActive,
+        isPencilTouch: isPencilTouch.current,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -907,6 +916,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         closeVectorTileInfo,
         bottomSheetRef,
         onCloseBottomSheet,
+        togglePencilMode,
       }}
     >
       <Home />
