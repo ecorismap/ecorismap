@@ -10,7 +10,6 @@ export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
 export const FUNC_ENCRYPTION = true;
 export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
-export const FUNC_MAPBOX = false;
 
 export const PLUGIN = {
   HISYOUTOOL: false,
