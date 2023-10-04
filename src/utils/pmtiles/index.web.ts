@@ -121,7 +121,6 @@ export function zxyToTileId(z: number, x: number, y: number): number {
 
 export function tileIdToZxy(i: number): [number, number, number] {
   let acc = 0;
-  const z = 0;
 
   for (let z = 0; z < 27; z++) {
     const num_tiles = (0x1 << z) * (0x1 << z);

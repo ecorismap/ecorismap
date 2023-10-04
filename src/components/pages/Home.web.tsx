@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useContext, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useContext } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -7,7 +7,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
-import Map, { GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
+import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
 import maplibregl, { LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
@@ -242,6 +242,43 @@ export default function HomeScreen() {
 
     return { styles: layers, header: header };
   };
+
+  const customHandle = useCallback(() => {
+    return (
+      <View
+        style={{
+          height: 25,
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+        }}
+      >
+        <View
+          style={{
+            backgroundColor: COLOR.GRAY4,
+            borderRadius: 2.5,
+            width: 30,
+            height: 4,
+            alignSelf: 'center',
+          }}
+        />
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            right: 16,
+            top: -4,
+            width: 24,
+            height: 25,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          onPress={() => bottomSheetRef.current?.close()}
+        >
+          <Text style={{ fontSize: 24, color: COLOR.GRAY4 }}>×</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [bottomSheetRef]);
 
   useEffect(() => {
     if (!mapViewRef.current) return;
@@ -588,7 +625,6 @@ export default function HomeScreen() {
                 mapStyle={mapStyle}
                 maxPitch={85}
                 onMove={(e) => onRegionChangeMapView(e.viewState)}
-                //mapboxAccessToken={mapboxToken}
                 onLoad={onMapLoad}
                 cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
@@ -702,6 +738,7 @@ export default function HomeScreen() {
         enablePanDownToClose
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
+        handleComponent={customHandle}
         style={{ width: '50%' }}
       >
         <Animated.View style={animatedStyle}>
