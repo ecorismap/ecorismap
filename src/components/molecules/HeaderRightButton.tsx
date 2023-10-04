@@ -34,7 +34,7 @@ const HeaderRightButton = React.memo((props: Props) => {
 const styles = StyleSheet.create({
   headerRight: {
     justifyContent: 'flex-end',
-    marginBottom: Platform.OS === 'ios' ? 5 : 0,
+    marginBottom: 0,
     marginLeft: Platform.OS === 'web' ? 0 : 15,
     marginRight: Platform.OS === 'web' ? 10 : -5,
   },
