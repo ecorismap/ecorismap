@@ -214,6 +214,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         longitudeDelta: 0.001,
         zoom: 15,
       },
+      previous: 'DataEdit',
     });
   }, [navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
 

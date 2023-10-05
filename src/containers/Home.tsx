@@ -601,6 +601,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
+
     bottomSheetRef.current?.snapToIndex(2);
     navigation.setParams({ tileMap: undefined });
     navigation.navigate('Maps');
@@ -617,24 +618,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
-    //console.log('jump', mapViewRef.current);
+
+    // console.log('jump', route.params?.jumpTo);
+    // console.log('previous', route.params?.previous);
+    // console.log('tileMap', route.params?.tileMap);
+
     if (route.params?.jumpTo != null) {
       //console.log(route.params.jumpTo);
       changeMapRegion({ ...route.params.jumpTo, zoom }, true);
-      navigation.setParams({ jumpTo: undefined });
-      bottomSheetRef.current?.snapToIndex(1);
     }
+    if (route.params?.previous === 'Settings') {
+      bottomSheetRef.current?.close();
+    } else if (route.params?.previous === 'DataEdit') {
+      bottomSheetRef.current?.snapToIndex(1);
+    } else if (route.params?.previous === 'Maps') {
+      if (route.params?.tileMap) {
+        //closeできないバグ？のため仕方なく0にしている
+        bottomSheetRef.current?.snapToIndex(0);
+      } else {
+        bottomSheetRef.current?.snapToIndex(2);
+      }
+    }
+    //navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.params?.jumpTo]);
-
-  useEffect(() => {
-    if (route.params?.tileMap != null) {
-      //BUG: close()が効かない
-      bottomSheetRef.current?.snapToIndex(0);
-      //bottomSheetRef.current?.close();
-    }
-  });
+  }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
 
   useEffect(() => {
     return bottomSheetRef.current?.close();

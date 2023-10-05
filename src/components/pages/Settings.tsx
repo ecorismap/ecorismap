@@ -7,12 +7,14 @@ import { TextButton } from '../molecules/TextButton';
 import { SettingsModalFileSave } from '../organisms/SettingsModalFileSave';
 import { SettingsModalMapListURL } from '../organisms/SettingsModalMapListURL';
 import { ScrollView } from 'react-native-gesture-handler';
+import { Loading } from '../molecules/Loading';
 
 export default function Settings() {
   const {
     mapListURL,
     isMapListURLOpen,
     isFileSaveOpen,
+    isLoading,
     //pressMapListURLOpen,
     pressMapListURLOK,
     pressMapListURLCancel,
@@ -36,6 +38,7 @@ export default function Settings() {
 
   return (
     <View style={styles.container}>
+      <Loading visible={isLoading} text="" />
       <ScrollView>
         <TextButton
           name={SETTINGS_BTN.FILE_SAVE}

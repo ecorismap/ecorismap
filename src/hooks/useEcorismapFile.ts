@@ -1,6 +1,15 @@
 import { useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { DataType, EcorisMapFileType, ExportType, LayerType, PhotoType, SettingsType, TileMapType } from '../types';
+import {
+  DataType,
+  EcorisMapFileType,
+  ExportType,
+  LayerType,
+  PhotoType,
+  RegionType,
+  SettingsType,
+  TileMapType,
+} from '../types';
 
 import { AppState } from '../modules';
 import { setLayersAction, createLayersInitialState } from '../modules/layers';
@@ -50,6 +59,7 @@ export type UseEcorisMapFileReturnType = {
   openEcorisMapFile: (uri: string) => Promise<{
     isOK: boolean;
     message: string;
+    region?: RegionType;
   }>;
   createExportSettings: () => SettingsType;
 };
@@ -257,7 +267,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         setSettingsAction({ ...settings, mapRegion: loaded.settings.mapRegion, mapType: loaded.settings.mapType })
       );
       dispatch(setTileMapsAction(loaded.maps));
-      return { isOK: true, message: '' };
+
+      return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },
     [dispatch, loadEcorisMapFile, settings]
   );
