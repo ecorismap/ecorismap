@@ -141,9 +141,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
-    changeColorTypeToIndivisual,
+    changeColorTypeToIndividual,
     clearMapMemoEditingLine,
-    togglePencilMode,
+    setPencilModeActive,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -208,12 +208,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
   );
 
-  const onPressMapView = useCallback(
+  const getInfoOfVectorTile = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
       let latlon: number[];
       let properties: { [key: string]: any }[];
       let position: Position;
-      if (isMapMemoDrawTool(currentMapMemoTool)) return;
+
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
         const map = (mapViewRef.current as MapRef).getMap();
@@ -234,7 +234,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         openVectorTileInfo(properties, position);
       }
     },
-    [closeVectorTileInfo, currentMapMemoTool, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+  );
+
+  const onPressMapView = useCallback(
+    async (event: MapPressEvent | MapLayerMouseEvent) => {
+      if (isMapMemoDrawTool(currentMapMemoTool)) return;
+      if (isInfoTool(currentDrawTool)) return;
+      await getInfoOfVectorTile(event);
+    },
+    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -242,6 +251,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await toggleGPS('show');
     }
   }, [gpsState, toggleGPS]);
+
+  const togglePencilMode = useCallback(() => {
+    runTutrial('PENCILMODE');
+    setPencilModeActive(!isPencilModeActive);
+  }, [isPencilModeActive, runTutrial, setPencilModeActive]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
@@ -251,12 +265,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setDrawTool('NONE');
         setMapMemoTool(value);
         if (value.includes('PEN')) {
-          const ret = changeColorTypeToIndivisual();
-          if (ret) Alert.alert('', t('Home.alert.indivisualColor'));
+          const ret = changeColorTypeToIndividual();
+          if (ret) Alert.alert('', t('Home.alert.individualColor'));
         }
       }
     },
-    [changeColorTypeToIndivisual, currentMapMemoTool, setDrawTool, setMapMemoTool]
+    [changeColorTypeToIndividual, currentMapMemoTool, setDrawTool, setMapMemoTool]
   );
 
   const selectDrawTool = useCallback(
@@ -596,6 +610,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
+
     bottomSheetRef.current?.snapToIndex(2);
     navigation.setParams({ tileMap: undefined });
     navigation.navigate('Maps');
@@ -612,24 +627,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
-    //console.log('jump', mapViewRef.current);
+
+    // console.log('jump', route.params?.jumpTo);
+    // console.log('previous', route.params?.previous);
+    // console.log('tileMap', route.params?.tileMap);
+
     if (route.params?.jumpTo != null) {
       //console.log(route.params.jumpTo);
       changeMapRegion({ ...route.params.jumpTo, zoom }, true);
-      navigation.setParams({ jumpTo: undefined });
-      bottomSheetRef.current?.snapToIndex(1);
     }
+    if (route.params?.previous === 'Settings') {
+      bottomSheetRef.current?.close();
+    } else if (route.params?.previous === 'DataEdit') {
+      bottomSheetRef.current?.snapToIndex(1);
+    } else if (route.params?.previous === 'Maps') {
+      if (route.params?.tileMap) {
+        //closeできないバグ？のため仕方なく0にしている
+        bottomSheetRef.current?.snapToIndex(0);
+      } else {
+        bottomSheetRef.current?.snapToIndex(2);
+      }
+    }
+    //navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.params?.jumpTo]);
-
-  useEffect(() => {
-    if (route.params?.tileMap != null) {
-      //BUG: close()が効かない
-      bottomSheetRef.current?.snapToIndex(0);
-      //bottomSheetRef.current?.close();
-    }
-  });
+  }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
 
   useEffect(() => {
     return bottomSheetRef.current?.close();

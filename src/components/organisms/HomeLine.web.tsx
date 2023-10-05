@@ -98,7 +98,11 @@ export const Line = React.memo((props: Props) => {
         type: 'line',
         paint: {
           'line-color': colorExpression,
-          'line-width': ['coalesce', ['get', '_strokeWidth'], 2],
+          'line-width': [
+            'coalesce',
+            layer.colorStyle.colorType === 'INDIVIDUAL' ? ['get', '_strokeWidth'] : layer_.colorStyle.lineWidth ?? 1.5,
+            layer_.colorStyle.lineWidth ?? 1.5,
+          ],
         },
         layout: {
           visibility: 'visible',
@@ -106,7 +110,7 @@ export const Line = React.memo((props: Props) => {
         filter: ['==', '_visible', true],
       };
     },
-    [getColorExpression, userId]
+    [getColorExpression, layer.colorStyle, userId]
   );
 
   if (data === undefined || data.length === 0) return null;

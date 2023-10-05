@@ -22,8 +22,9 @@ export const getColor = (layer: LayerType, feature: RecordType, transparency: nu
       const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
       color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
     }
-  } else if (colorStyle.colorType === 'INDIVISUAL') {
-    color = (feature.field._strokeColor as string) ?? 'rgba(0,0,0,0.7)';
+  } else if (colorStyle.colorType === 'INDIVIDUAL') {
+    color =
+      (feature.field._strokeColor as string) ?? transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)';
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
     color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
@@ -64,8 +65,16 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
         .flat();
       colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
     }
-  } else if (colorType === 'INDIVISUAL') {
-    colorRule = ['get', '_strokeColor'];
+  } else if (colorType === 'INDIVIDUAL') {
+    colorRule = [
+      'coalesce',
+      layer_.colorStyle.colorType === 'INDIVIDUAL'
+        ? ['get', '_strokeColor']
+        : transparency
+        ? 'rgba(0,0,0,0)'
+        : 'rgba(0,0,0,1)',
+      transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)',
+    ];
   } else if (colorType === 'USER') {
     const defaultColor = 'rgba(0,0,0,0)';
     const colorObj = colorList.find(({ value }) => value === displayName);
