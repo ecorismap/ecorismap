@@ -4,6 +4,7 @@ interface SettingsContextType {
   mapListURL: string | undefined;
   isMapListURLOpen: boolean;
   isFileSaveOpen: boolean;
+  isLoading: boolean;
   pressMapListURLOpen: () => void;
   pressMapListURLOK: (mapListURL: string) => void;
   pressMapListURLCancel: () => void;

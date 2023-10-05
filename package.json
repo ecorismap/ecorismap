@@ -65,8 +65,6 @@
     "@react-navigation/native": "^6.1.7",
     "@react-navigation/native-stack": "^6.9.13",
     "@react-navigation/stack": "^6.3.17",
-    "@stripe/react-stripe-js": "^2.1.0",
-    "@stripe/stripe-js": "^1.54.0",
     "@tmcw/togeojson": "^5.2.2",
     "@turf/boolean-valid": "^6.5.0",
     "@turf/line-distance": "^4.7.3",

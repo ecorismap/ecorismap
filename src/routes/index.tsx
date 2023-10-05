@@ -30,6 +30,7 @@ export type RootStackParamList = {
     | {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
+        previous: keyof RootStackParamList;
       }
     | undefined;
   AccountSettings: { previous: keyof RootStackParamList };
