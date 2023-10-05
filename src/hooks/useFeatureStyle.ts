@@ -247,6 +247,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
 
   const saveColorStyle = useCallback(() => {
     dispatch(updateLayerAction({ ...targetLayer, colorStyle: colorStyle }));
+    setIsEdited(false);
   }, [colorStyle, dispatch, targetLayer]);
 
   return {
