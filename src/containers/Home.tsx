@@ -208,12 +208,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
   );
 
-  const onPressMapView = useCallback(
+  const getInfoOfVectorTile = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
       let latlon: number[];
       let properties: { [key: string]: any }[];
       let position: Position;
-      if (isMapMemoDrawTool(currentMapMemoTool)) return;
+
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
         const map = (mapViewRef.current as MapRef).getMap();
@@ -234,7 +234,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         openVectorTileInfo(properties, position);
       }
     },
-    [closeVectorTileInfo, currentMapMemoTool, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+  );
+
+  const onPressMapView = useCallback(
+    async (event: MapPressEvent | MapLayerMouseEvent) => {
+      if (isMapMemoDrawTool(currentMapMemoTool)) return;
+      if (isInfoTool(currentDrawTool)) return;
+      await getInfoOfVectorTile(event);
+    },
+    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile]
   );
 
   const onDragMapView = useCallback(async () => {
