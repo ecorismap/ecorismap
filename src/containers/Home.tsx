@@ -143,7 +143,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     clearMapMemoHistory,
     changeColorTypeToIndividual,
     clearMapMemoEditingLine,
-    togglePencilMode,
+    setPencilModeActive,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -242,6 +242,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await toggleGPS('show');
     }
   }, [gpsState, toggleGPS]);
+
+  const togglePencilMode = useCallback(() => {
+    runTutrial('PENCILMODE');
+    setPencilModeActive(!isPencilModeActive);
+  }, [isPencilModeActive, runTutrial, setPencilModeActive]);
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType) => {
