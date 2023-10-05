@@ -15,6 +15,7 @@ export const TUTRIALS = {
   HOME_BTN_TRACK: true,
   MAPS_BTN_ONLINE: true,
   MAPS_BTN_OFFLINE: true,
+  PENCILMODE: true,
 };
 
 export const TUTRIALS_MESSAGE = {
@@ -32,4 +33,5 @@ export const TUTRIALS_MESSAGE = {
   HOME_BTN_TRACK: t('tutrials.home_btn.track'),
   MAPS_BTN_ONLINE: t('tutrials.maps_btn.online'),
   MAPS_BTN_OFFLINE: t('tutrials.maps_btn.offline'),
+  PENCILMODE: t('tutrials.pencilmode'),
 } as const;

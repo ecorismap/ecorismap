@@ -40,7 +40,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('POINT')}
             backgroundColor={COLOR.BLUE}
           />
-          <Button
+          {/* <Button
             id="LINE"
             name={HOME_FEATURE_BTN.LINE}
             onPressCustom={() => selectFeatureButton('LINE')}
@@ -51,7 +51,7 @@ export const HomeButtons = React.memo(() => {
             name={HOME_FEATURE_BTN.POLYGON}
             onPressCustom={() => selectFeatureButton('POLYGON')}
             backgroundColor={COLOR.BLUE}
-          />
+          /> */}
           <Button
             id="MEMO"
             name={HOME_FEATURE_BTN.MEMO}

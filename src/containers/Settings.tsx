@@ -27,6 +27,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
   const { isRunningProject } = usePermission();
+  const [isLoading, setIsLoading] = useState(false);
 
   const pressFileSave = useCallback(async () => {
     // if (isRunningProject) {
@@ -83,15 +84,20 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         await AlertAsync(t('hooks.message.wrongExtension'));
         return;
       }
-
-      const { isOK, message } = await openEcorisMapFile(file.assets[0].uri);
+      setIsLoading(true);
+      const { isOK, message, region } = await openEcorisMapFile(file.assets[0].uri);
+      setIsLoading(false);
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {
-        await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
+        //await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
+        navigation.navigate('Home', {
+          jumpTo: region,
+          previous: 'Settings',
+        });
       }
     }
-  }, [isRunningProject, openEcorisMapFile, tracking]);
+  }, [isRunningProject, navigation, openEcorisMapFile, tracking]);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
@@ -99,11 +105,13 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (tracking !== undefined) {
         return { isOK: false, message: t('hooks.message.cannotInTracking') };
       }
+      setIsLoading(true);
       const { isOK, message } = await clearEcorisMap();
+      setIsLoading(false);
       if (!isOK) {
         await AlertAsync(message);
       } else {
-        navigation.navigate('Home');
+        navigation.navigate('Home', { previous: 'Settings' });
       }
     }
   }, [clearEcorisMap, navigation, tracking]);
@@ -169,6 +177,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         mapListURL,
         isMapListURLOpen,
         isFileSaveOpen,
+        isLoading,
         pressMapListURLOpen,
         pressMapListURLOK,
         pressMapListURLCancel,

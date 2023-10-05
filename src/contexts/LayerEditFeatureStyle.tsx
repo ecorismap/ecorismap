@@ -14,10 +14,13 @@ interface LayerEditFeatureStyleContextType {
   colorRampLabels: string[];
   layerType: FeatureType;
   modalVisible: boolean;
+  isStyleChangeOnly: boolean;
+  isEdited: boolean;
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
   changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue, itemIndex: number) => void;
   changeTransparency: (value: number) => void;
+  changeLineWidth: (value: number) => void;
   changeFieldName: (itemValue: ItemValue, itemIndex: number) => void;
   changeColorRamp: (itemValue: ItemValue, itemIndex: number) => void;
   changeValue: (index: number, value: string) => void;
@@ -29,5 +32,6 @@ interface LayerEditFeatureStyleContextType {
   pressSelectColorOK: (hue: number, sat: number, val: number, alpha: number) => void;
   pressSelectColorCancel: () => void;
   gotoBack: () => void;
+  saveColorStyle: () => void;
 }
 export const LayerEditFeatureStyleContext = createContext({} as LayerEditFeatureStyleContextType);

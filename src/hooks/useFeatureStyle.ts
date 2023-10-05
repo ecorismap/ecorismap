@@ -27,6 +27,7 @@ export type UseFeatureStyleReturnType = {
   changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue) => void;
   changeTransparency: (value: number) => void;
+  changeLineWidth: (value: number) => void;
   changeFieldName: (itemValue: ItemValue) => void;
   changeColorRamp: (itemValue: ItemValue) => void;
   changeValue: (index: number, value: string) => void;
@@ -103,6 +104,16 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     (value: number) => {
       if (colorStyle.transparency !== value) {
         setColorStyle({ ...colorStyle, transparency: value });
+        setIsEdited(true);
+      }
+    },
+    [colorStyle]
+  );
+
+  const changeLineWidth = useCallback(
+    (value: number) => {
+      if (colorStyle.lineWidth !== value) {
+        setColorStyle({ ...colorStyle, lineWidth: value });
         setIsEdited(true);
       }
     },
@@ -236,6 +247,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
 
   const saveColorStyle = useCallback(() => {
     dispatch(updateLayerAction({ ...targetLayer, colorStyle: colorStyle }));
+    setIsEdited(false);
   }, [colorStyle, dispatch, targetLayer]);
 
   return {
@@ -255,6 +267,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     changeCustomFieldValue,
     changeColorType,
     changeTransparency,
+    changeLineWidth,
     changeFieldName,
     changeColorRamp,
     changeValue,
