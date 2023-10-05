@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import LayerEditFeatureStyle from '../components/pages/LayerEditFeatureStyle';
 import { LayerEditFeatureStyleContext } from '../contexts/LayerEditFeatureStyle';
 import { useFeatureStyle } from '../hooks/useFeatureStyle';
@@ -36,6 +36,8 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
     saveColorStyle,
   } = useFeatureStyle(route.params.targetLayer, route.params.isEdited);
 
+  const isStyleChangeOnly = useMemo(() => route.params.previous === 'Layers', [route.params.previous]);
+
   const gotoBack = useCallback(() => {
     if (route.params.previous === 'Layers') {
       saveColorStyle();
@@ -63,6 +65,8 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
         fieldLabels,
         layerType,
         modalVisible,
+        isStyleChangeOnly,
+        isEdited,
         setIsCustom,
         changeCustomFieldValue,
         changeColorType,
@@ -79,6 +83,7 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
         pressDeleteValue: deleteValue,
         pressReloadValue: reloadValue,
         gotoBack,
+        saveColorStyle,
       }}
     >
       <LayerEditFeatureStyle />
