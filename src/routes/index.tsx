@@ -12,6 +12,7 @@ export type RootStackParamList = {
     | {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
+        previous: keyof RootStackParamList;
       }
     | undefined;
   Settings: { previous: keyof RootStackParamList };

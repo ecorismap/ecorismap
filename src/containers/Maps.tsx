@@ -57,6 +57,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     (item: TileMapType) => {
       navigation.navigate('Home', {
         tileMap: item,
+        previous: 'Maps',
       });
     },
     [navigation]
