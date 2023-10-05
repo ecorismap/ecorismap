@@ -117,7 +117,11 @@ export const Polygon = React.memo((props: Props) => {
         type: 'line',
         paint: {
           'line-color': colorExpression,
-          'line-width': 1,
+          'line-width': [
+            'coalesce',
+            layer.colorStyle.colorType === 'INDIVIDUAL' ? ['get', '_strokeWidth'] : layer_.colorStyle.lineWidth ?? 1.5,
+            layer_.colorStyle.lineWidth ?? 1.5,
+          ],
         },
         layout: {
           visibility: 'visible',
@@ -125,7 +129,7 @@ export const Polygon = React.memo((props: Props) => {
         filter: ['==', '_visible', true],
       };
     },
-    [getColorExpression, userId]
+    [getColorExpression, layer.colorStyle.colorType, userId]
   );
 
   if (data === undefined || data.length === 0) return null;

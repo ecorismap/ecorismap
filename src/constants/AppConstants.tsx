@@ -87,7 +87,7 @@ export const FEATURETYPE = {
 export const COLORTYPE = {
   SINGLE: t('constants.colortype.single'),
   CATEGORIZED: t('constants.colortype.categorized'),
-  INDIVISUAL: t('constants.colortype.indivisual'),
+  INDIVIDUAL: t('constants.colortype.individual'),
 } as const;
 
 export const COLORRAMP = {

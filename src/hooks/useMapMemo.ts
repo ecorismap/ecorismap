@@ -37,7 +37,7 @@ export type UseMapMemoReturnType = {
   onPanResponderReleaseMapMemo: (isPinch?: boolean) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
-  changeColorTypeToIndivisual: () => boolean;
+  changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
   togglePencilMode: () => void;
 };
@@ -213,11 +213,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
   }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
 
-  const changeColorTypeToIndivisual = useCallback(() => {
-    if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVISUAL') return false;
+  const changeColorTypeToIndividual = useCallback(() => {
+    if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVIDUAL') return false;
     const newLayer = {
       ...activeMemoLayer,
-      colorStyle: { ...activeMemoLayer.colorStyle, colorType: 'INDIVISUAL' as const },
+      colorStyle: { ...activeMemoLayer.colorStyle, colorType: 'INDIVIDUAL' as const },
       label: '',
     };
     dispatch(updateLayerAction(newLayer));
@@ -249,7 +249,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
-    changeColorTypeToIndivisual,
+    changeColorTypeToIndividual,
     clearMapMemoEditingLine,
     togglePencilMode,
   } as const;

@@ -29,6 +29,7 @@ export default function LayerEditFeatureStyleScreen() {
     changeCustomFieldValue,
     changeColorType,
     changeTransparency,
+    changeLineWidth,
     changeFieldName,
     changeColorRamp,
     pressSelectSingleColor,
@@ -52,6 +53,20 @@ export default function LayerEditFeatureStyleScreen() {
   return (
     <View style={styles.container}>
       <ScrollView>
+        {(layerType === 'LINE' || layerType === 'POLYGON') && colorStyle.colorType !== 'INDIVIDUAL' && (
+          <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
+            <Slider
+              style={{ paddingHorizontal: 10 }}
+              label={t('common.width')}
+              labelColor={COLOR.BLACK}
+              initialValue={colorStyle.lineWidth ?? 1.5}
+              step={0.5}
+              minimumValue={1}
+              maximumValue={5}
+              onSlidingComplete={changeLineWidth}
+            />
+          </View>
+        )}
         <SimplePicker
           style={{ flex: 2, borderTopWidth: 1, borderColor: COLOR.GRAY2 }}
           label={t('common.colorType')}
