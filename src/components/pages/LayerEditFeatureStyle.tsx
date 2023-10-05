@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { COLOR } from '../../constants/AppConstants';
+import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
@@ -12,6 +12,7 @@ import { t } from '../../i18n/config';
 import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
 import { TextInput } from '../atoms';
 import { ScrollView } from 'react-native-gesture-handler';
+import HeaderRightButton from '../molecules/HeaderRightButton';
 
 export default function LayerEditFeatureStyleScreen() {
   const {
@@ -26,32 +27,65 @@ export default function LayerEditFeatureStyleScreen() {
     colorRampLabels,
     layerType,
     modalVisible,
+    isStyleChangeOnly,
+    isEdited,
     changeCustomFieldValue,
     changeColorType,
     changeTransparency,
+    changeLineWidth,
     changeFieldName,
     changeColorRamp,
     pressSelectSingleColor,
     gotoBack,
     pressSelectColorOK,
     pressSelectColorCancel,
+    saveColorStyle,
   } = useContext(LayerEditFeatureStyleContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
-    [gotoBack]
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) =>
+      isStyleChangeOnly ? <></> : <HeaderBackButton {...props_} onPress={gotoBack} />,
+    [gotoBack, isStyleChangeOnly]
+  );
+
+  const headerRightButton = useCallback(
+    () =>
+      isStyleChangeOnly ? (
+        <HeaderRightButton
+          name={LAYEREDIT_BTN.SAVE}
+          onPress={saveColorStyle}
+          backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!isEdited}
+        />
+      ) : null,
+    [isEdited, isStyleChangeOnly, saveColorStyle]
   );
 
   useEffect(() => {
     navigation.setOptions({
       headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
+      headerRight: () => headerRightButton(),
     });
-  }, [headerLeftButton, navigation]);
+  }, [headerLeftButton, headerRightButton, navigation]);
 
   return (
     <View style={styles.container}>
       <ScrollView>
+        {(layerType === 'LINE' || layerType === 'POLYGON') && colorStyle.colorType !== 'INDIVIDUAL' && (
+          <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
+            <Slider
+              style={{ paddingHorizontal: 10 }}
+              label={t('common.width')}
+              labelColor={COLOR.BLACK}
+              initialValue={colorStyle.lineWidth ?? 1.5}
+              step={0.5}
+              minimumValue={1}
+              maximumValue={5}
+              onSlidingComplete={changeLineWidth}
+            />
+          </View>
+        )}
         <SimplePicker
           style={{ flex: 2, borderTopWidth: 1, borderColor: COLOR.GRAY2 }}
           label={t('common.colorType')}

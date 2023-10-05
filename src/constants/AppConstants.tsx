@@ -42,6 +42,7 @@ export const COLOR = {
   ALFAWHITE: '#FFFFFF55',
   BLACK: '#000',
   CAROUSEL_BACKGROUND: 'rgba(1, 1, 1, 0.1)',
+  TRACK: '#0000FFee',
 };
 
 export const TILE_FOLDER = `${FileSystem.documentDirectory}tiles`;
@@ -93,7 +94,7 @@ export const COLORTYPE = {
   SINGLE: t('constants.colortype.single'),
   CATEGORIZED: t('constants.colortype.categorized'),
   ...(FUNC_LOGIN ? { USER: t('constants.colortype.user') } : {}),
-  INDIVISUAL: t('constants.colortype.indivisual'),
+  INDIVIDUAL: t('constants.colortype.individual'),
 } as const;
 
 export const COLORRAMP = {
