@@ -55,7 +55,20 @@ export const Line = React.memo((props: Props) => {
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
-        const strokeWidth = tracking?.dataId === feature.id ? 4 : (feature.field._strokeWidth as number) ?? 1.5;
+        let strokeWidth;
+        if (tracking?.dataId === feature.id) {
+          strokeWidth = 4;
+        } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+          if (feature.field._strokeWidth !== undefined) {
+            strokeWidth = feature.field._strokeWidth as number;
+          } else {
+            strokeWidth = 1.5;
+          }
+        } else if (layer.colorStyle.lineWidth !== undefined) {
+          strokeWidth = layer.colorStyle.lineWidth;
+        } else {
+          strokeWidth = 1.5;
+        }
 
         return (
           <PolylineComponent

@@ -54,9 +54,18 @@ export const Polygon = React.memo((props: Props) => {
         const pointColor = selected ? COLOR.YELLOW : color;
         const polygonColor = selected ? COLOR.ALFAYELLOW : getColor(layer, feature, transparency);
         const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
-        const strokeWidth = (feature.field._strokeWidth as number)
-          ? 2 ** (currentZoom - zoom) * (feature.field._strokeWidth as number)
-          : 1.5;
+        let strokeWidth;
+        if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+          if (feature.field._strokeWidth !== undefined) {
+            strokeWidth = feature.field._strokeWidth as number;
+          } else {
+            strokeWidth = 1.5;
+          }
+        } else if (layer.colorStyle.lineWidth !== undefined) {
+          strokeWidth = layer.colorStyle.lineWidth;
+        } else {
+          strokeWidth = 1.5;
+        }
 
         if (currentZoom >= 11) {
           return (

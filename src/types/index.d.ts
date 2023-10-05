@@ -149,6 +149,7 @@ export interface ColorStyle {
     value: string | number | undefined;
     color: string;
   }[];
+  lineWidth?: number;
 }
 
 export interface FieldType {
