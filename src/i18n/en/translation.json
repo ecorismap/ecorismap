@@ -77,7 +77,8 @@
     "polygontool": {
       "plot": "Create a polygon in your plot. \nA node is added where you touched. \nTouch the start point to finish editing the polygon. \nTouch the polygon to resume editing.",
       "freehand": "Create polygons freehand."
-    }
+    },
+    "pencilmode": "Use a pen to draw. A finger touch will move."
   },
   "Project": {
     "message": {}

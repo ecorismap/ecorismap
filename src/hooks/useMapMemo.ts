@@ -39,7 +39,7 @@ export type UseMapMemoReturnType = {
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
-  togglePencilMode: () => void;
+  setPencilModeActive: Dispatch<SetStateAction<boolean>>;
 };
 export type HistoryType = {
   operation: string;
@@ -224,10 +224,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     return true;
   }, [activeMemoLayer, dispatch]);
 
-  const togglePencilMode = useCallback(() => {
-    setPencilModeActive(!isPencilModeActive);
-  }, [isPencilModeActive]);
-
   return {
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -251,6 +247,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoHistory,
     changeColorTypeToIndividual,
     clearMapMemoEditingLine,
-    togglePencilMode,
+    setPencilModeActive,
   } as const;
 };
