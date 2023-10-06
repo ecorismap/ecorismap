@@ -69,7 +69,7 @@ index 0000000..6906eb6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/Metadata.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/PMTiles.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/PMTiles.dex
 new file mode 100644
-index 0000000..3c3fc28
+index 0000000..e44a287
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/PMTiles.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/PMTilesUtils.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/PMTilesUtils.dex
 new file mode 100644
@@ -103,29 +103,33 @@ diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4
 new file mode 100644
 index 0000000..e27c056
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/PMTiles/VectorLayer.dex differ
-diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/LayoutStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/LayoutStyle.dex
+diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayerStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayerStyle.dex
 new file mode 100644
-index 0000000..648d3f8
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/LayoutStyle.dex differ
-diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/PaintStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/PaintStyle.dex
+index 0000000..ca985a9
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayerStyle.dex differ
+diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayoutStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayoutStyle.dex
 new file mode 100644
-index 0000000..aabaef2
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/PaintStyle.dex differ
-diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/StyleLayer.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/StyleLayer.dex
+index 0000000..7ddc789
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/LayoutStyle.dex differ
+diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/PaintStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/PaintStyle.dex
 new file mode 100644
-index 0000000..89ec5d4
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/StyleLayer/StyleLayer.dex differ
+index 0000000..84da5a8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/PaintStyle.dex differ
+diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/VectorStyle.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/VectorStyle.dex
+new file mode 100644
+index 0000000..bf02101
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyle/VectorStyle.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$1.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$1.dex
 new file mode 100644
-index 0000000..ac7329a
+index 0000000..cdccb07
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$1.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$2.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$2.dex
 new file mode 100644
-index 0000000..6f1aa62
+index 0000000..a587c6f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager$2.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager.dex
 new file mode 100644
-index 0000000..cbb67a7
+index 0000000..8167816
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/VectorTileStyleManager/VectorTileStyleManager.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/BuildConfig.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/BuildConfig.dex
 new file mode 100644
@@ -305,31 +309,31 @@ index 0000000..114184c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTile.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileManager.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileManager.dex
 new file mode 100644
-index 0000000..dee9307
+index 0000000..29ea1f2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileManager.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.dex
 new file mode 100644
-index 0000000..8d2e4cb
+index 0000000..3f31656
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$LineData.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$LineData.dex
 new file mode 100644
-index 0000000..644b575
+index 0000000..ce784a4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$LineData.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PointData.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PointData.dex
 new file mode 100644
-index 0000000..0d9d3e6
+index 0000000..71f1f68
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PointData.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.dex
 new file mode 100644
-index 0000000..3d11bf8
+index 0000000..ee9a522
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.dex
 new file mode 100644
-index 0000000..b4830db
+index 0000000..7ad88a7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider.dex
 new file mode 100644
-index 0000000..d8cb354
+index 0000000..c149ade
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPMTileProvider.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPolygon.dex b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/com/rnmaps/maps/MapPolygon.dex
 new file mode 100644
@@ -549,7 +553,7 @@ index 0000000..2b78648
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/debug/vector_tile/VectorTile.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/desugar_graph.bin b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/desugar_graph.bin
 new file mode 100644
-index 0000000..bcf5899
+index 0000000..f7acbd1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/transformed/desugar_graph.bin differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/43b3ac3b9d1867d92c2f4c97c84b68de/results.bin b/node_modules/react-native-maps/android/build/.transforms/43b3ac3b9d1867d92c2f4c97c84b68de/results.bin
 new file mode 100644
@@ -560,7 +564,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/43b3ac3b9d1867d92c2f4c97c84b68de/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/43b3ac3b9d1867d92c2f4c97c84b68de/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..a6b205b
+index 0000000..c078d6b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/43b3ac3b9d1867d92c2f4c97c84b68de/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/770ce000c788bebb5c7729df58454a98/results.bin b/node_modules/react-native-maps/android/build/.transforms/770ce000c788bebb5c7729df58454a98/results.bin
 new file mode 100644
@@ -655,7 +659,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..3977c5a
+index 0000000..a653ea4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -2769,11 +2773,11 @@ index 0000000..2d3289c
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..c2af0c2
+index 0000000..0d8a8f2
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Mon Oct 02 13:58:40 JST 2023
++#Thu Oct 05 17:39:03 JST 2023
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..801edc8
@@ -2859,29 +2863,33 @@ diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/de
 new file mode 100644
 index 0000000..a667b8e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/PMTiles/VectorLayer.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayerStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayerStyle.class
 new file mode 100644
-index 0000000..3e23170
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/LayoutStyle.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class
+index 0000000..992cbcc
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayerStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayoutStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayoutStyle.class
 new file mode 100644
-index 0000000..a32ce88
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/PaintStyle.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class
+index 0000000..ecba08c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/LayoutStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/PaintStyle.class
 new file mode 100644
-index 0000000..230bb71
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/StyleLayer/StyleLayer.class differ
+index 0000000..fabf58f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/PaintStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/VectorStyle.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/VectorStyle.class
+new file mode 100644
+index 0000000..a93df25
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyle/VectorStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class
 new file mode 100644
-index 0000000..0412c89
+index 0000000..92b2258
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$2.class
 new file mode 100644
-index 0000000..1958390
+index 0000000..09793c4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..a5d2246
+index 0000000..c2c46b7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/BuildConfig.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/BuildConfig.class
 new file mode 100644
@@ -3061,31 +3069,31 @@ index 0000000..0008694
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class
 new file mode 100644
-index 0000000..cd5eb76
+index 0000000..670847c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..688d074
+index 0000000..85a072d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..87d8d58
+index 0000000..de10c9f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..6097738
+index 0000000..f4a68df
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..a594531
+index 0000000..de22d42
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..48b6ad4
+index 0000000..38e14bb
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class
 new file mode 100644
-index 0000000..0d4498d
+index 0000000..4a45b5c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class
 new file mode 100644
@@ -3448,29 +3456,33 @@ diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_
 new file mode 100644
 index 0000000..94c9887
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/PMTiles/VectorLayer.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/LayoutStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/LayoutStyle.class
+diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayerStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayerStyle.class
 new file mode 100644
-index 0000000..35d135b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/LayoutStyle.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/PaintStyle.class
+index 0000000..fb18ec7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayerStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayoutStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayoutStyle.class
 new file mode 100644
-index 0000000..b969493
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/PaintStyle.class differ
-diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/StyleLayer.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/StyleLayer.class
+index 0000000..027d079
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/LayoutStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/PaintStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/PaintStyle.class
 new file mode 100644
-index 0000000..6cc277b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/StyleLayer/StyleLayer.class differ
+index 0000000..3762dff
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/PaintStyle.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/VectorStyle.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/VectorStyle.class
+new file mode 100644
+index 0000000..18b5efe
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyle/VectorStyle.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$1.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$1.class
 new file mode 100644
-index 0000000..04a298a
+index 0000000..ab41244
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$2.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$2.class
 new file mode 100644
-index 0000000..951d14f
+index 0000000..75f148c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager.class
 new file mode 100644
-index 0000000..9a65dfd
+index 0000000..42b7c60
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/BuildConfig.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/BuildConfig.class
 new file mode 100644
@@ -3650,31 +3662,31 @@ index 0000000..cce568d
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileManager.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileManager.class
 new file mode 100644
-index 0000000..02a3118
+index 0000000..fe66afb
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..a7d5a77
+index 0000000..c64b7ad
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..9873bd2
+index 0000000..2fdab86
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..bb5fdec
+index 0000000..76ac826
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..b2db244
+index 0000000..a5b193f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..0a687f7
+index 0000000..94c4b67
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider.class
 new file mode 100644
-index 0000000..55dba88
+index 0000000..5430957
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/com/rnmaps/maps/MapPolygon.class
 new file mode 100644
@@ -3894,7 +3906,7 @@ index 0000000..498c518
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_dir/debug/vector_tile/VectorTile.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..fe37a53
+index 0000000..f3452a9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -5498,33 +5510,33 @@ diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWi
 new file mode 100644
 index 0000000..0008694
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTile.class.uniqueId3 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId24 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId24
 new file mode 100644
-index 0000000..cd5eb76
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18
+index 0000000..670847c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId24 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId19 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId19
 new file mode 100644
-index 0000000..3ef90a1
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25
+index 0000000..85a072d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId19 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId28 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId28
 new file mode 100644
-index 0000000..87d8d58
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 differ
+index 0000000..de10c9f
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId28 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0
 new file mode 100644
-index 0000000..6097738
+index 0000000..f4a68df
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId29 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId29
 new file mode 100644
-index 0000000..a594531
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 differ
+index 0000000..de22d42
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId29 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13
 new file mode 100644
-index 0000000..dc26d78
+index 0000000..38e14bb
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1
 new file mode 100644
-index 0000000..c153c5f
+index 0000000..87efac9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7
 new file mode 100644
@@ -5542,18 +5554,18 @@ diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWi
 new file mode 100644
 index 0000000..dc9a4f5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId8 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId25 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId25
 new file mode 100644
 index 0000000..929b068
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22 differ
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId25 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10
 new file mode 100644
 index 0000000..5317df8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20
 new file mode 100644
 index 0000000..f77548b
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19 differ
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId2 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId2
 new file mode 100644
 index 0000000..6a7e0d1
@@ -5562,10 +5574,10 @@ diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWi
 new file mode 100644
 index 0000000..d9775d3
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId11 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId27 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId27
 new file mode 100644
 index 0000000..8f4adf7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24 differ
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId27 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14
 new file mode 100644
 index 0000000..ec2aab4
@@ -5582,29 +5594,41 @@ diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWi
 new file mode 100644
 index 0000000..02da350
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId9 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22
 new file mode 100644
 index 0000000..f1446de
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20 differ
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12
 new file mode 100644
 index 0000000..6861c5a
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18
 new file mode 100644
 index 0000000..0085be7
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17 differ
-diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId26 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId26
 new file mode 100644
 index 0000000..f4c67e6
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23 differ
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId26 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4
 new file mode 100644
 index 0000000..002ccf6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$1.class.uniqueId21 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$1.class.uniqueId21
+new file mode 100644
+index 0000000..92b2258
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$1.class.uniqueId21 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$2.class.uniqueId17 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$2.class.uniqueId17
+new file mode 100644
+index 0000000..09793c4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager$2.class.uniqueId17 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager.class.uniqueId23 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager.class.uniqueId23
+new file mode 100644
+index 0000000..bd556b6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/VectorTileStyleManager.class.uniqueId23 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..a33d8cf
+index 0000000..23e483e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
 new file mode 100644
@@ -5843,10 +5867,10 @@ index 0000000..2cce63f
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileManager.java
 new file mode 100644
-index 0000000..90e5361
+index 0000000..457477a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileManager.java
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,93 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -5878,6 +5902,11 @@ index 0000000..90e5361
 +  @ReactProp(name = "urlTemplate")
 +  public void setUrlTemplate(MapPMTile view, String urlTemplate) {
 +    view.setUrlTemplate(urlTemplate);
++  }
++
++  @ReactProp(name = "styleURL")
++  public void setStyleURL(MapPMTile view, String styleURL) {
++    view.setStyleURL(styleURL);
 +  }
 +
 +  @ReactProp(name = "zIndex", defaultFloat = -1.0f)
@@ -5937,18 +5966,18 @@ index 0000000..90e5361
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..1b2df6c
+index 0000000..30de0da
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1137 @@
+@@ -0,0 +1,1210 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Metadata;
 +import PMTiles.PMTiles;
 +import PMTiles.RangeResponse;
-+import StyleLayer.LayoutStyle;
-+import StyleLayer.PaintStyle;
-+import StyleLayer.StyleLayer;
++import VectorTileStyle.LayerStyle;
++import VectorTileStyle.PaintStyle;
++import VectorTileStyle.VectorStyle;
 +import VectorTileStyleManager.VectorTileStyleManager;
 +import android.content.Context;
 +import android.graphics.Bitmap;
@@ -5978,7 +6007,9 @@ index 0000000..1b2df6c
 +import java.io.InputStreamReader;
 +import java.io.OutputStream;
 +import java.lang.System;
++import java.net.HttpURLConnection;
 +import java.net.MalformedURLException;
++import java.net.URL;
 +import java.net.URL;
 +import java.net.URLConnection;
 +import java.nio.ByteBuffer;
@@ -6052,24 +6083,28 @@ index 0000000..1b2df6c
 +    this.offlineMode = offlineMode;
 +    this.context = context;
 +    this.customMode = customMode;
-+    this.pmtiles = new PMTiles(urlTemplate, null, null);
-+    this.pmtiles.getHeader()
-+      .thenAccept(header -> {
-+        this.tileType = header.getTileType();
-+        this.tileSize = this.tileType == 1 ? 512 : 256;
-+      });
-+    this.pmtiles.getMetadata()
-+      .thenAccept(metadata -> {
-+        this.metadata = metadata;
-+        //System.out.println("##" + metadata.name + "##" + metadata.type);
-+      });
++
++    if (urlTemplate.endsWith(".pbf")) {
++      this.tileType = 0;
++      this.tileSize = 512;
++    } else {
++      this.pmtiles = new PMTiles(urlTemplate, null, null);
++      this.pmtiles.getHeader()
++        .thenAccept(header -> {
++          this.tileType = header.getTileType();
++          this.tileSize = this.tileType == 1 ? 512 : 256;
++        });
++      this.pmtiles.getMetadata()
++        .thenAccept(metadata -> {
++          this.metadata = metadata;
++          //System.out.println("##" + metadata.name + "##" + metadata.type);
++        });
++    }
 +    this.styleManager = new VectorTileStyleManager(urlTemplate, tileCachePath, styleURL);
 +  }
 +
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
-+    // if (!this.customMode) return getPMTile(x, y, zoom);
-+
 +    byte[] image = null;
 +    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
 +
@@ -6505,6 +6540,39 @@ index 0000000..1b2df6c
 +    return new PolygonData(path, centerX, centerY);
 +  }
 +
++  private boolean checkFilter(List<?> filter, Map<String, String> attributes) {
++    if (filter == null) return true;
++    if (filter.size() == 3) {
++      //System.out.println("##filter: " + filter);
++      String op = (String) filter.get(0);
++      String key = (String) filter.get(1);
++      String value = (String) filter.get(2);
++      String attributeValue = attributes.getOrDefault(key, "");
++      if ("==".equals(op)) {
++        return value.equals(attributeValue);
++      } else if ("!=".equals(op)) {
++        return !value.equals(attributeValue);
++      } else if (">".equals(op)) {
++        return Float.parseFloat(attributeValue) > Float.parseFloat(value);
++      } else if (">=".equals(op)) {
++        return Float.parseFloat(attributeValue) >= Float.parseFloat(value);
++      } else if ("<".equals(op)) {
++        return Float.parseFloat(attributeValue) < Float.parseFloat(value);
++      } else if ("<=".equals(op)) {
++        return Float.parseFloat(attributeValue) <= Float.parseFloat(value);
++      } else if ("in".equals(op)) {
++        return value.contains(attributeValue);
++      } else if ("!in".equals(op)) {
++        return !value.contains(attributeValue);
++      } else if ("has".equals(op)) {
++        return !attributeValue.isEmpty();
++      } else if ("!has".equals(op)) {
++        return attributeValue.isEmpty();
++      }
++    }
++    return false;
++  }
++
 +  private String computeDynamicColor(List<?> colors, Map<String, String> attributes) {
 +    if (colors.size() > 0 && "match".equals(colors.get(0))) {
 +      List<?> conditions = colors.subList(2, colors.size() - 1);
@@ -6524,9 +6592,9 @@ index 0000000..1b2df6c
 +    return null;
 +  }
 +
-+  public void applyStyle(Canvas canvas, StyleLayer styleLayer, VectorSource source) {
++  public void applyStyle(Canvas canvas, LayerStyle styleLayer, VectorSource source) {
 +    String type = styleLayer.type;
-+    //System.out.println("!!applyStyle: " + type);
++    //System.out.println("##applyStyle: " + type);
 +    if ("circle".equals(type)) {
 +      Paint circlePaint = new Paint();
 +      Paint circleOutlinePaint = new Paint(); // 追加：アウトライン用のPaint
@@ -6534,6 +6602,7 @@ index 0000000..1b2df6c
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof List<?>)) return;
 +        Map<String, String> attributes = feature.attributes;
++        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        String circleColor = "#ff0000";
 +        if (styleLayer.paint.circleColor instanceof String) {
 +          circleColor = (String) styleLayer.paint.circleColor;
@@ -6569,6 +6638,7 @@ index 0000000..1b2df6c
 +      Paint linePaint = new Paint();
 +      for (FeatureData feature : source.features) {
 +        Map<String, String> attributes = feature.attributes;
++        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        Path path;
 +        if (feature.geometry instanceof LineData) {
 +          LineData line = (LineData) feature.geometry;
@@ -6603,6 +6673,7 @@ index 0000000..1b2df6c
 +        if (!(feature.geometry instanceof PolygonData)) return;
 +        PolygonData polygon = (PolygonData) feature.geometry;
 +        Map<String, String> attributes = feature.attributes;
++        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        String fillColor = "#ffffffff";
 +        if (styleLayer.paint.fillColor instanceof String) {
 +          fillColor = (String) styleLayer.paint.fillColor;
@@ -6639,7 +6710,7 @@ index 0000000..1b2df6c
 +
 +      for (FeatureData feature : source.features) {
 +        Map<String, String> attributes = feature.attributes;
-+
++        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        float X = 0;
 +        float Y = 0;
 +        if ((feature.geometry instanceof List<?>)) {
@@ -6755,7 +6826,7 @@ index 0000000..1b2df6c
 +    return null; // or throw new NoSuchElementException("No VectorSource found with name: " + layerName);
 +  }
 +
-+  public Tile getPMTile2(int x, int y, int zoom) {
++  public Tile getVectorTile(int x, int y, int zoom) {
 +    try {
 +      byte[] pbfData = null;
 +      if (this.tileCachePath != null) {
@@ -6769,13 +6840,16 @@ index 0000000..1b2df6c
 +      }
 +      if (pbfData == null) {
 +        if (this.offlineMode) return null;
-+        CompletableFuture<Optional<RangeResponse>> futureTileData = pmtiles.getZxy(zoom, x, y);
-+        Optional<RangeResponse> optionalRangeResponse = futureTileData.get();
++        if (this.tileType == 0) {
++          pbfData = fetchPbf(zoom, x, y);
++        } else {
++          CompletableFuture<Optional<RangeResponse>> futureTileData = pmtiles.getZxy(zoom, x, y);
++          Optional<RangeResponse> optionalRangeResponse = futureTileData.get();
 +
-+        if (!optionalRangeResponse.isPresent()) return null;
-+        RangeResponse rangeResponse = optionalRangeResponse.get();
-+        pbfData = rangeResponse.data.array();
-+
++          if (!optionalRangeResponse.isPresent()) return null;
++          RangeResponse rangeResponse = optionalRangeResponse.get();
++          pbfData = rangeResponse.data.array();
++        }
 +        if (pbfData != null) {
 +          boolean success = writePbfData(pbfData, x, y, zoom);
 +        }
@@ -6816,9 +6890,10 @@ index 0000000..1b2df6c
 +      Bitmap image = Bitmap.createBitmap(tileSize, tileSize, Bitmap.Config.ARGB_8888);
 +      image.eraseColor(Color.TRANSPARENT);
 +      Canvas canvas = new Canvas(image);
-+      List<StyleLayer> styles = styleManager.getStyleLayers();
++      List<LayerStyle> styles = styleManager.getStyleLayers();
 +      if (styles.size() == 0) styles = styleManager.getDefaultStyleLayers(this.metadata);
-+      for (StyleLayer styleLayer : styles) {
++      for (LayerStyle styleLayer : styles) {
++        //System.out.println("##" + styleLayer);
 +        VectorSource source = getVectorSource(styleLayer.sourceLayer, sources);
 +        if (source == null) continue;
 +
@@ -6841,7 +6916,7 @@ index 0000000..1b2df6c
 +  }
 +
 +  //ラスター用
-+  public Tile getPMTile(int x, int y, int zoom) {
++  public Tile getRasterTile(int x, int y, int zoom) {
 +    CompletableFuture<Optional<RangeResponse>> futureTileData = pmtiles.getZxy(zoom, x, y);
 +
 +    try {
@@ -6864,16 +6939,43 @@ index 0000000..1b2df6c
 +
 +  byte[] fetchTile(int x, int y, int zoom) {
 +    Tile tile = null;
-+    if (this.tileType == 1) {
-+      tile = getPMTile2(x, y, zoom);
-+    } else {
-+      tile = getPMTile(x, y, zoom);
++    if (this.tileType == 0 || this.tileType == 1) {
++      tile = getVectorTile(x, y, zoom);
++    } else if (this.tileType == 2 || this.tileType == 3) {
++      tile = getRasterTile(x, y, zoom);
 +    }
 +    if (Objects.isNull(tile)) {
 +      // Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
 +      return null;
 +    }
 +    return tile.data;
++  }
++
++  byte[] fetchPbf(int zoom, int x, int y) {
++    String url =
++      this.urlTemplate.replace("{z}", Integer.toString(zoom))
++        .replace("{x}", Integer.toString(x))
++        .replace("{y}", Integer.toString(y));
++    // Log.d("urlTileA", url);
++    try {
++      URL urlObj = new URL(url);
++      HttpURLConnection connection = (HttpURLConnection) urlObj.openConnection();
++      connection.setRequestMethod("GET");
++      connection.setDoInput(true);
++      connection.connect();
++      InputStream input = connection.getInputStream();
++      ByteArrayOutputStream buffer = new ByteArrayOutputStream();
++      byte[] data = new byte[BUFFER_SIZE];
++      int nRead;
++      while ((nRead = input.read(data, 0, BUFFER_SIZE)) != -1) {
++        buffer.write(data, 0, nRead);
++      }
++      buffer.flush();
++      return buffer.toByteArray();
++    } catch (IOException e) {
++      e.printStackTrace();
++      return null;
++    }
 +  }
 +
 +  byte[] readPbfData(int x, int y, int zoom) {
@@ -10457,13 +10559,51 @@ index 0000000..bac1189
 +    return "VectorLayer{id='" + id + "'}";
 +  }
 +}
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayerStyle.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayerStyle.java
+new file mode 100644
+index 0000000..8824688
+--- /dev/null
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayerStyle.java
+@@ -0,0 +1,32 @@
++package VectorTileStyle;
++
++import VectorTileStyle.LayoutStyle;
++import VectorTileStyle.PaintStyle;
++import com.google.gson.Gson;
++import com.google.gson.annotations.SerializedName;
++import java.util.Map;
++
++public class LayerStyle {
++
++  public String id;
++  public String type;
++  public String source;
++
++  @SerializedName("source-layer")
++  public String sourceLayer;
++
++  public Integer minzoom;
++  public Integer maxzoom;
++
++  public PaintStyle paint; // Map<String, Object> の代わりに
++  public LayoutStyle layout; // Map<String, Object> の代わりに
++
++  public Object filter;
++
++  @Override
++  public String toString() {
++    // Gson オブジェクトを使ってオブジェクトを JSON 形式の文字列に変換
++    Gson gson = new Gson();
++    return gson.toJson(this);
++  }
++}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayoutStyle.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayoutStyle.java
 new file mode 100644
-index 0000000..b43d333
+index 0000000..f674e64
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/LayoutStyle.java
 @@ -0,0 +1,17 @@
-+package StyleLayer;
++package VectorTileStyle;
 +
 +import com.google.gson.annotations.SerializedName;
 +import java.util.List;
@@ -10474,7 +10614,7 @@ index 0000000..b43d333
 +  public List<String> textField;
 +
 +  @SerializedName("text-size")
-+  public int textSize;
++  public Integer textSize;
 +
 +  @SerializedName("text-font")
 +  public List<String> textFont;
@@ -10482,11 +10622,11 @@ index 0000000..b43d333
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java
 new file mode 100644
-index 0000000..9169367
+index 0000000..8ecd4e3
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java
 @@ -0,0 +1,43 @@
-+package StyleLayer;
++package VectorTileStyle;
 +
 +import com.google.gson.annotations.SerializedName;
 +
@@ -10499,25 +10639,25 @@ index 0000000..9169367
 +  public String fillOutlineColor;
 +
 +  @SerializedName("fill-opacity")
-+  public float fillOpacity;
++  public Float fillOpacity;
 +
 +  @SerializedName("line-color")
 +  public Object lineColor;
 +
 +  @SerializedName("line-width")
-+  public float lineWidth;
++  public Float lineWidth;
 +
 +  @SerializedName("circle-color")
 +  public Object circleColor;
 +
 +  @SerializedName("circle-radius")
-+  public float circleRadius;
++  public Float circleRadius;
 +
 +  @SerializedName("circle-stroke-color")
 +  public String circleStrokeColor;
 +
 +  @SerializedName("circle-stroke-width")
-+  public float circleStrokeWidth;
++  public Float circleStrokeWidth;
 +
 +  @SerializedName("text-color")
 +  public Object textColor;
@@ -10526,56 +10666,36 @@ index 0000000..9169367
 +  public String textHaloColor;
 +
 +  @SerializedName("text-halo-width")
-+  public float textHaloWidth;
++  public Float textHaloWidth;
 +  // 他のpaint属性もこちらに追加
 +}
-diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/StyleLayer.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/StyleLayer.java
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorStyle.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorStyle.java
 new file mode 100644
-index 0000000..5675b38
+index 0000000..e093889
 --- /dev/null
-+++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/StyleLayer.java
-@@ -0,0 +1,30 @@
-+package StyleLayer;
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorStyle.java
+@@ -0,0 +1,9 @@
++package VectorTileStyle;
 +
-+import StyleLayer.LayoutStyle;
-+import StyleLayer.PaintStyle;
-+import com.google.gson.Gson;
 +import com.google.gson.annotations.SerializedName;
-+import java.util.Map;
++import java.util.List;
 +
-+public class StyleLayer {
++public class VectorStyle {
 +
-+  public String id;
-+  public String type;
-+  public String source;
-+
-+  @SerializedName("source-layer")
-+  public String sourceLayer;
-+
-+  public int minzoom;
-+  public int maxzoom;
-+
-+  public PaintStyle paint; // Map<String, Object> の代わりに
-+  public LayoutStyle layout; // Map<String, Object> の代わりに
-+
-+  @Override
-+  public String toString() {
-+    // Gson オブジェクトを使ってオブジェクトを JSON 形式の文字列に変換
-+    Gson gson = new Gson();
-+    return gson.toJson(this);
-+  }
++  public List<LayerStyle> layers;
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
 new file mode 100644
-index 0000000..c7ccda5
+index 0000000..82ccfb3
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/VectorTileStyleManager.java
-@@ -0,0 +1,202 @@
+@@ -0,0 +1,205 @@
 +package VectorTileStyleManager;
 +
 +import PMTiles.Metadata;
 +import PMTiles.VectorLayer;
-+import StyleLayer.StyleLayer;
++import VectorTileStyle.LayerStyle;
++import VectorTileStyle.VectorStyle;
 +import com.google.gson.Gson;
 +import com.google.gson.reflect.TypeToken;
 +import java.io.BufferedReader;
@@ -10598,11 +10718,11 @@ index 0000000..c7ccda5
 +  private String urlTemplate;
 +  private String localPath;
 +  private long lastUpdatedTime = 0; // long型で記録
-+  private List<StyleLayer> styleLayers; // ダウンロードしたスタイル情報を保存
++  private List<LayerStyle> styleLayers; // ダウンロードしたスタイル情報を保存
 +
 +  public VectorTileStyleManager(String urlTemplate, String tileCachePath, String styleURL) {
 +    //System.out.println("##" + metadata.name + "##" + metadata.type);
-+    // System.out.println("##styleURL: " + styleURL);
++    //System.out.println("##styleURL: " + styleURL);
 +    if (styleURL != null && !styleURL.trim().isEmpty()) {
 +      this.urlTemplate = styleURL.trim();
 +    } else {
@@ -10619,13 +10739,15 @@ index 0000000..c7ccda5
 +      .thenAccept(style -> {
 +        // 正常にスタイルがロードされたときの処理
 +        Gson gson = new Gson();
-+        Type listType = new TypeToken<List<StyleLayer>>() {}.getType();
-+        this.styleLayers = gson.fromJson(style, listType);
++        Type styleType = new TypeToken<VectorStyle>() {}.getType();
++        VectorStyle vectorStyle = gson.fromJson(style, styleType);
++        this.styleLayers = vectorStyle.layers;
++        //System.out.println("##styleLayers: " + this.styleLayers);
 +      })
 +      .whenComplete((result, exception) -> {
 +        if (exception != null) {
 +          // エラーが発生した場合の処理
-+          System.out.println("Error loading style: " + exception.getMessage());
++          //System.out.println("##Error loading style: " + exception.getMessage());
 +          this.styleLayers = new ArrayList<>();
 +        }
 +        // ここには、正常ケースとエラーケースの両方で実行される処理を書くこともできます。
@@ -10708,11 +10830,11 @@ index 0000000..c7ccda5
 +    return response.toString();
 +  }
 +
-+  public List<StyleLayer> getDefaultStyleLayers(Metadata metadata) {
++  public List<LayerStyle> getDefaultStyleLayers(Metadata metadata) {
 +    // System.out.println("##name: " + metadata.name);
-+    List<StyleLayer> styleLayers = new ArrayList<>();
++    List<LayerStyle> styleLayers = new ArrayList<>();
 +    Gson gson = new Gson();
-+    Type styleLayerListType = new TypeToken<List<StyleLayer>>() {}.getType();
++    Type styleLayerListType = new TypeToken<List<LayerStyle>>() {}.getType();
 +    for (VectorLayer layer : metadata.vectorLayers) {
 +      // System.out.println("##id: " + layer.id);
 +      String json = String.format(
@@ -10759,13 +10881,13 @@ index 0000000..c7ccda5
 +        "]",
 +        layer.id
 +      );
-+      List<StyleLayer> newLayers = gson.fromJson(json, styleLayerListType);
++      List<LayerStyle> newLayers = gson.fromJson(json, styleLayerListType);
 +      styleLayers.addAll(newLayers);
 +    }
 +    return styleLayers;
 +  }
 +
-+  public List<StyleLayer> getStyleLayers() {
++  public List<LayerStyle> getStyleLayers() {
 +    return this.styleLayers;
 +  }
 +
@@ -16363,10 +16485,10 @@ index 0000000..b6c6ee9
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..358badb
+index 0000000..0d96586
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1030 @@
+@@ -0,0 +1,1118 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -16381,17 +16503,25 @@ index 0000000..358badb
 +- (id)initWithURLTemplate:(NSString *)urlTemplate {
 +
 +  self = [super init];
-+  PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
-+  self.pmtiles = pmtiles;
-+  headerv3 header = [pmtiles fetchHeader];
-+  self.metadata = [pmtiles fetchMetadata];
-+
-+  self.tileType = header.tile_type;
-+  if (header.tile_type == 1) {
++  // urlTemplateに.pbfが含まれている場合は、そのまま使用する
++  if ([urlTemplate containsString:@".pbf"]) {
++    self.tileType = 0;
 +    self.tileSize = 512;
 +  } else {
-+    self.tileSize = 256;
++
++    PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
++    self.pmtiles = pmtiles;
++    headerv3 header = [pmtiles fetchHeader];
++    self.metadata = [pmtiles fetchMetadata];
++
++    self.tileType = header.tile_type;
++    if (header.tile_type == 1) {
++      self.tileSize = 512;
++    } else {
++      self.tileSize = 256;
++    }
 +  }
++  self.urlTemplate = urlTemplate;
 +  return self;
 +}
 +
@@ -16517,10 +16647,10 @@ index 0000000..358badb
 +    }
 +  }
 +  if (!data) {
-+    if (self.tileType == 1) {
-+      data = [self fetchTile2:zoom x:x y:y];
++    if (self.tileType == 0 || self.tileType == 1) {
++      data = [self fetchVectorTile:zoom x:x y:y];
 +    } else {
-+      data = [self fetchTile:zoom x:x y:y];
++      data = [self fetchRasterTile:zoom x:x y:y];
 +    }
 +
 +    if (!data) {
@@ -16535,6 +16665,34 @@ index 0000000..358badb
 +      }
 +      return data;
 +    }
++  } else {
++    return data;
++  }
++}
++
++- (NSData *)getPbfTileWithZ:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++  NSError *error = nil;
++  NSString *urlString = [self.urlTemplate
++      stringByReplacingOccurrencesOfString:@"{z}"
++                                withString:[NSString
++                                               stringWithFormat:@"%ld",
++                                                                (long)zoom]];
++  urlString = [urlString
++      stringByReplacingOccurrencesOfString:@"{x}"
++                                withString:[NSString stringWithFormat:@"%ld",
++                                                                      (long)x]];
++  urlString = [urlString
++      stringByReplacingOccurrencesOfString:@"{y}"
++                                withString:[NSString stringWithFormat:@"%ld",
++                                                                      (long)y]];
++  NSURL *url = [NSURL URLWithString:urlString];
++
++  NSData *data = [NSData dataWithContentsOfURL:url
++                                       options:NSDataReadingUncached
++                                         error:&error];
++  if (error) {
++    NSLog(@"%@", [error localizedDescription]);
++    return nil;
 +  } else {
 +    return data;
 +  }
@@ -16863,18 +17021,56 @@ index 0000000..358badb
 +  return nil;
 +}
 +
++- (BOOL)checkFilter:(NSArray *)filter
++         attributes:(NSDictionary<NSString *, NSString *> *)attributes {
++  if (filter == nil)
++    return YES;
++  if ([filter count] == 3) {
++    // NSLog(@"##filter: %@", filter);
++    NSString *op = filter[0];
++    NSString *key = filter[1];
++    NSString *value = filter[2];
++    NSString *attributeValue = attributes[key] ? attributes[key] : @"";
++
++    if ([op isEqualToString:@"=="]) {
++      return [value isEqualToString:attributeValue];
++    } else if ([op isEqualToString:@"!="]) {
++      return ![value isEqualToString:attributeValue];
++    } else if ([op isEqualToString:@">"]) {
++      return [attributeValue floatValue] > [value floatValue];
++    } else if ([op isEqualToString:@">="]) {
++      return [attributeValue floatValue] >= [value floatValue];
++    } else if ([op isEqualToString:@"<"]) {
++      return [attributeValue floatValue] < [value floatValue];
++    } else if ([op isEqualToString:@"<="]) {
++      return [attributeValue floatValue] <= [value floatValue];
++    } else if ([op isEqualToString:@"in"]) {
++      return [value containsString:attributeValue];
++    } else if ([op isEqualToString:@"!in"]) {
++      return ![value containsString:attributeValue];
++    } else if ([op isEqualToString:@"has"]) {
++      return attributeValue.length > 0;
++    } else if ([op isEqualToString:@"!has"]) {
++      return attributeValue.length == 0;
++    }
++  }
++  return NO;
++}
++
 +- (void)applyStyleToContext:(CGContextRef)context
 +             withStyleLayer:(NSDictionary *)styleLayer
 +                  andSource:(VectorSource *)source {
 +
 +  NSString *type = styleLayer[@"type"];
-+
 +  if ([type isEqualToString:@"circle"]) {
 +    // Drawing settings for circle
 +    for (FeatureData *feature in source.features) {
 +      if (![feature.geometry isKindOfClass:[NSMutableArray class]])
 +        continue;
 +      NSDictionary *attributes = feature.attributes;
++      if (![self checkFilter:styleLayer[@"filter"] attributes:attributes])
++        continue;
++
 +      NSDictionary *paint =
 +          styleLayer[@"paint"]; // Explicitly define the paint dictionary
 +      NSString *circleColor = @"#ff0000"; // Default circle color
@@ -16925,7 +17121,8 @@ index 0000000..358badb
 +        CGContextFillEllipseInRect(context, circleRect); // Draw the circle
 +
 +        if (strokeWidth > 0) {
-+          CGContextStrokeEllipseInRect(context, circleRect); // Draw the outline
++          CGContextStrokeEllipseInRect(context,
++                                       circleRect); // Draw the outline
 +        }
 +      }
 +    }
@@ -16934,6 +17131,8 @@ index 0000000..358badb
 +      if (![feature.geometry isKindOfClass:[LineData class]])
 +        continue;
 +      NSDictionary *attributes = feature.attributes;
++      if (![self checkFilter:styleLayer[@"filter"] attributes:attributes])
++        continue;
 +      NSDictionary *paint =
 +          styleLayer[@"paint"]; // Explicitly define the paint dictionary
 +      UIBezierPath *path = nil;
@@ -16945,7 +17144,8 @@ index 0000000..358badb
 +        PolygonData *polygonData = (PolygonData *)feature.geometry;
 +        path = polygonData.path;
 +      } else {
-+        continue; // Skip to the next iteration if geometry is neither LineData
++        continue; // Skip to the next iteration if geometry is neither
++                  // LineData
 +        // nor PolygonData
 +      }
 +
@@ -16978,6 +17178,8 @@ index 0000000..358badb
 +      if (![feature.geometry isKindOfClass:[PolygonData class]])
 +        continue;
 +      NSDictionary *attributes = feature.attributes;
++      if (![self checkFilter:styleLayer[@"filter"] attributes:attributes])
++        continue;
 +      NSDictionary *paint =
 +          styleLayer[@"paint"]; // Explicitly define the paint dictionary
 +
@@ -17045,7 +17247,8 @@ index 0000000..358badb
 +
 +    for (FeatureData *feature in source.features) {
 +      NSDictionary *attributes = feature.attributes;
-+
++      if (![self checkFilter:styleLayer[@"filter"] attributes:attributes])
++        continue;
 +      float X = 0;
 +      float Y = 0;
 +
@@ -17114,13 +17317,13 @@ index 0000000..358badb
 +  }
 +}
 +
-+- (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)fetchRasterTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
 +  NSData *data = [self.pmtiles getTileWithZ:zoom x:x y:y];
 +
 +  return data;
 +}
 +
-+- (NSData *)fetchTile2:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)fetchVectorTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
 +  NSError *error;
 +
 +  NSURL *tileCacheFileDirectory =
@@ -17139,17 +17342,23 @@ index 0000000..358badb
 +    if (self.offlineMode) {
 +      return nil;
 +    }
-+    pbfData = [self.pmtiles getTileWithZ:zoom x:x y:y];
-+    // NSLog(@"fetch from url %d %d %d", zoom, x, y);
++    if (self.tileType == 0) {
++      pbfData = [self getPbfTileWithZ:zoom x:x y:y];
++    } else if (self.tileType == 1) {
++      pbfData = [self.pmtiles getTileWithZ:zoom x:x y:y];
++    }
++
 +    if (!pbfData) {
 +      return nil;
 +    }
++    // NSLog(@"fetch from url %d %d %d", zoom, x, y);
 +    if (self.tileCachePath) {
 +      [self writePbfData:tileCacheFileDirectory
 +          withPbfCacheFilePath:pbfCacheFilePath
 +                   withPbfData:pbfData];
 +    }
 +  }
++
 +  // NSLog(@"data %@", data);
 +  Tile *decodedTile = [Tile parseFromData:pbfData error:&error];
 +
@@ -17198,11 +17407,11 @@ index 0000000..358badb
 +
 +  CGContextRef context = [self createTransparentImageContext];
 +  NSArray *styleLayers = [self.styleManager getStyleLayers];
-+  if (styleLayers == nil) {
++  if (styleLayers.count == 0) {
 +    styleLayers =
 +        [self.styleManager getDefaultStyleLayersWithMetadata:self.metadata];
 +  }
-+  // NSLog(@"styleLayers %@", styleLayers);
++
 +  for (NSDictionary *styleLayer in styleLayers) {
 +    NSString *sourceLayer = styleLayer[@"source-layer"];
 +
@@ -17219,6 +17428,7 @@ index 0000000..358badb
 +    double actualMinzoom = (minzoom != nil) ? [minzoom doubleValue] : 0;
 +    double actualMaxzoom = (maxzoom != nil) ? [maxzoom doubleValue] : 22;
 +
++    // NSLog(@"zoom %f %f %d", actualMinzoom, actualMaxzoom, zoom);
 +    if (actualMinzoom > zoom || actualMaxzoom < zoom)
 +      continue;
 +
@@ -19324,10 +19534,10 @@ index 0000000..5023357
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..42aeff0
+index 0000000..f851c85
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,304 @@
+@@ -0,0 +1,315 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -19411,18 +19621,29 @@ index 0000000..42aeff0
 +  }
 +
 +  NSData *data = [style dataUsingEncoding:NSUTF8StringEncoding];
-+  NSArray *parsedStyleLayers =
++  NSObject *parsedStyleLayers =
 +      [NSJSONSerialization JSONObjectWithData:data
 +                                      options:kNilOptions
 +                                        error:&error];
++
 +  //   for (NSDictionary *layer in parsedStyleLayers) {
 +  //     NSLog(@"layer: %@", layer);
 +  //   }
 +  if (error) {
-+    NSLog(@"JSON parsing error: %@", [error localizedDescription]);
++    // NSLog(@"JSON parsing error: %@", [error localizedDescription]);
++    _styleLayers = @[];
++  } else if (![parsedStyleLayers isKindOfClass:[NSDictionary class]]) {
++    // NSLog(@"parsedStyleLayers: %@", parsedStyleLayers);
++    _styleLayers = @[];
 +  } else {
-+    _styleLayers = parsedStyleLayers;
++    NSDictionary *parsedStyleDictionary = (NSDictionary *)parsedStyleLayers;
++    if ([parsedStyleDictionary[@"layers"] isKindOfClass:[NSArray class]]) {
++      _styleLayers = parsedStyleDictionary[@"layers"];
++    } else {
++      _styleLayers = @[];
++    }
 +  }
++  // NSLog(@"##_styleLayers: %@", _styleLayers);
 +}
 +
 +- (NSString *)changeExtensionToJson:(NSString *)url {

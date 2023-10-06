@@ -185,7 +185,7 @@ export const MapModalTileMap = React.memo(() => {
                 maximumValue={22}
                 onSlidingComplete={(value) => setOverzoomThreshold(value)}
               />
-              {tileURL && !tileURL.includes('pmtiles') && (
+              {tileURL && !tileURL.includes('pmtiles') && !tileURL.includes('.pbf') && (
                 <View style={{ flexDirection: 'row' }}>
                   <CheckBox
                     style={{ backgroundColor: COLOR.WHITE }}
@@ -203,7 +203,7 @@ export const MapModalTileMap = React.memo(() => {
                   />
                 </View>
               )}
-              {tileURL && tileURL.includes('pmtiles') && (
+              {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && (
                 <CheckBox
                   style={{ backgroundColor: COLOR.WHITE }}
                   label={t('common.vectortile')}
@@ -212,7 +212,7 @@ export const MapModalTileMap = React.memo(() => {
                   onCheck={(checked) => setIsVector(checked)}
                 />
               )}
-              {tileURL && tileURL.includes('pmtiles') && isVector && (
+              {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && isVector && (
                 <TextInput
                   style={styles.modalTextInput}
                   placeholder="Style URL (Optional)"
