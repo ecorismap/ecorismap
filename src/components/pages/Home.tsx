@@ -366,7 +366,9 @@ export default function HomeScreen() {
               .reverse()
               .map((tileMap: TileMapType, mapIndex: number) =>
                 tileMap.visible && tileMap.url ? (
-                  tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') ? (
+                  tileMap.url.startsWith('pmtiles://') ||
+                  tileMap.url.includes('.pmtiles') ||
+                  tileMap.url.includes('.pbf') ? (
                     <PMTile
                       key={
                         Platform.OS === 'ios'
