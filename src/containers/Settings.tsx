@@ -91,7 +91,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (!isOK && message !== '') {
         await AlertAsync(message);
       } else if (isOK) {
-        //await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
+        await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
         navigation.navigate('Home', {
           jumpTo: region,
           previous: 'Settings',
@@ -106,9 +106,9 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (tracking !== undefined) {
         return { isOK: false, message: t('hooks.message.cannotInTracking') };
       }
-      setIsLoading(true);
+
       const { isOK, message } = await clearEcorisMap();
-      setIsLoading(false);
+
       if (!isOK) {
         await AlertAsync(message);
       } else {
