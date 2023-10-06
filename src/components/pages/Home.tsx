@@ -177,6 +177,12 @@ export default function HomeScreen() {
     };
   });
 
+  const customHandlePadding = useAnimatedStyle(() => {
+    return {
+      paddingTop: interpolate(animatedIndex.value, [0, 1, 2], [0, 0, insets.top]),
+    };
+  });
+
   const customHandle = useCallback(() => {
     return (
       <View
@@ -477,7 +483,7 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
-        style={{ paddingTop: insets.top, width: isLandscape ? '50%' : '100%' }}
+        style={[{ width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
       >
         <Animated.View style={animatedStyle}>
           <SplitScreen />
