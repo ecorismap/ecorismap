@@ -733,7 +733,6 @@ export default function HomeScreen() {
           )}
 
           {!FUNC_LOGIN || isDownloadPage ? null : <HomeAccountButton />}
-          <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
           {isShowingProjectButtons && <HomeProjectButtons />}
           {projectName === undefined || isDownloadPage ? null : (
