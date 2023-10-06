@@ -87,14 +87,20 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     const id = addTileRegions();
     if (tileMap === undefined || id === undefined) return;
 
-    const isPMTiles = getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('mbtiles://');
-    const pmtile = isPMTiles ? new PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
+    const tileType =
+      getExt(tileMap.url) === 'pbf'
+        ? 'pbf'
+        : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
+        ? 'pmtiles'
+        : 'png';
+
+    const pmtile = tileType === 'pmtiles' ? new PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
 
     setProgress('0');
     setIsDownloading(true);
 
     const minZoom = 0;
-    const maxZoom = isPMTiles ? 18 : 16;
+    const maxZoom = tileType === 'png' ? 16 : 18;
 
     const tiles = tileGridForRegion(downloadArea, minZoom, maxZoom);
 
@@ -147,7 +153,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       }
 
       let tilePromise;
-      if (pmtile !== undefined) {
+      if (tileType === 'pmtiles' && pmtile !== undefined) {
         //console.log(tile.z, tile.x, tile.y);
         const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
         tilePromise = pmtile
@@ -155,7 +161,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           .then(async (resp) => {
             if (resp === undefined) return;
             const base64String = Buffer.from(resp.data).toString('base64');
-            await FileSystem.writeAsStringAsync(localLocation, base64String, {
+            FileSystem.writeAsStringAsync(localLocation, base64String, {
               encoding: FileSystem.EncodingType.UTF8,
             });
           })
@@ -163,7 +169,31 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
             console.log(e);
             //errorCount++;
           });
-      } else {
+      } else if (tileType === 'pbf') {
+        const fetchUrl = tileMap.url
+          .replace('{z}', tile.z.toString())
+          .replace('{x}', tile.x.toString())
+          .replace('{y}', tile.y.toString());
+        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
+
+        tilePromise = fetch(fetchUrl)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.arrayBuffer();
+          })
+          .then(async (data) => {
+            const base64String = Buffer.from(data).toString('base64');
+            FileSystem.writeAsStringAsync(localLocation, base64String, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+          })
+          .catch(() => {
+            errorCount++;
+            //console.error(error);
+          });
+      } else if (tileType === 'png') {
         const fetchUrl = tileMap.url
           .replace('{z}', tile.z.toString())
           .replace('{x}', tile.x.toString())

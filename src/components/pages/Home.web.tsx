@@ -118,57 +118,6 @@ export default function HomeScreen() {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
-  // const hoverFeatureId = useRef<
-  //   | {
-  //       source: string;
-  //       id: number;
-  //     }
-  //   | undefined
-  // >();
-  // const lineAndPolygonLayerIds = useMemo(() => {
-  //   const lineIds = lineDataSet.flatMap((d) => {
-  //     const layer = layers.find((v) => v.id === d.layerId);
-  //     return d.data.length > 0 && layer!.visible ? `${d.layerId}_${d.userId ?? ''}` : [];
-  //   });
-  //   const polygonIds = polygonDataSet.flatMap((d) => {
-  //     const layer = layers.find((v) => v.id === d.layerId);
-  //     return d.data.length > 0 && layer!.visible ? `${d.layerId}_${d.userId ?? ''}` : [];
-  //   });
-  //   return [...lineIds, ...polygonIds];
-  // }, [layers, lineDataSet, polygonDataSet]);
-
-  // const lineLayerIds = useMemo(
-  //   () =>
-  //     lineDataSet.flatMap((d) => {
-  //       const layer = layers.find((v) => v.id === d.layerId);
-  //       return d.data.length > 0 && layer!.visible ? `${d.layerId}_${d.userId ?? ''}` : [];
-  //     }),
-  //   [layers, lineDataSet]
-  // );
-  // const polygonLayerIds = useMemo(
-  //   () =>
-  //     polygonDataSet.flatMap((d) => {
-  //       const layer = layers.find((v) => v.id === d.layerId);
-  //       d.data.length > 0 && layer!.visible ? `${d.layerId}_${d.userId}` : [];
-  //     }),
-  //   [layers, polygonDataSet]
-  // );
-
-  // const interactiveLayerIds = useMemo(() => {
-  //   //console.log(featureButton);
-  //   if (featureButton === 'POINT') {
-  //     return undefined;
-  //   } else if (featureButton === 'LINE') {
-  //     if (lineTool === 'SELECT' || lineTool === 'NONE') {
-  //       return lineLayerIds;
-  //     } else {
-  //       return undefined;
-  //     }
-  //   } else {
-  //     return lineAndPolygonLayerIds;
-  //   }
-  // }, [featureButton, lineAndPolygonLayerIds, lineLayerIds, lineTool]);
-
   //console.log('Home');
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
@@ -313,7 +262,7 @@ export default function HomeScreen() {
             if (response.ok) {
               const json = await response.json();
               if (json) {
-                layerStyles = json;
+                layerStyles = json.layers;
                 hasStyleJson = true;
               } else {
                 layerStyles = styles;
@@ -321,6 +270,7 @@ export default function HomeScreen() {
             } else {
               layerStyles = styles;
             }
+            if (!Array.isArray(layerStyles)) return;
             layerStyles.forEach((layerStyle: any, index: number) => {
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
@@ -336,6 +286,28 @@ export default function HomeScreen() {
           })();
 
           // 外部からレイヤーとそのスタイルを非同期に読み込む
+        } else if (tileMap.url && tileMap.url.includes('.pbf') && tileMap.isVector) {
+          (async () => {
+            const url = tileMap.styleURL;
+            if (!url) return;
+            const response = await fetch(url);
+            if (!response.ok) return;
+            const json = await response.json();
+            if (!json) return;
+            const layerStyles = json.layers;
+            //arrayかどうかチェック
+            if (!Array.isArray(layerStyles)) return;
+
+            layerStyles.forEach((layerStyle: any, index: number) => {
+              layerStyle.id = `${tileMap.id}_${index}`;
+              layerStyle.source = tileMap.id;
+              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+
+              //console.log(layerStyle);
+
+              map.addLayer(layerStyle);
+            });
+          })();
         }
       } catch (e) {
         console.log(e);
@@ -497,6 +469,19 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
+          } else if (tileMap.url.includes('.pbf')) {
+            return {
+              ...result,
+              [tileMap.id]: {
+                type: 'vector',
+                tiles: [tileMap.url],
+                minzoom: tileMap.minimumZ,
+                maxzoom: tileMap.maximumZ,
+                scheme: 'xyz',
+                tileSize: 512,
+                attribution: tileMap.attribution,
+              },
+            };
           } else if (tileMap.url) {
             return {
               ...result,
@@ -551,7 +536,9 @@ export default function HomeScreen() {
         if (tileMap.visible) {
           if (
             tileMap.url &&
-            (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) &&
+            (tileMap.url.startsWith('pmtiles://') ||
+              tileMap.url.includes('.pmtiles') ||
+              tileMap.url.includes('.pbf')) &&
             tileMap.isVector
           ) {
             return null;
