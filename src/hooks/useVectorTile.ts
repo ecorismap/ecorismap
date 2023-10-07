@@ -48,12 +48,12 @@ export const useVectorTile = (): UseVectorTileReturnType => {
       const tileX = lonToTileX(latlon[0], zoom);
       const tileY = latToTileY(latlon[1], zoom);
       const properties: { [key: string]: any }[] = [];
+      //console.log(tileX, tileY, zoom);
       for (const tileMap of tileMaps) {
-        if (!tileMap.visible || tileMap.url === '') continue;
+        if (!(tileMap.visible && (tileMap.url.includes('pmtiles') || tileMap.url.includes('.pbf')))) continue;
         //console.log(tileMap.name, tileX, tileY, zoom);
         const property = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
-        if (property === undefined) continue;
-        properties.push(property);
+        if (property !== undefined) properties.push(property);
       }
       return properties;
     },
