@@ -18,6 +18,8 @@ export const HomeMapMemoTools = () => {
     penColor,
     editableMapMemo,
     isPencilModeActive,
+    isUndoable,
+    isRedoable,
     selectMapMemoTool,
     setPen,
     setEraser,
@@ -113,18 +115,18 @@ export const HomeMapMemoTools = () => {
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.UNDO}
-          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={editableMapMemo && isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!editableMapMemo}
+          disabled={!(editableMapMemo && isUndoable)}
           onPress={pressUndoMapMemo}
         />
       </View>
       <View style={isPositionRight ? styles.buttonRight : styles.button}>
         <Button
           name={MAPMEMOTOOL.REDO}
-          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={editableMapMemo && isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!editableMapMemo}
+          disabled={!(editableMapMemo && isRedoable)}
           onPress={pressRedoMapMemo}
         />
       </View>

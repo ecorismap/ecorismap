@@ -1,4 +1,4 @@
-import { Dispatch, MutableRefObject, SetStateAction, useCallback, useMemo, useRef, useState } from 'react';
+import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EraserType, LineRecordType, MapMemoToolType, PenType } from '../types';
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
@@ -26,6 +26,8 @@ export type UseMapMemoReturnType = {
   mapMemoEditingLine: MutableRefObject<Position[]>;
   editableMapMemo: boolean;
   isPencilModeActive: boolean;
+  isUndoable: boolean;
+  isRedoable: boolean;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPen: Dispatch<SetStateAction<PenType>>;
   setEraser: Dispatch<SetStateAction<EraserType>>;
@@ -62,6 +64,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const mapMemoEditingLine = useRef<Position[]>([]);
   const offset = useRef([0, 0]);
   const dataSet = useSelector((state: AppState) => state.dataSet);
+  const MAX_HISTORY = 5;
 
   const { generateRecord } = useRecord();
   const activeMemoLayer = useMemo(
@@ -87,6 +90,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       ? 10
       : 1;
   }, [currentMapMemoTool]);
+
+  const isUndoable = useMemo(() => history.length > 0, [history]);
+  const isRedoable = useMemo(() => future.length > 0, [future]);
 
   const clearMapMemoEditingLine = useCallback(() => {
     mapMemoEditingLine.current = [];
@@ -118,20 +124,22 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     } else if (simplifiedXY.length === 1) {
       simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
     }
-    const lineLatLon = xyArrayToLatLonObjects(simplifiedXY, mapRegion, mapSize, mapViewRef);
-    const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
 
     if (currentMapMemoTool.includes('PEN')) {
+      const lineLatLon = xyArrayToLatLonObjects(simplifiedXY, mapRegion, mapSize, mapViewRef);
       const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon) as LineRecordType;
       newRecord.field._strokeWidth = penWidth;
       newRecord.field._strokeColor = penColor;
       newRecord.field._zoom = mapRegion.zoom;
-
-      setHistory([...history, { operation: 'add', data: newRecord }]);
+      setHistory((prev) => [
+        ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+        { operation: 'add', data: newRecord },
+      ]);
       setFuture([]);
       clearMapMemoEditingLine();
       dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: [newRecord] }));
     } else if (currentMapMemoTool.includes('ERASER')) {
+      const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
       const deleteLine = [] as { idx: number; line: LineRecordType }[];
       const newDrawLine = [] as LineRecordType[];
       memoLines.forEach((line, idx) => {
@@ -142,7 +150,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           newDrawLine.push(line);
         }
       });
-      setHistory([...history, { operation: 'remove', data: deleteLine }]);
+      setHistory((prev) => [
+        ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+        { operation: 'remove', data: deleteLine },
+      ]);
       setFuture([]);
       clearMapMemoEditingLine();
       dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
@@ -154,7 +165,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     currentMapMemoTool,
     dispatch,
     generateRecord,
-    history,
     mapRegion,
     mapSize,
     mapViewRef,
@@ -224,6 +234,11 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     return true;
   }, [activeMemoLayer, dispatch]);
 
+  useEffect(() => {
+    //activeMemoLayerが変わったら、undo,redoをクリアする
+    clearMapMemoEditingLine();
+  }, [activeMemoLayer, clearMapMemoEditingLine]);
+
   return {
     visibleMapMemoColor,
     currentMapMemoTool,
@@ -234,6 +249,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapMemoEditingLine,
     editableMapMemo,
     isPencilModeActive,
+    isUndoable,
+    isRedoable,
     setMapMemoTool,
     setPen,
     setEraser,
