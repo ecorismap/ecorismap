@@ -11,7 +11,6 @@ interface Props {
   layer: LayerType;
   zoom: number;
   zIndex: number;
-  onPressPolygon: (layer: LayerType, feature: RecordType) => void;
 }
 
 export const Polygon = React.memo((props: Props) => {

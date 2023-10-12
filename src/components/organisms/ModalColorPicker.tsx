@@ -28,7 +28,7 @@ interface Props {
   pressSelectColorCancel: () => void;
 }
 
-export const ModalColorPicker = (props: Props) => {
+export const ModalColorPicker = React.memo((props: Props) => {
   const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
   const { windowWidth } = useWindow();
   const [hue, setHue] = useState(0);
@@ -106,7 +106,7 @@ export const ModalColorPicker = (props: Props) => {
       </View>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   modalButtonContainer: {
