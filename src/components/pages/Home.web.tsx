@@ -674,7 +674,6 @@ export default function HomeScreen() {
                         data={d.data}
                         layer={layer!}
                         zoom={zoom}
-                        onPressLine={() => null}
                         zIndex={101}
                         selectedRecord={selectedRecord}
                       />
@@ -686,14 +685,7 @@ export default function HomeScreen() {
                   const layer = layers.find((v) => v.id === d.layerId);
                   return (
                     layer!.visible && (
-                      <Polygon
-                        key={`${d.layerId}-${d.userId}`}
-                        data={d.data}
-                        layer={layer!}
-                        zoom={zoom}
-                        onPressPolygon={() => null}
-                        zIndex={100}
-                      />
+                      <Polygon key={`${d.layerId}-${d.userId}`} data={d.data} layer={layer!} zoom={zoom} zIndex={100} />
                     )
                   );
                 })}
