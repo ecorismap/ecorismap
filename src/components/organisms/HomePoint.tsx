@@ -16,8 +16,8 @@ interface Props {
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
 }
 
-export const Point = (props: Props) => {
-  //console.log('render Point');
+export const Point = React.memo((props: Props) => {
+  //console.log('render Point', now());
   const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
 
   return (
@@ -37,7 +37,7 @@ export const Point = (props: Props) => {
       )}
     </>
   );
-};
+});
 
 const PointComponent = React.memo((props: any) => {
   const { feature, selectedRecord, draggable, onDragEndPoint, layer, zoom } = props;
