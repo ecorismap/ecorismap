@@ -322,7 +322,6 @@ export default function HomeScreen() {
                     data={d.data}
                     layer={layer!}
                     zoom={zoom}
-                    onPressLine={() => null}
                     zIndex={101}
                     selectedRecord={selectedRecord}
                   />
@@ -339,7 +338,6 @@ export default function HomeScreen() {
                     data={d.data}
                     layer={layer!}
                     zoom={zoom}
-                    onPressPolygon={() => null}
                     zIndex={100}
                     selectedRecord={selectedRecord}
                   />
@@ -347,23 +345,6 @@ export default function HomeScreen() {
               );
             })}
 
-            {/************ Vector Tile *****************/}
-            {/* <VectorTiles url="https://www.ecoris.co.jp/map/kitakami_vt" zoom={zoom} /> */}
-
-            {/* <UrlTile
-            urlTemplate={'https://www.ecoris.co.jp/map/kitakami_h30'}
-            flipY={false}
-            opacity={1}
-            tileSize={512}
-            minimumZ={0}
-            maximumZ={22}
-            zIndex={10}
-            doubleTileSize={false}
-            maximumNativeZ={22}
-            tileCachePath={`${TILE_FOLDER}/mapmemo`}
-            tileCacheMaxAge={0}
-            offlineMode={true}
-          /> */}
             {/************* TILE MAP ******************** */}
 
             {tileMaps
