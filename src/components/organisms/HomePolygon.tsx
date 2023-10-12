@@ -1,14 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { getColor } from '../../utils/Layer';
-import { useWindow } from '../../hooks/useWindow';
-import booleanIntersects from '@turf/boolean-intersects';
-import * as turf from '@turf/helpers';
-import { latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { generateLabel } from '../../hooks/useLayers';
 
 interface Props {
@@ -17,22 +13,11 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onPressPolygon: (layer: LayerType, feature: PolygonRecordType) => void;
 }
 
 export const Polygon = React.memo((props: Props) => {
   //console.log('render Polygon');
-  const { data, layer, zoom: currentZoom, zIndex, selectedRecord, onPressPolygon } = props;
-  const { mapRegion } = useWindow();
-
-  const regionArea = useMemo(() => {
-    const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
-    const topleft = [longitude - longitudeDelta / 2, latitude + latitudeDelta / 2];
-    const topright = [longitude + longitudeDelta / 2, latitude + latitudeDelta / 2];
-    const bottomright = [longitude + longitudeDelta / 2, latitude - latitudeDelta / 2];
-    const bottomleft = [longitude - longitudeDelta / 2, latitude - latitudeDelta / 2];
-    return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
-  }, [mapRegion]);
+  const { data, layer, zoom: currentZoom, zIndex, selectedRecord } = props;
 
   if (data === undefined) return null;
 
@@ -40,13 +25,7 @@ export const Polygon = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
-        const zoom = (feature.field._zoom as number) ?? currentZoom;
-        // if (currentZoom > zoom + 2) return null;
-        // if (currentZoom < zoom - 4) return null;
         if (feature.coords.length < 3) return null;
-
-        // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
-
         const label = generateLabel(layer, feature);
         const transparency = layer.colorStyle.transparency;
         const color = getColor(layer, feature, 0);
@@ -76,9 +55,7 @@ export const Polygon = React.memo((props: Props) => {
               featureColor={polygonColor}
               strokeWidth={strokeWidth}
               zIndex={zIndex}
-              layer={layer}
               feature={feature}
-              onPressPolygon={onPressPolygon}
             />
           );
         } else {
@@ -98,7 +75,7 @@ export const Polygon = React.memo((props: Props) => {
 });
 
 const PolygonComponent = React.memo((props: any) => {
-  const { label, color, featureColor, strokeWidth, layer, zIndex, feature, onPressPolygon } = props;
+  const { label, color, featureColor, strokeWidth, zIndex, feature } = props;
   return (
     <>
       <Poly
@@ -111,7 +88,6 @@ const PolygonComponent = React.memo((props: any) => {
         fillColor={featureColor}
         strokeWidth={strokeWidth}
         zIndex={zIndex}
-        onPress={() => onPressPolygon(layer, feature)}
       />
       <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid} label={label} size={15} color={color} />
     </>

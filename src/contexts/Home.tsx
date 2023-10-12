@@ -94,6 +94,8 @@ export interface HomeContextType {
     | undefined;
   isPencilModeActive: boolean;
   isPencilTouch: boolean;
+  isUndoable: boolean;
+  isRedoable: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;

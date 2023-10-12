@@ -12,6 +12,7 @@ import { latLonObjectsToLatLonArray } from '../../utils/Coords';
 import { generateLabel } from '../../hooks/useLayers';
 import { AppState } from '../../modules';
 import { useSelector } from 'react-redux';
+import { now } from 'lodash';
 
 interface Props {
   data: LineRecordType[];
@@ -19,14 +20,12 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  onPressLine: (layer: LayerType, feature: LineRecordType) => void;
 }
 
 export const Line = React.memo((props: Props) => {
-  //console.log('render Line');
-  const { data, layer, zIndex, selectedRecord, onPressLine } = props;
+  //console.log('render Line', now());
+  const { data, zoom: currentZoom, layer, zIndex, selectedRecord } = props;
   const tracking = useSelector((state: AppState) => state.settings.tracking);
-  // const { zoom: currentZoom } = useContext(HomeContext);
   //const { mapRegion } = useWindow();
 
   // const regionArea = useMemo(() => {
@@ -43,7 +42,7 @@ export const Line = React.memo((props: Props) => {
     <>
       {data.map((feature) => {
         if (!feature.visible) return null;
-        //const zoom = (feature.field._zoom as number) ?? currentZoom;
+        // const zoom = (feature.field._zoom as number) ?? currentZoom;
         // if (currentZoom > zoom + 2) return null;
         // if (currentZoom < zoom - 4) return null;
         if (feature.coords.length < 2) return null;
@@ -79,10 +78,8 @@ export const Line = React.memo((props: Props) => {
             strokeWidth={strokeWidth}
             labelPosition={labelPosition}
             zIndex={zIndex}
-            layer={layer}
             feature={feature}
             tappable={false}
-            onPressLine={onPressLine}
           />
         );
       })}
@@ -91,7 +88,7 @@ export const Line = React.memo((props: Props) => {
 });
 
 const PolylineComponent = React.memo((props: any) => {
-  const { label, color, lineColor, labelPosition, strokeWidth, zIndex, layer, feature, onPressLine } = props;
+  const { label, color, lineColor, labelPosition, strokeWidth, zIndex, feature } = props;
   return (
     <>
       <Polyline
@@ -103,7 +100,6 @@ const PolylineComponent = React.memo((props: any) => {
         // lineCap="round"
         // lineJoin="round"
         zIndex={zIndex}
-        onPress={() => onPressLine(layer, feature)}
       />
       <LineLabel
         key={'label' + feature.id}
