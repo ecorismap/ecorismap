@@ -9,6 +9,7 @@ export const getColor = (layer: LayerType, feature: RecordType, transparency: nu
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
   //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。
   const colorStyle = layer.colorStyle;
+
   let color = COLOR.WHITE;
   if (colorStyle.colorType === 'SINGLE') {
     color = hex2rgba(colorStyle.color, 1 - transparency);
@@ -24,7 +25,7 @@ export const getColor = (layer: LayerType, feature: RecordType, transparency: nu
     }
   } else if (colorStyle.colorType === 'INDIVIDUAL') {
     color =
-      (feature.field._strokeColor as string) ?? transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)';
+      (feature.field._strokeColor as string) ?? (transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)');
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
     color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
