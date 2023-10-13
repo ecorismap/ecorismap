@@ -37,8 +37,8 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 75
-        versionName '0.2.0'
+        versionCode 87
+        versionName '0.3.0'
     }
 
     signingConfigs {

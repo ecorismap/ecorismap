@@ -163,8 +163,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="8"
-          markerHeight="8"
+          markerWidth="15"
+          markerHeight="15"
           orient="0"
         >
           <Circle cx="5" cy="5" r="4" fill="yellow" stroke="black" strokeWidth="1" />
@@ -177,8 +177,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="6"
-          markerHeight="6"
+          markerWidth="15"
+          markerHeight="15"
           orient="0"
         >
           <Circle cx="5" cy="5" r="5" fill={COLOR.ALFABLUE} stroke="blue" strokeWidth="1" />
@@ -192,8 +192,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="6"
-          markerHeight="6"
+          markerWidth="15"
+          markerHeight="15"
           orient="0"
         >
           <Circle cx="5" cy="5" r="5" fill="grey" stroke="darkgrey" strokeWidth="1" />
@@ -208,8 +208,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="6"
-          markerHeight="6"
+          markerWidth="15"
+          markerHeight="15"
           orient="0"
         >
           <Circle cx="5" cy="5" r="3.5" fill="white" stroke="blue" strokeWidth="2" />
@@ -221,11 +221,11 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="3"
-          markerHeight="3"
+          markerWidth="12"
+          markerHeight="12"
           orient="0"
         >
-          <Rect width="10" height="10" fill="white" stroke="blue" strokeWidth="1" />
+          <Rect width="10" height="10" fill="white" stroke="blue" strokeWidth="1.5" />
         </Marker>
       </G>
     </Defs>

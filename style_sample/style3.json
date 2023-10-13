@@ -1,0 +1,191 @@
+{
+  "version": 8,
+  "name": "樹種ポリゴン",
+  "sources": {
+    "tree_species_source": {
+      "type": "vector",
+      "tiles": ["https://rinya-tochigi.geospatial.jp/2023/rinya/tile/tree_species/{z}/{x}/{y}.pbf"],
+      "minzoom": 8,
+      "maxzoom": 18
+    }
+  },
+  "layers": [
+    {
+      "id": "tree_species_01_スギ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#00cc66"
+      },
+      "filter": ["==", "解析樹種ID", "01"]
+    },
+    {
+      "id": "tree_species_02_ヒノキ類",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#99ff66"
+      },
+      "filter": ["==", "解析樹種ID", "02"]
+    },
+    {
+      "id": "tree_species_03_マツ類",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#cc0000"
+      },
+      "filter": ["==", "解析樹種ID", "03"]
+    },
+    {
+      "id": "tree_species_04_カラマツ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ff9966"
+      },
+      "filter": ["==", "解析樹種ID", "04"]
+    },
+    {
+      "id": "tree_species_05_トドマツ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ffcc99"
+      },
+      "filter": ["==", "解析樹種ID", "05"]
+    },
+
+    {
+      "id": "tree_species_06_エゾマツ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#cc6600"
+      },
+      "filter": ["==", "解析樹種ID", "06"]
+    },
+    {
+      "id": "tree_species_07_その他N",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#cc00cc"
+      },
+      "filter": ["==", "解析樹種ID", "07"]
+    },
+    {
+      "id": "tree_species_08_クヌギ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ffff99"
+      },
+      "filter": ["==", "解析樹種ID", "08"]
+    },
+    {
+      "id": "tree_species_09_ナラ類",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ff9933"
+      },
+      "filter": ["==", "解析樹種ID", "09"]
+    },
+    {
+      "id": "tree_species_10_ブナ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#cc9900"
+      },
+      "filter": ["==", "解析樹種ID", "10"]
+    },
+    {
+      "id": "tree_species_11_その他L",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ffff00"
+      },
+      "filter": ["==", "解析樹種ID", "11"]
+    },
+    {
+      "id": "tree_species_12_タケ",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#8000ff"
+      },
+      "filter": ["==", "解析樹種ID", "12"]
+    },
+    {
+      "id": "tree_species_96_針広混交林",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#8db3e2"
+      },
+      "filter": ["==", "解析樹種ID", "96"]
+    },
+    {
+      "id": "tree_species_97_新植地",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ccff99"
+      },
+      "filter": ["==", "解析樹種ID", "97"]
+    },
+    {
+      "id": "tree_species_98_伐採跡地",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#ff80ff"
+      },
+      "filter": ["==", "解析樹種ID", "98"]
+    },
+    {
+      "id": "tree_species_99_その他",
+      "type": "fill",
+      "source": "tree_species_source",
+      "source-layer": "tree_species_tochigi",
+      "paint": {
+        "fill-opacity": 1.0,
+        "fill-color": "#bfbfbf"
+      },
+      "filter": ["==", "解析樹種ID", "99"]
+    }
+  ]
+}
