@@ -3,7 +3,7 @@ import { t } from '../i18n/config';
 import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.2.2';
+export const VERSION = 'Version 0.3.1';
 
 export const PLUGIN = {
   HISYOUTOOL: false,
