@@ -49,14 +49,15 @@ export const Line = React.memo((props: Props) => {
 
         // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
-        const label = generateLabel(layer, feature);
         const color = getColor(layer, feature, 0);
         const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
         const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
         const labelPosition = feature.coords[feature.coords.length - 1];
+        let label = generateLabel(layer, feature);
         let strokeWidth;
         if (tracking?.dataId === feature.id) {
           strokeWidth = 4;
+          label = '';
         } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
           if (feature.field._strokeWidth !== undefined) {
             strokeWidth = feature.field._strokeWidth as number;
