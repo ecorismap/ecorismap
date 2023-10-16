@@ -18,30 +18,30 @@ export const getSavedLocations = async (): Promise<LocationType[]> => {
   }
 };
 
+export const addLocations = async (locations: LocationObject[]) => {
+  const savedLocations = await getSavedLocations();
+  const updatedLocations = updateLocations(savedLocations, locations);
+  const updatedLocationsString = JSON.stringify(updatedLocations);
+  //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+
+  await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+  return updatedLocations;
+};
+
 export const updateLocations = (savedLocations: LocationType[], locations: LocationObject[]) => {
   //console.log(savedLocation);
+  if (locations.length === 0) return savedLocations;
   const lastTimeStamp = savedLocations.length !== 0 ? savedLocations[savedLocations.length - 1].timestamp : 0;
   //同じ場所が繰り返して配信されることがあるので、最後の時間以前のデータは破棄する。
   //LocationTaskConsumer.javaで同様の対処されているが、対処が不十分(getLastLocationの処理が原因？）とiOSにはその処理が入っていない
   const newLocations = locations
     .map((location) => toLocationType(location))
     .filter((v) => v.timestamp! > lastTimeStamp!);
-  if (newLocations.length > 0) {
-    //精度10m以上の場合は、ログを記録しない
-    //if (newLocations[0].accuracy && newLocations[0].accuracy < 10) {
-    const updatedLocations = [...savedLocations, ...newLocations];
-    return updatedLocations;
-  } else {
-    return savedLocations;
-  }
-  //ログの取り始めは、昔のログが残っていることがあるので、3分以上前はスキップ
-  // if (savedLocations.length === 0 && dayjs().diff(newLocations[0]!.timestamp!) / (60 * 1000) > 3) return;
-  //
-
-  //if (savedLocation.length !== 0) {
-  //console.log([savedLocation[0], newLocations[0]]);
-  //const distance = getLineLength([savedLocation[0], newLocations[0]]);
-  //if (distance < 0.1) locationEventsEmitter.emit('update', newLocations);
+  //ログの取り始めは、精度が悪いので、精度が30m以下になるまでは破棄する
+  //console.log('newLocations', newLocations);
+  if (savedLocations.length === 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30) return [];
+  const updatedLocations = [...savedLocations, ...newLocations];
+  return updatedLocations;
 };
 
 export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {

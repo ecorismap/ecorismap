@@ -271,7 +271,7 @@ export const getSnappedPositionWithLine = (point: Position, line: Position[], op
   };
 };
 
-export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[], RANGE: number = 500) => {
+export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[], RANGE: number = 2000) => {
   if (xyLine.length < 2) return { isNear: false, index: -1, position: undefined };
   const snapped = getSnappedPositionWithLine(xyPoint, xyLine, { isXY: true });
   return { isNear: snapped.distance < RANGE, index: snapped.index, position: snapped.position };
@@ -280,16 +280,15 @@ export const checkDistanceFromLine = (xyPoint: Position, xyLine: Position[], RAN
 export const findNearNodeIndex = (xyPoint: Position, xyLine: Position[]) => {
   try {
     const ADJUST_VALUE = 1000.0;
+    const RESPONSE_AREA = 2000;
     if (xyLine.length < 2) return -1;
     const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
     const turfLine = turf.lineString(xyLine.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+    const bufferPolygon = turf.buffer(turfPoint, RESPONSE_AREA / ADJUST_VALUE);
+    const nodeIndex = turfLine.geometry.coordinates.findIndex((xy) =>
+      turf.booleanPointInPolygon(turf.point(xy), bufferPolygon)
+    );
 
-    const bufferPolygon = turf.buffer(turfPoint, 500 / ADJUST_VALUE);
-    const nodeIndex = turfLine.geometry.coordinates.findIndex((xy) => {
-      const node = turf.point(xy);
-      //@ts-ignore
-      return turf.booleanIntersects(node, bufferPolygon);
-    });
     return nodeIndex;
   } catch (e) {
     return -1;
@@ -312,10 +311,11 @@ export const isWithinPolygon = (xyPoint: Position, xyLine: Position[]) => {
 export const isNearWithPlot = (xyPoint: Position, xyPlot: Position) => {
   try {
     const ADJUST_VALUE = 1000.0;
+    const RESPONSE_AREA = Platform.OS === 'ios' ? 1000.0 : 1000.0;
     const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
     const turfPlot = turf.point([xyPlot[0] / ADJUST_VALUE, xyPlot[1] / ADJUST_VALUE]);
 
-    const bufferPolygon = turf.buffer(turfPoint, 1000 / ADJUST_VALUE);
+    const bufferPolygon = turf.buffer(turfPoint, RESPONSE_AREA / ADJUST_VALUE);
     //@ts-ignore
     return turf.booleanIntersects(turfPlot, bufferPolygon) as boolean;
   } catch (e) {
