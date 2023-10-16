@@ -185,7 +185,7 @@ export const MapModalTileMap = React.memo(() => {
                 maximumValue={22}
                 onSlidingComplete={(value) => setOverzoomThreshold(value)}
               />
-              {tileURL && !tileURL.includes('pmtiles') && !tileURL.includes('.pbf') && (
+              {!tileURL?.includes('pmtiles') && !tileURL?.includes('.pbf') && (
                 <View style={{ flexDirection: 'row' }}>
                   <CheckBox
                     style={{ backgroundColor: COLOR.WHITE }}
