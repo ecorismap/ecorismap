@@ -7,13 +7,7 @@ import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import {
-  clearSavedLocations,
-  getLineLength,
-  getSavedLocations,
-  isLocationObject,
-  updateLocations,
-} from '../utils/Location';
+import { addLocations, clearSavedLocations, getLineLength, getSavedLocations } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { isMapView } from '../utils/Map';
@@ -21,33 +15,50 @@ import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
 import { LocationHeadingObject, LocationSubscription } from 'expo-location';
-import { STORAGE, TASK } from '../constants/AppConstants';
+import { TASK } from '../constants/AppConstants';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 
 const locationEventsEmitter = new EventEmitter();
-const saveAndEmitLocation = async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
-  //console.log('saveAndEmitLocation');
-  if (isLocationObject(data) && data.locations.length > 0) {
-    const savedLocations = await getSavedLocations();
-    const updatedLocations = updateLocations(savedLocations, data.locations);
-    const updatedLocationsString = JSON.stringify(updatedLocations);
-    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
 
-    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
-    //console.log('update', updatedLocations);
-    locationEventsEmitter.emit('update', updatedLocations);
-    //console.log(dataSizeInMB);
-    //if (dataSizeInMB > 2) {
-    //console.warn('データサイズが2MBを超えています。保存されません。');
-    //AlertAsync(t('hooks.alert.dataSizeOver'));
-    //}
+TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
+  if (event.error) {
+    return console.error('[tracking]', 'Something went wrong within the background location task...', event.error);
   }
-};
-TaskManager.defineTask(TASK.FETCH_LOCATION, saveAndEmitLocation);
+
+  const locations = (event.data as any).locations as Location.LocationObject[];
+  //console.log('[tracking]', 'Received new locations', locations);
+
+  try {
+    // have to add it sequentially, parses/serializes existing JSON
+
+    const updatedLocations = await addLocations(locations);
+    locationEventsEmitter.emit('update', updatedLocations);
+  } catch (error) {
+    console.log('[tracking]', 'Something went wrong when saving a new location...', error);
+  }
+});
+
+// TaskManager.defineTask(TASK.FETCH_LOCATION, async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
+//   //console.log('saveAndEmitLocation');
+//   if (isLocationObject(data) && data.locations.length > 0) {
+//     const savedLocations = await getSavedLocations();
+//     const updatedLocations = updateLocations(savedLocations, data.locations);
+//     const updatedLocationsString = JSON.stringify(updatedLocations);
+//     //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+
+//     await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+//     //console.log('update', updatedLocations);
+//     locationEventsEmitter.emit('update', updatedLocations);
+//     //console.log(dataSizeInMB);
+//     //if (dataSizeInMB > 2) {
+//     //console.warn('データサイズが2MBを超えています。保存されません。');
+//     //AlertAsync(t('hooks.alert.dataSizeOver'));
+//     //}
+//   }
+// });
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -88,6 +99,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (status !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));
       }
+      if (Platform.OS === 'ios') await Location.requestBackgroundPermissionsAsync();
+
       return status;
     } catch (e: any) {
       // eslint-disable-next-line no-console
@@ -151,11 +164,9 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         distanceInterval: 2,
         timeInterval: 2000,
         pausesUpdatesAutomatically: false,
-        deferredUpdatesDistance: 2,
-        deferredUpdatesInterval: 2000,
-        //deferredUpdatesDistance: 100,
-        //deferredUpdatesInterval: 1000 * 60,
-        ////activityType: 3,
+        // deferredUpdatesDistance: 2,
+        // deferredUpdatesInterval: 2000,
+        //activityType: Location.ActivityType.Other,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
           notificationTitle: 'EcorisMap',
@@ -280,6 +291,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const updateTrackLog = useCallback(
     (locations: LocationType[]) => {
       if (tracking === undefined) return;
+      if (locations.length === 0) return;
       const coords = locations[locations.length - 1];
       if (gpsState === 'follow') {
         (mapViewRef as MapView).animateCamera(
@@ -332,6 +344,9 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         //console.log('### start tracking ');
         setTrackingState('on');
         await toggleGPS('follow');
+        //アプリがkillされている間にストレージに保存されているトラックを更新する
+        const savedLocations = await getSavedLocations();
+        updateTrackLog(savedLocations);
       }
     })();
 

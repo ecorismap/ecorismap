@@ -24,6 +24,7 @@ export const CurrentMarker = (props: Props) => {
   const { currentLocation, angle } = props;
 
   const accuracy = currentLocation.accuracy ?? 0;
+  const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
 
   return (
     <Marker
@@ -43,7 +44,7 @@ export const CurrentMarker = (props: Props) => {
       >
         <Svg height="50" width="50">
           <G stroke="white" strokeWidth="2" strokeLinejoin="round">
-            <Path d="M25 1 L40 33 L25 25 L10 33 Z" fill="#ff0000aa" />
+            <Path d="M25 1 L40 33 L25 25 L10 33 Z" fill={fillColor} />
           </G>
         </Svg>
       </View>
@@ -52,7 +53,7 @@ export const CurrentMarker = (props: Props) => {
         <View style={styles.calloutStyle}>
           <Text>Latitude: {decimalToDMS(currentLocation.latitude)}</Text>
           <Text>Longitude: {decimalToDMS(currentLocation.longitude)}</Text>
-          <Text>Altitude: {currentLocation.altitude} m</Text>
+          {/* <Text>Altitude: {currentLocation.altitude} m</Text> */}
           <Text>Accuracy: {Math.floor(accuracy)} m</Text>
         </View>
       </Callout>
