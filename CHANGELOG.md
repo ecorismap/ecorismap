@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.3.0] - 2023-10-13
+## [0.3.3] - 2023-10-16
 - Added support for displaying PMTiles and vector tiles in pbf format
 - Added a tool to write notes on the map
 - Added support for importing and exporting map settings
@@ -62,7 +62,7 @@
 ## [Unreleased]
 
 [Unreleased]: https://github.com/ecorismap/ecorismap/compare/1cd68323874443235ac4bf0614f0bd876e51d6eb...HEAD
-[0.3.0]: https://github.com/ecorismap/ecorismap/compare/37e4fe928b7728a191e87b7538cbfd92554bfc6b...1cd68323874443235ac4bf0614f0bd876e51d6eb
+[0.3.3]: https://github.com/ecorismap/ecorismap/compare/37e4fe928b7728a191e87b7538cbfd92554bfc6b...d642a3f85075c51679cfe795b96b443b793ab605
 [0.2.0]: https://github.com/ecorismap/ecorismap/compare/69d133b13d58a12f9ee4dbe406e1212560721551...37e4fe928b7728a191e87b7538cbfd92554bfc6b
 [0.1.10]: https://github.com/ecorismap/ecorismap/tree/69d133b13d58a12f9ee4dbe406e1212560721551
 
