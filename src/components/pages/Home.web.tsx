@@ -216,15 +216,15 @@ export default function HomeScreen() {
           style={{
             position: 'absolute',
             right: 16,
-            top: -4,
-            width: 24,
-            height: 25,
+            top: 0,
+            width: 25,
+            height: 20,
             justifyContent: 'center',
             alignItems: 'center',
           }}
           onPress={() => bottomSheetRef.current?.close()}
         >
-          <Text style={{ fontSize: 24, color: COLOR.GRAY4 }}>×</Text>
+          <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
         </TouchableOpacity>
       </View>
     );

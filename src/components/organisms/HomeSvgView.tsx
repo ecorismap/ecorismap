@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
@@ -64,7 +64,7 @@ export const SvgView = React.memo(() => {
             }
           }
 
-          let strokeColor = properties.includes('EDIT') ? 'lightblue' : 'yellow';
+          let strokeColor = properties.includes('EDIT') ? 'lightblue' : '#F7C114';
 
           if (Object.keys(HISYOUTOOL).some((p) => properties.includes(p)) || properties.includes('HISYOU_NOEDIT')) {
             strokeColor = 'blue';
@@ -127,6 +127,7 @@ export const SvgView = React.memo(() => {
 });
 
 const LineDefs = () => {
+  const OS_ASPECT_RATIO = Platform.OS === 'android' ? 2 : 0.8;
   return (
     <Defs>
       <G id="markers">
@@ -163,8 +164,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="15"
-          markerHeight="15"
+          markerWidth={15 * OS_ASPECT_RATIO}
+          markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
           <Circle cx="5" cy="5" r="4" fill="yellow" stroke="black" strokeWidth="1" />
@@ -177,8 +178,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="15"
-          markerHeight="15"
+          markerWidth={15 * OS_ASPECT_RATIO}
+          markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
           <Circle cx="5" cy="5" r="5" fill={COLOR.ALFABLUE} stroke="blue" strokeWidth="1" />
@@ -192,8 +193,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="15"
-          markerHeight="15"
+          markerWidth={15 * OS_ASPECT_RATIO}
+          markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
           <Circle cx="5" cy="5" r="5" fill="grey" stroke="darkgrey" strokeWidth="1" />
@@ -208,8 +209,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="15"
-          markerHeight="15"
+          markerWidth={15 * OS_ASPECT_RATIO}
+          markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
           <Circle cx="5" cy="5" r="3.5" fill="white" stroke="blue" strokeWidth="2" />
@@ -221,8 +222,8 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth="12"
-          markerHeight="12"
+          markerWidth={12 * OS_ASPECT_RATIO}
+          markerHeight={12 * OS_ASPECT_RATIO}
           orient="0"
         >
           <Rect width="10" height="10" fill="white" stroke="blue" strokeWidth="1.5" />
