@@ -140,9 +140,11 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Give $(PRODUCT_NAME) permission to access your camera</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to use your location</string>
+	<string>Turning on location services allows us to show your current location and record your tracks.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Allow $(PRODUCT_NAME) to use your location</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Turning on location services allows us to show your current location and record your tracks.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Turning on location services allows us to show your current location and record your tracks.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -151,8 +153,14 @@
 	<string>Give $(PRODUCT_NAME) permission to save photos</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Give $(PRODUCT_NAME) permission to access your photos</string>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UISceneConfigurations</key>
+		<dict/>
+	</dict>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>fetch</string>
 		<string>location</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
@@ -163,7 +171,6 @@
 	</array>
 	<key>UIRequiresFullScreen</key>
 	<true/>
-	<key>UIApplicationSceneManifest</key> <dict> <key>UISceneConfigurations</key> <dict/> </dict>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
