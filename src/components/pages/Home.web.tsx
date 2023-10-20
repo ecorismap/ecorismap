@@ -718,8 +718,7 @@ export default function HomeScreen() {
           >
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
-
-          {projectName === undefined || (!isShowingProjectButtons && !isSettingProject && <HomeProjectButtons />)}
+          {projectName !== undefined && (isShowingProjectButtons || isSettingProject) && <HomeProjectButtons />}
           {projectName === undefined || isDownloadPage ? null : (
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}
