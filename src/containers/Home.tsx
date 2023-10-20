@@ -655,6 +655,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressJumpProject = useCallback(() => {
     navigation.navigate('Home', {
       jumpTo: projectRegion,
+      previous: 'Home',
     });
   }, [navigation, projectRegion]);
 
@@ -797,8 +798,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('tileMap', route.params?.tileMap);
 
     if (route.params?.jumpTo != null) {
-      //console.log(route.params.jumpTo);
-      changeMapRegion({ ...route.params.jumpTo, zoom }, true);
+      const zoomToJump =
+        route.params.previous === 'ProjectEdit' || route.params.previous === 'Home' ? route.params.jumpTo.zoom : zoom;
+      changeMapRegion({ ...route.params.jumpTo, zoom: zoomToJump }, true);
     }
     if (route.params?.previous === 'Settings') {
       bottomSheetRef.current?.close();
@@ -812,7 +814,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         bottomSheetRef.current?.snapToIndex(2);
       }
     }
-    //navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
+    //プロジェクトのホームにジャンプする時にjumpToをリセットしないと更新されないので必要
+    navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo]);
