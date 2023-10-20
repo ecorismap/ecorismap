@@ -176,11 +176,6 @@ export default function HomeScreen() {
       ),
     };
   });
-  const customHandlePadding = useAnimatedStyle(() => {
-    return {
-      paddingTop: interpolate(animatedIndex.value, [0, 1, 2], [0, 0, insets.top]),
-    };
-  });
 
   const customHandlePadding = useAnimatedStyle(() => {
     return {
