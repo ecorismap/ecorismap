@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
+import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Linking, Platform } from 'react-native';
 import { t } from '../i18n/config';
