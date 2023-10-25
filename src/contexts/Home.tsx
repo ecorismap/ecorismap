@@ -90,6 +90,12 @@ export interface HomeContextType {
   isPencilTouch: boolean;
   isUndoable: boolean;
   isRedoable: boolean;
+  mapMemoLines: {
+    xy: Position[];
+    latlon: Position[];
+    strokeColor: string;
+    strokeWidth: number;
+  }[];
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
