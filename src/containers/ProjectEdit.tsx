@@ -10,7 +10,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { AppState } from '../modules';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
 import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
@@ -39,7 +39,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     startProjectSetting,
   } = useProjectEdit(route.params.project, route.params.isNew);
 
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const [isLoading, setIsLoading] = useState(false);
   const { ownerProjectsCount } = useProjects();
   const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup } = useE3kitGroup();

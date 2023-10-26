@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import AccountSettings from '../components/pages/AccountSettings';
 import { t } from '../i18n/config';
@@ -8,7 +8,7 @@ import { Props_AccountSettings } from '../routes';
 import { AccountSettingsContext } from '../contexts/AccountSettings';
 
 export default function AccountSettingsContainers({ navigation }: Props_AccountSettings) {
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
 
   const pressUpdateUserProfile = useCallback(() => {
     navigation.navigate('Account', { accountFormState: 'updateUserProfile' });

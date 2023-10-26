@@ -3,7 +3,7 @@ import { DataType, LayerType, PhotoType, ProjectSettingsType, ProjectType, Recor
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { createLayersInitialState, setLayersAction } from '../modules/layers';
@@ -131,13 +131,13 @@ export const useRepository = (): UseRepositoryReturnType => {
   const user = useSelector((state: AppState) => state.user);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const layers = useSelector((state: AppState) => state.layers);
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
+  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion, shallowEqual);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapType = useSelector((state: AppState) => state.settings.mapType);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
+  const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
+  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
   //const drawTools = useSelector((state: AppState) => state.settings.drawTools);
-  const plugins = useSelector((state: AppState) => state.settings.plugins);
-  const updatedAt = useSelector((state: AppState) => state.settings.updatedAt);
+  const plugins = useSelector((state: AppState) => state.settings.plugins, shallowEqual);
+  const updatedAt = useSelector((state: AppState) => state.settings.updatedAt, shallowEqual);
   const { photosToBeDeleted } = usePhoto();
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
