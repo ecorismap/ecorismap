@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { getUidsByEmails } from '../lib/firebase/firestore';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
@@ -37,8 +37,8 @@ export type UseProjectEditReturnType = {
 export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): UseProjectEditReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
-  const projectRegion = useSelector((state: AppState) => state.settings.projectRegion);
-  const currentProjectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectRegion = useSelector((state: AppState) => state.settings.projectRegion, shallowEqual);
+  const currentProjectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const projects = useSelector((state: AppState) => state.projects);
   const [targetProject, setTargetProject] = useState<ProjectType>(initialProject);
   const [originalProject, setOriginalProject] = useState<ProjectType>(initialProject);

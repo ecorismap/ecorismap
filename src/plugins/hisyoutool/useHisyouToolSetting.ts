@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { useRecord } from '../../hooks/useRecord';
 import { AppState } from '../../modules';
 import { updateLayerAction } from '../../modules/layers';
@@ -16,7 +16,10 @@ export type UseHisyouToolSettingReturnType = {
 
 export const useHisyouToolSetting = (): UseHisyouToolSettingReturnType => {
   const dispatch = useDispatch();
-  const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
+  const hisyouLayerId = useSelector(
+    (state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '',
+    shallowEqual
+  );
   const isHisyouToolActive = useMemo(() => hisyouLayerId !== '', [hisyouLayerId]);
   const [visibleHisyouToolSetting, setVisibleHisyouToolSetting] = useState(false);
   const { findLayer } = useRecord();

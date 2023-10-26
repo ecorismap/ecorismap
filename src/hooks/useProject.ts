@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
 import { ProjectType, RegionType } from '../types';
@@ -26,11 +26,11 @@ export type UseProjectReturnType = {
 
 export const useProject = (): UseProjectReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
-  const isSynced = useSelector((state: AppState) => state.settings.isSynced);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
-  const projectRegion = useSelector((state: AppState) => state.settings.projectRegion);
+  const isSynced = useSelector((state: AppState) => state.settings.isSynced, shallowEqual);
+  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
+  const projectRegion = useSelector((state: AppState) => state.settings.projectRegion, shallowEqual);
   const projects = useSelector((state: AppState) => state.projects);
   const project = useMemo(() => projects.find((d) => d.id === projectId), [projectId, projects]);
   const role = useMemo(() => project?.members.find((v) => v.uid === user.uid)?.role, [project?.members, user.uid]);
