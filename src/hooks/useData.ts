@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ExportType, LayerType, PhotoType, RecordType } from '../types';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
 import { AppState } from '../modules';
@@ -7,6 +7,8 @@ import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecord
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import dayjs from 'dayjs';
+import { usePermission } from './usePermission';
+import { t } from '../i18n/config';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -29,14 +31,23 @@ export type UseDataReturnType = {
     }[];
     fileName: string;
   };
+  checkRecordEditable: (
+    targetLayer: LayerType,
+    feature?: RecordType
+  ) => {
+    isOK: boolean;
+    message: string;
+  };
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
+  //console.log(targetLayer);
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const user = useSelector((state: AppState) => state.user);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
-
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: AppState) => state.user, shallowEqual);
+  const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
+  const { isRunningProject } = usePermission();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<boolean[]>([]);
 
@@ -51,6 +62,26 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
 
   const targetRecords = useMemo(() => allUserRecordSet.filter((_, i) => checkList[i]), [allUserRecordSet, checkList]);
+
+  const checkRecordEditable = useCallback(
+    (targetLayer: LayerType, feature?: RecordType) => {
+      if (isRunningProject && targetLayer.permission === 'COMMON') {
+        return { isOK: false, message: t('hooks.message.lockProject') };
+      }
+      if (isRunningProject && feature && feature.userId !== user.uid) {
+        return { isOK: false, message: t('hooks.message.cannotEditOthers') };
+      }
+      if (tracking !== undefined && tracking.dataId === feature?.id) {
+        return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
+      }
+      if (!targetLayer.active) {
+        return { isOK: false, message: t('hooks.message.noEditMode') };
+      }
+
+      return { isOK: true, message: '' };
+    },
+    [isRunningProject, tracking, user.uid]
+  );
 
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType) => {
@@ -198,5 +229,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     addDefaultRecord,
     deleteRecords,
     generateExportGeoData,
+    checkRecordEditable,
   } as const;
 };

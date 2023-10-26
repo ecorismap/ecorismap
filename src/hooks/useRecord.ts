@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import {
   DataType,
@@ -17,6 +17,7 @@ import {
 } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
+import { createSelector } from 'reselect';
 import { v4 as uuidv4 } from 'uuid';
 import { getDefaultField } from '../utils/Data';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
@@ -99,29 +100,24 @@ export const useRecord = (): UseRecordReturnType => {
 
   const layers = useSelector((state: AppState) => state.layers);
   const user = useSelector((state: AppState) => state.user);
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const pointDataSet = useSelector(
-    (state: AppState) =>
-      layers
-        .map((layer) => (layer.type === 'POINT' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
-        .flat() as PointDataType[]
-  );
-  const lineDataSet = useSelector(
-    (state: AppState) =>
-      layers
-        .map((layer) => (layer.type === 'LINE' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
-        .flat() as LineDataType[]
-  );
-  const polygonDataSet = useSelector(
-    (state: AppState) =>
-      layers
-        .map((layer) => (layer.type === 'POLYGON' ? state.dataSet.filter((v) => v.layerId === layer.id) : []))
-        .flat() as PolygonDataType[]
-  );
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
 
-  const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord);
+  const selectDataByLayerType = (layerType: string) =>
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    createSelector([(state) => state.dataSet, (_) => layers], (dataSet, layers) =>
+      //@ts-ignore
+      layers.map((layer) => (layer.type === layerType ? dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
+    );
+  const selectPointData = selectDataByLayerType('POINT');
+  const selectLineData = selectDataByLayerType('LINE');
+  const selectPolygonData = selectDataByLayerType('POLYGON');
+  const pointDataSet = useSelector((state) => selectPointData(state) as PointDataType[]);
+  const lineDataSet = useSelector((state) => selectLineData(state) as LineDataType[]);
+  const polygonDataSet = useSelector((state) => selectPolygonData(state) as PolygonDataType[]);
 
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord, shallowEqual);
+
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);

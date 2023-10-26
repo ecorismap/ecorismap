@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { PixelRatio, Platform, useWindowDimensions } from 'react-native';
 import { RegionType } from '../types';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 
 export type UseWindowReturnType = {
@@ -17,7 +17,7 @@ export type UseWindowReturnType = {
 };
 
 export const useWindow = (): UseWindowReturnType => {
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion);
+  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion, shallowEqual);
   const window = useWindowDimensions();
   const isLandscape = useMemo(() => window.width > window.height, [window.height, window.width]);
   const windowWidth = window.width;
