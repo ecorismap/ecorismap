@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLOR.GRAY3,
-    flex: 1,
     fontSize: 12,
   },
 

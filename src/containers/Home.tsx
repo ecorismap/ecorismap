@@ -12,7 +12,7 @@ import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -54,14 +54,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const isPencilTouch = useRef(false);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapType = useSelector((state: AppState) => state.settings.mapType);
-  const isOffline = useSelector((state: AppState) => state.settings.isOffline);
-  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
-  const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
-  const projectName = useSelector((state: AppState) => state.settings.projectName);
   const user = useSelector((state: AppState) => state.user);
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const projectName = useSelector((state: AppState) => state.settings.projectName, shallowEqual);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
+  const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
+  const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
+  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
+  const memberLocations = useSelector((state: AppState) => state.settings.memberLocation, shallowEqual);
 
   const routeName = getFocusedRouteNameFromRoute(route);
 
@@ -141,6 +141,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isPencilModeActive,
     isUndoable,
     isRedoable,
+    mapMemoLines,
     setMapMemoTool,
     setPen,
     setEraser,
@@ -153,7 +154,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressRedoMapMemo,
     clearMapMemoHistory,
     changeColorTypeToIndividual,
-    clearMapMemoEditingLine,
     setPencilModeActive,
   } = useMapMemo(mapViewRef.current);
 
@@ -227,7 +227,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
-      //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
       !isDrawLineVisible && showDrawLine();
       closeVectorTileInfo();
@@ -963,8 +962,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             await getInfoOfFeature(e);
           } else if (currentDrawTool !== 'NONE') {
             pressSvgView(e);
-          } else if (currentMapMemoTool !== 'NONE') {
-            if (!isPencilTouch.current && isPencilModeActive) return;
+          } else if (featureButton === 'MEMO') {
+            if (isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch.current && isPencilModeActive) {
+              setIsPinch(true);
+              return;
+            }
             onPanResponderGrantMapMemo(e);
           } else {
             unselectRecord();
@@ -976,11 +978,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           if (currentDrawTool === 'MOVE') {
           } else if (isPinch) {
           } else if (gesture.numberActiveTouches === 2) {
-            clearMapMemoEditingLine();
-            hideDrawLine();
             setIsPinch(true);
-          } else if (isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch.current) {
-            //指による移動
           } else if (isMapMemoDrawTool(currentMapMemoTool)) {
             onPanResponderMoveMapMemo(e);
           } else if (currentDrawTool !== 'NONE') {
@@ -991,7 +989,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
-            showDrawLine();
             setIsPinch(false);
           } else if (currentMapMemoTool !== 'NONE') {
             onPanResponderReleaseMapMemo();
@@ -1003,9 +1000,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }),
     [
       addLocationPoint,
-      clearMapMemoEditingLine,
       currentDrawTool,
       currentMapMemoTool,
+      featureButton,
       getInfoOfFeature,
       hideDrawLine,
       isPencilModeActive,
@@ -1079,6 +1076,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isPencilTouch: isPencilTouch.current,
         isUndoable,
         isRedoable,
+        mapMemoLines,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,

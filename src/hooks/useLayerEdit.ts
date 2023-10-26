@@ -4,7 +4,7 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 import { cloneDeep } from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { formattedInputs } from '../utils/Format';
 import { Platform } from 'react-native';
@@ -41,7 +41,7 @@ export const useLayerEdit = (
   colorStyle: ColorStyle | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const layers = useSelector((state: AppState) => state.layers);
   const user = useSelector((state: AppState) => state.user);
   const dataSet = useSelector((state: AppState) => state.dataSet.filter((d) => d.layerId === layer.id));

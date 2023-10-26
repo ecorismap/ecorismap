@@ -7,7 +7,7 @@ import { LayerType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
 import { usePermission } from '../hooks/usePermission';
@@ -17,7 +17,7 @@ import sanitize from 'sanitize-filename';
 import { Platform } from 'react-native';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const {
     targetLayer,
     isEdited,

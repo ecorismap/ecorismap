@@ -1,4 +1,4 @@
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import {
   DMSKey,
   LatLonDMSKey,
@@ -67,10 +67,10 @@ export const useDataEdit = (
   recordIndex: number
 ): UseDataEditReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
-  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
-
+  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
+  //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>(recordSet);
