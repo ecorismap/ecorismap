@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { TUTRIALS_MESSAGE } from '../constants/Tutrials';
 import { t } from '../i18n/config';
@@ -16,7 +16,7 @@ export type UseTutrialReturnType = {
 };
 
 export const useTutrial = (): UseTutrialReturnType => {
-  const tutrials = useSelector((state: AppState) => state.settings.tutrials);
+  const tutrials = useSelector((state: AppState) => state.settings.tutrials, shallowEqual);
   const isTermsOfUseOpen = useMemo(() => tutrials.TERMS_OF_USE, [tutrials.TERMS_OF_USE]);
   const dispatch = useDispatch();
 

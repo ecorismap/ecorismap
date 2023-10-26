@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { LayerType } from '../types';
 import Data from '../components/pages/Data';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useData } from '../hooks/useData';
 import { Props_Data } from '../routes';
@@ -11,10 +11,10 @@ import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
 import { usePhoto } from '../hooks/usePhoto';
-import { useRecord } from '../hooks/useRecord';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  //console.log('render DataContainer');
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
@@ -30,8 +30,9 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     addDefaultRecord,
     deleteRecords,
     generateExportGeoData,
+    checkRecordEditable,
   } = useData(route.params.targetLayer);
-  const { checkRecordEditable } = useRecord();
+
   const { deleteRecordPhotos } = usePhoto();
   //const { isMember } = usePermission();
 

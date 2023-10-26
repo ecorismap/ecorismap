@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { FeatureType, GeoJsonFeatureType, LayerType } from '../types';
 
 import { AppState } from '../modules';
@@ -42,7 +42,7 @@ const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
 
 export const useGeoFile = (): UseGeoFileReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
   const [isLoading, setIsLoading] = useState(false);
   const dataUser = useMemo(
