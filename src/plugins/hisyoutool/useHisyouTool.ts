@@ -20,7 +20,7 @@ import {
   propertiesToLegends,
 } from './utils';
 import { v4 as uuidv4 } from 'uuid';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { addRecordsAction, deleteRecordsAction } from '../../modules/dataSet';
 import { AppState } from '../../modules';
 import MapView, { LatLng } from 'react-native-maps';
@@ -67,7 +67,10 @@ export const useHisyouTool = (
     isEditingObject,
     mapViewRef
   );
-  const hisyouLayerId = useSelector((state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '');
+  const hisyouLayerId = useSelector(
+    (state: AppState) => state.settings.plugins?.hisyouTool?.hisyouLayerId ?? '',
+    shallowEqual
+  );
   const hisyouData = useSelector((state: AppState) => state.dataSet.find((v) => v.layerId === hisyouLayerId));
   const { selectedRecord } = useRecord();
   const { isHisyouToolActive } = useHisyouToolSetting();

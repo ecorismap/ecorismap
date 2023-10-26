@@ -12,7 +12,7 @@ import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -49,10 +49,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const isPencilTouch = useRef(false);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapType = useSelector((state: AppState) => state.settings.mapType);
-  const isOffline = useSelector((state: AppState) => state.settings.isOffline);
-  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord);
-  const memberLocations = useSelector((state: AppState) => state.settings.memberLocation);
+  const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
+  const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
+  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
+  const memberLocations = useSelector((state: AppState) => state.settings.memberLocation, shallowEqual);
 
   const routeName = getFocusedRouteNameFromRoute(route);
 

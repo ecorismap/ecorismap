@@ -22,71 +22,100 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
 }
 
-export const Line = React.memo((props: Props) => {
-  //console.log('render Line', now());
-  const { data, zoom: currentZoom, layer, zIndex, selectedRecord } = props;
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
-  //const { mapRegion } = useWindow();
+export const Line = React.memo(
+  (props: Props) => {
+    //console.log('render Line', now());
+    const { data, zoom: currentZoom, layer, zIndex, selectedRecord } = props;
+    const tracking = useSelector((state: AppState) => state.settings.tracking);
+    //const { mapRegion } = useWindow();
 
-  // const regionArea = useMemo(() => {
-  //   const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
-  //   const topleft = [longitude - longitudeDelta / 2, latitude + latitudeDelta / 2];
-  //   const topright = [longitude + longitudeDelta / 2, latitude + latitudeDelta / 2];
-  //   const bottomright = [longitude + longitudeDelta / 2, latitude - latitudeDelta / 2];
-  //   const bottomleft = [longitude - longitudeDelta / 2, latitude - latitudeDelta / 2];
-  //   return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
-  // }, [mapRegion]);
+    // const regionArea = useMemo(() => {
+    //   const { latitude, longitude, latitudeDelta, longitudeDelta } = mapRegion;
+    //   const topleft = [longitude - longitudeDelta / 2, latitude + latitudeDelta / 2];
+    //   const topright = [longitude + longitudeDelta / 2, latitude + latitudeDelta / 2];
+    //   const bottomright = [longitude + longitudeDelta / 2, latitude - latitudeDelta / 2];
+    //   const bottomleft = [longitude - longitudeDelta / 2, latitude - latitudeDelta / 2];
+    //   return turf.polygon([[topleft, topright, bottomright, bottomleft, topleft]]);
+    // }, [mapRegion]);
 
-  if (data === undefined) return null;
-  return (
-    <>
-      {data.map((feature) => {
-        if (!feature.visible) return null;
-        // const zoom = (feature.field._zoom as number) ?? currentZoom;
-        // if (currentZoom > zoom + 2) return null;
-        // if (currentZoom < zoom - 4) return null;
-        if (feature.coords.length < 2) return null;
+    if (data === undefined) return null;
+    return (
+      <>
+        {data.map((feature) => {
+          if (!feature.visible) return null;
+          // const zoom = (feature.field._zoom as number) ?? currentZoom;
+          // if (currentZoom > zoom + 2) return null;
+          // if (currentZoom < zoom - 4) return null;
+          if (feature.coords.length < 2) return null;
 
-        // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
+          // if (!booleanIntersects(regionArea, turf.lineString(latLonObjectsToLatLonArray(feature.coords)))) return null;
 
-        const color = getColor(layer, feature, 0);
-        const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
-        const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
-        const labelPosition = feature.coords[feature.coords.length - 1];
-        let label = generateLabel(layer, feature);
-        let strokeWidth;
-        if (tracking?.dataId === feature.id) {
-          strokeWidth = 4;
-          label = '';
-        } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-          if (feature.field._strokeWidth !== undefined) {
-            strokeWidth = feature.field._strokeWidth as number;
+          const color = getColor(layer, feature, 0);
+          const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
+          const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
+          const labelPosition = feature.coords[feature.coords.length - 1];
+          let label = generateLabel(layer, feature);
+          let strokeWidth;
+          if (tracking?.dataId === feature.id) {
+            strokeWidth = 4;
+            label = '';
+          } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+            if (feature.field._strokeWidth !== undefined) {
+              strokeWidth = feature.field._strokeWidth as number;
+            } else {
+              strokeWidth = 1.5;
+            }
+          } else if (layer.colorStyle.lineWidth !== undefined) {
+            strokeWidth = layer.colorStyle.lineWidth;
           } else {
             strokeWidth = 1.5;
           }
-        } else if (layer.colorStyle.lineWidth !== undefined) {
-          strokeWidth = layer.colorStyle.lineWidth;
-        } else {
-          strokeWidth = 1.5;
-        }
 
-        return (
-          <PolylineComponent
-            key={feature.id}
-            label={label}
-            color={color}
-            lineColor={lineColor}
-            strokeWidth={strokeWidth}
-            labelPosition={labelPosition}
-            zIndex={zIndex}
-            feature={feature}
-            tappable={false}
-          />
-        );
-      })}
-    </>
-  );
-});
+          return (
+            <PolylineComponent
+              key={feature.id}
+              label={label}
+              color={color}
+              lineColor={lineColor}
+              strokeWidth={strokeWidth}
+              labelPosition={labelPosition}
+              zIndex={zIndex}
+              feature={feature}
+              tappable={false}
+            />
+          );
+        })}
+      </>
+    );
+  },
+  (prevProps, nextProps) => {
+    if (prevProps.data !== nextProps.data) return false;
+    if (prevProps.layer !== nextProps.layer) return false;
+    if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.zIndex !== nextProps.zIndex) return false;
+
+    // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
+    if (
+      prevProps.selectedRecord &&
+      !nextProps.selectedRecord &&
+      prevProps.selectedRecord.layerId === prevProps.layer.id
+    ) {
+      return false;
+    }
+    // 選択されたレイヤーIDが自分のレイヤーIDと一致するか？
+    const isSelectedLayer = nextProps.selectedRecord?.layerId === nextProps.layer.id;
+
+    if (isSelectedLayer) {
+      // 選択レイヤが変更された場合
+      if (prevProps.selectedRecord?.layerId !== nextProps.selectedRecord?.layerId) return false;
+
+      // 選択レイヤが変更されていないが、選択レコードが変更された場合
+      if (prevProps.selectedRecord?.record.id !== nextProps.selectedRecord?.record.id) return false;
+    }
+
+    return true;
+  }
+);
 
 const PolylineComponent = React.memo((props: any) => {
   const { label, color, lineColor, labelPosition, strokeWidth, zIndex, feature } = props;
