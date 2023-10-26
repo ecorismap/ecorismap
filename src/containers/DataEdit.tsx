@@ -9,7 +9,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
@@ -47,7 +47,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.targetRecordSet,
     route.params.targetIndex
   );
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
   const { checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();

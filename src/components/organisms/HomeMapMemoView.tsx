@@ -5,7 +5,14 @@ import { HomeContext } from '../../contexts/Home';
 import { View } from 'react-native';
 
 export const MapMemoView = React.memo(() => {
-  const { penColor, penWidth, mapMemoEditingLine, currentMapMemoTool, zoom: currentZoom } = useContext(HomeContext);
+  const {
+    penColor,
+    penWidth,
+    mapMemoEditingLine,
+    currentMapMemoTool,
+    //zoom: currentZoom,
+    mapMemoLines,
+  } = useContext(HomeContext);
   //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
   return (
@@ -21,6 +28,15 @@ export const MapMemoView = React.memo(() => {
       pointerEvents={'none'}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
+        {mapMemoLines.map((line, index) => (
+          <Path
+            key={index}
+            d={`M${line.xy.map((p) => `${p[0]},${p[1]}`).join(' L')}`}
+            stroke={line.strokeColor}
+            strokeWidth={line.strokeWidth}
+            fill="none"
+          />
+        ))}
         <Path
           d={pointsToSvg(mapMemoEditingLine)}
           stroke={currentMapMemoTool === 'ERASER' ? 'white' : penColor}
