@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
 import { addLocations, clearSavedLocations, getLineLength, getSavedLocations } from '../utils/Location';
 import { AppState } from '../modules';
@@ -83,13 +83,13 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>((pos) => setMagnetometer(pos));
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
 
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');

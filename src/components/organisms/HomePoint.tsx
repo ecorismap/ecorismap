@@ -16,28 +16,59 @@ interface Props {
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
 }
 
-export const Point = React.memo((props: Props) => {
-  //console.log('render Point', now());
-  const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
+export const Point = React.memo(
+  (props: Props) => {
+    //console.log('render Point');
+    const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
 
-  return (
-    <>
-      {data.map((feature) =>
-        feature.visible ? (
-          <PointComponent
-            key={`point-${feature.id}-${feature.redraw}`}
-            feature={feature}
-            selectedRecord={selectedRecord}
-            draggable={draggable}
-            onDragEndPoint={onDragEndPoint}
-            layer={layer}
-            zoom={zoom}
-          />
-        ) : null
-      )}
-    </>
-  );
-});
+    return (
+      <>
+        {data.map((feature) =>
+          feature.visible ? (
+            <PointComponent
+              key={`point-${feature.id}-${feature.redraw}`}
+              feature={feature}
+              selectedRecord={selectedRecord}
+              draggable={draggable}
+              onDragEndPoint={onDragEndPoint}
+              layer={layer}
+              zoom={zoom}
+            />
+          ) : null
+        )}
+      </>
+    );
+  },
+  (prevProps, nextProps) => {
+    // 既存のプロパティの比較
+    if (prevProps.data !== nextProps.data) return false;
+    if (prevProps.layer !== nextProps.layer) return false;
+    if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.draggable !== nextProps.draggable) return false;
+    if (prevProps.onDragEndPoint !== nextProps.onDragEndPoint) return false;
+
+    // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
+    if (
+      prevProps.selectedRecord &&
+      !nextProps.selectedRecord &&
+      prevProps.selectedRecord.layerId === prevProps.layer.id
+    ) {
+      return false;
+    }
+
+    // 選択されている場合のみ、レイヤーIDの比較を行う
+    const isSelectedLayer = nextProps.selectedRecord?.layerId === nextProps.layer.id;
+    if (isSelectedLayer) {
+      // 選択レイヤが変更された場合
+      if (prevProps.selectedRecord?.layerId !== nextProps.selectedRecord?.layerId) return false;
+
+      // 選択レイヤが変更されていないが、選択レコードが変更された場合
+      if (prevProps.selectedRecord?.record.id !== nextProps.selectedRecord?.record.id) return false;
+    }
+
+    return true;
+  }
+);
 
 const PointComponent = React.memo((props: any) => {
   const { feature, selectedRecord, draggable, onDragEndPoint, layer, zoom } = props;

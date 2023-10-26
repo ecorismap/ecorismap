@@ -9,7 +9,7 @@ import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
@@ -21,7 +21,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const maps = useSelector((state: AppState) => state.tileMaps);
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
+  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { clearTileCache } = useMaps();
   const { mapListURL, saveMapListURL } = useMaps();

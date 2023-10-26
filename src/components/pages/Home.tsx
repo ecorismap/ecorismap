@@ -46,6 +46,7 @@ import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  //console.log('render HomeScreen');
   const {
     pointDataSet,
     lineDataSet,
@@ -321,49 +322,48 @@ export default function HomeScreen() {
 
             {pointDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
+              if (!layer?.visible) return null;
+
               return (
-                layer?.visible && (
-                  <Point
-                    key={`${d.layerId}-${d.userId}`}
-                    data={d.data}
-                    layer={layer!}
-                    zoom={zoom}
-                    selectedRecord={selectedRecord}
-                    draggable={currentDrawTool === 'MOVE_POINT'}
-                    onDragEndPoint={onDragEndPoint}
-                  />
-                )
+                <Point
+                  key={`${d.layerId}-${d.userId}`}
+                  data={d.data}
+                  layer={layer}
+                  zoom={zoom}
+                  selectedRecord={selectedRecord}
+                  draggable={currentDrawTool === 'MOVE_POINT'}
+                  onDragEndPoint={onDragEndPoint}
+                />
               );
             })}
+
             {lineDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
+              if (!layer?.visible) return null;
               return (
-                layer?.visible && (
-                  <Line
-                    key={`${d.layerId}-${d.userId}`}
-                    data={d.data}
-                    layer={layer!}
-                    zoom={zoom}
-                    zIndex={101}
-                    selectedRecord={selectedRecord}
-                  />
-                )
+                <Line
+                  key={`${d.layerId}-${d.userId}`}
+                  data={d.data}
+                  layer={layer}
+                  zoom={zoom}
+                  zIndex={101}
+                  selectedRecord={selectedRecord}
+                />
               );
             })}
 
             {polygonDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
+              if (!layer?.visible) return null;
               return (
-                layer?.visible && (
-                  <Polygon
-                    key={`${d.layerId}-${d.userId}`}
-                    data={d.data}
-                    layer={layer!}
-                    zoom={zoom}
-                    zIndex={100}
-                    selectedRecord={selectedRecord}
-                  />
-                )
+                <Polygon
+                  key={`${d.layerId}-${d.userId}`}
+                  data={d.data}
+                  layer={layer}
+                  zoom={zoom}
+                  zIndex={100}
+                  selectedRecord={selectedRecord}
+                />
               );
             })}
 

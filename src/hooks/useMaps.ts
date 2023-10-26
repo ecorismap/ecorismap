@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { TileMapItemType, TileMapType } from '../types';
 import { Platform } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
 import { AppState } from '../modules';
 import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
@@ -47,13 +47,13 @@ export type UseMapsReturnType = {
 
 export const useMaps = (): UseMapsReturnType => {
   const dispatch = useDispatch();
-  const isOffline = useSelector((state: AppState) => state.settings.isOffline);
-  const mapListURL = useSelector((state: AppState) => state.settings.mapListURL);
+  const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
+  const mapListURL = useSelector((state: AppState) => state.settings.mapListURL, shallowEqual);
   const maps = useSelector((state: AppState) => state.tileMaps);
-  const tileRegions = useSelector((state: AppState) => state.settings.tileRegions);
+  const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
-  const mapList = useSelector((state: AppState) => state.settings.mapList);
+  const mapList = useSelector((state: AppState) => state.settings.mapList, shallowEqual);
 
   const fetchMapList = useCallback(
     async (signal: AbortSignal) => {

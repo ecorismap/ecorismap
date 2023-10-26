@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 
 import { AppState } from '../modules';
 
@@ -12,9 +12,9 @@ export type UseLayersReturnType = {
 };
 
 export const usePermission = (): UseLayersReturnType => {
-  const projectId = useSelector((state: AppState) => state.settings.projectId);
-  const role = useSelector((state: AppState) => state.settings.role);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject);
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const role = useSelector((state: AppState) => state.settings.role, shallowEqual);
+  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
   const isClosedProject = useMemo(() => projectId === undefined, [projectId]);
   const isRunningProject = useMemo(() => !isClosedProject && !isSettingProject, [isClosedProject, isSettingProject]);
 
