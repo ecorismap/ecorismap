@@ -42,7 +42,7 @@ import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
-import { isMapMemoDrawTool } from '../../utils/General';
+import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -616,7 +616,17 @@ export default function HomeScreen() {
           <div {...getRootProps({ className: 'dropzone' })}>
             <input {...getInputProps()} />
 
-            <View style={styles.map} {...panResponder.panHandlers}>
+            <View
+              style={styles.map}
+              {...(isMapMemoDrawTool(currentMapMemoTool) ||
+              isPolygonTool(currentDrawTool) ||
+              isLineTool(currentDrawTool) ||
+              isPointTool(currentDrawTool) ||
+              currentDrawTool === 'SELECT' ||
+              currentDrawTool === 'DELETE_POINT'
+                ? panResponder.panHandlers
+                : {})}
+            >
               <Map
                 mapLib={maplibregl}
                 ref={mapViewRef as React.MutableRefObject<MapRef>}
