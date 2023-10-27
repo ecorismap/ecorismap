@@ -436,7 +436,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
-      toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
     [
