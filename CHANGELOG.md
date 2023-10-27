@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.3.5] - 2023-10-27
+- Improved data display speed.
+- Enhanced drawing process of MapMemo.
+- Fixed vector tile loading bug on Android.
+
+- データの表示速度を改善
+- MapMemoのドロー処理を改善
+- Androidのベクトルタイルの読み込みバグを修正
+
+
 ## [0.3.3] - 2023-10-16
 - Added support for displaying PMTiles and vector tiles in pbf format
 - Added a tool to write notes on the map
@@ -61,7 +71,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/1cd68323874443235ac4bf0614f0bd876e51d6eb...HEAD
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/5b421a6fd52393b90b9f2c14adb536daa19639c0...HEAD
+[0.3.5]: https://github.com/ecorismap/ecorismap/compare/d642a3f85075c51679cfe795b96b443b793ab605...5b421a6fd52393b90b9f2c14adb536daa19639c0
 [0.3.3]: https://github.com/ecorismap/ecorismap/compare/37e4fe928b7728a191e87b7538cbfd92554bfc6b...d642a3f85075c51679cfe795b96b443b793ab605
 [0.2.0]: https://github.com/ecorismap/ecorismap/compare/69d133b13d58a12f9ee4dbe406e1212560721551...37e4fe928b7728a191e87b7538cbfd92554bfc6b
 [0.1.10]: https://github.com/ecorismap/ecorismap/tree/69d133b13d58a12f9ee4dbe406e1212560721551
