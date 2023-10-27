@@ -102,6 +102,7 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
           //   longitudeDelta: region.longitudeDelta,
           // };
           // (mapViewRef as MapView).animateToRegion(jumpRegion, 5);
+          if (mapViewRef === null) return;
           (mapViewRef as MapView).animateCamera(
             {
               center: {

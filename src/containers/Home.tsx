@@ -170,7 +170,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useHisyouToolSetting();
 
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
-  const { mapSize, mapRegion } = useWindow();
+  const { mapSize, mapRegion, isLandscape } = useWindow();
 
   const [isLoading] = useState(false);
 
@@ -202,6 +202,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
+      //console.log('onRegionChangeMapView', region);
       changeMapRegion(region);
       !isDrawLineVisible && showDrawLine();
       closeVectorTileInfo();
@@ -625,6 +626,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [navigation]);
 
   const gotoBack = useCallback(() => navigation.navigate('Maps'), [navigation]);
+
+  useEffect(() => {
+    changeMapRegion({ ...mapRegion, zoom }, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLandscape]);
 
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
