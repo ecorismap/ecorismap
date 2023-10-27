@@ -272,18 +272,6 @@ export default function HomeScreen() {
             mapType={mapType}
             onPress={onPressMapView}
             onPanDrag={onDragMapView}
-            //@ts-ignore
-            options={
-              Platform.OS === 'web' && {
-                zoomControlOptions: {
-                  //@ts-ignore
-                  position: window.google.maps.ControlPosition.LEFT_TOP,
-                },
-                mapTypeControl: true,
-                streetViewControl: false,
-                fullscreenControl: false,
-              }
-            }
             {...panResponder.panHandlers}
           >
             {/************** Current Marker ****************** */}

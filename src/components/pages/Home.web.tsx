@@ -29,7 +29,6 @@ import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
-import { HomeZoomButton } from '../organisms/HomeZoomButton';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
@@ -38,7 +37,7 @@ import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
-import { isMapMemoDrawTool } from '../../utils/General';
+import { isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -74,8 +73,6 @@ export default function HomeScreen() {
     pressStopDownloadTiles,
     pressDeleteTiles,
     gotoMaps,
-    pressZoomIn,
-    pressZoomOut,
     onDragEndPoint,
     setVisibleMapMemoColor,
     selectPenColor,
@@ -352,93 +349,6 @@ export default function HomeScreen() {
     });
   };
 
-  // const onMouseMove = useCallback(
-  //   (event) => {
-  //     const map = (mapViewRef.current as MapRef).getMap();
-  //     //console.log(hoverFeatureId.current);
-  //     if (hoverFeatureId.current !== undefined) {
-  //       //console.log('WWW', hoverFeatureId.current);
-  //       map.removeFeatureState(hoverFeatureId.current, 'hover');
-  //     }
-  //     const hoverFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
-  //     //console.log(clickedFeature);
-  //     if (hoverFeature && typeof hoverFeature.id === 'number') {
-  //       hoverFeatureId.current = {
-  //         source: hoverFeature.source,
-  //         id: hoverFeature.id,
-  //       };
-  //       map.setFeatureState(hoverFeatureId.current, {
-  //         hover: true,
-  //       });
-  //     } else {
-  //       hoverFeatureId.current = undefined;
-  //     }
-  //     if (featureButton === 'NONE') {
-  //       map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
-  //     }
-  //   },
-  //   [featureButton, mapViewRef]
-  // );
-
-  //hoverは使いにくいからやめ
-  // const onMouseMove = useCallback(() => {}, []);
-
-  // const onClick = useCallback(
-  //   (event) => {
-  //     const map = (mapViewRef.current as MapRef).getMap();
-  //     //console.log(event);
-  //     if (selectedRecord !== undefined && selectedRecord.record !== undefined) {
-  //       //console.log('WWW', selectedRecord.record.userId);
-  //       map.removeFeatureState({
-  //         source: `${selectedRecord.layerId}_${selectedRecord.record.userId ?? ''}`,
-  //       });
-  //     }
-  //     const clickedFeature = map.queryRenderedFeatures([event.point.x, event.point.y])[0];
-  //     //console.log(clickedFeature);
-  //     if (clickedFeature && typeof clickedFeature.id === 'number') {
-  //       map.setFeatureState(
-  //         {
-  //           source: clickedFeature.source,
-  //           id: clickedFeature.id,
-  //         },
-  //         {
-  //           clicked: true,
-  //         }
-  //       );
-  //       const [layerId, userId] = clickedFeature.layer.id.split('_');
-
-  //       const layer = layers.find((n) => n.id === layerId);
-  //       if (layer === undefined) return;
-  //       if (clickedFeature.layer.type === 'line') {
-  //         const data = lineDataSet.find(
-  //           (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
-  //         );
-  //         const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
-  //         if (feature === undefined) return;
-  //         //onPressLine(layer, feature);
-  //       } else if (clickedFeature.layer.type === 'fill') {
-  //         //console.log('layer:', layerId, ' user:', userId);
-  //         const data = polygonDataSet.find(
-  //           (d) => d.layerId === layerId && (d.userId === undefined ? userId === '' : d.userId === userId)
-  //         );
-  //         //console.log('data:', data);
-  //         const feature = data?.data.find((record) => record.id === clickedFeature.properties!._id);
-  //         //console.log(feature);
-  //         if (feature === undefined) return;
-  //         //onPressPolygon(layer, feature);
-  //       }
-  //     } else {
-  //       //@ts-ignore
-  //       onPressMapView({ nativeEvent: { coordinate: { longitude: event.lngLat.lng, latitude: event.lngLat.lat } } });
-  //     }
-  //     //BUGS 3D表示の場合はホバーやクリックのスタイル変更を反映しないので、以下の呼び出しが必要
-  //     if (featureButton === 'NONE') {
-  //       map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
-  //     }
-  //   },
-  //   [featureButton, layers, lineDataSet, mapViewRef, onPressMapView, polygonDataSet, selectedRecord]
-  // );
-
   const mapStyle: string | mapboxgl.Style | undefined = useMemo(() => {
     const sources = tileMaps
       .slice(0)
@@ -605,7 +515,18 @@ export default function HomeScreen() {
           <div {...getRootProps({ className: 'dropzone' })}>
             <input {...getInputProps()} />
 
-            <View style={styles.map} {...panResponder.panHandlers}>
+            <View
+              style={styles.map}
+              {...(isMapMemoDrawTool(currentMapMemoTool) ||
+              isPolygonTool(currentDrawTool) ||
+              isLineTool(currentDrawTool) ||
+              isPointTool(currentDrawTool) ||
+              currentDrawTool === 'SELECT' ||
+              currentDrawTool === 'DELETE_POINT' ||
+              isInfoTool(currentDrawTool)
+                ? panResponder.panHandlers
+                : {})}
+            >
               <Map
                 mapLib={maplibregl}
                 ref={mapViewRef as React.MutableRefObject<MapRef>}
@@ -703,7 +624,6 @@ export default function HomeScreen() {
             <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
           </View>
 
-          <HomeZoomButton zoom={zoom} top={60} left={6} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
           <HomeCommonTools />
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
