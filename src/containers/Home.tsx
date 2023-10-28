@@ -816,7 +816,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.params?.jumpTo]);
+  }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
 
   useEffect(() => {
     //Web版は自分の位置は共有しない。取得はする。
