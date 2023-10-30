@@ -77,7 +77,7 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
   useEffect(() => {
     if (isSynced === true && syncSubscriber.current === undefined) {
       if (isLoggedIn(user) && hasOpened(projectId)) {
-        console.log('sync start');
+        //console.log('sync start');
         syncSubscriber.current = syncCurrentPosition(user.uid, projectId!);
       }
     }
@@ -85,7 +85,7 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
       if (syncSubscriber.current !== undefined) {
         syncSubscriber.current();
         syncSubscriber.current = undefined;
-        console.log('!!!!!!!!!!!!!!', 'sync stop2');
+        // console.log('!!!!!!!!!!!!!!', 'sync stop2');
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
