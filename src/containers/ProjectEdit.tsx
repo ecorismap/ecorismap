@@ -112,10 +112,15 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {
       try {
+        if (isProjectOpen) {
+          const ret = await ConfirmAsync(t('Home.confirm.reOpenProject'));
+          if (!ret) return;
+        }
         if (tracking !== undefined) {
           await AlertAsync(t('hooks.message.finishTrackking'));
           return;
         }
+
         const projectLicenseResult = validateProjectLicense(targetProject.license, ownerProjectsCount());
         if (!projectLicenseResult.isOK && isOwner) {
           if (Platform.OS === 'web') {
@@ -151,6 +156,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }
     },
     [
+      isProjectOpen,
       tracking,
       targetProject,
       ownerProjectsCount,

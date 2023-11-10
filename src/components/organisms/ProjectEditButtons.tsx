@@ -27,12 +27,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
     <View style={styles.buttonContainer}>
       {!isNew && (
         <View style={{ marginHorizontal: 9 }}>
-          <Button
-            name={PROJECTEDIT_BTN.OPEN}
-            onPress={onPressOpenProject}
-            backgroundColor={isProjectOpen ? COLOR.LIGHTBLUE : COLOR.BLUE}
-            disabled={isProjectOpen}
-          />
+          <Button name={PROJECTEDIT_BTN.OPEN} onPress={onPressOpenProject} backgroundColor={COLOR.BLUE} />
         </View>
       )}
       {!isNew && isOwnerAdmin && (
