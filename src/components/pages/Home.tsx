@@ -142,8 +142,9 @@ export default function HomeScreen() {
       isDownloading ? (
         <View style={styles.headerRight}>
           <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-
-          <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
+          <View style={{ width: 40, alignItems: 'flex-end' }}>
+            <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
+          </View>
         </View>
       ) : (
         <View style={styles.headerRight}>
