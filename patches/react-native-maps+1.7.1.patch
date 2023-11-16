@@ -16078,10 +16078,10 @@ index 0000000..b6c6ee9
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..46ff8b2
+index 0000000..9f9a523
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1116 @@
+@@ -0,0 +1,1111 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -16099,7 +16099,7 @@ index 0000000..46ff8b2
 +  // urlTemplateに.pbfが含まれている場合は、そのまま使用する
 +  if ([urlTemplate containsString:@".pbf"]) {
 +    self.tileType = 0;
-+    self.tileSize = 512;
++    // self.tileSize = 256;
 +  } else {
 +
 +    PMTiles *pmtiles = [[PMTiles alloc] initWithURL:urlTemplate];
@@ -16108,12 +16108,13 @@ index 0000000..46ff8b2
 +    self.metadata = [pmtiles fetchMetadata];
 +
 +    self.tileType = header.tile_type;
-+    if (header.tile_type == 1) {
-+      self.tileSize = 512;
-+    } else {
-+      self.tileSize = 256;
-+    }
++    // if (header.tile_type == 1) {
++    //   self.tileSize = 256;
++    // } else {
++    //   self.tileSize = 256;
++    // }
 +  }
++  self.tileSize = 256;
 +  self.urlTemplate = urlTemplate;
 +  return self;
 +}
@@ -16329,14 +16330,9 @@ index 0000000..46ff8b2
 +}
 +
 +- (CGContextRef)createTransparentImageContext {
-+  // 透明な512x512の画像を生成
-+  UIGraphicsBeginImageContextWithOptions(
-+      CGSizeMake(self.tileSize, self.tileSize), NO, 0.0);
++  // 透明な256x256の画像を生成. 1はscale factor.
++  UIGraphicsBeginImageContextWithOptions(CGSizeMake(256, 256), NO, 1);
 +  CGContextRef context = UIGraphicsGetCurrentContext();
-+
-+  // 描画を透明に設定
-+  CGContextSetFillColorWithColor(context, [UIColor clearColor].CGColor);
-+  CGContextFillRect(context, CGRectMake(0, 0, self.tileSize, self.tileSize));
 +
 +  return context;
 +}
@@ -16407,7 +16403,7 @@ index 0000000..46ff8b2
 +  int index = 0;
 +  float cursorX = 0;
 +  float cursorY = 0;
-+  float scaleFactor = self.tileSize / extent;
++  float scaleFactor = 256 / extent;
 +  while (index < geometryArray.count) {
 +    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
 +    uint32_t commandId = commandInteger & 0x7;
@@ -16443,7 +16439,7 @@ index 0000000..46ff8b2
 +  float cursorX = 0;
 +  float cursorY = 0;
 +  float totalLength = 0;
-+  float scaleFactor = self.tileSize / extent;
++  float scaleFactor = 256 / extent;
 +
 +  while (index < geometryArray.count) {
 +    uint32_t commandInteger = [geometryArray valueAtIndex:index++];
@@ -16511,7 +16507,7 @@ index 0000000..46ff8b2
 +  NSUInteger pointCount = 0;
 +  float cursorX = 0;
 +  float cursorY = 0;
-+  float scaleFactor = self.tileSize / extent; // タイルのサイズ / extent
++  float scaleFactor = 256 / extent; // タイルのサイズ / extent
 +  float totalX = 0;
 +  float totalY = 0;
 +
@@ -16881,9 +16877,8 @@ index 0000000..46ff8b2
 +        }
 +      }
 +
-+      if (shouldDraw && textX >= 0 && textY >= 0 &&
-+          textX + textWidth <= self.tileSize &&
-+          textY + textHeight <= self.tileSize) {
++      if (shouldDraw && textX >= 0 && textY >= 0 && textX + textWidth <= 256 &&
++          textY + textHeight <= 256) {
 +        CGContextSetLineWidth(context, labelHaloWidth);
 +        CGContextSetStrokeColorWithColor(context, labelHaloColor.CGColor);
 +        CGContextSetTextDrawingMode(context, kCGTextStroke);
