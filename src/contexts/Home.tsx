@@ -87,7 +87,7 @@ export interface HomeContextType {
       }
     | undefined;
   isPencilModeActive: boolean;
-  isPencilTouch: boolean;
+  isPencilTouch: boolean | undefined;
   isUndoable: boolean;
   isRedoable: boolean;
   mapMemoLines: {

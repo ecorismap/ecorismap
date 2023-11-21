@@ -178,7 +178,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       clearMapMemoEditingLine();
       timer.current = setTimeout(() => {
         saveMapMemo(newMapMemoLines);
-      }, 1000);
+      }, 300);
     } else if (currentMapMemoTool.includes('ERASER')) {
       const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
       const deleteLine = [] as { idx: number; line: LineRecordType }[];
