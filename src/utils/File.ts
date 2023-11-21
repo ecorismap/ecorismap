@@ -97,7 +97,7 @@ export const clearCacheData = async () => {
 export async function getReceivedFiles() {
   try {
     const dirPath = FileSystem.cacheDirectory + '';
-    if (Platform.OS === 'ios') copyFromInbox(dirPath);
+    if (Platform.OS === 'ios') await copyFromInbox(dirPath);
 
     const files = await FileSystem.readDirectoryAsync(dirPath);
     const filesPromise = files.map(async (name) => {

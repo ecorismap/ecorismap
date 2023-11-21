@@ -52,7 +52,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const isPencilTouch = useRef(false);
+  const isPencilTouch = useRef<boolean | undefined>(undefined);
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const user = useSelector((state: AppState) => state.user);
   const projectName = useSelector((state: AppState) => state.settings.projectName, shallowEqual);
@@ -951,6 +951,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: async (e: GestureResponderEvent) => {
+          //console.log('#######################');
           //@ts-ignore
           isPencilTouch.current = !!e.nativeEvent.altitudeAngle;
           if (currentDrawTool === 'MOVE') {
@@ -962,7 +963,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           } else if (currentDrawTool !== 'NONE') {
             pressSvgView(e);
           } else if (featureButton === 'MEMO') {
-            if (isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch.current && isPencilModeActive) {
+            if (isMapMemoDrawTool(currentMapMemoTool) && isPencilTouch.current === false && isPencilModeActive) {
               setIsPinch(true);
               return;
             }
@@ -985,6 +986,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
         },
         onPanResponderRelease: async (e: GestureResponderEvent) => {
+          isPencilTouch.current = undefined;
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
@@ -994,7 +996,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
           }
-          isPencilTouch.current = false;
         },
       }),
     [
