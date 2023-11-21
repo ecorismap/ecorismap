@@ -237,6 +237,9 @@ export default function HomeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
 
+  //console.log('isPencilTouch', isPencilTouch);
+  //console.log('isFinger', isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch);
+
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
@@ -272,6 +275,7 @@ export default function HomeScreen() {
           <MapMemoView />
           <HomePopup />
           {isDrawLineVisible && <SvgView />}
+
           <MapView
             ref={mapViewRef as React.MutableRefObject<MapView>}
             provider={PROVIDER_GOOGLE}
@@ -286,7 +290,10 @@ export default function HomeScreen() {
             zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
             scrollEnabled={
               isPinch ||
-              (isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch) ||
+              (isMapMemoDrawTool(currentMapMemoTool) &&
+                isPencilModeActive &&
+                !isPencilTouch &&
+                mapMemoEditingLine.length === 0) ||
               (currentMapMemoTool === 'NONE' &&
                 (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
             }

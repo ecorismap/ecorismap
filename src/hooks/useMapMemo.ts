@@ -9,7 +9,8 @@ import { latLonObjectsToLatLonArray, latlonArrayToLatLonObjects, xyArrayToLatLon
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { GestureResponderEvent } from 'react-native';
-import lineIntersect from '@turf/line-intersect';
+//@ts-ignore
+import { booleanContains, booleanIntersects } from '@turf/turf';
 import * as turf from '@turf/helpers';
 import { addRecordsAction, setRecordSetAction } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
@@ -151,6 +152,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const onPanResponderReleaseMapMemo = useCallback(() => {
     //const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
     //const simplifiedXY = simplify(smoothedXY);
+
+    //const simplifiedXY = removeSharpTurns(mapMemoEditingLine.current);
     const simplifiedXY = [...mapMemoEditingLine.current];
     if (simplifiedXY.length === 0) {
       clearMapMemoEditingLine();
@@ -175,14 +178,17 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       clearMapMemoEditingLine();
       timer.current = setTimeout(() => {
         saveMapMemo(newMapMemoLines);
-      }, 1000);
+      }, 300);
     } else if (currentMapMemoTool.includes('ERASER')) {
       const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
       const deleteLine = [] as { idx: number; line: LineRecordType }[];
       const newDrawLine = [] as LineRecordType[];
       memoLines.forEach((line, idx) => {
         const lineArray = latLonObjectsToLatLonArray(line.coords);
-        if (lineIntersect(turf.lineString(lineArray), turf.lineString(lineLatLonArray)).features.length > 0) {
+        const lineGeometry = turf.lineString(lineArray);
+        const polygonGeometry = turf.polygon([[...lineLatLonArray, lineLatLonArray[0]]]);
+
+        if (booleanContains(polygonGeometry, lineGeometry) || booleanIntersects(polygonGeometry, lineGeometry)) {
           deleteLine.push({ idx, line });
         } else {
           newDrawLine.push(line);

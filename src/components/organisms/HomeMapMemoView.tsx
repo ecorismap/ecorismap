@@ -28,6 +28,15 @@ export const MapMemoView = React.memo(() => {
       pointerEvents={'none'}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
+        <Path
+          d={pointsToSvg(mapMemoEditingLine)}
+          stroke={currentMapMemoTool === 'ERASER' ? 'white' : penColor}
+          strokeWidth={currentMapMemoTool === 'ERASER' ? 10 : penWidth}
+          strokeDasharray={'none'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill={'none'}
+        />
         {mapMemoLines.map((line, index) => (
           <Path
             key={index}
@@ -35,17 +44,10 @@ export const MapMemoView = React.memo(() => {
             stroke={line.strokeColor}
             strokeWidth={line.strokeWidth}
             fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         ))}
-        <Path
-          d={pointsToSvg(mapMemoEditingLine)}
-          stroke={currentMapMemoTool === 'ERASER' ? 'white' : penColor}
-          strokeWidth={currentMapMemoTool === 'ERASER' ? 10 : penWidth}
-          strokeDasharray={'none'}
-          // strokeLinecap="round"
-          // strokeLinejoin="round"
-          fill={'none'}
-        />
       </Svg>
     </View>
   );
