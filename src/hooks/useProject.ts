@@ -11,6 +11,7 @@ import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMa
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
+import { Platform } from 'react-native';
 
 export type UseProjectReturnType = {
   isSettingProject: boolean;
@@ -47,7 +48,7 @@ export const useProject = (): UseProjectReturnType => {
   const downloadData = useCallback(
     async (shouldPhotoDownload: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (isOwnerAdmin) {
+      if (isOwnerAdmin && Platform.OS === 'ios') {
         const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload);
         if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
       } else {
