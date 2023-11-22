@@ -802,6 +802,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     if (route.params?.previous === 'Settings') {
       bottomSheetRef.current?.close();
+    } else if (route.params?.previous === 'ProjectEdit') {
+      setTimeout(() => bottomSheetRef.current?.close(), 100);
     } else if (route.params?.previous === 'DataEdit') {
       bottomSheetRef.current?.snapToIndex(1);
     } else if (route.params?.previous === 'Maps') {
