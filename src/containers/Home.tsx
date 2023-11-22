@@ -641,13 +641,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       bottomSheetRef.current?.snapToIndex(1);
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
-        //closeできないバグ？のため仕方なく0にしている
-        bottomSheetRef.current?.snapToIndex(0);
+        setTimeout(() => bottomSheetRef.current?.close(), 200);
       } else {
         bottomSheetRef.current?.snapToIndex(2);
       }
     }
-    //navigation.setParams({ jumpTo: undefined, previous: undefined, tileMap: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
