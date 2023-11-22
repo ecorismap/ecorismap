@@ -267,8 +267,11 @@ export const useRepository = (): UseRepositoryReturnType => {
 
       for (const layer of targetLayers) {
         //自分のデータ削除
-
-        await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
+        //プロジェクトの設定をアップロードするときは、レイヤ設定のリストを順次追加したいという要望に対応するために、一時的にすでにあるデータは削除しないように変更。
+        //TODO:ただし、レイヤ設定が大きく変更になる場合は、既存のデータとレイヤ設定が合わなくなるので、削除する必要がある。
+        if (!isSettingProject) {
+          await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
+        }
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
         const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);

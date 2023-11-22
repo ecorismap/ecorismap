@@ -30,7 +30,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           <Button name={PROJECTEDIT_BTN.OPEN} onPress={onPressOpenProject} backgroundColor={COLOR.BLUE} />
         </View>
       )}
-      {!isNew && isOwnerAdmin && (
+      {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <Button
           name={PROJECTEDIT_BTN.SETTING}
           onPress={onPressSettingProject}
@@ -48,7 +48,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           />
         </View>
       )}
-      {!isNew && isOwnerAdmin && (
+      {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.DELETE}
