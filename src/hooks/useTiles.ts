@@ -153,9 +153,24 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       }
 
       let tilePromise;
-      if (tileType === 'pmtiles' && pmtile !== undefined) {
+      if (tileType === 'pmtiles' && tileMap.isVector && pmtile !== undefined) {
         //console.log(tile.z, tile.x, tile.y);
         const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
+        tilePromise = pmtile
+          .getZxy(tile.z, tile.x, tile.y)
+          .then(async (resp) => {
+            if (resp === undefined) return;
+            const base64String = Buffer.from(resp.data).toString('base64');
+            FileSystem.writeAsStringAsync(localLocation, base64String, {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+          })
+          .catch((e) => {
+            console.log(e);
+            //errorCount++;
+          });
+      } else if (tileType === 'pmtiles' && !tileMap.isVector && pmtile !== undefined) {
+        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.png`;
         tilePromise = pmtile
           .getZxy(tile.z, tile.x, tile.y)
           .then(async (resp) => {

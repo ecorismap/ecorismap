@@ -808,7 +808,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       bottomSheetRef.current?.snapToIndex(1);
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
-        setTimeout(() => bottomSheetRef.current?.close(), 100);
+        setTimeout(() => bottomSheetRef.current?.close(), 200);
       } else {
         bottomSheetRef.current?.snapToIndex(2);
       }
