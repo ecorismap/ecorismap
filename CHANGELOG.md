@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.3.9] - 2023-11-23
+- Fixed a bug that prevented downloading maps for offline use
+- Added support for downloading PMTiles (raster)
+
+- オフライン用の地図をダウンロードできないバグを修正
+- PMTiles(ラスター)のダウンロードに対応
+
 ## [0.3.7] - 2023-11-21
 - Fix the bug that prevents editing with the draw tool.
 - Fix the bug that causes freezing with PMTiles(iOS).
@@ -79,7 +86,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/8410b80fb75dcb65e214b431d4ddfadcd9afe9d4...HEAD
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...HEAD
+[0.3.9]: https://github.com/ecorismap/ecorismap/compare/8410b80fb75dcb65e214b431d4ddfadcd9afe9d4...996dcffdb7baf6a08d2e4056920585422f26bd6f
 [0.3.7]: https://github.com/ecorismap/ecorismap/compare/5b421a6fd52393b90b9f2c14adb536daa19639c0...8410b80fb75dcb65e214b431d4ddfadcd9afe9d4
 [0.3.5]: https://github.com/ecorismap/ecorismap/compare/d642a3f85075c51679cfe795b96b443b793ab605...5b421a6fd52393b90b9f2c14adb536daa19639c0
 [0.3.3]: https://github.com/ecorismap/ecorismap/compare/37e4fe928b7728a191e87b7538cbfd92554bfc6b...d642a3f85075c51679cfe795b96b443b793ab605
