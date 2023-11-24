@@ -17,6 +17,7 @@ interface DataEditContextType {
   submitField: (name: string, format: string) => void;
   onChangeRecord: (value: number) => void;
   pressSaveData: () => void;
+  pressCopyData: () => void;
   pressPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   pressTakePhoto: (name: string) => void;
   pressPickPhoto: (name: string) => void;
