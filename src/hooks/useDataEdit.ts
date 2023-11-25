@@ -10,7 +10,7 @@ import {
   SelectedPhotoType,
 } from '../types';
 import { AppState } from '../modules';
-import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import { Platform } from 'react-native';
@@ -52,6 +52,7 @@ export type UseDataEditReturnType = {
   removePhoto: (photo: SelectedPhotoType) => void;
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
+  copyRecord: (originalRecord: RecordType) => RecordType;
   changeLatLonType: () => void;
   changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
@@ -296,6 +297,23 @@ export const useDataEdit = (
     setTemporaryAddedPhotoList([]);
   }, [setIsEditingRecord, temporaryAddedPhotoList]);
 
+  const copyRecord = useCallback(
+    (originalRecord: RecordType) => {
+      const id = uuidv4();
+      // const field = getDefaultField(targetLayer, ownRecordSet, id);
+
+      const newData: RecordType = {
+        ...originalRecord,
+        id: id,
+        userId: dataUser.uid,
+        displayName: dataUser.displayName,
+      };
+      dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
+      return newData;
+    },
+    [targetLayer, dataUser.uid, dataUser.displayName, dispatch]
+  );
+
   return {
     targetRecord,
     targetLayer,
@@ -316,6 +334,7 @@ export const useDataEdit = (
     submitField,
     changeLatLon,
     cancelUpdate,
+    copyRecord,
     saveData,
   } as const;
 };
