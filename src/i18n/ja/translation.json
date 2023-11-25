@@ -456,10 +456,12 @@
       "downloadPhoto": "写真をダウンロードしますか？",
       "changeRecord": "変更を破棄しますか？",
       "gotoBack": "変更を破棄しますか？",
-      "close": "変更を破棄しますか？"
+      "close": "変更を破棄しますか？",
+      "copyData": "データをコピーしますか？"
     },
     "alert": {
-      "referenceData": "一旦変更を保存してください。"
+      "referenceData": "一旦変更を保存してください。",
+      "copyData": "コピーしました。"
     }
   },
   "firebase": {

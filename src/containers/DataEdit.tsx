@@ -92,16 +92,19 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
 
-  const pressCopyData = useCallback(() => {
+  const pressCopyData = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
+    if (!ret) return;
     const newData = copyRecord(targetRecord);
+    await AlertAsync(t('DataEdit.alert.copyData'));
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: newData,
       targetLayer: { ...targetLayer },
       targetRecordSet: [...route.params.targetRecordSet, newData],
-      targetIndex: route.params.targetIndex + 1,
+      targetIndex: route.params.targetRecordSet.length,
     });
-  }, [copyRecord, navigation, route.params.targetIndex, route.params.targetRecordSet, targetLayer, targetRecord]);
+  }, [copyRecord, navigation, route.params.targetRecordSet, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
