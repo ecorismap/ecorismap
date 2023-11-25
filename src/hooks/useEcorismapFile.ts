@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useCallback, useMemo, useState } from 'react';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import {
   DataType,
   EcorisMapFileType,
@@ -28,6 +28,7 @@ import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
 import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
 import sanitize from 'sanitize-filename';
+import { v4 as uuidv4 } from 'uuid';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -68,6 +69,13 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dispatch = useDispatch();
   const settings = useSelector((state: AppState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
+
+  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: AppState) => state.user, shallowEqual);
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
 
   const createExportSettings = useCallback(() => {
     return {
@@ -227,6 +235,37 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     []
   );
 
+  const updateDataSetUser = useCallback(
+    (dataSet: DataType[]) => {
+      //userとidを書き換える
+      //複数の管理者がデータをアップロードするときに、同じidが発生する？ので書き換える。要調査
+      const newDataSet = dataSet.map((d) => {
+        const newData = d.data.map((v) => {
+          return { ...v, id: uuidv4(), userId: dataUser.uid, displayName: dataUser.displayName };
+        });
+        return { ...d, userId: dataUser.uid, data: newData };
+      });
+      return newDataSet;
+    },
+    [dataUser.displayName, dataUser.uid]
+  );
+
+  const mergeSameLayer = useCallback(
+    (dataSet: DataType[]) => {
+      //同じレイヤーのデータをマージ.ユーザーも書き換える
+      const newDataSet: DataType[] = [];
+      const layerIds = dataSet.map((d) => d.layerId);
+      const uniqueLayerIds = layerIds.filter((x, i, self) => self.indexOf(x) === i);
+      uniqueLayerIds.forEach((layerId) => {
+        const layerDataSet = dataSet.filter((d) => d.layerId === layerId);
+        const mergedData = layerDataSet.map((d) => d.data).flat();
+        newDataSet.push({ layerId: layerId, userId: dataUser.uid, data: mergedData });
+      });
+      return newDataSet;
+    },
+    [dataUser.uid]
+  );
+
   const loadEcorisMapFile = useCallback(
     async (uri: string) => {
       try {
@@ -240,9 +279,11 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         const decompressed = await loaded.files[jsonFile].async('text');
         const data = JSON.parse(decompressed) as EcorisMapFileType;
 
-        const updatedDataSet = await updatePhotoField(data, loaded.files);
-
-        return { ...data, dataSet: updatedDataSet };
+        const updatedPhotoDataSet = await updatePhotoField(data, loaded.files);
+        const updatedUserDataSet = updateDataSetUser(updatedPhotoDataSet);
+        const mergedDataSet = mergeSameLayer(updatedUserDataSet);
+        // console.log('updatedUserDataSet', updatedUserDataSet);
+        return { ...data, dataSet: mergedDataSet };
       } catch (e) {
         console.log(e);
         return undefined;
@@ -250,7 +291,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         setIsLoading(false);
       }
     },
-    [updatePhotoField]
+    [mergeSameLayer, updateDataSetUser, updatePhotoField]
   );
 
   const openEcorisMapFile = useCallback(
