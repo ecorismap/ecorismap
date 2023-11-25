@@ -37,6 +37,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     removePhoto,
     selectPhoto,
     deleteRecord,
+    copyRecord,
     changeLatLonType,
     changeField,
     submitField,
@@ -90,6 +91,17 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       Alert.alert('', result.message);
     }
   }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
+
+  const pressCopyData = useCallback(() => {
+    const newData = copyRecord(targetRecord);
+    navigation.navigate('DataEdit', {
+      previous: 'Data',
+      targetData: newData,
+      targetLayer: { ...targetLayer },
+      targetRecordSet: [...route.params.targetRecordSet, newData],
+      targetIndex: route.params.targetIndex + 1,
+    });
+  }, [copyRecord, navigation, route.params.targetIndex, route.params.targetRecordSet, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
@@ -375,6 +387,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         pressRemovePhoto,
         pressDownloadPhoto,
         pressDeleteData,
+        pressCopyData,
         pressAddReferenceData,
         gotoHomeAndJump,
         gotoGoogleMaps,

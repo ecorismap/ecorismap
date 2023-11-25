@@ -6,7 +6,7 @@ import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditContext } from '../../contexts/DataEdit';
 
 export const DataEditButtons = () => {
-  const { isEditingRecord, pressSaveData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps } =
+  const { isEditingRecord, pressSaveData, pressCopyData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps } =
     useContext(DataEditContext);
 
   return (
@@ -25,6 +25,12 @@ export const DataEditButtons = () => {
           disabled={isEditingRecord}
         />
         <Button name={DATAEDIT_BTN.DELETE} onPress={pressDeleteData} backgroundColor={COLOR.BLUE} />
+        <Button
+          name={DATAEDIT_BTN.COPY}
+          onPress={pressCopyData}
+          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isEditingRecord}
+        />
         <Button
           name={DATAEDIT_BTN.SAVE}
           onPress={pressSaveData}
