@@ -32,10 +32,12 @@ export const DataEditList = (props: Props) => {
 
   useEffect(() => {
     //選択されている値が「その他」の場合テキストの値をセットする必要がある。
-
     if (otherItem !== undefined && selectedItem === otherItem.value) {
       setOtherText(value ? value.toString() : '');
       setOtherSelected(true);
+    } else {
+      setOtherText('');
+      setOtherSelected(false);
     }
   }, [value, listItemValues, otherItem, selectedItem]);
 
