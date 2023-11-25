@@ -119,11 +119,7 @@ export const checkLayerInputs = (layer: LayerType) => {
   if (layer.field.length !== duplicateCleanedField.length) {
     return { isOK: false, message: t('utils.Layer.message.duplicateFieldName') };
   }
-  //SERIAL複数チェック
-  const serialField = layer.field.filter(({ format }) => format === 'SERIAL');
-  if (serialField.length > 1) {
-    return { isOK: false, message: t('utils.Layer.message.duplicateSerial') };
-  }
+
   return { isOK: true, message: '' };
 };
 
