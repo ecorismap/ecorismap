@@ -1,4 +1,4 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWTOOL, MAPMEMOTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
@@ -7,7 +7,6 @@ import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSett
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
-import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
@@ -31,8 +30,6 @@ export const HomeDrawTools = () => {
     togglePencilMode,
   } = useContext(HomeContext);
   const insets = useSafeAreaInsets();
-  const { isLandscape } = useWindow();
-  const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
   const { isHisyouToolActive } = useHisyouToolSetting();
 
@@ -50,34 +47,18 @@ export const HomeDrawTools = () => {
       top: Platform.OS === 'ios' ? 360 : 330,
       // zIndex: 101,
     },
-    buttonContainerRight: {
-      // elevation: 101,
-      marginHorizontal: 0,
-      position: 'absolute',
-      right: 10 + insets.right,
-      top: 70,
-      // zIndex: 101,
-    },
-    buttonRight: {
-      alignSelf: 'flex-end',
-      marginTop: 2,
-      width: 36,
-    },
+
     selectionalButton: {
       alignSelf: 'flex-start',
-      marginTop: 2,
-    },
-    selectionalButtonRight: {
-      alignSelf: 'flex-end',
       marginTop: 2,
     },
   });
 
   return (
-    <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
-      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
+    <View style={styles.buttonContainer}>
+      <View style={styles.selectionalButton}>
         {featureButton === 'POINT' && (
-          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <View style={styles.button}>
             <Button
               id={'ADD_LOCATION_POINT'}
               name={POINTTOOL.ADD_LOCATION_POINT}
@@ -95,7 +76,7 @@ export const HomeDrawTools = () => {
           </View>
         )}
         {featureButton === 'POINT' && (
-          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <View style={styles.button}>
             <Button
               id={'PLOT_POINT'}
               name={POINTTOOL.PLOT_POINT}
@@ -106,7 +87,7 @@ export const HomeDrawTools = () => {
           </View>
         )}
         {featureButton === 'POINT' && (
-          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <View style={styles.button}>
             <Button
               name={DRAWTOOL.MOVE_POINT}
               backgroundColor={currentDrawTool === 'MOVE_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -117,7 +98,7 @@ export const HomeDrawTools = () => {
           </View>
         )}
         {featureButton === 'POINT' && (
-          <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <View style={styles.button}>
             <Button
               name={DRAWTOOL.DELETE_POINT}
               backgroundColor={
@@ -132,7 +113,7 @@ export const HomeDrawTools = () => {
         {featureButton === 'LINE' && (
           <HomeLineToolButton
             disabled={isHisyouToolActive}
-            isPositionRight={isPositionRight}
+            isPositionRight={false}
             currentDrawTool={currentDrawTool}
             currentLineTool={currentLineTool}
             selectDrawTool={selectDrawTool}
@@ -141,7 +122,7 @@ export const HomeDrawTools = () => {
         )}
         {featureButton === 'POLYGON' && (
           <HomePolygonToolButton
-            isPositionRight={isPositionRight}
+            isPositionRight={false}
             currentDrawTool={currentDrawTool}
             currentPolygonTool={currentPolygonTool}
             selectDrawTool={selectDrawTool}
@@ -150,11 +131,11 @@ export const HomeDrawTools = () => {
         )}
       </View>
       {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
-        <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
+        <View style={styles.selectionalButton}>
           <HisyouToolButton
             isEditing={isEditingDraw}
             isSelected={isSelectedDraw}
-            isPositionRight={isPositionRight}
+            isPositionRight={false}
             currentDrawTool={currentDrawTool}
             selectDrawTool={selectDrawTool}
           />
@@ -162,7 +143,7 @@ export const HomeDrawTools = () => {
       )}
 
       {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={DRAWTOOL.SELECT}
             backgroundColor={
@@ -175,7 +156,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
       {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={DRAWTOOL.MOVE}
             backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -186,7 +167,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
       {Platform.OS === 'ios' && isTablet() && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={MAPMEMOTOOL.PENCIL_LOCK}
             backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -196,7 +177,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
       {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={DRAWTOOL.SAVE}
             backgroundColor={!isEditingDraw || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
@@ -207,7 +188,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
       {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={DRAWTOOL.UNDO}
             backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -218,7 +199,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
       {featureButton !== 'POINT' && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={DRAWTOOL.DELETE}
             backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
