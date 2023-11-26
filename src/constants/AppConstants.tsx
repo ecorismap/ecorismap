@@ -242,6 +242,7 @@ export const DATAEDIT_BTN = {
   JUMP: 'airplane',
   GOOGLE: 'google',
   DELETE: 'delete',
+  COPY: 'content-copy',
   SAVE: 'content-save',
 } as const;
 

@@ -43,7 +43,7 @@ const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
 export const useGeoFile = (): UseGeoFileReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
+  const user = useSelector((state: AppState) => state.user, shallowEqual);
   const [isLoading, setIsLoading] = useState(false);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),

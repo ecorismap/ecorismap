@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
+import { COLOR, DRAWTOOL, MAPMEMOTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
 import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 
@@ -10,6 +10,7 @@ import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isTablet } from 'react-native-device-info';
 
 export const HomeDrawTools = () => {
   const {
@@ -20,12 +21,14 @@ export const HomeDrawTools = () => {
     currentLineTool,
     currentPolygonTool,
     featureButton,
+    isPencilModeActive,
     selectDrawTool,
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
     pressSaveDraw,
     pressDeleteDraw,
+    togglePencilMode,
   } = useContext(HomeContext);
   const insets = useSafeAreaInsets();
   const { isLandscape } = useWindow();
@@ -179,6 +182,16 @@ export const HomeDrawTools = () => {
             borderRadius={10}
             disabled={false}
             onPress={() => selectDrawTool('MOVE')}
+          />
+        </View>
+      )}
+      {Platform.OS === 'ios' && isTablet() && (
+        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+          <Button
+            name={MAPMEMOTOOL.PENCIL_LOCK}
+            backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
+            borderRadius={10}
+            onPress={togglePencilMode}
           />
         </View>
       )}

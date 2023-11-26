@@ -94,10 +94,12 @@
       "downloadPhoto": "Do you want to download photos?",
       "changeRecord": "Do you want to discard your changes?",
       "gotoBack": "Do you want to discard your changes?",
-      "close": "Do you want to discard your changes?"
+      "close": "Do you want to discard your changes?",
+      "copyData": "Do you want to copy the data?"
     },
     "alert": {
-      "referenceData": "Please save your changes once."
+      "referenceData": "Please save your changes once.",
+      "copyData": "I copied it."
     }
   },
   "common": {
