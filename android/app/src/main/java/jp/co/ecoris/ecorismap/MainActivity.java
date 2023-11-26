@@ -2,8 +2,10 @@ package jp.co.ecoris.ecorismap;
 
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -38,6 +40,14 @@ public class MainActivity extends ReactActivity {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null);
+
+    int screenLayoutSize = getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK;
+    if (
+      screenLayoutSize == Configuration.SCREENLAYOUT_SIZE_SMALL ||
+      screenLayoutSize == Configuration.SCREENLAYOUT_SIZE_NORMAL
+    ) {
+      setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+    }
   }
 
   /**
