@@ -295,7 +295,11 @@ export default function HomeScreen() {
                 !isPencilTouch &&
                 mapMemoEditingLine.length === 0) ||
               (currentMapMemoTool === 'NONE' &&
-                (currentDrawTool === 'NONE' || currentDrawTool === 'MOVE' || currentDrawTool.includes('INFO')))
+                (currentDrawTool === 'NONE' ||
+                  currentDrawTool === 'MOVE' ||
+                  currentDrawTool.includes('INFO') ||
+                  currentDrawTool === 'MOVE_POINT' ||
+                  (isPencilModeActive && !isPencilTouch)))
             }
             moveOnMarkerPress={false}
             //@ts-ignore

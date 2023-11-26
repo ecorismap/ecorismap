@@ -962,6 +962,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           } else if (isInfoTool(currentDrawTool)) {
             await getInfoOfFeature(e);
           } else if (currentDrawTool !== 'NONE') {
+            if (isPencilTouch.current === false && isPencilModeActive) {
+              hideDrawLine();
+              setIsPinch(true);
+              return;
+            }
             pressSvgView(e);
           } else if (featureButton === 'MEMO') {
             if (isMapMemoDrawTool(currentMapMemoTool) && isPencilTouch.current === false && isPencilModeActive) {
@@ -991,6 +996,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
+            showDrawLine();
             setIsPinch(false);
           } else if (currentMapMemoTool !== 'NONE') {
             onPanResponderReleaseMapMemo();
