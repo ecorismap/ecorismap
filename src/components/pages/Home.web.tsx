@@ -640,7 +640,7 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
-        style={{ width: '50%' }}
+        style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
       >
         <Animated.View style={animatedStyle}>
           <SplitScreen />
