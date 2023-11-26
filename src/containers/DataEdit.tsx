@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { Linking, Platform } from 'react-native';
+// eslint-disable-next-line react-native/split-platform-components
+import { Linking, Platform, PlatformIOSStatic } from 'react-native';
 import { LayerType, LocationType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -64,11 +65,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       return;
     }
 
-    if (keyboardShown) {
-      //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
-      //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
-      Alert.alert('', '入力を確定してください');
-      return;
+    if (Platform.OS === 'ios') {
+      const platformIOS = Platform as PlatformIOSStatic;
+      if (!platformIOS.isPad) {
+        //iPadの場合はペン入力の確定を指でおこなうとkeybordShownがtrueになるため、ここでチェックしない。
+        //iPadはキーボード閉じないと保存できないので、問題はないはず。iPhoneも？
+        if (keyboardShown) {
+          //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
+          //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
+          Alert.alert('', '入力を確定してください');
+          return;
+        }
+      }
     }
     const checkInputResult = checkFieldInput(targetLayer, targetRecord);
     if (!checkInputResult.isOK) {
@@ -86,16 +94,19 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
   }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
 
-  const pressCopyData = useCallback(() => {
+  const pressCopyData = useCallback(async () => {
+    const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
+    if (!ret) return;
     const newData = copyRecord(targetRecord);
+    await AlertAsync(t('DataEdit.alert.copyData'));
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: newData,
       targetLayer: { ...targetLayer },
       targetRecordSet: [...route.params.targetRecordSet, newData],
-      targetIndex: route.params.targetIndex + 1,
+      targetIndex: route.params.targetRecordSet.length,
     });
-  }, [copyRecord, navigation, route.params.targetIndex, route.params.targetRecordSet, targetLayer, targetRecord]);
+  }, [copyRecord, navigation, route.params.targetRecordSet, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
