@@ -108,6 +108,7 @@ export const LayersTable = () => {
 
           <View style={[styles.td, { flex: 5, width: 160 }]}>
             <Picker
+              style={{ maxWidth: 160 }}
               selectedValue={item.label}
               onValueChange={(itemValue) => changeLabel(item, itemValue as string)}
               itemLabelArray={fieldNames}
