@@ -1,9 +1,8 @@
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, MAPMEMOTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
-import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
 import { HomeMapMemoPenButton } from './HomeMapMemoPenButton';
 import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
@@ -30,8 +29,6 @@ export const HomeMapMemoTools = () => {
   } = useContext(HomeContext);
 
   const insets = useSafeAreaInsets();
-  const { isLandscape } = useWindow();
-  const isPositionRight = useMemo(() => Platform.OS !== 'web' && isLandscape, [isLandscape]);
 
   const styles = StyleSheet.create({
     button: {
@@ -47,35 +44,19 @@ export const HomeMapMemoTools = () => {
       top: Platform.OS === 'ios' ? 360 : 330,
       // zIndex: 101,
     },
-    buttonContainerRight: {
-      elevation: 101,
-      marginHorizontal: 0,
-      position: 'absolute',
-      right: 10 + insets.right,
-      top: 70,
-      // zIndex: 101,
-    },
-    buttonRight: {
-      alignSelf: 'flex-end',
-      marginTop: 2,
-      width: 36,
-    },
+
     selectionalButton: {
       alignSelf: 'flex-start',
-      marginTop: 2,
-    },
-    selectionalButtonRight: {
-      alignSelf: 'flex-end',
       marginTop: 2,
     },
   });
 
   return (
-    <View style={isPositionRight ? styles.buttonContainerRight : styles.buttonContainer}>
-      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
+    <View style={styles.buttonContainer}>
+      <View style={styles.selectionalButton}>
         <HomeMapMemoPenButton
           disabled={!editableMapMemo}
-          isPositionRight={isPositionRight}
+          isPositionRight={false}
           currentMapMemoTool={currentMapMemoTool}
           currentPen={currentPen}
           penColor={penColor}
@@ -83,17 +64,17 @@ export const HomeMapMemoTools = () => {
           setPen={setPen}
         />
       </View>
-      <View style={isPositionRight ? styles.selectionalButtonRight : styles.selectionalButton}>
+      <View style={styles.selectionalButton}>
         <HomeMapMemoEraserButton
           disabled={!editableMapMemo}
-          isPositionRight={isPositionRight}
+          isPositionRight={false}
           currentMapMemoTool={currentMapMemoTool}
           currentEraser={currentEraser}
           selectMapMemoTool={selectMapMemoTool}
           setEraser={setEraser}
         />
       </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+      <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.COLOR}
           backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -103,7 +84,7 @@ export const HomeMapMemoTools = () => {
         />
       </View>
       {Platform.OS === 'ios' && isTablet() && (
-        <View style={isPositionRight ? styles.buttonRight : styles.button}>
+        <View style={styles.button}>
           <Button
             name={MAPMEMOTOOL.PENCIL_LOCK}
             backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
@@ -112,7 +93,7 @@ export const HomeMapMemoTools = () => {
           />
         </View>
       )}
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+      <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.UNDO}
           backgroundColor={editableMapMemo && isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
@@ -121,7 +102,7 @@ export const HomeMapMemoTools = () => {
           onPress={pressUndoMapMemo}
         />
       </View>
-      <View style={isPositionRight ? styles.buttonRight : styles.button}>
+      <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.REDO}
           backgroundColor={editableMapMemo && isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
