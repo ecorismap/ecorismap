@@ -128,9 +128,10 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: COLOR.GRAY0,
     borderRadius: 5,
-    flex: 2,
+    flex: 1,
     fontSize: 16,
     height: 40,
+    maxWidth: 130,
     paddingHorizontal: 5,
     paddingLeft: 10,
     textAlignVertical: 'center',
