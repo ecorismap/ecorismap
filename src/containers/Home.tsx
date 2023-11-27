@@ -450,8 +450,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         previous: 'Data',
         targetData: recordSet[0],
         targetLayer: layer,
-        targetRecordSet: recordSet,
-        targetIndex: 0,
       });
     }
   }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
@@ -494,8 +492,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             previous: 'Data',
             targetData: recordSet[0],
             targetLayer: layer,
-            targetRecordSet: recordSet,
-            targetIndex: 0,
           });
         }
       }
@@ -755,8 +751,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         previous: 'Data',
         targetData: record,
         targetLayer: layer,
-        targetRecordSet: [],
-        targetIndex: 0,
       });
     }
     selectDrawTool(currentDrawTool);
@@ -784,8 +778,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         previous: 'Data',
         targetData: { ...feature },
         targetLayer: { ...layer },
-        targetRecordSet: recordSet,
-        targetIndex: recordIndex,
       });
     },
     [isEditingRecord, isLandscape, navigation, selectSingleFeature, unselectRecord]

@@ -60,20 +60,16 @@ export type UseDataEditReturnType = {
   cancelUpdate: () => void;
 };
 
-export const useDataEdit = (
-  record: RecordType,
-  layer: LayerType,
-  recordSet: RecordType[],
-  recordIndex: number
-): UseDataEditReturnType => {
+export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
+  const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
   //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
-  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>(recordSet);
+  const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
   const [recordNumber, setRecordNumber] = useState(1);
@@ -104,14 +100,16 @@ export const useDataEdit = (
     //データの初期化。以降はchangeRecordで行う。
     selectRecord(layer.id, record);
     setTargetRecord(record);
-    setTargetRecordSet(recordSet);
+    const allUserRecordSet = dataSet.map((d) => (d.layerId === layer.id ? d.data : [])).flat();
+    setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
-    setRecordNumber(recordIndex + 1);
+    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
+    setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
       const newLatLon = toLatLonDMS(record.coords as LocationType);
       setLatLon(newLatLon);
     }
-  }, [layer, layer.id, layer.type, record, recordIndex, recordSet, selectRecord]);
+  }, [dataSet, layer, layer.id, layer.type, record, selectRecord]);
 
   const changeRecord = useCallback(
     (value: number) => {
