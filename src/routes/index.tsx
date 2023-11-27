@@ -27,8 +27,6 @@ export type RootStackParamList = {
     previous: keyof RootStackParamList;
     targetData: RecordType;
     targetLayer: LayerType;
-    targetRecordSet: RecordType[];
-    targetIndex: number;
     mainData?: RecordType;
     mainLayer?: LayerType;
   };

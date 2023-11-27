@@ -115,7 +115,14 @@ const DataTitle = React.memo(() => {
   const onChangeOrder = useCallback(
     (colName: string, format: FormatType | '_user_') => {
       if (format === 'PHOTO') return;
-      const sortOrder = sortedName === colName && sortedOrder === 'ASCENDING' ? 'DESCENDING' : 'ASCENDING';
+      const sortOrder =
+        colName === sortedName
+          ? sortedOrder === 'UNSORTED'
+            ? 'DESCENDING'
+            : sortedOrder === 'DESCENDING'
+            ? 'ASCENDING'
+            : 'UNSORTED'
+          : 'DESCENDING';
       setSortedName(colName);
       setSortedOrder(sortOrder);
       changeOrder(colName, sortOrder);
