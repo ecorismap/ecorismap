@@ -51,19 +51,23 @@ const Picker = React.memo((props: Props) => {
 });
 
 const PickerAndroidOrWeb = React.memo((props: Props) => {
-  const { style, label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
+  const { label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
 
   return (
     <View style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
         <RNPicker
-          itemStyle={Platform.OS === 'ios' ? { height: 40, fontSize: 12 } : {}}
           style={
-            style
-              ? style
-              : Platform.OS === 'web'
-              ? { flex: 1, height: 40, backgroundColor: COLOR.MAIN, borderColor: COLOR.GRAY1, paddingHorizontal: 5 }
+            Platform.OS === 'web'
+              ? {
+                  flex: 1,
+                  height: 40,
+                  backgroundColor: COLOR.MAIN,
+                  borderColor: COLOR.GRAY1,
+                  paddingHorizontal: 5,
+                  maxWidth: 140,
+                }
               : { flex: 1, height: 40, marginLeft: -13 }
           }
           enabled={enabled}
