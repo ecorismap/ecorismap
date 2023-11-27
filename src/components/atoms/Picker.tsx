@@ -89,8 +89,10 @@ const PickeriOS = React.memo((props: Props) => {
 
   const items = itemValueArray.slice(0, maxIndex + 1).map((item, index) => ({
     label: itemLabelArray[index],
+    value: itemValueArray[index],
     key: index,
   }));
+  const selectedLabel = itemLabelArray[itemValueArray.indexOf(selectedValue)];
   const selectorRef = useRef(null);
 
   const openSelector = () => {
@@ -112,9 +114,9 @@ const PickeriOS = React.memo((props: Props) => {
             selectStyle={{ borderWidth: 0 }}
             overlayStyle={{ backgroundColor: COLOR.GRAY3 }}
             accessible={enabled}
-            initValue={selectedValue}
+            initValue={selectedLabel}
             onChange={(option) => {
-              if (option.label !== selectedValue) onValueChange(option.label, option.key);
+              if (option.value !== selectedValue) onValueChange(option.value, option.key);
             }}
           />
           <MaterialCommunityIcons
