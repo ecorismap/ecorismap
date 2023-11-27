@@ -219,22 +219,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         data: [updatedRecord],
       })
     );
-    setTargetRecord(updatedRecord);
-    const updatedRecordSet = targetRecordSet.map((d) => (d.id === updatedRecord.id ? updatedRecord : d));
-    setTargetRecordSet(updatedRecordSet);
 
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
-  }, [
-    targetRecord,
-    targetLayer,
-    latlon,
-    isDecimal,
-    temporaryDeletePhotoList,
-    dispatch,
-    targetRecordSet,
-    setIsEditingRecord,
-  ]);
+  }, [targetRecord, targetLayer, latlon, isDecimal, temporaryDeletePhotoList, dispatch, setIsEditingRecord]);
 
   const deleteRecord = useCallback(() => {
     deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);
