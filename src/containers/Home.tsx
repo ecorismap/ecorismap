@@ -8,7 +8,7 @@ import {
   PanResponder,
 } from 'react-native';
 import MapView, { MapPressEvent, Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, RegionType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -197,7 +197,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [isShowingProjectButtons, setIsShowingProjectButtons] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
-  const { mapSize, mapRegion } = useWindow();
+  const { mapSize, mapRegion, isLandscape } = useWindow();
 
   const attribution = useMemo(
     () =>
@@ -476,8 +476,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         previous: 'Data',
         targetData: recordSet[0],
         targetLayer: layer,
-        targetRecordSet: recordSet,
-        targetIndex: 0,
       });
     }
   }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
@@ -520,8 +518,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             previous: 'Data',
             targetData: recordSet[0],
             targetLayer: layer,
-            targetRecordSet: recordSet,
-            targetIndex: 0,
           });
         }
       }
@@ -788,6 +784,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const gotoBack = useCallback(() => navigation.navigate('Maps'), [navigation]);
 
+  const ajustMapRegion = useCallback(
+    //画面がportlateの場合、画面の高さの1/4の緯度だけ下にずらす。landscapeの場合は、経度の1/4だけ右にずらす。
+    (region: RegionType) => {
+      if (isLandscape) {
+        return { ...region, longitude: region.longitude + mapRegion.longitudeDelta / 4 };
+      } else {
+        return { ...region, latitude: region.latitude - mapRegion.latitudeDelta / 4 };
+      }
+    },
+    [isLandscape, mapRegion.latitudeDelta, mapRegion.longitudeDelta]
+  );
+
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
 
@@ -796,16 +804,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('tileMap', route.params?.tileMap);
 
     if (route.params?.jumpTo != null) {
+      const region = ajustMapRegion(route.params.jumpTo);
       const zoomToJump =
         route.params.previous === 'ProjectEdit' || route.params.previous === 'Home' ? route.params.jumpTo.zoom : zoom;
-      changeMapRegion({ ...route.params.jumpTo, zoom: zoomToJump }, true);
+      changeMapRegion({ ...region, zoom: zoomToJump }, true);
+      //console.log(route.params.jumpTo);
     }
     if (route.params?.previous === 'Settings') {
       bottomSheetRef.current?.close();
     } else if (route.params?.previous === 'ProjectEdit') {
       setTimeout(() => bottomSheetRef.current?.close(), 100);
     } else if (route.params?.previous === 'DataEdit') {
-      bottomSheetRef.current?.snapToIndex(1);
+      if (isLandscape) {
+        bottomSheetRef.current?.snapToIndex(2);
+      } else {
+        bottomSheetRef.current?.snapToIndex(1);
+      }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
         setTimeout(() => bottomSheetRef.current?.close(), 200);
@@ -914,8 +928,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         previous: 'Data',
         targetData: record,
         targetLayer: layer,
-        targetRecordSet: [],
-        targetIndex: 0,
       });
     }
     selectDrawTool(currentDrawTool);
@@ -934,16 +946,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         unselectRecord();
         return;
       }
-      bottomSheetRef.current?.snapToIndex(1);
+      if (isLandscape) {
+        bottomSheetRef.current?.snapToIndex(2);
+      } else {
+        bottomSheetRef.current?.snapToIndex(1);
+      }
       navigation.navigate('DataEdit', {
         previous: 'Data',
         targetData: { ...feature },
         targetLayer: { ...layer },
-        targetRecordSet: recordSet,
-        targetIndex: recordIndex,
       });
     },
-    [isEditingRecord, navigation, selectSingleFeature, unselectRecord]
+    [isEditingRecord, isLandscape, navigation, selectSingleFeature, unselectRecord]
   );
 
   const panResponder: PanResponderInstance = useMemo(

@@ -89,8 +89,9 @@ const ValueList = (props: Props_List) => {
       const newValues = [...values];
       newValues[index] = value;
       setValues(newValues);
+      onEndEditing(selectedItems, newValues);
     },
-    [values]
+    [onEndEditing, selectedItems, values]
   );
 
   const deleteValue = useCallback(

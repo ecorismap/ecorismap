@@ -51,19 +51,23 @@ const Picker = React.memo((props: Props) => {
 });
 
 const PickerAndroidOrWeb = React.memo((props: Props) => {
-  const { style, label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
+  const { label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
 
   return (
     <View style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
         <RNPicker
-          itemStyle={Platform.OS === 'ios' ? { height: 40, fontSize: 12 } : {}}
           style={
-            style
-              ? style
-              : Platform.OS === 'web'
-              ? { flex: 1, height: 40, backgroundColor: COLOR.MAIN, borderColor: COLOR.GRAY1, paddingHorizontal: 5 }
+            Platform.OS === 'web'
+              ? {
+                  flex: 1,
+                  height: 40,
+                  backgroundColor: COLOR.MAIN,
+                  borderColor: COLOR.GRAY1,
+                  paddingHorizontal: 5,
+                  maxWidth: 140,
+                }
               : { flex: 1, height: 40, marginLeft: -13 }
           }
           enabled={enabled}
@@ -89,8 +93,10 @@ const PickeriOS = React.memo((props: Props) => {
 
   const items = itemValueArray.slice(0, maxIndex + 1).map((item, index) => ({
     label: itemLabelArray[index],
+    value: itemValueArray[index],
     key: index,
   }));
+  const selectedLabel = itemLabelArray[itemValueArray.indexOf(selectedValue)];
   const selectorRef = useRef(null);
 
   const openSelector = () => {
@@ -112,9 +118,10 @@ const PickeriOS = React.memo((props: Props) => {
             selectStyle={{ borderWidth: 0 }}
             overlayStyle={{ backgroundColor: COLOR.GRAY3 }}
             accessible={enabled}
-            initValue={selectedValue}
+            animationType={'none'}
+            initValue={selectedLabel}
             onChange={(option) => {
-              if (option.label !== selectedValue) onValueChange(option.label, option.key);
+              if (option.value !== selectedValue) onValueChange(option.value, option.key);
             }}
           />
           <MaterialCommunityIcons
