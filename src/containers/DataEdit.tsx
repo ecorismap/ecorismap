@@ -43,12 +43,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-  } = useDataEdit(
-    route.params.targetData,
-    route.params.targetLayer,
-    route.params.targetRecordSet,
-    route.params.targetIndex
-  );
+  } = useDataEdit(route.params.targetData, route.params.targetLayer);
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
   const { checkRecordEditable } = useRecord();
@@ -101,10 +96,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       previous: 'Data',
       targetData: newData,
       targetLayer: { ...targetLayer },
-      targetRecordSet: [...route.params.targetRecordSet, newData],
-      targetIndex: route.params.targetRecordSet.length,
     });
-  }, [copyRecord, navigation, route.params.targetRecordSet, targetLayer, targetRecord]);
+  }, [copyRecord, navigation, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
@@ -130,8 +123,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'Data',
           targetLayer: route.params.mainLayer,
           targetData: route.params.mainData,
-          targetRecordSet: [],
-          targetIndex: 0,
         });
       }
     }
@@ -295,8 +286,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
           previous: 'Data',
           targetLayer: route.params.mainLayer,
           targetData: route.params.mainData,
-          targetRecordSet: [],
-          targetIndex: 0,
         });
       }
     };
@@ -329,8 +318,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
-        targetRecordSet: [],
-        targetIndex: 0,
         mainData: targetRecord,
         mainLayer: targetLayer,
       });
@@ -356,8 +343,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
-        targetRecordSet: [],
-        targetIndex: 0,
         mainData: targetRecord,
         mainLayer: targetLayer,
       });
