@@ -118,6 +118,7 @@ const PickeriOS = React.memo((props: Props) => {
             selectStyle={{ borderWidth: 0 }}
             overlayStyle={{ backgroundColor: COLOR.GRAY3 }}
             accessible={enabled}
+            animationType={'none'}
             initValue={selectedLabel}
             onChange={(option) => {
               if (option.value !== selectedValue) onValueChange(option.value, option.key);
