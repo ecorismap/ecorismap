@@ -85,7 +85,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (!result.isOK) {
       Alert.alert('', result.message);
     }
-  }, [checkRecordEditable, isDecimal, keyboardShown, latlon, saveData, targetLayer, targetRecord]);
+    navigation.navigate('DataEdit', {
+      previous: 'Data',
+      targetData: targetRecord,
+      targetLayer: { ...targetLayer },
+    });
+  }, [checkRecordEditable, isDecimal, keyboardShown, latlon, navigation, saveData, targetLayer, targetRecord]);
 
   const pressCopyData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
