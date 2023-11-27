@@ -51,6 +51,10 @@ export const DataEditList = (props: Props) => {
     }
   };
 
+  const onChangeText = (text: string) => {
+    setOtherText(text);
+    onValueChange(text);
+  };
   const onEndEditing = () => {
     onValueChange(otherText);
   };
@@ -73,7 +77,7 @@ export const DataEditList = (props: Props) => {
             style={styles.input}
             label={t('common.value')}
             value={otherText}
-            onChangeText={setOtherText}
+            onChangeText={onChangeText}
             onEndEditing={onEndEditing}
             onBlur={onEndEditing}
           />
