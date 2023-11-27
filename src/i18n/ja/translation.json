@@ -436,7 +436,8 @@
         "inputTableItem": "テーブルのアイテムを設定してください。",
         "inputListTableItem": "リストテーブルのアイテムを設定してください。",
         "duplicateFieldName": "フィールド名が重複しています。",
-        "duplicateSerial": "Serialのフィールドが複数あります。"
+        "duplicateSerial": "Serialのフィールドが複数あります。",
+        "listItemsWarning": "リストアイテムに「その他」の項目がある場合、空白のアイテムは追加できません。"
       }
     }
   },

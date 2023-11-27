@@ -102,6 +102,17 @@ export const checkLayerInputs = (layer: LayerType) => {
     //console.log(layer);
     return { isOK: false, message: t('utils.Layer.message.inputListItem') };
   }
+  if (
+    layer.field.find(
+      (f) =>
+        f.format === 'LIST' &&
+        f.list !== undefined &&
+        f.list.find((l) => l.isOther) &&
+        f.list.find((l) => l.value === '')
+    )
+  ) {
+    return { isOK: false, message: t('utils.Layer.message.listItemsWarning') };
+  }
   if (layer.field.find((f) => f.format === 'RADIO' && f.list === undefined)) {
     return { isOK: false, message: t('utils.Layer.message.inputRadioItem') };
   }
