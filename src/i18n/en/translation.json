@@ -638,7 +638,8 @@
         "inputTableItem": "Please set the items in the table.",
         "inputListTableItem": "Set the items in the list table.",
         "duplicateFieldName": "Duplicate field name.",
-        "duplicateSerial": "I have multiple fields in Serial."
+        "duplicateSerial": "I have multiple fields in Serial.",
+        "listItemsWarning": "If the list item has an \"Other\" item, you cannot add a blank item."
       }
     }
   },
