@@ -67,15 +67,14 @@ const ValueList = (props: Props_List) => {
 
   const changeText = useCallback(
     (rowIndex: number, colIndex: number, value: string) => {
-      if (value.indexOf('|') !== -1 || value.indexOf(',') !== -1) {
-        setValueList([...valueList]);
-      } else {
-        const updatedValue = [...valueList];
-        updatedValue[rowIndex][colIndex] = value;
-        setValueList(updatedValue);
+      const updatedValueList = [...valueList];
+      if (value.indexOf('|') === -1 && value.indexOf(',') === -1) {
+        updatedValueList[rowIndex][colIndex] = value;
       }
+      setValueList(updatedValueList);
+      onEndEditing(updatedValueList);
     },
-    [valueList]
+    [onEndEditing, valueList]
   );
 
   const deleteValue = useCallback(

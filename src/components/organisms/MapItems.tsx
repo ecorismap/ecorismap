@@ -44,7 +44,7 @@ export const MapItems = React.memo(() => {
           </View>
 
           <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' && item.id !== 'hybrid' && Platform.OS !== 'web' && (
+            {item.id !== 'standard' && item.id !== 'hybrid' && (
               <RectButton2 name="chevron-double-up" onPress={() => changeMapOrder(index)} color={COLOR.GRAY2} />
             )}
           </View>

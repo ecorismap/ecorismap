@@ -73,10 +73,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       previous: 'Data',
       targetData: addedData,
       targetLayer: layer,
-      targetRecordSet: [...data, addedData],
-      targetIndex: data.length,
     });
-  }, [addDefaultRecord, data, layer, navigation, route.params.targetLayer.active]);
+  }, [addDefaultRecord, layer, navigation, route.params.targetLayer.active]);
 
   const gotoDataEdit = useCallback(
     (index: number) => {
@@ -84,8 +82,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         previous: 'Data',
         targetData: data[index],
         targetLayer: { ...layer },
-        targetRecordSet: data,
-        targetIndex: index,
       });
     },
     [navigation, data, layer]
