@@ -150,7 +150,7 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[]) =>
     case 'NUMBERRANGE':
       return { [field.name]: `${t('common.ndash')}` };
     case 'LIST':
-      return { [field.name]: field.list![0].value };
+      return { [field.name]: field.list![0].isOther ? '' : field.list![0].value };
     case 'RADIO':
       return { [field.name]: field.list![0].value };
     case 'CHECK':
