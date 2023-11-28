@@ -16,19 +16,17 @@ export const DataEditDatetime = (props: Props) => {
   const { name, value, mode, onValueChange } = props;
   const [open, setOpen] = useState(false);
 
-  //console.log('###', value);
   const dateValue = useMemo(() => {
     if (value === '') return new Date();
     if (mode === 'time') {
       return dayjs(`2000/1/1 ${value}`).toDate();
     } else if (mode === 'date') {
-      return dayjs(value).toDate();
+      const formatL = dayjs().localeData().longDateFormat('L');
+      return dayjs(value, formatL).toDate();
     } else {
       return dayjs(value).toDate();
     }
   }, [mode, value]);
-
-  //console.log('$$$', dateValue);
 
   const dateValueString = useMemo(() => {
     if (value === '') return '';
@@ -65,7 +63,6 @@ export const DataEditDatetime = (props: Props) => {
           <DatePicker
             modal
             open={open}
-            theme="light"
             date={dateValue}
             title={null}
             confirmText={'OK'}
