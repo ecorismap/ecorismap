@@ -108,7 +108,7 @@ export const checkLayerInputs = (layer: LayerType) => {
         f.format === 'LIST' &&
         f.list !== undefined &&
         f.list.find((l) => l.isOther) &&
-        f.list.find((l) => l.value === '')
+        f.list.find((l) => !l.isOther && l.value === '')
     )
   ) {
     return { isOK: false, message: t('utils.Layer.message.listItemsWarning') };
