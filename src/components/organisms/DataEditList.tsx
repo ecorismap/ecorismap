@@ -17,7 +17,7 @@ export const DataEditList = (props: Props) => {
   const { name, value, listItems, onValueChange } = props;
 
   //const [selectedItem, setSelectedItem] = useState<string>('');
-  const [otherSelected, setOtherSelected] = useState<boolean>(false);
+  const [otherSelected, setOtherSelected] = useState<boolean>(false); //これを外に出す
   const [otherText, setOtherText] = useState('');
 
   const otherItem = useMemo(() => listItems.find((v) => v.isOther), [listItems]);
@@ -27,8 +27,8 @@ export const DataEditList = (props: Props) => {
 
   const selectedItem = useMemo(() => {
     const item = value ? value.toString() : '';
-    return listItemValues.includes(item) ? item : otherItem !== undefined ? otherItem.value : '';
-  }, [listItemValues, otherItem, value]);
+    return !otherSelected && listItemValues.includes(item) ? item : otherItem !== undefined ? otherItem.value : '';
+  }, [listItemValues, otherItem, otherSelected, value]);
 
   useEffect(() => {
     //選択されている値が「その他」の場合テキストの値をセットする必要がある。
