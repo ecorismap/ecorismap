@@ -15,7 +15,6 @@ export const HomeMapMemoTools = () => {
     currentPen,
     currentEraser,
     penColor,
-    editableMapMemo,
     isPencilModeActive,
     isUndoable,
     isRedoable,
@@ -55,7 +54,6 @@ export const HomeMapMemoTools = () => {
     <View style={styles.buttonContainer}>
       <View style={styles.selectionalButton}>
         <HomeMapMemoPenButton
-          disabled={!editableMapMemo}
           isPositionRight={false}
           currentMapMemoTool={currentMapMemoTool}
           currentPen={currentPen}
@@ -66,7 +64,6 @@ export const HomeMapMemoTools = () => {
       </View>
       <View style={styles.selectionalButton}>
         <HomeMapMemoEraserButton
-          disabled={!editableMapMemo}
           isPositionRight={false}
           currentMapMemoTool={currentMapMemoTool}
           currentEraser={currentEraser}
@@ -77,9 +74,8 @@ export const HomeMapMemoTools = () => {
       <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.COLOR}
-          backgroundColor={editableMapMemo ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
-          disabled={!editableMapMemo}
           onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
@@ -96,18 +92,18 @@ export const HomeMapMemoTools = () => {
       <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.UNDO}
-          backgroundColor={editableMapMemo && isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isUndoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!(editableMapMemo && isUndoable)}
+          disabled={!isUndoable}
           onPress={pressUndoMapMemo}
         />
       </View>
       <View style={styles.button}>
         <Button
           name={MAPMEMOTOOL.REDO}
-          backgroundColor={editableMapMemo && isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+          backgroundColor={isRedoable ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
           borderRadius={10}
-          disabled={!(editableMapMemo && isRedoable)}
+          disabled={!isRedoable}
           onPress={pressRedoMapMemo}
         />
       </View>

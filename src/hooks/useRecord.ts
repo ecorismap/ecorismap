@@ -38,6 +38,9 @@ export type UseRecordReturnType = {
         record: RecordType;
       }
     | undefined;
+  activePointLayer: LayerType | undefined;
+  activeLineLayer: LayerType | undefined;
+  activePolygonLayer: LayerType | undefined;
   addRecord: (
     layer: LayerType,
     record: RecordType,
@@ -332,6 +335,9 @@ export const useRecord = (): UseRecordReturnType => {
     lineDataSet,
     polygonDataSet,
     selectedRecord,
+    activePointLayer,
+    activeLineLayer,
+    activePolygonLayer,
     addRecordWithCheck,
     findRecord,
     selectRecord,
