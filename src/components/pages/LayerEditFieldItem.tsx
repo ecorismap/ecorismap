@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
-import { Button, Picker, TextInput } from '../atoms';
+import { Button, Picker, RectButton2, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -26,6 +26,7 @@ export default function LayerEditFieldItemScreen() {
     changeValue,
     pressDeleteValue,
     gotoBack,
+    pressListOrder,
   } = useContext(LayerEditFieldItemContext);
   const navigation = useNavigation();
   const editable = true;
@@ -60,6 +61,7 @@ export default function LayerEditFieldItemScreen() {
             <View style={[styles.td3, { flex: 4 }]}>
               <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
             </View>
+            <View style={styles.td3} />
             <View style={styles.td3} />
           </>
         )}
@@ -150,6 +152,9 @@ export default function LayerEditFieldItemScreen() {
                   disabled={!editable}
                   onPress={() => pressDeleteValue(index)}
                 />
+              </View>
+              <View style={styles.td}>
+                <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
               </View>
             </View>
           ))}
