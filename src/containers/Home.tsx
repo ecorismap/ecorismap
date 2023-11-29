@@ -89,6 +89,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     lineDataSet,
     polygonDataSet,
     selectedRecord,
+    activePointLayer,
+    activeLineLayer,
+    activePolygonLayer,
     unselectRecord,
     addRecordWithCheck,
     checkRecordEditable,
@@ -288,15 +291,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (currentMapMemoTool === value) {
         setMapMemoTool('NONE');
       } else {
-        setDrawTool('NONE');
-        setMapMemoTool(value);
         if (value.includes('PEN')) {
+          if (!editableMapMemo) {
+            Alert.alert('', t('Home.alert.cannotEdit'));
+            return;
+          }
           const ret = changeColorTypeToIndividual();
           if (ret) Alert.alert('', t('Home.alert.individualColor'));
         }
+        setDrawTool('NONE');
+        setMapMemoTool(value);
       }
     },
-    [changeColorTypeToIndividual, currentMapMemoTool, setDrawTool, setMapMemoTool]
+    [changeColorTypeToIndividual, currentMapMemoTool, editableMapMemo, setDrawTool, setMapMemoTool]
   );
 
   const selectDrawTool = useCallback(
@@ -312,10 +319,28 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool('NONE');
         } else {
           //ドローツールをオン
+
+          if (isPointTool(value)) {
+            if (activePointLayer === undefined) {
+              await AlertAsync(t('Home.alert.cannotEdit'));
+              return;
+            }
+            await runTutrial(`POINTTOOL_${value}`);
+          } else if (isLineTool(value)) {
+            if (activeLineLayer === undefined) {
+              await AlertAsync(t('Home.alert.cannotEdit'));
+              return;
+            }
+            await runTutrial(`LINETOOL_${value}`);
+          } else if (isPolygonTool(value)) {
+            if (activePolygonLayer === undefined) {
+              await AlertAsync(t('Home.alert.cannotEdit'));
+              return;
+            }
+            await runTutrial(`POLYGONTOOL_${value}`);
+          }
+
           setDrawTool(value);
-          if (isPointTool(value)) await runTutrial(`POINTTOOL_${value}`);
-          if (isLineTool(value)) await runTutrial(`LINETOOL_${value}`);
-          if (isPolygonTool(value)) await runTutrial(`POLYGONTOOL_${value}`);
         }
       } else if (isInfoTool(value)) {
         if (currentDrawTool === value) {
@@ -334,6 +359,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
+          if (featureButton === 'LINE' && activeLineLayer === undefined) {
+            await AlertAsync(t('Home.alert.cannotEdit'));
+            return;
+          } else if (featureButton === 'POLYGON' && activePolygonLayer === undefined) {
+            await AlertAsync(t('Home.alert.cannotEdit'));
+            return;
+          }
           setDrawTool(value);
           await runTutrial('SELECTIONTOOL');
         }
@@ -342,6 +374,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
+          if (activePointLayer === undefined) {
+            await AlertAsync(t('Home.alert.cannotEdit'));
+            return;
+          }
           setDrawTool(value);
         }
       } else if (value === 'MOVE_POINT') {
@@ -349,6 +385,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           resetDrawTools();
           setDrawTool('NONE');
         } else {
+          if (activePointLayer === undefined) {
+            await AlertAsync(t('Home.alert.cannotEdit'));
+            return;
+          }
           setDrawTool(value);
         }
       } else if (isHisyouTool(value)) {
@@ -372,7 +412,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     },
     [
+      activeLineLayer,
+      activePointLayer,
+      activePolygonLayer,
       currentDrawTool,
+      featureButton,
       isEditingDraw,
       isSelectedDraw,
       resetDrawTools,
@@ -1091,7 +1135,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
-        editableMapMemo,
         vectorTileInfo,
         isPencilModeActive,
         isPencilTouch: isPencilTouch.current,

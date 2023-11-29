@@ -85,7 +85,6 @@ export interface HomeContextType {
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: Position[];
-  editableMapMemo: boolean;
   vectorTileInfo:
     | {
         position: Position;
