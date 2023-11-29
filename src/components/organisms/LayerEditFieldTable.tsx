@@ -115,7 +115,12 @@ export const LayerEditFieldTable = () => {
               )}
             </View>
             <View style={[styles.td, { flex: 2 }]}>
-              <RectButton2 name="chevron-double-up" disabled={!editable} onPress={() => onChangeFieldOrder(index)} />
+              <RectButton2
+                name="chevron-double-up"
+                disabled={!editable}
+                onPress={() => onChangeFieldOrder(index)}
+                color={COLOR.GRAY2}
+              />
             </View>
           </View>
         );
