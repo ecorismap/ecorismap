@@ -22,6 +22,7 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
     changeValue,
     addValue,
     deleteValue,
+    pressListOrder,
   } = useFieldList(route.params.targetLayer, route.params.fieldIndex, route.params.isEdited);
 
   const gotoBack = useCallback(() => {
@@ -53,6 +54,7 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
         pressAddValue: addValue,
         pressDeleteValue: deleteValue,
         gotoBack,
+        pressListOrder,
       }}
     >
       <LayerEditFieldItem />

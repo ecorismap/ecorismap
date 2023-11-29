@@ -23,6 +23,7 @@ export type UseFieldListReturnType = {
   changeValue: (index: number, value: string) => void;
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
+  pressListOrder: (index: number) => void;
 };
 
 export const useFieldList = (
@@ -164,6 +165,18 @@ export const useFieldList = (
     },
     [itemValues]
   );
+
+  const pressListOrder = useCallback(
+    (index: number) => {
+      const newItemValues = cloneDeep(itemValues);
+      if (index === 0) return;
+      [newItemValues[index], newItemValues[index - 1]] = [newItemValues[index - 1], newItemValues[index]];
+      setItemValues(newItemValues);
+      setIsEdited(true);
+    },
+    [itemValues]
+  );
+
   return {
     isEdited,
     itemValues,
@@ -181,5 +194,6 @@ export const useFieldList = (
     changeValue,
     addValue,
     deleteValue,
+    pressListOrder,
   };
 };

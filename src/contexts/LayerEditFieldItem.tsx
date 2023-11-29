@@ -19,5 +19,6 @@ interface LayerEditFieldItemContextType {
   pressDeleteValue: (id: number) => void;
   pressAddValue: (other?: boolean) => void;
   gotoBack: () => void;
+  pressListOrder: (index: number) => void;
 }
 export const LayerEditFieldItemContext = createContext({} as LayerEditFieldItemContextType);
