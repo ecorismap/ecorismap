@@ -569,7 +569,8 @@
       "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen.",
       "clearMapMemo": "I deleted the map notes.",
       "individualColor": "Changed the color type to [Individual]. \nIf you want to undo it, change it from the layer style.",
-      "storage": "Loading data is full. \nDelete unnecessary data."
+      "storage": "Loading data is full. \nDelete unnecessary data.",
+      "cannotEdit": "There are no editable layers."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
