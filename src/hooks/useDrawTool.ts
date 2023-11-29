@@ -589,6 +589,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const showDrawLine = useCallback(() => {
     //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
     refreshDrawLine.current = true;
+    if (drawLine.current.length === 0) setDrawLineVisible(true);
   }, []);
 
   const pressSvgView = useCallback(
