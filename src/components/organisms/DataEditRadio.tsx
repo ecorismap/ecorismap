@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, Text, ScrollView } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { CheckBox } from '../molecules/CheckBox';
 import { CheckInput } from '../molecules/CheckInput';
+import { ScrollView } from 'react-native-gesture-handler';
 
 interface Props {
   name: string;
