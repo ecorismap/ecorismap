@@ -98,24 +98,27 @@ export const formattedInputs = (
       break;
     }
     case 'NUMBERRANGE': {
-      if (typeof value !== 'string') {
-        alert && Alert.alert('', `${t('Format.alert.formattedInputs')} ${type}:${value}`);
-        isOK = false;
-        result = value;
-        break;
-      }
-      const splitedValue = value.split(t('common.ndash'));
-      const pattern = /^[+-]?\d+(?:\.\d+)?$/g;
-      const regMatch0 = splitedValue[0].match(pattern);
-      const regMatch1 = splitedValue[1].match(pattern);
-      if (regMatch0 === null || regMatch1 === null) {
-        alert && Alert.alert('', `${t('Format.alert.formattedInputs')} ${type}:${value}`);
-        isOK = false;
-        result = value;
-      } else {
-        result = value;
-      }
+      result = value;
       break;
+      //厳密なチェックは操作性が悪くなるので現時点ではスルーする
+      // if (typeof value !== 'string') {
+      //   alert && Alert.alert('', `${t('Format.alert.formattedInputs')} ${type}:${value}`);
+      //   isOK = false;
+      //   result = value;
+      //   break;
+      // }
+      // const splitedValue = value.split(t('common.ndash'));
+      // const pattern = /^[+-]?\d+(?:\.\d+)?$/g;
+      // const regMatch0 = splitedValue[0].match(pattern);
+      // const regMatch1 = splitedValue[1].match(pattern);
+      // if (regMatch0 === null || regMatch1 === null) {
+      //   alert && Alert.alert('', `${t('Format.alert.formattedInputs')} ${type}:${value}`);
+      //   isOK = false;
+      //   result = value;
+      // } else {
+      //   result = value;
+      // }
+      // break;
     }
     case 'DATETIME':
       result = value;
