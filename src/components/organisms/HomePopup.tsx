@@ -1,8 +1,9 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, ScrollView, Text } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { HomeContext } from '../../contexts/Home';
 import { COLOR } from '../../constants/AppConstants';
 import { FontAwesome } from '@expo/vector-icons';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export const HomePopup = React.memo(() => {
   const { vectorTileInfo, closeVectorTileInfo } = useContext(HomeContext);

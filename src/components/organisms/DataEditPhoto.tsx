@@ -1,9 +1,10 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { RectButton } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { PhotoType } from '../../types';
 import { DataEditContext } from '../../contexts/DataEdit';
+import { ScrollView } from 'react-native-gesture-handler';
 
 interface Props {
   fieldName: string;
