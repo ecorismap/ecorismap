@@ -1,5 +1,21 @@
 # Change Log
 
+## [0.3.11] - 2023-11-29
+- Change the iOS picker.
+- Add a copy function for data.
+- Add a lock feature for Apple Pencil in the drawing tool.
+- Change the layout for tablets in landscape mode.
+- Modify to disable landscape mode usage on smartphones.
+- Fix minor bugs and adjust features.
+
+- iOSのピッカーを変更
+- データのコピー機能を追加
+- ドローツールにApple Pencil用のロック機能を追加
+- タブレットの横向きの配置を変更
+- スマホの横向き利用はできないように変更
+- 細かなバグと機能を修正
+  
+
 ## [0.3.9] - 2023-11-23
 - Fixed a bug that prevented downloading maps for offline use
 - Added support for downloading PMTiles (raster)
@@ -86,7 +102,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...HEAD
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...HEAD
+[0.3.11]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...80638642cfe69f9fa27464d8e6deb58bbcd698d0
 [0.3.9]: https://github.com/ecorismap/ecorismap/compare/8410b80fb75dcb65e214b431d4ddfadcd9afe9d4...996dcffdb7baf6a08d2e4056920585422f26bd6f
 [0.3.7]: https://github.com/ecorismap/ecorismap/compare/5b421a6fd52393b90b9f2c14adb536daa19639c0...8410b80fb75dcb65e214b431d4ddfadcd9afe9d4
 [0.3.5]: https://github.com/ecorismap/ecorismap/compare/d642a3f85075c51679cfe795b96b443b793ab605...5b421a6fd52393b90b9f2c14adb536daa19639c0
