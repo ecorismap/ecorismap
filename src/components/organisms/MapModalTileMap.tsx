@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
 
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
 import Slider from '../atoms/Slider';
@@ -9,6 +9,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { MapsContext } from '../../contexts/Maps';
 import { SmallButton } from '../atoms';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export const MapModalTileMap = React.memo(() => {
   //console.log('render ModalTileMap');
