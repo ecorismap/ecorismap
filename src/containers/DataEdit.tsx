@@ -85,24 +85,39 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (!result.isOK) {
       Alert.alert('', result.message);
     }
-    navigation.navigate('DataEdit', {
-      previous: 'Data',
-      targetData: targetRecord,
-      targetLayer: { ...targetLayer },
-    });
-  }, [checkRecordEditable, isDecimal, keyboardShown, latlon, navigation, saveData, targetLayer, targetRecord]);
+
+    if (route.params.previous === 'Data') {
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: targetRecord,
+        targetLayer: { ...targetLayer },
+      });
+    }
+  }, [
+    checkRecordEditable,
+    isDecimal,
+    keyboardShown,
+    latlon,
+    navigation,
+    route.params.previous,
+    saveData,
+    targetLayer,
+    targetRecord,
+  ]);
 
   const pressCopyData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.copyData'));
     if (!ret) return;
     const newData = copyRecord(targetRecord);
     await AlertAsync(t('DataEdit.alert.copyData'));
-    navigation.navigate('DataEdit', {
-      previous: 'Data',
-      targetData: newData,
-      targetLayer: { ...targetLayer },
-    });
-  }, [copyRecord, navigation, targetLayer, targetRecord]);
+    if (route.params.previous === 'Data') {
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: newData,
+        targetLayer: { ...targetLayer },
+      });
+    }
+  }, [copyRecord, navigation, route.params.previous, targetLayer, targetRecord]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
