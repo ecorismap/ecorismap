@@ -95,17 +95,26 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType) => {
-      const { data: sortedData, idx } = sortData(allUserRecordSet, colName, order);
+      let sortedData: RecordType[] = [];
+      let idx: number[] = [];
+
+      if (order === 'UNSORTED') {
+        sortedData = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
+        idx = sortedData.map((_, i) => i);
+      } else {
+        const result = sortData(allUserRecordSet, colName, order);
+        sortedData = result.data;
+        idx = result.idx;
+      }
       const sortedCheckList = idx.map((d) => checkList[d]);
       setCheckList(sortedCheckList);
       setAllUserRecordSet(sortedData);
     },
-    [allUserRecordSet, checkList]
+    [allUserRecordSet, checkList, dataSet, targetLayer.id]
   );
 
   const changeVisibleAll = useCallback(
     (visible: boolean) => {
-      console.log(visible);
       const data = dataSet.filter((d) => d.layerId === targetLayer.id);
       data.forEach((d) =>
         dispatch(
