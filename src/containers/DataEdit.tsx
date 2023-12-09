@@ -94,6 +94,18 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         targetData: targetRecord,
         targetLayer: { ...targetLayer },
       });
+    } else if (
+      route.params.previous === 'DataEdit' &&
+      route.params.mainLayer !== undefined &&
+      route.params.mainData !== undefined
+    ) {
+      navigation.navigate('DataEdit', {
+        previous: 'DataEdit',
+        targetData: targetRecord,
+        targetLayer: { ...targetLayer },
+        mainData: route.params.mainData,
+        mainLayer: route.params.mainLayer,
+      });
     }
   }, [
     checkRecordEditable,
@@ -101,6 +113,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     keyboardShown,
     latlon,
     navigation,
+    route.params.mainData,
+    route.params.mainLayer,
     route.params.previous,
     saveData,
     targetLayer,
@@ -118,8 +132,28 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         targetData: newData,
         targetLayer: { ...targetLayer },
       });
+    } else if (
+      route.params.previous === 'DataEdit' &&
+      route.params.mainLayer !== undefined &&
+      route.params.mainData !== undefined
+    ) {
+      navigation.navigate('DataEdit', {
+        previous: 'DataEdit',
+        targetData: newData,
+        targetLayer: { ...targetLayer },
+        mainData: route.params.mainData,
+        mainLayer: route.params.mainLayer,
+      });
     }
-  }, [copyRecord, navigation, route.params.previous, targetLayer, targetRecord]);
+  }, [
+    copyRecord,
+    navigation,
+    route.params.mainData,
+    route.params.mainLayer,
+    route.params.previous,
+    targetLayer,
+    targetRecord,
+  ]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));

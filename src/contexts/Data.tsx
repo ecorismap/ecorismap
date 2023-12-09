@@ -19,5 +19,6 @@ interface DataContextType {
   changeVisibleAll: (visible: boolean) => void;
   gotoDataEdit: (index: number) => void;
   gotoBack: () => void;
+  updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
 }
 export const DataContext = createContext({} as DataContextType);

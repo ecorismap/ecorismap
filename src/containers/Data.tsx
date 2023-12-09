@@ -32,6 +32,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     deleteRecords,
     generateExportGeoData,
     checkRecordEditable,
+    updateOwnRecordSetOrder,
   } = useData(route.params.targetLayer);
   const { isOwnerAdmin } = usePermission();
 
@@ -111,6 +112,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         pressExportData,
         gotoDataEdit,
         gotoBack,
+        updateOwnRecordSetOrder,
       }}
     >
       <Data />

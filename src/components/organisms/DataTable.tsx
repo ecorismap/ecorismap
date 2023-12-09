@@ -4,99 +4,28 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
 import { CheckBox } from '../molecules/CheckBox';
-import { RecordType, PhotoType, FormatType } from '../../types';
+import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
 import { SortOrderType } from '../../utils/Data';
-import { FlatList } from 'react-native-gesture-handler';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 
 export const DataTable = React.memo(() => {
   //console.log(data[0]);
-  const { data, checkList, projectId, layer, gotoDataEdit, changeChecked, changeVisible } = useContext(DataContext);
-  //@ts-ignore
-  const renderItem = useCallback(
-    ({ item, index }: { item: RecordType; index: number }) => (
-      <View style={{ flex: 1, height: 45, flexDirection: 'row' }}>
-        <View style={[styles.td, { width: 50 }]}>
-          <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
-        </View>
-        <View style={[styles.td, { width: 60 }]}>
-          <Button
-            color={COLOR.GRAY4}
-            style={{ backgroundColor: COLOR.MAIN }}
-            borderRadius={0}
-            name={checkList[index] ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-            onPress={() => changeChecked(index, !checkList[index])}
-          />
-        </View>
+  const {
+    data,
+    checkList,
+    projectId,
+    layer,
+    gotoDataEdit,
+    changeChecked,
+    changeVisible,
+    updateOwnRecordSetOrder,
+    changeOrder,
+    changeCheckedAll,
+    changeVisibleAll,
+  } = useContext(DataContext);
 
-        {projectId !== undefined && (
-          <TouchableOpacity style={[styles.td, { flex: 2, width: 100 }]} onPress={() => gotoDataEdit(index)}>
-            <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-              {item.displayName}
-            </Text>
-          </TouchableOpacity>
-        )}
-        {projectId === undefined && layer.field.length === 0 ? (
-          <View style={[styles.td, { width: 60 }]}>
-            <Button
-              color={COLOR.GRAY4}
-              style={{ backgroundColor: COLOR.MAIN }}
-              borderRadius={0}
-              name={'menu-right'}
-              onPress={() => gotoDataEdit(index)}
-            />
-          </View>
-        ) : (
-          layer.field.map(({ name, format }, field_index) => (
-            <TouchableOpacity
-              key={field_index}
-              style={[styles.td, { flex: 2, width: 120 }]}
-              onPress={() => gotoDataEdit(index)}
-            >
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                {item.field[name] === undefined
-                  ? ''
-                  : format === 'DATETIME'
-                  ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                  : format === 'PHOTO'
-                  ? `${(item.field[name] as PhotoType[]).length} pic`
-                  : format === 'REFERENCE'
-                  ? 'Reference'
-                  : `${item.field[name]}`}
-              </Text>
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
-    ),
-    [changeChecked, changeVisible, checkList, gotoDataEdit, layer.field, projectId]
-  );
-  const keyExtractor = useCallback((item: RecordType) => item.id, []);
-
-  return (
-    <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-      {data.length !== 0 ? (
-        <FlatList
-          data={data}
-          stickyHeaderIndices={[0]}
-          initialNumToRender={15}
-          extraData={data}
-          ListHeaderComponent={<DataTitle />}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          removeClippedSubviews={true}
-          disableVirtualization={true}
-        />
-      ) : (
-        <DataTitle />
-      )}
-    </View>
-  );
-});
-
-const DataTitle = React.memo(() => {
-  const { projectId, layer, changeOrder, changeCheckedAll, changeVisibleAll } = useContext(DataContext);
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
   const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
@@ -129,7 +58,143 @@ const DataTitle = React.memo(() => {
     },
     [changeOrder, sortedName, sortedOrder]
   );
+  //@ts-ignore
+  const renderItem = useCallback(
+    ({ item, getIndex, drag, isActive }: RenderItemParams<RecordType>) => {
+      const index = getIndex();
+      if (index === undefined) return null;
+      return (
+        <View
+          style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
+        >
+          <View style={[styles.td, { width: 50 }]}>
+            <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
+          </View>
+          <View style={[styles.td, { width: 60 }]}>
+            <Button
+              color={COLOR.GRAY4}
+              style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
+              borderRadius={0}
+              name={checkList[index] ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              onPress={() => changeChecked(index, !checkList[index])}
+            />
+          </View>
 
+          {projectId !== undefined && (
+            <TouchableOpacity
+              style={[styles.td, { flex: 2, width: 100 }]}
+              onLongPress={drag}
+              disabled={isActive}
+              onPress={() => gotoDataEdit(index)}
+            >
+              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                {item.displayName}
+              </Text>
+            </TouchableOpacity>
+          )}
+          {projectId === undefined && layer.field.length === 0 ? (
+            <View style={[styles.td, { width: 60 }]}>
+              <Button
+                color={COLOR.GRAY4}
+                style={{ backgroundColor: COLOR.MAIN }}
+                borderRadius={0}
+                name={'menu-right'}
+                onPress={() => gotoDataEdit(index)}
+              />
+            </View>
+          ) : (
+            layer.field.map(({ name, format }, field_index) => (
+              <TouchableOpacity
+                key={field_index}
+                style={[styles.td, { flex: 2, width: 120 }]}
+                onLongPress={drag}
+                disabled={isActive}
+                onPress={() => gotoDataEdit(index)}
+              >
+                <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                  {item.field[name] === undefined
+                    ? ''
+                    : format === 'DATETIME'
+                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
+                    : format === 'PHOTO'
+                    ? `${(item.field[name] as PhotoType[]).length} pic`
+                    : format === 'REFERENCE'
+                    ? 'Reference'
+                    : `${item.field[name]}`}
+                </Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+      );
+    },
+    [changeChecked, changeVisible, checkList, gotoDataEdit, layer.field, projectId]
+  );
+  const keyExtractor = useCallback((item: RecordType) => item.id, []);
+
+  return (
+    <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
+      {data.length !== 0 ? (
+        <DraggableFlatList
+          data={data}
+          stickyHeaderIndices={[0]}
+          initialNumToRender={15}
+          extraData={data}
+          // eslint-disable-next-line react/no-unstable-nested-components
+          ListHeaderComponent={() => (
+            <DataTitle
+              visibleAll={visibleAll}
+              onVisibleAll={onVisibleAll}
+              checkedAll={checkedAll}
+              onCheckAll={onCheckAll}
+              onChangeOrder={onChangeOrder}
+              sortedName={sortedName}
+              sortedOrder={sortedOrder}
+              projectId={projectId}
+              layer={layer}
+            />
+          )}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          removeClippedSubviews={true}
+          disableVirtualization={true}
+          // eslint-disable-next-line @typescript-eslint/no-shadow
+          onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
+          activationDistance={10}
+        />
+      ) : (
+        <DataTitle
+          visibleAll={visibleAll}
+          onVisibleAll={onVisibleAll}
+          checkedAll={checkedAll}
+          onCheckAll={onCheckAll}
+          onChangeOrder={onChangeOrder}
+          sortedName={sortedName}
+          sortedOrder={sortedOrder}
+          projectId={projectId}
+          layer={layer}
+        />
+      )}
+    </View>
+  );
+});
+
+interface Props {
+  visibleAll: boolean;
+  onVisibleAll: () => void;
+  checkedAll: boolean;
+  onCheckAll: () => void;
+  onChangeOrder: (colName: string, format: FormatType | '_user_') => void;
+  sortedName: string;
+  sortedOrder: SortOrderType;
+  projectId: string | undefined;
+  layer: LayerType;
+}
+
+const DataTitle = React.memo((props: Props) => {
+  //propsから変数を取り出す
+  const { visibleAll, onVisibleAll, checkedAll, onCheckAll, onChangeOrder, sortedName, sortedOrder, projectId, layer } =
+    props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { width: 50 }]}>
@@ -151,10 +216,10 @@ const DataTitle = React.memo(() => {
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
-          {sortedName === 'user' && sortedOrder === 'ASCENDING' && (
+          {sortedName === '_user_' && sortedOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
           )}
-          {sortedName === 'user' && sortedOrder === 'DESCENDING' && (
+          {sortedName === '_user_' && sortedOrder === 'DESCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
           )}
         </TouchableOpacity>
@@ -188,7 +253,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
     //flex: 1,
-    //flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 0,
@@ -200,7 +265,7 @@ const styles = StyleSheet.create({
     borderColor: COLOR.GRAY2,
     borderRightWidth: 1,
     //flex: 1,
-    // flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 0,
