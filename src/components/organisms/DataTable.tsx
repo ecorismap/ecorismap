@@ -160,6 +160,7 @@ export const DataTable = React.memo(() => {
           disableVirtualization={true}
           // eslint-disable-next-line @typescript-eslint/no-shadow
           onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
+          activationDistance={10}
         />
       ) : (
         <DataTitle
@@ -215,10 +216,10 @@ const DataTitle = React.memo((props: Props) => {
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
-          {sortedName === 'user' && sortedOrder === 'ASCENDING' && (
+          {sortedName === '_user_' && sortedOrder === 'ASCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
           )}
-          {sortedName === 'user' && sortedOrder === 'DESCENDING' && (
+          {sortedName === '_user_' && sortedOrder === 'DESCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
           )}
         </TouchableOpacity>
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
     //flex: 1,
-    //flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 0,
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     borderColor: COLOR.GRAY2,
     borderRightWidth: 1,
     //flex: 1,
-    // flexDirection: 'row',
+    flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 0,
