@@ -38,6 +38,7 @@ export type UseDataReturnType = {
     isOK: boolean;
     message: string;
   };
+  updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -83,6 +84,15 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [isRunningProject, tracking, user.uid]
   );
 
+  const updateOwnRecordSetOrder = useCallback(
+    (allUserRecordSet_: RecordType[]) => {
+      const ownRecordSet_ = allUserRecordSet_.filter((d) => d.userId === dataUser.uid);
+
+      dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: dataUser.uid, data: ownRecordSet_ }));
+    },
+    [dataUser.uid, dispatch, targetLayer.id]
+  );
+
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType) => {
       const { data: sortedData, idx } = sortData(allUserRecordSet, colName, order);
@@ -95,6 +105,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const changeVisibleAll = useCallback(
     (visible: boolean) => {
+      console.log(visible);
       const data = dataSet.filter((d) => d.layerId === targetLayer.id);
       data.forEach((d) =>
         dispatch(
@@ -230,5 +241,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     deleteRecords,
     generateExportGeoData,
     checkRecordEditable,
+    updateOwnRecordSetOrder,
   } as const;
 };
