@@ -22,11 +22,13 @@ import { t } from '../i18n/config';
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
 export const sortData = (data: RecordType[], fieldName: string, order: SortOrderType = 'UNSORTED') => {
+  //console.log('sortData', fieldName, order);
   const dataWithIdx = data.map((d, idx) => ({ ...d, idx }));
   let idx = data.map((_, i) => i);
-  if (data.length === 0 || order === 'UNSORTED') {
-    return { data, idx };
+  if (data.length === 0) {
+    return { data: [], idx: [] };
   }
+
   let sortedDataWithIdx;
   if (fieldName === '_user_') {
     sortedDataWithIdx = [...dataWithIdx].sort((a, b) =>
@@ -40,9 +42,17 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
       a.field[fieldName].toString().localeCompare(b.field[fieldName].toString(), undefined, { numeric: true })
     );
   }
+
   if (order === 'DESCENDING') {
     sortedDataWithIdx.reverse();
   }
+  // 前のソート順序に基づいて二次ソート
+  sortedDataWithIdx = sortedDataWithIdx.sort((a, b) => {
+    if (a.field[fieldName] === b.field[fieldName]) {
+      return a.idx - b.idx;
+    }
+    return 0;
+  });
   const sortedData: RecordType[] = sortedDataWithIdx.map(({ idx: _, ...d }) => d);
   idx = sortedDataWithIdx.map(({ idx: Idx }) => Idx);
   return { data: sortedData, idx };
