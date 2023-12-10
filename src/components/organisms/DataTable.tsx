@@ -160,7 +160,7 @@ export const DataTable = React.memo(() => {
           disableVirtualization={true}
           // eslint-disable-next-line @typescript-eslint/no-shadow
           onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
-          activationDistance={10}
+          activationDistance={5}
         />
       ) : (
         <DataTitle
