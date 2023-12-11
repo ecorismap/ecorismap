@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.13] - 2023-12-11
+- データの並び替えに対応
+- 細かなバグと機能を修正
+
 ## [0.3.11] - 2023-11-29
 - Change the iOS picker.
 - Add a copy function for data.
