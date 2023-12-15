@@ -261,7 +261,7 @@ export default function HomeScreen() {
             layerStyles.forEach((layerStyle: any, index: number) => {
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
-              //console.log(layerStyle);
+              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
 
               if (!hasStyleJson) {
                 const source = map.getSource(tileMap.id) as mapboxgl.VectorSource;
