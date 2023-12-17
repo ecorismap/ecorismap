@@ -216,7 +216,7 @@ export const MapModalTileMap = React.memo(() => {
               {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && isVector && (
                 <TextInput
                   style={styles.modalTextInput}
-                  placeholder="Style URL (Optional)"
+                  placeholder="Style URL (json)"
                   placeholderTextColor={COLOR.GRAY4}
                   value={styleURL}
                   onChangeText={(text) => setStyleURL(text)}
