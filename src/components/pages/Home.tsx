@@ -358,9 +358,9 @@ export default function HomeScreen() {
                     <PMTile
                       key={
                         Platform.OS === 'ios'
-                          ? `${tileMap.id}-${isOffline}-${tileMap.styleURL}`
+                          ? `${tileMap.url}-${isOffline}-${tileMap.styleURL}`
                           : `${tileMap.id}-${tileMap.styleURL}`
-                      } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                      } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。urlの変更でキーを変更すると、キャッシュがクリアされる。
                       urlTemplate={tileMap.url.replace('pmtiles://', '')}
                       styleURL={tileMap.styleURL}
                       flipY={false}
@@ -374,6 +374,7 @@ export default function HomeScreen() {
                       tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
                       tileCacheMaxAge={604800}
                       offlineMode={isOffline}
+                      isVector={tileMap.isVector}
                     />
                   ) : (
                     <UrlTile
