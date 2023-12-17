@@ -23,6 +23,7 @@ describe('Gpx2Data', () => {
           colorRamp: 'RANDOM',
           colorType: 'SINGLE',
           fieldName: '',
+          lineWidth: 1.5,
           customFieldValue: '',
           transparency: 0.8,
         },

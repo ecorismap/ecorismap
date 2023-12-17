@@ -100,8 +100,8 @@ describe('sortData', () => {
             { latitude: 1, longitude: 1 },
           ],
           displayName: 'mizutani',
-          field: { name: 'みやぎ', no: 1 },
-          id: '0',
+          field: { name: 'あいち', no: 2 },
+          id: '1',
           redraw: false,
           userId: '0',
           visible: true,
@@ -112,14 +112,14 @@ describe('sortData', () => {
             { latitude: 1, longitude: 1 },
           ],
           displayName: 'mizutani',
-          field: { name: 'あいち', no: 2 },
-          id: '1',
+          field: { name: 'みやぎ', no: 1 },
+          id: '0',
           redraw: false,
           userId: '0',
           visible: true,
         },
       ],
-      idx: [0, 1],
+      idx: [1, 0],
     });
   });
 });
