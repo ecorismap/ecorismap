@@ -1,6 +1,9 @@
 # Change Log
 
-## [0.3.13] - 2023-12-11
+## [0.3.13] - 2023-12-18
+- Support for data sorting
+- Fixed minor bugs and features
+
 - データの並び替えに対応
 - 細かなバグと機能を修正
 
@@ -106,7 +109,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...HEAD
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...HEAD
+[0.3.13]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...12f64c2289ebf291339f453d4cba33920120ae9a
 [0.3.11]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...80638642cfe69f9fa27464d8e6deb58bbcd698d0
 [0.3.9]: https://github.com/ecorismap/ecorismap/compare/8410b80fb75dcb65e214b431d4ddfadcd9afe9d4...996dcffdb7baf6a08d2e4056920585422f26bd6f
 [0.3.7]: https://github.com/ecorismap/ecorismap/compare/5b421a6fd52393b90b9f2c14adb536daa19639c0...8410b80fb75dcb65e214b431d4ddfadcd9afe9d4
