@@ -15,6 +15,9 @@ jest.mock('i18next', () => ({
   t: (k) => k,
 }));
 
+jest.mock('uuid', () => ({
+  v4: () => 'uuid',
+}));
 //jest.mock('expo', () => require.requireMock('expo'));
 
 // jest.mock('expo-file-system', () => ({
