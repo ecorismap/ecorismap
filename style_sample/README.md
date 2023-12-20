@@ -13,3 +13,6 @@
 3. source-layerはベクトルタイルのデータと対応させる必要があります。
 4. filter関連は、sampleにある形式のみ対応しています。
 
+## Thanks
+style3.jsonはG空間情報センター「栃木県「樹種ポリゴン」で公開されているstyle.jsonを参照
+https://www.geospatial.jp/ckan/dataset/tree_species_tochigi
