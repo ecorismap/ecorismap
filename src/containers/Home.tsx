@@ -47,6 +47,7 @@ import { latLonToXY } from '../utils/Coords';
 import { Position } from '@turf/turf';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { useNetInfo } from '@react-native-community/netinfo';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -69,6 +70,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
+  const { isConnected } = useNetInfo();
 
   const [isPinch, setIsPinch] = useState(false);
   //タイルのダウンロード関連
@@ -699,6 +701,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressDownloadData = useCallback(async () => {
     try {
+      const ret = await ConfirmAsync(t('Home.confirm.download'));
+      if (!ret) return;
+      if (!isConnected) {
+        await AlertAsync(t('Home.alert.noInternet'));
+        return;
+      }
       //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
       const shouldPhotoDownload = false;
       setIsLoading(true);
@@ -709,7 +717,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [downloadData]);
+  }, [downloadData, isConnected]);
 
   const pressUploadData = useCallback(async () => {
     try {
@@ -720,6 +728,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         } else {
           await AlertAsync(t('Home.alert.uploadLicense'));
         }
+        return;
+      }
+      if (!isConnected) {
+        await AlertAsync(t('Home.alert.noInternet'));
+        return;
       }
       setIsLoading(true);
       await uploadData(storageLicenseResult.isOK);
@@ -729,7 +742,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [project, uploadData]);
+  }, [isConnected, project, uploadData]);
 
   const pressSyncPosition = useCallback(() => {
     if (isSynced === false) {

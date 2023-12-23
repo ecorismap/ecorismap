@@ -1,6 +1,6 @@
 {
   "name": "ecorismap",
-  "version": "0.3.12",
+  "version": "0.3.14",
   "main": "index.js",
   "homepage": "/pukiwiki/map/ecorismap",
   "license": "MIT LICENSED",
@@ -53,6 +53,7 @@
     "@mui/x-date-pickers": "^5.0.19",
     "@react-native-async-storage/async-storage": "1.18.2",
     "@react-native-community/hooks": "^3.0.0",
+    "@react-native-community/netinfo": "^11.2.1",
     "@react-native-community/slider": "^4.4.2",
     "@react-native-firebase/app": "^18.3.2",
     "@react-native-firebase/app-check": "^18.3.2",
