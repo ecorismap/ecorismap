@@ -58,6 +58,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
       navigation.navigate('Home', {
         tileMap: item,
         previous: 'Maps',
+        mode: 'downloadMap',
       });
     },
     [navigation]

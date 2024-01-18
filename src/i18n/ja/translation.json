@@ -48,6 +48,10 @@
       "default": "デフォルト",
       "save": "現状を保存",
       "copy": "既存のコピー"
+    },
+    "orientation": {
+      "portrait": "縦",
+      "landscape": "横"
     }
   },
   "common": {
@@ -125,7 +129,14 @@
     "vector": "ベクタ",
     "vectortile": "ベクタタイル",
     "size": "サイズ",
-    "width": "ライン幅"
+    "width": "ライン幅",
+    "pdfSettings": "PDFの出力設定",
+    "paperSize": "用紙サイズ",
+    "orientation": "用紙方向",
+    "scale": "スケール",
+    "settings": "設定",
+    "zoomlevelOfMaps": "地図レベル",
+    "currentZoom": "現在のズーム"
   },
   "Home": {
     "confirm": {
@@ -161,7 +172,8 @@
       "cannotEdit": "編集できるレイヤがありません。"
     },
     "navigation": {
-      "download": "地図のダウンロード"
+      "download": "地図のダウンロード",
+      "exportPDF": "PDFの出力"
     }
   },
   "AccountSettings": {
@@ -294,6 +306,10 @@
     "file_new": {
       "text": "データをクリア",
       "info": "現在のデータをクリアします。"
+    },
+    "pdf_save": {
+      "text": "pdfの出力",
+      "info": "現在の地図とデータをpdfに出力します。"
     }
   },
   "Projects": {
@@ -644,6 +660,9 @@
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"
+    },
+    "pdf": {
+      "comment": "この地図はウェブメルカトル図法で作成しています。スケールの長さは図の中心位置での目安です。"
     }
   },
   "site": {

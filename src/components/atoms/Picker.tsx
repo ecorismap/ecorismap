@@ -16,12 +16,25 @@ interface Props {
   itemValueArray: string[];
   maxIndex: number;
   enabled?: boolean;
+  dropdownIcon?: boolean;
+  modal?: boolean;
 }
 
 const Picker = React.memo((props: Props) => {
-  const { style, label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
+  const {
+    style,
+    label,
+    selectedValue,
+    onValueChange,
+    itemLabelArray,
+    itemValueArray,
+    maxIndex,
+    enabled,
+    dropdownIcon,
+    modal,
+  } = props;
 
-  if (Platform.OS === 'ios') {
+  if (modal === true || Platform.OS === 'ios') {
     return (
       <PickeriOS
         style={style}
@@ -32,6 +45,7 @@ const Picker = React.memo((props: Props) => {
         itemValueArray={itemValueArray}
         maxIndex={maxIndex}
         enabled={enabled}
+        dropdownIcon={dropdownIcon}
       />
     );
   } else {
@@ -89,7 +103,8 @@ const PickerAndroidOrWeb = React.memo((props: Props) => {
 });
 
 const PickeriOS = React.memo((props: Props) => {
-  const { label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled } = props;
+  const { label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled, dropdownIcon } =
+    props;
 
   const items = itemValueArray.slice(0, maxIndex + 1).map((item, index) => ({
     label: itemLabelArray[index],
@@ -116,7 +131,7 @@ const PickeriOS = React.memo((props: Props) => {
             data={items}
             initValueTextStyle={{ color: COLOR.BLACK, minWidth: 100 }}
             selectStyle={{ borderWidth: 0 }}
-            overlayStyle={{ backgroundColor: COLOR.GRAY3 }}
+            //overlayStyle={{ backgroundColor: COLOR.DARKGREEN }}
             accessible={enabled}
             animationType={'none'}
             initValue={selectedLabel}
@@ -124,13 +139,15 @@ const PickeriOS = React.memo((props: Props) => {
               if (option.value !== selectedValue) onValueChange(option.value, option.key);
             }}
           />
-          <MaterialCommunityIcons
-            color={COLOR.GRAY4}
-            style={[styles.icon, { marginHorizontal: 3 }]}
-            size={20}
-            name={'chevron-down'}
-            iconStyle={{ marginRight: 0 }}
-          />
+          {dropdownIcon === false ? null : (
+            <MaterialCommunityIcons
+              color={COLOR.GRAY4}
+              style={[styles.icon, { marginHorizontal: 3 }]}
+              size={20}
+              name={'chevron-down'}
+              iconStyle={{ marginRight: 0 }}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </View>

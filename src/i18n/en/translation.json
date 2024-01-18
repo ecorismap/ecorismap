@@ -48,6 +48,10 @@
       "default": "default",
       "save": "save",
       "copy": "copy"
+    },
+    "orientation": {
+      "landscape": "landscape",
+      "portrait": "portrait"
     }
   },
   "tutrials": {
@@ -177,7 +181,14 @@
     "customLabel": "custom label",
     "vectortile": "vector tiles",
     "size": "size",
-    "width": "line width"
+    "width": "line width",
+    "pdfSettings": "PDF output settings",
+    "paperSize": "size",
+    "orientation": "direction",
+    "scale": "scale",
+    "settings": "setting",
+    "zoomlevelOfMaps": "map level",
+    "currentZoom": "current zoom"
   },
   "firebase": {
     "message": {
@@ -252,6 +263,10 @@
     "file_new": {
       "text": "Clear data",
       "info": "Clear the current data."
+    },
+    "pdf_save": {
+      "info": "Output the current map and data to pdf.",
+      "text": "output pdf"
     }
   },
   "Purchases": {
@@ -549,6 +564,9 @@
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
+    },
+    "pdf": {
+      "comment": "This map is created using the Web Mercator projection. \nThe scale length is a guideline at the center of the diagram."
     }
   },
   "Home": {
@@ -585,7 +603,8 @@
       "clearMapMemo": "Erase all map notes?"
     },
     "navigation": {
-      "download": "Map download"
+      "download": "Map download",
+      "exportPDF": "PDF output"
     }
   },
   "LayerEditFeatureStyle": {

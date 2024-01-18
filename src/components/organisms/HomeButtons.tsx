@@ -11,7 +11,6 @@ export const HomeButtons = React.memo(() => {
 
   const { featureButton, trackingState, gotoMaps, gotoSettings, pressTracking, gotoLayers, selectFeatureButton } =
     useContext(HomeContext);
-  //console.log('HomeButton');
 
   const { isLandscape } = useWindow();
 
@@ -76,16 +75,22 @@ export const HomeButtons = React.memo(() => {
 const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'flex-end',
+    alignSelf: 'center',
+    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 35,
+    position: 'absolute',
     // zIndex: 0,
   },
   buttonContainerLandscape: {
     alignItems: 'flex-end',
+    //alignSelf: 'center',
+    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     marginVertical: 20,
+    position: 'absolute',
     width: '50%',
     // zIndex: 0,
   },

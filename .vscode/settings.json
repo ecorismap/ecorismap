@@ -5,5 +5,7 @@
     "ios/Pods/boost-for-react-native/boost/locale",
     "ios/Pods/boost-for-react-native/boost/predef/language"
   ],
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "typescript.referencesCodeLens.enabled": true,
+  "typescript.implementationsCodeLens.enabled": true
 }
