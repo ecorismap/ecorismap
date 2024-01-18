@@ -29,6 +29,13 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const { isRunningProject } = usePermission();
   const [isLoading, setIsLoading] = useState(false);
 
+  const pressPDFSettingsOpen = useCallback(async () => {
+    navigation.navigate('Home', {
+      previous: 'Settings',
+      mode: 'exportPDF',
+    });
+  }, [navigation]);
+
   const pressFileSave = useCallback(async () => {
     // if (isRunningProject) {
     //   //ToDo バックアップできた方がいいかも？もしくは裏で自動
@@ -94,6 +101,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         navigation.navigate('Home', {
           jumpTo: region,
           previous: 'Settings',
+          mode: 'openEcorisMap',
         });
       }
     }
@@ -111,7 +119,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (!isOK) {
         await AlertAsync(message);
       } else {
-        navigation.navigate('Home', { previous: 'Settings' });
+        navigation.navigate('Home', { previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
   }, [clearEcorisMap, navigation, tracking]);
@@ -166,7 +174,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     });
   }, [navigation]);
 
-  const pressVersion = useCallback(() => {
+  const pressVersion = useCallback(async () => {
     const url = t('site.changelog');
     Linking.openURL(url);
   }, []);
@@ -191,6 +199,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         pressGotoManual,
         pressOSSLicense,
         pressVersion,
+        pressPDFSettingsOpen,
       }}
     >
       <Settings />

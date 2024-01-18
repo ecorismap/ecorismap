@@ -39,6 +39,8 @@ PODS:
     - React-NativeModulesApple
     - React-RCTAppDelegate
     - ReactCommon/turbomodule/core
+  - ExpoPrint (12.4.2):
+    - ExpoModulesCore
   - ExpoSharing (11.5.0):
     - ExpoModulesCore
   - EXSplashScreen (0.20.5):
@@ -595,6 +597,7 @@ DEPENDENCIES:
   - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoLocalization (from `../node_modules/expo-localization/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoPrint (from `../node_modules/expo-print/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - EXTaskManager (from `../node_modules/expo-task-manager/ios`)
@@ -700,6 +703,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-localization/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
+  ExpoPrint:
+    :path: "../node_modules/expo-print/ios"
   ExpoSharing:
     :path: "../node_modules/expo-sharing/ios"
   EXSplashScreen:
@@ -834,6 +839,7 @@ SPEC CHECKSUMS:
   ExpoLinearGradient: 5966dd5d49872cc9c104fedc8bbc298b6049b2e8
   ExpoLocalization: be37fdd0b5930c6a49cd307b4542f4b426d6134c
   ExpoModulesCore: 51cb2e7ab4c8da14be3f40b66d54c1781002e99d
+  ExpoPrint: e1531d216196f51b431c7cc4d906e569f79f10e7
   ExpoSharing: 825b2b3fc919a2656f75def0069f584bbd6e359a
   EXSplashScreen: c0e7f2d4a640f3b875808ed0b88575538daf6d82
   EXTaskManager: f1730c315eb6fe457a3a2ee4ed899a51d717f302

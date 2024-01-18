@@ -147,3 +147,14 @@ export async function deleteReceivedFiles(
     await FileSystem.deleteAsync(file.uri);
   }
 }
+
+export async function customShareAsync(uri: string, options: Sharing.SharingOptions, fileName: string) {
+  const destPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
+  if (await RNFS.exists(destPath)) {
+    await RNFS.unlink(destPath);
+  }
+  await RNFS.copyFile(uri as string, destPath);
+  await Sharing.shareAsync(`file://${encodeURI(destPath)}`, options);
+  await RNFS.unlink(destPath);
+  await RNFS.unlink(uri as string);
+}

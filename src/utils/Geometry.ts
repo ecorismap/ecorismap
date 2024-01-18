@@ -329,6 +329,29 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
   return csv;
 };
 
+export const generateHTMLTable = (dataSet: RecordType[], field: LayerType['field']) => {
+  let html = '<table style="border: 1px solid black; border-collapse: collapse;">';
+  html += '<tr style="background-color: #f2f2f2;">';
+  field.forEach((f) => {
+    html += `<th style="border: 1px solid black; padding: 10px;">${f.name}</th>`;
+  });
+  html += '</tr>';
+  dataSet.forEach((record) => {
+    html += '<tr>';
+    field.forEach((f) => {
+      const fieldValue = record.field[f.name];
+      if (isPhotoField(fieldValue)) {
+        html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue.map((p) => p.name).join(',')}</td>`;
+      } else {
+        html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</table>';
+  return html;
+};
+
 export const generateGPX = (data: RecordType[], type: FeatureType) => {
   const gpx = xmlBuilder
     .create('gpx', {

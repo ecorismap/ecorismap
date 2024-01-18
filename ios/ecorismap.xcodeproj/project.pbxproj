@@ -391,7 +391,7 @@
 				INFOPLIST_FILE = ecorismap/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EcorisMap;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -428,7 +428,7 @@
 				INFOPLIST_FILE = ecorismap/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EcorisMap;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
