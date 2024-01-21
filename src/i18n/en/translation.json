@@ -188,7 +188,9 @@
     "scale": "scale",
     "settings": "setting",
     "zoomlevelOfMaps": "map level",
-    "currentZoom": "current zoom"
+    "currentZoom": "current zoom",
+    "outputDataPDF": "Data list",
+    "outputVRT": "Output VRT file"
   },
   "firebase": {
     "message": {

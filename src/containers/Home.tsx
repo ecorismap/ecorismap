@@ -186,13 +186,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pdfScales,
     pdfTileMapZoomLevel,
     pdfTileMapZoomLevels,
+    outputVRT,
+    outputDataPDF,
     setPdfOrientation,
     setPdfPaperSize,
     setPdfScale,
     generatePDF,
     generateVRT,
+    generateDataPDF,
     setIsPDFSettingsVisible,
     setPdfTileMapZoomLevel,
+    setOutputVRT,
+    setOutputDataPDF,
   } = usePDF();
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion, isLandscape } = useWindow();
@@ -703,24 +708,51 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressExportPDF = useCallback(async () => {
     //console.log('pressExportPDF');
+    let mapUri: string | Window | null;
+    let dataUri: string | Window | null;
+    let vrt: string;
     try {
-      setIsLoading(true);
-      const fileName = `ecorismap_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
-      const uri = await generatePDF({ dataSet, layers });
-      const vrt = generateVRT(fileName);
-      setIsLoading(false);
+      const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
+      if (outputVRT) {
+        vrt = generateVRT(fileName);
+        await exportFile(vrt, fileName.replace('.pdf', '.vrt'));
+      }
       // 作成した PDF を共有
       if (Platform.OS === 'web') {
+        if (outputDataPDF) {
+          setIsLoading(true);
+          dataUri = await generateDataPDF({ dataSet, layers });
+          setIsLoading(false);
+          (dataUri as Window).document.title = fileName.replace('_map_', '_data_');
+          (dataUri as Window).print();
+          (dataUri as Window).close();
+        }
+        setIsLoading(true);
+        mapUri = await generatePDF({ dataSet, layers });
+        setIsLoading(false);
         setTimeout(async () => {
-          (uri as Window).document.title = fileName;
-          (uri as Window).print();
-          (uri as Window).close();
-          await exportFile(vrt, fileName.replace('.pdf', '.vrt'));
+          (mapUri as Window).document.title = fileName;
+          (mapUri as Window).print();
+          (mapUri as Window).close();
         }, 5000);
       } else {
+        if (outputDataPDF) {
+          setIsLoading(true);
+          dataUri = await generateDataPDF({ dataSet, layers });
+          setIsLoading(false);
+          setTimeout(async () => {
+            await customShareAsync(
+              dataUri as string,
+              { mimeType: 'application/pdf' },
+              fileName.replace('_map_', '_data_')
+            );
+          }, 2000);
+        }
+        setIsLoading(true);
+        mapUri = await generatePDF({ dataSet, layers });
+        setIsLoading(false);
         setTimeout(async () => {
-          await customShareAsync(uri as string, { mimeType: 'application/pdf' }, fileName);
-          await exportFile(vrt, fileName.replace('.pdf', '.vrt'));
+          await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
         }, 2000);
       }
     } catch (e) {
@@ -729,7 +761,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } finally {
       setIsLoading(false);
     }
-  }, [dataSet, generatePDF, generateVRT, layers]);
+  }, [dataSet, generateDataPDF, generatePDF, generateVRT, layers, outputDataPDF, outputVRT]);
 
   const pressPDFSettingsOpen = useCallback(() => {
     setIsPDFSettingsVisible(true);
@@ -1086,10 +1118,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pdfScales={pdfScales}
         pdfTileMapZoomLevel={pdfTileMapZoomLevel}
         pdfTileMapZoomLevels={pdfTileMapZoomLevels}
+        outputVRT={outputVRT}
+        outputDataPDF={outputDataPDF}
         setPdfOrientation={setPdfOrientation}
         setPdfPaperSize={setPdfPaperSize}
         setPdfScale={setPdfScale}
         setPdfTileMapZoomLevel={setPdfTileMapZoomLevel}
+        setOutputVRT={setOutputVRT}
+        setOutputDataPDF={setOutputDataPDF}
         pressOK={() => setIsPDFSettingsVisible(false)}
       />
       {PLUGIN.HISYOUTOOL && (
