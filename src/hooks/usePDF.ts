@@ -8,6 +8,7 @@ import {
   TileRegionType,
   PaperOrientationType,
   PaperSizeType,
+  RecordType,
 } from '../types';
 
 import { AppState } from '../modules';
@@ -18,7 +19,7 @@ import * as turf from '@turf/turf';
 import { generateLabel } from './useLayers';
 import { getColor } from '../utils/Layer';
 import { LatLng } from 'react-native-maps';
-import { generateHTMLTable } from '../utils/Geometry';
+import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { toPDFCoordinate, toPixel, toPoint } from '../utils/General';
 import { t } from '../i18n/config';
@@ -34,18 +35,26 @@ export type UseEcorisMapFileReturnType = {
   pdfOrientations: PaperOrientationType[];
   pdfTileMapZoomLevel: string;
   pdfTileMapZoomLevels: string[];
+  outputVRT: boolean;
+  outputDataPDF: boolean;
   generatePDF: (data: { dataSet: DataType[]; layers: LayerType[] }) => Promise<string | Window | null>;
+  generateDataPDF: (data: { dataSet: DataType[]; layers: LayerType[] }) => Promise<string | Window | null>;
   generateVRT: (fileName: string) => string;
+  generateCompositionXML: () => string;
   setPdfOrientation: React.Dispatch<React.SetStateAction<PaperOrientationType>>;
   setPdfScale: React.Dispatch<React.SetStateAction<ScaleType>>;
   setPdfPaperSize: React.Dispatch<React.SetStateAction<PaperSizeType>>;
   setIsPDFSettingsVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setPdfTileMapZoomLevel: React.Dispatch<React.SetStateAction<string>>;
+  setOutputVRT: React.Dispatch<React.SetStateAction<boolean>>;
+  setOutputDataPDF: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const usePDF = (): UseEcorisMapFileReturnType => {
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const { mapRegion } = useWindow();
+  const [outputVRT, setOutputVRT] = useState(false);
+  const [outputDataPDF, setOutputDataPDF] = useState(false);
   const [isPDFSettingsVisible, setIsPDFSettingsVisible] = useState(false);
   const [pdfOrientation, setPdfOrientation] = useState<PaperOrientationType>('PORTRAIT');
   const [pdfScale, setPdfScale] = useState<ScaleType>('10000');
@@ -73,15 +82,15 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     if (pdfPaperSize === 'A0' || pdfPaperSize === 'A1') {
       switch (pdfScale) {
         case '500':
-          return ['14', '15', '16'];
+          return ['17', '18', '19', '20', '21'];
         case '1000':
-          return ['14', '15', '16'];
+          return ['16', '17', '18', '19', '20'];
         case '1500':
-          return ['14', '15', '16'];
+          return ['15', '16', '17', '18', '19'];
         case '2500':
-          return ['14', '15', '16'];
+          return ['14', '15', '16', '17', '18'];
         case '5000':
-          return ['13', '14', '15', '16'];
+          return ['13', '14', '15', '16', '17'];
         case '10000':
           return ['12', '13', '14', '15', '16'];
         case '25000':
@@ -96,17 +105,17 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     } else if (pdfPaperSize === 'A2' || pdfPaperSize === 'A3') {
       switch (pdfScale) {
         case '500':
-          return ['14', '15', '16'];
+          return ['18', '19', '20', '21', '22'];
         case '1000':
-          return ['14', '15', '16'];
+          return ['17', '18', '19', '20', '21'];
         case '1500':
-          return ['14', '15', '16'];
+          return ['16', '17', '18', '19', '20'];
         case '2500':
-          return ['14', '15', '16'];
+          return ['15', '16', '17', '18', '19'];
         case '5000':
-          return ['14', '15', '16'];
+          return ['14', '15', '16', '17', '18'];
         case '10000':
-          return ['13', '14', '15', '16'];
+          return ['13', '14', '15', '16', '17'];
         case '25000':
           return ['12', '13', '14', '15', '16'];
         case '50000':
@@ -119,19 +128,19 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     } else if (pdfPaperSize === 'A4') {
       switch (pdfScale) {
         case '500':
-          return ['15', '16'];
+          return ['18', '19', '20', '21', '22'];
         case '1000':
-          return ['15', '16'];
+          return ['17', '18', '19', '20', '21'];
         case '1500':
-          return ['15', '16'];
+          return ['16', '17', '18', '19', '20'];
         case '2500':
-          return ['15', '16'];
+          return ['15', '16', '17', '18', '19'];
         case '5000':
-          return ['15', '16'];
+          return ['15', '16', '17', '18', '19'];
         case '10000':
-          return ['14', '15', '16'];
+          return ['14', '15', '16', '17', '18'];
         case '25000':
-          return ['13', '14', '15', '16'];
+          return ['13', '14', '15', '16', '17'];
         case '50000':
           return ['12', '13', '14', '15', '16'];
         case '100000':
@@ -474,7 +483,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             }" style="fill:${color}; stroke:white; stroke-width:${0.2 / tileScale};"></circle>`;
 
             // SVG 内のテキストを追加
-            svgContent += `<text x="${pixelX + 5}" y="${pixelY + 5}" fill="${color}" font-size="${
+            svgContent += `<text x="${pixelX + 0.5}" y="${pixelY + 0.5}" fill="${color}" font-size="${
               12 / tileScale
             }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
           });
@@ -759,29 +768,65 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ]
   );
 
-  // const generateDataPDF = useCallback(
-  //   async (data: { dataSet: DataType[]; layers: LayerType[] }) => {
-  //     // PDF を作成するための HTML
-  //     let html = `<html><body style="width:${paperSize.widthPixel}px;height:${paperSize.heightPixel}px;">`;
-  //     for (const layer of data.layers) {
-  //       const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
-  //       const layerName = layer.name;
-  //       const table = generateHTMLTable(records, layer.field);
-  //       html += `<h1>${layerName}</h1>`;
-  //       html += table;
-  //       html += '<div style="page-break-after: always;"></div>'; // ページブレークを追加
-  //     }
-  //     html += '</body></html>';
+  const generateHTMLTable = useCallback((dataSet: RecordType[], field: LayerType['field']) => {
+    let html = '<table style="border: 1px solid black; border-collapse: collapse;">';
+    html += '<tr style="background-color: #f2f2f2;">';
+    field.forEach((f) => {
+      html += `<th style="border: 1px solid black; padding: 10px;">${f.name}</th>`;
+    });
+    html += '</tr>';
+    dataSet.forEach((record) => {
+      html += '<tr>';
+      field.forEach((f) => {
+        const fieldValue = record.field[f.name];
+        if (isPhotoField(fieldValue)) {
+          html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue.map((p) => p.name).join(',')}</td>`;
+        } else {
+          html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue}</td>`;
+        }
+      });
+      html += '</tr>';
+    });
+    html += '</table>';
+    return html;
+  }, []);
 
-  //     const { uri } = await Print.printToFileAsync({
-  //       html,
-  //       width: paperSize.widthPoint,
-  //       height: paperSize.heightPoint,
-  //     });
-  //     return uri;
-  //   },
-  //   [paperSize.heightPixel, paperSize.heightPoint, paperSize.widthPixel, paperSize.widthPoint]
-  // );
+  const generateDataPDF = useCallback(
+    async (data: { dataSet: DataType[]; layers: LayerType[] }) => {
+      // PDF を作成するための HTML
+      let html = `<html><head><style> @page { size: 297mm 210mm;} </style></head>`;
+      html += `<body style="width:1123px;height:794px;padding:30px;">`;
+      for (const layer of data.layers) {
+        const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
+        const layerName = layer.name;
+        const table = generateHTMLTable(records, layer.field);
+        html += `<h1>${layerName}</h1>`;
+        html += table;
+        html += '<div style="page-break-after: always;"></div>'; // ページブレークを追加
+      }
+      html += '</body></html>';
+      if (Platform.OS === 'web') {
+        const pW = window.open('', '', `height=794px, width=1123px`);
+        pW!.document.write(html);
+        pW!.document.close();
+        return pW;
+      } else {
+        const { uri } = await Print.printToFileAsync({
+          html,
+          width: 842,
+          height: 595,
+          margins: {
+            top: 30,
+            bottom: 30,
+            left: 30,
+            right: 30,
+          },
+        });
+        return uri;
+      }
+    },
+    [generateHTMLTable]
+  );
 
   useEffect(() => {
     //pdfScaleが変更されたらpdfTileMapZoomLevelをリセットして最後の値にする
@@ -799,12 +844,18 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     pdfOrientations,
     pdfTileMapZoomLevel,
     pdfTileMapZoomLevels,
+    outputVRT,
+    outputDataPDF,
     generatePDF,
+    generateDataPDF,
     generateVRT,
+    generateCompositionXML,
     setPdfOrientation,
     setPdfScale,
     setPdfPaperSize,
     setIsPDFSettingsVisible,
     setPdfTileMapZoomLevel,
+    setOutputVRT,
+    setOutputDataPDF,
   } as const;
 };

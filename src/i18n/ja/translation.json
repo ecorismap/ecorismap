@@ -136,7 +136,9 @@
     "scale": "スケール",
     "settings": "設定",
     "zoomlevelOfMaps": "地図レベル",
-    "currentZoom": "現在のズーム"
+    "currentZoom": "現在のズーム",
+    "outputDataPDF": "データ一覧",
+    "outputVRT": "VRTファイル"
   },
   "Home": {
     "confirm": {

@@ -5,6 +5,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import Picker from '../atoms/Picker';
+import { CheckBox } from '../molecules/CheckBox';
 
 interface Props {
   visible: boolean;
@@ -16,11 +17,15 @@ interface Props {
   pdfScales: ScaleType[];
   pdfTileMapZoomLevel: string;
   pdfTileMapZoomLevels: string[];
+  outputVRT: boolean;
+  outputDataPDF: boolean;
   pressOK: () => void;
   setPdfOrientation: React.Dispatch<React.SetStateAction<PaperOrientationType>>;
   setPdfPaperSize: React.Dispatch<React.SetStateAction<PaperSizeType>>;
   setPdfScale: React.Dispatch<React.SetStateAction<ScaleType>>;
   setPdfTileMapZoomLevel: React.Dispatch<React.SetStateAction<string>>;
+  setOutputVRT: React.Dispatch<React.SetStateAction<boolean>>;
+  setOutputDataPDF: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const HomeModalPDFSettings = React.memo((props: Props) => {
@@ -34,10 +39,14 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
     pdfScales,
     pdfTileMapZoomLevel,
     pdfTileMapZoomLevels,
+    outputVRT,
+    outputDataPDF,
     setPdfOrientation,
     setPdfPaperSize,
     setPdfScale,
     setPdfTileMapZoomLevel,
+    setOutputVRT,
+    setOutputDataPDF,
     pressOK,
   } = props;
 
@@ -126,7 +135,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
 
             <View style={{ flexDirection: 'column' }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, width: 80 }}>{`${t('common.paperSize')}:`}</Text>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.paperSize')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
                     selectedValue={pdfPaperSize}
@@ -138,7 +147,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 </View>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, width: 80 }}>{`${t('common.orientation')}:`}</Text>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.orientation')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
                     selectedValue={pdfOrientation}
@@ -150,7 +159,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 </View>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, width: 80 }}>{`${t('common.scale')}:`}</Text>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.scale')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
                     selectedValue={pdfScale}
@@ -162,7 +171,7 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                 </View>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 14, width: 80 }}>{`${t('common.zoomlevelOfMaps')}:`}</Text>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.zoomlevelOfMaps')}:`}</Text>
                 <View style={{ width: 155, height: 45, borderWidth: 1, borderRadius: 2, margin: 1 }}>
                   <Picker
                     selectedValue={pdfTileMapZoomLevel}
@@ -170,6 +179,28 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
                     itemLabelArray={pdfTileMapZoomLevels}
                     itemValueArray={pdfTileMapZoomLevels}
                     maxIndex={pdfTileMapZoomLevels.length - 1}
+                  />
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.outputVRT')}:`}</Text>
+                <View style={{ width: 155, height: 45, margin: 1 }}>
+                  <CheckBox
+                    style={{ backgroundColor: COLOR.WHITE }}
+                    width={windowWidth * modalWidthScale * 0.5}
+                    checked={outputVRT}
+                    onCheck={setOutputVRT}
+                  />
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, width: 120 }}>{`${t('common.outputDataPDF')}:`}</Text>
+                <View style={{ width: 155, height: 45, margin: 1 }}>
+                  <CheckBox
+                    style={{ backgroundColor: COLOR.WHITE }}
+                    width={windowWidth * modalWidthScale * 0.5}
+                    checked={outputDataPDF}
+                    onCheck={setOutputDataPDF}
                   />
                 </View>
               </View>
