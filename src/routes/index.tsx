@@ -13,6 +13,7 @@ export type RootStackParamList = {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
         previous: keyof RootStackParamList;
+        mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | undefined;
       }
     | undefined;
   Settings: { previous: keyof RootStackParamList };

@@ -1,6 +1,8 @@
-import { TileRegionType } from '../types';
-
-export function tileGridForRegion(region: TileRegionType, minZoom: number, maxZoom: number) {
+export function tileGridForRegion(
+  region: { minLat: number; maxLat: number; minLon: number; maxLon: number },
+  minZoom: number,
+  maxZoom: number
+) {
   let tiles: { x: number; y: number; z: number }[] = [];
 
   for (let zoom = minZoom; zoom <= maxZoom; zoom++) {
@@ -14,12 +16,15 @@ export function tileGridForRegion(region: TileRegionType, minZoom: number, maxZo
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
-export function tileToLatLon(x: number, y: number, z: number): { lon: number; lat: number } {
-  const lon = (x / Math.pow(2, z)) * 360 - 180; // 経度（東経）
-  const mapy = (y / Math.pow(2, z)) * 2 * Math.PI - Math.PI;
-  const lat = (2 * Math.atan(Math.exp(-mapy)) * 180) / Math.PI - 90; // 緯度（北緯）
-  return { lon, lat };
+
+export function tileToWebMercator(x: number, y: number, z: number): { mercatorX: number; mercatorY: number } {
+  const resolution = (2 * Math.PI * 6378137) / Math.pow(2, z);
+  const mercatorX = x * resolution - Math.PI * 6378137;
+  const mercatorY = Math.PI * 6378137 - y * resolution;
+
+  return { mercatorX, mercatorY };
 }
+
 export function lonToTileX(lon: number, zoom: number): number {
   return Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
 }
@@ -30,11 +35,11 @@ export function latToTileY(lat: number, zoom: number): number {
   );
 }
 
-export function tilesForZoom(region: TileRegionType, zoom: number): { x: number; y: number; z: number }[] {
-  const minLon = region.coords[0].longitude;
-  const minLat = region.coords[0].latitude;
-  const maxLon = region.coords[2].longitude;
-  const maxLat = region.coords[2].latitude;
+export function tilesForZoom(
+  region: { minLon: number; maxLon: number; minLat: number; maxLat: number },
+  zoom: number
+): { x: number; y: number; z: number }[] {
+  const { minLon, maxLon, minLat, maxLat } = region;
 
   const minTileX = lonToTileX(minLon, zoom);
   const maxTileX = lonToTileX(maxLon, zoom);
@@ -42,9 +47,8 @@ export function tilesForZoom(region: TileRegionType, zoom: number): { x: number;
   const maxTileY = latToTileY(minLat, zoom);
 
   const tiles: { x: number; y: number; z: number }[] = [];
-
-  for (let x = minTileX; x <= maxTileX + 1; x++) {
-    for (let y = minTileY; y <= maxTileY + 1; y++) {
+  for (let y = minTileY; y <= maxTileY + 1; y++) {
+    for (let x = minTileX; x <= maxTileX + 1; x++) {
       tiles.push({ x, y, z: zoom });
     }
   }

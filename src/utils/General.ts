@@ -58,3 +58,15 @@ export function nearDegree(deg: number, interval: number) {
   const r = Math.trunc(deg / interval);
   return r * interval + q;
 }
+
+export function toPixel(millimeter: number) {
+  return Math.round(96 * (millimeter / 25.4));
+}
+
+export function toPoint(millimeter: number) {
+  return Math.round((72 * millimeter) / 25.4);
+}
+
+export function toPDFCoordinate(millimeter: number) {
+  return Math.round((150 * millimeter) / 25.4);
+}

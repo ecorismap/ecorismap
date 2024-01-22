@@ -23,6 +23,7 @@ import {
   PEN,
   ERASER,
   MAPMEMOTOOL,
+  ORIENTATIONTYPE,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -453,3 +454,7 @@ export interface EcorisMapFileType {
   settings: SettingsType;
   maps: TileMapType[];
 }
+
+export type PaperSizeType = 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
+export type ScaleType = '500' | '1000' | '1500' | '2500' | '5000' | '10000' | '25000' | '50000' | '100000';
+export type PaperOrientationType = keyof typeof ORIENTATIONTYPE;
