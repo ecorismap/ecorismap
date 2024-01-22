@@ -382,13 +382,14 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   });
 };
 
-const isPhotoField = (value: any): value is PhotoType[] => {
+export const isPhotoField = (value: any): value is PhotoType[] => {
   if (Array.isArray(value)) {
     if (value.length === 0) return true;
     if (value[0].thumbnail !== undefined) return true;
   }
   return false;
 };
+
 const generateProperties = (record: RecordType, field: LayerType['field']) => {
   const properties = field
     .map(({ name }) => {

@@ -28,6 +28,7 @@ export default function Settings() {
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
+    pressPDFSettingsOpen,
   } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
@@ -40,6 +41,12 @@ export default function Settings() {
     <View style={styles.container}>
       <Loading visible={isLoading} text="" />
       <ScrollView>
+        <TextButton
+          name={SETTINGS_BTN.PDF_SAVE}
+          text={t('Settings.pdf_save.text')}
+          info={t('Settings.pdf_save.info')}
+          onPress={pressPDFSettingsOpen}
+        />
         <TextButton
           name={SETTINGS_BTN.FILE_SAVE}
           text={t('Settings.file_save.text')}

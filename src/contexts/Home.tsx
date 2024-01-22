@@ -22,6 +22,9 @@ import {
   MapMemoToolType,
   EraserType,
   LayerType,
+  ScaleType,
+  PaperOrientationType,
+  PaperSizeType,
 } from '../types';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
@@ -38,6 +41,7 @@ export interface HomeContextType {
   tileMaps: TileMapType[];
   isOffline: boolean;
   isDownloadPage: boolean;
+  isExportPDFPage: boolean;
   downloadProgress: string;
   savedTileSize: string;
   restored: boolean;
@@ -57,6 +61,11 @@ export interface HomeContextType {
   selectLine: Position[];
   isDownloading: boolean;
   downloadArea: TileRegionType;
+  pdfArea: TileRegionType;
+  pdfOrientation: PaperOrientationType;
+  pdfPaperSize: PaperSizeType;
+  pdfScale: ScaleType;
+  pdfTileMapZoomLevel: string;
   savedArea: TileRegionType[];
   attribution: string;
   featureButton: FeatureButtonType;
@@ -107,6 +116,7 @@ export interface HomeContextType {
   pressGPS: () => Promise<void>;
   pressTracking: () => void;
   pressDownloadTiles: () => Promise<void>;
+  pressExportPDF: () => Promise<void>;
   pressStopDownloadTiles: () => void;
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
@@ -114,7 +124,7 @@ export interface HomeContextType {
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
-  gotoBack: () => void;
+  gotoHome: () => void;
   selectFeatureButton: (value: FeatureButtonType) => void;
   selectDrawTool: (value: DrawToolType) => void;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
@@ -136,6 +146,7 @@ export interface HomeContextType {
   bottomSheetRef: RefObject<BottomSheetMethods>;
   onCloseBottomSheet: () => void;
   togglePencilMode: () => void;
+  pressPDFSettingsOpen: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

@@ -91,3 +91,5 @@ export function decodeUri(uri: string) {
 
 export async function deleteReceivedFiles() {}
 export async function getReceivedFiles() {}
+
+export async function customShareAsync() {}

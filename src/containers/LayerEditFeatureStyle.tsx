@@ -40,7 +40,6 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
 
   const gotoBack = useCallback(() => {
     if (route.params.previous === 'Layers') {
-      saveColorStyle();
       navigation.navigate('Layers');
     } else {
       navigation.navigate('LayerEdit', {
@@ -49,7 +48,7 @@ export default function LayerEditFeatureStyleContainer({ navigation, route }: Pr
         colorStyle: { ...colorStyle },
       });
     }
-  }, [colorStyle, isEdited, navigation, route.params.previous, route.params.targetLayer, saveColorStyle]);
+  }, [colorStyle, isEdited, navigation, route.params.previous, route.params.targetLayer]);
 
   return (
     <LayerEditFeatureStyleContext.Provider
