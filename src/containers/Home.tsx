@@ -784,7 +784,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       changeMapRegion({ ...region, zoom }, true);
     }
     if (route.params?.previous === 'Settings') {
-      setTimeout(() => bottomSheetRef.current?.close(), 200);
+      setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'DataEdit') {
@@ -795,7 +795,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
-        setTimeout(() => bottomSheetRef.current?.close(), 200);
+        setTimeout(() => bottomSheetRef.current?.close(), 300);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else {
