@@ -966,12 +966,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       //console.log(route.params.jumpTo);
     }
     if (route.params?.previous === 'Settings') {
-      bottomSheetRef.current?.close();
-      setTimeout(() => bottomSheetRef.current?.close(), 100);
+      setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'ProjectEdit') {
-      setTimeout(() => bottomSheetRef.current?.close(), 200);
+      setTimeout(() => bottomSheetRef.current?.close(), 300);
     } else if (route.params?.previous === 'DataEdit') {
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
@@ -980,7 +979,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
-        setTimeout(() => bottomSheetRef.current?.close(), 200);
+        setTimeout(() => bottomSheetRef.current?.close(), 300);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else {
