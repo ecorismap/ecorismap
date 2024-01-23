@@ -280,10 +280,12 @@ export default function HomeScreen() {
             }
             if (!Array.isArray(layerStyles)) return;
             layerStyles.forEach((layerStyle: any, index: number) => {
+              console.log(layerStyle);
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
-              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
-
+              if (layerStyle.paint['fill-opacity']) {
+                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              }
               if (!hasStyleJson) {
                 const source = map.getSource(tileMap.id) as mapboxgl.VectorSource;
                 source.minzoom = header.minZoom;
@@ -309,7 +311,9 @@ export default function HomeScreen() {
             layerStyles.forEach((layerStyle: any, index: number) => {
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
-              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              if (layerStyle.paint['fill-opacity']) {
+                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              }
 
               //console.log(layerStyle);
 
