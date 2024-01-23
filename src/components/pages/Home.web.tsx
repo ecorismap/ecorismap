@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
-// @ts-ignore
-import ScaleBar from 'react-native-scale-bar';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
@@ -66,7 +64,6 @@ export default function HomeScreen() {
     trackingState,
     currentLocation,
     zoom,
-    zoomDecimal,
     tileMaps,
     isDownloading,
     featureButton,
@@ -153,10 +150,10 @@ export default function HomeScreen() {
   const vectorStyle = async (file: PMTiles) => {
     const metadata = await file.getMetadata();
     const header = await file.getHeader();
-    let layers: LayerSpecification[] = [];
+    let layers_: LayerSpecification[] = [];
     const baseOpacity = 0.7;
     if (metadata.type !== 'baselayer') {
-      layers = [];
+      layers_ = [];
     }
 
     let vector_layers: LayerSpecification[];
@@ -169,7 +166,7 @@ export default function HomeScreen() {
 
     if (vector_layers) {
       for (const [i, layer] of vector_layers.entries()) {
-        layers.push({
+        layers_.push({
           id: layer.id + '_fill',
           type: 'fill',
           source: 'source',
@@ -186,7 +183,7 @@ export default function HomeScreen() {
           },
           filter: ['==', ['geometry-type'], 'Polygon'],
         });
-        layers.push({
+        layers_.push({
           id: layer.id + '_stroke',
           type: 'line',
           source: 'source',
@@ -197,7 +194,7 @@ export default function HomeScreen() {
           },
           filter: ['==', ['geometry-type'], 'LineString'],
         });
-        layers.push({
+        layers_.push({
           id: layer.id + '_point',
           type: 'circle',
           source: 'source',
@@ -211,7 +208,7 @@ export default function HomeScreen() {
       }
     }
 
-    return { styles: layers, header: header };
+    return { styles: layers_, header: header };
   };
 
   const customHandle = useCallback(() => {
@@ -559,6 +556,7 @@ export default function HomeScreen() {
                 : {})}
             >
               <Map
+                //@ts-ignore
                 mapLib={maplibregl}
                 ref={mapViewRef as React.MutableRefObject<MapRef>}
                 {...mapRegion}
