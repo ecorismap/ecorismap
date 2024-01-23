@@ -770,11 +770,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
 
   const generateHTMLTable = useCallback((dataSet: RecordType[], field: LayerType['field']) => {
     let html = '<table style="border: 1px solid black; border-collapse: collapse;">';
-    html += '<tr style="background-color: #f2f2f2;">';
+    html += '<thead>';
+    html += '<tr>';
     field.forEach((f) => {
-      html += `<th style="border: 1px solid black; padding: 10px;">${f.name}</th>`;
+      html += `<th style="border: 1px solid black; padding: 10px;background-color: #f2f2f2;">${f.name}</th>`;
     });
     html += '</tr>';
+    html += '</thead>';
+    html += '<tbody>';
     dataSet.forEach((record) => {
       html += '<tr>';
       field.forEach((f) => {
@@ -787,6 +790,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       });
       html += '</tr>';
     });
+    html += '</tbody>';
     html += '</table>';
     return html;
   }, []);
@@ -805,6 +809,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         html += '<div style="page-break-after: always;"></div>'; // ページブレークを追加
       }
       html += '</body></html>';
+      //console.log(html);
       if (Platform.OS === 'web') {
         const pW = window.open('', '', `height=794px, width=1123px`);
         pW!.document.write(html);

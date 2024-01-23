@@ -738,22 +738,25 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else {
         if (outputDataPDF) {
           setIsLoading(true);
+          mapUri = await generatePDF({ dataSet, layers });
           dataUri = await generateDataPDF({ dataSet, layers });
           setIsLoading(false);
           setTimeout(async () => {
+            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
             await customShareAsync(
               dataUri as string,
               { mimeType: 'application/pdf' },
               fileName.replace('_map_', '_data_')
             );
           }, 2000);
+        } else {
+          setIsLoading(true);
+          mapUri = await generatePDF({ dataSet, layers });
+          setIsLoading(false);
+          setTimeout(async () => {
+            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
+          }, 2000);
         }
-        setIsLoading(true);
-        mapUri = await generatePDF({ dataSet, layers });
-        setIsLoading(false);
-        setTimeout(async () => {
-          await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
-        }, 2000);
       }
     } catch (e) {
       setIsLoading(false);
