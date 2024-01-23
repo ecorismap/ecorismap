@@ -19,6 +19,7 @@ interface SettingsContextType {
   pressGotoManual: () => void;
   pressOSSLicense: () => void;
   pressVersion: () => void;
+  pressPDFSettingsOpen: () => void;
 }
 
 export const SettingsContext = createContext({} as SettingsContextType);

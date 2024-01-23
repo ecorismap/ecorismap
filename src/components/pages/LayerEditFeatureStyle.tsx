@@ -44,9 +44,8 @@ export default function LayerEditFeatureStyleScreen() {
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) =>
-      isStyleChangeOnly ? <></> : <HeaderBackButton {...props_} onPress={gotoBack} />,
-    [gotoBack, isStyleChangeOnly]
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
+    [gotoBack]
   );
 
   const headerRightButton = useCallback(

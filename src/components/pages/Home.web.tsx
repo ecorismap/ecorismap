@@ -1,15 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 
-// @ts-ignore
-import ScaleBar from 'react-native-scale-bar';
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
-import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl } from 'react-map-gl';
+import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl';
 import maplibregl, { LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
@@ -47,6 +45,8 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { schemeSet3 } from 'd3-scale-chromatic';
 import { PMTiles } from '../../utils/pmtiles';
+import { PDFArea } from '../organisms/HomePDFArea';
+import { HomePDFButtons } from '../organisms/HomePDFButtons';
 
 export default function HomeScreen() {
   const {
@@ -54,6 +54,12 @@ export default function HomeScreen() {
     lineDataSet,
     polygonDataSet,
     isDownloadPage,
+    isExportPDFPage,
+    pdfArea,
+    pdfOrientation,
+    pdfPaperSize,
+    pdfScale,
+    pdfTileMapZoomLevel,
     downloadProgress,
     savedTileSize,
     restored,
@@ -62,7 +68,6 @@ export default function HomeScreen() {
     trackingState,
     currentLocation,
     zoom,
-    zoomDecimal,
     tileMaps,
     isDownloading,
     featureButton,
@@ -83,9 +88,11 @@ export default function HomeScreen() {
     pressStopDownloadTiles,
     pressDeleteTiles,
     gotoMaps,
+    gotoHome,
     onDragEndPoint,
     setVisibleMapMemoColor,
     selectPenColor,
+    pressExportPDF,
     panResponder,
     isDrawLineVisible,
     mapMemoEditingLine,
@@ -93,6 +100,7 @@ export default function HomeScreen() {
     onPressMapView,
     bottomSheetRef,
     onCloseBottomSheet,
+    pressPDFSettingsOpen,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -116,33 +124,46 @@ export default function HomeScreen() {
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
   //console.log('Home');
-  const headerLeftButton = useCallback(
+  const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
     [gotoMaps]
   );
-  const headerRightButton = useCallback(
-    () =>
-      isDownloading ? (
+  const headerGotoHomeButton = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoHome} />,
+    [gotoHome]
+  );
+  const headerRightButton = useCallback(() => {
+    if (isDownloading) {
+      return (
         <View style={styles.headerRight}>
           <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-
-          <Text style={{ marginHorizontal: 10 }}>{downloadProgress}%</Text>
+          <View style={{ width: 40, alignItems: 'flex-end' }}>
+            <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
+          </View>
         </View>
-      ) : (
+      );
+    } else if (isExportPDFPage) {
+      return (
+        <View style={styles.headerRight}>
+          <Button name="cog" onPress={pressPDFSettingsOpen} />
+        </View>
+      );
+    } else {
+      return (
         <View style={styles.headerRight}>
           <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
         </View>
-      ),
-    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize]
-  );
+      );
+    }
+  }, [downloadProgress, isDownloading, isExportPDFPage, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
 
   const vectorStyle = async (file: PMTiles) => {
     const metadata = await file.getMetadata();
     const header = await file.getHeader();
-    let layers: LayerSpecification[] = [];
+    let layers_: LayerSpecification[] = [];
     const baseOpacity = 0.7;
     if (metadata.type !== 'baselayer') {
-      layers = [];
+      layers_ = [];
     }
 
     let vector_layers: LayerSpecification[];
@@ -155,7 +176,7 @@ export default function HomeScreen() {
 
     if (vector_layers) {
       for (const [i, layer] of vector_layers.entries()) {
-        layers.push({
+        layers_.push({
           id: layer.id + '_fill',
           type: 'fill',
           source: 'source',
@@ -172,7 +193,7 @@ export default function HomeScreen() {
           },
           filter: ['==', ['geometry-type'], 'Polygon'],
         });
-        layers.push({
+        layers_.push({
           id: layer.id + '_stroke',
           type: 'line',
           source: 'source',
@@ -183,7 +204,7 @@ export default function HomeScreen() {
           },
           filter: ['==', ['geometry-type'], 'LineString'],
         });
-        layers.push({
+        layers_.push({
           id: layer.id + '_point',
           type: 'circle',
           source: 'source',
@@ -197,7 +218,7 @@ export default function HomeScreen() {
       }
     }
 
-    return { styles: layers, header: header };
+    return { styles: layers_, header: header };
   };
 
   const customHandle = useCallback(() => {
@@ -269,10 +290,12 @@ export default function HomeScreen() {
             }
             if (!Array.isArray(layerStyles)) return;
             layerStyles.forEach((layerStyle: any, index: number) => {
+              console.log(layerStyle);
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
-              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
-
+              if (layerStyle.paint['fill-opacity']) {
+                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              }
               if (!hasStyleJson) {
                 const source = map.getSource(tileMap.id) as mapboxgl.VectorSource;
                 source.minzoom = header.minZoom;
@@ -298,7 +321,9 @@ export default function HomeScreen() {
             layerStyles.forEach((layerStyle: any, index: number) => {
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
-              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              if (layerStyle.paint['fill-opacity']) {
+                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+              }
 
               //console.log(layerStyle);
 
@@ -324,14 +349,21 @@ export default function HomeScreen() {
       navigation.setOptions({
         title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
+        headerRight: () => headerRightButton(),
+      });
+    } else if (isExportPDFPage) {
+      navigation.setOptions({
+        title: t('Home.navigation.exportPDF', 'PDFの出力'),
+        headerShown: true,
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoHomeButton(props_),
         headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({ headerShown: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
+  }, [isDownloadPage, isExportPDFPage, isDownloading, downloadProgress, savedTileSize]);
 
   // 地理院のraster-dem
   const maptilerdem = {
@@ -506,7 +538,7 @@ export default function HomeScreen() {
           style={{
             height: '100%',
             width: windowWidth,
-            justifyContent: 'flex-end',
+            justifyContent: 'center',
             zIndex: 0,
             elevation: 0,
           }}
@@ -539,6 +571,7 @@ export default function HomeScreen() {
                 : {})}
             >
               <Map
+                //@ts-ignore
                 mapLib={maplibregl}
                 ref={mapViewRef as React.MutableRefObject<MapRef>}
                 {...mapRegion}
@@ -626,19 +659,12 @@ export default function HomeScreen() {
                     )
                   );
                 })}
+                {isExportPDFPage && <PDFArea pdfArea={pdfArea} />}
+                <ScaleControl maxWidth={300} unit={'metric'} position="bottom-left" />
               </Map>
             </View>
           </div>
 
-          <View
-            style={{
-              left: 50,
-              position: 'absolute',
-              bottom: 80,
-            }}
-          >
-            <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
-          </View>
           {projectName !== undefined && (isShowingProjectButtons || isSettingProject) && <HomeProjectButtons />}
           {projectName === undefined || isDownloadPage ? null : (
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
@@ -658,6 +684,16 @@ export default function HomeScreen() {
           {!isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!isDownloadPage && <HomeButtons />}
           {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {isExportPDFPage && (
+            <HomePDFButtons
+              pdfTileMapZoomLevel={pdfTileMapZoomLevel}
+              pdfOrientation={pdfOrientation}
+              pdfPaperSize={pdfPaperSize}
+              pdfScale={pdfScale}
+              onPress={pressExportPDF}
+              pressPDFSettingsOpen={pressPDFSettingsOpen}
+            />
+          )}
         </View>
       </View>
 

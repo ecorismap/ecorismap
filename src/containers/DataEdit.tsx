@@ -307,6 +307,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         zoom: 15,
       },
       previous: 'DataEdit',
+      mode: 'jumpTo',
     });
   }, [navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
 
