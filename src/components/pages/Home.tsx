@@ -44,6 +44,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PDFArea } from '../organisms/HomePDFArea';
+import { HomePDFButtons } from '../organisms/HomePDFButtons';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -52,6 +54,7 @@ export default function HomeScreen() {
     lineDataSet,
     polygonDataSet,
     isDownloadPage,
+    isExportPDFPage,
     downloadProgress,
     savedTileSize,
     restored,
@@ -68,6 +71,11 @@ export default function HomeScreen() {
     isOffline,
     isDownloading,
     downloadArea,
+    pdfArea,
+    pdfOrientation,
+    pdfPaperSize,
+    pdfScale,
+    pdfTileMapZoomLevel,
     savedArea,
     attribution,
     featureButton,
@@ -87,6 +95,7 @@ export default function HomeScreen() {
     onDragMapView,
     onDragEndPoint,
     pressDownloadTiles,
+    pressExportPDF,
     pressStopDownloadTiles,
     pressZoomIn,
     pressZoomOut,
@@ -94,6 +103,7 @@ export default function HomeScreen() {
     pressDeleteTiles,
     pressGPS,
     gotoMaps,
+    gotoHome,
     setVisibleMapMemoColor,
     selectPenColor,
     panResponder,
@@ -104,6 +114,7 @@ export default function HomeScreen() {
     onCloseBottomSheet,
     isPencilModeActive,
     isPencilTouch,
+    pressPDFSettingsOpen,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -111,7 +122,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
 
-  const navigationHeaderHeight = useMemo(() => (isDownloadPage ? 56 : 0), [isDownloadPage]);
+  const navigationHeaderHeight = useMemo(
+    () => (isDownloadPage || isExportPDFPage ? 56 : 0),
+    [isDownloadPage, isExportPDFPage]
+  );
 
   const styles = StyleSheet.create({
     container: {
@@ -142,26 +156,46 @@ export default function HomeScreen() {
     },
   });
   //console.log('Home');
-  const headerLeftButton = useCallback(
+  const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
     [gotoMaps]
   );
-  const headerRightButton = useCallback(
-    () =>
-      isDownloading ? (
+  const headerGotoHomeButton = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoHome} />,
+    [gotoHome]
+  );
+  const headerRightButton = useCallback(() => {
+    if (isDownloading) {
+      return (
         <View style={styles.headerRight}>
           <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
           <View style={{ width: 40, alignItems: 'flex-end' }}>
             <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
           </View>
         </View>
-      ) : (
+      );
+    } else if (isExportPDFPage) {
+      return (
+        <View style={[styles.headerRight, { marginRight: -10 }]}>
+          <Button name="cog" onPress={pressPDFSettingsOpen} />
+        </View>
+      );
+    } else {
+      return (
         <View style={styles.headerRight}>
           <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
         </View>
-      ),
-    [downloadProgress, isDownloading, pressStopDownloadTiles, savedTileSize, styles.headerRight]
-  );
+      );
+    }
+  }, [
+    downloadProgress,
+    isDownloading,
+    isExportPDFPage,
+    pressPDFSettingsOpen,
+    pressStopDownloadTiles,
+    savedTileSize,
+    styles.headerRight,
+  ]);
 
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
@@ -228,14 +262,30 @@ export default function HomeScreen() {
       navigation.setOptions({
         title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
+        headerRight: () => headerRightButton(),
+      });
+    } else if (isExportPDFPage) {
+      navigation.setOptions({
+        title: t('Home.navigation.exportPDF', 'PDF'),
+        headerShown: true,
+        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoHomeButton(props_),
         headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({ headerShown: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDownloadPage, isDownloading, downloadProgress, savedTileSize]);
+  }, [
+    isDownloadPage,
+    isExportPDFPage,
+    isDownloading,
+    downloadProgress,
+    savedTileSize,
+    pdfPaperSize,
+    pdfScale,
+    pdfOrientation,
+  ]);
 
   //console.log('isPencilTouch', isPencilTouch);
   //console.log('isFinger', isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch);
@@ -245,7 +295,7 @@ export default function HomeScreen() {
       <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
         <View
           style={{
-            justifyContent: 'flex-end',
+            justifyContent: 'center',
             zIndex: 0,
             elevation: 0,
             height: windowHeight - navigationHeaderHeight,
@@ -427,6 +477,8 @@ export default function HomeScreen() {
                 onPress={pressDownloadTiles}
               />
             )}
+            {/************* exportPDF mode ******************** */}
+            {isExportPDFPage && <PDFArea pdfArea={pdfArea} />}
           </MapView>
           {mapRegion && (
             <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
@@ -448,11 +500,23 @@ export default function HomeScreen() {
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
           {<HomeAttributionText bottom={8} attribution={attribution} />}
-          {!isDownloadPage && <HomeCommonTools />}
-          {!isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
-          {!isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
-          {!isDownloadPage && <HomeButtons />}
+          {!(isDownloadPage || isExportPDFPage) && <HomeCommonTools />}
+          {!(isDownloadPage || isExportPDFPage) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+            <HomeDrawTools />
+          )}
+          {!(isDownloadPage || isExportPDFPage) && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!(isDownloadPage || isExportPDFPage) && <HomeButtons />}
           {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {isExportPDFPage && (
+            <HomePDFButtons
+              pdfTileMapZoomLevel={pdfTileMapZoomLevel}
+              pdfOrientation={pdfOrientation}
+              pdfPaperSize={pdfPaperSize}
+              pdfScale={pdfScale}
+              onPress={pressExportPDF}
+              pressPDFSettingsOpen={pressPDFSettingsOpen}
+            />
+          )}
         </View>
       </View>
 

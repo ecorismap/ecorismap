@@ -8,12 +8,12 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
-import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 import { getExt } from '../utils/General';
 import { PMTiles } from '../utils/pmtiles';
 import { Buffer } from 'buffer';
+import { cloneDeep } from 'lodash';
 
 export type UseTilesReturnType = {
   isDownloading: boolean;
@@ -35,11 +35,16 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
   const [downloadProgress, setProgress] = useState('0');
   const [savedTileSize, setTileSize] = useState('0');
   const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
-  const downloadArea: TileRegionType = useMemo(() => {
+  const downloadRegion = useMemo(() => {
     const minLon = mapRegion.longitude - mapRegion.latitudeDelta / 4;
     const minLat = mapRegion.latitude - mapRegion.latitudeDelta / 4;
     const maxLon = mapRegion.longitude + mapRegion.latitudeDelta / 4;
     const maxLat = mapRegion.latitude + mapRegion.latitudeDelta / 4;
+    return { minLon, minLat, maxLon, maxLat };
+  }, [mapRegion.latitude, mapRegion.latitudeDelta, mapRegion.longitude]);
+
+  const downloadArea: TileRegionType = useMemo(() => {
+    const { minLon, minLat, maxLon, maxLat } = downloadRegion;
     return {
       id: '',
       tileMapId: '',
@@ -54,7 +59,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
         longitude: mapRegion.longitude,
       },
     };
-  }, [mapRegion.latitude, mapRegion.latitudeDelta, mapRegion.longitude]);
+  }, [downloadRegion, mapRegion.latitude, mapRegion.longitude]);
 
   const savedArea = useMemo(
     () => tileRegions.filter(({ tileMapId }) => tileMapId === tileMap?.id),
@@ -102,7 +107,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     const minZoom = 0;
     const maxZoom = tileType === 'png' ? 16 : 18;
 
-    const tiles = tileGridForRegion(downloadArea, minZoom, maxZoom);
+    const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
 
     const BATCH_SIZE = 10;
 
@@ -249,7 +254,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       return;
     }
     await AlertAsync(t('hooks.alert.completeDownload'));
-  }, [addTileRegions, downloadArea, removeTileRegion, tileMap]);
+  }, [addTileRegions, downloadRegion, removeTileRegion, tileMap]);
 
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {

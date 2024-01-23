@@ -282,6 +282,7 @@ export const SETTINGS_BTN = {
   FILE_NEW: 'file',
   FILE_SAVE: 'content-save',
   FILE_OPEN: 'folder-open',
+  PDF_SAVE: 'file-image-marker',
   MAP_CACHE_DELETE: 'delete-variant',
   PHOTO_CACHE_DELETE: 'delete-circle',
   APRI_CLEAR: 'restore',
@@ -310,3 +311,8 @@ export const NAV_BTN = {
 
 export const DEFAULT_MAP_LIST_URL =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRMrdVYRXwBY48wvorb8X7mBG8lx2cdFeRVMzxLqlkGbep2GzR0D22Ti4k0XbXeE_9T8TYlidR5fRDt/pub?gid=0&single=true&output=csv';
+
+export const ORIENTATIONTYPE = {
+  PORTRAIT: t('constants.orientation.portrait'),
+  LANDSCAPE: t('constants.orientation.landscape'),
+} as const;

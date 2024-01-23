@@ -37,7 +37,7 @@ import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
-import { getReceivedFiles, deleteReceivedFiles } from '../utils/File';
+import { getReceivedFiles, deleteReceivedFiles, customShareAsync, exportFile } from '../utils/File';
 import { importDropedFile } from '../utils/File.web';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { useMapMemo } from '../hooks/useMapMemo';
@@ -49,6 +49,9 @@ import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useNetInfo } from '@react-native-community/netinfo';
 
+import { usePDF } from '../hooks/usePDF';
+import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
+import dayjs from 'dayjs';
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
@@ -63,7 +66,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
   const memberLocations = useSelector((state: AppState) => state.settings.memberLocation, shallowEqual);
-
+  const layers = useSelector((state: AppState) => state.layers);
+  const dataSet = useSelector((state: AppState) => state.dataSet);
   const routeName = getFocusedRouteNameFromRoute(route);
 
   const { isRunningProject } = usePermission();
@@ -200,10 +204,35 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   } = useProject();
 
   const [isShowingProjectButtons, setIsShowingProjectButtons] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    isPDFSettingsVisible,
+    pdfArea,
+    pdfOrientation,
+    pdfPaperSize,
+    pdfScale,
+    pdfOrientations,
+    pdfPaperSizes,
+    pdfScales,
+    pdfTileMapZoomLevel,
+    pdfTileMapZoomLevels,
+    outputVRT,
+    outputDataPDF,
+    setPdfOrientation,
+    setPdfPaperSize,
+    setPdfScale,
+    generatePDF,
+    generateVRT,
+    generateDataPDF,
+    setIsPDFSettingsVisible,
+    setPdfTileMapZoomLevel,
+    setOutputVRT,
+    setOutputDataPDF,
+  } = usePDF();
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion, isLandscape } = useWindow();
 
+  const [isLoading, setIsLoading] = useState(false);
   const attribution = useMemo(
     () =>
       tileMaps
@@ -215,6 +244,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const isDownloadPage = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
+  const isExportPDFPage = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
 
   /*************** onXXXXMapView *********************/
 
@@ -696,6 +726,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     navigation.navigate('Home', {
       jumpTo: projectRegion,
       previous: 'Home',
+      mode: 'jumpTo',
     });
   }, [navigation, projectRegion]);
 
@@ -839,10 +870,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     });
   }, [navigation]);
 
-  const gotoBack = useCallback(() => navigation.navigate('Maps'), [navigation]);
+  const gotoHome = useCallback(() => {
+    navigation.navigate('Home', { previous: 'Home', mode: undefined });
+  }, [navigation]);
 
   const ajustMapRegion = useCallback(
-    //画面がportlateの場合、画面の高さの1/4の緯度だけ下にずらす。landscapeの場合は、経度の1/4だけ右にずらす。
+    //画面がportraitの場合、画面の高さの1/4の緯度だけ下にずらす。landscapeの場合は、経度の1/4だけ右にずらす。
     (region: RegionType) => {
       if (isLandscape) {
         return { ...region, longitude: region.longitude + mapRegion.longitudeDelta / 4 };
@@ -853,12 +886,77 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [isLandscape, mapRegion.latitudeDelta, mapRegion.longitudeDelta]
   );
 
+  const pressExportPDF = useCallback(async () => {
+    //console.log('pressExportPDF');
+    let mapUri: string | Window | null;
+    let dataUri: string | Window | null;
+    let vrt: string;
+    try {
+      const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
+      if (outputVRT) {
+        vrt = generateVRT(fileName);
+        await exportFile(vrt, fileName.replace('.pdf', '.vrt'));
+      }
+      // 作成した PDF を共有
+      if (Platform.OS === 'web') {
+        if (outputDataPDF) {
+          setIsLoading(true);
+          dataUri = await generateDataPDF({ dataSet, layers });
+          setIsLoading(false);
+          (dataUri as Window).document.title = fileName.replace('_map_', '_data_');
+          (dataUri as Window).print();
+          (dataUri as Window).close();
+        }
+        setIsLoading(true);
+        mapUri = await generatePDF({ dataSet, layers });
+        setIsLoading(false);
+        setTimeout(async () => {
+          (mapUri as Window).document.title = fileName;
+          (mapUri as Window).print();
+          (mapUri as Window).close();
+        }, 5000);
+      } else {
+        if (outputDataPDF) {
+          setIsLoading(true);
+          mapUri = await generatePDF({ dataSet, layers });
+          dataUri = await generateDataPDF({ dataSet, layers });
+          setIsLoading(false);
+          setTimeout(async () => {
+            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
+            await customShareAsync(
+              dataUri as string,
+              { mimeType: 'application/pdf' },
+              fileName.replace('_map_', '_data_')
+            );
+          }, 2000);
+        } else {
+          setIsLoading(true);
+          mapUri = await generatePDF({ dataSet, layers });
+          setIsLoading(false);
+          setTimeout(async () => {
+            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
+          }, 2000);
+        }
+      }
+    } catch (e) {
+      setIsLoading(false);
+      console.log('###', e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [dataSet, generateDataPDF, generatePDF, generateVRT, layers, outputDataPDF, outputVRT]);
+
+  const pressPDFSettingsOpen = useCallback(() => {
+    setIsPDFSettingsVisible(true);
+  }, [setIsPDFSettingsVisible]);
+
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
 
     // console.log('jump', route.params?.jumpTo);
     // console.log('previous', route.params?.previous);
     // console.log('tileMap', route.params?.tileMap);
+    //console.log('mode', route.params?.mode);
 
     if (route.params?.jumpTo != null) {
       const region = ajustMapRegion(route.params.jumpTo);
@@ -869,8 +967,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     if (route.params?.previous === 'Settings') {
       bottomSheetRef.current?.close();
-    } else if (route.params?.previous === 'ProjectEdit') {
       setTimeout(() => bottomSheetRef.current?.close(), 100);
+      toggleWebTerrainActive(false);
+      if (Platform.OS !== 'web') toggleHeadingUp(false);
+    } else if (route.params?.previous === 'ProjectEdit') {
+      setTimeout(() => bottomSheetRef.current?.close(), 200);
     } else if (route.params?.previous === 'DataEdit') {
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
@@ -880,6 +981,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
         setTimeout(() => bottomSheetRef.current?.close(), 200);
+        toggleWebTerrainActive(false);
+        if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else {
         bottomSheetRef.current?.snapToIndex(2);
       }
@@ -1109,6 +1212,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         editingLine: editingLineXY.current,
         selectLine: selectLine.current,
         isDownloadPage,
+        isExportPDFPage,
         memberLocations,
         mapViewRef,
         mapType,
@@ -1116,6 +1220,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         savedTileSize,
         isDownloading,
         downloadArea,
+        pdfArea,
+        pdfOrientation,
+        pdfPaperSize,
+        pdfScale,
+        pdfTileMapZoomLevel,
         savedArea,
         downloadProgress,
         isOffline,
@@ -1170,6 +1279,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressGPS,
         pressTracking,
         pressDownloadTiles,
+        pressExportPDF,
         pressStopDownloadTiles,
         pressDeleteTiles,
         pressUndoDraw,
@@ -1187,10 +1297,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoMaps,
         gotoSettings,
         gotoLayers,
-        gotoBack,
         gotoAccount,
         gotoLogin,
         gotoProjects,
+        gotoHome,
         termsOfUseOK,
         termsOfUseCancel,
         selectMapMemoTool,
@@ -1207,10 +1317,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         bottomSheetRef,
         onCloseBottomSheet,
         togglePencilMode,
+        pressPDFSettingsOpen,
       }}
     >
       <Home />
       {Platform.OS !== 'web' && <HomeModalTermsOfUse />}
+      <HomeModalPDFSettings
+        visible={isPDFSettingsVisible}
+        pdfOrientation={pdfOrientation}
+        pdfPaperSize={pdfPaperSize}
+        pdfScale={pdfScale}
+        pdfOrientations={pdfOrientations}
+        pdfPaperSizes={pdfPaperSizes}
+        pdfScales={pdfScales}
+        pdfTileMapZoomLevel={pdfTileMapZoomLevel}
+        pdfTileMapZoomLevels={pdfTileMapZoomLevels}
+        outputVRT={outputVRT}
+        outputDataPDF={outputDataPDF}
+        setPdfOrientation={setPdfOrientation}
+        setPdfPaperSize={setPdfPaperSize}
+        setPdfScale={setPdfScale}
+        setPdfTileMapZoomLevel={setPdfTileMapZoomLevel}
+        setOutputVRT={setOutputVRT}
+        setOutputDataPDF={setOutputDataPDF}
+        pressOK={() => setIsPDFSettingsVisible(false)}
+      />
       {PLUGIN.HISYOUTOOL && (
         <ModalHisyouToolSetting
           visible={visibleHisyouToolSetting}
