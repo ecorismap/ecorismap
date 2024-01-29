@@ -79,6 +79,45 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
   const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>((pos) => setMagnetometer(pos));
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
+  const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
+  const gpsAccuracyOption = useMemo(() => {
+    switch (gpsAccuracy) {
+      case 'HIGH':
+        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
+      case 'MEDIUM':
+        return { accuracy: Location.Accuracy.High, distanceInterval: 10 };
+      case 'LOW':
+        return { accuracy: Location.Accuracy.Balanced };
+      default:
+        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
+    }
+  }, [gpsAccuracy]);
+
+  const trackingAccuracyOption = useMemo(() => {
+    switch (gpsAccuracy) {
+      case 'HIGH':
+        return {
+          accuracy: Location.Accuracy.Highest,
+          distanceInterval: 2,
+          //timeInterval: 2000,
+          //activityType: Location.ActivityType.Other,
+        };
+      case 'MEDIUM':
+        return {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 10,
+        };
+      case 'LOW':
+        return {
+          accuracy: Location.Accuracy.Balanced,
+        };
+      default:
+        return {
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 2,
+        };
+    }
+  }, [gpsAccuracy]);
 
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user);
@@ -112,12 +151,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     if ((await confirmLocationPermittion()) !== 'granted') return;
     //GPSもトラッキングもOFFの場合
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-      gpsSubscriber.current = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 1,
-        },
-        (pos) => updateGpsPosition.current(pos)
+      gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) =>
+        updateGpsPosition.current(pos)
       );
     }
     if (headingSubscriber.current === undefined) {
@@ -125,7 +160,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         updateHeading.current(pos);
       });
     }
-  }, [confirmLocationPermittion]);
+  }, [confirmLocationPermittion, gpsAccuracyOption]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -159,14 +194,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     if ((await confirmLocationPermittion()) !== 'granted') return;
     if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
-        //accuracy: Location.Accuracy.BestForNavigation,
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 2,
-        timeInterval: 2000,
+        ...trackingAccuracyOption,
         pausesUpdatesAutomatically: false,
-        // deferredUpdatesDistance: 2,
-        // deferredUpdatesInterval: 2000,
-        //activityType: Location.ActivityType.Other,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
           notificationTitle: 'EcorisMap',
@@ -177,7 +206,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => updateHeading.current(pos));
     }
-  }, [confirmLocationPermittion]);
+  }, [confirmLocationPermittion, trackingAccuracyOption]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');

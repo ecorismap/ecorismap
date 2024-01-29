@@ -52,6 +52,11 @@
     "orientation": {
       "portrait": "縦",
       "landscape": "横"
+    },
+    "gpsaccuracy": {
+      "high": "高精度、高バッテリー消費",
+      "medium": "中精度、中バッテリー消費",
+      "low": "低精度、低バッテリー消費"
     }
   },
   "common": {
@@ -138,7 +143,13 @@
     "zoomlevelOfMaps": "地図レベル",
     "currentZoom": "現在のズーム",
     "outputDataPDF": "データ一覧",
-    "outputVRT": "VRTファイル"
+    "outputVRT": "VRTファイル",
+    "gps_settings": "GPSの設定",
+    "accuracy": {
+      "high": "高精度、高バッテリー消費"
+    },
+    "gps_settings_disabled": "GPSがオンの時は設定できません",
+    "gps_settings_alert": "GPSの起動時に設定が反映されます。"
   },
   "Home": {
     "confirm": {
@@ -312,6 +323,10 @@
     "pdf_save": {
       "text": "pdfの出力",
       "info": "現在の地図とデータをpdfに出力します。"
+    },
+    "gps_settings": {
+      "text": "GPSの設定",
+      "info": "GPSの精度を変更します。バッテリー消費にも影響します。"
     }
   },
   "Projects": {
