@@ -8,23 +8,31 @@ import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
 import { exportGeoFile } from '../utils/File';
 import sanitize from 'sanitize-filename';
 import { usePermission } from '../hooks/usePermission';
+import { SettingsModalFileSave } from '../components/organisms/SettingsModalFileSave';
+import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
+import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
+import { editSettingsAction } from '../modules/settings';
+import { GpsAccuracyType } from '../types';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
+  const dispatch = useDispatch();
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const maps = useSelector((state: AppState) => state.tileMaps);
   const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
+  const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
-  const { clearTileCache } = useMaps();
-  const { mapListURL, saveMapListURL } = useMaps();
+  const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
+
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
+  const [isGPSSettingsOpen, setIsGPSSettingsOpen] = useState(false);
   const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
   const { isRunningProject } = usePermission();
   const [isLoading, setIsLoading] = useState(false);
@@ -163,6 +171,22 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     setIsMapListURLOpen(true);
   }, []);
 
+  const pressGPSSettingsOpen = useCallback(() => {
+    setIsGPSSettingsOpen(true);
+  }, []);
+
+  const pressGPSSettingsOK = useCallback(
+    (value: GpsAccuracyType) => {
+      dispatch(editSettingsAction({ gpsAccuracy: value }));
+      setIsGPSSettingsOpen(false);
+    },
+    [dispatch]
+  );
+
+  const pressGPSSettingsCancel = useCallback(() => {
+    setIsGPSSettingsOpen(false);
+  }, []);
+
   const pressGotoManual = useCallback(() => {
     const url = t('site.manual');
     Linking.openURL(url);
@@ -182,27 +206,34 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   return (
     <SettingsContext.Provider
       value={{
-        mapListURL,
-        isMapListURLOpen,
-        isFileSaveOpen,
         isLoading,
         pressMapListURLOpen,
-        pressMapListURLOK,
-        pressMapListURLCancel,
-        pressMapListURLReset,
         pressFileOpen,
         pressFileSave,
-        pressFileSaveOK,
-        pressFileSaveCancel,
         pressClearData,
         pressClearTileCache,
         pressGotoManual,
         pressOSSLicense,
         pressVersion,
         pressPDFSettingsOpen,
+        pressGPSSettingsOpen,
       }}
     >
       <Settings />
+      <SettingsModalFileSave visible={isFileSaveOpen} pressOK={pressFileSaveOK} pressCancel={pressFileSaveCancel} />
+      <SettingsModalGPS
+        visible={isGPSSettingsOpen}
+        gpsAccuracy={gpsAccuracy}
+        pressOK={pressGPSSettingsOK}
+        pressCancel={pressGPSSettingsCancel}
+      />
+      <SettingsModalMapListURL
+        visible={isMapListURLOpen}
+        mapListURL={mapListURL}
+        pressOK={pressMapListURLOK}
+        pressCancel={pressMapListURLCancel}
+        pressReset={pressMapListURLReset}
+      />
     </SettingsContext.Provider>
   );
 }
