@@ -52,6 +52,11 @@
     "orientation": {
       "landscape": "landscape",
       "portrait": "portrait"
+    },
+    "gpsaccuracy": {
+      "high": "High precision, high battery consumption",
+      "medium": "Medium accuracy, medium battery consumption",
+      "low": "Low accuracy, low battery consumption"
     }
   },
   "tutrials": {
@@ -190,7 +195,13 @@
     "zoomlevelOfMaps": "map level",
     "currentZoom": "current zoom",
     "outputDataPDF": "Data list",
-    "outputVRT": "Output VRT file"
+    "outputVRT": "Output VRT file",
+    "gps_settings": "GPS settings",
+    "accuracy": {
+      "high": "High precision, high battery consumption"
+    },
+    "gps_settings_disabled": "Cannot be set when GPS is on",
+    "gps_settings_alert": "The settings will be reflected when GPS starts up."
   },
   "firebase": {
     "message": {
@@ -269,6 +280,10 @@
     "pdf_save": {
       "info": "Output the current map and data to pdf.",
       "text": "output pdf"
+    },
+    "gps_settings": {
+      "info": "Change GPS accuracy. \nIt also affects battery consumption.",
+      "text": "GPS settings"
     }
   },
   "Purchases": {
