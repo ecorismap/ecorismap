@@ -38,6 +38,7 @@ export function createSettingsInitialState(): SettingsType {
     photosToBeDeleted: [],
     mapListURL: DEFAULT_MAP_LIST_URL,
     mapList: [],
+    gpsAccuracy: 'HIGH',
   };
 }
 

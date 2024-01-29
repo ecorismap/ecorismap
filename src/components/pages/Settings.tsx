@@ -4,31 +4,22 @@ import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
-import { SettingsModalFileSave } from '../organisms/SettingsModalFileSave';
-import { SettingsModalMapListURL } from '../organisms/SettingsModalMapListURL';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Loading } from '../molecules/Loading';
 
 export default function Settings() {
   const {
-    mapListURL,
-    isMapListURLOpen,
-    isFileSaveOpen,
     isLoading,
     //pressMapListURLOpen,
-    pressMapListURLOK,
-    pressMapListURLCancel,
-    pressMapListURLReset,
     pressFileOpen,
     pressFileSave,
-    pressFileSaveOK,
-    pressFileSaveCancel,
     pressClearData,
     pressClearTileCache,
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
     pressPDFSettingsOpen,
+    pressGPSSettingsOpen,
   } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
@@ -65,6 +56,12 @@ export default function Settings() {
           info={t('Settings.file_new.info')}
           onPress={pressClearData}
         />
+        <TextButton
+          name={SETTINGS_BTN.GPS_SETTINGS}
+          text={t('Settings.gps_settings.text')}
+          info={t('Settings.gps_settings.info')}
+          onPress={pressGPSSettingsOpen}
+        />
         {/* <TextButton
           name={SETTINGS_BTN.MAP_LIST_URL}
           text={t('Settings.maplisturl.text')}
@@ -98,14 +95,6 @@ export default function Settings() {
           onPress={pressVersion}
         />
       </ScrollView>
-      <SettingsModalMapListURL
-        visible={isMapListURLOpen}
-        mapListURL={mapListURL}
-        pressOK={pressMapListURLOK}
-        pressCancel={pressMapListURLCancel}
-        pressReset={pressMapListURLReset}
-      />
-      <SettingsModalFileSave visible={isFileSaveOpen} pressOK={pressFileSaveOK} pressCancel={pressFileSaveCancel} />
     </View>
   );
 }
