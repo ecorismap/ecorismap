@@ -295,6 +295,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const toggleHeadingUp = useCallback(
     (headingUp_: boolean) => {
+      if (mapViewRef === null) return;
       if (headingUp_) {
         updateHeading.current = (pos: Location.LocationHeadingObject) => {
           //console.log(pos)

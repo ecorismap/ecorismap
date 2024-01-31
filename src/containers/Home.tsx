@@ -979,7 +979,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             showDrawLine();
             setIsPinch(false);
           } else if (currentMapMemoTool !== 'NONE') {
-            onPanResponderReleaseMapMemo();
+            onPanResponderReleaseMapMemo(e);
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
           }
