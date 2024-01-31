@@ -1,12 +1,14 @@
 import React from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
-import { LayerType, LineRecordType, RecordType } from '../../types';
-import { LineLabel } from '../atoms';
+import { LayerType, LineRecordType, PointRecordType, RecordType } from '../../types';
+import { LineLabel, PointView } from '../atoms';
 import { getColor } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel } from '../../hooks/useLayers';
 import { AppState } from '../../modules';
 import { useSelector } from 'react-redux';
+import { Point, PointComponent } from './HomePoint';
+import { Point2 } from './HomePoint2';
 
 interface Props {
   data: LineRecordType[];
@@ -27,6 +29,9 @@ export const Line = React.memo(
       <>
         {data.map((feature) => {
           if (!feature.visible) return null;
+          if (feature.coords.length === 1) {
+            return <Point2 key={feature.id} feature={{ ...feature, coords: feature.coords[0] }} layer={layer} />;
+          }
           if (feature.coords.length < 2) return null;
 
           const color = getColor(layer, feature, 0);

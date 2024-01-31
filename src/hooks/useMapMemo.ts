@@ -43,7 +43,7 @@ export type UseMapMemoReturnType = {
   clearMapMemoHistory: () => void;
   onPanResponderGrantMapMemo: (event: GestureResponderEvent) => void;
   onPanResponderMoveMapMemo: (event: GestureResponderEvent) => void;
-  onPanResponderReleaseMapMemo: (isPinch?: boolean) => void;
+  onPanResponderReleaseMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
@@ -149,73 +149,129 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setRedraw(uuidv4());
   }, []);
 
-  const onPanResponderReleaseMapMemo = useCallback(() => {
-    //const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
-    //const simplifiedXY = simplify(smoothedXY);
-
-    //const simplifiedXY = removeSharpTurns(mapMemoEditingLine.current);
-    const simplifiedXY = [...mapMemoEditingLine.current];
-    if (simplifiedXY.length === 0) {
-      clearMapMemoEditingLine();
-      setFuture([]);
-      return;
-    } else if (simplifiedXY.length === 1) {
-      simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
-    }
-
-    if (currentMapMemoTool.includes('PEN')) {
-      const newMapMemoLines = [
-        ...mapMemoLines,
-        {
-          xy: simplifiedXY,
-          latlon: xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef),
-          strokeColor: penColor,
-          strokeWidth: penWidth,
-        },
+  const calcArrowedXY = useCallback((xy: Position[]) => {
+    //終点から2点目までのベクトルを求め、そのベクトルに対して+-30度の方向を向くベクトルを求め矢印の羽根の先端とする。
+    //そのベクトルの長さを元のベクトルの長さの3倍にして、羽根の長さを調整する。
+    //羽根の部分のみを一本の線として返す。
+    if (xy.length < 2) return [];
+    const lastPoint = xy[xy.length - 1];
+    const secondPoint = xy[xy.length - 2];
+    let vector;
+    if (xy.length === 2) {
+      vector = [lastPoint[0] - secondPoint[0], lastPoint[1] - secondPoint[1]];
+    } else {
+      const thirdPoint = xy[xy.length - 3];
+      // Calculate the average vector
+      vector = [
+        (lastPoint[0] - thirdPoint[0] + lastPoint[0] - secondPoint[0]) / 2,
+        (lastPoint[1] - thirdPoint[1] + lastPoint[1] - secondPoint[1]) / 2,
       ];
-
-      setMapMemoLines(newMapMemoLines);
-      clearMapMemoEditingLine();
-      timer.current = setTimeout(() => {
-        saveMapMemo(newMapMemoLines);
-      }, 300);
-    } else if (currentMapMemoTool.includes('ERASER')) {
-      const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
-      const deleteLine = [] as { idx: number; line: LineRecordType }[];
-      const newDrawLine = [] as LineRecordType[];
-      memoLines.forEach((line, idx) => {
-        const lineArray = latLonObjectsToLatLonArray(line.coords);
-        const lineGeometry = turf.lineString(lineArray);
-        const polygonGeometry = turf.polygon([[...lineLatLonArray, lineLatLonArray[0]]]);
-
-        if (booleanContains(polygonGeometry, lineGeometry) || booleanIntersects(polygonGeometry, lineGeometry)) {
-          deleteLine.push({ idx, line });
-        } else {
-          newDrawLine.push(line);
-        }
-      });
-      setHistory((prev) => [
-        ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
-        { operation: 'remove', data: deleteLine },
-      ]);
-      setFuture([]);
-      clearMapMemoEditingLine();
-      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
     }
-  }, [
-    activeMemoRecordSet,
-    clearMapMemoEditingLine,
-    currentMapMemoTool,
-    dispatch,
-    mapMemoLines,
-    mapRegion,
-    mapSize,
-    mapViewRef,
-    memoLines,
-    penColor,
-    penWidth,
-    saveMapMemo,
-  ]);
+    const vectorLength = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+    const vectorUnit = [vector[0] / vectorLength, vector[1] / vectorLength];
+    const vectorUnitX = vectorUnit[0];
+    const vectorUnitY = vectorUnit[1];
+    const vectorUnitX30 = vectorUnitX * Math.cos((30 * Math.PI) / 180) - vectorUnitY * Math.sin((30 * Math.PI) / 180);
+    const vectorUnitY30 = vectorUnitX * Math.sin((30 * Math.PI) / 180) + vectorUnitY * Math.cos((30 * Math.PI) / 180);
+    const vectorUnitXm30 =
+      vectorUnitX * Math.cos((-30 * Math.PI) / 180) - vectorUnitY * Math.sin((-30 * Math.PI) / 180);
+    const vectorUnitYm30 =
+      vectorUnitX * Math.sin((-30 * Math.PI) / 180) + vectorUnitY * Math.cos((-30 * Math.PI) / 180);
+
+    const arrowLength = 20;
+    return [
+      [lastPoint[0] - vectorUnitX30 * arrowLength, lastPoint[1] - vectorUnitY30 * arrowLength],
+      [lastPoint[0], lastPoint[1]],
+      [lastPoint[0] - vectorUnitXm30 * arrowLength, lastPoint[1] - vectorUnitYm30 * arrowLength],
+    ];
+  }, []);
+
+  const onPanResponderReleaseMapMemo = useCallback(
+    (event: GestureResponderEvent) => {
+      //const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
+      //const simplifiedXY = simplify(smoothedXY);
+
+      //const simplifiedXY = removeSharpTurns(mapMemoEditingLine.current);
+      const simplifiedXY = [...mapMemoEditingLine.current];
+      if (simplifiedXY.length === 0) {
+        console.log('no line');
+        simplifiedXY.push([event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]]);
+        console.log(simplifiedXY);
+        // clearMapMemoEditingLine();
+        // setFuture([]);
+        // return;
+      } else if (simplifiedXY.length === 1) {
+        simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
+      }
+
+      if (currentMapMemoTool.includes('PEN')) {
+        const newMapMemoLines = [
+          ...mapMemoLines,
+          {
+            xy: simplifiedXY,
+            latlon: xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef),
+            strokeColor: penColor,
+            strokeWidth: penWidth,
+          },
+        ];
+        //先端を矢印にする関数を呼び出す
+        if (simplifiedXY.length > 1 || currentMapMemoTool === 'PEN_ARROW') {
+          const arrowedXY = calcArrowedXY(simplifiedXY);
+          const arrowedLatLon = xyArrayToLatLonArray(arrowedXY, mapRegion, mapSize, mapViewRef);
+          const arrowedLine = {
+            xy: arrowedXY,
+            latlon: arrowedLatLon,
+            strokeColor: penColor,
+            strokeWidth: penWidth,
+          };
+          newMapMemoLines.push(arrowedLine);
+        }
+        setMapMemoLines(newMapMemoLines);
+        clearMapMemoEditingLine();
+        timer.current = setTimeout(() => {
+          saveMapMemo(newMapMemoLines);
+        }, 300);
+      } else if (currentMapMemoTool.includes('ERASER')) {
+        const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
+        const deleteLine = [] as { idx: number; line: LineRecordType }[];
+        const newDrawLine = [] as LineRecordType[];
+        memoLines.forEach((line, idx) => {
+          const lineArray = latLonObjectsToLatLonArray(line.coords);
+          if (lineArray.length === 1) lineArray.push([lineArray[0][0] + 0.0000001, lineArray[0][1] + 0.0000001]);
+          const lineGeometry = turf.lineString(lineArray);
+          const polygonGeometry = turf.polygon([[...lineLatLonArray, lineLatLonArray[0]]]);
+
+          if (booleanContains(polygonGeometry, lineGeometry) || booleanIntersects(polygonGeometry, lineGeometry)) {
+            deleteLine.push({ idx, line });
+          } else {
+            newDrawLine.push(line);
+          }
+        });
+        setHistory((prev) => [
+          ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+          { operation: 'remove', data: deleteLine },
+        ]);
+        setFuture([]);
+        clearMapMemoEditingLine();
+        dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
+      }
+    },
+    [
+      activeMemoRecordSet,
+      calcArrowedXY,
+      clearMapMemoEditingLine,
+      currentMapMemoTool,
+      dispatch,
+      mapMemoLines,
+      mapRegion,
+      mapSize,
+      mapViewRef,
+      memoLines,
+      penColor,
+      penWidth,
+      saveMapMemo,
+    ]
+  );
 
   const selectPenColor = useCallback((hue: number, sat: number, val: number, alpha: number) => {
     setVisibleMapMemoColor(false);
