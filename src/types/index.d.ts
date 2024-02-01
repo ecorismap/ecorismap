@@ -23,6 +23,7 @@ import {
   ERASER,
   MAPMEMOTOOL,
   ORIENTATIONTYPE,
+  GPS_ACCURACY,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -297,6 +298,7 @@ export interface SettingsType {
   }[];
   mapListURL: string;
   mapList: TileMapItemType[];
+  gpsAccuracy: GpsAccuracyType;
 }
 
 export interface RegionType {
@@ -457,3 +459,4 @@ export interface EcorisMapFileType {
 export type PaperSizeType = 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
 export type ScaleType = '500' | '1000' | '1500' | '2500' | '5000' | '10000' | '25000' | '50000' | '100000';
 export type PaperOrientationType = keyof typeof ORIENTATIONTYPE;
+export type GpsAccuracyType = keyof typeof GPS_ACCURACY;

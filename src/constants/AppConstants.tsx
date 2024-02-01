@@ -286,6 +286,7 @@ export const SETTINGS_BTN = {
   MAP_CACHE_DELETE: 'delete-variant',
   PHOTO_CACHE_DELETE: 'delete-circle',
   APRI_CLEAR: 'restore',
+  GPS_SETTINGS: 'crosshairs-gps',
   MANUAL: 'help',
   TERMSOFUSE: 'book-open-variant',
   OSSLICENSE: 'star',
@@ -315,4 +316,10 @@ export const DEFAULT_MAP_LIST_URL =
 export const ORIENTATIONTYPE = {
   PORTRAIT: t('constants.orientation.portrait'),
   LANDSCAPE: t('constants.orientation.landscape'),
+} as const;
+
+export const GPS_ACCURACY = {
+  HIGH: t('constants.gpsaccuracy.high'),
+  MEDIUM: t('constants.gpsaccuracy.medium'),
+  LOW: t('constants.gpsaccuracy.low'),
 } as const;

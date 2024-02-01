@@ -834,8 +834,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   );
 
   useEffect(() => {
-    //pdfScaleが変更されたらpdfTileMapZoomLevelをリセットして最後の値にする
-    setPdfTileMapZoomLevel(pdfTileMapZoomLevels[pdfTileMapZoomLevels.length - 1]);
+    //pdfScaleが変更されたらpdfTileMapZoomLevelをリセットして最後から3番目のズームレベルにする
+    setPdfTileMapZoomLevel(pdfTileMapZoomLevels[pdfTileMapZoomLevels.length - 3]);
   }, [pdfTileMapZoomLevels]);
 
   return {
