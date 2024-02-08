@@ -89,11 +89,11 @@ export default function MapContainer({ navigation }: Props_Maps) {
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.assets === null) return;
     const ext = getExt(file.assets[0].name)?.toLowerCase();
-    if (!(ext === 'json')) {
+    if (!(ext === 'json' || ext === 'pdf' || ext === 'tif')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const { message } = await importMapFile(file.assets[0].uri);
+    const { message } = await importMapFile(file.assets[0].uri, ext);
     if (message !== '') await AlertAsync(message);
   }, [importMapFile]);
 
