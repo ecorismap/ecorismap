@@ -3116,6 +3116,11 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/hooks/-/hooks-3.0.0.tgz#af5f2ca32eea59b792ce9e3d9a4cf0354f9b195f"
   integrity sha512-g2OyxXHfwIytXUJitBR6Z/ISoOfp0WKx5FOv+NqJ/CrWjRDcTw6zXE5I1C9axfuh30kJqzWchVfCDrkzZYTxqg==
 
+"@react-native-community/image-editor@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-3.1.1.tgz#7e8bd86dc4c78d95fc48fe88ce48752205fa09ae"
+  integrity sha512-hr5sfF2TQPJtxV48QaHDP5S62jEYEdlJef92mRMwvPx1uqPD8RN4NVbDQvQqTNLacwbftBEXVX/I8kFeEYaPIg==
+
 "@react-native-community/slider@^4.4.2":
   version "4.4.2"
   resolved "https://registry.yarnpkg.com/@react-native-community/slider/-/slider-4.4.2.tgz#1fea0eb3ae31841fe87bd6c4fc67569066e9cf4b"
@@ -12730,6 +12735,11 @@ react-native-modal-selector@^2.1.2:
   integrity sha512-+Cvoz/yNUFmfIkJ7xkmlLR2nhJOUhx00S6BPqp2Ruy8LkmaiNr7WMZ4BzsgzylyEgZ84Q+42HQ0v0QzJYobviA==
   dependencies:
     prop-types "^15.5.10"
+
+react-native-pdf-to-image@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/react-native-pdf-to-image/-/react-native-pdf-to-image-3.3.0.tgz#d7cfa32f89efdae59554b97baf560943639ea3e7"
+  integrity sha512-4CF3tzshvg2htDTRwOBIrzvm/VmqPgXlJMhTnI0x6VMAMYfEJ1R37x1Y0Rcdbc6Wk1reWycZaY0E+g6MhUMcCg==
 
 react-native-reanimated@~3.3.0:
   version "3.3.0"
