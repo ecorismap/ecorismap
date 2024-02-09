@@ -124,6 +124,10 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  deleteCommonAndTemplateData: (project: ProjectType) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
 };
 
 export const useRepository = (): UseRepositoryReturnType => {
@@ -238,6 +242,23 @@ export const useRepository = (): UseRepositoryReturnType => {
     [updateStoragePhoto]
   );
 
+  const deleteCommonAndTemplateData = useCallback(
+    async (project: ProjectType) => {
+      if (!isLoggedIn(user)) {
+        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+      }
+      const targetLayers = getTargetLayers(layers, 'All');
+      //もともとあったレイヤが削除された場合、この処理ではそのレイヤのデータは削除されないままになってしまう。
+      //ToDO: レイヤを削除した場合は、そのレイヤのデータも削除する処理を追加する。or　レイヤid関係なく全てのデータを削除する処理を追加する。
+      for (const layer of targetLayers) {
+        await projectStore.deleteData(project.id, layer.id, 'TEMPLATE', user.uid);
+        await projectStore.deleteData(project.id, layer.id, 'COMMON', user.uid);
+      }
+      return { isOK: true, message: '' };
+    },
+    [layers, user]
+  );
+
   const uploadData = useCallback(
     async (
       project: ProjectType,
@@ -267,8 +288,6 @@ export const useRepository = (): UseRepositoryReturnType => {
 
       for (const layer of targetLayers) {
         //自分のデータ削除
-        //プロジェクトの設定をアップロードするときは、レイヤ設定のリストを順次追加したいという要望に対応するために、一時的にすでにあるデータは削除しないように変更。
-        //TODO:ただし、レイヤ設定が大きく変更になる場合は、既存のデータとレイヤ設定が合わなくなるので、削除する必要がある。
         if (!isSettingProject) {
           await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
         }
@@ -604,7 +623,8 @@ export const useRepository = (): UseRepositoryReturnType => {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
-      //console.log(data);
+      console.log(project_.id);
+      console.log(data);
       if (!isOK || data === undefined) {
         return { isOK: false, message };
       }
@@ -659,5 +679,6 @@ export const useRepository = (): UseRepositoryReturnType => {
     downloadPublicAndAllPrivateData,
     uploadData,
     uploadProjectSettings,
+    deleteCommonAndTemplateData,
   } as const;
 };

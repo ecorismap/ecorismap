@@ -43,6 +43,7 @@ export const useProject = (): UseProjectReturnType => {
     downloadPublicAndAllPrivateData,
     uploadData: uploadDataToRepository,
     uploadProjectSettings,
+    deleteCommonAndTemplateData,
   } = useRepository();
 
   const downloadData = useCallback(
@@ -105,6 +106,8 @@ export const useProject = (): UseProjectReturnType => {
     async (isLicenseOK: boolean) => {
       //コモンデータの写真はあればアップロードする
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+      const deleteDataResult = await deleteCommonAndTemplateData(project);
+      if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
       const projectSettingsResult = await uploadProjectSettings(project);
       if (!projectSettingsResult.isOK) throw new Error(projectSettingsResult.message);
       const dataToRepositoryResult = await uploadDataToRepository(project, isLicenseOK, 'Common');
@@ -112,7 +115,7 @@ export const useProject = (): UseProjectReturnType => {
       const uploadTemplateResult = await uploadDataToRepository(project, isLicenseOK, 'Template');
       if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
     },
-    [project, uploadDataToRepository, uploadProjectSettings]
+    [deleteCommonAndTemplateData, project, uploadDataToRepository, uploadProjectSettings]
   );
 
   return {
