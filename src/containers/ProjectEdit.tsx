@@ -149,6 +149,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         navigation.navigate('Home', {
           jumpTo: projectSettingsResult.region,
           previous: 'ProjectEdit',
+          mode: 'jumpTo',
         });
       } catch (e: any) {
         setIsLoading(false);

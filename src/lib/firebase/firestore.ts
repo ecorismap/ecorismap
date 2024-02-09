@@ -166,7 +166,12 @@ export const deleteAllData = async (projectId: string) => {
   }
 };
 
-export const deleteData = async (projectId: string, layerId: string, permission: PermissionType, userId: string) => {
+export const deleteData = async (
+  projectId: string,
+  layerId: string,
+  permission: PermissionType | 'TEMPLATE',
+  userId: string
+) => {
   try {
     const querySnapshot = await firestore
       .collection(`projects/${projectId}/data`)
