@@ -132,37 +132,10 @@ export const DataTable = React.memo(() => {
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
-  return (
-    <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-      {data.length !== 0 ? (
-        <DraggableFlatList
-          data={data}
-          stickyHeaderIndices={[0]}
-          initialNumToRender={15}
-          extraData={data}
-          // eslint-disable-next-line react/no-unstable-nested-components
-          ListHeaderComponent={() => (
-            <DataTitle
-              visibleAll={visibleAll}
-              onVisibleAll={onVisibleAll}
-              checkedAll={checkedAll}
-              onCheckAll={onCheckAll}
-              onChangeOrder={onChangeOrder}
-              sortedName={sortedName}
-              sortedOrder={sortedOrder}
-              projectId={projectId}
-              layer={layer}
-            />
-          )}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          removeClippedSubviews={true}
-          disableVirtualization={true}
-          // eslint-disable-next-line @typescript-eslint/no-shadow
-          onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
-          activationDistance={5}
-        />
-      ) : (
+  return data.length !== 0 ? (
+    <DraggableFlatList
+      // eslint-disable-next-line react/no-unstable-nested-components
+      ListHeaderComponent={() => (
         <DataTitle
           visibleAll={visibleAll}
           onVisibleAll={onVisibleAll}
@@ -175,7 +148,29 @@ export const DataTable = React.memo(() => {
           layer={layer}
         />
       )}
-    </View>
+      data={data}
+      stickyHeaderIndices={[0]}
+      initialNumToRender={15}
+      extraData={data}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      removeClippedSubviews={true}
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
+      activationDistance={5}
+    />
+  ) : (
+    <DataTitle
+      visibleAll={visibleAll}
+      onVisibleAll={onVisibleAll}
+      checkedAll={checkedAll}
+      onCheckAll={onCheckAll}
+      onChangeOrder={onChangeOrder}
+      sortedName={sortedName}
+      sortedOrder={sortedOrder}
+      projectId={projectId}
+      layer={layer}
+    />
   );
 });
 

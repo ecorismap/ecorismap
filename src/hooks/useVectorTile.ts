@@ -52,8 +52,8 @@ export const useVectorTile = (): UseVectorTileReturnType => {
       for (const tileMap of tileMaps) {
         if (!(tileMap.visible && (tileMap.url.includes('pmtiles') || tileMap.url.includes('.pbf')))) continue;
         //console.log(tileMap.name, tileX, tileY, zoom);
-        const property = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
-        if (property !== undefined) properties.push(property);
+        const propertyList = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
+        properties.push(...propertyList);
       }
       return properties;
     },

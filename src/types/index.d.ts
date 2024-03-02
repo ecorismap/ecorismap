@@ -195,6 +195,19 @@ export interface LatLonDMSType {
 export type LocationStateType = 'follow' | 'show' | 'off';
 export type TrackingStateType = 'on' | 'off';
 
+export interface boundaryType {
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  zoom: number;
+  bounds: {
+    north: number;
+    south: number;
+    west: number;
+    east: number;
+  };
+}
 export interface TileMapItemType {
   name: string;
   url: string;
@@ -207,6 +220,8 @@ export interface TileMapItemType {
   minimumZ: number;
   maximumZ: number;
   flipY: boolean;
+  tileSize?: number;
+  boundary?: boundaryType;
 }
 
 export interface TileMapType extends TileMapItemType {

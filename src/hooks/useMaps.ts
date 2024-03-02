@@ -3,7 +3,7 @@ import * as FileSystem from 'expo-file-system';
 import { v4 as uuidv4 } from 'uuid';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { TileMapItemType, TileMapType } from '../types';
-import { Platform, Image } from 'react-native';
+import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
 import { AppState } from '../modules';
@@ -12,14 +12,14 @@ import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
 import { decodeUri } from '../utils/File.web';
-import { convert } from 'react-native-pdf-to-image';
+import { convert } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
 import * as RNFS from 'react-native-fs';
 import { tileToWebMercator } from '../utils/Tile';
-
-//import initGdalJs from 'gdal3.js';
-
+import { webMercatorToLatLon } from '../utils/Coords';
+import { Buffer } from 'buffer';
 export type UseMapsReturnType = {
+  progress: string;
   mapListURL: string;
   mapList: TileMapItemType[];
   maps: TileMapType[];
@@ -46,7 +46,8 @@ export type UseMapsReturnType = {
   saveMapListURL: (url: string) => void;
   importMapFile: (
     uri: string,
-    ext: 'json' | 'pdf' | 'tif'
+    name: string,
+    ext: 'json' | 'pdf'
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -62,6 +63,7 @@ export const useMaps = (): UseMapsReturnType => {
   const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
+  const [progress, setProgress] = useState('10');
   const mapList = useSelector((state: AppState) => state.settings.mapList, shallowEqual);
 
   const fetchMapList = useCallback(
@@ -225,18 +227,6 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
-  const getImageSize = (imageUri: string): Promise<{ width: number; height: number }> => {
-    return new Promise((resolve, reject) => {
-      Image.getSize(
-        imageUri,
-        (width, height) => {
-          resolve({ width, height });
-        },
-        reject
-      );
-    });
-  };
-
   const calculateTile = (coordinate: { x: number; y: number }, zoomLevel: number): { tileX: number; tileY: number } => {
     const earthCircumference = 40075016.686;
     const offset = 20037508.342789244;
@@ -245,168 +235,224 @@ export const useMaps = (): UseMapsReturnType => {
     return { tileX, tileY };
   };
 
-  const importMapFile = useCallback(
-    async (uri: string, ext: 'json' | 'pdf' | 'tif') => {
-      if (ext === 'json') {
-        try {
-          const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-          const json = JSON.parse(jsonStrings);
-          if (Array.isArray(json)) {
-            const isValid = json.every((tileMap) => !isTileMapType(tileMap));
-            if (!isValid) {
-              return { isOK: false, message: t('hooks.message.invalidDataFormat') };
-            }
-          } else {
-            return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
+  const importJsonMapFile = useCallback(
+    async (uri: string) => {
+      try {
+        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+        const json = JSON.parse(jsonStrings);
+        if (Array.isArray(json)) {
+          const isValid = json.every((tileMap) => !isTileMapType(tileMap));
+          if (!isValid) {
+            return { isOK: false, message: t('hooks.message.invalidDataFormat') };
           }
-          dispatch(setTileMapsAction(json));
-          return { isOK: true, message: t('hooks.message.receiveFile') };
-        } catch (e: any) {
-          return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+        } else {
+          return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
         }
-      } else if (ext === 'pdf') {
+        dispatch(setTileMapsAction(json));
+        return { isOK: true, message: t('hooks.message.receiveFile') };
+      } catch (e: any) {
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      }
+    },
+    [dispatch]
+  );
+
+  const calculateZoomLevel = (pdfTopCoord: number, pdfBottomCoord: number, imageHeight: number) => {
+    const coordPerPixel = (pdfTopCoord - pdfBottomCoord) / imageHeight;
+    const earthCircumference = Math.PI * 2 * 6378137;
+    return Math.round(Math.log2(earthCircumference / coordPerPixel / 256)) - 1;
+  };
+
+  const calculateOffset = (
+    pdfTopLeftCoord: { x: number; y: number },
+    topLeftCoord: { mercatorX: number; mercatorY: number },
+    coordPerPixel: number
+  ) => {
+    const offsetLeft = pdfTopLeftCoord.x - topLeftCoord.mercatorX;
+    const offsetTop = topLeftCoord.mercatorY - pdfTopLeftCoord.y;
+    return { x: -offsetLeft / coordPerPixel, y: -offsetTop / coordPerPixel };
+  };
+
+  const calculateCropSize = (zoomLevel: number, coordPerPixel: number) => {
+    const earthCircumference = Math.PI * 2 * 6378137;
+    return {
+      width: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
+      height: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
+    };
+  };
+
+  const importPdfMapFile = useCallback(
+    async (uri: string, name: string) => {
+      const { outputFiles } = await convert(uri.replace('file://', '')).catch((e) => {
+        console.error(e);
+        return { outputFiles: [] };
+      });
+
+      if (outputFiles === undefined || outputFiles.length === 0) {
+        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      }
+      setProgress('50');
+      const newTileMaps = cloneDeep(maps);
+      for (let i = 0; i < outputFiles.length; i++) {
+        const outputFile = outputFiles[i];
         const mapId = uuidv4();
-        const copyUri = `${TILE_FOLDER}/temp.pdf`;
-        RNFS.unlink(copyUri);
-        await RNFS.moveFile(uri, copyUri);
-        //const images = await convert(copyUri.replace('file://', ''));
-        console.log('###', copyUri);
-        const images = await convert(copyUri);
-        console.log('####', images);
-        if (images.outputFiles === undefined || images.outputFiles[0].length === 0) {
-          return { isOK: false, message: t('hooks.message.failReceiveFile') };
-        }
+        const pdfImage = 'file://' + outputFile.uri;
 
-        //const pdfImage = 'file://' + images.outputFiles[0];
-        const pdfImage = images.outputFiles[0];
-        console.log(pdfImage);
-        const { width: imageWidth, height: imageHeight } = await getImageSize(pdfImage);
-        console.log('image', imageWidth, imageHeight);
-        const ratio = 72 / 150;
-        const GCP1 = { pixel: 59 * ratio, line: 59 * ratio, x: 15027250.074291376, y: 4164549.9790928965 };
-        const GCP2 = { pixel: 1181 * ratio, line: 1695 * ratio, x: 15029569.332909595, y: 4161168.7441600203 };
-        //pdfImageの四隅の座標を計算。pixel,lineは画像の左上からの座標
-        const dx = GCP2.x - GCP1.x;
-        const dy = GCP1.y - GCP2.y;
-        const dpx = GCP2.pixel - GCP1.pixel;
-        const dpy = GCP2.line - GCP1.line;
-        const pdfLeftCoord = ((0 - GCP1.pixel) * dx) / dpx + GCP1.x;
-        const pdfTopCoord = (GCP1.line * dy) / dpy + GCP1.y;
-        const pdfRightCoord = pdfLeftCoord + (imageWidth * dx) / dpx;
-        const pdfBottomCoord = pdfTopCoord - (imageHeight * dy) / dpy;
-
-        // const pdfLeftCoord = parseFloat(images.outputFiles[1]);
-        // const pdfTopCoord = parseFloat(images.outputFiles[2]);
-        // const pdfRightCoord = parseFloat(images.outputFiles[3]);
-        // const pdfBottomCoord = parseFloat(images.outputFiles[4]);
-        // const imageWidth = parseFloat(images.outputFiles[5]);
-        // const imageHeight = parseFloat(images.outputFiles[6]);
-        // console.log('Warped:', imageWidth, imageHeight);
-        // console.log(pdfLeftCoord, pdfTopCoord, pdfRightCoord, pdfBottomCoord);
-        //四隅の座標と画像のサイズから最適なズームレベルを計算
-        //1pxあたりの座標を計算して地球の円周からズームレベルを求める
+        const { y: pdfTopCoord } = outputFile.topLeft;
+        const { y: pdfBottomCoord } = outputFile.bottomRight;
+        //const imageWidth = outputFile.width;
+        const imageHeight = outputFile.height;
+        const topLeftLatLon = webMercatorToLatLon(outputFile.topLeft);
+        const bottomRightLatLon = webMercatorToLatLon(outputFile.bottomRight);
         const coordPerPixel = (pdfTopCoord - pdfBottomCoord) / imageHeight;
-        //地球の円周
-        const earthCircumference = Math.PI * 2 * 6378137;
-        //zoomLevel = log2(地球の円周 / 1pxあたりの座標)
-        const zoomLevel = Math.round(Math.log2(earthCircumference / coordPerPixel / 256));
-        console.log(zoomLevel);
-        //四隅の座標からタイルの座標を計算
-        const topLeftTile = calculateTile({ x: pdfLeftCoord, y: pdfTopCoord }, zoomLevel);
-        const bottomRightTile = calculateTile({ x: pdfRightCoord, y: pdfBottomCoord }, zoomLevel);
-        console.log(topLeftTile, bottomRightTile);
-        //タイルの左上の座標を計算
-        const topLeftCoord = tileToWebMercator(topLeftTile.tileX, topLeftTile.tileY, zoomLevel);
-        const rightBottomCoord = tileToWebMercator(bottomRightTile.tileX, bottomRightTile.tileY, zoomLevel);
-        console.log(topLeftCoord, rightBottomCoord);
-        //offsetを計算
-        const offsetLeft = pdfLeftCoord - topLeftCoord.mercatorX;
-        const offsetTop = topLeftCoord.mercatorY - pdfTopCoord;
-        console.log(offsetLeft, offsetTop);
-        const offset = { x: -offsetLeft / coordPerPixel, y: -offsetTop / coordPerPixel };
-        console.log('offset', offset);
-        //cropSizeを計算.zoomLevelにおけるタイルのサイズ
-        const cropSize = {
-          width: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
-          height: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
-        };
-        console.log('cropSize', cropSize);
+        const baseZoomLevel = calculateZoomLevel(pdfTopCoord, pdfBottomCoord, imageHeight);
+        //console.log('width', imageWidth, 'height', imageHeight);
+        const tileSize = 512;
 
-        const tileSize = { width: 256, height: 256 };
-        const tileZ = zoomLevel;
-        const tileX = topLeftTile.tileX;
-        const tileY = topLeftTile.tileY;
-        //offsetからwidth,heightを超えるまで切り出すためのループを回す回数を計算
+        const minimumZ = 3;
+        const tiles = [];
+        for (let tileZ = baseZoomLevel; tileZ >= minimumZ; tileZ--) {
+          const topLeftTile = calculateTile(outputFile.topLeft, tileZ);
+          const bottomRightTile = calculateTile(outputFile.bottomRight, tileZ);
+          const topLeftCoord = tileToWebMercator(topLeftTile.tileX, topLeftTile.tileY, tileZ);
+          const offset = calculateOffset(outputFile.topLeft, topLeftCoord, coordPerPixel);
+          const cropSize = calculateCropSize(tileZ, coordPerPixel);
+          const tileX = topLeftTile.tileX;
+          const tileY = topLeftTile.tileY;
+          const loopX = bottomRightTile.tileX - topLeftTile.tileX + 1;
+          const loopY = bottomRightTile.tileY - topLeftTile.tileY + 1;
+          // console.log('topLeftTile', topLeftTile, 'bottomRightTile', bottomRightTile);
+          // console.log('topLeftCoord', topLeftCoord);
+          // console.log('offset', offset);
+          // console.log('cropSize', cropSize);
+          // console.log('tileX', tileX, 'tileY', tileY, 'tileZ', tileZ);
 
-        const loopX = bottomRightTile.tileX - topLeftTile.tileX + 1;
-        const loopY = bottomRightTile.tileY - topLeftTile.tileY + 1;
-        for (let y = 0; y < loopY; y++) {
-          for (let x = 0; x < loopX; x++) {
-            const offsetX = offset.x + x * cropSize.width;
-            const offsetY = offset.y + y * cropSize.height;
-            //console.log(offsetX, offsetY, cropSize.width, cropSize.height);
-            const croppedImageUri = await ImageEditor.cropImage(pdfImage, {
-              offset: { x: offsetX, y: offsetY },
-              size: cropSize,
-              displaySize: tileSize,
-            });
-            const tileUri = `${TILE_FOLDER}/${mapId}/${tileZ}/${tileX + x}/${tileY + y}`;
-            const folder = `${TILE_FOLDER}/${mapId}/${tileZ}/${tileX + x}`;
-            await FileSystem.makeDirectoryAsync(folder, {
-              intermediates: true,
-            });
-            await RNFS.moveFile(croppedImageUri, tileUri);
-            //console.log(tileUri);
+          for (let y = 0; y < loopY; y++) {
+            for (let x = 0; x < loopX; x++) {
+              const offsetX = offset.x + x * cropSize.width;
+              const offsetY = offset.y + y * cropSize.height;
+              tiles.push({ x: tileX + x, y: tileY + y, z: tileZ, offsetX, offsetY, cropSize });
+            }
           }
         }
+        const BATCH_SIZE = 10;
+        let batch: Promise<void>[] = [];
+
+        for (const tile of tiles) {
+          const folder = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}`;
+          const folderPromise = FileSystem.makeDirectoryAsync(folder, {
+            intermediates: true,
+          });
+          batch.push(folderPromise);
+          if (batch.length >= BATCH_SIZE) {
+            await Promise.all(batch);
+            batch = [];
+          }
+        }
+        await Promise.all(batch);
+
+        let batchCount = 0;
+        batch = [];
+
+        for (const tile of tiles) {
+          const tileUri = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}/${tile.y}`;
+
+          const cropImagePromise = ImageEditor.cropImage(pdfImage, {
+            offset: { x: tile.offsetX, y: tile.offsetY },
+            size: tile.cropSize,
+            displaySize: { width: tileSize, height: tileSize },
+            resizeMode: 'cover',
+          })
+            .then((croppedImageUri) => {
+              RNFS.moveFile(croppedImageUri, tileUri);
+            })
+            .catch((e) => {
+              console.log(tile, e);
+            });
+
+          batch.push(cropImagePromise);
+          if (batch.length >= BATCH_SIZE) {
+            batchCount = batchCount + BATCH_SIZE;
+            const percentPerPage = 50 / outputFiles.length;
+            setProgress((50 + percentPerPage * i + (batchCount / tiles.length) * percentPerPage).toFixed());
+            await Promise.all(batch);
+            batch = [];
+          }
+        }
+        await Promise.all(batch);
 
         RNFS.unlink(pdfImage);
-
+        const pdfName = outputFiles.length === 1 ? name : `${name}_page${(i + 1).toString().padStart(2, '0')}`;
         const newTileMap: TileMapType = {
           id: mapId,
-          name: 'PDF',
-          url: 'https://localhost/' + mapId + '/{z}/{x}/{y}.png',
+          name: pdfName,
+          url: `file://${name}`,
           attribution: 'PDF',
           maptype: 'none',
           visible: true,
           transparency: 0,
-          overzoomThreshold: zoomLevel,
+          overzoomThreshold: baseZoomLevel,
           highResolutionEnabled: false,
-          minimumZ: 0,
+          minimumZ: minimumZ,
           maximumZ: 22,
           flipY: false,
+          tileSize: tileSize,
+          boundary: {
+            center: {
+              latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
+              longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
+            },
+            zoom: baseZoomLevel - 1,
+            bounds: {
+              north: topLeftLatLon.latitude,
+              south: bottomRightLatLon.latitude,
+              west: topLeftLatLon.longitude,
+              east: bottomRightLatLon.longitude,
+            },
+          },
         };
-        const newTileMaps = cloneDeep(maps);
-        newTileMaps.unshift(newTileMap);
-        dispatch(setTileMapsAction(newTileMaps));
-        return { isOK: true, message: t('hooks.message.receiveFile') };
-      } else if (ext === 'tif') {
-        // const response = await fetch(uri);
-        // // console.log(response);
-        // const blob = await response.blob();
-        // const paths = {
-        //   wasm: require('../assets/gdal3/gdal3WebAssembly.wasm'),
-        //   data: require('../assets/gdal3/gdal3WebAssembly.data'),
-        //   js: require('../assets/gdal3/gdal3.js'),
-        // };
-        // const gdal = await initGdalJs({ paths, useWorker: true });
-        //const gdal = await initGdalJs({ path: '/' });
-        // console.log('GDAL initialized');
-        // const file = new File([blob], 'maxdepth.tif');
-        // const tif = (await gdal.open(file)).datasets[0];
-        // console.log('GDAL TIF', tif);
-        // const datasetInfo = await gdal.getInfo(tif);
-        // console.log('GDAL INFO', datasetInfo);
 
-        return { isOK: true, message: t('hooks.message.receiveFile') };
-      } else {
-        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+        newTileMaps.unshift(newTileMap);
+        setProgress((50 + ((i + 1) / outputFiles.length) * 50).toFixed());
       }
+      setProgress('10'); //次回のための初期値
+      dispatch(setTileMapsAction(newTileMaps));
+      return { isOK: true, message: t('hooks.message.receiveFile') };
     },
     [dispatch, maps]
   );
 
+  const importMapFile = useCallback(
+    async (uri: string, name: string, ext: 'json' | 'pdf') => {
+      if (ext === 'json') {
+        return importJsonMapFile(uri);
+      } else if (ext === 'pdf') {
+        let pdfUri = uri;
+
+        if (uri.startsWith('file://') === false) {
+          //uriからbasicauth部分を取得
+          const auth = uri.split('@')[0].split('//')[1];
+          const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
+          const download = FileSystem.createDownloadResumable(uri, `${FileSystem.cacheDirectory}/temp.pdf`, {
+            headers: { Authorization: options },
+          });
+          const result = await download.downloadAsync();
+          if (!result || result.status !== 200) {
+            return { isOK: false, message: t('hooks.message.failReceiveFile') };
+          }
+
+          pdfUri = result.uri;
+        }
+        return importPdfMapFile(pdfUri, name);
+      } else {
+        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      }
+    },
+    [importJsonMapFile, importPdfMapFile]
+  );
+
   return {
+    progress,
     mapListURL,
     mapList,
     maps,
