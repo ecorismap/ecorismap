@@ -95,4 +95,5 @@ APIKeys.ts
 android_bac/
 ios_bac/
 
-modules/
+modules/android/libs/
+modules/ios/Frameworks/
