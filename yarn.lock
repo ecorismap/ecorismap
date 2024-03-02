@@ -3831,6 +3831,11 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/hooks/-/hooks-3.0.0.tgz#af5f2ca32eea59b792ce9e3d9a4cf0354f9b195f"
   integrity sha512-g2OyxXHfwIytXUJitBR6Z/ISoOfp0WKx5FOv+NqJ/CrWjRDcTw6zXE5I1C9axfuh30kJqzWchVfCDrkzZYTxqg==
 
+"@react-native-community/image-editor@^3.1.1":
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-3.2.0.tgz#f1754df81ae64a75416c3b792691c7928d47dd2a"
+  integrity sha512-MGao9CZbYRzx9w8AD+he1WznUn810936D9Q5gSYc01QbuS7dtU+6tN0pI6CZCq8CqlvnDEDNSbJsASSwDBCsDQ==
+
 "@react-native-community/netinfo@^11.2.1":
   version "11.2.1"
   resolved "https://registry.yarnpkg.com/@react-native-community/netinfo/-/netinfo-11.2.1.tgz#177f5409f2ac41fd51ede6e4994307bb0edb2178"
@@ -17073,6 +17078,10 @@ react-native-fs@^2.20.0:
   dependencies:
     base-64 "^0.1.0"
     utf8 "^3.0.0"
+
+"react-native-gdalwarp@link:./modules/react-native-gdalwarp":
+  version "0.0.0"
+  uid ""
 
 react-native-gesture-handler@^2.13.4:
   version "2.13.4"

@@ -752,6 +752,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const pressUploadData = useCallback(async () => {
     try {
+      const ret = await ConfirmAsync(t('Home.confirm.upload'));
+      if (!ret) return;
       const storageLicenseResult = validateStorageLicense(project);
       if (!storageLicenseResult.isOK) {
         if (Platform.OS === 'web') {
@@ -958,20 +960,32 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('tileMap', route.params?.tileMap);
     //console.log('mode', route.params?.mode);
 
-    if (route.params?.jumpTo != null) {
-      const region = ajustMapRegion(route.params.jumpTo);
-      const zoomToJump =
-        route.params.previous === 'ProjectEdit' || route.params.previous === 'Home' ? route.params.jumpTo.zoom : zoom;
-      changeMapRegion({ ...region, zoom: zoomToJump }, true);
-      //console.log(route.params.jumpTo);
-    }
-    if (route.params?.previous === 'Settings') {
+    if (route.params?.previous === 'Home') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        const zoomToJump = route.params.jumpTo.zoom;
+        changeMapRegion({ ...region, zoom: zoomToJump }, true);
+      }
+    } else if (route.params?.previous === 'Settings') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        changeMapRegion({ ...region, zoom }, true);
+      }
       setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'ProjectEdit') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        const zoomToJump = route.params.jumpTo.zoom;
+        changeMapRegion({ ...region, zoom: zoomToJump }, true);
+      }
       setTimeout(() => bottomSheetRef.current?.close(), 300);
     } else if (route.params?.previous === 'DataEdit') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        changeMapRegion({ ...region, zoom }, true);
+      }
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
       } else {
@@ -979,9 +993,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
+        setTimeout(() => bottomSheetRef.current?.close(), 500);
+        toggleWebTerrainActive(false);
+        if (Platform.OS !== 'web') toggleHeadingUp(false);
+      } else if (route.params?.jumpTo) {
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
+        changeMapRegion(route.params.jumpTo, true);
       } else {
         bottomSheetRef.current?.snapToIndex(2);
       }

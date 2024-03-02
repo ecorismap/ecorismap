@@ -50,6 +50,7 @@ target 'ecorismap' do
     ####
     
     $static_framework += [
+      'react-native-gdalwarp',
       'react-native-maps',
       'react-native-google-maps',
       'Google-Maps-iOS-Utils',
