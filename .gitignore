@@ -95,5 +95,6 @@ APIKeys.ts
 android_bac/
 ios_bac/
 
-modules/android/libs/
-modules/ios/Frameworks/
+modules/react-native-gdalwarp/android/libs/
+modules/react-native-gdalwarp/ios/Frameworks/
+
