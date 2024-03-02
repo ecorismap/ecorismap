@@ -23,6 +23,8 @@ import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { toPDFCoordinate, toPixel, toPoint } from '../utils/General';
 import { t } from '../i18n/config';
+import { convert } from 'react-native-gdalwarp';
+import * as FileSystem from 'expo-file-system';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -40,7 +42,6 @@ export type UseEcorisMapFileReturnType = {
   generatePDF: (data: { dataSet: DataType[]; layers: LayerType[] }) => Promise<string | Window | null>;
   generateDataPDF: (data: { dataSet: DataType[]; layers: LayerType[] }) => Promise<string | Window | null>;
   generateVRT: (fileName: string) => string;
-  generateCompositionXML: () => string;
   setPdfOrientation: React.Dispatch<React.SetStateAction<PaperOrientationType>>;
   setPdfScale: React.Dispatch<React.SetStateAction<ScaleType>>;
   setPdfPaperSize: React.Dispatch<React.SetStateAction<PaperSizeType>>;
@@ -654,19 +655,20 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ]
   );
 
-  const generateCompositionXML = useCallback(() => {
-    const { minX, minY, maxX, maxY } = getBoundingBox();
-    //bboxに対応するpdfのポイント座標を計算する
-    const leftPoint = toPoint(pageMargin.millimeter);
-    const rightPoint = toPoint(paperSize.widthMillimeter - pageMargin.millimeter);
-    const topPoint = toPoint(pageMargin.millimeter);
-    const bottomPoint = toPoint(paperSize.heightMillimeter - pageMargin.millimeter);
+  const generateCompositionXML = useCallback(
+    async (uri: string) => {
+      const { minX, minY, maxX, maxY } = getBoundingBox();
+      //bboxに対応するpdfのポイント座標を計算する
+      const leftPoint = toPoint(pageMargin.millimeter);
+      const rightPoint = toPoint(paperSize.widthMillimeter - pageMargin.millimeter);
+      const topPoint = toPoint(pageMargin.millimeter);
+      const bottomPoint = toPoint(paperSize.heightMillimeter - pageMargin.millimeter);
 
-    //以下のコマンドでgeoPDFを作成することができる
-    //現時点では、VRTの方がQGISで直接読み込めるため、使用しない
-    //gdal_create test.pdf -co COMPOSITION_FILE=input.xml
+      //以下のコマンドでgeoPDFを作成することができる
+      //現時点では、VRTの方がQGISで直接読み込めるため、使用しない
+      //gdal_create test.pdf -co COMPOSITION_FILE=input.xml
 
-    const xml = `
+      const xml = `
     <PDFComposition>
       <Metadata>
           <Author>EcorisMap</Author>
@@ -683,22 +685,28 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             <ControlPoint x="${rightPoint}"  y="${topPoint}"  GeoY="${minY}"  GeoX="${maxX}"/>
           </Georeferencing>
           <Content>
-            <PDF dataset="test.pdf">
+            <PDF dataset="${uri.replace('file://', '')}">
               <Blending function="Normal" opacity="1"/>
             </PDF>
           </Content>
       </Page> 
     </PDFComposition>
     `;
-    return xml;
-  }, [
-    getBoundingBox,
-    pageMargin.millimeter,
-    paperSize.heightMillimeter,
-    paperSize.heightPoint,
-    paperSize.widthMillimeter,
-    paperSize.widthPoint,
-  ]);
+
+      const xmlUri = uri.replace('.pdf', '.xml');
+      await FileSystem.writeAsStringAsync(xmlUri, xml, { encoding: FileSystem.EncodingType.UTF8 });
+
+      return xmlUri;
+    },
+    [
+      getBoundingBox,
+      pageMargin.millimeter,
+      paperSize.heightMillimeter,
+      paperSize.heightPoint,
+      paperSize.widthMillimeter,
+      paperSize.widthPoint,
+    ]
+  );
 
   const generatePDF = useCallback(
     async (data: { dataSet: DataType[]; layers: LayerType[] }) => {
@@ -739,7 +747,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             width: outputWidth,
             height: outputHeight,
           });
-          return uri;
+          //console.log(uri);
+          const xmlUri = await generateCompositionXML(uri);
+          const { outputFiles } = await convert(xmlUri.replace('file://', '')).catch((error) => {
+            console.error(error);
+            throw error;
+          });
+
+          return 'file://' + outputFiles[0].uri;
         }
       } catch (error) {
         //console.error('!!!', error);
@@ -749,6 +764,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     [
       generateCaptions,
       generateComment,
+      generateCompositionXML,
       generateNorthArrow,
       generateScaleBar,
       generateTileMap,
@@ -854,7 +870,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     generatePDF,
     generateDataPDF,
     generateVRT,
-    generateCompositionXML,
     setPdfOrientation,
     setPdfScale,
     setPdfPaperSize,

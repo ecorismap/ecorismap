@@ -723,3 +723,8 @@ export function getMetersPerPixelAtZoomLevel(latitude: number, currentZoomLevel:
   const metersPerPx = (156543.03392 * Math.cos((latitude * Math.PI) / 180)) / Math.pow(2, currentZoomLevel);
   return metersPerPx;
 }
+
+export function webMercatorToLatLon(mercator: { x: number; y: number }): { longitude: number; latitude: number } {
+  const latlon = turf.toWgs84([mercator.x, mercator.y]);
+  return { longitude: latlon[0], latitude: latlon[1] };
+}
