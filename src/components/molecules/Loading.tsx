@@ -31,6 +31,9 @@ const styles = StyleSheet.create({
     padding: 22,
   },
   textStyle: {
+    color: COLOR.BLUE,
+    fontWeight: 'bold',
+    textAlign: 'center',
     //fontSize: 18,
     //marginLeft: 18,
   },

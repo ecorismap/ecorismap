@@ -22,44 +22,44 @@ export const fetchVectorTileInfo = async (
     const localLocation = `${TILE_FOLDER}/${tileMapId}/${tile.z}/${tile.x}/${tile.y}.pbf`;
     const info = await FileSystem.getInfoAsync(localLocation);
     //console.log(info);
-    if (!info.exists) return undefined;
+    if (!info.exists) return [];
     const base64String = await FileSystem.readAsStringAsync(localLocation);
 
     const binaryData = Buffer.from(base64String, 'base64');
 
     const pbf = new Pbf(binaryData);
     const layers = new VectorTile.VectorTile(pbf).layers;
-
-    for (const layerName of Object.keys(layers)) {
+    const propertyList: { [key: string]: any }[] = [];
+    for (const layerName of Object.keys(layers).reverse()) {
       const layer = layers[layerName];
-      //console.log(layerName, tile, layer.length);
       for (let i = 0; i < layer.length; i++) {
         const feature = layer.feature(i);
         const geometry = feature.toGeoJSON(tile.x, tile.y, tile.z);
         //console.log(i, geometry.geometry.type);
         if (geometry.geometry.type === 'Point') {
           if (distance(point(latlon), point(geometry.geometry.coordinates), { units: 'meters' }) <= maxDistanceToLine)
-            return feature.properties;
+            propertyList.push(feature.properties);
         } else if (geometry.geometry.type === 'LineString') {
           if (
             pointToLineDistance(point(latlon), lineString(geometry.geometry.coordinates), { units: 'meters' }) <=
             maxDistanceToLine
           )
-            return feature.properties;
+            propertyList.push(feature.properties);
         } else if (geometry.geometry.type === 'Polygon') {
           const coords = geometry.geometry.coordinates;
           const isInside = booleanPointInPolygon(point(latlon), polygon(coords));
-          if (isInside) return feature.properties;
+          if (isInside) propertyList.push(feature.properties);
         } else if (geometry.geometry.type === 'MultiPolygon') {
           for (const coords of geometry.geometry.coordinates) {
             const isInside = booleanPointInPolygon(point(latlon), polygon(coords));
-            if (isInside) return feature.properties;
+            if (isInside) propertyList.push(feature.properties);
           }
         }
       }
     }
+    return propertyList;
   } catch (e) {
     console.log(e);
-    return undefined;
+    return [];
   }
 };
