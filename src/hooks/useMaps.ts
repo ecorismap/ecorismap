@@ -12,8 +12,14 @@ import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
 import { decodeUri } from '../utils/File.web';
-
+import { convert } from 'react-native-gdalwarp';
+import ImageEditor from '@react-native-community/image-editor';
+import * as RNFS from 'react-native-fs';
+import { tileToWebMercator } from '../utils/Tile';
+import { webMercatorToLatLon } from '../utils/Coords';
+import { Buffer } from 'buffer';
 export type UseMapsReturnType = {
+  progress: string;
   mapListURL: string;
   mapList: TileMapItemType[];
   maps: TileMapType[];
@@ -38,7 +44,11 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   saveMapListURL: (url: string) => void;
-  importMapFile: (uri: string) => Promise<{
+  importMapFile: (
+    uri: string,
+    name: string,
+    ext: 'json' | 'pdf'
+  ) => Promise<{
     isOK: boolean;
     message: string;
   }>;
@@ -53,6 +63,7 @@ export const useMaps = (): UseMapsReturnType => {
   const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
+  const [progress, setProgress] = useState('10');
   const mapList = useSelector((state: AppState) => state.settings.mapList, shallowEqual);
 
   const fetchMapList = useCallback(
@@ -216,7 +227,15 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
-  const importMapFile = useCallback(
+  const calculateTile = (coordinate: { x: number; y: number }, zoomLevel: number): { tileX: number; tileY: number } => {
+    const earthCircumference = 40075016.686;
+    const offset = 20037508.342789244;
+    const tileX = Math.floor(((coordinate.x + offset) / earthCircumference) * Math.pow(2, zoomLevel));
+    const tileY = Math.floor(((offset - coordinate.y) / earthCircumference) * Math.pow(2, zoomLevel));
+    return { tileX, tileY };
+  };
+
+  const importJsonMapFile = useCallback(
     async (uri: string) => {
       try {
         const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
@@ -238,7 +257,202 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
+  const calculateZoomLevel = (pdfTopCoord: number, pdfBottomCoord: number, imageHeight: number) => {
+    const coordPerPixel = (pdfTopCoord - pdfBottomCoord) / imageHeight;
+    const earthCircumference = Math.PI * 2 * 6378137;
+    return Math.round(Math.log2(earthCircumference / coordPerPixel / 256)) - 1;
+  };
+
+  const calculateOffset = (
+    pdfTopLeftCoord: { x: number; y: number },
+    topLeftCoord: { mercatorX: number; mercatorY: number },
+    coordPerPixel: number
+  ) => {
+    const offsetLeft = pdfTopLeftCoord.x - topLeftCoord.mercatorX;
+    const offsetTop = topLeftCoord.mercatorY - pdfTopLeftCoord.y;
+    return { x: -offsetLeft / coordPerPixel, y: -offsetTop / coordPerPixel };
+  };
+
+  const calculateCropSize = (zoomLevel: number, coordPerPixel: number) => {
+    const earthCircumference = Math.PI * 2 * 6378137;
+    return {
+      width: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
+      height: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
+    };
+  };
+
+  const importPdfMapFile = useCallback(
+    async (uri: string, name: string) => {
+      const { outputFiles } = await convert(uri.replace('file://', '')).catch((e) => {
+        console.error(e);
+        return { outputFiles: [] };
+      });
+
+      if (outputFiles === undefined || outputFiles.length === 0) {
+        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      }
+      setProgress('50');
+      const newTileMaps = cloneDeep(maps);
+      for (let i = 0; i < outputFiles.length; i++) {
+        const outputFile = outputFiles[i];
+        const mapId = uuidv4();
+        const pdfImage = 'file://' + outputFile.uri;
+
+        const { y: pdfTopCoord } = outputFile.topLeft;
+        const { y: pdfBottomCoord } = outputFile.bottomRight;
+        //const imageWidth = outputFile.width;
+        const imageHeight = outputFile.height;
+        const topLeftLatLon = webMercatorToLatLon(outputFile.topLeft);
+        const bottomRightLatLon = webMercatorToLatLon(outputFile.bottomRight);
+        const coordPerPixel = (pdfTopCoord - pdfBottomCoord) / imageHeight;
+        const baseZoomLevel = calculateZoomLevel(pdfTopCoord, pdfBottomCoord, imageHeight);
+        //console.log('width', imageWidth, 'height', imageHeight);
+        const tileSize = 512;
+
+        const minimumZ = 3;
+        const tiles = [];
+        for (let tileZ = baseZoomLevel; tileZ >= minimumZ; tileZ--) {
+          const topLeftTile = calculateTile(outputFile.topLeft, tileZ);
+          const bottomRightTile = calculateTile(outputFile.bottomRight, tileZ);
+          const topLeftCoord = tileToWebMercator(topLeftTile.tileX, topLeftTile.tileY, tileZ);
+          const offset = calculateOffset(outputFile.topLeft, topLeftCoord, coordPerPixel);
+          const cropSize = calculateCropSize(tileZ, coordPerPixel);
+          const tileX = topLeftTile.tileX;
+          const tileY = topLeftTile.tileY;
+          const loopX = bottomRightTile.tileX - topLeftTile.tileX + 1;
+          const loopY = bottomRightTile.tileY - topLeftTile.tileY + 1;
+          // console.log('topLeftTile', topLeftTile, 'bottomRightTile', bottomRightTile);
+          // console.log('topLeftCoord', topLeftCoord);
+          // console.log('offset', offset);
+          // console.log('cropSize', cropSize);
+          // console.log('tileX', tileX, 'tileY', tileY, 'tileZ', tileZ);
+
+          for (let y = 0; y < loopY; y++) {
+            for (let x = 0; x < loopX; x++) {
+              const offsetX = offset.x + x * cropSize.width;
+              const offsetY = offset.y + y * cropSize.height;
+              tiles.push({ x: tileX + x, y: tileY + y, z: tileZ, offsetX, offsetY, cropSize });
+            }
+          }
+        }
+        const BATCH_SIZE = 10;
+        let batch: Promise<void>[] = [];
+
+        for (const tile of tiles) {
+          const folder = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}`;
+          const folderPromise = FileSystem.makeDirectoryAsync(folder, {
+            intermediates: true,
+          });
+          batch.push(folderPromise);
+          if (batch.length >= BATCH_SIZE) {
+            await Promise.all(batch);
+            batch = [];
+          }
+        }
+        await Promise.all(batch);
+
+        let batchCount = 0;
+        batch = [];
+
+        for (const tile of tiles) {
+          const tileUri = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}/${tile.y}`;
+
+          const cropImagePromise = ImageEditor.cropImage(pdfImage, {
+            offset: { x: tile.offsetX, y: tile.offsetY },
+            size: tile.cropSize,
+            displaySize: { width: tileSize, height: tileSize },
+            resizeMode: 'cover',
+          })
+            .then((croppedImageUri) => {
+              RNFS.moveFile(croppedImageUri, tileUri);
+            })
+            .catch((e) => {
+              console.log(tile, e);
+            });
+
+          batch.push(cropImagePromise);
+          if (batch.length >= BATCH_SIZE) {
+            batchCount = batchCount + BATCH_SIZE;
+            const percentPerPage = 50 / outputFiles.length;
+            setProgress((50 + percentPerPage * i + (batchCount / tiles.length) * percentPerPage).toFixed());
+            await Promise.all(batch);
+            batch = [];
+          }
+        }
+        await Promise.all(batch);
+
+        RNFS.unlink(pdfImage);
+        const pdfName = outputFiles.length === 1 ? name : `${name}_page${(i + 1).toString().padStart(2, '0')}`;
+        const newTileMap: TileMapType = {
+          id: mapId,
+          name: pdfName,
+          url: `file://${name}`,
+          attribution: 'PDF',
+          maptype: 'none',
+          visible: true,
+          transparency: 0,
+          overzoomThreshold: baseZoomLevel,
+          highResolutionEnabled: false,
+          minimumZ: minimumZ,
+          maximumZ: 22,
+          flipY: false,
+          tileSize: tileSize,
+          boundary: {
+            center: {
+              latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
+              longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
+            },
+            zoom: baseZoomLevel - 1,
+            bounds: {
+              north: topLeftLatLon.latitude,
+              south: bottomRightLatLon.latitude,
+              west: topLeftLatLon.longitude,
+              east: bottomRightLatLon.longitude,
+            },
+          },
+        };
+
+        newTileMaps.unshift(newTileMap);
+        setProgress((50 + ((i + 1) / outputFiles.length) * 50).toFixed());
+      }
+      setProgress('10'); //次回のための初期値
+      dispatch(setTileMapsAction(newTileMaps));
+      return { isOK: true, message: t('hooks.message.receiveFile') };
+    },
+    [dispatch, maps]
+  );
+
+  const importMapFile = useCallback(
+    async (uri: string, name: string, ext: 'json' | 'pdf') => {
+      if (ext === 'json') {
+        return importJsonMapFile(uri);
+      } else if (ext === 'pdf') {
+        let pdfUri = uri;
+
+        if (uri.startsWith('file://') === false) {
+          //uriからbasicauth部分を取得
+          const auth = uri.split('@')[0].split('//')[1];
+          const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
+          const download = FileSystem.createDownloadResumable(uri, `${FileSystem.cacheDirectory}/temp.pdf`, {
+            headers: { Authorization: options },
+          });
+          const result = await download.downloadAsync();
+          if (!result || result.status !== 200) {
+            return { isOK: false, message: t('hooks.message.failReceiveFile') };
+          }
+
+          pdfUri = result.uri;
+        }
+        return importPdfMapFile(pdfUri, name);
+      } else {
+        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      }
+    },
+    [importJsonMapFile, importPdfMapFile]
+  );
+
   return {
+    progress,
     mapListURL,
     mapList,
     maps,
