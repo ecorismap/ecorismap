@@ -7,10 +7,12 @@ import { MapModalTileMap } from '../organisms/MapModalTileMap';
 import { MapItems } from '../organisms/MapItems';
 import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
+import { Loading } from '../molecules/Loading';
+import { t } from '../../i18n/config';
 
 export default function MapScreen() {
   //console.log('render Maps');
-  const { isOffline, pressToggleOnline } = useContext(MapsContext);
+  const { progress, isLoading, isOffline, pressToggleOnline } = useContext(MapsContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -33,6 +35,7 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
+      <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
       <MapItems />
       <MapButtons />
       <MapModalTileMap />

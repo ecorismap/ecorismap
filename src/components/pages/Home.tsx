@@ -432,9 +432,9 @@ export default function HomeScreen() {
                       urlTemplate={tileMap.url}
                       flipY={tileMap.flipY}
                       opacity={1 - tileMap.transparency}
-                      tileSize={256}
-                      minimumZ={0}
-                      maximumZ={22}
+                      tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
+                      minimumZ={tileMap.minimumZ}
+                      maximumZ={tileMap.maximumZ}
                       zIndex={mapIndex}
                       doubleTileSize={tileMap.highResolutionEnabled}
                       maximumNativeZ={tileMap.overzoomThreshold}

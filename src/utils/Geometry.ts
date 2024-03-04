@@ -297,13 +297,13 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       break;
     case 'POINT':
       geometries = dataSet.map(
-        ({ coords }) => `POINT(${(coords as LocationType).longitude} ${(coords as LocationType).latitude})`
+        ({ coords }) => `"POINT(${(coords as LocationType).longitude} ${(coords as LocationType).latitude})"`
       );
       break;
     case 'LINE':
       geometries = dataSet.map(({ coords }) => {
         const linestring = (coords as LocationType[]).map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
-        return `LINESTRING(${linestring})`;
+        return `"LINESTRING(${linestring})"`;
       });
       break;
     case 'POLYGON':
@@ -317,7 +317,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
             return `(${hole_one})`;
           })
           .join(',');
-        return `POLYGON((${polygonstring}),${holestring})`;
+        return `"POLYGON((${polygonstring}),${holestring})"`;
       });
       break;
   }

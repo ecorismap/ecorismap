@@ -1,0 +1,9 @@
+{
+  "name": "react-native-gdalwarp",
+  "version": "0.0.0",
+  "description": "gdalwarp implementaion",
+  "main": "src/index",
+  "author": " <> ()",
+  "license": "UNLICENSED",
+  "homepage": "#readme"
+}

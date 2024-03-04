@@ -149,7 +149,8 @@
       "high": "高精度、高バッテリー消費"
     },
     "gps_settings_disabled": "GPSがオンの時は設定できません",
-    "gps_settings_alert": "GPSの起動時に設定が反映されます。"
+    "gps_settings_alert": "GPSの起動時に設定が反映されます。",
+    "processing": "処理中..."
   },
   "Home": {
     "confirm": {
@@ -673,7 +674,8 @@
       "invalidLine": "ラインが不正なため保存できません。",
       "invalidPoint": "ポイントが不正なため保存できません。",
       "cannotInRunningProject": "プロジェクトを開いている時はできません",
-      "cannotSaveInTracking": "トラックの記録中は変更できません。"
+      "cannotSaveInTracking": "トラックの記録中は変更できません。",
+      "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

@@ -778,16 +778,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('tileMap', route.params?.tileMap);
     //console.log('mode', route.params?.mode);
 
-    if (route.params?.jumpTo != null) {
-      //console.log(route.params.jumpTo);
-      const region = ajustMapRegion(route.params.jumpTo);
-      changeMapRegion({ ...region, zoom }, true);
-    }
     if (route.params?.previous === 'Settings') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        changeMapRegion({ ...region, zoom }, true);
+      }
       setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'DataEdit') {
+      if (route.params?.jumpTo) {
+        const region = ajustMapRegion(route.params.jumpTo);
+        changeMapRegion({ ...region, zoom }, true);
+      }
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
       } else {
@@ -795,9 +798,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
+        setTimeout(() => bottomSheetRef.current?.close(), 500);
+        toggleWebTerrainActive(false);
+        if (Platform.OS !== 'web') toggleHeadingUp(false);
+      } else if (route.params?.jumpTo) {
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
+        changeMapRegion(route.params.jumpTo, true);
       } else {
         bottomSheetRef.current?.snapToIndex(2);
       }

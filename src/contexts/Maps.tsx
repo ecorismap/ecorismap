@@ -1,8 +1,10 @@
 import { createContext } from 'react';
 
-import { TileMapType } from '../types';
+import { TileMapType, boundaryType } from '../types';
 
 interface MapsContextType {
+  progress: string;
+  isLoading: boolean;
   isOffline: boolean;
   maps: TileMapType[];
   editedMap: TileMapType;
@@ -16,8 +18,9 @@ interface MapsContextType {
   pressEditMapOK: (newTileMap: TileMapType) => void;
   pressEditMapCancel: () => void;
   gotoMapList: () => void;
-  pressImportMaps: () => void;
-  pressExportMaps: () => void;
+  pressImportMaps: () => Promise<void>;
+  pressExportMaps: () => Promise<void>;
+  jumpToBoundary: (boundary: boundaryType | undefined) => void;
 }
 
 export const MapsContext = createContext({} as MapsContextType);

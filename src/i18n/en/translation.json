@@ -201,7 +201,8 @@
       "high": "High precision, high battery consumption"
     },
     "gps_settings_disabled": "Cannot be set when GPS is on",
-    "gps_settings_alert": "The settings will be reflected when GPS starts up."
+    "gps_settings_alert": "The settings will be reflected when GPS starts up.",
+    "processing": "processing..."
   },
   "firebase": {
     "message": {
@@ -566,7 +567,7 @@
       "wrongPassword": "The password is incorrect.",
       "tooManyMapList": "There are too many lists. \nPlease keep it within 50 pieces.",
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
-      "receiveFile": "I have imported the file.",
+      "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
       "wrongExtension": "Incorrect file type.",
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
@@ -577,7 +578,8 @@
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
       "cannotInRunningProject": "Not possible when project is open",
-      "cannotSaveInTracking": "It cannot be changed while the track is being recorded."
+      "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
+      "notSupportPDF": "The web version does not support PDF import."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
