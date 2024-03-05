@@ -76,7 +76,7 @@
     "expo-localization": "~14.3.0",
     "expo-location": "~16.1.0",
     "expo-media-library": "~15.4.1",
-    "expo-print": "~12.4.2",
+    "expo-print": "12.6.0",
     "expo-sharing": "~11.5.0",
     "expo-splash-screen": "~0.20.5",
     "expo-status-bar": "~1.6.0",
