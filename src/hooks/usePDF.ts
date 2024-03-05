@@ -25,6 +25,8 @@ import { toPDFCoordinate, toPixel, toPoint } from '../utils/General';
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
 import * as FileSystem from 'expo-file-system';
+import { TILE_FOLDER } from '../constants/AppConstants';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -270,16 +272,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     };
   }, [mapRegion.latitude, mapRegion.longitude, pdfRegion]);
 
-  // const convertImageToBase64 = async (filePath: string) => {
-  //   try {
-  //     const base64 = await FileSystem.readAsStringAsync(filePath, { encoding: FileSystem.EncodingType.Base64 });
-  //     return `data:image/png;base64,${base64}`;
-  //   } catch (error) {
-  //     console.error(error);
-  //     return null;
-  //   }
-  // };
-
   const convertCoordsToPixels = useCallback(
     (
       coords: LocationType[],
@@ -418,7 +410,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     return commentContents;
   }, [pageMargin.pixel, pageSize.heightPixel, pageSize.widthPixel]);
 
-  const generateTileMap = useCallback(() => {
+  const generateTileMap = useCallback(async () => {
     const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
     const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(tileZoom);
 
@@ -430,15 +422,35 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
 
       for (let x = leftTileX; x <= rightTileX; x++) {
         for (const map of maps) {
-          //const mapImage = `${TILE_FOLDER}/${map.id}/${zoom}/${x}/${y}`;
-          //const mapSrc = await convertImageToBase64(mapImage);
-          const mapSrc = map.url
-            .replace('{z}', tileZoom.toString())
-            .replace('{x}', x.toString())
-            .replace('{y}', y.toString());
-          tileContents += `<img src="${mapSrc}" style="position: absolute; width: 256px; height: 256px; left: ${
-            256 * (x - leftTileX)
-          }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
+          let mapSrc;
+
+          const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
+          if ((await FileSystem.getInfoAsync(mapUri)).exists) {
+            mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG });
+          } else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
+            mapSrc = undefined;
+          } else {
+            const mapUri = map.url
+              .replace('{z}', tileZoom.toString())
+              .replace('{x}', x.toString())
+              .replace('{y}', y.toString());
+
+            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
+              intermediates: true,
+            });
+            const resp = await FileSystem.downloadAsync(mapUri, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
+            if (resp.status === 200) {
+              mapSrc = await manipulateAsync(resp.uri, [], { base64: true, format: SaveFormat.PNG });
+            }
+          }
+
+          if (mapSrc) {
+            tileContents += `<img src="data:image/png;base64,${
+              mapSrc.base64
+            }" style="position: absolute; width: 256px; height: 256px; left: ${256 * (x - leftTileX)}px; top: ${
+              256 * (y - topTileY)
+            }px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
+          }
         }
       }
       tileContents += '</div>';
@@ -717,7 +729,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       // タイル地図を作成するための HTML
       let mapContents = `<div style="position: absolute; left: ${pageMargin.pixel}; top:${pageMargin.pixel};width: ${pageSize.widthPixel}px;height: ${pageSize.heightPixel}px;overflow: hidden;">`;
       mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
-      mapContents += generateTileMap();
+      mapContents += await generateTileMap();
       mapContents += generateVectorMap(data);
       mapContents += '</div>';
       mapContents += '</div>';
@@ -751,14 +763,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
           const xmlUri = await generateCompositionXML(uri);
           const { outputFiles } = await convert(xmlUri.replace('file://', '')).catch((error) => {
             console.error(error);
-            throw error;
+            return { outputFiles: [] };
           });
-
+          if (outputFiles.length === 0) return null;
           return 'file://' + outputFiles[0].uri;
         }
       } catch (error) {
-        //console.error('!!!', error);
-        throw error;
+        console.error('!!!', error);
+        return null;
       }
     },
     [

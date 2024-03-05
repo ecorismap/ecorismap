@@ -7973,10 +7973,10 @@ expo-modules-core@1.5.11:
     compare-versions "^3.4.0"
     invariant "^2.2.4"
 
-expo-print@~12.4.2:
-  version "12.4.2"
-  resolved "https://registry.yarnpkg.com/expo-print/-/expo-print-12.4.2.tgz#116f9d86d971531cf682718e23869d14e8089e63"
-  integrity sha512-kI3yYxEzu+aSDXMndFr8RTTBnahP98zdbRgSkeOHEHzPQ/0cM4dk0LOwIe83q1eLND0gRANM3Qm6eN+hUpnyCA==
+expo-print@12.6.0:
+  version "12.6.0"
+  resolved "https://registry.yarnpkg.com/expo-print/-/expo-print-12.6.0.tgz#daccc423def8db3644e2ebbe360656544847bacb"
+  integrity sha512-Xpt+524SZUnsqrdbATFXVUQcmtVteyDDtfRHJO0j15EqbZ1FTyoVotVd+NE7Oo9qYxmQk7KImgaspAtdl5tWBw==
 
 expo-pwa@0.0.127:
   version "0.0.127"
