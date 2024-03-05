@@ -39,7 +39,7 @@ PODS:
     - React-NativeModulesApple
     - React-RCTAppDelegate
     - ReactCommon/turbomodule/core
-  - ExpoPrint (12.4.2):
+  - ExpoPrint (12.6.0):
     - ExpoModulesCore
   - ExpoSharing (11.5.0):
     - ExpoModulesCore
@@ -852,7 +852,7 @@ SPEC CHECKSUMS:
   ExpoLinearGradient: 5966dd5d49872cc9c104fedc8bbc298b6049b2e8
   ExpoLocalization: be37fdd0b5930c6a49cd307b4542f4b426d6134c
   ExpoModulesCore: 51cb2e7ab4c8da14be3f40b66d54c1781002e99d
-  ExpoPrint: e1531d216196f51b431c7cc4d906e569f79f10e7
+  ExpoPrint: c048657854ad4315be943e1d6a5cf50d94df74f8
   ExpoSharing: 825b2b3fc919a2656f75def0069f584bbd6e359a
   EXSplashScreen: c0e7f2d4a640f3b875808ed0b88575538daf6d82
   EXTaskManager: f1730c315eb6fe457a3a2ee4ed899a51d717f302
