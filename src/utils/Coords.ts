@@ -430,13 +430,22 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return lineFeatures
       .map((feature) => {
-        const featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        let featureLine;
+        if (feature.coords.length === 1) {
+          featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
+        } else if (feature.coords.length > 1) {
+          featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        } else {
+          return undefined;
+        }
+
         //@ts-ignore
         const intersects = turf.booleanIntersects(featureLine, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is LineRecordType => d !== undefined);
   } catch (e) {
+    //console.log(e);
     return [];
   }
 };
@@ -483,7 +492,14 @@ export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointC
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = lineFeatures
       .map((feature) => {
-        const featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        let featureLine;
+        if (feature.coords.length === 1) {
+          featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
+        } else if (feature.coords.length > 1) {
+          featureLine = turf.lineString(feature.coords.map((c) => [c.longitude, c.latitude]));
+        } else {
+          return undefined;
+        }
         //@ts-ignore
         const intersects = turf.booleanIntersects(featureLine, bufferPolygon);
         if (intersects) return feature;
