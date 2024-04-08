@@ -22,7 +22,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     allUserRecordSet: data,
     isChecked,
     checkList,
-    targetRecords,
+    checkedRecords,
+    isMapMemoLayer,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -52,7 +53,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (!ret) return;
-    for (const record of targetRecords) {
+    for (const record of checkedRecords) {
       const { isOK, message } = checkRecordEditable(route.params.targetLayer, record);
       if (!isOK) {
         await AlertAsync(message);
@@ -60,10 +61,10 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
     }
     deleteRecords();
-    targetRecords.forEach((record) => {
+    checkedRecords.forEach((record) => {
       deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
     });
-  }, [checkRecordEditable, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer, targetRecords]);
+  }, [checkRecordEditable, checkedRecords, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer]);
 
   const pressAddData = useCallback(() => {
     if (!route.params.targetLayer.active) {
@@ -102,6 +103,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         layer,
         isChecked,
         checkList,
+        isMapMemoLayer,
         changeOrder,
         changeChecked,
         changeCheckedAll,

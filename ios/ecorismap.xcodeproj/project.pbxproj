@@ -734,6 +734,8 @@
 				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = V5G4AV2NNZ;
 				ENABLE_BITCODE = NO;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
@@ -775,6 +777,7 @@
 				CODE_SIGN_ENTITLEMENTS = ecorismap/ecorismap.entitlements;
 				CURRENT_PROJECT_VERSION = 85;
 				DEVELOPMENT_TEAM = V5G4AV2NNZ;
+				GCC_NO_COMMON_BLOCKS = YES;
 				INFOPLIST_FILE = ecorismap/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EcorisMap;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";

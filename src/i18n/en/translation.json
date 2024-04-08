@@ -207,7 +207,24 @@
     },
     "gps_settings_disabled": "Cannot be set when GPS is on",
     "gps_settings_alert": "The settings will be reflected when GPS starts up.",
-    "processing": "processing..."
+    "processing": "processing...",
+    "selectStamp": "select stamp",
+    "selectPen": "select pen",
+    "selectBrush": "select brush",
+    "selectStrokeWidth": "pen thickness",
+    "eraser": "eraser",
+    "strokeWidth": "line thickness",
+    "arrow": "arrow",
+    "selectEraser": "Select eraser",
+    "accuracyAndBattery": "Accuracy and Battery",
+    "selectPenEraser": "erase everything",
+    "selectBrushEraser": "brush only",
+    "selectStampEraser": "stamp only",
+    "snapWithLine": "snap to line",
+    "straight_curve": "Curve/straight line",
+    "default": "Default",
+    "common": "common",
+    "smoothLine": "smooth the lines"
   },
   "firebase": {
     "message": {

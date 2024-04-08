@@ -1,27 +1,24 @@
 import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, MAPMEMOTOOL } from '../../constants/AppConstants';
+import { COLOR, MAPMEMOTOOL, PEN, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeContext } from '../../contexts/Home';
-import { HomeMapMemoPenButton } from './HomeMapMemoPenButton';
-import { HomeMapMemoEraserButton } from './HomeMapMemoEraserButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 
 export const HomeMapMemoTools = () => {
   const {
     currentMapMemoTool,
-    currentPen,
-    currentEraser,
-    penColor,
     isPencilModeActive,
     isUndoable,
     isRedoable,
     selectMapMemoTool,
-    setPen,
-    setEraser,
     setVisibleMapMemoColor,
+    setVisibleMapMemoPen,
+    setVisibleMapMemoStamp,
+    setVisibleMapMemoBrush,
+    setVisibleMapMemoEraser,
     pressUndoMapMemo,
     pressRedoMapMemo,
     togglePencilMode,
@@ -53,22 +50,44 @@ export const HomeMapMemoTools = () => {
   return (
     <View style={styles.buttonContainer}>
       <View style={styles.selectionalButton}>
-        <HomeMapMemoPenButton
-          isPositionRight={false}
-          currentMapMemoTool={currentMapMemoTool}
-          currentPen={currentPen}
-          penColor={penColor}
-          selectMapMemoTool={selectMapMemoTool}
-          setPen={setPen}
+        <Button
+          // @ts-ignore
+          name={PEN[currentMapMemoTool] || PEN.PEN}
+          backgroundColor={Object.keys(PEN).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoPen(true)}
+          onLongPress={() => selectMapMemoTool(undefined)}
         />
       </View>
-      <View style={styles.selectionalButton}>
-        <HomeMapMemoEraserButton
-          isPositionRight={false}
-          currentMapMemoTool={currentMapMemoTool}
-          currentEraser={currentEraser}
-          selectMapMemoTool={selectMapMemoTool}
-          setEraser={setEraser}
+      <View style={styles.button}>
+        <Button
+          // @ts-ignore
+          name={STAMP[currentMapMemoTool] || STAMP.STAMP}
+          backgroundColor={Object.keys(STAMP).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoStamp(true)}
+          onLongPress={() => selectMapMemoTool(undefined)}
+        />
+      </View>
+      <View style={styles.button}>
+        <Button
+          // @ts-ignore
+          name={BRUSH[currentMapMemoTool] || BRUSH.BRUSH}
+          backgroundColor={Object.keys(BRUSH).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoBrush(true)}
+          onLongPress={() => selectMapMemoTool(undefined)}
+        />
+      </View>
+
+      <View style={styles.button}>
+        <Button
+          // @ts-ignore
+          name={ERASER.ERASER}
+          backgroundColor={Object.keys(ERASER).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
+          borderRadius={10}
+          onPress={() => setVisibleMapMemoEraser(true)}
+          onLongPress={() => selectMapMemoTool(undefined)}
         />
       </View>
       <View style={styles.button}>
@@ -79,6 +98,7 @@ export const HomeMapMemoTools = () => {
           onPress={() => setVisibleMapMemoColor(true)}
         />
       </View>
+
       {Platform.OS === 'ios' && isTablet() && (
         <View style={styles.button}>
           <Button
