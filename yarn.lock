@@ -3836,10 +3836,10 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-3.2.0.tgz#f1754df81ae64a75416c3b792691c7928d47dd2a"
   integrity sha512-MGao9CZbYRzx9w8AD+he1WznUn810936D9Q5gSYc01QbuS7dtU+6tN0pI6CZCq8CqlvnDEDNSbJsASSwDBCsDQ==
 
-"@react-native-community/netinfo@^11.2.1":
-  version "11.2.1"
-  resolved "https://registry.yarnpkg.com/@react-native-community/netinfo/-/netinfo-11.2.1.tgz#177f5409f2ac41fd51ede6e4994307bb0edb2178"
-  integrity sha512-n9kgmH7vLaU7Cdo8vGfJGGwhrlgppaOSq5zKj9I7H4k5iRM3aNtwURw83mgrc22Ip7nSye2afZV2xDiIyvHttQ==
+"@react-native-community/netinfo@^11.3.1":
+  version "11.3.1"
+  resolved "https://registry.yarnpkg.com/@react-native-community/netinfo/-/netinfo-11.3.1.tgz#4539371a2f4bd402d932031be82c2449ed63a1a5"
+  integrity sha512-UBnJxyV0b7i9Moa97Av+HKho1ByzX0DtbJXzUQS5E3xhQs6P2D/Os0iw3ouy7joY1TVd6uIhplPbr7l1SJNaNQ==
 
 "@react-native-community/slider@^4.4.2":
   version "4.4.2"
@@ -10357,10 +10357,10 @@ expo-modules-core@1.5.11:
     compare-versions "^3.4.0"
     invariant "^2.2.4"
 
-expo-print@~12.4.2:
-  version "12.4.2"
-  resolved "https://registry.yarnpkg.com/expo-print/-/expo-print-12.4.2.tgz#116f9d86d971531cf682718e23869d14e8089e63"
-  integrity sha512-kI3yYxEzu+aSDXMndFr8RTTBnahP98zdbRgSkeOHEHzPQ/0cM4dk0LOwIe83q1eLND0gRANM3Qm6eN+hUpnyCA==
+expo-print@12.6.0:
+  version "12.6.0"
+  resolved "https://registry.yarnpkg.com/expo-print/-/expo-print-12.6.0.tgz#daccc423def8db3644e2ebbe360656544847bacb"
+  integrity sha512-Xpt+524SZUnsqrdbATFXVUQcmtVteyDDtfRHJO0j15EqbZ1FTyoVotVd+NE7Oo9qYxmQk7KImgaspAtdl5tWBw==
 
 expo-pwa@0.0.127:
   version "0.0.127"
@@ -17106,7 +17106,7 @@ react-native-keychain@^8.1.2:
   resolved "https://registry.yarnpkg.com/react-native-keychain/-/react-native-keychain-8.1.2.tgz#34291ae472878e5124d081211af5ede7d810e64f"
   integrity sha512-bhHEui+yMp3Us41NMoRGtnWEJiBE0g8tw5VFpq4mpmXAx6XJYahuM6K3WN5CsUeUl83hYysSL9oFZNKSTPSvYw==
 
-react-native-maps@^1.7.1:
+react-native-maps@~1.7.1:
   version "1.7.1"
   resolved "https://registry.yarnpkg.com/react-native-maps/-/react-native-maps-1.7.1.tgz#e0b9d68542b4b59b5ca3df375ada7c860fb41f2e"
   integrity sha512-CHVLzL+Q2jiUGgbt4/vosxVI1SukWyaLGjD62VLgR/wZpnH4Umi9ql1bmKDPWcfj2C1QZwMU0Yc7rXTbvZUIiw==
