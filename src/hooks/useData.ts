@@ -14,7 +14,8 @@ export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
   checkList: boolean[];
-  targetRecords: RecordType[];
+  checkedRecords: RecordType[];
+  isMapMemoLayer: boolean;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
   changeChecked: (index: number) => void;
@@ -62,11 +63,16 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   );
   const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
 
-  const targetRecords = useMemo(() => allUserRecordSet.filter((_, i) => checkList[i]), [allUserRecordSet, checkList]);
+  const checkedRecords = useMemo(() => allUserRecordSet.filter((_, i) => checkList[i]), [allUserRecordSet, checkList]);
+
+  const isMapMemoLayer = useMemo(
+    () => allUserRecordSet.some((r) => r.field._strokeColor !== undefined),
+    [allUserRecordSet]
+  );
 
   const checkRecordEditable = useCallback(
-    (targetLayer: LayerType, feature?: RecordType) => {
-      if (isRunningProject && targetLayer.permission === 'COMMON') {
+    (targetLayer_: LayerType, feature?: RecordType) => {
+      if (isRunningProject && targetLayer_.permission === 'COMMON') {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
       if (isRunningProject && feature && feature.userId !== user.uid) {
@@ -75,7 +81,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       if (tracking !== undefined && tracking.dataId === feature?.id) {
         return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
       }
-      if (!targetLayer.active) {
+      if (!targetLayer_.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
@@ -127,17 +133,26 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     },
     [dataSet, dispatch, targetLayer.id]
   );
+
   const changeVisible = useCallback(
     (record: RecordType) => {
+      let updatedRecords;
+      if (isMapMemoLayer) {
+        //同じグループのレコードを取得
+        const subGroupRecords = allUserRecordSet.filter((r) => r.field._group === record.id);
+        updatedRecords = [record, ...subGroupRecords].map((r) => ({ ...r, visible: !record.visible }));
+      } else {
+        updatedRecords = [{ ...record, visible: !record.visible }];
+      }
       dispatch(
         updateRecordsAction({
           layerId: targetLayer.id,
           userId: record.userId,
-          data: [{ ...record, visible: !record.visible }],
+          data: updatedRecords,
         })
       );
     },
-    [dispatch, targetLayer.id]
+    [allUserRecordSet, dispatch, isMapMemoLayer, targetLayer.id]
   );
 
   const changeCheckedAll = useCallback(
@@ -177,37 +192,66 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   );
 
   const deleteRecords = useCallback(() => {
+    let deletedRecords: RecordType[] = [];
+    if (isMapMemoLayer) {
+      //同じグループのレコードを取得
+      checkedRecords.forEach((record) => {
+        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
+        const subGroupRecords = allUserRecordSet.filter((r) => r.field._group === record.id);
+        deletedRecords = [...deletedRecords, record, ...subGroupRecords];
+      });
+    } else {
+      deletedRecords = checkedRecords;
+    }
     dispatch(
       deleteRecordsAction({
         layerId: targetLayer.id,
         userId: dataUser.uid,
-        data: targetRecords,
+        data: deletedRecords,
       })
     );
-  }, [dataUser.uid, dispatch, targetLayer.id, targetRecords]);
+  }, [allUserRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer.id]);
 
   const generateExportGeoData = useCallback(() => {
     const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
 
+    let exportedRecords: RecordType[] = [];
+    if (isMapMemoLayer) {
+      checkedRecords.forEach((record) => {
+        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
+        const subGroupRecords = allUserRecordSet.filter((r) => r.field._group === record.id);
+        exportedRecords = [...exportedRecords, record, ...subGroupRecords];
+      });
+    } else {
+      exportedRecords = checkedRecords;
+    }
+
     //LayerSetting
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
+
     //GeoJSON
     if (targetLayer.type !== 'NONE') {
-      const geojson = generateGeoJson(targetRecords, targetLayer.field, targetLayer.type, targetLayer.name);
+      const geojson = generateGeoJson(
+        exportedRecords,
+        targetLayer.field,
+        targetLayer.type,
+        targetLayer.name,
+        isMapMemoLayer
+      );
       const geojsonData = JSON.stringify(geojson);
       const geojsonName = `${targetLayer.name}_${time}.geojson`;
       exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
     }
     //CSV
-    const csv = generateCSV(targetRecords, targetLayer.field, targetLayer.type);
+    const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type, isMapMemoLayer);
     const csvData = csv;
     const csvName = `${targetLayer.name}_${time}.csv`;
     exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: '' });
     //GPX
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
-      const gpx = generateGPX(targetRecords, targetLayer.type);
+      const gpx = generateGPX(exportedRecords, targetLayer.type);
       const gpxData = gpx;
       const gpxName = `${targetLayer.name}_${time}.gpx`;
       exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: '' });
@@ -215,7 +259,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     //Photo
 
     const photoFields = targetLayer.field.filter((f) => f.format === 'PHOTO');
-    targetRecords.forEach(({ field }) => {
+    exportedRecords.forEach(({ field }) => {
       photoFields.forEach(({ name }) => {
         const photos = field[name] as PhotoType[];
         for (const photo of photos) {
@@ -227,12 +271,14 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     });
     const fileName = `${targetLayer.name}_${time}`;
     return { exportData, fileName };
-  }, [targetLayer, targetRecords]);
+  }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
     if (dataSet === undefined) return;
-    const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
+    const data = dataSet.flatMap((d) => (d.layerId === targetLayer.id ? d.data : []));
+
     setCheckList(new Array(data.length).fill(false));
+    //console.log(data);
     setAllUserRecordSet(data);
   }, [dataSet, targetLayer.id]);
 
@@ -240,7 +286,8 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     allUserRecordSet,
     isChecked,
     checkList,
-    targetRecords,
+    checkedRecords,
+    isMapMemoLayer,
     changeVisible,
     changeVisibleAll,
     changeChecked,

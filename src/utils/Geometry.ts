@@ -270,11 +270,21 @@ export const GeoJson2Data = (
   }
 };
 
-export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
-  const header = field.map((f) => f.name).join(',') + ',' + 'geometry';
+export const generateCSV = (
+  dataSet: RecordType[],
+  field: LayerType['field'],
+  type: FeatureType,
+  isMapMemoLayer: boolean
+) => {
+  const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
+  let header = field.map((f) => f.name).join(',');
+  if (isMapMemoLayer) {
+    header = header + ',' + '_id' + ',' + mapMemoHeader.join(',') + ',' + '_qgisColor';
+  }
+  header = header + ',' + 'geometry';
 
   const properties = dataSet.map((record) => {
-    const fieldCSV = field
+    let fieldCSV = field
       .map(({ name, format }) => {
         const fieldValue = record.field[name];
         if (isPhotoField(fieldValue)) {
@@ -287,6 +297,12 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       })
       .join(',');
 
+    if (isMapMemoLayer) {
+      const mapMemoProperties = mapMemoHeader.map((name) => record.field[name] ?? '').join(',');
+      const id = record.id;
+      const qgisColor = record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '';
+      fieldCSV = fieldCSV + ',' + id + ',' + mapMemoProperties + ',' + qgisColor;
+    }
     return fieldCSV;
   });
 
@@ -410,7 +426,8 @@ export const generateGeoJson = (
   data: RecordType[] | RecordType[],
   field: LayerType['field'],
   type: GeoJsonFeatureType,
-  layerName: string
+  layerName: string,
+  isMapMemoLayer: boolean
 ) => {
   const geojson = {
     type: 'FeatureCollection',
@@ -440,17 +457,26 @@ export const generateGeoJson = (
     case 'LINE':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
+        const mapMemoProperties = isMapMemoLayer
+          ? {
+              _visible: record.visible,
+              _id: record.id,
+              _group: record.field._group ?? '',
+              _strokeWidth: record.field._strokeWidth ?? '',
+              _strokeColor: record.field._strokeColor ?? '',
+              _strokeStyle: record.field._strokeStyle ?? '',
+              _stamp: record.field._stamp ?? '',
+              _zoom: record.field._zoom ?? '',
+              _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
+            }
+          : {};
+
         const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
         const feature = {
           type: 'Feature',
           properties: {
             ...properties,
-            _visible: record.visible,
-            _id: record.id,
-            _strokeWidth: record.field._strokeWidth ?? '',
-            _strokeColor: record.field._strokeColor ?? '',
-            _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
-            _zoom: record.field._zoom ?? '',
+            ...mapMemoProperties,
           },
           geometry: {
             type: 'LineString',
