@@ -15,9 +15,10 @@ const LineLabel = React.memo((props: Props) => {
   //console.log(arrow.deg);
   return (
     <Marker
-      anchor={{ x: 0.5, y: 0.5 }}
+      anchor={{ x: 1, y: 1 }}
       coordinate={coordinate}
       tracksViewChanges={Platform.OS === 'ios' ? true : false}
+      zIndex={9999}
     >
       <View style={{ alignItems: 'center' }}>
         <Text

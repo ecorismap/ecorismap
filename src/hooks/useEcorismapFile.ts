@@ -6,6 +6,7 @@ import {
   ExportType,
   LayerType,
   PhotoType,
+  RecordType,
   RegionType,
   SettingsType,
   TileMapType,
@@ -96,6 +97,29 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     } as SettingsType;
   }, [settings]);
 
+  const sortGroupData = (data: RecordType[]) => {
+    // 親要素を取得
+    const parents = data.filter((item) => (item.field._group ? item.field._group === '' : true));
+    // 子要素を取得（一時的に使用しないが、後のステップで役立つかもしれない）
+    // const children = data.filter(item => item._group !== "");
+
+    // ソートされたデータを保持する配列
+    const sortedData: RecordType[] = [];
+
+    // 各親要素に対して、その子要素を見つけて配列に追加する
+    parents.forEach((parent) => {
+      sortedData.push(parent); // 親要素を追加
+      // この親の子要素を見つけて追加
+      data
+        .filter((child) => child.field._group === parent.id)
+        .forEach((child) => {
+          sortedData.push(child);
+        });
+    });
+
+    return sortedData;
+  };
+
   const generateEcorisMapData = useCallback(
     async (
       data: {
@@ -122,20 +146,22 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           folder: sanitize(layer.name),
         });
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
+        const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
+        const sortedRecords = isMapMemoLayer ? sortGroupData(records) : records;
         if (option?.includeGISData) {
           //GeoJSON
-          const geojson = generateGeoJson(records, layer.field, layer.type, layer.id);
+          const geojson = generateGeoJson(sortedRecords, layer.field, layer.type, layer.id, isMapMemoLayer);
           const geojsonData = JSON.stringify(geojson);
           const geojsonName = `${layer.name}_${time}.geojson`;
           exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: sanitize(layer.name) });
           //CSV
-          const csv = generateCSV(records, layer.field, layer.type);
+          const csv = generateCSV(sortedRecords, layer.field, layer.type, isMapMemoLayer);
           const csvData = csv;
           const csvName = `${layer.name}_${time}.csv`;
           exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: sanitize(layer.name) });
           //GPX
           if (layer.type === 'POINT' || layer.type === 'LINE') {
-            const gpx = generateGPX(records, layer.type);
+            const gpx = generateGPX(sortedRecords, layer.type);
             const gpxData = gpx;
             const gpxName = `${layer.name}_${time}.gpx`;
             exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: sanitize(layer.name) });

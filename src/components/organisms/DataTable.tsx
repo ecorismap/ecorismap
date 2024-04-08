@@ -17,6 +17,7 @@ export const DataTable = React.memo(() => {
     checkList,
     projectId,
     layer,
+    isMapMemoLayer,
     gotoDataEdit,
     changeChecked,
     changeVisible,
@@ -63,6 +64,9 @@ export const DataTable = React.memo(() => {
     ({ item, getIndex, drag, isActive }: RenderItemParams<RecordType>) => {
       const index = getIndex();
       if (index === undefined) return null;
+      const isGroupParent = item.field._group ? item.field._group === '' : true;
+      if (!isGroupParent) return null;
+
       return (
         <View
           style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
@@ -125,6 +129,14 @@ export const DataTable = React.memo(() => {
               </TouchableOpacity>
             ))
           )}
+          {/* {isMapMemoLayer &&
+            ['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom'].map((name, field_index) => (
+              <View key={field_index} style={[styles.td, { flex: 2, width: 120 }]}>
+                <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                  {item.field[name] === undefined ? '' : (item.field[name] as string)}
+                </Text>
+              </View>
+            ))} */}
         </View>
       );
     },
@@ -137,6 +149,7 @@ export const DataTable = React.memo(() => {
       // eslint-disable-next-line react/no-unstable-nested-components
       ListHeaderComponent={() => (
         <DataTitle
+          isMapMemoLayer={isMapMemoLayer}
           visibleAll={visibleAll}
           onVisibleAll={onVisibleAll}
           checkedAll={checkedAll}
@@ -161,6 +174,7 @@ export const DataTable = React.memo(() => {
     />
   ) : (
     <DataTitle
+      isMapMemoLayer={isMapMemoLayer}
       visibleAll={visibleAll}
       onVisibleAll={onVisibleAll}
       checkedAll={checkedAll}
@@ -175,6 +189,7 @@ export const DataTable = React.memo(() => {
 });
 
 interface Props {
+  isMapMemoLayer: boolean;
   visibleAll: boolean;
   onVisibleAll: () => void;
   checkedAll: boolean;
@@ -188,8 +203,19 @@ interface Props {
 
 const DataTitle = React.memo((props: Props) => {
   //propsから変数を取り出す
-  const { visibleAll, onVisibleAll, checkedAll, onCheckAll, onChangeOrder, sortedName, sortedOrder, projectId, layer } =
-    props;
+  const {
+    //isMapMemoLayer,
+    visibleAll,
+    onVisibleAll,
+    checkedAll,
+    onCheckAll,
+    onChangeOrder,
+    sortedName,
+    sortedOrder,
+    projectId,
+    layer,
+  } = props;
+
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { width: 50 }]}>
@@ -238,6 +264,12 @@ const DataTitle = React.memo((props: Props) => {
           </TouchableOpacity>
         ))
       )}
+      {/* {isMapMemoLayer &&
+        ['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom'].map((name, field_index) => (
+          <View key={field_index} style={[styles.th, { flex: 2, width: 120 }]}>
+            <Text>{name}</Text>
+          </View>
+        ))} */}
     </View>
   );
 });

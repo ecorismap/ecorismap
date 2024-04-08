@@ -146,13 +146,23 @@ export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): n
   return serials.length === 0 ? 1 : Math.max(...serials) + 1;
 };
 
-export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[]) => {
+export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): number => {
+  const serial = dataSet.find((data) => data.id === groupId)?.field[groupFieldName];
+  return serial === undefined ? -1 : (serial as number);
+};
+
+export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
   switch (field.format) {
     case 'STRING':
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL':
-      const serial = getDataSerial(dataSet, field.name);
-      return { [field.name]: serial };
+      if (options?.groupId) {
+        const serial = getGroupSerial(dataSet, field.name, options.groupId);
+        return { [field.name]: serial };
+      } else {
+        const serial = getDataSerial(dataSet, field.name);
+        return { [field.name]: serial };
+      }
     case 'INTEGER':
       return { [field.name]: field.defaultValue ?? 0 };
     case 'DECIMAL':
@@ -197,9 +207,14 @@ export const updateReferenceFieldValue = (layer: LayerType, field: RecordType['f
   return updatedField;
 };
 
-export const getDefaultField = (layer: LayerType, dataSet: RecordType[], id: string) => {
+export const getDefaultField = (
+  layer: LayerType,
+  dataSet: RecordType[],
+  id: string,
+  options?: { groupId?: string }
+) => {
   const defaultField = layer.field
-    .map((fieldObject) => getDefaultFieldValue(fieldObject, dataSet))
+    .map((fieldObject) => getDefaultFieldValue(fieldObject, dataSet, options))
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
   return updateReferenceFieldValue(layer, defaultField, id);
 };

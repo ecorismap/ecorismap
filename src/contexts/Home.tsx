@@ -20,7 +20,6 @@ import {
   DrawLineType,
   PenType,
   MapMemoToolType,
-  EraserType,
   LayerType,
   ScaleType,
   PaperOrientationType,
@@ -84,7 +83,6 @@ export interface HomeContextType {
   currentMapMemoTool: MapMemoToolType;
   visibleMapMemoColor: boolean;
   currentPen: PenType;
-  currentEraser: EraserType;
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: Position[];
@@ -132,10 +130,13 @@ export interface HomeContextType {
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
-  selectMapMemoTool: (value: MapMemoToolType) => void;
+  selectMapMemoTool: (value: MapMemoToolType | undefined) => void;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
-  setEraser: React.Dispatch<React.SetStateAction<EraserType>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleMapMemoStamp: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleMapMemoBrush: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleMapMemoEraser: React.Dispatch<React.SetStateAction<boolean>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
