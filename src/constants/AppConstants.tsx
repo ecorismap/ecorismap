@@ -1,6 +1,5 @@
 import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
-import { HISYOUTOOL } from '../plugins/hisyoutool/Constants';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.3.15 Pro';
@@ -12,7 +11,7 @@ export const FUNC_ENCRYPTION = true;
 export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
 
 export const PLUGIN = {
-  HISYOUTOOL: false,
+  HISYOUTOOL: true,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
@@ -177,21 +176,71 @@ export const DRAWTOOL = {
   SAVE: 'content-save',
   DELETE: 'delete',
   NONE: 'none',
-  ...HISYOUTOOL,
+  // ...HISYOUTOOL,
 } as const;
 
 export const PEN = {
+  PEN: 'lead-pencil',
   PEN_THICK: 'circle',
   PEN_MEDIUM: 'circle-medium',
   PEN_THIN: 'circle-small',
 } as const;
 
-export const ERASER = {
-  ERASER: 'eraser',
+export const PEN_STYLE = {
+  STRAIGHT: 'chart-line-variant',
+  FREEHAND: 'gesture',
+  NONE: 'ray-start-end',
+  ARROW_END: 'arrow-right',
+  ARROW_BOTH: 'arrow-left-right',
 } as const;
 
+export const STAMP_HISYOU = {
+  TOMARI: 'circle-medium',
+  KARI: 'close-thick',
+  HOVERING: 'alpha-h-circle-outline',
+} as const;
+
+export const STAMP = {
+  STAMP: 'stamper',
+  NUMBERS: 'numeric',
+  ALPHABETS: 'alphabetical-variant',
+  TEXT: 'format-text',
+  IMAGE: 'image',
+  SQUARE: 'square',
+  CIRCLE: 'circle',
+  TRIANGLE: 'triangle',
+  ...STAMP_HISYOU,
+} as const;
+
+export const ARROW = {
+  ARROW: 'arrow-top-right',
+} as const;
+
+export const BRUSH_HISYOU = {
+  SENKAI: 'circle-outline',
+  SENJYOU: 'circle-double',
+  KOUGEKI: 'flag-triangle',
+  DISPLAY: 'stairs',
+  KYUKOKA: 'chevron-triple-down',
+} as const;
+
+export const BRUSH = {
+  BRUSH: 'brush',
+  PLUS: 'plus',
+  CROSS: 'sign-pole',
+  ...BRUSH_HISYOU,
+} as const;
+
+export const ERASER = {
+  ERASER: 'eraser',
+  PEN_ERASER: 'eraser',
+  BRUSH_ERASER: 'brush',
+  STAMP_ERASER: 'stamper',
+} as const;
 export const MAPMEMOTOOL = {
   ...PEN,
+  ...STAMP,
+  ...BRUSH,
   ...ERASER,
   COLOR: 'palette-outline',
   UNDO: 'undo-variant',
@@ -199,7 +248,6 @@ export const MAPMEMOTOOL = {
   PENCIL_LOCK: 'pencil-lock',
   NONE: 'none',
 } as const;
-
 export const HOME_FEATURE_BTN = {
   POINT: 'scatter-plot',
   LINE: 'chart-timeline-variant',

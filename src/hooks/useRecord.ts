@@ -84,7 +84,8 @@ export type UseRecordReturnType = {
     featureType: FeatureType,
     editingLayer: LayerType,
     editingRecordSet: RecordType[],
-    coords: LocationType | LocationType[]
+    coords: LocationType | LocationType[],
+    options?: { groupId?: string }
   ) => RecordType;
   isLayerEditable: (type: FeatureType, layer: LayerType) => boolean | undefined;
   checkRecordEditable: (
@@ -220,10 +221,11 @@ export const useRecord = (): UseRecordReturnType => {
       featureType: FeatureType,
       editingLayer: LayerType,
       editingRecordSet: RecordType[],
-      coords: LocationType | LocationType[]
+      coords: LocationType | LocationType[],
+      options?: { groupId?: string }
     ) => {
       const id = uuidv4();
-      const field = getDefaultField(editingLayer, editingRecordSet, id);
+      const field = getDefaultField(editingLayer, editingRecordSet, id, options);
       const centroid = Array.isArray(coords)
         ? featureType === 'LINE'
           ? calcLineMidPoint(coords)

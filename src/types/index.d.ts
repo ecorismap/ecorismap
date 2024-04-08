@@ -20,10 +20,11 @@ import {
   DRAWTOOL,
   INFOTOOL,
   PEN,
-  ERASER,
+  STAMP,
   MAPMEMOTOOL,
   ORIENTATIONTYPE,
   GPS_ACCURACY,
+  BRUSH,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -381,7 +382,8 @@ export type SelectionToolType = keyof typeof SELECTIONTOOL;
 
 export type MapMemoToolType = keyof typeof MAPMEMOTOOL;
 export type PenType = keyof typeof PEN;
-export type EraserType = keyof typeof ERASER;
+export type StampType = keyof typeof STAMP;
+export type BrushType = keyof typeof BRUSH;
 export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
 
 export type HomeButtonType = keyof typeof HOME_BTN;
@@ -475,3 +477,5 @@ export type PaperSizeType = 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
 export type ScaleType = '500' | '1000' | '1500' | '2500' | '5000' | '10000' | '25000' | '50000' | '100000';
 export type PaperOrientationType = keyof typeof ORIENTATIONTYPE;
 export type GpsAccuracyType = keyof typeof GPS_ACCURACY;
+
+export type ArrowStyleType = 'NONE' | 'ARROW_END' | 'ARROW_BOTH';

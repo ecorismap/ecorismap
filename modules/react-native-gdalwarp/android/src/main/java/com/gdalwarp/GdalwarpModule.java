@@ -176,8 +176,6 @@ public class GdalwarpModule extends ReactContextBaseJavaModule {
       promise.resolve(result);
     } catch (Exception e) {
       promise.reject("E_CONVERT_ERROR", e.toString());
-    } finally {
-      gdal.GDALDestroyDriverManager();
     }
   }
 
@@ -211,8 +209,6 @@ public class GdalwarpModule extends ReactContextBaseJavaModule {
     } catch (Exception e) {
       Log.e(TAG, "createGeoPDF: error", e);
       promise.reject("E_CONVERT_ERROR", e.toString());
-    } finally {
-      gdal.GDALDestroyDriverManager();
     }
   }
 

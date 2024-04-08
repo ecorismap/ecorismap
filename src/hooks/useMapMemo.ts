@@ -1,27 +1,42 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EraserType, LineRecordType, MapMemoToolType, PenType } from '../types';
+import { ArrowStyleType, LineRecordType, MapMemoToolType, PenType } from '../types';
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { Position } from '@turf/turf';
 import { v4 as uuidv4 } from 'uuid';
-import { latLonObjectsToLatLonArray, latlonArrayToLatLonObjects, xyArrayToLatLonArray } from '../utils/Coords';
+import {
+  checkDistanceFromLine,
+  getSnappedLine,
+  getSnappedPositionWithLine,
+  latLonObjectsToLatLonArray,
+  latLonObjectsToXYArray,
+  latlonArrayToLatLonObjects,
+  removeSharpTurns,
+  smoothingByBezier,
+  xyArrayToLatLonArray,
+} from '../utils/Coords';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
-import { booleanContains, booleanIntersects } from '@turf/turf';
+import { booleanContains, booleanIntersects, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
-import { addRecordsAction, setRecordSetAction } from '../modules/dataSet';
+import { addRecordsAction, deleteRecordsAction, setRecordSetAction } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
+import { STAMP } from '../constants/AppConstants';
+import { isBrushTool, isPenTool, isStampTool } from '../utils/General';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
+  visibleMapMemoPen: boolean;
+  visibleMapMemoStamp: boolean;
+  visibleMapMemoBrush: boolean;
+  visibleMapMemoEraser: boolean;
   currentMapMemoTool: MapMemoToolType;
   currentPen: PenType;
-  currentEraser: EraserType;
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: MutableRefObject<Position[]>;
@@ -29,50 +44,75 @@ export type UseMapMemoReturnType = {
   isPencilModeActive: boolean;
   isUndoable: boolean;
   isRedoable: boolean;
-  mapMemoLines: {
-    xy: Position[];
-    latlon: Position[];
-    strokeColor: string;
-    strokeWidth: number;
-  }[];
+  mapMemoLines: MapMemoStateType[];
+  snapWithLine: boolean;
+  arrowStyle: ArrowStyleType;
+  isStraightStyle: boolean;
+  isMapMemoLineSmoothed: boolean;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPen: Dispatch<SetStateAction<PenType>>;
-  setEraser: Dispatch<SetStateAction<EraserType>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
+  setVisibleMapMemoPen: Dispatch<SetStateAction<boolean>>;
+  setVisibleMapMemoStamp: Dispatch<SetStateAction<boolean>>;
+  setVisibleMapMemoBrush: Dispatch<SetStateAction<boolean>>;
+  setVisibleMapMemoEraser: Dispatch<SetStateAction<boolean>>;
+  setArrowStyle: Dispatch<SetStateAction<ArrowStyleType>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   clearMapMemoHistory: () => void;
   onPanResponderGrantMapMemo: (event: GestureResponderEvent) => void;
   onPanResponderMoveMapMemo: (event: GestureResponderEvent) => void;
-  onPanResponderReleaseMapMemo: (isPinch?: boolean) => void;
+  onPanResponderReleaseMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
   clearMapMemoEditingLine: () => void;
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
+  setSnapWithLine: Dispatch<SetStateAction<boolean>>;
+  setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
+  setMapMemoLineSmoothed: Dispatch<SetStateAction<boolean>>;
 };
 export type HistoryType = {
   operation: string;
-  data: LineRecordType | { idx: number; line: LineRecordType }[];
+  data: { idx: number; line: LineRecordType }[];
+};
+
+export type MapMemoStateType = {
+  xy: Position[];
+  latlon: Position[];
+  strokeColor: string;
+  strokeWidth: number;
+  strokeStyle?: string;
+  stamp?: string;
+  zoom?: number;
+  groupId?: string;
 };
 
 export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
+  const user = useSelector((state: AppState) => state.user);
   const layers = useSelector((state: AppState) => state.layers);
   const [history, setHistory] = useState<HistoryType[]>([]);
   const [future, setFuture] = useState<HistoryType[]>([]);
   const [penColor, setPenColor] = useState('rgba(0,0,0,0.7)');
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
+  const [visibleMapMemoPen, setVisibleMapMemoPen] = useState(false);
+  const [visibleMapMemoStamp, setVisibleMapMemoStamp] = useState(false);
+  const [visibleMapMemoBrush, setVisibleMapMemoBrush] = useState(false);
+  const [visibleMapMemoEraser, setVisibleMapMemoEraser] = useState(false);
   const [currentMapMemoTool, setMapMemoTool] = useState<MapMemoToolType>('NONE');
   const [currentPen, setPen] = useState<PenType>('PEN_MEDIUM');
-  const [currentEraser, setEraser] = useState<EraserType>('ERASER');
   const [, setRedraw] = useState('');
   const [isPencilModeActive, setPencilModeActive] = useState(false);
   const mapMemoEditingLine = useRef<Position[]>([]);
-  const [mapMemoLines, setMapMemoLines] = useState<
-    { xy: Position[]; latlon: Position[]; strokeColor: string; strokeWidth: number }[]
-  >([]);
+  const [mapMemoLines, setMapMemoLines] = useState<MapMemoStateType[]>([]);
+  const [arrowStyle, setArrowStyle] = useState<ArrowStyleType>('NONE');
+  const [snapWithLine, setSnapWithLine] = useState(true);
+  const [isStraightStyle, setIsStraightStyle] = useState(false);
+  const [isMapMemoLineSmoothed, setMapMemoLineSmoothed] = useState(false);
 
+  const snappedLine = useRef<{ coordsXY: Position[]; id: string } | undefined>(undefined);
+  const snappedStartPoint = useRef<Position>([]);
   const offset = useRef([0, 0]);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const MAX_HISTORY = 10;
@@ -107,106 +147,330 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const isRedoable = useMemo(() => future.length > 0, [future]);
 
   const saveMapMemo = useCallback(
-    (newMapMemoLines: { xy: Position[]; latlon: Position[]; strokeColor: string; strokeWidth: number }[]) => {
+    (newMapMemoLines: MapMemoStateType[]) => {
       if (newMapMemoLines.length === 0) return;
-      const newHistoryItems: { operation: string; data: LineRecordType }[] = [];
+      const newHistoryItems: HistoryType[] = [];
 
-      const newRecords = newMapMemoLines.map((line) => {
-        const lineLatLon = latlonArrayToLatLonObjects(line.latlon);
-        const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon) as LineRecordType;
-        newRecord.field._strokeWidth = line.strokeWidth;
-        newRecord.field._strokeColor = line.strokeColor;
-        newRecord.field._zoom = mapRegion.zoom;
-        newHistoryItems.push({ operation: 'add', data: newRecord });
-        return newRecord;
-      });
+      const newRecords = newMapMemoLines
+        .map((line) => {
+          const lineLatLon = latlonArrayToLatLonObjects(line.latlon);
+          const newRecord = generateRecord('LINE', activeMemoLayer!, memoLines, lineLatLon, {
+            groupId: line.groupId,
+          }) as LineRecordType;
+
+          newRecord.field._strokeWidth = line.strokeWidth;
+          newRecord.field._strokeColor = line.strokeColor;
+          newRecord.field._strokeStyle = line.strokeStyle ?? '';
+          newRecord.field._stamp = line.stamp ?? '';
+          newRecord.field._group = line.groupId ?? '';
+          newRecord.field._zoom = line.zoom ?? 0;
+          newHistoryItems.push({ operation: 'add', data: [{ idx: -1, line: newRecord }] });
+          return newRecord;
+        })
+        .flat();
+
       dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: newRecords }));
       setHistory((prev) => [...(prev.length === MAX_HISTORY ? prev.slice(1) : prev), ...newHistoryItems]);
       setFuture([]);
       setMapMemoLines([]);
     },
-    [activeMemoLayer, activeMemoRecordSet, dispatch, generateRecord, mapRegion, memoLines]
+    [activeMemoLayer, activeMemoRecordSet, dispatch, generateRecord, memoLines]
   );
 
   const clearMapMemoEditingLine = useCallback(() => {
     mapMemoEditingLine.current = [];
+    snappedLine.current = undefined;
   }, []);
 
-  const onPanResponderGrantMapMemo = useCallback((event: GestureResponderEvent) => {
-    if (timer) {
-      clearTimeout(timer.current);
-    }
-    offset.current = [
-      event.nativeEvent.locationX - event.nativeEvent.pageX,
-      event.nativeEvent.locationY - event.nativeEvent.pageY,
-    ];
-  }, []);
+  const findSnappedLine = useCallback(
+    (pXY: Position) => {
+      for (const line of memoLines) {
+        if (line.field._stamp !== '') continue;
+        if (isBrushTool(line.field._strokeStyle as string)) continue;
+        const lineXY = latLonObjectsToXYArray(line.coords, mapRegion, mapSize, mapViewRef);
+        if (checkDistanceFromLine(pXY, lineXY).isNear) {
+          return { coordsXY: lineXY, id: line.id };
+        }
+      }
+      return undefined;
+    },
+    [mapRegion, mapSize, mapViewRef, memoLines]
+  );
 
-  const onPanResponderMoveMapMemo = useCallback((event: GestureResponderEvent) => {
-    if (!event.nativeEvent.touches.length) return;
-    const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
-    mapMemoEditingLine.current = [...mapMemoEditingLine.current, pXY];
-    setRedraw(uuidv4());
-  }, []);
+  const onPanResponderGrantMapMemo = useCallback(
+    (event: GestureResponderEvent) => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+      offset.current = [
+        event.nativeEvent.locationX - event.nativeEvent.pageX,
+        event.nativeEvent.locationY - event.nativeEvent.pageY,
+      ];
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+      if (isStampTool(currentMapMemoTool)) {
+        const result = findSnappedLine(pXY);
+        if (result && snapWithLine) {
+          const snappedPoint = getSnappedPositionWithLine(pXY, result.coordsXY, { isXY: true }).position;
+          snappedLine.current = { coordsXY: result.coordsXY, id: result.id };
+          mapMemoEditingLine.current = [snappedPoint];
+        } else {
+          mapMemoEditingLine.current = [pXY];
+        }
+      } else if (isBrushTool(currentMapMemoTool)) {
+        const result = findSnappedLine(pXY);
+        if (result) {
+          snappedStartPoint.current = getSnappedPositionWithLine(pXY, result.coordsXY, { isXY: true }).position;
+          snappedLine.current = { coordsXY: result.coordsXY, id: result.id };
+          return;
+        }
+      } else {
+        mapMemoEditingLine.current = [pXY];
+      }
+
+      setRedraw(uuidv4());
+    },
+    [currentMapMemoTool, findSnappedLine, snapWithLine]
+  );
+
+  const onPanResponderMoveMapMemo = useCallback(
+    (event: GestureResponderEvent) => {
+      if (!event.nativeEvent.touches.length) return;
+      const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
+
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+      if (isStampTool(currentMapMemoTool)) {
+        if (isSnappedWithLine && snapWithLine) {
+          mapMemoEditingLine.current = [
+            getSnappedPositionWithLine(pXY, snappedLine.current!.coordsXY, { isXY: true }).position,
+          ];
+        } else {
+          mapMemoEditingLine.current = [pXY];
+        }
+      } else if (isBrushTool(currentMapMemoTool)) {
+        if (!isSnappedWithLine) return;
+        const snappedEndPoint = getSnappedPositionWithLine(pXY, snappedLine.current!.coordsXY, { isXY: true }).position;
+        const brushLine = getSnappedLine(snappedStartPoint.current, snappedEndPoint, snappedLine.current!.coordsXY);
+        mapMemoEditingLine.current = brushLine;
+      } else {
+        if (isStraightStyle && isPenTool(currentMapMemoTool)) {
+          mapMemoEditingLine.current = [mapMemoEditingLine.current[0], pXY];
+        } else {
+          mapMemoEditingLine.current = [...mapMemoEditingLine.current, pXY];
+        }
+      }
+      setRedraw(uuidv4());
+    },
+    [currentMapMemoTool, isStraightStyle, snapWithLine]
+  );
 
   const onPanResponderReleaseMapMemo = useCallback(() => {
-    //const smoothedXY = smoothingByBezier(mapMemoEditingLine.current);
-    //const simplifiedXY = simplify(smoothedXY);
+    const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
-    //const simplifiedXY = removeSharpTurns(mapMemoEditingLine.current);
-    const simplifiedXY = [...mapMemoEditingLine.current];
-    if (simplifiedXY.length === 0) {
-      clearMapMemoEditingLine();
-      setFuture([]);
-      return;
-    } else if (simplifiedXY.length === 1) {
-      simplifiedXY.push([simplifiedXY[0][0] + 0.0000001, simplifiedXY[0][1] + 0.0000001]);
-    }
+    if (isPenTool(currentMapMemoTool)) {
+      let drawingLine = [...mapMemoEditingLine.current];
+      if (isMapMemoLineSmoothed && !isStraightStyle) {
+        const smoothedXY = smoothingByBezier(drawingLine);
+        //drawingLine = simplify(smoothedXY);
+        drawingLine = smoothedXY;
+      } else {
+        drawingLine = removeSharpTurns(mapMemoEditingLine.current);
+      }
 
-    if (currentMapMemoTool.includes('PEN')) {
+      if (drawingLine.length === 0) {
+        clearMapMemoEditingLine();
+        setFuture([]);
+        return;
+      } else if (drawingLine.length === 1) {
+        drawingLine.push([drawingLine[0][0] + 0.0000001, drawingLine[0][1] + 0.0000001]);
+      }
+
       const newMapMemoLines = [
         ...mapMemoLines,
         {
-          xy: simplifiedXY,
-          latlon: xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef),
+          xy: drawingLine,
+          latlon: xyArrayToLatLonArray(drawingLine, mapRegion, mapSize, mapViewRef),
+          zoom: mapRegion.zoom,
           strokeColor: penColor,
           strokeWidth: penWidth,
+          strokeStyle: arrowStyle,
+          stamp: '',
         },
       ];
 
       setMapMemoLines(newMapMemoLines);
       clearMapMemoEditingLine();
+
       timer.current = setTimeout(() => {
         saveMapMemo(newMapMemoLines);
-      }, 300);
-    } else if (currentMapMemoTool.includes('ERASER')) {
-      const lineLatLonArray = xyArrayToLatLonArray(simplifiedXY, mapRegion, mapSize, mapViewRef);
-      const deleteLine = [] as { idx: number; line: LineRecordType }[];
-      const newDrawLine = [] as LineRecordType[];
-      memoLines.forEach((line, idx) => {
-        const lineArray = latLonObjectsToLatLonArray(line.coords);
-        const lineGeometry = turf.lineString(lineArray);
-        const polygonGeometry = turf.polygon([[...lineLatLonArray, lineLatLonArray[0]]]);
+      }, 500);
+    } else if (isStampTool(currentMapMemoTool)) {
+      const newMapMemoLines = [
+        {
+          xy: mapMemoEditingLine.current,
+          latlon: xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef),
+          zoom: mapRegion.zoom,
+          strokeColor: penColor,
+          strokeWidth: penWidth,
+          strokeStyle: '',
+          stamp: currentMapMemoTool,
+          groupId: snappedLine.current ? snappedLine.current.id : undefined,
+        },
+      ];
+      clearMapMemoEditingLine();
+      saveMapMemo(newMapMemoLines);
+    } else if (isBrushTool(currentMapMemoTool)) {
+      if (!isSnappedWithLine) return;
+      const brushLine = [...mapMemoEditingLine.current];
+      if (brushLine.length < 2) return;
+      const newMapMemoLines = [
+        ...mapMemoLines,
+        {
+          xy: mapMemoEditingLine.current,
+          latlon: xyArrayToLatLonArray(brushLine, mapRegion, mapSize, mapViewRef),
+          zoom: mapRegion.zoom,
+          strokeColor: penColor,
+          strokeWidth: penWidth,
+          strokeStyle: currentMapMemoTool,
+          groupId: snappedLine.current ? snappedLine.current.id : undefined,
+        },
+      ];
+      clearMapMemoEditingLine();
+      saveMapMemo(newMapMemoLines);
+    } else if (currentMapMemoTool === 'BRUSH_ERASER') {
+      const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
 
-        if (booleanContains(polygonGeometry, lineGeometry) || booleanIntersects(polygonGeometry, lineGeometry)) {
-          deleteLine.push({ idx, line });
-        } else {
-          newDrawLine.push(line);
+      const deletedLines: { idx: number; line: LineRecordType }[] = [];
+
+      memoLines.forEach((line, idx) => {
+        if (!isBrushTool(line.field._strokeStyle as string)) return;
+        const lineArray = latLonObjectsToLatLonArray(line.coords);
+
+        const brushLineGeometry = turf.lineString(lineArray);
+        const lineGeometry = turf.lineString(eraserLineLatLonArray);
+        if (booleanIntersects(brushLineGeometry, lineGeometry)) {
+          deletedLines.push({ idx, line });
         }
       });
-      setHistory((prev) => [
-        ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
-        { operation: 'remove', data: deleteLine },
-      ]);
+      if (deletedLines.length > 0) {
+        setHistory((prev) => [
+          ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+          { operation: 'remove', data: deletedLines },
+        ]);
+        dispatch(
+          deleteRecordsAction({
+            layerId: activeMemoLayer!.id,
+            userId: user.uid,
+            data: deletedLines.map((dline) => dline.line),
+          })
+        );
+      }
       setFuture([]);
       clearMapMemoEditingLine();
-      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
+    } else if (currentMapMemoTool === 'STAMP_ERASER') {
+      const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+      const deletedLines: { idx: number; line: LineRecordType }[] = [];
+
+      memoLines.forEach((line, idx) => {
+        if (!Object.keys(STAMP).includes(line.field._stamp as string)) return;
+        const stampLatLon = latLonObjectsToLatLonArray(line.coords)[0];
+        const stampGeometry = buffer(turf.point(stampLatLon), mapRegion.latitudeDelta);
+        let polygonGeometry;
+        if (eraserLineLatLonArray.length < 4) {
+          //3点以下の場合は、4点のラインにしてバッファを作成して判定する
+          eraserLineLatLonArray.push([
+            eraserLineLatLonArray[0][0] + 0.0000001,
+            eraserLineLatLonArray[0][1] + 0.0000001,
+          ]);
+          polygonGeometry = buffer(turf.lineString(eraserLineLatLonArray), mapRegion.latitudeDelta);
+        } else {
+          //4点以上の場合は、最初の点を最後に追加してポリゴンを作成する
+          eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
+          polygonGeometry = turf.polygon([eraserLineLatLonArray]);
+        }
+
+        if (booleanContains(polygonGeometry, stampGeometry) || booleanIntersects(polygonGeometry, stampGeometry)) {
+          deletedLines.push({ idx, line });
+        }
+      });
+      if (deletedLines.length > 0) {
+        setHistory((prev) => [
+          ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+          { operation: 'remove', data: deletedLines },
+        ]);
+        dispatch(
+          deleteRecordsAction({
+            layerId: activeMemoLayer!.id,
+            userId: user.uid,
+            data: deletedLines.map((dline) => dline.line),
+          })
+        );
+      }
+      setFuture([]);
+      clearMapMemoEditingLine();
+    } else if (currentMapMemoTool === 'PEN_ERASER') {
+      const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+      const deletedLines: { idx: number; line: LineRecordType }[] = [];
+      const otherLines: { idx: number; line: LineRecordType }[] = [];
+      memoLines.forEach((line, idx) => {
+        const lineArray = latLonObjectsToLatLonArray(line.coords);
+        if (lineArray.length === 1) lineArray.push([lineArray[0][0] + 0.0000001, lineArray[0][1] + 0.0000001]);
+        const stampLineGeometry = turf.lineString(lineArray);
+        let polygonGeometry;
+        if (eraserLineLatLonArray.length < 4) {
+          //3点以下の場合は、4点のラインにしてバッファを作成して判定する
+          eraserLineLatLonArray.push([
+            eraserLineLatLonArray[0][0] + 0.0000001,
+            eraserLineLatLonArray[0][1] + 0.0000001,
+          ]);
+          polygonGeometry = buffer(turf.lineString(eraserLineLatLonArray), mapRegion.latitudeDelta);
+        } else {
+          //4点以上の場合は、最初の点を最後に追加してポリゴンを作成する
+          eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
+          polygonGeometry = turf.polygon([eraserLineLatLonArray]);
+        }
+
+        if (
+          booleanContains(polygonGeometry, stampLineGeometry) ||
+          booleanIntersects(polygonGeometry, stampLineGeometry)
+        ) {
+          deletedLines.push({ idx, line });
+        } else {
+          otherLines.push({ idx, line });
+        }
+      });
+      if (deletedLines.length > 0) {
+        //deleteLineとgroupが同じものをdeleteLineに移動する
+        const updatedDeletedLines = [...deletedLines];
+        otherLines.forEach(({ idx, line }) => {
+          const sameGroup = deletedLines.find((dline) => dline.line.id === line.field._group);
+          if (sameGroup) updatedDeletedLines.push({ idx, line });
+        });
+        //updateDeletedLinesのidxを昇順にソートする
+        updatedDeletedLines.sort((a, b) => a.idx - b.idx);
+        setHistory((prev) => [
+          ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+          { operation: 'remove', data: updatedDeletedLines },
+        ]);
+        dispatch(
+          deleteRecordsAction({
+            layerId: activeMemoLayer!.id,
+            userId: user.uid,
+            data: updatedDeletedLines.map((dline) => dline.line),
+          })
+        );
+      }
+
+      setFuture([]);
+      clearMapMemoEditingLine();
     }
   }, [
-    activeMemoRecordSet,
+    activeMemoLayer,
+    arrowStyle,
     clearMapMemoEditingLine,
     currentMapMemoTool,
     dispatch,
+    isMapMemoLineSmoothed,
+    isStraightStyle,
     mapMemoLines,
     mapRegion,
     mapSize,
@@ -215,6 +479,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penColor,
     penWidth,
     saveMapMemo,
+    user.uid,
   ]);
 
   const selectPenColor = useCallback((hue: number, sat: number, val: number, alpha: number) => {
@@ -234,17 +499,18 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setFuture([...future, lastOperation]);
     setHistory(history.slice(0, history.length - 1));
     if (lastOperation.operation === 'add') {
+      //最後に追加したラインを削除する.
+      const newDrawLine = memoLines.filter((line) => lastOperation.data.every((dline) => dline.line.id !== line.id));
       dispatch(
         setRecordSetAction({
           ...activeMemoRecordSet!,
-          data: memoLines.slice(0, memoLines.length - 1),
+          data: newDrawLine,
         })
       );
     } else if (lastOperation.operation === 'remove') {
+      //最後に削除したラインを追加する.
       const newDrawLine = [...memoLines];
-      (lastOperation.data as { idx: number; line: LineRecordType }[]).forEach(({ idx, line }) => {
-        newDrawLine.splice(idx, 0, line);
-      });
+      [...lastOperation.data].reverse().forEach(({ idx, line }) => newDrawLine.splice(idx, 0, line));
       dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
     }
   }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
@@ -255,12 +521,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setFuture(future.slice(0, future.length - 1));
     setHistory([...history, nextOperation]);
     if (nextOperation.operation === 'add') {
-      dispatch(
-        setRecordSetAction({ ...activeMemoRecordSet!, data: [...memoLines, nextOperation.data as LineRecordType] })
-      );
+      //futureの最後のaddのラインを追加する
+      const addedLines = nextOperation.data.map((operation) => operation.line);
+      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: [...memoLines, ...addedLines] }));
     } else if (nextOperation.operation === 'remove') {
+      //futureの最後のremoveのラインを削除する
       const newDrawLine = [...(activeMemoRecordSet!.data as LineRecordType[])];
-      (nextOperation.data as { idx: number; line: LineRecordType }[]).reverse().forEach(({ idx }) => {
+      [...nextOperation.data].reverse().forEach(({ idx }) => {
         newDrawLine.splice(idx, 1);
       });
       dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
@@ -285,7 +552,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   useEffect(() => {
     return () => {
-      if (timer) {
+      if (timer.current) {
         clearTimeout(timer.current);
       }
     };
@@ -293,9 +560,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   return {
     visibleMapMemoColor,
+    visibleMapMemoPen,
+    visibleMapMemoStamp,
+    visibleMapMemoBrush,
+    visibleMapMemoEraser,
     currentMapMemoTool,
     currentPen,
-    currentEraser,
     penColor,
     penWidth,
     mapMemoEditingLine,
@@ -304,10 +574,18 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     isUndoable,
     isRedoable,
     mapMemoLines,
+    snapWithLine,
+    arrowStyle,
+    isStraightStyle,
+    isMapMemoLineSmoothed,
     setMapMemoTool,
     setPen,
-    setEraser,
     setVisibleMapMemoColor,
+    setVisibleMapMemoPen,
+    setVisibleMapMemoStamp,
+    setVisibleMapMemoBrush,
+    setVisibleMapMemoEraser,
+    setArrowStyle,
     selectPenColor,
     onPanResponderGrantMapMemo,
     onPanResponderMoveMapMemo,
@@ -318,5 +596,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     changeColorTypeToIndividual,
     clearMapMemoEditingLine,
     setPencilModeActive,
+    setSnapWithLine,
+    setIsStraightStyle,
+    setMapMemoLineSmoothed,
   } as const;
 };

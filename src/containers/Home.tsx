@@ -52,6 +52,10 @@ import { useNetInfo } from '@react-native-community/netinfo';
 import { usePDF } from '../hooks/usePDF';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
 import dayjs from 'dayjs';
+import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPicker';
+import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
+import { HomeModalBrushPicker } from '../components/organisms/HomeModalBrushPicker';
+import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPicker';
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
@@ -98,6 +102,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     activePointLayer,
     activeLineLayer,
     activePolygonLayer,
+    selectRecord,
     unselectRecord,
     addRecordWithCheck,
     checkRecordEditable,
@@ -140,9 +145,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const {
     visibleMapMemoColor,
+    visibleMapMemoPen,
+    visibleMapMemoStamp,
+    visibleMapMemoBrush,
+    visibleMapMemoEraser,
     currentMapMemoTool,
     currentPen,
-    currentEraser,
     penColor,
     penWidth,
     mapMemoEditingLine,
@@ -151,10 +159,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isUndoable,
     isRedoable,
     mapMemoLines,
+    snapWithLine,
+    arrowStyle,
+    isStraightStyle,
+    isMapMemoLineSmoothed,
     setMapMemoTool,
     setPen,
-    setEraser,
     setVisibleMapMemoColor,
+    setVisibleMapMemoPen,
+    setVisibleMapMemoStamp,
+    setVisibleMapMemoBrush,
+    setVisibleMapMemoEraser,
+    setArrowStyle,
     selectPenColor,
     onPanResponderGrantMapMemo,
     onPanResponderMoveMapMemo,
@@ -164,6 +180,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     clearMapMemoHistory,
     changeColorTypeToIndividual,
     setPencilModeActive,
+    setSnapWithLine,
+    setIsStraightStyle,
+    setMapMemoLineSmoothed,
   } = useMapMemo(mapViewRef.current);
 
   const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
@@ -229,6 +248,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setOutputVRT,
     setOutputDataPDF,
   } = usePDF();
+
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion, isLandscape } = useWindow();
 
@@ -319,8 +339,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [isPencilModeActive, runTutrial, setPencilModeActive]);
 
   const selectMapMemoTool = useCallback(
-    (value: MapMemoToolType) => {
-      if (currentMapMemoTool === value) {
+    (value: MapMemoToolType | undefined) => {
+      if (value === undefined) {
         setMapMemoTool('NONE');
       } else {
         if (value.includes('PEN')) {
@@ -335,7 +355,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setMapMemoTool(value);
       }
     },
-    [changeColorTypeToIndividual, currentMapMemoTool, editableMapMemo, setDrawTool, setMapMemoTool]
+    [changeColorTypeToIndividual, editableMapMemo, setDrawTool, setMapMemoTool]
   );
 
   const selectDrawTool = useCallback(
@@ -1124,6 +1144,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         unselectRecord();
         return;
       }
+      selectRecord(layer.id, { ...feature });
+
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
       } else {
@@ -1135,7 +1157,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         targetLayer: { ...layer },
       });
     },
-    [isEditingRecord, isLandscape, navigation, selectSingleFeature, unselectRecord]
+    [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
   );
 
   const panResponder: PanResponderInstance = useMemo(
@@ -1172,7 +1194,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
           //@ts-ignore
-
           if (currentDrawTool === 'MOVE') {
           } else if (isPinch) {
           } else if (gesture.numberActiveTouches === 2) {
@@ -1191,7 +1212,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             showDrawLine();
             setIsPinch(false);
           } else if (currentMapMemoTool !== 'NONE') {
-            onPanResponderReleaseMapMemo();
+            onPanResponderReleaseMapMemo(e);
           } else if (currentDrawTool !== 'NONE') {
             onReleaseSvgView(e);
           }
@@ -1271,7 +1292,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentMapMemoTool,
         visibleMapMemoColor,
         currentPen,
-        currentEraser,
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
@@ -1323,8 +1343,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         termsOfUseCancel,
         selectMapMemoTool,
         setPen,
-        setEraser,
         setVisibleMapMemoColor,
+        setVisibleMapMemoPen,
+        setVisibleMapMemoStamp,
+        setVisibleMapMemoBrush,
+        setVisibleMapMemoEraser,
         selectPenColor,
         pressUndoMapMemo,
         pressRedoMapMemo,
@@ -1340,6 +1363,39 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     >
       <Home />
       {Platform.OS !== 'web' && <HomeModalTermsOfUse />}
+      <HomeModalPenPicker
+        modalVisible={visibleMapMemoPen}
+        currentMapMemoTool={currentMapMemoTool}
+        arrowStyle={arrowStyle}
+        isStraightStyle={isStraightStyle}
+        isMapMemoLineSmoothed={isMapMemoLineSmoothed}
+        selectMapMemoTool={selectMapMemoTool}
+        selectMapMemoArrowStyle={setArrowStyle}
+        selectMapMemoStraightStyle={setIsStraightStyle}
+        selectMapMemoLineSmoothed={setMapMemoLineSmoothed}
+        setVisibleMapMemoPen={setVisibleMapMemoPen}
+      />
+      <HomeModalBrushPicker
+        modalVisible={visibleMapMemoBrush}
+        currentMapMemoTool={currentMapMemoTool}
+        selectMapMemoTool={selectMapMemoTool}
+        setVisibleMapMemoBrush={setVisibleMapMemoBrush}
+      />
+      <HomeModalStampPicker
+        modalVisible={visibleMapMemoStamp}
+        currentMapMemoTool={currentMapMemoTool}
+        snapWithLine={snapWithLine}
+        selectMapMemoTool={selectMapMemoTool}
+        selectMapMemoSnapWithLine={setSnapWithLine}
+        setVisibleMapMemoStamp={setVisibleMapMemoStamp}
+      />
+      <HomeModalEraserPicker
+        modalVisible={visibleMapMemoEraser}
+        currentMapMemoTool={currentMapMemoTool}
+        selectMapMemoTool={selectMapMemoTool}
+        setVisibleMapMemoEraser={setVisibleMapMemoEraser}
+      />
+
       <HomeModalPDFSettings
         visible={isPDFSettingsVisible}
         pdfOrientation={pdfOrientation}

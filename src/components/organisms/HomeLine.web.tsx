@@ -115,8 +115,8 @@ export const Line = React.memo((props: Props) => {
 
   if (data === undefined || data.length === 0) return null;
 
-  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name);
+  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, false);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, false);
   //console.log(geojsonLabel);
 
   return (

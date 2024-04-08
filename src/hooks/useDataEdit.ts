@@ -95,13 +95,22 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     [dataUser.uid, projectId, targetLayer.id]
   );
 
+  const isMapMemoLayer = useMemo(
+    () =>
+      dataSet.flatMap((d) => (d.layerId === layer.id ? d.data : [])).some((d) => d.field._strokeColor !== undefined),
+    [dataSet, layer.id]
+  );
+
   const maxRecordNumber = targetRecordSet.length;
 
   useEffect(() => {
     //データの初期化。以降はchangeRecordで行う。
-    selectRecord(layer.id, record);
+
     setTargetRecord(record);
-    const allUserRecordSet = dataSet.map((d) => (d.layerId === layer.id ? d.data : [])).flat();
+    const allUserRecordSet = dataSet
+      .flatMap((d) => (d.layerId === layer.id ? d.data : []))
+      .filter((d) => (d.field._group ? d.field._group === '' : true));
+
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
@@ -241,14 +250,26 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
+
+    let deletedRecords: RecordType[] = [];
+    if (isMapMemoLayer) {
+      //同じグループのレコードを取得
+      const subGroupRecords = dataSet
+        .flatMap((d) => (d.layerId === layer.id ? d.data : []))
+        .filter((d) => d.field._group === targetRecord.id);
+      deletedRecords = [targetRecord, ...subGroupRecords];
+    } else {
+      deletedRecords = [targetRecord];
+    }
+
     dispatch(
       deleteRecordsAction({
         layerId: targetLayer.id,
         userId: targetRecord.userId,
-        data: [targetRecord],
+        data: deletedRecords,
       })
     );
-  }, [targetRecord, targetLayer, deleteRecordPhotos, projectId, dispatch]);
+  }, [deleteRecordPhotos, targetLayer, targetRecord, projectId, isMapMemoLayer, dispatch, dataSet, layer.id]);
 
   const changeField = useCallback(
     (name: string, value: string | number) => {
