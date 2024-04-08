@@ -8,6 +8,7 @@ interface DataContextType {
   layer: LayerType;
   isChecked: boolean;
   checkList: boolean[];
+  isMapMemoLayer: boolean;
   pressAddData: () => void;
   pressDeleteData: () => void;
   pressExportData: () => void;

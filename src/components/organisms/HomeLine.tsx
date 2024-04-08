@@ -1,12 +1,16 @@
 import React from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
-import { LayerType, LineRecordType, RecordType } from '../../types';
+import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
 import { getColor } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel } from '../../hooks/useLayers';
 import { AppState } from '../../modules';
 import { useSelector } from 'react-redux';
+import { isBrushTool } from '../../utils/General';
+import LineArrow from '../atoms/LineArrow';
+import { HomeMapMemoStamp } from './HomeMapMemoStamp';
+import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 
 interface Props {
   data: LineRecordType[];
@@ -27,11 +31,26 @@ export const Line = React.memo(
       <>
         {data.map((feature) => {
           if (!feature.visible) return null;
+          if (feature.coords.length === 1) {
+            return (
+              <HomeMapMemoStamp
+                key={'stamp' + feature.id}
+                feature={{ ...feature, coords: feature.coords[0] }}
+                layer={layer}
+                selectedRecord={selectedRecord}
+                zoom={zoom}
+              />
+            );
+          }
           if (feature.coords.length < 2) return null;
 
           const color = getColor(layer, feature, 0);
-          const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
+
+          const selected =
+            feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+
           const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
+
           const labelPosition = feature.coords[feature.coords.length - 1];
           let label = generateLabel(layer, feature);
           let strokeWidth;
@@ -49,19 +68,31 @@ export const Line = React.memo(
           } else {
             strokeWidth = 1.5;
           }
-
-          return (
+          const isBrush = isBrushTool(feature.field._strokeStyle as string);
+          const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+          return isBrush ? (
+            <HomeMapMemoBrush
+              key={'brush' + feature.id}
+              lineColor={lineColor}
+              strokeWidth={strokeWidth}
+              zIndex={zIndex}
+              feature={feature}
+              zoom={zoom}
+              selected={selected}
+            />
+          ) : (
             <PolylineComponent
-              key={feature.id}
+              key={'line' + feature.id}
               label={label}
               color={color}
               lineColor={lineColor}
               strokeWidth={strokeWidth}
+              arrowStyle={arrowStyle}
               labelPosition={labelPosition}
               zIndex={zIndex}
               feature={feature}
-              tappable={false}
               zoom={zoom}
+              selected={selected}
             />
           );
         })}
@@ -97,18 +128,37 @@ export const Line = React.memo(
   }
 );
 
-const PolylineComponent = React.memo((props: any) => {
-  const { label, color, lineColor, labelPosition, strokeWidth, zIndex, feature, zoom } = props;
+interface PolylineProps {
+  label: string;
+  color: string;
+  lineColor: string;
+  arrowStyle: ArrowStyleType;
+  labelPosition: LatLng;
+  strokeWidth: number;
+  zIndex: number;
+  feature: LineRecordType;
+  zoom: number;
+  selected: boolean;
+}
+const PolylineComponent = React.memo((props: PolylineProps) => {
+  const { label, color, lineColor, arrowStyle, labelPosition, strokeWidth, zIndex, feature, zoom, selected } = props;
   return (
     <>
+      <LineArrow
+        selected={selected}
+        coordinates={feature.coords as LatLng[]}
+        strokeColor={lineColor}
+        strokeWidth={strokeWidth}
+        arrowStyle={arrowStyle}
+      />
+
       <Polyline
         key={'polyline' + feature.id}
         tappable={false}
         coordinates={feature.coords as LatLng[]}
         strokeColor={lineColor}
         strokeWidth={strokeWidth}
-        lineCap="round"
-        lineJoin="round"
+        lineCap="butt"
         zIndex={zIndex}
       />
       <LineLabel

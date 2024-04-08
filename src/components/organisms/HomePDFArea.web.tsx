@@ -1,10 +1,7 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl';
-import { RecordType, LayerType, TileRegionType } from '../../types';
-import { generateGeoJson } from '../../utils/Geometry';
-import { getColorRule } from '../../utils/Layer';
-import { t } from '../../i18n/config';
+import { TileRegionType } from '../../types';
 
 interface Props {
   pdfArea: TileRegionType;

@@ -150,7 +150,25 @@
     },
     "gps_settings_disabled": "GPSがオンの時は設定できません",
     "gps_settings_alert": "GPSの起動時に設定が反映されます。",
-    "processing": "処理中..."
+    "processing": "処理中...",
+    "selectStamp": "スタンプを選択",
+    "selectPen": "ペンを選択",
+    "selectBrush": "ブラシを選択",
+    "selectStrokeWidth": "ペンの太さ",
+    "eraser": "消しゴム",
+    "strokeWidth": "ラインの太さ",
+    "arrow": "矢印",
+    "selectEraser": "消しゴムを選択",
+    "accuracyAndBattery": "位置精度とバッテリー消費",
+    "selectPenEraser": "すべてを消す",
+    "selectBrushEraser": "ブラシのみ",
+    "selectStampEraser": "スタンプのみ",
+    "snapWithLine": "ラインにスナップ",
+    "straight_curve": "曲線・直線",
+    "general": "一般",
+    "default": "デフォルト",
+    "common": "共通",
+    "smoothLine": "ラインを滑らかにする"
   },
   "Home": {
     "confirm": {
