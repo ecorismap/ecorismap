@@ -1,4 +1,3 @@
-import { Position } from '@turf/turf';
 import { cloneDeep } from 'lodash';
 import {
   DMSType,
@@ -18,6 +17,8 @@ import MapView, { LatLng } from 'react-native-maps';
 import booleanValid from '@turf/boolean-valid';
 import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
+
+import { Position, along, bearing, length } from '@turf/turf';
 
 export const isPoint = (coords: any): coords is LocationType => {
   return 'latitude' in coords && 'longitude' in coords;
@@ -545,7 +546,7 @@ export const booleanNearEqual = (p1: Position, p2: Position) => {
 export const simplify = (points: Position[]) => {
   try {
     if (points.length < 2) return points;
-    const simplified = turf.simplify(turf.lineString(points), { tolerance: 1, highQuality: false });
+    const simplified = turf.simplify(turf.lineString(points), { tolerance: 0.1, highQuality: false });
     return simplified.geometry.coordinates;
   } catch (e) {
     console.log('simplify error', e);
@@ -743,4 +744,136 @@ export function getMetersPerPixelAtZoomLevel(latitude: number, currentZoomLevel:
 export function webMercatorToLatLon(mercator: { x: number; y: number }): { longitude: number; latitude: number } {
   const latlon = turf.toWgs84([mercator.x, mercator.y]);
   return { longitude: latlon[0], latitude: latlon[1] };
+}
+
+export const getSnappedLine = (start: Position, end: Position, line: Position[]) => {
+  const ADJUST_VALUE = 1000.0;
+  const adjustedStartPt = turf.point([start[0] / ADJUST_VALUE, start[1] / ADJUST_VALUE]);
+  const adjustedEndPt = turf.point([end[0] / ADJUST_VALUE, end[1] / ADJUST_VALUE]);
+  const adjustedLine = turf.lineString(line.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
+  const sliced = turf.lineSlice(adjustedStartPt, adjustedEndPt, adjustedLine);
+  const snappedLine = sliced.geometry.coordinates.map((d) => [d[0] * ADJUST_VALUE, d[1] * ADJUST_VALUE]);
+  // snappedLine[0] = start;
+  // snappedLine[snappedLine.length - 1] = end;
+
+  return snappedLine;
+};
+
+export const calcArrowAngle = (xy: Position[]) => {
+  if (xy.length < 2) return undefined; // 点が2つ未満の場合は計算不可
+
+  let vectorX = 0;
+  let vectorY = 0;
+
+  if (xy.length >= 3) {
+    // 最後の3点から2つのベクトルを計算し、重み付きの平均を求める
+    const p1 = xy[xy.length - 3];
+    const p2 = xy[xy.length - 2];
+    const p3 = xy[xy.length - 1];
+    const vector1 = [(p2[0] - p1[0]) * 0.5, (p2[1] - p1[1]) * 0.5]; // 最初のベクトルには小さい重みを
+    const vector2 = [(p3[0] - p2[0]) * 1.5, (p3[1] - p2[1]) * 1.5]; // 2番目のベクトルには大きい重みを
+    // 重み付き平均ベクトルを計算
+    vectorX = vector1[0] + vector2[0];
+    vectorY = vector1[1] + vector2[1];
+    vectorX /= 2; // 合計の重みで割る
+    vectorY /= 2; // 合計の重みで割る
+  } else {
+    // 2点の場合は直接ベクトルを計算
+    const lastPoint = xy[xy.length - 1];
+    const secondLastPoint = xy[xy.length - 2];
+    vectorX = lastPoint[0] - secondLastPoint[0];
+    vectorY = lastPoint[1] - secondLastPoint[1];
+  }
+
+  // ベクトルの方向から角度を計算
+  let angle = Math.atan2(vectorY, vectorX) + Math.PI / 2;
+  angle = angle * (180 / Math.PI); // ラジアンを度に変換
+
+  // 角度を0度から360度の範囲に正規化
+  if (angle >= 360) {
+    angle -= 360;
+  }
+
+  return angle; // 角度を返す
+};
+
+export const removeSharpTurns = (line: Position[]) => {
+  const xyArrayLength = line.length;
+  if (xyArrayLength < 3) return line; // 配列の長さが3未満の場合は、そのまま配列を返す
+
+  // 最後の3点を取得
+  const p1 = line[xyArrayLength - 3];
+  const p2 = line[xyArrayLength - 2];
+  const p3 = line[xyArrayLength - 1];
+
+  // ベクトルを計算
+  const v1 = [p2[0] - p1[0], p2[1] - p1[1]];
+  const v2 = [p3[0] - p2[0], p3[1] - p2[1]];
+
+  // コサインの角度を計算
+  const cosTheta = (v1[0] * v2[0] + v1[1] * v2[1]) / (Math.hypot(v1[0], v1[1]) * Math.hypot(v2[0], v2[1]));
+
+  // 最終的な点が鋭角を形成するかどうかを評価
+  if (cosTheta < 0.5) {
+    // 最終的な点を削除する場合
+    return line.slice(0, xyArrayLength - 1);
+  } else {
+    // 最終的な点を含める場合
+    return line;
+  }
+};
+
+export function interpolateLineString(line: Position[], interval: number) {
+  const lineGeoJSON = turf.lineString(line);
+  const lineLength = length(lineGeoJSON, { units: 'kilometers' });
+  const midpoint = along(lineGeoJSON, lineLength / 2, { units: 'kilometers' });
+
+  const points = [{ coordinates: midpoint.geometry.coordinates, angle: 0 }];
+
+  let offset = interval;
+  while (offset < lineLength / 2) {
+    const pointBefore = along(lineGeoJSON, lineLength / 2 - offset, { units: 'kilometers' });
+    const pointAfter = along(lineGeoJSON, lineLength / 2 + offset, { units: 'kilometers' });
+
+    points.unshift({ coordinates: pointBefore.geometry.coordinates, angle: 0 });
+    points.push({ coordinates: pointAfter.geometry.coordinates, angle: 0 });
+
+    offset += interval;
+  }
+
+  // 角度の計算: 前後のポイントを使用してbearingを計算
+  for (let i = 0; i < points.length; i++) {
+    // 始点と終点以外の場合
+    if (i > 0 && i < points.length - 1) {
+      const bearingBeforeRad =
+        (bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates)) * Math.PI) / 180;
+      const bearingAfterRad =
+        (bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates)) * Math.PI) / 180;
+
+      const x1 = Math.cos(bearingBeforeRad);
+      const y1 = Math.sin(bearingBeforeRad);
+      const x2 = Math.cos(bearingAfterRad);
+      const y2 = Math.sin(bearingAfterRad);
+
+      const averageX = (x1 + x2) / 2;
+      const averageY = (y1 + y2) / 2;
+
+      const angleRad = Math.atan2(averageY, averageX);
+      const angleDeg = ((angleRad * 180) / Math.PI + 360) % 360;
+
+      points[i].angle = angleDeg;
+    } else if (i === 0 && points.length > 1) {
+      // 始点の場合
+      const bearingAfter = bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates));
+      points[i].angle = (bearingAfter + 360) % 360;
+    } else if (i === points.length - 1 && points.length > 1) {
+      // 終点の場合
+      const bearingBefore = bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates));
+      points[i].angle = (bearingBefore + 360) % 360;
+    } else {
+      //1点の場合
+      points[i].angle = bearing(turf.point(line[0]), turf.point(line[line.length - 1]));
+    }
+  }
+  return points;
 }

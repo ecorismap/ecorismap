@@ -427,7 +427,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           }
         }
       }
-      if (feature === undefined && (featureButton === 'LINE' || currentDrawTool === 'ALL_INFO')) {
+      if (
+        feature === undefined &&
+        (featureButton === 'LINE' || featureButton === 'MEMO' || currentDrawTool === 'ALL_INFO')
+      ) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
 
         for (const { layerId, data } of lineDataSet) {
@@ -547,6 +550,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       features = selectPointFeatures(selectLineCoords, recordSet);
       if (features.length > 0) convertPointFeatureToDrawLine(layer.id, features);
     } else if (featureButton === 'LINE') {
+      console.log('selectEditableFeatures');
       features = selectLineFeatures(selectLineCoords, recordSet);
       if (features.length > 0)
         isHisyouToolActive

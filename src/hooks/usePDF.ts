@@ -9,6 +9,7 @@ import {
   PaperOrientationType,
   PaperSizeType,
   RecordType,
+  ArrowStyleType,
 } from '../types';
 
 import { AppState } from '../modules';
@@ -18,15 +19,15 @@ import { useWindow } from './useWindow';
 import * as turf from '@turf/turf';
 import { generateLabel } from './useLayers';
 import { getColor } from '../utils/Layer';
-import { LatLng } from 'react-native-maps';
 import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
-import { toPDFCoordinate, toPixel, toPoint } from '../utils/General';
+import { isBrushTool, isStampTool, toPDFCoordinate, toPixel, toPoint } from '../utils/General';
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
 import * as FileSystem from 'expo-file-system';
-import { TILE_FOLDER } from '../constants/AppConstants';
+import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { interpolateLineString, latLonObjectsToLatLonArray } from '../utils/Coords';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -66,6 +67,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   const pdfPaperSizes: PaperSizeType[] = ['A4', 'A3', 'A2', 'A1', 'A0'];
   const pdfScales: ScaleType[] = ['500', '1000', '1500', '2500', '5000', '10000', '25000', '50000', '100000'];
   const pdfOrientations: PaperOrientationType[] = ['PORTRAIT', 'LANDSCAPE'];
+  const tracking = useSelector((state: AppState) => state.settings.tracking);
 
   const pageScale = useMemo(() => {
     const scaleInt = parseInt(pdfScale, 10);
@@ -272,6 +274,25 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     };
   }, [mapRegion.latitude, mapRegion.longitude, pdfRegion]);
 
+  const convertCoordToPixel = useCallback(
+    (
+      coord: LocationType,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number
+    ) => {
+      const mercatorCoords = turf.toMercator([coord.longitude, coord.latitude]);
+      const mercatorX = mercatorCoords[0];
+      const mercatorY = mercatorCoords[1];
+      const pixelX = ((mercatorX - leftX) / (rightX - leftX)) * width;
+      const pixelY = height - ((mercatorY - bottomY) / (topY - bottomY)) * height;
+      return { pixelX, pixelY };
+    },
+    []
+  );
   const convertCoordsToPixels = useCallback(
     (
       coords: LocationType[],
@@ -281,16 +302,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       topY: number,
       width: number,
       height: number
-    ) =>
-      coords.map((c) => {
-        const mercatorCoords = turf.toMercator([c.longitude, c.latitude]);
-        const mercatorX = mercatorCoords[0];
-        const mercatorY = mercatorCoords[1];
-        const pixelX = ((mercatorX - leftX) / (rightX - leftX)) * width;
-        const pixelY = height - ((mercatorY - bottomY) / (topY - bottomY)) * height;
-        return { pixelX, pixelY };
-      }),
-    []
+    ) => coords.map((c) => convertCoordToPixel(c, leftX, rightX, bottomY, topY, width, height)),
+    [convertCoordToPixel]
   );
 
   const getTileRegion = useCallback(
@@ -426,11 +439,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
 
           const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
           if ((await FileSystem.getInfoAsync(mapUri)).exists) {
-            mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG });
+            mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
+              //console.error(e);
+              return undefined;
+            });
           } else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
             mapSrc = undefined;
           } else {
-            const mapUri = map.url
+            const mapUrl = map.url
               .replace('{z}', tileZoom.toString())
               .replace('{x}', x.toString())
               .replace('{y}', y.toString());
@@ -438,9 +454,12 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
               intermediates: true,
             });
-            const resp = await FileSystem.downloadAsync(mapUri, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
+            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
             if (resp.status === 200) {
-              mapSrc = await manipulateAsync(resp.uri, [], { base64: true, format: SaveFormat.PNG });
+              mapSrc = await manipulateAsync(resp.uri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
+                //console.error(e);
+                return undefined;
+              });
             }
           }
 
@@ -458,6 +477,431 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     return tileContents;
   }, [getTileRegion, pdfTileMapZoomLevel, tileMaps]);
 
+  const generateStampSvg = useCallback(
+    (
+      feature: RecordType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number,
+      color: string
+    ) => {
+      // 緯度経度からピクセル座標に変換
+      const pixels = convertCoordsToPixels(
+        feature.coords as LocationType[],
+        leftX,
+        rightX,
+        bottomY,
+        topY,
+        width,
+        height
+      );
+
+      const stamp = feature.field._stamp as string;
+      let svg = '';
+      switch (stamp) {
+        case 'NUMBERS':
+          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
+            16 / tileScale
+          }" fill="${color}" text-anchor="middle">1</text>`;
+          break;
+        case 'ALPHABETS':
+          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
+            16 / tileScale
+          }" fill="${color}" text-anchor="middle">A</text>`;
+          break;
+        case 'TEXT':
+          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY}" font-family="Arial" font-size="${
+            12 / tileScale
+          }" fill="${color}" text-anchor="middle">クマタカ</text>`;
+          break;
+        case 'SQUARE':
+          svg = `<rect x="${pixels[0].pixelX - 6 / tileScale}" y="${pixels[0].pixelY - 6 / tileScale}" width="${
+            12 / tileScale
+          }" height="${12 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" fill="${color}" />`;
+          break;
+        case 'CIRCLE':
+          svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
+            6 / tileScale
+          }" stroke="${color}" stroke-width="${3 / tileScale}" fill="${color}" />`;
+          break;
+        case 'TRIANGLE':
+          svg = `<polygon points="${pixels[0].pixelX},${pixels[0].pixelY - 6 / tileScale} ${
+            pixels[0].pixelX - 6 / tileScale
+          },${pixels[0].pixelY + 6 / tileScale} ${pixels[0].pixelX + 6 / tileScale},${
+            pixels[0].pixelY + 6 / tileScale
+          }" stroke="${color}" stroke-width="${2 / tileScale}" fill="${color}" />`;
+          break;
+        case 'TOMARI':
+          svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
+            4 / tileScale
+          }" stroke="#ffffffaa" stroke-width="${1 / tileScale}" fill="${color}" />`;
+          break;
+        case 'KARI':
+          svg = `<line x1="${pixels[0].pixelX - 6 / tileScale}" y1="${pixels[0].pixelY - 6 / tileScale}" x2="${
+            pixels[0].pixelX + 6 / tileScale
+          }" y2="${pixels[0].pixelY + 6 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />
+                <line x1="${pixels[0].pixelX + 6 / tileScale}" y1="${pixels[0].pixelY - 6 / tileScale}" x2="${
+            pixels[0].pixelX - 6 / tileScale
+          }" y2="${pixels[0].pixelY + 6 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />`;
+          break;
+        case 'HOVERING':
+          svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
+            7 / tileScale
+          }" stroke="${color}" stroke-width="${1 / tileScale}" fill="#ffffffaa" />
+                <text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
+            12 / tileScale
+          }" fill="${color}" text-anchor="middle">H</text>`;
+          break;
+        default:
+          svg = '';
+          break;
+      }
+
+      return svg;
+    },
+    [convertCoordsToPixels]
+  );
+
+  const generateBrushSvg = useCallback(
+    (
+      feature: RecordType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number,
+      color: string
+    ) => {
+      const latlon = latLonObjectsToLatLonArray(feature.coords as LocationType[]);
+      const brushLatLon = interpolateLineString(latlon, (pageScale.value / 10000) * 0.1);
+
+      const brush = feature.field._strokeStyle as string;
+      let svg = '';
+      brushLatLon.forEach(({ coordinates, angle }) => {
+        const point = convertCoordToPixel(
+          { latitude: coordinates[1], longitude: coordinates[0] },
+          leftX,
+          rightX,
+          bottomY,
+          topY,
+          width,
+          height
+        );
+
+        switch (brush) {
+          case 'PLUS':
+            svg += `<line x1="${point.pixelX - 5 / tileScale}" y1="${point.pixelY}" x2="${
+              point.pixelX + 5 / tileScale
+            }" y2="${point.pixelY}" stroke="${color}" stroke-width="${1.5 / tileScale}"  transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})"/>`;
+            break;
+          case 'CROSS':
+            svg += `<line x1="${point.pixelX}" y1="${point.pixelY}" x2="${point.pixelX + 10 / tileScale}" y2="${
+              point.pixelY
+            }" stroke="${color}" stroke-width="${1.5 / tileScale}"  transform="rotate(${angle}, ${point.pixelX}, ${
+              point.pixelY
+            })"/>`;
+            break;
+          case 'SENKAI':
+            svg += `<circle cx="${point.pixelX + 5 / tileScale}" cy="${point.pixelY}" r="${
+              4 / tileScale
+            }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />`;
+            break;
+          case 'SENJYOU':
+            svg += `<circle cx="${point.pixelX + 5 / tileScale}" cy="${point.pixelY}" r="${
+              4 / tileScale
+            }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />
+              <circle cx="${point.pixelX + 5 / tileScale}" cy="${point.pixelY}" r="${
+              2 / tileScale
+            }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />`;
+            break;
+          case 'KOUGEKI':
+            svg += `<polygon points="${point.pixelX},${point.pixelY - 6 / tileScale} ${point.pixelX + 10 / tileScale},${
+              point.pixelY
+            } ${point.pixelX},${
+              point.pixelY + 6 / tileScale
+            }" stroke="none" fill="${color}" transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />`;
+            break;
+
+          case 'DISPLAY':
+            svg += `<path d="M${point.pixelX - 6 / tileScale},${point.pixelY + 9 / tileScale} L${
+              point.pixelX + 6 / tileScale
+            },${point.pixelY + 3 / tileScale} L${point.pixelX - 6 / tileScale},${point.pixelY - 3 / tileScale}  L${
+              point.pixelX + 6 / tileScale
+            },${point.pixelY - 9 / tileScale}" 
+            stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />`;
+            break;
+          case 'KYUKOKA':
+            svg += `<path d="M${point.pixelX - 5 / tileScale},${point.pixelY - 3 / tileScale} L${point.pixelX},${
+              point.pixelY - 8 / tileScale
+            } L${point.pixelX + 5 / tileScale},${point.pixelY - 3 / tileScale}" stroke="${color}" stroke-width="${
+              1.5 / tileScale
+            }" fill="none" transform="rotate(${angle},
+              ${point.pixelX}, ${point.pixelY})" />
+              <path d="M${point.pixelX - 5 / tileScale},${point.pixelY + 2 / tileScale} L${point.pixelX},${
+              point.pixelY - 3 / tileScale
+            } L${point.pixelX + 5 / tileScale},${point.pixelY + 2 / tileScale}" stroke="${color}" stroke-width="${
+              1.5 / tileScale
+            }" fill="none" transform="rotate(${angle},
+              ${point.pixelX}, ${point.pixelY})" />
+              <path d="M${point.pixelX - 5 / tileScale},${point.pixelY + 7 / tileScale} L${point.pixelX},${
+              point.pixelY + 2 / tileScale
+            } L${point.pixelX + 5 / tileScale},${point.pixelY + 7 / tileScale}" stroke="${color}" stroke-width="${
+              1.5 / tileScale
+            }" fill="none" transform="rotate(${angle},
+              ${point.pixelX}, ${point.pixelY})" />`;
+
+            break;
+          default:
+            svg += '';
+            break;
+        }
+      });
+
+      return svg;
+
+      // return `<polyline points="${points}" style="fill:none; stroke:${color}; stroke-width:${
+      //   strokeWidth + 5
+      // }; stroke-opacity:1;"/>`;
+    },
+    [convertCoordToPixel, pageScale.value]
+  );
+
+  const generatePointSvg = useCallback(
+    (
+      feature: RecordType,
+      layer: LayerType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number
+    ) => {
+      const label = generateLabel(layer, feature);
+      const color = getColor(layer, feature, 0);
+      const pixels = convertCoordsToPixels(
+        [feature.coords] as LocationType[],
+        leftX,
+        rightX,
+        bottomY,
+        topY,
+        width,
+        height
+      );
+      const pixelX = pixels[0].pixelX;
+      const pixelY = pixels[0].pixelY;
+
+      return `<circle cx="${pixelX}" cy="${pixelY}" r="${
+        4 / tileScale
+      }" style="fill:${color}; stroke:white; stroke-width:${0.2 / tileScale};"></circle>
+            <text x="${pixelX + 0.5}" y="${pixelY + 0.5}" fill="${color}" font-size="${
+        12 / tileScale
+      }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
+    },
+    [convertCoordsToPixels]
+  );
+
+  const generateArrowSvg = useCallback(
+    (
+      pixels: { pixelX: number; pixelY: number }[],
+      color: string,
+      strokeWidth: number,
+      arrowStyle: ArrowStyleType,
+      tileScale: number
+    ) => {
+      let svg = '';
+      if (arrowStyle === 'NONE') return svg;
+      const p0 = [pixels[0].pixelX, pixels[0].pixelY];
+      const p1 = [pixels[1].pixelX, pixels[1].pixelY];
+      const p2 = [pixels[pixels.length - 2].pixelX, pixels[pixels.length - 2].pixelY];
+      const p3 = [pixels[pixels.length - 1].pixelX, pixels[pixels.length - 1].pixelY];
+      // 矢印の向きを計算. 0度が北で時計回り.三角関数で計算
+      const bearingEnd = Math.atan2(p3[1] - p2[1], p3[0] - p2[0]) * (180 / Math.PI);
+      const angleEnd = (bearingEnd + 360 + 90) % 360;
+      const bearingStart = Math.atan2(p0[1] - p1[1], p0[0] - p1[0]) * (180 / Math.PI);
+      const angleStart = (bearingStart + 360 + 90) % 360;
+
+      const scale = Math.sqrt(strokeWidth - 1) / tileScale;
+      const originalSize = 40;
+      // scaleに基づいた新しいサイズを計算
+      const size = originalSize * scale;
+
+      // Pathのd属性をscaleに基づいて調整
+      const scaledPath = `M${20 * scale} ${0 * scale} L${14 * scale} ${13 * scale} L${20 * scale} ${10 * scale} L${
+        26 * scale
+      } ${13 * scale} Z`;
+
+      svg += `<path d="${scaledPath}" fill="${color}" stroke="white" stroke-width="0.2" transform="translate(${
+        p3[0] - size / 2
+      },${p3[1]}) rotate(${angleEnd}, ${size / 2}, 0)" />`;
+
+      if (arrowStyle === 'ARROW_BOTH') {
+        svg += `<path d="${scaledPath}" fill="${color}" stroke="white" stroke-width="0.2" transform="translate(${
+          p0[0] - size / 2
+        },${p0[1]}) rotate(${angleStart}, ${size / 2}, 0)" />`;
+      }
+      return svg;
+    },
+    []
+  );
+
+  const generatePolyLineSvg = useCallback(
+    (
+      feature: RecordType,
+      layer: LayerType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number,
+      lineColor: string
+    ) => {
+      let label = generateLabel(layer, feature);
+
+      let strokeWidth;
+      if (tracking?.dataId === feature.id) {
+        strokeWidth = 4;
+        label = '';
+      } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+        if (feature.field._strokeWidth !== undefined) {
+          strokeWidth = feature.field._strokeWidth as number;
+        } else {
+          strokeWidth = 1.5;
+        }
+      } else if (layer.colorStyle.lineWidth !== undefined) {
+        strokeWidth = layer.colorStyle.lineWidth;
+      } else {
+        strokeWidth = 1.5;
+      }
+
+      const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+      const pixels = convertCoordsToPixels(
+        feature.coords as LocationType[],
+        leftX,
+        rightX,
+        bottomY,
+        topY,
+        width,
+        height
+      );
+      let points = '';
+      pixels.forEach((p) => {
+        points += `${p.pixelX},${p.pixelY} `;
+      });
+
+      const labelPosition = { x: pixels[pixels.length - 1].pixelX + 5, y: pixels[pixels.length - 1].pixelY + 5 };
+      let svg = '';
+      svg += `<polyline points="${points}" fill="none" stroke="${lineColor}" stroke-width="${
+        strokeWidth / tileScale
+      }" />`;
+
+      svg += generateArrowSvg(pixels, lineColor, strokeWidth, arrowStyle, tileScale);
+
+      svg += `<text x="${labelPosition.x}" y="${labelPosition.y}" fill="${lineColor}" font-size="${
+        12 / tileScale
+      }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
+        0.2 / tileScale
+      }" paint-order="stroke">${label}</text>`;
+      return svg;
+    },
+    [convertCoordsToPixels, generateArrowSvg, tracking?.dataId]
+  );
+
+  const generateLineSvg = useCallback(
+    (
+      feature: RecordType,
+      layer: LayerType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number
+    ) => {
+      const color = getColor(layer, feature, 0);
+      const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : color;
+      if (isStampTool(feature.field._stamp as string)) {
+        return generateStampSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
+      } else if (isBrushTool(feature.field._strokeStyle as string)) {
+        return generateBrushSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
+      } else {
+        return generatePolyLineSvg(feature, layer, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
+      }
+    },
+    [generateBrushSvg, generatePolyLineSvg, generateStampSvg, tracking?.dataId]
+  );
+
+  const generatePolygonSvg = useCallback(
+    (
+      feature: RecordType,
+      layer: LayerType,
+      tileScale: number,
+      leftX: number,
+      rightX: number,
+      bottomY: number,
+      topY: number,
+      width: number,
+      height: number
+    ) => {
+      const label = generateLabel(layer, feature);
+      const color = getColor(layer, feature, 0);
+      const transparency = layer.colorStyle.transparency;
+      const polygonColor = getColor(layer, feature, transparency);
+      const strokeWidth = layer.colorStyle.lineWidth || 1.5;
+
+      const pixels = convertCoordsToPixels(
+        feature.coords as LocationType[],
+        leftX,
+        rightX,
+        bottomY,
+        topY,
+        width,
+        height
+      );
+      const outerPath = 'M ' + pixels.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ') + ' Z';
+      let innerPaths = '';
+
+      if (feature.holes) {
+        Object.values(feature.holes).forEach((hole) => {
+          const holePixels = convertCoordsToPixels(hole, leftX, rightX, bottomY, topY, width, height);
+          innerPaths += ' M ' + holePixels.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ') + ' Z';
+        });
+      }
+
+      return `<path d="${outerPath} ${innerPaths}" fill="${polygonColor}" stroke="${color}" stroke-width="${
+        strokeWidth / tileScale
+      }" />
+            <text x="${pixels[pixels.length - 1].pixelX + 5}" y="${
+        pixels[pixels.length - 1].pixelY + 5
+      }" fill="${color}" font-size="${
+        12 / tileScale
+      }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
+        0.2 / tileScale
+      }" paint-order="stroke">${label}</text>`;
+    },
+    [convertCoordsToPixels]
+  );
+
   const generateVectorMap = useCallback(
     (data: { dataSet: DataType[]; layers: LayerType[] }) => {
       const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
@@ -473,126 +917,25 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       data.dataSet.forEach((d) => {
         const layer = data.layers.find((l) => l.id === d.layerId);
         if (layer === undefined) return;
+        // レイヤータイプごとに適切なSVG生成関数を呼び出し
         if (layer.type === 'POINT' && layer.visible) {
-          d.data.forEach((feature) => {
-            const label = generateLabel(layer, feature);
-            const color = getColor(layer, feature, 0);
-
-            // 緯度経度からピクセル座標に変換（この関数は独自に定義する必要がある）
-            const pixels = convertCoordsToPixels(
-              [feature.coords] as LocationType[],
-              leftX,
-              rightX,
-              bottomY,
-              topY,
-              width,
-              height
-            );
-            const pixelX = pixels[0].pixelX;
-            const pixelY = pixels[0].pixelY;
-            // SVG 内の円を追加
-            svgContent += `<circle cx="${pixelX}" cy="${pixelY}" r="${
-              4 / tileScale
-            }" style="fill:${color}; stroke:white; stroke-width:${0.2 / tileScale};"></circle>`;
-
-            // SVG 内のテキストを追加
-            svgContent += `<text x="${pixelX + 0.5}" y="${pixelY + 0.5}" fill="${color}" font-size="${
-              12 / tileScale
-            }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
+          d.data.forEach((f) => {
+            svgContent += generatePointSvg(f, layer, tileScale, leftX, rightX, bottomY, topY, width, height);
           });
         } else if (layer.type === 'LINE' && layer.visible) {
-          d.data.forEach((feature) => {
-            const label = generateLabel(layer, feature);
-            const color = getColor(layer, feature, 0);
-
-            // 緯度経度からピクセル座標に変換（この関数は独自に定義する必要がある）
-            const pixels = convertCoordsToPixels(
-              feature.coords as LocationType[],
-              leftX,
-              rightX,
-              bottomY,
-              topY,
-              width,
-              height
-            );
-            //pixelsでsvgを作成する
-            let points = '';
-            pixels.forEach((p) => {
-              points += `${p.pixelX},${p.pixelY} `;
-            });
-            svgContent += `<polyline points="${points}" style="fill:none; stroke:${color}; stroke-width:${
-              2 / tileScale
-            }; stroke-opacity:0.5;"/>`;
-            svgContent += `<text x="${pixels[pixels.length - 1].pixelX + 5}" y="${
-              pixels[pixels.length - 1].pixelY + 5
-            }" fill="${color}" font-size="${
-              12 / tileScale
-            }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
-              0.2 / tileScale
-            }" paint-order="stroke">${label}</text>`;
+          d.data.forEach((f) => {
+            svgContent += generateLineSvg(f, layer, tileScale, leftX, rightX, bottomY, topY, width, height);
           });
         } else if (layer.type === 'POLYGON' && layer.visible) {
-          d.data.forEach((feature) => {
-            const holes = feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined;
-            const label = generateLabel(layer, feature);
-            const color = getColor(layer, feature, 0);
-            const transparency = layer.colorStyle.transparency;
-            const polygonColor = getColor(layer, feature, transparency);
-
-            let strokeWidth;
-            if (layer.colorStyle.colorType === 'INDIVIDUAL') {
-              if (feature.field._strokeWidth !== undefined) {
-                strokeWidth = feature.field._strokeWidth as number;
-              } else {
-                strokeWidth = 1.5;
-              }
-            } else if (layer.colorStyle.lineWidth !== undefined) {
-              strokeWidth = layer.colorStyle.lineWidth;
-            } else {
-              strokeWidth = 1.5;
-            }
-            // 緯度経度からピクセル座標に変換
-            const pixels = convertCoordsToPixels(
-              feature.coords as LocationType[],
-              leftX,
-              rightX,
-              bottomY,
-              topY,
-              width,
-              height
-            );
-
-            const holesPixels = holes?.map((h) =>
-              convertCoordsToPixels(h as LocationType[], leftX, rightX, bottomY, topY, width, height)
-            );
-
-            //pixelsとholesPixelsでドーナツポリゴンに対応したsvgをpathで作成する。
-            // 外側のポリゴンのパス命令を生成
-            const outerPath = 'M ' + pixels.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ');
-
-            // 内側のポリゴン（穴）のパス命令を生成
-            const innerPath = holesPixels
-              ?.map((hole) => 'M ' + hole.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ') + ' Z')
-              .join(' ');
-
-            // SVG path 要素の作成
-            svgContent += `<path d="${outerPath} ${innerPath}" fill="${polygonColor}" stroke="${color}" stroke-width="${
-              strokeWidth / tileScale
-            }" />`;
-            svgContent += `<text x="${pixels[pixels.length - 1].pixelX + 5}" y="${
-              pixels[pixels.length - 1].pixelY + 5
-            }" fill="${color}" font-size="${
-              12 / tileScale
-            }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
-              0.2 / tileScale
-            }" paint-order="stroke">${label}</text>`;
+          d.data.forEach((f) => {
+            svgContent += generatePolygonSvg(f, layer, tileScale, leftX, rightX, bottomY, topY, width, height);
           });
         }
       });
       svgContent += '</svg>';
       return svgContent;
     },
-    [convertCoordsToPixels, getTileRegion, getTileScale, pdfTileMapZoomLevel]
+    [generateLineSvg, generatePointSvg, generatePolygonSvg, getTileRegion, getTileScale, pdfTileMapZoomLevel]
   );
 
   const generateVRT = useCallback(
@@ -807,6 +1150,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     html += '</thead>';
     html += '<tbody>';
     dataSet.forEach((record) => {
+      const isGroupParent = record.field._group ? record.field._group === '' : true;
+      if (!isGroupParent) return;
       html += '<tr>';
       field.forEach((f) => {
         const fieldValue = record.field[f.name];

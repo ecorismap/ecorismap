@@ -112,7 +112,7 @@ export const SettingsModalGPS = React.memo((props: Props) => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('common.gps_settings')}`} </Text>
             <View style={{ borderWidth: 1, borderRadius: 5, padding: 10 }}>
-              <Text style={styles.text}>Accuracy and Battery</Text>
+              <Text style={styles.text}>{`${t('common.accuracyAndBattery')}`}</Text>
               <View style={styles.checkbox}>
                 {gpsAccuracyList.map((item, index) => (
                   <CheckBox
