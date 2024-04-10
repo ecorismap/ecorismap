@@ -465,7 +465,8 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'raster',
-                tiles: ['custom://' + tileMap.url],
+                //tiles: ['custom://' + tileMap.url], //キャッシュを使う場合
+                tiles: [tileMap.url],
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
