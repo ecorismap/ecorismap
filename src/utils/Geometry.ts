@@ -473,7 +473,7 @@ export const generateGeoJson = (
               _zoom: record.field._zoom ?? '',
               _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             }
-          : {};
+          : { _visible: record.visible, _id: record.id };
 
         if ((record.coords as LocationType[]).length === 1) {
           //MapMemoのSTAMPの場合

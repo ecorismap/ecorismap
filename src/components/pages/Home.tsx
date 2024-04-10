@@ -33,7 +33,6 @@ import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
-import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -42,6 +41,7 @@ import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
+import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -293,7 +293,7 @@ export default function HomeScreen() {
           }}
         >
           <Loading visible={isLoading} text="" />
-          <ModalColorPicker
+          <HomeMapMemoColorPicker
             color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}
