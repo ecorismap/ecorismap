@@ -14,10 +14,10 @@ import { t } from '../i18n/config';
 import { decodeUri } from '../utils/File.web';
 import { convert } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
-import * as RNFS from 'react-native-fs';
 import { tileToWebMercator } from '../utils/Tile';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';
+import { moveFile, unlink } from '../utils/File';
 export type UseMapsReturnType = {
   progress: string;
   mapListURL: string;
@@ -364,7 +364,7 @@ export const useMaps = (): UseMapsReturnType => {
             resizeMode: 'cover',
           })
             .then((croppedImageUri) => {
-              RNFS.moveFile(croppedImageUri, tileUri);
+              moveFile(croppedImageUri, tileUri);
             })
             .catch((e) => {
               console.log(tile, e);
@@ -381,7 +381,7 @@ export const useMaps = (): UseMapsReturnType => {
         }
         await Promise.all(batch);
 
-        RNFS.unlink(pdfImage);
+        unlink(pdfImage);
         const pdfName = outputFiles.length === 1 ? name : `${name}_page${(i + 1).toString().padStart(2, '0')}`;
         const newTileMap: TileMapType = {
           id: mapId,

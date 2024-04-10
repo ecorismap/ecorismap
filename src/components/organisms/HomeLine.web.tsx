@@ -1,123 +1,134 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl';
-import { RecordType, LayerType } from '../../types';
+import { RecordType, LayerType, LineRecordType, ArrowStyleType } from '../../types';
 import { generateGeoJson } from '../../utils/Geometry';
+import { getDataStyleLine, getLabelStyle } from '../../utils/MapGl.web';
+import { isBrushTool } from '../../utils/General';
+import { HomeMapMemoStamp } from './HomeMapMemoStamp';
+import { HomeMapMemoBrush } from './HomeMapMemoBrush';
 import { COLOR } from '../../constants/AppConstants';
-import { getColorRule } from '../../utils/Layer';
-import { t } from '../../i18n/config';
+import { getColor } from '../../utils/Layer';
+import { LineArrow } from '../atoms';
 
 interface Props {
-  data: RecordType[];
+  data: LineRecordType[];
   layer: LayerType;
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
 }
 
+const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
+  let strokeWidth;
+  if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+    if (feature.field._strokeWidth !== undefined) {
+      strokeWidth = feature.field._strokeWidth as number;
+    } else {
+      strokeWidth = 1.5;
+    }
+  } else if (layer.colorStyle.lineWidth !== undefined) {
+    strokeWidth = layer.colorStyle.lineWidth;
+  } else {
+    strokeWidth = 1.5;
+  }
+  return strokeWidth;
+};
+
 export const Line = React.memo((props: Props) => {
-  const { data, layer, zoom } = props;
-  const displayName = data.length === 0 ? '' : data[0].displayName ? data[0].displayName : '';
-  const userId = data.length === 0 ? '' : data[0].userId ? data[0].userId : '';
-
-  const getColorExpression = useCallback(
-    (layer_: LayerType) => {
-      const colorExpression = [
-        'case',
-        ['boolean', ['feature-state', 'clicked'], false],
-        COLOR.YELLOW,
-        ['boolean', ['feature-state', 'hover'], false],
-        COLOR.YELLOW,
-        getColorRule(layer_, 0, displayName),
-      ];
-
-      return colorExpression;
-    },
-    [displayName]
-  );
-
-  const labelStyle = useCallback(
-    (layer_: LayerType) => {
-      const colorExpression = getColorExpression(layer_);
-
-      // Prepare the text-field based on the label value
-      let textField;
-      if (layer_.label === t('common.custom') && layer_.customLabel) {
-        // Split the customLabel into fields and create a Mapbox expression
-        const fieldNames = layer_.customLabel.split('|');
-        const fields = fieldNames.reduce((acc, field, index) => {
-          const fieldName = field.trim(); // Remove leading and trailing whitespaces
-          if (fieldName.startsWith('"') || fieldName.startsWith("'")) {
-            //@ts-ignore
-            acc.push(fieldName.substring(1, fieldName.length - 1)); // Remove quotes
-          } else {
-            //@ts-ignore
-            acc.push(['get', fieldName]);
-          }
-          // Do not add " " after the last field
-          if (index < fieldNames.length - 1) {
-            //@ts-ignore
-            acc.push(' ');
-          }
-          return acc;
-        }, []);
-        textField = ['concat', ...fields];
-      } else {
-        textField = ['get', layer_.label];
-      }
-
-      return {
-        id: `${layer_.id}_${userId}-label`,
-        type: 'symbol',
-        layout: {
-          'text-field': textField,
-          'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-          //'text-radial-offset': 0.5,
-          'text-size': 14,
-          'text-justify': 'auto',
-          'text-font': ['Noto Sans Universal Regular'],
-          //'icon-image': ['get', 'icon']
-        },
-        paint: {
-          'text-color': colorExpression,
-          'text-halo-color': 'rgba(255,255,255,1)',
-          'text-halo-width': 1,
-        },
-        filter: ['==', '_visible', true],
-      };
-    },
-    [getColorExpression, userId]
-  );
-
-  const dataStyle = useCallback(
-    (layer_: LayerType) => {
-      const colorExpression = getColorExpression(layer_);
-
-      return {
-        id: `${layer_.id}_${userId}`,
-        type: 'line',
-        paint: {
-          'line-color': colorExpression,
-          'line-width': [
-            'coalesce',
-            layer.colorStyle.colorType === 'INDIVIDUAL' ? ['get', '_strokeWidth'] : layer_.colorStyle.lineWidth ?? 1.5,
-            layer_.colorStyle.lineWidth ?? 1.5,
-          ],
-        },
-        layout: {
-          visibility: 'visible',
-        },
-        filter: ['==', '_visible', true],
-      };
-    },
-    [getColorExpression, layer.colorStyle, userId]
-  );
+  const { data, layer, zoom, selectedRecord } = props;
 
   if (data === undefined || data.length === 0) return null;
 
-  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, false);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, false);
+  const stampRecords: LineRecordType[] = [];
+  const brushRecords: LineRecordType[] = [];
+  const arrowRecords: LineRecordType[] = [];
+  const lineRecords: LineRecordType[] = [];
+  data.forEach((feature) => {
+    if (!feature.visible) return;
+    if (feature.coords.length === 1) {
+      stampRecords.push(feature);
+    } else if (isBrushTool(feature.field._strokeStyle as string)) {
+      brushRecords.push(feature);
+    } else {
+      const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+      if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_END') {
+        arrowRecords.push(feature);
+      }
+      lineRecords.push(feature);
+    }
+  });
+
+  const displayName = data[0].displayName ? data[0].displayName : '';
+  const userId = data[0].userId ? data[0].userId : '';
+
   //console.log(geojsonLabel);
+
+  return (
+    <>
+      {stampRecords.map((feature) => (
+        <HomeMapMemoStamp
+          key={'stamp' + feature.id}
+          feature={{ ...feature, coords: feature.coords[0] }}
+          selectedRecord={selectedRecord}
+        />
+      ))}
+      {brushRecords.map((feature) => {
+        const color = getColor(layer, feature, 0);
+        const selected =
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+        const lineColor = selected ? COLOR.YELLOW : color;
+        return (
+          <HomeMapMemoBrush
+            key={'brush' + feature.id}
+            lineColor={lineColor}
+            feature={feature}
+            zoom={zoom}
+            selected={selected}
+          />
+        );
+      })}
+      {arrowRecords.map((feature) => {
+        const color = getColor(layer, feature, 0);
+        const selected =
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+        const lineColor = selected ? COLOR.YELLOW : color;
+        const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+        const strokeWidth = getStrokeWidth(layer, feature);
+        return (
+          <LineArrow
+            key={'arrow' + feature.id}
+            selected={selected}
+            coordinates={feature.coords}
+            strokeColor={lineColor}
+            strokeWidth={strokeWidth}
+            arrowStyle={arrowStyle}
+          />
+        );
+      })}
+      <PolylineComponent data={lineRecords} layer={layer} userId={userId} displayName={displayName} zoom={zoom} />
+    </>
+  );
+});
+
+interface PolylineProps {
+  data: LineRecordType[];
+  layer: LayerType;
+  userId: string;
+  displayName: string;
+  zoom: number;
+}
+
+const PolylineComponent = React.memo((props: PolylineProps) => {
+  const { data, layer, userId, displayName, zoom } = props;
+
+  const labelStyle = getLabelStyle(layer, userId, displayName);
+
+  const dataStyle = getDataStyleLine(layer, userId, displayName);
+
+  const isMapMemoLayer = data.some((r) => r.field._strokeColor !== undefined);
+  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, isMapMemoLayer);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, isMapMemoLayer);
 
   return (
     <View>
@@ -125,15 +136,16 @@ export const Line = React.memo((props: Props) => {
         //@ts-ignore
         <Source type="geojson" data={geojsonLabel}>
           {/*// @ts-ignore*/}
-          <Layer {...labelStyle(layer)} />
+          <Layer {...labelStyle} />
         </Source>
       )}
+
       {/*
                   //@ts-ignore*/}
       <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} promoteId={'_id'}>
         {/*
                   //@ts-ignore*/}
-        <Layer {...dataStyle(layer)} />
+        <Layer {...dataStyle} />
       </Source>
     </View>
   );

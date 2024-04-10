@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
-import { Marker, LatLng } from 'react-native-maps';
+import { View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { bearing } from '@turf/turf';
 import * as turf from '@turf/helpers';
 import { ArrowStyleType } from '../../types';
+import { Marker } from 'react-map-gl';
+import { LatLng } from 'react-native-maps';
 
 interface Props {
   selected: boolean;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 const LineArrow = React.memo((props: Props) => {
-  const { selected, coordinates, strokeColor, strokeWidth, arrowStyle } = props;
+  const { coordinates, strokeColor, strokeWidth, arrowStyle } = props;
 
   if (arrowStyle === 'NONE') return null;
   const p0 = [coordinates[0].longitude, coordinates[0].latitude];
@@ -38,14 +39,7 @@ const LineArrow = React.memo((props: Props) => {
 
   return (
     <>
-      <Marker
-        tracksViewChanges={Platform.OS === 'ios' ? true : selected}
-        coordinate={coordinates[coordinates.length - 1]}
-        opacity={1}
-        anchor={{ x: 0.5, y: 0.5 }}
-        rotation={angleEnd}
-        style={{ zIndex: -1, alignItems: 'center' }}
-      >
+      <Marker {...coordinates[coordinates.length - 1]} anchor={'center'} draggable={false} rotation={angleEnd}>
         <View style={{ width: size, height: size }}>
           <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
             <Path d={scaledPath} fill={strokeColor} stroke="white" />
@@ -53,14 +47,7 @@ const LineArrow = React.memo((props: Props) => {
         </View>
       </Marker>
       {arrowStyle === 'ARROW_BOTH' && (
-        <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected}
-          coordinate={coordinates[0]}
-          opacity={1}
-          anchor={{ x: 0.5, y: 0.02 * scale }}
-          rotation={angleStart}
-          style={{ zIndex: -1, alignItems: 'center' }}
-        >
+        <Marker {...coordinates[0]} anchor={'center'} draggable={false} rotation={angleStart}>
           <View style={{ width: size, height: size }}>
             <Svg height={size.toString()} width={size.toString()} viewBox={`0 0 ${size} ${size}`}>
               <Path d={scaledPath} fill={strokeColor} stroke="white" />
