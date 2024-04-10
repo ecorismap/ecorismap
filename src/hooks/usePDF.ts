@@ -739,23 +739,23 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       const angleStart = (bearingStart + 360 + 90) % 360;
 
       const scale = Math.sqrt(strokeWidth - 1) / tileScale;
-      const originalSize = 40;
+      const originalSize = 20;
       // scaleに基づいた新しいサイズを計算
       const size = originalSize * scale;
 
       // Pathのd属性をscaleに基づいて調整
-      const scaledPath = `M${20 * scale} ${0 * scale} L${14 * scale} ${13 * scale} L${20 * scale} ${10 * scale} L${
-        26 * scale
-      } ${13 * scale} Z`;
+      const scaledPath = `M${10 * scale} ${7 * scale} L${5 * scale} ${20 * scale} L${10 * scale} ${18 * scale} L${
+        15 * scale
+      } ${20 * scale} Z`;
 
       svg += `<path d="${scaledPath}" fill="${color}" stroke="white" stroke-width="0.2" transform="translate(${
         p3[0] - size / 2
-      },${p3[1]}) rotate(${angleEnd}, ${size / 2}, 0)" />`;
+      },${p3[1] - size / 2}) rotate(${angleEnd}, ${size / 2}, ${size / 2})" />`;
 
       if (arrowStyle === 'ARROW_BOTH') {
         svg += `<path d="${scaledPath}" fill="${color}" stroke="white" stroke-width="0.2" transform="translate(${
           p0[0] - size / 2
-        },${p0[1]}) rotate(${angleStart}, ${size / 2}, 0)" />`;
+        },${p0[1] - size / 2}) rotate(${angleStart}, ${size / 2}, ${size / 2})" />`;
       }
       return svg;
     },

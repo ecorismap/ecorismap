@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import ColorPicker, { Panel2, BrightnessSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
 import { t } from '../../i18n/config';
-import { useWindow } from '../../hooks/useWindow';
 
 const customSwatches = [
   '#000000b3',
@@ -28,9 +27,9 @@ interface Props {
   pressSelectColorCancel: () => void;
 }
 
-export const ModalColorPicker = React.memo((props: Props) => {
+export const HomeMapMemoColorPicker = React.memo((props: Props) => {
   const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
-  const { windowWidth } = useWindow();
+
   const [hue, setHue] = useState(0);
   const [sat, setSat] = useState(1);
   const [val, setVal] = useState(1);
@@ -65,7 +64,7 @@ export const ModalColorPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: windowWidth * 0.6, height: 370 }]}>
+          <View style={[styles.modalContents, { width: 230, height: 370 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`} </Text>
             <ColorPicker
               value={defaultColor}
@@ -87,7 +86,7 @@ export const ModalColorPicker = React.memo((props: Props) => {
               />
             </ColorPicker>
 
-            <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
+            <View style={[styles.modalButtonContainer, { width: 230 }]}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
                 onPress={() => pressSelectColorOK(hue, sat, val, alpha)}

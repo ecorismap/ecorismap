@@ -6,7 +6,7 @@ import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl';
-import maplibregl, { LayerSpecification } from 'maplibre-gl';
+import maplibregl, { LayerSpecification, RequestParameters, ResponseCallback } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
@@ -32,7 +32,6 @@ import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
-import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
 import { isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
@@ -43,6 +42,8 @@ import { schemeSet3 } from 'd3-scale-chromatic';
 import { PMTiles } from '../../utils/pmtiles';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
+import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import Dexie from 'dexie';
 
 export default function HomeScreen() {
   const {
@@ -112,6 +113,52 @@ export default function HomeScreen() {
 
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
+
+  // データベースの定義
+  const db = new Dexie('TilesDatabase');
+  db.version(1).stores({
+    tiles: 'url, blob', // Blobデータとして画像を保存
+  });
+
+  // IndexedDBに画像をBlobとして保存
+  const saveImageToIndexedDB = async (url: string, blob: Blob) => {
+    //@ts-ignore
+    await db.tiles.put({ url, blob });
+    //console.log('IndexedDBに保存', url);
+  };
+
+  const getLocalTile = async (url: string) => {
+    //@ts-ignore
+    const tile = await db.tiles.get(url);
+    if (tile?.blob) {
+      //console.log('IndexedDBから取得', url);
+      return tile.blob.arrayBuffer(); // BlobをArrayBufferに変換
+    }
+    return null;
+  };
+
+  maplibregl.addProtocol('custom', (params: RequestParameters, callback: ResponseCallback<any>) => {
+    getLocalTile(params.url).then((tileBuffer) => {
+      if (tileBuffer) {
+        callback(null, tileBuffer, null, null);
+      } else {
+        fetch(`https://${params.url.split('://')[2]}`)
+          .then(async (response) => {
+            if (!response.ok) {
+              throw new Error(`Tile fetch error: ${response.statusText}`);
+            }
+            const blob = await response.blob();
+            saveImageToIndexedDB(params.url, blob); // Blobとして保存
+            const arrayBuffer = await blob.arrayBuffer();
+            callback(null, arrayBuffer, null, null);
+          })
+          .catch((e) => {
+            callback(new Error(e.message));
+          });
+      }
+    });
+    return { cancel: () => {} };
+  });
 
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
@@ -280,7 +327,7 @@ export default function HomeScreen() {
             }
             if (!Array.isArray(layerStyles)) return;
             layerStyles.forEach((layerStyle: any, index: number) => {
-              console.log(layerStyle);
+              //console.log(layerStyle);
               layerStyle.id = `${tileMap.id}_${index}`;
               layerStyle.source = tileMap.id;
               if (layerStyle.paint['fill-opacity']) {
@@ -418,7 +465,7 @@ export default function HomeScreen() {
               ...result,
               [tileMap.id]: {
                 type: 'raster',
-                tiles: [tileMap.url],
+                tiles: ['custom://' + tileMap.url],
                 minzoom: tileMap.minimumZ,
                 maxzoom: tileMap.maximumZ,
                 scheme: tileMap.flipY ? 'tms' : 'xyz',
@@ -533,7 +580,7 @@ export default function HomeScreen() {
           }}
         >
           <Loading visible={isLoading} text="" />
-          <ModalColorPicker
+          <HomeMapMemoColorPicker
             color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}

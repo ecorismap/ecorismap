@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR, PEN, PEN_STYLE } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { useWindow } from '../../hooks/useWindow';
 import { ArrowStyleType, MapMemoToolType } from '../../types';
 import Button from '../atoms/Button';
 import { isPenTool } from '../../utils/General';
@@ -34,7 +33,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     selectMapMemoLineSmoothed,
     setVisibleMapMemoPen,
   } = props;
-  const { windowWidth } = useWindow();
+
   const [pen, setPen] = useState<MapMemoToolType | undefined>(undefined);
 
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
@@ -57,7 +56,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
       height: 45,
       //justifyContent: 'space-between',
       margin: 2,
-      width: windowWidth * 0.4,
+      width: 180,
     },
     modalButtonContainer: {
       flexDirection: 'row',
@@ -136,7 +135,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: windowWidth * 0.5, height: 350 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 350 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10 }}>
               <Text style={styles.modalSubTitle}>{`${t('common.strokeWidth')}`} </Text>
