@@ -3831,10 +3831,10 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/hooks/-/hooks-3.0.0.tgz#af5f2ca32eea59b792ce9e3d9a4cf0354f9b195f"
   integrity sha512-g2OyxXHfwIytXUJitBR6Z/ISoOfp0WKx5FOv+NqJ/CrWjRDcTw6zXE5I1C9axfuh30kJqzWchVfCDrkzZYTxqg==
 
-"@react-native-community/image-editor@^3.1.1":
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-3.2.0.tgz#f1754df81ae64a75416c3b792691c7928d47dd2a"
-  integrity sha512-MGao9CZbYRzx9w8AD+he1WznUn810936D9Q5gSYc01QbuS7dtU+6tN0pI6CZCq8CqlvnDEDNSbJsASSwDBCsDQ==
+"@react-native-community/image-editor@^4.2.0":
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-4.2.0.tgz#5b7d5d56ca6170991cdeecc36ee2714cde1e2438"
+  integrity sha512-awyoOwElkAI+jrXxhm1kicXIKJXUnq8hE4RRdFs8HkCAdCOjNtAQPRneD+eHe9pOGKuX2h8sqgIJKqMv9wnwqw==
 
 "@react-native-community/netinfo@^11.3.1":
   version "11.3.1"
@@ -9358,6 +9358,11 @@ detect-node@^2.0.4:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/detect-node/-/detect-node-2.1.0.tgz#c9c70775a49c3d03bc2c06d9a73be550f978f8b1"
   integrity sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==
+
+dexie@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/dexie/-/dexie-4.0.2.tgz#40c319aa720c05a9b03d1281dd1850e94cab17f4"
+  integrity sha512-0D9Gds8Y3yN3k4p7SKrfdP9dqzMxskpNdFwNx9xvWbaowdF5oDwJtej/l9nh1xIeYCoilV+PWRZvM5vAn5SNsA==
 
 diff-sequences@^29.4.3:
   version "29.4.3"
