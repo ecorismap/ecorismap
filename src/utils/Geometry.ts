@@ -325,6 +325,10 @@ export const generateCSV = (
       break;
     case 'LINE':
       geometries = dataSet.map(({ coords }) => {
+        if ((coords as LocationType[]).length === 1) {
+          //MapMemoのSTAMPの場合
+          return `"POINT(${(coords as LocationType[])[0].longitude} ${(coords as LocationType[])[0].latitude})"`;
+        }
         const linestring = (coords as LocationType[]).map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
         return `"LINESTRING(${linestring})"`;
       });
@@ -482,8 +486,27 @@ export const generateGeoJson = (
               _zoom: record.field._zoom ?? '',
               _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             }
-          : {};
+          : { _visible: record.visible, _id: record.id };
 
+        if ((record.coords as LocationType[]).length === 1) {
+          //MapMemoのSTAMPの場合
+          const coordinates = [
+            (record.coords as LocationType[])[0].longitude,
+            (record.coords as LocationType[])[0].latitude,
+          ];
+          const feature = {
+            type: 'Feature',
+            properties: {
+              ...properties,
+              ...mapMemoProperties,
+            },
+            geometry: {
+              type: 'Point',
+              coordinates: coordinates,
+            },
+          };
+          return feature;
+        }
         const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
         const feature = {
           type: 'Feature',

@@ -93,3 +93,6 @@ export async function deleteReceivedFiles() {}
 export async function getReceivedFiles() {}
 
 export async function customShareAsync() {}
+
+export async function moveFile() {}
+export async function unlink() {}

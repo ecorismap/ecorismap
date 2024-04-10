@@ -4,7 +4,6 @@ import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
-import { ModalColorPicker } from '../organisms/ModalColorPicker';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import Slider from '../atoms/Slider';
@@ -13,6 +12,7 @@ import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureSty
 import { TextInput } from '../atoms';
 import { ScrollView } from 'react-native-gesture-handler';
 import HeaderRightButton from '../molecules/HeaderRightButton';
+import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 
 export default function LayerEditFeatureStyleScreen() {
   const {
@@ -147,7 +147,7 @@ export default function LayerEditFeatureStyleScreen() {
         )}
       </ScrollView>
 
-      <ModalColorPicker
+      <HomeMapMemoColorPicker
         color={colorStyle.color}
         modalVisible={modalVisible}
         pressSelectColorOK={pressSelectColorOK}

@@ -14,6 +14,7 @@ export { default as PointView } from './PointView';
 export { default as PolygonView } from './PolygonView';
 export { default as PointLabel } from './PointLabel';
 export { default as LineLabel } from './LineLabel';
+export { default as LineArrow } from './LineArrow';
 export { default as PolygonLabel } from './PolygonLabel';
 export { default as Airplane } from './Airplane';
 export { default as Circle } from './Circle';

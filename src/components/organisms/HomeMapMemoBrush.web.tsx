@@ -1,10 +1,10 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
-import { Marker } from 'react-native-maps';
+import { View } from 'react-native';
 import { LineRecordType } from '../../types';
 import Svg, { Circle, Path, Polygon } from 'react-native-svg';
 
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
+import { Marker } from 'react-map-gl';
 
 interface Props {
   lineColor: string;
@@ -14,14 +14,22 @@ interface Props {
 }
 
 export const HomeMapMemoBrush = React.memo((props: Props) => {
-  const { lineColor, feature, zoom, selected } = props;
+  const { lineColor, feature, zoom } = props;
   const latlon = latLonObjectsToLatLonArray(feature.coords);
   const points = interpolateLineString(latlon, 1 / 2 ** (zoom - 10));
   //turfで
   return (
     <>
-      {points.map((point, idx) => (
+      {points.map((point) => (
         <Marker
+          key={`${feature.id}-${feature.redraw}`}
+          longitude={point.coordinates[0]}
+          latitude={point.coordinates[1]}
+          anchor={'center'}
+          rotation={point.angle}
+          draggable={false}
+        >
+          {/* <Marker
           tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
           coordinate={{ latitude: point.coordinates[1], longitude: point.coordinates[0] }}
           opacity={1}
@@ -29,7 +37,7 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
           rotation={point.angle}
           style={{ zIndex: -1, alignItems: 'center' }}
           key={idx}
-        >
+        > */}
           <View style={{ width: 20, height: 20 }}>
             {feature.field._strokeStyle === 'PLUS' && (
               <Svg height="20" width="20" viewBox="0 0 20 20">
