@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR, PLUGIN, STAMP } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { useWindow } from '../../hooks/useWindow';
 import { MapMemoToolType } from '../../types';
 import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
@@ -27,7 +26,6 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
     selectMapMemoSnapWithLine,
   } = props;
   const [stamp, setStamp] = useState<MapMemoToolType | undefined>(undefined);
-  const { windowWidth } = useWindow();
   const [snapped, setSnapped] = useState(false);
 
   useEffect(() => {
@@ -42,7 +40,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
       height: 45,
       //justifyContent: 'space-between',
       margin: 2,
-      width: windowWidth * 0.48,
+      width: 180,
     },
     modalButtonContainer: {
       flexDirection: 'row',
@@ -121,9 +119,9 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: windowWidth * 0.5, height: PLUGIN.HISYOUTOOL ? 310 : 230 }]}>
+          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 310 : 230 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectStamp')}`} </Text>
-            <View style={{ flexDirection: 'column', margin: 10, width: windowWidth * 0.48 }}>
+            <View style={{ flexDirection: 'column', margin: 10, width: 180 }}>
               <Text style={styles.modalSubTitle}>{`${t('common.common')}`} </Text>
               {/* <View style={{ flexDirection: 'row' }}>
                 <View style={{ margin: 5 }}>

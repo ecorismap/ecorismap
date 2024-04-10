@@ -3116,10 +3116,10 @@
   resolved "https://registry.yarnpkg.com/@react-native-community/hooks/-/hooks-3.0.0.tgz#af5f2ca32eea59b792ce9e3d9a4cf0354f9b195f"
   integrity sha512-g2OyxXHfwIytXUJitBR6Z/ISoOfp0WKx5FOv+NqJ/CrWjRDcTw6zXE5I1C9axfuh30kJqzWchVfCDrkzZYTxqg==
 
-"@react-native-community/image-editor@^3.1.1":
-  version "3.1.1"
-  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-3.1.1.tgz#7e8bd86dc4c78d95fc48fe88ce48752205fa09ae"
-  integrity sha512-hr5sfF2TQPJtxV48QaHDP5S62jEYEdlJef92mRMwvPx1uqPD8RN4NVbDQvQqTNLacwbftBEXVX/I8kFeEYaPIg==
+"@react-native-community/image-editor@^4.2.0":
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/@react-native-community/image-editor/-/image-editor-4.2.0.tgz#5b7d5d56ca6170991cdeecc36ee2714cde1e2438"
+  integrity sha512-awyoOwElkAI+jrXxhm1kicXIKJXUnq8hE4RRdFs8HkCAdCOjNtAQPRneD+eHe9pOGKuX2h8sqgIJKqMv9wnwqw==
 
 "@react-native-community/slider@^4.4.2":
   version "4.4.2"
@@ -7207,6 +7207,11 @@ detect-node@^2.0.4:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/detect-node/-/detect-node-2.1.0.tgz#c9c70775a49c3d03bc2c06d9a73be550f978f8b1"
   integrity sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==
+
+dexie@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/dexie/-/dexie-4.0.2.tgz#40c319aa720c05a9b03d1281dd1850e94cab17f4"
+  integrity sha512-0D9Gds8Y3yN3k4p7SKrfdP9dqzMxskpNdFwNx9xvWbaowdF5oDwJtej/l9nh1xIeYCoilV+PWRZvM5vAn5SNsA==
 
 diff-sequences@^29.3.1:
   version "29.3.1"

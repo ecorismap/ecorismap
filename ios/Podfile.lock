@@ -407,7 +407,7 @@ PODS:
     - GoogleMaps (= 7.4.0)
     - Protobuf
     - React-Core
-  - react-native-image-editor (3.1.1):
+  - react-native-image-editor (4.2.0):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
     - React-RCTImage
@@ -884,7 +884,7 @@ SPEC CHECKSUMS:
   react-native-gdalwarp: 52a1bda87bfe2c4c20a5bffcfbd94ad095b28aff
   react-native-get-random-values: dee677497c6a740b71e5612e8dbd83e7539ed5bb
   react-native-google-maps: 77524ec626e3e38de3d4c38acf85fbb9f5608c9e
-  react-native-image-editor: 9c90ca77117d954dfbdea3ce23e15b91f1fa1281
+  react-native-image-editor: a60c74bc79f6101b7863c092aa53726e9e40a327
   react-native-maps: 667f9b975549c6fa9b1631bf859440f68ebd3b8f
   react-native-safe-area-context: 7aa8e6d9d0f3100a820efb1a98af68aa747f9284
   react-native-slider: 33b8d190b59d4f67a541061bb91775d53d617d9d
