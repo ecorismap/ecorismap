@@ -14,7 +14,7 @@ interface Props {
   pressSelectColorCancel: () => void;
 }
 
-export const ModalColorPicker = React.memo((props: Props) => {
+export const HomeMapMemoColorPicker = React.memo((props: Props) => {
   const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
 
   const [val, setVal] = useState({

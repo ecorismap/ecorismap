@@ -158,3 +158,11 @@ export async function customShareAsync(uri: string, options: Sharing.SharingOpti
   await RNFS.unlink(destPath);
   await RNFS.unlink(uri as string);
 }
+
+export async function moveFile(uri: any, destPath: string) {
+  await RNFS.moveFile(uri, destPath);
+}
+
+export async function unlink(uri: string) {
+  return RNFS.unlink(uri);
+}

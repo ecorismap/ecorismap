@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR, ERASER } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { useWindow } from '../../hooks/useWindow';
 import { MapMemoToolType } from '../../types';
 import { isEraserTool } from '../../utils/General';
 import { Button } from '../atoms';
@@ -18,7 +17,6 @@ interface Props {
 export const HomeModalEraserPicker = React.memo((props: Props) => {
   const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoEraser } = props;
   const [eraser, setEraser] = React.useState<MapMemoToolType | undefined>(undefined);
-  const { windowWidth } = useWindow();
 
   useEffect(() => {
     const defaultEraser = isEraserTool(currentMapMemoTool) ? currentMapMemoTool : 'PEN_ERASER';
@@ -32,7 +30,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
       height: 120,
       //justifyContent: 'space-between',
       margin: 5,
-      width: windowWidth * 0.5,
+      width: 180,
     },
     modalButtonContainer: {
       flexDirection: 'row',
@@ -106,7 +104,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: windowWidth * 0.5, height: 300 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 250 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectEraser')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10 }}>
               <TouchableOpacity

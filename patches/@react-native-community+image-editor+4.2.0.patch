@@ -7,40 +7,31 @@ index 0000000..5ff383e
 +o/debug
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/BuildConfig.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/BuildConfig.dex
 new file mode 100644
-index 0000000..115580a
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/BuildConfig.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.dex
 new file mode 100644
-index 0000000..abea1df
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.dex
 new file mode 100644
-index 0000000..f0eecff
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.dex
 new file mode 100644
-index 0000000..3d5fac2
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.dex
 new file mode 100644
-index 0000000..e06de79
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.dex
 new file mode 100644
-index 0000000..5f0d436
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.dex
 new file mode 100644
-index 0000000..c60b256
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.dex b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.dex
 new file mode 100644
-index 0000000..07d6668
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/desugar_graph.bin b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/desugar_graph.bin
 new file mode 100644
-index 0000000..601f245
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/.transforms/43a38c83eb9b137df4b4537448b47a48/transformed/desugar_graph.bin differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/.transforms/7510228b31aa0c01e911c43722e55d84/results.bin b/node_modules/@react-native-community/image-editor/android/build/.transforms/7510228b31aa0c01e911c43722e55d84/results.bin
 new file mode 100644
 index 0000000..1ed65e0
@@ -2105,11 +2096,11 @@ index 0000000..5347f17
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/@react-native-community/image-editor/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..754e4b7
+index 0000000..42bcec0
 --- /dev/null
 +++ b/node_modules/@react-native-community/image-editor/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Thu Feb 22 18:33:47 JST 2024
++#Mon Apr 08 19:59:52 JST 2024
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/@react-native-community/image-editor/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..6fd45de
@@ -2198,40 +2189,31 @@ index 0000000..308e056
 \ No newline at end of file
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/META-INF/react-native-community_image-editor_debug.kotlin_module b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/META-INF/react-native-community_image-editor_debug.kotlin_module
 new file mode 100644
-index 0000000..8c840dd
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/META-INF/react-native-community_image-editor_debug.kotlin_module differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/BuildConfig.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/BuildConfig.class
 new file mode 100644
-index 0000000..8399a6c
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/BuildConfig.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.class
 new file mode 100644
-index 0000000..93afe25
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule$Companion.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.class
 new file mode 100644
-index 0000000..516e925
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModule.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.class
 new file mode 100644
-index 0000000..cb5ad39
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$Companion.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.class
 new file mode 100644
-index 0000000..b1a7f15
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cleanTask$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.class
 new file mode 100644
-index 0000000..b02d1d5
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl$cropImage$1.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.class
 new file mode 100644
-index 0000000..8b82d50
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.class b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.class
 new file mode 100644
-index 0000000..4f4041a
-Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_dir/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.class differ
+index 0000000..e69de29
 diff --git a/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/@react-native-community/image-editor/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
 index 0000000..b1a7219
@@ -3691,7 +3673,7 @@ index 0000000..cb1ab1e
 +xml rn_dev_preferences
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab
 new file mode 100644
-index 0000000..d12b0f7
+index 0000000..5c4dbdc
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.keystream
 new file mode 100644
@@ -3707,7 +3689,7 @@ index 0000000..a9f80ae
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.values.at
 new file mode 100644
-index 0000000..f3154e3
+index 0000000..2fe1f7f
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab_i
 new file mode 100644
@@ -3719,7 +3701,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/inputs/source-to-output.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab
 new file mode 100644
-index 0000000..ca4d6bb
+index 0000000..5c11f83
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.keystream
 new file mode 100644
@@ -3735,7 +3717,7 @@ index 0000000..ec8f944
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.values.at
 new file mode 100644
-index 0000000..319930a
+index 0000000..3737e13
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab_i
 new file mode 100644
@@ -3747,7 +3729,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-attributes.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab
 new file mode 100644
-index 0000000..c9858aa
+index 0000000..86c35fd
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.keystream
 new file mode 100644
@@ -3763,7 +3745,7 @@ index 0000000..ec8f944
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at
 new file mode 100644
-index 0000000..9e20154
+index 0000000..ca8a78c
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i
 new file mode 100644
@@ -3775,7 +3757,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/class-fq-name-to-source.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab
 new file mode 100644
-index 0000000..ff59924
+index 0000000..f99c3c4
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.keystream
 new file mode 100644
@@ -3791,7 +3773,7 @@ index 0000000..01bdaa1
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.values.at
 new file mode 100644
-index 0000000..7faffbd
+index 0000000..e61f526
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab_i
 new file mode 100644
@@ -3803,7 +3785,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/constants.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab
 new file mode 100644
-index 0000000..edfc225
+index 0000000..e4f843b
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.keystream
 new file mode 100644
@@ -3819,7 +3801,7 @@ index 0000000..817b326
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.values.at
 new file mode 100644
-index 0000000..078b59e
+index 0000000..f08a762
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab_i
 new file mode 100644
@@ -3831,7 +3813,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/internal-name-to-source.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab
 new file mode 100644
-index 0000000..237031d
+index 0000000..e311b50
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.keystream
 new file mode 100644
@@ -3847,7 +3829,7 @@ index 0000000..9e27f73
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.values.at
 new file mode 100644
-index 0000000..b5f81a3
+index 0000000..d32896f
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab_i
 new file mode 100644
@@ -3859,7 +3841,7 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/proto.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab
 new file mode 100644
-index 0000000..8af2f50
+index 0000000..9853b3f
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.keystream
 new file mode 100644
@@ -3875,7 +3857,7 @@ index 0000000..a9f80ae
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at
 new file mode 100644
-index 0000000..103bcd4
+index 0000000..5be8bd3
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/source-to-classes.tab_i
 new file mode 100644
@@ -3943,16 +3925,16 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/jvm/kotlin/supertypes.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/counters.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/counters.tab
 new file mode 100644
-index 0000000..3d952e7
+index 0000000..c393a51
 --- /dev/null
 +++ b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/counters.tab
 @@ -0,0 +1,2 @@
-+7
++3
 +0
 \ No newline at end of file
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab
 new file mode 100644
-index 0000000..1ebc85d
+index 0000000..7cce3de
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.keystream
 new file mode 100644
@@ -3968,7 +3950,7 @@ index 0000000..a9f80ae
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.values.at
 new file mode 100644
-index 0000000..25454f3
+index 0000000..9f383b5
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab_i
 new file mode 100644
@@ -3980,27 +3962,27 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/file-to-id.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab
 new file mode 100644
-index 0000000..6fca11c
+index 0000000..60a36f7
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream
 new file mode 100644
-index 0000000..2459ed6
+index 0000000..636f34a
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream.len b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream.len
 new file mode 100644
-index 0000000..379d85c
+index 0000000..29ce11c
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.keystream.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.len b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.len
 new file mode 100644
-index 0000000..817b326
+index 0000000..a9f80ae
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.values.at
 new file mode 100644
-index 0000000..cba9d41
+index 0000000..617b48b
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i
 new file mode 100644
-index 0000000..0667ccd
+index 0000000..e9905b3
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i.len b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i.len
 new file mode 100644
@@ -4008,11 +3990,11 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/id-to-file.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab
 new file mode 100644
-index 0000000..e094dae
+index 0000000..b07b390
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.keystream b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.keystream
 new file mode 100644
-index 0000000..e193462
+index 0000000..caffc31
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.keystream differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.keystream.len b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.keystream.len
 new file mode 100644
@@ -4024,11 +4006,11 @@ index 0000000..a32ade1
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.values.at b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.values.at
 new file mode 100644
-index 0000000..715dddb
+index 0000000..9493112
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab.values.at differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i
 new file mode 100644
-index 0000000..d080b35
+index 0000000..e04f1ce
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i.len b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i.len
 new file mode 100644
@@ -4036,11 +4018,11 @@ index 0000000..131e265
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/caches-jvm/lookups/lookups.tab_i.len differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/last-build.bin b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/last-build.bin
 new file mode 100644
-index 0000000..814f180
+index 0000000..155f2dd
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/cacheable/last-build.bin differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/local-state/build-history.bin b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/local-state/build-history.bin
 new file mode 100644
-index 0000000..d97406f
+index 0000000..f7c3267
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/kotlin/compileDebugKotlin/local-state/build-history.bin differ
 diff --git a/node_modules/@react-native-community/image-editor/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/@react-native-community/image-editor/android/build/outputs/logs/manifest-merger-debug-report.txt
 new file mode 100644
@@ -4110,13 +4092,41 @@ new file mode 100644
 index 0000000..4f4041a
 Binary files /dev/null and b/node_modules/@react-native-community/image-editor/android/build/tmp/kotlin-classes/debug/com/reactnativecommunity/imageeditor/ImageEditorPackage.class differ
 diff --git a/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt b/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
-index 0ba83ac..d986c3b 100644
+index 8fd6014..d986c3b 100644
 --- a/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
 +++ b/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
-@@ -38,6 +38,11 @@ import kotlinx.coroutines.Dispatchers
+@@ -19,21 +19,15 @@ import android.net.Uri
+ import android.os.Build
+ import android.provider.MediaStore
+ import android.text.TextUtils
+-import android.util.Base64
+ import androidx.exifinterface.media.ExifInterface
+ import com.facebook.common.logging.FLog
+ import com.facebook.infer.annotation.Assertions
+-import com.facebook.react.bridge.Arguments
+ import com.facebook.react.bridge.JSApplicationIllegalArgumentException
+ import com.facebook.react.bridge.Promise
+ import com.facebook.react.bridge.ReactApplicationContext
+ import com.facebook.react.bridge.ReadableMap
+-import com.facebook.react.bridge.ReadableType
+-import com.facebook.react.bridge.WritableMap
+ import com.facebook.react.common.ReactConstants
+-import java.io.ByteArrayInputStream
+ import java.io.File
+-import java.io.FileInputStream
+ import java.io.FileOutputStream
+ import java.io.IOException
+ import java.io.InputStream
+@@ -44,12 +38,11 @@ import kotlinx.coroutines.Dispatchers
  import kotlinx.coroutines.cancel
  import kotlinx.coroutines.isActive
  import kotlinx.coroutines.launch
+-
+-object MimeType {
+-    const val JPEG = "image/jpeg"
+-    const val PNG = "image/png"
+-    const val WEBP = "image/webp"
+-}
 +import kotlin.math.max
 +import kotlin.math.min
 +import android.graphics.Canvas
@@ -4125,26 +4135,97 @@ index 0ba83ac..d986c3b 100644
  
  class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
      private val moduleCoroutineScope = CoroutineScope(Dispatchers.Default)
-@@ -181,6 +186,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -100,15 +93,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+      *   is passed to this is the file:// URI of the new image
+      */
+     fun cropImage(uri: String?, options: ReadableMap, promise: Promise) {
+-        val headers =
+-            if (options.hasKey("headers") && options.getType("headers") == ReadableType.Map)
+-                options.getMap("headers")?.toHashMap()
+-            else null
+-        val format = if (options.hasKey("format")) options.getString("format") else null
+         val offset = if (options.hasKey("offset")) options.getMap("offset") else null
+         val size = if (options.hasKey("size")) options.getMap("size") else null
+-        val includeBase64 =
+-            if (options.hasKey("includeBase64")) options.getBoolean("includeBase64") else false
+         val quality =
+             if (options.hasKey("quality")) (options.getDouble("quality") * 100).toInt() else 90
+         if (
+@@ -157,22 +143,25 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+                             width,
+                             height,
+                             targetWidth,
+-                            targetHeight,
+-                            headers
++                            targetHeight
+                         )
+                     } else {
+-                        cropTask(outOptions, uri, x, y, width, height, headers)
++                        cropTask(outOptions, uri, x, y, width, height)
+                     }
+                 if (cropped == null) {
+                     throw IOException("Cannot decode bitmap: $uri")
+                 }
+-                val mimeType = getMimeType(outOptions, format)
++                val mimeType = outOptions.outMimeType
++                if (mimeType.isNullOrEmpty()) {
++                    throw IOException("Could not determine MIME type")
++                }
++
+                 val tempFile = createTempFile(reactContext, mimeType)
+                 writeCompressedBitmapToFile(cropped, mimeType, tempFile, quality)
+-                if (mimeType == MimeType.JPEG) {
++                if (mimeType == "image/jpeg") {
+                     copyExif(reactContext, Uri.parse(uri), tempFile)
+                 }
+-                promise.resolve(getResultMap(tempFile, cropped, mimeType, includeBase64))
++                promise.resolve(Uri.fromFile(tempFile).toString())
+             } catch (e: Exception) {
+                 promise.reject(e)
+             }
+@@ -195,10 +184,11 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+         x: Int,
+         y: Int,
          width: Int,
-         height: Int
+-        height: Int,
+-        headers: HashMap<String, Any?>?
++        height: Int
      ): Bitmap? {
+-        return openBitmapInputStream(uri, headers)?.use {
 +        val resultBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
 +
-         return openBitmapInputStream(uri)?.use {
++        return openBitmapInputStream(uri)?.use {
              // Efficiently crops image without loading full resolution into memory
              // https://developer.android.com/reference/android/graphics/BitmapRegionDecoder.html
-@@ -191,8 +198,30 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+             val decoder =
+@@ -206,32 +196,34 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+                     BitmapRegionDecoder.newInstance(it)
+                 } else {
                      @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(it, false)
+-                } ?: throw Error("Could not create bitmap decoder. Uri: $uri")
+-
+-            val imageHeight: Int = decoder.height
+-            val imageWidth: Int = decoder.width
+-            val orientation = getOrientation(reactContext, Uri.parse(uri))
+-
+-            val (left, top) =
+-                when (orientation) {
+-                    90 -> y to imageHeight - width - x
+-                    180 -> imageWidth - width - x to imageHeight - height - y
+-                    270 -> imageWidth - height - y to x
+-                    else -> x to y
                  }
-             return@use try {
--                val rect = Rect(x, y, x + width, y + height)
--                decoder!!.decodeRegion(rect, outOptions)
++            return@use try {
 +
 +                val cropStartX = if(x<0) 0 else x
 +                val cropStartY = if(y<0) 0 else y
 +                
-+              
+               
+-            val (right, bottom) =
+-                when (orientation) {
+-                    90,
+-                    270 -> left + height to top + width
+-                    else -> left + width to top + height
 +                val cropEndX = if(x+width>decoder!!.width) decoder!!.width else (x+width)
 +                val cropEndY = if(y+height>decoder!!.height) decoder!!.height else (y+height)
 +                val cropWidth = cropEndX - cropStartX
@@ -4155,9 +4236,12 @@ index 0ba83ac..d986c3b 100644
 +                    rect = Rect(0, 0, 1, 1)
 +                }else{
 +                    rect = Rect(cropStartX, cropStartY, cropEndX, cropEndY)
-+                }
+                 }
 +                val croppedBitmap = decoder!!.decodeRegion(rect, outOptions)
-+        
+         
+-            return@use try {
+-                val rect = Rect(left, top, right, bottom)
+-                decoder.decodeRegion(rect, outOptions)
 +                val posX = if(x<0) -1*x else 0
 +                val posY = if(y<0) -1*y else 0
 +                Canvas(resultBitmap).apply {
@@ -4165,65 +4249,58 @@ index 0ba83ac..d986c3b 100644
 +                }
 +                return resultBitmap
              } finally {
-                 decoder!!.recycle()
+-                decoder.recycle()
++                decoder!!.recycle()
              }
-@@ -224,44 +253,67 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+         }
+     }
+@@ -252,17 +244,24 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+     private fun cropAndResizeTask(
+         outOptions: BitmapFactory.Options,
+         uri: String,
+-        xPos: Int,
+-        yPos: Int,
+-        rectWidth: Int,
+-        rectHeight: Int,
+-        outputWidth: Int,
+-        outputHeight: Int,
+-        headers: HashMap<String, Any?>?
++        x: Int,
++        y: Int,
++        width: Int,
++        height: Int,
++        targetWidth: Int,
++        targetHeight: Int,
      ): Bitmap? {
          Assertions.assertNotNull(outOptions)
  
--        // Loading large bitmaps efficiently:
--        // http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
--
--        // This uses scaling mode COVER
--
--        // Where would the crop rect end up within the scaled bitmap?
--        val cropRectRatio = width / height.toFloat()
--        val targetRatio = targetWidth / targetHeight.toFloat()
--        val isCropRatioLargerThanTargetRatio = cropRectRatio > targetRatio
--        val newWidth =
--            if (isCropRatioLargerThanTargetRatio) height * targetRatio else width.toFloat()
--        val newHeight =
--            if (isCropRatioLargerThanTargetRatio) height.toFloat() else width / targetRatio
--        val newX = if (isCropRatioLargerThanTargetRatio) x + (width - newWidth) / 2 else x.toFloat()
--        val newY =
--            if (isCropRatioLargerThanTargetRatio) y.toFloat() else y + (height - newHeight) / 2
--        val scale =
--            if (isCropRatioLargerThanTargetRatio) targetHeight / height.toFloat()
--            else targetWidth / width.toFloat()
--
--        // Decode the bitmap. We have to open the stream again, like in the example linked above.
--        // Is there a way to just continue reading from the stream?
--        outOptions.inSampleSize = getDecodeSampleSize(width, height, targetWidth, targetHeight)
--        val bitmap =
--            openBitmapInputStream(uri)?.use {
--                // This can use significantly less memory than decoding the full-resolution bitmap
--                BitmapFactory.decodeStream(it, null, outOptions)
--            } ?: return null
--
--        val cropX = (newX / outOptions.inSampleSize.toFloat()).roundToInt()
--        val cropY = (newY / outOptions.inSampleSize.toFloat()).roundToInt()
--        val cropWidth = (newWidth / outOptions.inSampleSize.toFloat()).roundToInt()
--        val cropHeight = (newHeight / outOptions.inSampleSize.toFloat()).roundToInt()
--        val cropScale = scale * outOptions.inSampleSize
--        val scaleMatrix = Matrix().apply { setScale(cropScale, cropScale) }
+-        return openBitmapInputStream(uri, headers)?.use {
 +
 +        val cropScaleX = targetWidth/width.toFloat()
 +        val cropScaleY = targetHeight/height.toFloat()
 +        val scaleMatrix = Matrix().apply { setScale(cropScaleX, cropScaleY) }
-         val filter = true
- 
--        return Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight, scaleMatrix, filter)
++        val filter = true
++
 +        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
 +        
 +        val resultBitmap =  openBitmapInputStream(uri)?.use {
-+            // Efficiently crops image without loading full resolution into memory
-+            // https://developer.android.com/reference/android/graphics/BitmapRegionDecoder.html
-+            val decoder =
-+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-+                    BitmapRegionDecoder.newInstance(it)
-+                } else {
-+                    @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(it, false)
-+                }
+             // Efficiently crops image without loading full resolution into memory
+             // https://developer.android.com/reference/android/graphics/BitmapRegionDecoder.html
+             val decoder =
+@@ -270,86 +269,58 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+                     BitmapRegionDecoder.newInstance(it)
+                 } else {
+                     @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(it, false)
+-                } ?: throw Error("Could not create bitmap decoder. Uri: $uri")
+-
+-            val orientation = getOrientation(reactContext, Uri.parse(uri))
+-            val (x, y) =
+-                when (orientation) {
+-                    90 -> yPos to decoder.height - rectWidth - xPos
+-                    270 -> decoder.width - rectHeight - yPos to xPos
+-                    180 -> decoder.width - rectWidth - xPos to decoder.height - rectHeight - yPos
+-                    else -> xPos to yPos
+                 }
 +            return@use try {
 +
 +                val cropStartX = if(x<0) 0 else x
@@ -4234,13 +4311,23 @@ index 0ba83ac..d986c3b 100644
 +                val cropEndY = if(y+height>decoder!!.height) decoder!!.height else (y+height)
 +                val cropWidth = cropEndX - cropStartX
 +                val cropHeight = cropEndY - cropStartY 
-+    
+     
+-            val (width, height) =
+-                when (orientation) {
+-                    90,
+-                    270 -> rectHeight to rectWidth
+-                    else -> rectWidth to rectHeight
 +                var rect: Rect
 +                if (cropWidth <= 0 || cropHeight <= 0){
 +                    rect = Rect(0, 0, 1, 1)
 +                }else{
 +                    rect = Rect(cropStartX, cropStartY, cropEndX, cropEndY)
-+                }
+                 }
+-            val (targetWidth, targetHeight) =
+-                when (orientation) {
+-                    90,
+-                    270 -> outputHeight to outputWidth
+-                    else -> outputWidth to outputHeight
 +                val croppedBitmap = decoder!!.decodeRegion(rect, outOptions)
 +        
 +                val posX = if(x<0) -1*x else 0
@@ -4254,8 +4341,48 @@ index 0ba83ac..d986c3b 100644
 +                        postScale(cropScaleX, cropScaleY)
 +                    }
 +                    drawBitmap(croppedBitmap, matrix, paint)
-+                }
-+
+                 }
+ 
+-            val cropRectRatio = width / height.toFloat()
+-            val targetRatio = targetWidth / targetHeight.toFloat()
+-            val isCropRatioLargerThanTargetRatio = cropRectRatio > targetRatio
+-            val newWidth =
+-                if (isCropRatioLargerThanTargetRatio) height * targetRatio else width.toFloat()
+-            val newHeight =
+-                if (isCropRatioLargerThanTargetRatio) height.toFloat() else width / targetRatio
+-            val newX =
+-                if (isCropRatioLargerThanTargetRatio) x + (width - newWidth) / 2 else x.toFloat()
+-            val newY =
+-                if (isCropRatioLargerThanTargetRatio) y.toFloat() else y + (height - newHeight) / 2
+-            val scale =
+-                if (isCropRatioLargerThanTargetRatio) targetHeight / height.toFloat()
+-                else targetWidth / width.toFloat()
+-
+-            // Decode the bitmap. We have to open the stream again, like in the example linked
+-            // above.
+-            // Is there a way to just continue reading from the stream?
+-            outOptions.inSampleSize = getDecodeSampleSize(width, height, targetWidth, targetHeight)
+-
+-            val cropX = (newX / outOptions.inSampleSize.toFloat()).roundToInt()
+-            val cropY = (newY / outOptions.inSampleSize.toFloat()).roundToInt()
+-            val cropWidth = (newWidth / outOptions.inSampleSize.toFloat()).roundToInt()
+-            val cropHeight = (newHeight / outOptions.inSampleSize.toFloat()).roundToInt()
+-            val cropScale = scale * outOptions.inSampleSize
+-            val scaleMatrix = Matrix().apply { setScale(cropScale, cropScale) }
+-            val filter = true
+-
+-            val rect = Rect(0, 0, decoder.width, decoder.height)
+-            val bitmap = decoder.decodeRegion(rect, outOptions)
+-
+-            return Bitmap.createBitmap(
+-                bitmap,
+-                cropX,
+-                cropY,
+-                cropWidth,
+-                cropHeight,
+-                scaleMatrix,
+-                filter
+-            )
 +                // Canvas(resultBitmap).apply {
 +                //     drawBitmap(croppedBitmap, posX.toFloat(), posY.toFloat(), null)
 +                // }
@@ -4263,19 +4390,225 @@ index 0ba83ac..d986c3b 100644
 +            } finally {
 +                decoder!!.recycle()
 +            }
-+        }
+         }
 +
 +        return resultBitmap
 +
 +        //return Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight, scaleMatrix, filter)
      }
  
-     private fun openBitmapInputStream(uri: String): InputStream? {
+-    private fun openBitmapInputStream(uri: String, headers: HashMap<String, Any?>?): InputStream? {
+-        return if (uri.startsWith("data:")) {
+-            val src = uri.substring(uri.indexOf(",") + 1)
+-            ByteArrayInputStream(Base64.decode(src, Base64.DEFAULT))
+-        } else if (isLocalUri(uri)) {
++    private fun openBitmapInputStream(uri: String): InputStream? {
++        return if (isLocalUri(uri)) {
+             reactContext.contentResolver.openInputStream(Uri.parse(uri))
+         } else {
+             val connection = URL(uri).openConnection()
+-            headers?.forEach { (key, value) ->
+-                if (value is String) {
+-                    connection.setRequestProperty(key, value)
+-                }
+-            }
+             connection.getInputStream()
+         }
+     }
+@@ -367,163 +338,30 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+         @SuppressLint("InlinedApi")
+         private val EXIF_ATTRIBUTES =
+             arrayOf(
+-                ExifInterface.TAG_APERTURE_VALUE,
+-                ExifInterface.TAG_MAX_APERTURE_VALUE,
+-                ExifInterface.TAG_METERING_MODE,
+-                ExifInterface.TAG_ARTIST,
+-                ExifInterface.TAG_BITS_PER_SAMPLE,
+-                ExifInterface.TAG_COMPRESSION,
+-                ExifInterface.TAG_BODY_SERIAL_NUMBER,
+-                ExifInterface.TAG_BRIGHTNESS_VALUE,
+-                ExifInterface.TAG_CONTRAST,
+-                ExifInterface.TAG_CAMERA_OWNER_NAME,
+-                ExifInterface.TAG_COLOR_SPACE,
+-                ExifInterface.TAG_COPYRIGHT,
+                 ExifInterface.TAG_DATETIME,
+                 ExifInterface.TAG_DATETIME_DIGITIZED,
+-                ExifInterface.TAG_DATETIME_ORIGINAL,
+-                ExifInterface.TAG_DEVICE_SETTING_DESCRIPTION,
+-                ExifInterface.TAG_DIGITAL_ZOOM_RATIO,
+-                ExifInterface.TAG_EXIF_VERSION,
+-                ExifInterface.TAG_EXPOSURE_BIAS_VALUE,
+-                ExifInterface.TAG_EXPOSURE_INDEX,
+-                ExifInterface.TAG_EXPOSURE_MODE,
+                 ExifInterface.TAG_EXPOSURE_TIME,
+-                ExifInterface.TAG_EXPOSURE_PROGRAM,
+                 ExifInterface.TAG_FLASH,
+-                ExifInterface.TAG_FLASH_ENERGY,
+                 ExifInterface.TAG_FOCAL_LENGTH,
+-                ExifInterface.TAG_FOCAL_LENGTH_IN_35MM_FILM,
+-                ExifInterface.TAG_FOCAL_PLANE_RESOLUTION_UNIT,
+-                ExifInterface.TAG_FOCAL_PLANE_X_RESOLUTION,
+-                ExifInterface.TAG_FOCAL_PLANE_Y_RESOLUTION,
+-                ExifInterface.TAG_PHOTOMETRIC_INTERPRETATION,
+-                ExifInterface.TAG_PLANAR_CONFIGURATION,
+-                ExifInterface.TAG_F_NUMBER,
+-                ExifInterface.TAG_GAIN_CONTROL,
+-                ExifInterface.TAG_GAMMA,
+                 ExifInterface.TAG_GPS_ALTITUDE,
+                 ExifInterface.TAG_GPS_ALTITUDE_REF,
+-                ExifInterface.TAG_GPS_AREA_INFORMATION,
+                 ExifInterface.TAG_GPS_DATESTAMP,
+-                ExifInterface.TAG_GPS_DOP,
+                 ExifInterface.TAG_GPS_LATITUDE,
+                 ExifInterface.TAG_GPS_LATITUDE_REF,
+                 ExifInterface.TAG_GPS_LONGITUDE,
+                 ExifInterface.TAG_GPS_LONGITUDE_REF,
+-                ExifInterface.TAG_GPS_STATUS,
+-                ExifInterface.TAG_GPS_DEST_BEARING,
+-                ExifInterface.TAG_GPS_DEST_BEARING_REF,
+-                ExifInterface.TAG_GPS_DEST_DISTANCE,
+-                ExifInterface.TAG_GPS_DEST_DISTANCE_REF,
+-                ExifInterface.TAG_GPS_DEST_LATITUDE,
+-                ExifInterface.TAG_GPS_DEST_LATITUDE_REF,
+-                ExifInterface.TAG_GPS_DEST_LONGITUDE,
+-                ExifInterface.TAG_GPS_DEST_LONGITUDE_REF,
+-                ExifInterface.TAG_GPS_DIFFERENTIAL,
+-                ExifInterface.TAG_GPS_IMG_DIRECTION,
+-                ExifInterface.TAG_GPS_IMG_DIRECTION_REF,
+-                ExifInterface.TAG_GPS_MAP_DATUM,
+-                ExifInterface.TAG_GPS_MEASURE_MODE,
+                 ExifInterface.TAG_GPS_PROCESSING_METHOD,
+-                ExifInterface.TAG_GPS_SATELLITES,
+-                ExifInterface.TAG_GPS_SPEED,
+-                ExifInterface.TAG_GPS_SPEED_REF,
+-                ExifInterface.TAG_GPS_STATUS,
+                 ExifInterface.TAG_GPS_TIMESTAMP,
+-                ExifInterface.TAG_GPS_TRACK,
+-                ExifInterface.TAG_GPS_TRACK_REF,
+-                ExifInterface.TAG_GPS_VERSION_ID,
+-                ExifInterface.TAG_IMAGE_DESCRIPTION,
+-                ExifInterface.TAG_IMAGE_UNIQUE_ID,
+-                ExifInterface.TAG_ISO_SPEED,
+-                ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY,
+-                ExifInterface.TAG_JPEG_INTERCHANGE_FORMAT,
+-                ExifInterface.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH,
+-                ExifInterface.TAG_LENS_MAKE,
+-                ExifInterface.TAG_LENS_MODEL,
+-                ExifInterface.TAG_LENS_SERIAL_NUMBER,
+-                ExifInterface.TAG_LENS_SPECIFICATION,
+-                ExifInterface.TAG_LIGHT_SOURCE,
++                ExifInterface.TAG_IMAGE_LENGTH,
++                ExifInterface.TAG_IMAGE_WIDTH,
+                 ExifInterface.TAG_MAKE,
+-                ExifInterface.TAG_MAKER_NOTE,
+                 ExifInterface.TAG_MODEL,
+                 ExifInterface.TAG_ORIENTATION,
+-                ExifInterface.TAG_SATURATION,
+-                ExifInterface.TAG_SHARPNESS,
+-                ExifInterface.TAG_SHUTTER_SPEED_VALUE,
+-                ExifInterface.TAG_SOFTWARE,
+-                ExifInterface.TAG_SUBJECT_DISTANCE,
+-                ExifInterface.TAG_SUBJECT_DISTANCE_RANGE,
+-                ExifInterface.TAG_SUBJECT_LOCATION,
+-                ExifInterface.TAG_USER_COMMENT,
++                ExifInterface.TAG_SUBSEC_TIME,
+                 ExifInterface.TAG_WHITE_BALANCE
+             )
+ 
+         // Utils
+-        private fun getResultMap(
+-            resizedImage: File,
+-            image: Bitmap,
+-            mimeType: String,
+-            includeBase64: Boolean
+-        ): WritableMap {
+-            val response = Arguments.createMap()
+-            response.putString("path", resizedImage.absolutePath)
+-            response.putString("uri", Uri.fromFile(resizedImage).toString())
+-            response.putString("name", resizedImage.name)
+-            response.putInt("size", resizedImage.length().toInt())
+-            response.putInt("width", image.width)
+-            response.putInt("height", image.height)
+-            response.putString("type", mimeType)
+-
+-            if (includeBase64) {
+-                response.putString("base64", getBase64String(resizedImage))
+-            }
+-
+-            return response
+-        }
+-
+-        private fun getBase64String(file: File): String {
+-            val inputStream = FileInputStream(file)
+-            val buffer = ByteArray(file.length().toInt())
+-            inputStream.read(buffer)
+-            inputStream.close()
+-            return Base64.encodeToString(buffer, Base64.NO_WRAP)
+-        }
+-
+-        private fun getMimeType(outOptions: BitmapFactory.Options, format: String?): String {
+-            val mimeType =
+-                when (format) {
+-                    "webp" -> MimeType.WEBP
+-                    "png" -> MimeType.PNG
+-                    "jpeg" -> MimeType.JPEG
+-                    else -> outOptions.outMimeType
+-                }
+-            if (mimeType.isNullOrEmpty()) {
+-                return MimeType.JPEG
+-            }
+-            return mimeType
+-        }
+-
+-        private fun getOrientation(context: Context, uri: Uri): Int {
+-            val file = getFileFromUri(context, uri)
+-            if (file == null) {
+-                return 0
+-            }
+-            val exif = ExifInterface(file.absolutePath)
+-            return when (
+-                exif.getAttributeInt(
+-                    ExifInterface.TAG_ORIENTATION,
+-                    ExifInterface.ORIENTATION_NORMAL
+-                )
+-            ) {
+-                ExifInterface.ORIENTATION_ROTATE_90 -> 90
+-                ExifInterface.ORIENTATION_ROTATE_180 -> 180
+-                ExifInterface.ORIENTATION_ROTATE_270 -> 270
+-                else -> 0
+-            }
+-        }
+-
+         @Throws(IOException::class)
+         private fun copyExif(context: Context, oldImage: Uri, newFile: File) {
+             val oldFile = getFileFromUri(context, oldImage)
+@@ -572,8 +410,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+ 
+         private fun getFileExtensionForType(mimeType: String?): String {
+             return when (mimeType) {
+-                MimeType.PNG -> ".png"
+-                MimeType.WEBP -> ".webp"
++                "image/png" -> ".png"
++                "image/webp" -> ".webp"
+                 else -> ".jpg"
+             }
+         }
+@@ -586,8 +424,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+                     @Suppress("DEPRECATION") CompressFormat.WEBP
+                 }
+             return when (mimeType) {
+-                MimeType.PNG -> CompressFormat.PNG
+-                MimeType.WEBP -> webpCompressFormat
++                "image/png" -> CompressFormat.PNG
++                "image/webp" -> webpCompressFormat
+                 else -> CompressFormat.JPEG
+             }
+         }
 diff --git a/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm b/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
-index bc66552..0df76bb 100644
+index 75d4971..0df76bb 100644
 --- a/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
 +++ b/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
-@@ -13,14 +13,14 @@
+@@ -13,62 +13,22 @@
  #import <React/RCTLog.h>
  #import <React/RCTUtils.h>
  
@@ -4292,8 +4625,56 @@ index bc66552..0df76bb 100644
 +#import <React/RCTImageUtils.h>
  #endif
  
+-#define DEFAULT_DISPLAY_SIZE 0
+-#define DEFAULT_COMPRESSION_QUALITY 0.9
+-#define DEFAULT_RESIZE_MODE "cover"
+-
+-struct Params {
+-public:
+-    CGPoint offset;
+-    CGSize size;
+-    CGSize displaySize;
+-    RCTResizeMode resizeMode;
+-    CGFloat quality;
+-    NSString *format;
+-    BOOL includeBase64;
+-    NSDictionary *headers;
+-};
+-
  @implementation RNCImageEditor
-@@ -41,102 +41,174 @@ RCT_EXPORT_MODULE()
+ 
+ RCT_EXPORT_MODULE()
+ 
+ @synthesize bridge = _bridge;
+ 
+-- (Params)adaptParamsWithFormat:(id)format
+-                          width:(id)width
+-                         height:(id)height
+-                        offsetX:(id)offsetX
+-                        offsetY:(id)offsetY
+-                     resizeMode:(id)resizeMode
+-                   displayWidth:(id)displayWidth
+-                  displayHeight:(id)displayHeight
+-                        quality:(id)quality
+-                  includeBase64:(id)includeBase64
+-                        headers:(id)headers
+-{
+-    return Params{
+-        .offset = {[RCTConvert double:offsetX], [RCTConvert double:offsetY]},
+-        .size = {[RCTConvert double:width], [RCTConvert double:height]},
+-        .displaySize = {[RCTConvert double:displayWidth], [RCTConvert double:displayHeight]},
+-        .resizeMode = [RCTConvert RCTResizeMode:resizeMode ?: @(DEFAULT_RESIZE_MODE)],
+-        .quality = [RCTConvert CGFloat:quality],
+-        .format = [RCTConvert NSString:format],
+-        .includeBase64 = [RCTConvert BOOL:includeBase64],
+-        .headers = [RCTConvert NSDictionary:RCTNilIfNull(headers)]
+-    };
+-}
+-
+ /**
+  * Crops an image and saves the result to temporary file. Consider using
+  * CameraRoll API or other third-party module to save it in gallery.
+@@ -81,128 +41,174 @@ RCT_EXPORT_MODULE()
   *        All units are in px (not points).
   */
  #ifdef RCT_NEW_ARCH_ENABLED
@@ -4303,8 +4684,17 @@ index bc66552..0df76bb 100644
 -         resolve:(RCTPromiseResolveBlock)resolve
 -         reject:(RCTPromiseRejectBlock)reject
 -{
--  CGSize size = [RCTConvert CGSize:@{ @"width": @(data.size().width()), @"height": @(data.size().height()) }];
--  CGPoint offset = [RCTConvert CGPoint:@{ @"x": @(data.offset().x()), @"y": @(data.offset().y()) }];
+-    auto params = [self adaptParamsWithFormat:data.format()
+-        width:@(data.size().width())
+-        height:@(data.size().height())
+-        offsetX:@(data.offset().x())
+-        offsetY:@(data.offset().y())
+-        resizeMode:data.resizeMode()
+-        displayWidth:@(data.displaySize().has_value() ? data.displaySize()->width() : DEFAULT_DISPLAY_SIZE)
+-        displayHeight:@(data.displaySize().has_value() ? data.displaySize()->height() : DEFAULT_DISPLAY_SIZE)
+-        quality:@(data.quality().has_value() ? *data.quality() : DEFAULT_COMPRESSION_QUALITY)
+-        includeBase64:@(data.includeBase64().has_value() ? *data.includeBase64() : NO)
+-        headers: data.headers()];
 +          resolve:(RCTPromiseResolveBlock)resolve
 +           reject:(RCTPromiseRejectBlock)reject {
 +  CGSize size = [RCTConvert CGSize:@{
@@ -4313,92 +4703,107 @@ index bc66552..0df76bb 100644
 +  }];
 +  CGPoint offset = [RCTConvert
 +      CGPoint:@{@"x" : @(data.offset().x()), @"y" : @(data.offset().y())}];
-   CGSize targetSize = size;
-   if (data.displaySize().has_value()) {
--    JS::NativeRNCImageEditor::SpecCropImageCropDataDisplaySize displaySize = *data.displaySize(); // Extract the value from the optional
++  CGSize targetSize = size;
++  if (data.displaySize().has_value()) {
 +    JS::NativeRNCImageEditor::SpecCropImageCropDataDisplaySize displaySize =
 +        *data.displaySize(); // Extract the value from the optional
-     // in pixels
--    targetSize = [RCTConvert CGSize:@{ @"width": @(displaySize.width()), @"height": @(displaySize.height()) }];
++    // in pixels
 +    targetSize = [RCTConvert CGSize:@{
 +      @"width" : @(displaySize.width()),
 +      @"height" : @(displaySize.height())
 +    }];
-   }
-   NSString *displaySize = data.resizeMode();
--  NSURLRequest *imageRequest = [NSURLRequest requestWithURL:[NSURL URLWithString: uri]];
++  }
++  NSString *displaySize = data.resizeMode();
 +  NSURLRequest *imageRequest =
 +      [NSURLRequest requestWithURL:[NSURL URLWithString:uri]];
-   CGFloat compressionQuality = 1;
-   if (data.quality().has_value()) {
-     compressionQuality = *data.quality();
-   }
++  CGFloat compressionQuality = 1;
++  if (data.quality().has_value()) {
++    compressionQuality = *data.quality();
++  }
  #else
--RCT_EXPORT_METHOD(cropImage:(NSURLRequest *)imageRequest
+-RCT_EXPORT_METHOD(cropImage:(NSString *)uri
 -                  cropData:(NSDictionary *)cropData
 -                  resolve:(RCTPromiseResolveBlock)resolve
 -                  reject:(RCTPromiseRejectBlock)reject)
 -{
+-  auto params = [self adaptParamsWithFormat:cropData[@"format"]
+-    width:cropData[@"size"][@"width"]
+-    height:cropData[@"size"][@"height"]
+-    offsetX:cropData[@"offset"][@"x"]
+-    offsetY:cropData[@"offset"][@"y"]
+-    resizeMode:cropData[@"resizeMode"]
+-    displayWidth:cropData[@"displaySize"] ? cropData[@"displaySize"][@"width"] : @(DEFAULT_DISPLAY_SIZE)
+-    displayHeight:cropData[@"displaySize"] ? cropData[@"displaySize"][@"height"] : @(DEFAULT_DISPLAY_SIZE)
+-    quality:cropData[@"quality"] ? cropData[@"quality"] : @(DEFAULT_COMPRESSION_QUALITY)
+-    includeBase64:cropData[@"includeBase64"]
+-    headers:cropData[@"headers"]];
 +RCT_EXPORT_METHOD(cropImage
 +                  : (NSURLRequest *)imageRequest cropData
 +                  : (NSDictionary *)cropData resolve
 +                  : (RCTPromiseResolveBlock)resolve reject
 +                  : (RCTPromiseRejectBlock)reject) {
-   CGSize size = [RCTConvert CGSize:cropData[@"size"]];
-   CGPoint offset = [RCTConvert CGPoint:cropData[@"offset"]];
-   CGSize targetSize = size;
-   NSString *displaySize = cropData[@"resizeMode"];
--  if(displaySize){
++  CGSize size = [RCTConvert CGSize:cropData[@"size"]];
++  CGPoint offset = [RCTConvert CGPoint:cropData[@"offset"]];
++  CGSize targetSize = size;
++  NSString *displaySize = cropData[@"resizeMode"];
 +  if (displaySize) {
-     targetSize = [RCTConvert CGSize:cropData[@"displaySize"]];
-   }
-+
-   CGFloat compressionQuality = 1;
--  if(cropData[@"quality"]){
--      compressionQuality = [RCTConvert CGFloat:cropData[@"quality"]];
++    targetSize = [RCTConvert CGSize:cropData[@"displaySize"]];
++  }
+ 
++  CGFloat compressionQuality = 1;
 +  if (cropData[@"quality"]) {
 +    compressionQuality = [RCTConvert CGFloat:cropData[@"quality"]];
-   }
++  }
  #endif
--  CGRect rect = {offset,size};
+-  NSMutableURLRequest *imageRequest = [NSMutableURLRequest requestWithURL:[NSURL URLWithString: uri]];
+-  [params.headers enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+-    if (value) {
+-      [imageRequest addValue:[RCTConvert NSString:value] forHTTPHeaderField:key];
+-    }
+-  }];
+-
    NSURL *url = [imageRequest URL];
 -  NSString *urlPath = [url path];
 -  NSString *extension = [urlPath pathExtension];
--
+-  if([params.format isEqualToString:@"png"] || [params.format isEqualToString:@"jpeg"]){
+-    extension = params.format;
+-  }
+ 
 -  [[_bridge moduleForName:@"ImageLoader" lazilyLoadIfNecessary:YES] loadImageWithURLRequest:imageRequest callback:^(NSError *error, UIImage *image) {
 -    if (error) {
 -      reject(@(error.code).stringValue, error.description, error);
 -      return;
 -    }
--    if (compressionQuality > 1 || compressionQuality < 0) {
+-    if (params.quality > 1 || params.quality < 0) {
 -      reject(RCTErrorUnspecified, @("quality must be a number between 0 and 1"), nil);
 -      return;
 -    }
 -
 -    // Crop image
--    CGRect targetRect = {{-rect.origin.x, -rect.origin.y}, image.size};
+-    CGSize targetSize = params.size;
+-    CGRect targetRect = {{-params.offset.x, -params.offset.y}, image.size};
 -    CGAffineTransform transform = RCTTransformFromTargetRect(image.size, targetRect);
 -    UIImage *croppedImage = RCTTransformImage(image, targetSize, image.scale, transform);
 -
 -    // Scale image
--    if (displaySize) {
--      RCTResizeMode resizeMode = [RCTConvert RCTResizeMode:displaySize ?: @"contain"];
--      targetRect = RCTTargetRect(croppedImage.size, targetSize, 1, resizeMode);
+-    if (params.displaySize.width != DEFAULT_DISPLAY_SIZE && params.displaySize.height != DEFAULT_DISPLAY_SIZE) {
+-      targetSize = params.displaySize;
+-      targetRect = RCTTargetRect(croppedImage.size, targetSize, 1, params.resizeMode);
 -      transform = RCTTransformFromTargetRect(croppedImage.size, targetRect);
 -      croppedImage = RCTTransformImage(croppedImage, targetSize, image.scale, transform);
 -    }
 -
 -    // Store image
+-    NSString *type = @"image/jpeg";
 -    NSString *path = NULL;
 -    NSData *imageData = NULL;
 -
 -    if([extension isEqualToString:@"png"]){
+-      type = @"image/png";
 -      imageData = UIImagePNGRepresentation(croppedImage);
 -      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".png"];
--    }
--    else{
--
--      imageData = UIImageJPEGRepresentation(croppedImage, compressionQuality);
+-    } else{
+-      imageData = UIImageJPEGRepresentation(croppedImage, params.quality);
 -      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".jpg"];
 -    }
 -
@@ -4410,9 +4815,26 @@ index bc66552..0df76bb 100644
 -      return;
 -    }
 -
--    resolve(uri);
+-    NSURL *fileurl = [[NSURL alloc] initFileURLWithPath:path];
+-    NSString *filename = fileurl.lastPathComponent;
+-    NSError *attributesError = nil;
+-    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:&attributesError];
+-    NSNumber *fileSize = fileAttributes == nil ? 0 : [fileAttributes objectForKey:NSFileSize];
+-
+-    NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
+-    response[@"path"] = path;
+-    response[@"uri"] = uri;
+-    response[@"name"] = filename;
+-    response[@"type"] = type;
+-    response[@"size"] = fileSize ?: @(0);
+-    response[@"width"] = @(croppedImage.size.width);
+-    response[@"height"] = @(croppedImage.size.height);
+-    if (params.includeBase64) {
+-      response[@"base64"] = [imageData base64EncodedStringWithOptions:0];
+-    }
+-
+-    resolve(response);
 -  }];
-+
 +  [[_bridge moduleForName:@"ImageLoader" lazilyLoadIfNecessary:YES]
 +      loadImageWithURLRequest:imageRequest
 +                     callback:^(NSError *error, UIImage *image) {
