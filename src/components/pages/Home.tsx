@@ -279,7 +279,7 @@ export default function HomeScreen() {
 
   //console.log('isPencilTouch', isPencilTouch);
   //console.log('isFinger', isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch);
-
+  //console.log(mapMemoEditingLine.length);
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>

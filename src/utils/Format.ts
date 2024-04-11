@@ -222,8 +222,8 @@ export const formattedInputs = (
       break;
     }
     case 'url': {
-      // eslint-disable-next-line no-useless-escape
-      const pattern = /(https?|file):\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+/g;
+      const pattern =
+        /(https?|file):\/\/[-\_.!~*'()a-zA-Z0-9;\\/?:\\@&=+\\$,%#\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]+/g;
       const regMatch = value.toString().match(pattern);
       if (regMatch == null) {
         alert && Alert.alert('', `${t('Format.alert.formattedInputs')} ${type}:${value}`);

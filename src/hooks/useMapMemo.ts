@@ -27,7 +27,7 @@ import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
-import { isBrushTool, isPenTool, isStampTool } from '../utils/General';
+import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
@@ -223,7 +223,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           snappedLine.current = { coordsXY: result.coordsXY, id: result.id };
           return;
         }
-      } else {
+      } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
         mapMemoEditingLine.current = [pXY];
       }
 
