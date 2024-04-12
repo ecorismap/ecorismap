@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
-import { SmallButton, RectButton2, CheckButton } from '../atoms';
+import { SmallButton, RectButton2 } from '../atoms';
 import { MapsContext } from '../../contexts/Maps';
 import { FlatList } from 'react-native-gesture-handler';
 
@@ -18,11 +18,14 @@ export const MapItems = React.memo(() => {
       keyExtractor={(item) => item.id}
       renderItem={({ item, index }) => (
         <View style={styles.tr}>
-          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => changeVisible(!item.visible, index!)}>
+          <View style={[styles.td, { flex: 3 }]}>
             <View style={[styles.td2, { flex: 2 }]}>
-              <CheckButton checked={item.visible} />
+              <RectButton2
+                name={item.visible ? 'eye' : 'eye-off-outline'}
+                onPress={() => changeVisible(!item.visible, index!)}
+              />
             </View>
-          </TouchableOpacity>
+          </View>
           <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item.boundary)}>
             <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
               <Text>{item.name}</Text>

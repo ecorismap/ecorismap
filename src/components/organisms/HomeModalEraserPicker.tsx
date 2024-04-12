@@ -180,7 +180,10 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => setVisibleMapMemoEraser(false)}
+                onPress={() => {
+                  selectMapMemoTool(undefined);
+                  setVisibleMapMemoEraser(false);
+                }}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>

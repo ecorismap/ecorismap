@@ -181,6 +181,7 @@ export const DRAWTOOL = {
 
 export const PEN = {
   PEN: 'lead-pencil',
+  PEN_OFF: 'pencil-off',
   PEN_THICK: 'circle',
   PEN_MEDIUM: 'circle-medium',
   PEN_THIN: 'circle-small',
