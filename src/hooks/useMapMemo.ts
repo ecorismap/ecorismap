@@ -12,7 +12,6 @@ import {
   latLonObjectsToLatLonArray,
   latLonObjectsToXYArray,
   latlonArrayToLatLonObjects,
-  removeSharpTurns,
   smoothingByBezier,
   xyArrayToLatLonArray,
 } from '../utils/Coords';
@@ -269,11 +268,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     if (isPenTool(currentMapMemoTool)) {
       let drawingLine = [...mapMemoEditingLine.current];
       if (isMapMemoLineSmoothed && !isStraightStyle) {
+        if (drawingLine.length > 8) {
+          drawingLine = drawingLine.slice(2, -2); //ハネを削除
+        }
         const smoothedXY = smoothingByBezier(drawingLine);
         //drawingLine = simplify(smoothedXY);
         drawingLine = smoothedXY;
-      } else {
-        drawingLine = removeSharpTurns(mapMemoEditingLine.current);
       }
 
       if (drawingLine.length === 0) {
