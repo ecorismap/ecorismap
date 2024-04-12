@@ -57,7 +57,7 @@ const LineArrow = React.memo((props: Props) => {
           tracksViewChanges={Platform.OS === 'ios' ? true : selected}
           coordinate={coordinates[0]}
           opacity={1}
-          anchor={{ x: 0.5, y: 0.02 * scale }}
+          anchor={{ x: 0.5, y: 0.5 * scale }}
           rotation={angleStart}
           style={{ zIndex: -1, alignItems: 'center' }}
         >
