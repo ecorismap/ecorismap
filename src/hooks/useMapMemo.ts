@@ -12,7 +12,6 @@ import {
   latLonObjectsToLatLonArray,
   latLonObjectsToXYArray,
   latlonArrayToLatLonObjects,
-  removeSharpTurns,
   smoothingByBezier,
   xyArrayToLatLonArray,
 } from '../utils/Coords';
@@ -27,7 +26,7 @@ import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
-import { isBrushTool, isPenTool, isStampTool } from '../utils/General';
+import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
@@ -223,7 +222,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           snappedLine.current = { coordsXY: result.coordsXY, id: result.id };
           return;
         }
-      } else {
+      } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
         mapMemoEditingLine.current = [pXY];
       }
 
@@ -269,11 +268,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     if (isPenTool(currentMapMemoTool)) {
       let drawingLine = [...mapMemoEditingLine.current];
       if (isMapMemoLineSmoothed && !isStraightStyle) {
+        if (drawingLine.length > 8) {
+          drawingLine = drawingLine.slice(2, -2); //ハネを削除
+        }
         const smoothedXY = smoothingByBezier(drawingLine);
         //drawingLine = simplify(smoothedXY);
         drawingLine = smoothedXY;
-      } else {
-        drawingLine = removeSharpTurns(mapMemoEditingLine.current);
       }
 
       if (drawingLine.length === 0) {

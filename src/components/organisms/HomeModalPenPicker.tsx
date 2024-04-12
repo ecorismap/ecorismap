@@ -142,11 +142,20 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ margin: 5 }}>
                   <Button
+                    id={'PEN_OFF'}
+                    name={PEN.PEN_OFF}
+                    backgroundColor={pen === undefined ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    borderRadius={10}
+                    onPress={() => setPen(undefined)}
+                  />
+                </View>
+                <View style={{ margin: 5 }}>
+                  <Button
                     id={'PEN_THIN'}
                     name={PEN.PEN_THIN}
                     backgroundColor={pen === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => (pen === 'PEN_THIN' ? setPen(undefined) : setPen('PEN_THIN'))}
+                    onPress={() => setPen('PEN_THIN')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -155,7 +164,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN.PEN_MEDIUM}
                     backgroundColor={pen === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => (pen === 'PEN_MEDIUM' ? setPen(undefined) : setPen('PEN_MEDIUM'))}
+                    onPress={() => setPen('PEN_MEDIUM')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -164,7 +173,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN.PEN_THICK}
                     backgroundColor={pen === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => (pen === 'PEN_THICK' ? setPen(undefined) : setPen('PEN_THICK'))}
+                    onPress={() => setPen('PEN_THICK')}
                   />
                 </View>
               </View>
@@ -255,7 +264,13 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               >
                 <Text>OK</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => setVisibleMapMemoPen(false)}>
+              <TouchableOpacity
+                style={styles.modalOKCancelButton}
+                onPress={() => {
+                  selectMapMemoTool(undefined);
+                  setVisibleMapMemoPen(false);
+                }}
+              >
                 <Text>Cancel</Text>
               </TouchableOpacity>
             </View>
