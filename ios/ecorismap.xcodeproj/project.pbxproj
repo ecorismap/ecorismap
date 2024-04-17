@@ -157,7 +157,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				D218490399DB667941D56FDC /* [CP] Embed Pods Frameworks */,
 				680833D0A4B24E95BB3EBF04 /* [CP] Copy Pods Resources */,
-				18EDB9F7CADD04E5DE081125 /* [CP-User] [RNFB] Core Configuration */,
+				344D77548FF4394ADD55D4CA /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
@@ -230,7 +230,7 @@
 			shellPath = /bin/sh;
 			shellScript = "if [[ -f \"$PODS_ROOT/../.xcode.env\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env\"\nfi\nif [[ -f \"$PODS_ROOT/../.xcode.env.local\" ]]; then\n  source \"$PODS_ROOT/../.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" $PROJECT_ROOT ios relative | tail -n 1)\"\nfi\n\n`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\n\n";
 		};
-		18EDB9F7CADD04E5DE081125 /* [CP-User] [RNFB] Core Configuration */ = {
+		344D77548FF4394ADD55D4CA /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -731,7 +731,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = ecorismap/ecorismap.entitlements;
-				CURRENT_PROJECT_VERSION = 86;
+				CURRENT_PROJECT_VERSION = 87;
 				DEVELOPMENT_TEAM = V5G4AV2NNZ;
 				ENABLE_BITCODE = NO;
 				ENABLE_TESTABILITY = YES;
@@ -775,7 +775,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = ecorismap/ecorismap.entitlements;
-				CURRENT_PROJECT_VERSION = 86;
+				CURRENT_PROJECT_VERSION = 87;
 				DEVELOPMENT_TEAM = V5G4AV2NNZ;
 				GCC_NO_COMMON_BLOCKS = YES;
 				INFOPLIST_FILE = ecorismap/Info.plist;
