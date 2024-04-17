@@ -21,7 +21,7 @@ import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
 import { booleanContains, booleanIntersects, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
-import { addRecordsAction, deleteRecordsAction, setRecordSetAction } from '../modules/dataSet';
+import { addDataAction, addRecordsAction, deleteRecordsAction, setRecordSetAction } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
@@ -167,8 +167,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           return newRecord;
         })
         .flat();
+      if (activeMemoRecordSet === undefined) {
+        dispatch(addDataAction([{ layerId: activeMemoLayer!.id, userId: user.uid, data: newRecords }]));
+      } else {
+        dispatch(addRecordsAction({ ...activeMemoRecordSet, data: newRecords }));
+      }
 
-      dispatch(addRecordsAction({ ...activeMemoRecordSet!, data: newRecords }));
       setHistory((prev) => [...(prev.length === MAX_HISTORY ? prev.slice(1) : prev), ...newHistoryItems]);
       setFuture([]);
       setMapMemoLines([]);
