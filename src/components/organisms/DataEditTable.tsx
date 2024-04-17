@@ -13,7 +13,10 @@ interface Props_DataEditTable {
 
 export const DataEditTable = (props: Props_DataEditTable) => {
   const { value, name, list, onChangeValue } = props;
-  const data = useMemo(() => (value === '' ? [[]] : value.split(',').map((rowItem) => rowItem.split('|'))), [value]);
+  const data = useMemo(
+    () => (value === undefined || value === '' ? [[]] : value.split(',').map((rowItem) => rowItem.split('|'))),
+    [value]
+  );
 
   const addValue = useCallback(() => {
     const newValue = value === '' ? '|'.repeat(list.length - 1) : '|'.repeat(list.length - 1) + ',' + value;
