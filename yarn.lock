@@ -2940,10 +2940,10 @@
   resolved "https://registry.npmjs.org/@popperjs/core/-/core-2.11.6.tgz"
   integrity sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==
 
-"@react-native-async-storage/async-storage@^1.23.1":
-  version "1.23.1"
-  resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-1.23.1.tgz#cad3cd4fab7dacfe9838dce6ecb352f79150c883"
-  integrity sha512-Qd2kQ3yi6Y3+AcUlrHxSLlnBvpdCEMVGFlVBneVOjaFaPU61g1huc38g339ysXspwY1QZA2aNhrk/KlHGO+ewA==
+"@react-native-async-storage/async-storage@1.19.8":
+  version "1.19.8"
+  resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-1.19.8.tgz#a29fc4f4aa5c85805f8b3edea84e19f797c59fdd"
+  integrity sha512-O25eaSbmH+LEmOobkpwf43bAGIkqE9YGzfWcirTszI90xk4ItaDWpgJsQx9LeAbeAKzVkn1h+Nq5Bo6I6q2oFA==
   dependencies:
     merge-options "^3.0.4"
 
@@ -4696,6 +4696,11 @@
   version "7946.0.12"
   resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.12.tgz#0307536218d32e6b970bccd1d148b9c4e5b6f10d"
   integrity sha512-uK2z1ZHJyC0nQRbuovXFt4mzXDwf27vQeUWNhfKGwRcWW429GOhP8HxUHlM6TLH4bzmlv/HlEjpvJh3JfmGsAA==
+
+"@types/geojson@^7946.0.13":
+  version "7946.0.14"
+  resolved "https://registry.yarnpkg.com/@types/geojson/-/geojson-7946.0.14.tgz#319b63ad6df705ee2a65a73ef042c8271e696613"
+  integrity sha512-WCfD5Ht3ZesJUsONdhvm84dmzWOiOzOAqOncN0++w0lBw1o8OuDNJF2McvvCef/yBqb/HYRahp1BYtODFQ8bRg==
 
 "@types/glob@^7.1.1":
   version "7.2.0"
@@ -12731,12 +12736,12 @@ react-native-get-random-values@~1.9.0:
   dependencies:
     fast-base64-decode "^1.0.0"
 
-react-native-maps@~1.7.1:
-  version "1.7.1"
-  resolved "https://registry.yarnpkg.com/react-native-maps/-/react-native-maps-1.7.1.tgz#e0b9d68542b4b59b5ca3df375ada7c860fb41f2e"
-  integrity sha512-CHVLzL+Q2jiUGgbt4/vosxVI1SukWyaLGjD62VLgR/wZpnH4Umi9ql1bmKDPWcfj2C1QZwMU0Yc7rXTbvZUIiw==
+react-native-maps@1.13.2:
+  version "1.13.2"
+  resolved "https://registry.yarnpkg.com/react-native-maps/-/react-native-maps-1.13.2.tgz#3dfb3e18b0e77362b8939f11148da629e5bf1d04"
+  integrity sha512-7t2zEqS6VYGdNaZHt08nNJxH2YzYAv0gLNf/RbapD3vCYaLYF+sYV0COkQ5YYEEwqJb5I9OViwXuU9GkJXlVmw==
   dependencies:
-    "@types/geojson" "^7946.0.10"
+    "@types/geojson" "^7946.0.13"
 
 react-native-modal-selector@^2.1.2:
   version "2.1.2"
