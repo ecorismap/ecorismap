@@ -521,6 +521,8 @@ export default function HomeScreen() {
             tileMap.isVector
           ) {
             return null;
+          } else if (tileMap.url.startsWith('http') && tileMap.url.includes('.pdf')) {
+            return null;
           } else if (tileMap.url) {
             return {
               id: tileMap.id,
