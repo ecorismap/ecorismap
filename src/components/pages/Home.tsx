@@ -448,7 +448,7 @@ export default function HomeScreen() {
                       offlineMode={isOffline}
                       isVector={tileMap.isVector}
                     />
-                  ) : (
+                  ) : !(tileMap.url.startsWith('http') && tileMap.url.includes('.pdf')) ? (
                     <UrlTile
                       key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
                       urlTemplate={tileMap.url}

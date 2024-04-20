@@ -428,12 +428,12 @@ export const useMaps = (): UseMapsReturnType => {
         return importJsonMapFile(uri);
       } else if (ext === 'pdf') {
         let pdfUri = uri;
-
+        const tempPdf = `${FileSystem.cacheDirectory}${uuidv4()}.pdf`;
         if (uri.startsWith('file://') === false) {
           //uriからbasicauth部分を取得
           const auth = uri.split('@')[0].split('//')[1];
           const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
-          const download = FileSystem.createDownloadResumable(uri, `${FileSystem.cacheDirectory}/temp.pdf`, {
+          const download = FileSystem.createDownloadResumable(uri, tempPdf, {
             headers: { Authorization: options },
           });
           const result = await download.downloadAsync();
@@ -443,7 +443,10 @@ export const useMaps = (): UseMapsReturnType => {
 
           pdfUri = result.uri;
         }
-        return importPdfMapFile(pdfUri, name);
+
+        const result = await importPdfMapFile(pdfUri, name);
+        unlink(tempPdf);
+        return result;
       } else {
         return { isOK: false, message: t('hooks.message.failReceiveFile') };
       }

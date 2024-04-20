@@ -164,5 +164,7 @@ export async function moveFile(uri: any, destPath: string) {
 }
 
 export async function unlink(uri: string) {
-  return RNFS.unlink(uri);
+  if (await RNFS.exists(uri)) {
+    await RNFS.unlink(uri);
+  }
 }
