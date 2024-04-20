@@ -138,17 +138,19 @@ interface PolylineProps {
 }
 const PolylineComponent = React.memo((props: PolylineProps) => {
   const { label, color, lineColor, labelPosition, strokeWidth, zIndex, feature, zoom, selected } = props;
-  const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+  const arrowStyle = feature.field._strokeStyle as ArrowStyleType | undefined;
+
   return (
     <>
-      <LineArrow
-        selected={selected}
-        coordinates={feature.coords as LatLng[]}
-        strokeColor={lineColor}
-        strokeWidth={strokeWidth}
-        arrowStyle={arrowStyle}
-      />
-
+      {arrowStyle && (
+        <LineArrow
+          selected={selected}
+          coordinates={feature.coords as LatLng[]}
+          strokeColor={lineColor}
+          strokeWidth={strokeWidth}
+          arrowStyle={arrowStyle}
+        />
+      )}
       <Polyline
         key={'polyline' + feature.id}
         tappable={false}
