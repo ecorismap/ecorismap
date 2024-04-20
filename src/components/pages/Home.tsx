@@ -442,7 +442,7 @@ export default function HomeScreen() {
                       tileCacheMaxAge={604800}
                       offlineMode={isOffline}
                     />
-                  )
+                  ) : null
                 ) : null
               )}
             {/************* download mode ******************** */}
