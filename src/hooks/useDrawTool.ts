@@ -550,7 +550,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       features = selectPointFeatures(selectLineCoords, recordSet);
       if (features.length > 0) convertPointFeatureToDrawLine(layer.id, features);
     } else if (featureButton === 'LINE') {
-      console.log('selectEditableFeatures');
+      //console.log('selectEditableFeatures');
       features = selectLineFeatures(selectLineCoords, recordSet);
       if (features.length > 0)
         isHisyouToolActive

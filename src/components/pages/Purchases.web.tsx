@@ -77,7 +77,7 @@ const ProductPage = (props: ProductPage_Props) => {
   );
 
   useEffect(() => {
-    console.log(products);
+    //console.log(products);
     if (products.length === 0 || products[0].prices.length === 0) return;
     const initialChecked = products.map(() => false);
     initialChecked[0] = true;
