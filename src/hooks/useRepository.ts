@@ -623,8 +623,8 @@ export const useRepository = (): UseRepositoryReturnType => {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
-      console.log(project_.id);
-      console.log(data);
+      //console.log(project_.id);
+      //console.log(data);
       if (!isOK || data === undefined) {
         return { isOK: false, message };
       }
