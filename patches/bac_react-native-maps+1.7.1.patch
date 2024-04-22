@@ -2,10 +2,10 @@ diff --git a/node_modules/react-native-maps/.DS_Store b/node_modules/react-nativ
 new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build.gradle b/node_modules/react-native-maps/android/build.gradle
-index 68e5ba9..d76a842 100644
+index 88b8991..82cf08a 100644
 --- a/node_modules/react-native-maps/android/build.gradle
 +++ b/node_modules/react-native-maps/android/build.gradle
-@@ -50,6 +50,7 @@ repositories {
+@@ -39,6 +39,7 @@ repositories {
      // Android JSC is installed from npm
      url "$rootDir/../node_modules/jsc-android/dist"
    }
@@ -13,9 +13,9 @@ index 68e5ba9..d76a842 100644
    google()
  }
  
-@@ -60,4 +61,6 @@ dependencies {
-   implementation "com.google.android.gms:play-services-location:21.0.1"
-   implementation 'com.google.maps.android:android-maps-utils:3.8.2'
+@@ -49,4 +50,6 @@ dependencies {
+   implementation "com.google.android.gms:play-services-location:20.0.0"
+   implementation 'com.google.maps.android:android-maps-utils:3.4.0'
    implementation "androidx.work:work-runtime:2.7.1"
 +  implementation 'com.google.protobuf:protobuf-javalite:3.21.11'
 +  implementation 'com.google.code.gson:gson:2.8.8'
@@ -447,17 +447,10 @@ index 0000000..0d259dd
 +++ b/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/results.bin
 @@ -0,0 +1 @@
 +o/classes
-diff --git a/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/results.bin b/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/results.bin
+diff --git a/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..0d259dd
---- /dev/null
-+++ b/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/results.bin
-@@ -0,0 +1 @@
-+o/classes
-diff --git a/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/transformed/classes/classes.dex
-new file mode 100644
-index 0000000..0cc0184
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/8242b77a19d7865bae61c8c2f8129654/transformed/classes/classes.dex differ
+index 0000000..1b19868
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/886550d092f56c4694c7c6dc72acb6a6/results.bin b/node_modules/react-native-maps/android/build/.transforms/886550d092f56c4694c7c6dc72acb6a6/results.bin
 new file mode 100644
 index 0000000..0d259dd
@@ -500,10 +493,10 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
-index 0000000..845e2d9
+index 0000000..b0978df
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,10 @@
 +/**
 + * Automatically generated file. DO NOT MODIFY
 + */
@@ -513,8 +506,6 @@ index 0000000..845e2d9
 +  public static final boolean DEBUG = Boolean.parseBoolean("true");
 +  public static final String LIBRARY_PACKAGE_NAME = "com.rnmaps.maps";
 +  public static final String BUILD_TYPE = "debug";
-+  // Field from default config.
-+  public static final boolean IS_NEW_ARCHITECTURE_ENABLED = false;
 +}
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/release/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/release/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
@@ -650,24 +641,24 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..8cb8b56
+index 0000000..caee939
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar
 new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
-index 0000000..4c78c2a
+index 0000000..7ba7952
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/release/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/release/R.jar
 new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
-index 0000000..63d4b5f
+index 0000000..2d3289c
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt
-@@ -0,0 +1,2099 @@
+@@ -0,0 +1,2100 @@
 +int anim abc_fade_in 0x0
 +int anim abc_fade_out 0x0
 +int anim abc_grow_fade_in_from_bottom 0x0
@@ -1620,6 +1611,7 @@ index 0000000..63d4b5f
 +int id view_tag_instance_handle 0x0
 +int id view_tag_native_id 0x0
 +int id view_tree_lifecycle_owner 0x0
++int id view_tree_on_back_pressed_dispatcher_owner 0x0
 +int id view_tree_saved_state_registry_owner 0x0
 +int id view_tree_view_model_store_owner 0x0
 +int id visible_removing_fragment_view_tag 0x0
@@ -4875,11 +4867,11 @@ index 0000000..2d3289c
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..47b2780
+index 0000000..32f5c95
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Mon Apr 22 13:08:43 JST 2024
++#Sun Apr 21 20:10:19 JST 2024
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..801edc8
@@ -5038,7 +5030,7 @@ index 0000000..b68c489
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/VectorTileStyleManager/VectorTileStyleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/BuildConfig.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/BuildConfig.class
 new file mode 100644
-index 0000000..1e8072b
+index 0000000..f6d3034
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/BuildConfig.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FileUtil.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FileUtil.class
 new file mode 100644
@@ -5054,7 +5046,7 @@ index 0000000..9c93edf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FusedLocationSource$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FusedLocationSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FusedLocationSource.class
 new file mode 100644
-index 0000000..61bc85e
+index 0000000..7c89ec9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/FusedLocationSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ImageReadable.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ImageReadable.class
 new file mode 100644
@@ -5120,6 +5112,10 @@ diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/de
 new file mode 100644
 index 0000000..fc63a0b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapHeatmapManager.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLiteManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLiteManager.class
+new file mode 100644
+index 0000000..329da73
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLiteManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLocalTile$AIRMapLocalTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLocalTile$AIRMapLocalTileProvider.class
 new file mode 100644
 index 0000000..93efe6f
@@ -5134,7 +5130,7 @@ index 0000000..94d5472
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapLocalTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapManager.class
 new file mode 100644
-index 0000000..8202d74
+index 0000000..9ab0c99
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$1.class
 new file mode 100644
@@ -5142,11 +5138,11 @@ index 0000000..dd81022
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$2.class
 new file mode 100644
-index 0000000..761eafa
+index 0000000..175d6c0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker.class
 new file mode 100644
-index 0000000..5ec019a
+index 0000000..00d82b0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarker.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager$AirMapMarkerSharedIcon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager$AirMapMarkerSharedIcon.class
 new file mode 100644
@@ -5154,39 +5150,47 @@ index 0000000..eabce45
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager$AirMapMarkerSharedIcon.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager.class
 new file mode 100644
-index 0000000..2693153
+index 0000000..e027f77
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapMarkerManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1$1.class
 new file mode 100644
-index 0000000..1524f56
+index 0000000..715b922
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1.class
 new file mode 100644
-index 0000000..b0bd4c2
+index 0000000..9ced02f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$2.class
 new file mode 100644
-index 0000000..23d3a49
+index 0000000..1c392e3
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$3.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$3.class
 new file mode 100644
-index 0000000..6e9b752
+index 0000000..7e90d72
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$3.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$4.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$4.class
 new file mode 100644
-index 0000000..5cdb99b
+index 0000000..119533a
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$4.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$5.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$5.class
 new file mode 100644
-index 0000000..a81ea37
+index 0000000..3fff025
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$5.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$6.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$6.class
 new file mode 100644
-index 0000000..097d30b
+index 0000000..f830324
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$6.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7$1.class
+new file mode 100644
+index 0000000..32507b5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7$1.class differ
+diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7.class
+new file mode 100644
+index 0000000..dbc0771
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule$7.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule.class
 new file mode 100644
-index 0000000..d4e4915
+index 0000000..8f194f9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapModule.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapOverlay.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapOverlay.class
 new file mode 100644
@@ -5250,7 +5254,7 @@ index 0000000..be68553
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider$AIRMapUrlTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class
 new file mode 100644
-index 0000000..2d38d84
+index 0000000..1f3a9e0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileWorker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileWorker.class
 new file mode 100644
@@ -5266,75 +5270,75 @@ index 0000000..0491e3c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapUrlTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$1.class
 new file mode 100644
-index 0000000..0f10d46
+index 0000000..05b2762
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$10.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$10.class
 new file mode 100644
-index 0000000..9d53c64
+index 0000000..ed00712
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$10.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$11.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$11.class
 new file mode 100644
-index 0000000..e3e2a3d
+index 0000000..cb64527
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$11.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$12.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$12.class
 new file mode 100644
-index 0000000..1159add
+index 0000000..dc9a4f5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$12.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$13.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$13.class
 new file mode 100644
-index 0000000..f52b166
+index 0000000..929b068
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$13.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$14.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$14.class
 new file mode 100644
-index 0000000..6b52ed0
+index 0000000..5317df8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$14.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$15.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$15.class
 new file mode 100644
-index 0000000..53f6917
+index 0000000..f77548b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$15.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$16.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$16.class
 new file mode 100644
-index 0000000..eac0bb5
+index 0000000..6a7e0d1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$16.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$17.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$17.class
 new file mode 100644
-index 0000000..fbeb275
+index 0000000..d9775d3
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$17.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$2.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$2.class
 new file mode 100644
-index 0000000..6e832b3
+index 0000000..8f4adf7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$2.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$3.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$3.class
 new file mode 100644
-index 0000000..7b114e7
+index 0000000..ec2aab4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$3.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$4.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$4.class
 new file mode 100644
-index 0000000..048a8ab
+index 0000000..e4d5721
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$4.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$5.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$5.class
 new file mode 100644
-index 0000000..2c66240
+index 0000000..26be8f5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$5.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$6.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$6.class
 new file mode 100644
-index 0000000..fa28949
+index 0000000..02da350
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$6.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$7.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$7.class
 new file mode 100644
-index 0000000..7067451
+index 0000000..f1446de
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$7.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$8.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$8.class
 new file mode 100644
-index 0000000..8ed15e2
+index 0000000..6861c5a
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$8.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$9.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$9.class
 new file mode 100644
-index 0000000..00693d4
+index 0000000..0085be7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView$9.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView.class
 new file mode 100644
-index 0000000..323e5df
+index 0000000..f4c67e6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapView.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class
 new file mode 100644
@@ -5354,7 +5358,7 @@ index 0000000..06919c5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapWMSTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapsPackage.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapsPackage.class
 new file mode 100644
-index 0000000..dcdaa0c
+index 0000000..002ccf6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapsPackage.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/RegionChangeEvent.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/RegionChangeEvent.class
 new file mode 100644
@@ -5370,11 +5374,11 @@ index 0000000..b561cf4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewAttacherGroup.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker$1.class
 new file mode 100644
-index 0000000..6d00e87
+index 0000000..59794cf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker.class
 new file mode 100644
-index 0000000..f4aa642
+index 0000000..62c278a
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/ViewChangesTracker.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/vector_tile/VectorTile$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/vector_tile/VectorTile$1.class
 new file mode 100644
@@ -6370,17 +6374,17 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..a660389
+index 0000000..579b277
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar
 new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
-index 0000000..6c3bdf0
+index 0000000..070f2ad
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
-@@ -0,0 +1,1560 @@
+@@ -0,0 +1,1561 @@
 +com.rnmaps.maps
 +anim abc_fade_in
 +anim abc_fade_out
@@ -7334,6 +7338,7 @@ index 0000000..6c3bdf0
 +id view_tag_instance_handle
 +id view_tag_native_id
 +id view_tree_lifecycle_owner
++id view_tree_on_back_pressed_dispatcher_owner
 +id view_tree_saved_state_registry_owner
 +id view_tree_view_model_store_owner
 +id visible_removing_fragment_view_tag
@@ -9653,7 +9658,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..4d29f4b
+index 0000000..3a036d5
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
@@ -11256,7 +11261,7 @@ index 0000000..1a4034a
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
-index 2b1a646..00b8912 100644
+index 2b1a646..335e30f 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 @@ -1,49 +1,51 @@
@@ -11495,7 +11500,7 @@ index 2b1a646..00b8912 100644
 +
 +    if (image == null && this.tileCachePath != null && this.offlineMode && drawType == 0) {
 +      //Log.d("urlTile", "findLowerZoomTileForScaling");
-       int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1; 
+       int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
 -      int minimumZoomToSearch = Math.max(this.minimumZ, zoom - 3);
 +      int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
        for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
@@ -11688,7 +11693,7 @@ index 2b1a646..00b8912 100644
 +      // Log.d("urlTile", "generateTileFromHigherZoom: null " + x + " " + y + " " + zoom);
 +      return null;
 +    }
-     
+ 
 -    bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
 -    canvas.drawBitmap(bitmap, 0, 256, paint);
 -    bitmap.recycle();
@@ -11728,18 +11733,18 @@ index 2b1a646..00b8912 100644
 +        canvas.drawBitmap(bitmapRightBottom, null, new Rect(width / 2, height / 2, width, height), paint);
 +      }
 +    }
-     
+ 
 -    bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
 -    canvas.drawBitmap(bitmap, 256, 0, paint);
 -    bitmap.recycle();
 +    data = bitmapToByteArray(combinedBitmap);
 +    combinedBitmap.recycle();
-   
+ 
 -    bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
 -    canvas.drawBitmap(bitmap, 256, 256, paint);
 -    bitmap.recycle();
 +    boolean success = writeTileImage(data, x, y, zoom);
-     
+ 
 -    data = bitmapToByteArray(image);
 -    image.recycle();
      return data;
@@ -11766,9 +11771,9 @@ index 2b1a646..00b8912 100644
 +  byte[] drawOverZoomTile(int x, int y, int zoom, int maximumZoom) {
      int overZoomLevel = zoom - maximumZoom;
      int zoomFactor = 1 << overZoomLevel;
-     
+ 
 @@ -294,197 +343,187 @@ public class MapTileProvider implements TileProvider {
-     
+ 
      int xOffset = x % zoomFactor;
      int yOffset = y % zoomFactor;
 -
@@ -12123,7 +12128,6 @@ index 2b1a646..00b8912 100644
 +    this.customMode = customMode;
 +  }
  }
-\ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTileManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTileManager.java
 index 2f1c573..ed7cba1 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTileManager.java
@@ -12147,8 +12151,1069 @@ index 2f1c573..ed7cba1 100644
    }
  
    @Override
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
+index 2ac1525..b026ca3 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
+@@ -1,16 +1,13 @@
+ package com.rnmaps.maps;
+ 
++import static androidx.core.content.PermissionChecker.checkSelfPermission;
++
+ import android.content.Context;
+ import android.content.res.ColorStateList;
+ import android.graphics.Bitmap;
+ import android.graphics.Color;
+ import android.graphics.Point;
+-
+-import androidx.annotation.NonNull;
+-import androidx.annotation.Nullable;
+-import androidx.core.content.PermissionChecker;
+-import androidx.core.view.GestureDetectorCompat;
+-import androidx.core.view.MotionEventCompat;
++import android.location.Location;
+ import android.view.GestureDetector;
+ import android.view.MotionEvent;
+ import android.view.View;
+@@ -18,8 +15,12 @@ import android.view.ViewGroup;
+ import android.widget.ImageView;
+ import android.widget.ProgressBar;
+ import android.widget.RelativeLayout;
+-import android.location.Location;
+-
++import androidx.annotation.NonNull;
++import androidx.annotation.Nullable;
++import androidx.core.content.PermissionChecker;
++import androidx.core.view.GestureDetectorCompat;
++import androidx.core.view.MotionEventCompat;
++import com.facebook.react.bridge.Arguments;
+ import com.facebook.react.bridge.LifecycleEventListener;
+ import com.facebook.react.bridge.ReactApplicationContext;
+ import com.facebook.react.bridge.ReadableArray;
+@@ -28,7 +29,6 @@ import com.facebook.react.bridge.WritableArray;
+ import com.facebook.react.bridge.WritableMap;
+ import com.facebook.react.bridge.WritableNativeArray;
+ import com.facebook.react.bridge.WritableNativeMap;
+-import com.facebook.react.bridge.Arguments;
+ import com.facebook.react.uimanager.ThemedReactContext;
+ import com.facebook.react.uimanager.UIManagerModule;
+ import com.facebook.react.uimanager.events.EventDispatcher;
+@@ -41,6 +41,8 @@ import com.google.android.gms.maps.Projection;
+ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+ import com.google.android.gms.maps.model.CameraPosition;
+ import com.google.android.gms.maps.model.GroundOverlay;
++import com.google.android.gms.maps.model.IndoorBuilding;
++import com.google.android.gms.maps.model.IndoorLevel;
+ import com.google.android.gms.maps.model.LatLng;
+ import com.google.android.gms.maps.model.LatLngBounds;
+ import com.google.android.gms.maps.model.MapStyleOptions;
+@@ -50,8 +52,6 @@ import com.google.android.gms.maps.model.PointOfInterest;
+ import com.google.android.gms.maps.model.Polygon;
+ import com.google.android.gms.maps.model.Polyline;
+ import com.google.android.gms.maps.model.TileOverlay;
+-import com.google.android.gms.maps.model.IndoorBuilding;
+-import com.google.android.gms.maps.model.IndoorLevel;
+ import com.google.maps.android.collections.CircleManager;
+ import com.google.maps.android.collections.GroundOverlayManager;
+ import com.google.maps.android.collections.MarkerManager;
+@@ -61,9 +61,6 @@ import com.google.maps.android.data.kml.KmlContainer;
+ import com.google.maps.android.data.kml.KmlLayer;
+ import com.google.maps.android.data.kml.KmlPlacemark;
+ import com.google.maps.android.data.kml.KmlStyle;
+-
+-import org.xmlpull.v1.XmlPullParserException;
+-
+ import java.io.IOException;
+ import java.io.InputStream;
+ import java.util.ArrayList;
+@@ -72,11 +69,17 @@ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.concurrent.ExecutionException;
++import org.xmlpull.v1.XmlPullParserException;
+ 
+-import static androidx.core.content.PermissionChecker.checkSelfPermission;
++public class MapView
++  extends com.google.android.gms.maps.MapView
++  implements
++    GoogleMap.InfoWindowAdapter,
++    GoogleMap.OnMarkerDragListener,
++    OnMapReadyCallback,
++    GoogleMap.OnPoiClickListener,
++    GoogleMap.OnIndoorStateChangeListener {
+ 
+-public class MapView extends com.google.android.gms.maps.MapView implements GoogleMap.InfoWindowAdapter,
+-    GoogleMap.OnMarkerDragListener, OnMapReadyCallback, GoogleMap.OnPoiClickListener, GoogleMap.OnIndoorStateChangeListener {
+   public GoogleMap map;
+   private MarkerManager markerManager;
+   private MarkerManager.Collection markerCollection;
+@@ -111,8 +114,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   private LatLngBounds cameraLastIdleBounds;
+   private int cameraMoveReason = 0;
+ 
+-  private static final String[] PERMISSIONS = new String[]{
+-      "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"};
++  private static final String[] PERMISSIONS = new String[] {
++    "android.permission.ACCESS_FINE_LOCATION",
++    "android.permission.ACCESS_COARSE_LOCATION",
++  };
+ 
+   private final List<MapFeature> features = new ArrayList<>();
+   private final Map<Marker, MapMarker> markerMap = new HashMap<>();
+@@ -134,9 +139,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   private LatLng tapLocation;
+ 
+   private static boolean contextHasBug(Context context) {
+-    return context == null ||
+-        context.getResources() == null ||
+-        context.getResources().getConfiguration() == null;
++    return context == null || context.getResources() == null || context.getResources().getConfiguration() == null;
+   }
+ 
+   // We do this to fix this bug:
+@@ -146,8 +149,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   // https://github.com/react-native-maps/react-native-maps/issues/1147
+   //
+   // Doing this allows us to avoid both bugs.
+-  private static Context getNonBuggyContext(ThemedReactContext reactContext,
+-      ReactApplicationContext appContext) {
++  private static Context getNonBuggyContext(ThemedReactContext reactContext, ReactApplicationContext appContext) {
+     Context superContext = reactContext;
+     if (!contextHasBug(appContext.getCurrentActivity())) {
+       superContext = appContext.getCurrentActivity();
+@@ -158,16 +160,17 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       } else if (!contextHasBug(reactContext.getApplicationContext())) {
+         superContext = reactContext.getApplicationContext();
+       }
+-
+     }
+     return superContext;
+   }
+ 
+-  public MapView(ThemedReactContext reactContext, ReactApplicationContext appContext,
+-                 MapManager manager,
+-                 GoogleMapOptions googleMapOptions) {
++  public MapView(
++    ThemedReactContext reactContext,
++    ReactApplicationContext appContext,
++    MapManager manager,
++    GoogleMapOptions googleMapOptions
++  ) {
+     super(getNonBuggyContext(reactContext, appContext), googleMapOptions);
+-
+     this.manager = manager;
+     this.context = reactContext;
+ 
+@@ -181,11 +184,11 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     fusedLocationSource = new FusedLocationSource(context);
+ 
+     gestureDetector =
+-        new GestureDetectorCompat(reactContext, new GestureDetector.SimpleOnGestureListener() {
+-
++      new GestureDetectorCompat(
++        reactContext,
++        new GestureDetector.SimpleOnGestureListener() {
+           @Override
+-          public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
+-              float distanceY) {
++          public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+             if (handlePanDrag) {
+               onPanDrag(e2);
+             }
+@@ -197,16 +200,29 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+             onDoublePress(ev);
+             return false;
+           }
+-        });
++        }
++      );
+ 
+-    this.addOnLayoutChangeListener(new OnLayoutChangeListener() {
+-      @Override public void onLayoutChange(View v, int left, int top, int right, int bottom,
+-          int oldLeft, int oldTop, int oldRight, int oldBottom) {
+-        if (!paused) {
+-          MapView.this.cacheView();
++    this.addOnLayoutChangeListener(
++        new OnLayoutChangeListener() {
++          @Override
++          public void onLayoutChange(
++            View v,
++            int left,
++            int top,
++            int right,
++            int bottom,
++            int oldLeft,
++            int oldTop,
++            int oldRight,
++            int oldBottom
++          ) {
++            if (!paused) {
++              MapView.this.cacheView();
++            }
++          }
+         }
+-      }
+-    });
++      );
+ 
+     eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
+ 
+@@ -251,162 +267,187 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+     final MapView view = this;
+ 
+-    map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+-      @Override
+-      public void onMyLocationChange(Location location){
+-        WritableMap event = new WritableNativeMap();
+-
+-        WritableMap coordinate = new WritableNativeMap();
+-        coordinate.putDouble("latitude", location.getLatitude());
+-        coordinate.putDouble("longitude", location.getLongitude());
+-        coordinate.putDouble("altitude", location.getAltitude());
+-        coordinate.putDouble("timestamp", location.getTime());
+-        coordinate.putDouble("accuracy", location.getAccuracy());
+-        coordinate.putDouble("speed", location.getSpeed());
+-        coordinate.putDouble("heading", location.getBearing());
+-        coordinate.putBoolean("isFromMockProvider", location.isFromMockProvider());
+-
+-        event.putMap("coordinate", coordinate);
+-
+-        manager.pushEvent(context, view, "onUserLocationChange", event);
+-      }
+-    });
+-
+-    markerCollection.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+-      @Override
+-      public boolean onMarkerClick(@NonNull Marker marker) {
+-        MapMarker airMapMarker = getMarkerMap(marker);
+-
+-        WritableMap event = makeClickEventData(marker.getPosition());
+-        event.putString("action", "marker-press");
+-        event.putString("id", airMapMarker.getIdentifier());
+-        manager.pushEvent(context, view, "onMarkerPress", event);
+-
+-        event = makeClickEventData(marker.getPosition());
+-        event.putString("action", "marker-press");
+-        event.putString("id", airMapMarker.getIdentifier());
+-        manager.pushEvent(context, airMapMarker, "onPress", event);
+-
+-        // Return false to open the callout info window and center on the marker
+-        // https://developers.google.com/android/reference/com/google/android/gms/maps/GoogleMap
+-        // .OnMarkerClickListener
+-        if (view.moveOnMarkerPress) {
+-          return false;
+-        } else {
+-          marker.showInfoWindow();
+-          return true;
++    map.setOnMyLocationChangeListener(
++      new GoogleMap.OnMyLocationChangeListener() {
++        @Override
++        public void onMyLocationChange(Location location) {
++          WritableMap event = new WritableNativeMap();
++
++          WritableMap coordinate = new WritableNativeMap();
++          coordinate.putDouble("latitude", location.getLatitude());
++          coordinate.putDouble("longitude", location.getLongitude());
++          coordinate.putDouble("altitude", location.getAltitude());
++          coordinate.putDouble("timestamp", location.getTime());
++          coordinate.putDouble("accuracy", location.getAccuracy());
++          coordinate.putDouble("speed", location.getSpeed());
++          coordinate.putDouble("heading", location.getBearing());
++          coordinate.putBoolean("isFromMockProvider", location.isFromMockProvider());
++
++          event.putMap("coordinate", coordinate);
++
++          manager.pushEvent(context, view, "onUserLocationChange", event);
+         }
+       }
+-    });
+-
+-    polygonCollection.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+-      @Override
+-      public void onPolygonClick(@NonNull Polygon polygon) {
+-        WritableMap event = makeClickEventData(tapLocation);
+-        event.putString("action", "polygon-press");
+-        manager.pushEvent(context, polygonMap.get(polygon), "onPress", event);
+-      }
+-    });
+-
+-    polylineCollection.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
+-      @Override
+-      public void onPolylineClick(@NonNull Polyline polyline) {
+-        WritableMap event = makeClickEventData(tapLocation);
+-        event.putString("action", "polyline-press");
+-        manager.pushEvent(context, polylineMap.get(polyline), "onPress", event);
+-      }
+-    });
+-
+-    markerCollection.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+-      @Override
+-      public void onInfoWindowClick(@NonNull Marker marker) {
+-        WritableMap event = makeClickEventData(marker.getPosition());
+-        event.putString("action", "callout-press");
+-        manager.pushEvent(context, view, "onCalloutPress", event);
+-
+-        event = makeClickEventData(marker.getPosition());
+-        event.putString("action", "callout-press");
+-        MapMarker markerView = getMarkerMap(marker);
+-        manager.pushEvent(context, markerView, "onCalloutPress", event);
+-
+-        event = makeClickEventData(marker.getPosition());
+-        event.putString("action", "callout-press");
+-        MapCallout infoWindow = markerView.getCalloutView();
+-        if (infoWindow != null) manager.pushEvent(context, infoWindow, "onPress", event);
++    );
++
++    markerCollection.setOnMarkerClickListener(
++      new GoogleMap.OnMarkerClickListener() {
++        @Override
++        public boolean onMarkerClick(@NonNull Marker marker) {
++          MapMarker airMapMarker = getMarkerMap(marker);
++
++          WritableMap event = makeClickEventData(marker.getPosition());
++          event.putString("action", "marker-press");
++          event.putString("id", airMapMarker.getIdentifier());
++          manager.pushEvent(context, view, "onMarkerPress", event);
++
++          event = makeClickEventData(marker.getPosition());
++          event.putString("action", "marker-press");
++          event.putString("id", airMapMarker.getIdentifier());
++          manager.pushEvent(context, airMapMarker, "onPress", event);
++
++          // Return false to open the callout info window and center on the marker
++          // https://developers.google.com/android/reference/com/google/android/gms/maps/GoogleMap
++          // .OnMarkerClickListener
++          if (view.moveOnMarkerPress) {
++            return false;
++          } else {
++            marker.showInfoWindow();
++            return true;
++          }
++        }
+       }
+-    });
+-
+-    map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+-      @Override
+-      public void onMapClick(@NonNull LatLng point) {
+-        WritableMap event = makeClickEventData(point);
+-        event.putString("action", "press");
+-        manager.pushEvent(context, view, "onPress", event);
++    );
++
++    polygonCollection.setOnPolygonClickListener(
++      new GoogleMap.OnPolygonClickListener() {
++        @Override
++        public void onPolygonClick(@NonNull Polygon polygon) {
++          WritableMap event = makeClickEventData(tapLocation);
++          event.putString("action", "polygon-press");
++          manager.pushEvent(context, polygonMap.get(polygon), "onPress", event);
++        }
+       }
+-    });
+-
+-    map.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+-      @Override
+-      public void onMapLongClick(@NonNull LatLng point) {
+-        WritableMap event = makeClickEventData(point);
+-        event.putString("action", "long-press");
+-        manager.pushEvent(context, view, "onLongPress", makeClickEventData(point));
++    );
++
++    polylineCollection.setOnPolylineClickListener(
++      new GoogleMap.OnPolylineClickListener() {
++        @Override
++        public void onPolylineClick(@NonNull Polyline polyline) {
++          WritableMap event = makeClickEventData(tapLocation);
++          event.putString("action", "polyline-press");
++          manager.pushEvent(context, polylineMap.get(polyline), "onPress", event);
++        }
+       }
+-    });
+-
+-    groundOverlayCollection.setOnGroundOverlayClickListener(new GoogleMap.OnGroundOverlayClickListener() {
+-      @Override
+-      public void onGroundOverlayClick(@NonNull GroundOverlay groundOverlay) {
+-        WritableMap event = makeClickEventData(groundOverlay.getPosition());
+-        event.putString("action", "overlay-press");
+-        manager.pushEvent(context, overlayMap.get(groundOverlay), "onPress", event);
++    );
++
++    markerCollection.setOnInfoWindowClickListener(
++      new GoogleMap.OnInfoWindowClickListener() {
++        @Override
++        public void onInfoWindowClick(@NonNull Marker marker) {
++          WritableMap event = makeClickEventData(marker.getPosition());
++          event.putString("action", "callout-press");
++          manager.pushEvent(context, view, "onCalloutPress", event);
++
++          event = makeClickEventData(marker.getPosition());
++          event.putString("action", "callout-press");
++          MapMarker markerView = getMarkerMap(marker);
++          manager.pushEvent(context, markerView, "onCalloutPress", event);
++
++          event = makeClickEventData(marker.getPosition());
++          event.putString("action", "callout-press");
++          MapCallout infoWindow = markerView.getCalloutView();
++          if (infoWindow != null) manager.pushEvent(context, infoWindow, "onPress", event);
++        }
+       }
+-    });
++    );
+ 
+-    map.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
+-      @Override
+-      public void onCameraMoveStarted(int reason) {
+-        cameraMoveReason = reason;
++    map.setOnMapClickListener(
++      new GoogleMap.OnMapClickListener() {
++        @Override
++        public void onMapClick(@NonNull LatLng point) {
++          WritableMap event = makeClickEventData(point);
++          event.putString("action", "press");
++          manager.pushEvent(context, view, "onPress", event);
++        }
+       }
+-    });
++    );
+ 
+-    map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
+-      @Override
+-      public void onCameraMove() {
+-        LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
++    map.setOnMapLongClickListener(
++      new GoogleMap.OnMapLongClickListener() {
++        @Override
++        public void onMapLongClick(@NonNull LatLng point) {
++          WritableMap event = makeClickEventData(point);
++          event.putString("action", "long-press");
++          manager.pushEvent(context, view, "onLongPress", makeClickEventData(point));
++        }
++      }
++    );
+ 
+-        cameraLastIdleBounds = null;
+-        boolean isGesture = GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE == cameraMoveReason;
++    groundOverlayCollection.setOnGroundOverlayClickListener(
++      new GoogleMap.OnGroundOverlayClickListener() {
++        @Override
++        public void onGroundOverlayClick(@NonNull GroundOverlay groundOverlay) {
++          WritableMap event = makeClickEventData(groundOverlay.getPosition());
++          event.putString("action", "overlay-press");
++          manager.pushEvent(context, overlayMap.get(groundOverlay), "onPress", event);
++        }
++      }
++    );
+ 
+-        RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, true, isGesture);
+-        eventDispatcher.dispatchEvent(event);
++    map.setOnCameraMoveStartedListener(
++      new GoogleMap.OnCameraMoveStartedListener() {
++        @Override
++        public void onCameraMoveStarted(int reason) {
++          cameraMoveReason = reason;
++        }
+       }
+-    });
++    );
+ 
+-    map.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener() {
+-      @Override
+-      public void onCameraIdle() {
+-        LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
+-        if ((cameraMoveReason != 0) &&
+-          ((cameraLastIdleBounds == null) ||
+-            LatLngBoundsUtils.BoundsAreDifferent(bounds, cameraLastIdleBounds))) {
++    map.setOnCameraMoveListener(
++      new GoogleMap.OnCameraMoveListener() {
++        @Override
++        public void onCameraMove() {
++          LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
+ 
+-          cameraLastIdleBounds = bounds;
++          cameraLastIdleBounds = null;
+           boolean isGesture = GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE == cameraMoveReason;
+ 
+-          RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, false, isGesture);
++          RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, true, isGesture);
+           eventDispatcher.dispatchEvent(event);
+         }
+       }
+-    });
++    );
+ 
+-    map.setOnMapLoadedCallback(new GoogleMap.OnMapLoadedCallback() {
+-      @Override public void onMapLoaded() {
+-        isMapLoaded = true;
+-        manager.pushEvent(context, view, "onMapLoaded", new WritableNativeMap());
+-        MapView.this.cacheView();
++    map.setOnCameraIdleListener(
++      new GoogleMap.OnCameraIdleListener() {
++        @Override
++        public void onCameraIdle() {
++          LatLngBounds bounds = map.getProjection().getVisibleRegion().latLngBounds;
++          if (
++            (cameraMoveReason != 0) &&
++            ((cameraLastIdleBounds == null) || LatLngBoundsUtils.BoundsAreDifferent(bounds, cameraLastIdleBounds))
++          ) {
++            cameraLastIdleBounds = bounds;
++            boolean isGesture = GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE == cameraMoveReason;
++
++            RegionChangeEvent event = new RegionChangeEvent(getId(), bounds, false, isGesture);
++            eventDispatcher.dispatchEvent(event);
++          }
++        }
+       }
+-    });
++    );
++
++    map.setOnMapLoadedCallback(
++      new GoogleMap.OnMapLoadedCallback() {
++        @Override
++        public void onMapLoaded() {
++          isMapLoaded = true;
++          manager.pushEvent(context, view, "onMapLoaded", new WritableNativeMap());
++          MapView.this.cacheView();
++        }
++      }
++    );
+ 
+     // We need to be sure to disable location-tracking when app enters background, in-case some
+     // other module
+@@ -415,51 +456,53 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     // updating location constantly, killing the battery, even though some other location-mgmt
+     // module may
+     // desire to shut-down location-services.
+-    lifecycleListener = new LifecycleEventListener() {
+-      @Override
+-      public void onHostResume() {
+-        if (hasPermissions() && map != null) {
+-          //noinspection MissingPermission
+-          map.setMyLocationEnabled(showUserLocation);
+-          map.setLocationSource(fusedLocationSource);
+-        }
+-        synchronized (MapView.this) {
+-          if (!destroyed) {
+-            MapView.this.onResume();
++    lifecycleListener =
++      new LifecycleEventListener() {
++        @Override
++        public void onHostResume() {
++          if (hasPermissions() && map != null) {
++            //noinspection MissingPermission
++            map.setMyLocationEnabled(showUserLocation);
++            map.setLocationSource(fusedLocationSource);
++          }
++          synchronized (MapView.this) {
++            if (!destroyed) {
++              MapView.this.onResume();
++            }
++            paused = false;
+           }
+-          paused = false;
+         }
+-      }
+ 
+-      @Override
+-      public void onHostPause() {
+-        if (hasPermissions() && map != null) {
+-          //noinspection MissingPermission
+-          map.setMyLocationEnabled(false);
+-        }
+-        synchronized (MapView.this) {
+-          if (!destroyed) {
+-            MapView.this.onPause();
++        @Override
++        public void onHostPause() {
++          if (hasPermissions() && map != null) {
++            //noinspection MissingPermission
++            map.setMyLocationEnabled(false);
++          }
++          synchronized (MapView.this) {
++            if (!destroyed) {
++              MapView.this.onPause();
++            }
++            paused = true;
+           }
+-          paused = true;
+         }
+-      }
+ 
+-      @Override
+-      public void onHostDestroy() {
+-        MapView.this.doDestroy();
+-      }
+-    };
++        @Override
++        public void onHostDestroy() {
++          MapView.this.doDestroy();
++        }
++      };
+ 
+     context.addLifecycleEventListener(lifecycleListener);
+   }
+ 
+   private boolean hasPermissions() {
+-    return checkSelfPermission(getContext(), PERMISSIONS[0]) == PermissionChecker.PERMISSION_GRANTED ||
+-        checkSelfPermission(getContext(), PERMISSIONS[1]) == PermissionChecker.PERMISSION_GRANTED;
++    return (
++      checkSelfPermission(getContext(), PERMISSIONS[0]) == PermissionChecker.PERMISSION_GRANTED ||
++      checkSelfPermission(getContext(), PERMISSIONS[1]) == PermissionChecker.PERMISSION_GRANTED
++    );
+   }
+ 
+-
+   /*
+   onDestroy is final method so I can't override it.
+    */
+@@ -501,18 +544,18 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   }
+ 
+   private void applyBridgedProps() {
+-    if(initialRegion != null) {
++    if (initialRegion != null) {
+       moveToRegion(initialRegion);
+       initialRegionSet = true;
+-    } else if(initialCamera != null) {
++    } else if (initialCamera != null) {
+       moveToCamera(initialCamera);
+       initialCameraSet = true;
+-    } else if(region != null) {
++    } else if (region != null) {
+       moveToRegion(region);
+     } else {
+       moveToCamera(camera);
+     }
+-    if(customMapStyleString != null) {
++    if (customMapStyleString != null) {
+       map.setMapStyle(new MapStyleOptions(customMapStyleString));
+     }
+   }
+@@ -525,8 +568,8 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     double lngDelta = region.getDouble("longitudeDelta");
+     double latDelta = region.getDouble("latitudeDelta");
+     LatLngBounds bounds = new LatLngBounds(
+-            new LatLng(lat - latDelta / 2, lng - lngDelta / 2), // southwest
+-            new LatLng(lat + latDelta / 2, lng + lngDelta / 2)  // northeast
++      new LatLng(lat - latDelta / 2, lng - lngDelta / 2), // southwest
++      new LatLng(lat + latDelta / 2, lng + lngDelta / 2) // northeast
+     );
+     if (super.getHeight() <= 0 || super.getWidth() <= 0) {
+       // in this case, our map has not been laid out yet, so we save the bounds in a local
+@@ -543,14 +586,14 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+   public void setRegion(ReadableMap region) {
+     this.region = region;
+-    if(region != null && map != null) {
++    if (region != null && map != null) {
+       moveToRegion(region);
+     }
+   }
+ 
+   public void setCamera(ReadableMap camera) {
+     this.camera = camera;
+-    if(camera != null && map != null) {
++    if (camera != null && map != null) {
+       moveToCamera(camera);
+     }
+   }
+@@ -567,9 +610,9 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       builder.target(new LatLng(lat, lng));
+     }
+ 
+-    builder.tilt((float)camera.getDouble("pitch"));
+-    builder.bearing((float)camera.getDouble("heading"));
+-    builder.zoom((float)camera.getDouble("zoom"));
++    builder.tilt((float) camera.getDouble("pitch"));
++    builder.bearing((float) camera.getDouble("heading"));
++    builder.zoom((float) camera.getDouble("zoom"));
+ 
+     CameraUpdate update = CameraUpdateFactory.newCameraPosition(builder.build());
+ 
+@@ -586,7 +629,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+   public void setMapStyle(@Nullable String customMapStyleString) {
+     this.customMapStyleString = customMapStyleString;
+-    if(map != null && customMapStyleString != null) {
++    if (map != null && customMapStyleString != null) {
+       map.setMapStyle(new MapStyleOptions(customMapStyleString));
+     }
+   }
+@@ -600,15 +643,15 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     }
+   }
+ 
+-  public void setUserLocationPriority(int priority){
++  public void setUserLocationPriority(int priority) {
+     fusedLocationSource.setPriority(priority);
+   }
+ 
+-  public void setUserLocationUpdateInterval(int interval){
++  public void setUserLocationUpdateInterval(int interval) {
+     fusedLocationSource.setInterval(interval);
+   }
+ 
+-  public void setUserLocationFastestInterval(int interval){
++  public void setUserLocationFastestInterval(int interval) {
+     fusedLocationSource.setFastestInterval(interval);
+   }
+ 
+@@ -687,7 +730,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+       // Remove from a view group if already present, prevent "specified child
+       // already had a parent" error.
+-      ViewGroup annotationParent = (ViewGroup)annotation.getParent();
++      ViewGroup annotationParent = (ViewGroup) annotation.getParent();
+       if (annotationParent != null) {
+         annotationParent.removeView(annotation);
+       }
+@@ -728,6 +771,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       MapUrlTile urlTileView = (MapUrlTile) child;
+       urlTileView.addToMap(map);
+       features.add(index, urlTileView);
++    } else if (child instanceof MapPMTile) {
++      MapPMTile PMTileView = (MapPMTile) child;
++      PMTileView.addToMap(map);
++      features.add(index, PMTileView);
+     } else if (child instanceof MapWMSTile) {
+       MapWMSTile urlTileView = (MapWMSTile) child;
+       urlTileView.addToMap(map);
+@@ -746,7 +793,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       MapHeatmap heatmapView = (MapHeatmap) child;
+       heatmapView.addToMap(map);
+       features.add(index, heatmapView);
+-      TileOverlay heatmap = (TileOverlay)heatmapView.getFeature();
++      TileOverlay heatmap = (TileOverlay) heatmapView.getFeature();
+       heatmapMap.put(heatmap, heatmapView);
+     } else if (child instanceof ViewGroup) {
+       ViewGroup children = (ViewGroup) child;
+@@ -774,13 +821,13 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     } else if (feature instanceof MapHeatmap) {
+       heatmapMap.remove(feature.getFeature());
+       feature.removeFromMap(map);
+-    } else if(feature instanceof MapCircle) {
++    } else if (feature instanceof MapCircle) {
+       feature.removeFromMap(circleCollection);
+-    } else if(feature instanceof MapOverlay) {
++    } else if (feature instanceof MapOverlay) {
+       feature.removeFromMap(groundOverlayCollection);
+-    } else if(feature instanceof MapPolygon) {
++    } else if (feature instanceof MapPolygon) {
+       feature.removeFromMap(polygonCollection);
+-    } else if(feature instanceof  MapPolyline) {
++    } else if (feature instanceof MapPolyline) {
+       feature.removeFromMap(polylineCollection);
+     } else {
+       feature.removeFromMap(map);
+@@ -824,8 +871,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+       boundsToMove = null;
+       cameraToSet = null;
+-    }
+-    else if (cameraToSet != null) {
++    } else if (cameraToSet != null) {
+       map.moveCamera(cameraToSet);
+       cameraToSet = null;
+     }
+@@ -835,13 +881,13 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     if (map == null) return;
+     CameraPosition.Builder builder = new CameraPosition.Builder(map.getCameraPosition());
+     if (camera.hasKey("zoom")) {
+-      builder.zoom((float)camera.getDouble("zoom"));
++      builder.zoom((float) camera.getDouble("zoom"));
+     }
+     if (camera.hasKey("heading")) {
+-      builder.bearing((float)camera.getDouble("heading"));
++      builder.bearing((float) camera.getDouble("heading"));
+     }
+     if (camera.hasKey("pitch")) {
+-      builder.tilt((float)camera.getDouble("pitch"));
++      builder.tilt((float) camera.getDouble("pitch"));
+     }
+     if (camera.hasKey("center")) {
+       ReadableMap center = camera.getMap("center");
+@@ -852,15 +898,14 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+     if (duration <= 0) {
+       map.moveCamera(update);
+-    }
+-    else {
++    } else {
+       map.animateCamera(update, duration, null);
+     }
+   }
+ 
+   public void animateToRegion(LatLngBounds bounds, int duration) {
+     if (map == null) return;
+-    if(duration <= 0) {
++    if (duration <= 0) {
+       map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0));
+     } else {
+       map.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 0), duration, null);
+@@ -887,8 +932,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, baseMapPadding);
+ 
+       if (edgePadding != null) {
+-        map.setPadding(edgePadding.getInt("left"), edgePadding.getInt("top"),
+-          edgePadding.getInt("right"), edgePadding.getInt("bottom"));
++        map.setPadding(
++          edgePadding.getInt("left"),
++          edgePadding.getInt("top"),
++          edgePadding.getInt("right"),
++          edgePadding.getInt("bottom")
++        );
+       }
+ 
+       if (animated) {
+@@ -929,8 +978,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, baseMapPadding);
+ 
+       if (edgePadding != null) {
+-        map.setPadding(edgePadding.getInt("left"), edgePadding.getInt("top"),
+-          edgePadding.getInt("right"), edgePadding.getInt("bottom"));
++        map.setPadding(
++          edgePadding.getInt("left"),
++          edgePadding.getInt("top"),
++          edgePadding.getInt("right"),
++          edgePadding.getInt("bottom")
++        );
+       }
+ 
+       if (animated) {
+@@ -946,7 +999,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   int baseTopMapPadding;
+   int baseBottomMapPadding;
+ 
+-  public void applyBaseMapPadding(int left, int top, int right, int bottom){
++  public void applyBaseMapPadding(int left, int top, int right, int bottom) {
+     this.map.setPadding(left, top, right, bottom);
+     baseLeftMapPadding = left;
+     baseRightMapPadding = right;
+@@ -954,8 +1007,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     baseBottomMapPadding = bottom;
+   }
+ 
+-  public void fitToCoordinates(ReadableArray coordinatesArray, ReadableMap edgePadding,
+-      boolean animated) {
++  public void fitToCoordinates(ReadableArray coordinatesArray, ReadableMap edgePadding, boolean animated) {
+     if (map == null) return;
+ 
+     LatLngBounds.Builder builder = new LatLngBounds.Builder();
+@@ -971,7 +1023,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, baseMapPadding);
+ 
+     if (edgePadding != null) {
+-      appendMapPadding(edgePadding.getInt("left"), edgePadding.getInt("top"), edgePadding.getInt("right"), edgePadding.getInt("bottom"));
++      appendMapPadding(
++        edgePadding.getInt("left"),
++        edgePadding.getInt("top"),
++        edgePadding.getInt("right"),
++        edgePadding.getInt("bottom")
++      );
+     }
+ 
+     if (animated) {
+@@ -983,7 +1040,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     map.setPadding(baseLeftMapPadding, baseTopMapPadding, baseRightMapPadding, baseBottomMapPadding);
+   }
+ 
+-  private void appendMapPadding(int iLeft,int iTop, int iRight, int iBottom) {
++  private void appendMapPadding(int iLeft, int iTop, int iRight, int iBottom) {
+     int left;
+     int top;
+     int right;
+@@ -995,10 +1052,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     right = (int) (iRight * density);
+     bottom = (int) (iBottom * density);
+ 
+-    map.setPadding(left + baseLeftMapPadding,
+-            top + baseTopMapPadding,
+-            right + baseRightMapPadding,
+-            bottom + baseBottomMapPadding);
++    map.setPadding(
++      left + baseLeftMapPadding,
++      top + baseTopMapPadding,
++      right + baseRightMapPadding,
++      bottom + baseBottomMapPadding
++    );
+   }
+ 
+   public double[][] getMapBoundaries() {
+@@ -1006,10 +1065,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     LatLng northEast = bounds.northeast;
+     LatLng southWest = bounds.southwest;
+ 
+-    return new double[][] {
+-      {northEast.longitude, northEast.latitude},
+-      {southWest.longitude, southWest.latitude}
+-    };
++    return new double[][] { { northEast.longitude, northEast.latitude }, { southWest.longitude, southWest.latitude } };
+   }
+ 
+   public void setMapBoundaries(ReadableMap northEast, ReadableMap southWest) {
+@@ -1048,18 +1104,18 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   public boolean dispatchTouchEvent(MotionEvent ev) {
+     gestureDetector.onTouchEvent(ev);
+ 
+-    int X = (int)ev.getX();          
+-    int Y = (int)ev.getY();
+-    if(map != null) {
+-      tapLocation = map.getProjection().fromScreenLocation(new Point(X,Y));
++    int X = (int) ev.getX();
++    int Y = (int) ev.getY();
++    if (map != null) {
++      tapLocation = map.getProjection().fromScreenLocation(new Point(X, Y));
+     }
+ 
+     int action = MotionEventCompat.getActionMasked(ev);
+ 
+     switch (action) {
+       case (MotionEvent.ACTION_DOWN):
+-        this.getParent().requestDisallowInterceptTouchEvent(
+-            map != null && map.getUiSettings().isScrollGesturesEnabled());
++        this.getParent()
++          .requestDisallowInterceptTouchEvent(map != null && map.getUiSettings().isScrollGesturesEnabled());
+         break;
+       case (MotionEvent.ACTION_UP):
+         // Clear this regardless, since isScrollGesturesEnabled() may have been updated
+@@ -1125,12 +1181,15 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     if (this.mapLoadingLayout == null) {
+       this.mapLoadingLayout = new RelativeLayout(getContext());
+       this.mapLoadingLayout.setBackgroundColor(Color.LTGRAY);
+-      this.addView(this.mapLoadingLayout,
+-          new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+-              ViewGroup.LayoutParams.MATCH_PARENT));
++      this.addView(
++          this.mapLoadingLayout,
++          new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
++        );
+ 
+       RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+-          RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
++        RelativeLayout.LayoutParams.WRAP_CONTENT,
++        RelativeLayout.LayoutParams.WRAP_CONTENT
++      );
+       params.addRule(RelativeLayout.CENTER_IN_PARENT);
+       this.mapLoadingLayout.addView(this.getMapLoadingProgressBar(), params);
+ 
+@@ -1143,9 +1202,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   private ImageView getCacheImageView() {
+     if (this.cacheImageView == null) {
+       this.cacheImageView = new ImageView(getContext());
+-      this.addView(this.cacheImageView,
+-          new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+-              ViewGroup.LayoutParams.MATCH_PARENT));
++      this.addView(
++          this.cacheImageView,
++          new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
++        );
+       this.cacheImageView.setVisibility(View.INVISIBLE);
+     }
+     return this.cacheImageView;
+@@ -1180,13 +1240,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       cacheImageView.setVisibility(View.INVISIBLE);
+       mapLoadingLayout.setVisibility(View.VISIBLE);
+       if (this.isMapLoaded) {
+-        this.map.snapshot(new GoogleMap.SnapshotReadyCallback() {
+-          @Override public void onSnapshotReady(Bitmap bitmap) {
+-            cacheImageView.setImageBitmap(bitmap);
+-            cacheImageView.setVisibility(View.VISIBLE);
+-            mapLoadingLayout.setVisibility(View.INVISIBLE);
+-          }
+-        });
++        this.map.snapshot(
++            new GoogleMap.SnapshotReadyCallback() {
++              @Override
++              public void onSnapshotReady(Bitmap bitmap) {
++                cacheImageView.setImageBitmap(bitmap);
++                cacheImageView.setVisibility(View.VISIBLE);
++                mapLoadingLayout.setVisibility(View.INVISIBLE);
++              }
++            }
++          );
+       }
+     } else {
+       this.removeCacheImageView();
+@@ -1213,13 +1276,22 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+   public void setKmlSrc(String kmlSrc) {
+     try {
+-      InputStream kmlStream =  new FileUtil(context).execute(kmlSrc).get();
++      InputStream kmlStream = new FileUtil(context).execute(kmlSrc).get();
+ 
+       if (kmlStream == null) {
+         return;
+       }
+ 
+-      KmlLayer kmlLayer = new KmlLayer(map, kmlStream, context, markerManager, polygonManager, polylineManager, groundOverlayManager, null);
++      KmlLayer kmlLayer = new KmlLayer(
++        map,
++        kmlStream,
++        context,
++        markerManager,
++        polygonManager,
++        polylineManager,
++        groundOverlayManager,
++        null
++      );
+       kmlLayer.addLayerToMap();
+ 
+       WritableMap pointers = new WritableNativeMap();
+@@ -1237,7 +1309,6 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+         return;
+       }
+ 
+-
+       if (container.getContainers().iterator().hasNext()) {
+         container = container.getContainers().iterator().next();
+       }
+@@ -1270,8 +1341,7 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+ 
+         MapMarker marker = new MapMarker(context, options, this.manager.getMarkerManager());
+ 
+-        if (placemark.getInlineStyle() != null
+-            && placemark.getInlineStyle().getIconUrl() != null) {
++        if (placemark.getInlineStyle() != null && placemark.getInlineStyle().getIconUrl() != null) {
+           marker.setImage(placemark.getInlineStyle().getIconUrl());
+         } else if (container.getStyle(placemark.getStyleId()) != null) {
+           KmlStyle style = container.getStyle(placemark.getStyleId());
+@@ -1295,7 +1365,6 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+       pointers.putArray("markers", markers);
+ 
+       manager.pushEvent(context, this, "onKmlReady", pointers);
+-
+     } catch (XmlPullParserException | IOException | InterruptedException | ExecutionException e) {
+       e.printStackTrace();
+     }
+@@ -1382,8 +1451,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     }
+ 
+     for (Map.Entry<Marker, MapMarker> entryMarker : markerMap.entrySet()) {
+-      if (entryMarker.getKey().getPosition().equals(marker.getPosition())
+-          && entryMarker.getKey().getTitle().equals(marker.getTitle())) {
++      if (
++        entryMarker.getKey().getPosition().equals(marker.getPosition()) &&
++        entryMarker.getKey().getTitle().equals(marker.getTitle())
++      ) {
+         airMarker = entryMarker.getValue();
+         break;
+       }
+@@ -1401,8 +1472,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+   private final Runnable measureAndLayout = new Runnable() {
+     @Override
+     public void run() {
+-      measure(MeasureSpec.makeMeasureSpec(getWidth(), MeasureSpec.EXACTLY),
+-              MeasureSpec.makeMeasureSpec(getHeight(), MeasureSpec.EXACTLY));
++      measure(
++        MeasureSpec.makeMeasureSpec(getWidth(), MeasureSpec.EXACTLY),
++        MeasureSpec.makeMeasureSpec(getHeight(), MeasureSpec.EXACTLY)
++      );
+       layout(getLeft(), getTop(), getRight(), getBottom());
+     }
+   };
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java
-index 3bf751d..ff6b49f 100644
+index 30ca00f..411f16b 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java
 @@ -4,7 +4,6 @@ import com.facebook.react.ReactPackage;
@@ -12159,14 +13224,14 @@ index 3bf751d..ff6b49f 100644
  import java.util.ArrayList;
  import java.util.List;
  
-@@ -39,6 +38,7 @@ public class MapsPackage implements ReactPackage {
+@@ -36,6 +35,7 @@ public class MapsPackage implements ReactPackage {
+     viewManagers.add(new MapCircleManager(reactContext));
+     viewManagers.add(new MapLiteManager(reactContext));
+     viewManagers.add(new MapUrlTileManager(reactContext));
++    viewManagers.add(new MapPMTileManager(reactContext));
+     viewManagers.add(new MapWMSTileManager(reactContext));
      viewManagers.add(new MapLocalTileManager(reactContext));
      viewManagers.add(new MapOverlayManager(reactContext));
-     viewManagers.add(new MapHeatmapManager());
-+    viewManagers.add(new MapPMTileManager(reactContext));
- 
-     return viewManagers;
-   }
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/PMTiles/BufferPosition.class b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/PMTiles/BufferPosition.class
 new file mode 100644
 index 0000000..e69de29
@@ -17910,6 +18975,1347 @@ index 0000000..69be0be
 diff --git a/node_modules/react-native-maps/ios/.DS_Store b/node_modules/react-native-maps/ios/.DS_Store
 new file mode 100644
 index 0000000..e69de29
+diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMap.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMap.m
+index 555f03c..11aec61 100644
+--- a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMap.m
++++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMap.m
+@@ -8,57 +8,62 @@
+ #ifdef HAVE_GOOGLE_MAPS
+ 
+ #import "AIRGoogleMap.h"
++#import "AIRGoogleMapCircle.h"
++#import "AIRGoogleMapHeatmap.h"
+ #import "AIRGoogleMapMarker.h"
+ #import "AIRGoogleMapMarkerManager.h"
++#import "AIRGoogleMapOverlay.h"
++#import "AIRGoogleMapPMTile.h"
+ #import "AIRGoogleMapPolygon.h"
+ #import "AIRGoogleMapPolyline.h"
+-#import "AIRGoogleMapCircle.h"
+-#import "AIRGoogleMapHeatmap.h"
+ #import "AIRGoogleMapUrlTile.h"
+ #import "AIRGoogleMapWMSTile.h"
+-#import "AIRGoogleMapOverlay.h"
++#import "RCTConvert+AirMap.h"
+ #import <GoogleMaps/GoogleMaps.h>
+ #import <MapKit/MapKit.h>
+-#import <React/UIView+React.h>
+ #import <React/RCTBridge.h>
+-#import "RCTConvert+AirMap.h"
++#import <React/UIView+React.h>
+ #import <objc/runtime.h>
+ 
+ #ifdef HAVE_GOOGLE_MAPS_UTILS
++#import "GMUGeometryRenderer.h"
+ #import "GMUKMLParser.h"
+ #import "GMUPlacemark.h"
+ #import "GMUPoint.h"
+-#import "GMUGeometryRenderer.h"
+-#define REQUIRES_GOOGLE_MAPS_UTILS(feature) do {} while (0)
++#define REQUIRES_GOOGLE_MAPS_UTILS(feature)                                    \
++  do {                                                                         \
++  } while (0)
+ #else
+ #define GMUKMLParser void
+ #define GMUPlacemark void
+-#define REQUIRES_GOOGLE_MAPS_UTILS(feature) do { \
+- [NSException raise:@"ReactNativeMapsDependencyMissing" \
+-             format:@"Use of " feature "requires Google-Maps-iOS-Utils, you  must install via CocoaPods to use this feature"]; \
+-} while (0)
++#define REQUIRES_GOOGLE_MAPS_UTILS(feature)                                    \
++  do {                                                                         \
++    [NSException raise:@"ReactNativeMapsDependencyMissing"                     \
++                format:@"Use of " feature                                      \
++                        "requires Google-Maps-iOS-Utils, you  must install "   \
++                        "via CocoaPods to use this feature"];                  \
++  } while (0)
+ #endif
+ 
+-
+ id regionAsJSON(MKCoordinateRegion region) {
+   return @{
+-           @"latitude": [NSNumber numberWithDouble:region.center.latitude],
+-           @"longitude": [NSNumber numberWithDouble:region.center.longitude],
+-           @"latitudeDelta": [NSNumber numberWithDouble:region.span.latitudeDelta],
+-           @"longitudeDelta": [NSNumber numberWithDouble:region.span.longitudeDelta],
+-           };
++    @"latitude" : [NSNumber numberWithDouble:region.center.latitude],
++    @"longitude" : [NSNumber numberWithDouble:region.center.longitude],
++    @"latitudeDelta" : [NSNumber numberWithDouble:region.span.latitudeDelta],
++    @"longitudeDelta" : [NSNumber numberWithDouble:region.span.longitudeDelta],
++  };
+ }
+ 
+ @interface AIRGoogleMap () <GMSIndoorDisplayDelegate>
+ 
+ - (id)eventFromCoordinate:(CLLocationCoordinate2D)coordinate;
+ 
+-@property (nonatomic, strong) NSMutableDictionary<NSNumber *, NSDictionary*> *origGestureRecognizersMeta;
++@property(nonatomic, strong)
++    NSMutableDictionary<NSNumber *, NSDictionary *> *origGestureRecognizersMeta;
+ 
+ @end
+ 
+-@implementation AIRGoogleMap
+-{
++@implementation AIRGoogleMap {
+   NSMutableArray<UIView *> *_reactSubviews;
+   MKCoordinateRegion _initialRegion;
+   MKCoordinateRegion _region;
+@@ -70,8 +75,7 @@ id regionAsJSON(MKCoordinateRegion region) {
+   BOOL _zoomTapEnabled;
+ }
+ 
+-- (instancetype)init
+-{
++- (instancetype)init {
+   if ((self = [super init])) {
+     _reactSubviews = [NSMutableArray new];
+     _markers = [NSMutableArray array];
+@@ -83,8 +87,10 @@ id regionAsJSON(MKCoordinateRegion region) {
+     _overlays = [NSMutableArray array];
+     _initialCamera = nil;
+     _cameraProp = nil;
+-    _initialRegion = MKCoordinateRegionMake(CLLocationCoordinate2DMake(0.0, 0.0), MKCoordinateSpanMake(0.0, 0.0));
+-    _region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(0.0, 0.0), MKCoordinateSpanMake(0.0, 0.0));
++    _initialRegion = MKCoordinateRegionMake(
++        CLLocationCoordinate2DMake(0.0, 0.0), MKCoordinateSpanMake(0.0, 0.0));
++    _region = MKCoordinateRegionMake(CLLocationCoordinate2DMake(0.0, 0.0),
++                                     MKCoordinateSpanMake(0.0, 0.0));
+     _initialRegionSet = false;
+     _initialCameraSet = false;
+     _didLayoutSubviews = false;
+@@ -106,9 +112,7 @@ id regionAsJSON(MKCoordinateRegion region) {
+ }
+ 
+ - (void)dealloc {
+-  [self removeObserver:self
+-            forKeyPath:@"myLocation"
+-               context:NULL];
++  [self removeObserver:self forKeyPath:@"myLocation" context:NULL];
+ }
+ 
+ - (id)eventFromCoordinate:(CLLocationCoordinate2D)coordinate {
+@@ -116,52 +120,58 @@ id regionAsJSON(MKCoordinateRegion region) {
+   CGPoint touchPoint = [self.projection pointForCoordinate:coordinate];
+ 
+   return @{
+-           @"coordinate": @{
+-               @"latitude": @(coordinate.latitude),
+-               @"longitude": @(coordinate.longitude),
+-               },
+-           @"position": @{
+-               @"x": @(touchPoint.x),
+-               @"y": @(touchPoint.y),
+-               },
+-           };
++    @"coordinate" : @{
++      @"latitude" : @(coordinate.latitude),
++      @"longitude" : @(coordinate.longitude),
++    },
++    @"position" : @{
++      @"x" : @(touchPoint.x),
++      @"y" : @(touchPoint.y),
++    },
++  };
+ }
+ 
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
+-- (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex {
+-  // Our desired API is to pass up markers/overlays as children to the mapview component.
+-  // This is where we intercept them and do the appropriate underlying mapview action.
++- (void)insertReactSubview:(id<RCTComponent>)subview
++                   atIndex:(NSInteger)atIndex {
++  // Our desired API is to pass up markers/overlays as children to the mapview
++  // component. This is where we intercept them and do the appropriate
++  // underlying mapview action.
+   if ([subview isKindOfClass:[AIRGoogleMapMarker class]]) {
+-    AIRGoogleMapMarker *marker = (AIRGoogleMapMarker*)subview;
++    AIRGoogleMapMarker *marker = (AIRGoogleMapMarker *)subview;
+     marker.realMarker.map = self;
+     [self.markers addObject:marker];
+   } else if ([subview isKindOfClass:[AIRGoogleMapPolygon class]]) {
+-    AIRGoogleMapPolygon *polygon = (AIRGoogleMapPolygon*)subview;
++    AIRGoogleMapPolygon *polygon = (AIRGoogleMapPolygon *)subview;
+     polygon.polygon.map = self;
+     [self.polygons addObject:polygon];
+   } else if ([subview isKindOfClass:[AIRGoogleMapPolyline class]]) {
+-    AIRGoogleMapPolyline *polyline = (AIRGoogleMapPolyline*)subview;
++    AIRGoogleMapPolyline *polyline = (AIRGoogleMapPolyline *)subview;
+     polyline.polyline.map = self;
+     [self.polylines addObject:polyline];
+   } else if ([subview isKindOfClass:[AIRGoogleMapCircle class]]) {
+-    AIRGoogleMapCircle *circle = (AIRGoogleMapCircle*)subview;
++    AIRGoogleMapCircle *circle = (AIRGoogleMapCircle *)subview;
+     circle.circle.map = self;
+     [self.circles addObject:circle];
+   } else if ([subview isKindOfClass:[AIRGoogleMapUrlTile class]]) {
+-    AIRGoogleMapUrlTile *tile = (AIRGoogleMapUrlTile*)subview;
++    AIRGoogleMapUrlTile *tile = (AIRGoogleMapUrlTile *)subview;
++    tile.tileLayer.map = self;
++    [self.tiles addObject:tile];
++  } else if ([subview isKindOfClass:[AIRGoogleMapPMTile class]]) {
++    AIRGoogleMapPMTile *tile = (AIRGoogleMapPMTile *)subview;
+     tile.tileLayer.map = self;
+     [self.tiles addObject:tile];
+   } else if ([subview isKindOfClass:[AIRGoogleMapWMSTile class]]) {
+-    AIRGoogleMapWMSTile *tile = (AIRGoogleMapWMSTile*)subview;
++    AIRGoogleMapWMSTile *tile = (AIRGoogleMapWMSTile *)subview;
+     tile.tileLayer.map = self;
+     [self.tiles addObject:tile];
+   } else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]) {
+-    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
++    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay *)subview;
+     overlay.overlay.map = self;
+     [self.overlays addObject:overlay];
+-  } else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
+-    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
++  } else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]) {
++    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap *)subview;
+     heatmap.heatmap.map = self;
+     [self.heatmaps addObject:heatmap];
+   } else {
+@@ -170,46 +180,49 @@ id regionAsJSON(MKCoordinateRegion region) {
+       [self insertReactSubview:(UIView *)childSubviews[i] atIndex:atIndex];
+     }
+   }
+-  [_reactSubviews insertObject:(UIView *)subview atIndex:(NSUInteger) atIndex];
++  [_reactSubviews insertObject:(UIView *)subview atIndex:(NSUInteger)atIndex];
+ }
+ #pragma clang diagnostic pop
+ 
+-
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wobjc-missing-super-calls"
+ - (void)removeReactSubview:(id<RCTComponent>)subview {
+-  // similarly, when the children are being removed we have to do the appropriate
+-  // underlying mapview action here.
++  // similarly, when the children are being removed we have to do the
++  // appropriate underlying mapview action here.
+   if ([subview isKindOfClass:[AIRGoogleMapMarker class]]) {
+-    AIRGoogleMapMarker *marker = (AIRGoogleMapMarker*)subview;
++    AIRGoogleMapMarker *marker = (AIRGoogleMapMarker *)subview;
+     marker.realMarker.map = nil;
+     [self.markers removeObject:marker];
+   } else if ([subview isKindOfClass:[AIRGoogleMapPolygon class]]) {
+-    AIRGoogleMapPolygon *polygon = (AIRGoogleMapPolygon*)subview;
++    AIRGoogleMapPolygon *polygon = (AIRGoogleMapPolygon *)subview;
+     polygon.polygon.map = nil;
+     [self.polygons removeObject:polygon];
+   } else if ([subview isKindOfClass:[AIRGoogleMapPolyline class]]) {
+-    AIRGoogleMapPolyline *polyline = (AIRGoogleMapPolyline*)subview;
++    AIRGoogleMapPolyline *polyline = (AIRGoogleMapPolyline *)subview;
+     polyline.polyline.map = nil;
+     [self.polylines removeObject:polyline];
+   } else if ([subview isKindOfClass:[AIRGoogleMapCircle class]]) {
+-    AIRGoogleMapCircle *circle = (AIRGoogleMapCircle*)subview;
++    AIRGoogleMapCircle *circle = (AIRGoogleMapCircle *)subview;
+     circle.circle.map = nil;
+     [self.circles removeObject:circle];
+   } else if ([subview isKindOfClass:[AIRGoogleMapUrlTile class]]) {
+-    AIRGoogleMapUrlTile *tile = (AIRGoogleMapUrlTile*)subview;
++    AIRGoogleMapUrlTile *tile = (AIRGoogleMapUrlTile *)subview;
++    tile.tileLayer.map = nil;
++    [self.tiles removeObject:tile];
++  } else if ([subview isKindOfClass:[AIRGoogleMapPMTile class]]) {
++    AIRGoogleMapPMTile *tile = (AIRGoogleMapPMTile *)subview;
+     tile.tileLayer.map = nil;
+     [self.tiles removeObject:tile];
+   } else if ([subview isKindOfClass:[AIRGoogleMapWMSTile class]]) {
+-    AIRGoogleMapWMSTile *tile = (AIRGoogleMapWMSTile*)subview;
++    AIRGoogleMapWMSTile *tile = (AIRGoogleMapWMSTile *)subview;
+     tile.tileLayer.map = nil;
+     [self.tiles removeObject:tile];
+   } else if ([subview isKindOfClass:[AIRGoogleMapOverlay class]]) {
+-    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay*)subview;
++    AIRGoogleMapOverlay *overlay = (AIRGoogleMapOverlay *)subview;
+     overlay.overlay.map = nil;
+     [self.overlays removeObject:overlay];
+-  } else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]){
+-    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap*)subview;
++  } else if ([subview isKindOfClass:[AIRGoogleMapHeatmap class]]) {
++    AIRGoogleMapHeatmap *heatmap = (AIRGoogleMapHeatmap *)subview;
+     heatmap.heatmap.map = nil;
+     [self.heatmaps removeObject:heatmap];
+   } else {
+@@ -229,84 +242,89 @@ id regionAsJSON(MKCoordinateRegion region) {
+ }
+ #pragma clang diagnostic pop
+ 
+-- (NSArray *)getMapBoundaries
+-{
+-    GMSVisibleRegion visibleRegion = self.projection.visibleRegion;
+-    GMSCoordinateBounds *bounds = [[GMSCoordinateBounds alloc] initWithRegion:visibleRegion];
++- (NSArray *)getMapBoundaries {
++  GMSVisibleRegion visibleRegion = self.projection.visibleRegion;
++  GMSCoordinateBounds *bounds =
++      [[GMSCoordinateBounds alloc] initWithRegion:visibleRegion];
+ 
+-    CLLocationCoordinate2D northEast = bounds.northEast;
+-    CLLocationCoordinate2D southWest = bounds.southWest;
++  CLLocationCoordinate2D northEast = bounds.northEast;
++  CLLocationCoordinate2D southWest = bounds.southWest;
+ 
+-    return @[
+-        @[
+-            [NSNumber numberWithDouble:northEast.longitude],
+-            [NSNumber numberWithDouble:northEast.latitude]
+-        ],
+-        @[
+-            [NSNumber numberWithDouble:southWest.longitude],
+-            [NSNumber numberWithDouble:southWest.latitude]
+-        ]
+-    ];
++  return @[
++    @[
++      [NSNumber numberWithDouble:northEast.longitude],
++      [NSNumber numberWithDouble:northEast.latitude]
++    ],
++    @[
++      [NSNumber numberWithDouble:southWest.longitude],
++      [NSNumber numberWithDouble:southWest.latitude]
++    ]
++  ];
+ }
+ 
+ - (void)layoutSubviews {
+   [super layoutSubviews];
+-  if(_didLayoutSubviews) return;
++  if (_didLayoutSubviews)
++    return;
+   _didLayoutSubviews = true;
+ 
+   if (_initialCamera != nil) {
+     self.camera = _initialCamera;
+     _initialCameraSet = true;
+-  }
+-  else if (_initialRegion.span.latitudeDelta != 0.0 &&
+-      _initialRegion.span.longitudeDelta != 0.0) {
+-    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self andMKCoordinateRegion:_initialRegion];
++  } else if (_initialRegion.span.latitudeDelta != 0.0 &&
++             _initialRegion.span.longitudeDelta != 0.0) {
++    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                       andMKCoordinateRegion:_initialRegion];
+     _initialRegionSet = true;
+   } else if (_region.span.latitudeDelta != 0.0 &&
+-      _region.span.longitudeDelta != 0.0) {
+-    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self andMKCoordinateRegion:_region];
++             _region.span.longitudeDelta != 0.0) {
++    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                       andMKCoordinateRegion:_region];
+   }
+ }
+ 
+ - (void)setInitialRegion:(MKCoordinateRegion)initialRegion {
+   _initialRegion = initialRegion;
+-  if(!_initialRegionSet && _didLayoutSubviews){
+-    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self andMKCoordinateRegion:initialRegion];
++  if (!_initialRegionSet && _didLayoutSubviews) {
++    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                       andMKCoordinateRegion:initialRegion];
+     _initialRegionSet = true;
+   }
+ }
+ 
+-- (void)setInitialCamera:(GMSCameraPosition*)initialCamera {
+-    _initialCamera = initialCamera;
+-    if(!_initialCameraSet && _didLayoutSubviews){
+-      self.camera = initialCamera;
+-      _initialCameraSet = true;
+-    }
++- (void)setInitialCamera:(GMSCameraPosition *)initialCamera {
++  _initialCamera = initialCamera;
++  if (!_initialCameraSet && _didLayoutSubviews) {
++    self.camera = initialCamera;
++    _initialCameraSet = true;
++  }
+ }
+ 
+ - (void)setRegion:(MKCoordinateRegion)region {
+-  // TODO: The JS component is repeatedly setting region unnecessarily. We might want to deal with that in here.
++  // TODO: The JS component is repeatedly setting region unnecessarily. We might
++  // want to deal with that in here.
+   _region = region;
+-  if(_didLayoutSubviews) {
+-    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self  andMKCoordinateRegion:region];
++  if (_didLayoutSubviews) {
++    self.camera = [AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                       andMKCoordinateRegion:region];
+   }
+ }
+ 
+-- (void)setCameraProp:(GMSCameraPosition*)camera {
+-    _initialCamera = camera;
+-    self.camera = camera;
++- (void)setCameraProp:(GMSCameraPosition *)camera {
++  _initialCamera = camera;
++  self.camera = camera;
+ }
+ 
+ - (void)setOnMapReady:(RCTBubblingEventBlock)onMapReady {
+-    _onMapReady = onMapReady;
+-    if(!_didCallOnMapReady && _didPrepareMap) {
+-      self.onMapReady(@{});
+-      _didCallOnMapReady = true;
+-    }
++  _onMapReady = onMapReady;
++  if (!_didCallOnMapReady && _didPrepareMap) {
++    self.onMapReady(@{});
++    _didCallOnMapReady = true;
++  }
+ }
+ 
+ - (void)didPrepareMap {
+-  UIView* mapView = [self valueForKey:@"mapView"]; //GMSVectorMapView
++  UIView *mapView = [self valueForKey:@"mapView"]; // GMSVectorMapView
+   [self overrideGestureRecognizersForView:mapView];
+ 
+   if (!_didCallOnMapReady && self.onMapReady) {
+@@ -317,22 +335,26 @@ id regionAsJSON(MKCoordinateRegion region) {
+ }
+ 
+ - (void)mapViewDidFinishTileRendering {
+-  if (self.onMapLoaded) self.onMapLoaded(@{});
++  if (self.onMapLoaded)
++    self.onMapLoaded(@{});
+ }
+ 
+ - (BOOL)didTapMarker:(GMSMarker *)marker {
+   AIRGMSMarker *airMarker = (AIRGMSMarker *)marker;
+ 
+-  id event = @{@"action": @"marker-press",
+-               @"id": airMarker.identifier ?: @"unknown",
+-               @"coordinate": @{
+-                   @"latitude": @(airMarker.position.latitude),
+-                   @"longitude": @(airMarker.position.longitude)
+-                   }
+-               };
++  id event = @{
++    @"action" : @"marker-press",
++    @"id" : airMarker.identifier ?: @"unknown",
++    @"coordinate" : @{
++      @"latitude" : @(airMarker.position.latitude),
++      @"longitude" : @(airMarker.position.longitude)
++    }
++  };
+ 
+-  if (airMarker.onPress) airMarker.onPress(event);
+-  if (self.onMarkerPress) self.onMarkerPress(event);
++  if (airMarker.onPress)
++    airMarker.onPress(event);
++  if (self.onMarkerPress)
++    self.onMarkerPress(event);
+ 
+   // TODO: not sure why this is necessary
+   [self setSelectedMarker:marker];
+@@ -342,62 +364,80 @@ id regionAsJSON(MKCoordinateRegion region) {
+ - (void)didTapPolyline:(GMSOverlay *)polyline {
+   AIRGMSPolyline *airPolyline = (AIRGMSPolyline *)polyline;
+ 
+-  id event = @{@"action": @"polyline-press",
+-               @"id": airPolyline.identifier ?: @"unknown",
+-               };
++  id event = @{
++    @"action" : @"polyline-press",
++    @"id" : airPolyline.identifier ?: @"unknown",
++  };
+ 
+-   if (airPolyline.onPress) airPolyline.onPress(event);
++  if (airPolyline.onPress)
++    airPolyline.onPress(event);
+ }
+ 
+ - (void)didTapPolygon:(GMSOverlay *)polygon {
+-    AIRGMSPolygon *airPolygon = (AIRGMSPolygon *)polygon;
++  AIRGMSPolygon *airPolygon = (AIRGMSPolygon *)polygon;
+ 
+-    id event = @{@"action": @"polygon-press",
+-                 @"id": airPolygon.identifier ?: @"unknown",
+-                 };
++  id event = @{
++    @"action" : @"polygon-press",
++    @"id" : airPolygon.identifier ?: @"unknown",
++  };
+ 
+-    if (airPolygon.onPress) airPolygon.onPress(event);
++  if (airPolygon.onPress)
++    airPolygon.onPress(event);
+ }
+ 
+ - (void)didTapAtCoordinate:(CLLocationCoordinate2D)coordinate {
+-  if (!self.onPress) return;
++  if (!self.onPress)
++    return;
+   self.onPress([self eventFromCoordinate:coordinate]);
+ }
+ 
+ - (void)didLongPressAtCoordinate:(CLLocationCoordinate2D)coordinate {
+-  if (!self.onLongPress) return;
++  if (!self.onLongPress)
++    return;
+   self.onLongPress([self eventFromCoordinate:coordinate]);
+ }
+ 
+-- (void)didChangeCameraPosition:(GMSCameraPosition *)position isGesture:(BOOL)isGesture{
+-  id event = @{@"continuous": @YES,
+-               @"region": regionAsJSON([AIRGoogleMap makeGMSCameraPositionFromMap:self andGMSCameraPosition:position]),
+-               @"isGesture": [NSNumber numberWithBool:isGesture],
+-               };
++- (void)didChangeCameraPosition:(GMSCameraPosition *)position
++                      isGesture:(BOOL)isGesture {
++  id event = @{
++    @"continuous" : @YES,
++    @"region" :
++        regionAsJSON([AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                           andGMSCameraPosition:position]),
++    @"isGesture" : [NSNumber numberWithBool:isGesture],
++  };
+ 
+-  if (self.onChange) self.onChange(event);
++  if (self.onChange)
++    self.onChange(event);
+ }
+ 
+ - (void)didTapPOIWithPlaceID:(NSString *)placeID
+                         name:(NSString *)name
+                     location:(CLLocationCoordinate2D)location {
+-  id event = @{@"placeId": placeID,
+-               @"name": name,
+-               @"coordinate": @{
+-                   @"latitude": @(location.latitude),
+-                   @"longitude": @(location.longitude)
+-                   }
+-               };
++  id event = @{
++    @"placeId" : placeID,
++    @"name" : name,
++    @"coordinate" : @{
++      @"latitude" : @(location.latitude),
++      @"longitude" : @(location.longitude)
++    }
++  };
+ 
+-  if (self.onPoiClick) self.onPoiClick(event);
++  if (self.onPoiClick)
++    self.onPoiClick(event);
+ }
+ 
+-- (void)idleAtCameraPosition:(GMSCameraPosition *)position  isGesture:(BOOL)isGesture{
+-  id event = @{@"continuous": @NO,
+-               @"region": regionAsJSON([AIRGoogleMap makeGMSCameraPositionFromMap:self andGMSCameraPosition:position]),
+-               @"isGesture": [NSNumber numberWithBool:isGesture],
+-               };
+-  if (self.onChange) self.onChange(event);  // complete
++- (void)idleAtCameraPosition:(GMSCameraPosition *)position
++                   isGesture:(BOOL)isGesture {
++  id event = @{
++    @"continuous" : @NO,
++    @"region" :
++        regionAsJSON([AIRGoogleMap makeGMSCameraPositionFromMap:self
++                                           andGMSCameraPosition:position]),
++    @"isGesture" : [NSNumber numberWithBool:isGesture],
++  };
++  if (self.onChange)
++    self.onChange(event); // complete
+ }
+ 
+ - (void)setMapPadding:(UIEdgeInsets)mapPadding {
+@@ -408,35 +448,29 @@ id regionAsJSON(MKCoordinateRegion region) {
+   return self.padding;
+ }
+ 
+-- (void)setPaddingAdjustmentBehaviorString:(NSString *)str
+-{
+-  if ([str isEqualToString:@"never"])
+-  {
++- (void)setPaddingAdjustmentBehaviorString:(NSString *)str {
++  if ([str isEqualToString:@"never"]) {
+     self.paddingAdjustmentBehavior = kGMSMapViewPaddingAdjustmentBehaviorNever;
+-  }
+-  else if ([str isEqualToString:@"automatic"])
+-  {
+-    self.paddingAdjustmentBehavior = kGMSMapViewPaddingAdjustmentBehaviorAutomatic;
+-  }
+-  else //if ([str isEqualToString:@"always"]) <-- default
++  } else if ([str isEqualToString:@"automatic"]) {
++    self.paddingAdjustmentBehavior =
++        kGMSMapViewPaddingAdjustmentBehaviorAutomatic;
++  } else // if ([str isEqualToString:@"always"]) <-- default
+   {
+     self.paddingAdjustmentBehavior = kGMSMapViewPaddingAdjustmentBehaviorAlways;
+   }
+ }
+ 
+-- (NSString *)paddingAdjustmentBehaviorString
+-{
+-  switch (self.paddingAdjustmentBehavior)
+-  {
+-    case kGMSMapViewPaddingAdjustmentBehaviorNever:
+-      return @"never";
+-    case kGMSMapViewPaddingAdjustmentBehaviorAutomatic:
+-      return @"automatic";
+-    case kGMSMapViewPaddingAdjustmentBehaviorAlways:
+-      return @"always";
+-
+-    default:
+-      return @"unknown";
++- (NSString *)paddingAdjustmentBehaviorString {
++  switch (self.paddingAdjustmentBehavior) {
++  case kGMSMapViewPaddingAdjustmentBehaviorNever:
++    return @"never";
++  case kGMSMapViewPaddingAdjustmentBehaviorAutomatic:
++    return @"automatic";
++  case kGMSMapViewPaddingAdjustmentBehaviorAlways:
++    return @"always";
++
++  default:
++    return @"unknown";
+   }
+ }
+ 
+@@ -456,8 +490,10 @@ id regionAsJSON(MKCoordinateRegion region) {
+   return self.settings.zoomGestures;
+ }
+ 
+-- (void)setScrollDuringRotateOrZoomEnabled:(BOOL)enableScrollGesturesDuringRotateOrZoom {
+-  self.settings.allowScrollGesturesDuringRotateOrZoom = enableScrollGesturesDuringRotateOrZoom;
++- (void)setScrollDuringRotateOrZoomEnabled:
++    (BOOL)enableScrollGesturesDuringRotateOrZoom {
++  self.settings.allowScrollGesturesDuringRotateOrZoom =
++      enableScrollGesturesDuringRotateOrZoom;
+ }
+ 
+ - (BOOL)scrollDuringRotateOrZoomEnabled {
+@@ -465,11 +501,11 @@ id regionAsJSON(MKCoordinateRegion region) {
+ }
+ 
+ - (void)setZoomTapEnabled:(BOOL)zoomTapEnabled {
+-    _zoomTapEnabled = zoomTapEnabled;
++  _zoomTapEnabled = zoomTapEnabled;
+ }
+ 
+ - (BOOL)zoomTapEnabled {
+-    return _zoomTapEnabled;
++  return _zoomTapEnabled;
+ }
+ 
+ - (void)setRotateEnabled:(BOOL)rotateEnabled {
+@@ -511,7 +547,8 @@ id regionAsJSON(MKCoordinateRegion region) {
+ - (void)setCustomMapStyleString:(NSString *)customMapStyleString {
+   NSError *error;
+ 
+-  GMSMapStyle *style = [GMSMapStyle styleWithJSONString:customMapStyleString error:&error];
++  GMSMapStyle *style = [GMSMapStyle styleWithJSONString:customMapStyleString
++                                                  error:&error];
+ 
+   if (!style) {
+     NSLog(@"The style definition could not be loaded: %@", error);
+@@ -541,11 +578,11 @@ id regionAsJSON(MKCoordinateRegion region) {
+ }
+ 
+ - (void)setMinZoomLevel:(CGFloat)minZoomLevel {
+-  [self setMinZoom:minZoomLevel maxZoom:self.maxZoom ];
++  [self setMinZoom:minZoomLevel maxZoom:self.maxZoom];
+ }
+ 
+ - (void)setMaxZoomLevel:(CGFloat)maxZoomLevel {
+-  [self setMinZoom:self.minZoom maxZoom:maxZoomLevel ];
++  [self setMinZoom:self.minZoom maxZoom:maxZoomLevel];
+ }
+ 
+ - (void)setShowsIndoors:(BOOL)showsIndoors {
+@@ -564,273 +601,309 @@ id regionAsJSON(MKCoordinateRegion region) {
+   return self.settings.indoorPicker;
+ }
+ 
+-+ (MKCoordinateRegion) makeGMSCameraPositionFromMap:(GMSMapView *)map andGMSCameraPosition:(GMSCameraPosition *)position {
+++ (MKCoordinateRegion)makeGMSCameraPositionFromMap:(GMSMapView *)map
++                              andGMSCameraPosition:
++                                  (GMSCameraPosition *)position {
+   // solution from here: http://stackoverflow.com/a/16587735/1102215
+   GMSVisibleRegion visibleRegion = map.projection.visibleRegion;
+-  GMSCoordinateBounds *bounds = [[GMSCoordinateBounds alloc] initWithRegion: visibleRegion];
++  GMSCoordinateBounds *bounds =
++      [[GMSCoordinateBounds alloc] initWithRegion:visibleRegion];
+   CLLocationCoordinate2D center;
+   CLLocationDegrees longitudeDelta;
+-  CLLocationDegrees latitudeDelta = bounds.northEast.latitude - bounds.southWest.latitude;
+-
+-  if(bounds.northEast.longitude >= bounds.southWest.longitude) {
+-    //Standard case
+-    center = CLLocationCoordinate2DMake((bounds.southWest.latitude + bounds.northEast.latitude) / 2,
+-                                        (bounds.southWest.longitude + bounds.northEast.longitude) / 2);
++  CLLocationDegrees latitudeDelta =
++      bounds.northEast.latitude - bounds.southWest.latitude;
++
++  if (bounds.northEast.longitude >= bounds.southWest.longitude) {
++    // Standard case
++    center = CLLocationCoordinate2DMake(
++        (bounds.southWest.latitude + bounds.northEast.latitude) / 2,
++        (bounds.southWest.longitude + bounds.northEast.longitude) / 2);
+     longitudeDelta = bounds.northEast.longitude - bounds.southWest.longitude;
+   } else {
+-    //Region spans the international dateline
+-    center = CLLocationCoordinate2DMake((bounds.southWest.latitude + bounds.northEast.latitude) / 2,
+-                                        (bounds.southWest.longitude + bounds.northEast.longitude + 360) / 2);
+-    longitudeDelta = bounds.northEast.longitude + 360 - bounds.southWest.longitude;
++    // Region spans the international dateline
++    center = CLLocationCoordinate2DMake(
++        (bounds.southWest.latitude + bounds.northEast.latitude) / 2,
++        (bounds.southWest.longitude + bounds.northEast.longitude + 360) / 2);
++    longitudeDelta =
++        bounds.northEast.longitude + 360 - bounds.southWest.longitude;
+   }
+   MKCoordinateSpan span = MKCoordinateSpanMake(latitudeDelta, longitudeDelta);
+   return MKCoordinateRegionMake(center, span);
+ }
+ 
+-+ (GMSCameraPosition*) makeGMSCameraPositionFromMap:(GMSMapView *)map andMKCoordinateRegion:(MKCoordinateRegion)region {
+++ (GMSCameraPosition *)makeGMSCameraPositionFromMap:(GMSMapView *)map
++                              andMKCoordinateRegion:(MKCoordinateRegion)region {
+   float latitudeDelta = region.span.latitudeDelta * 0.5;
+   float longitudeDelta = region.span.longitudeDelta * 0.5;
+ 
+-  CLLocationCoordinate2D a = CLLocationCoordinate2DMake(region.center.latitude + latitudeDelta,
+-                                                        region.center.longitude + longitudeDelta);
+-  CLLocationCoordinate2D b = CLLocationCoordinate2DMake(region.center.latitude - latitudeDelta,
+-                                                        region.center.longitude - longitudeDelta);
+-  GMSCoordinateBounds *bounds = [[GMSCoordinateBounds alloc] initWithCoordinate:a coordinate:b];
++  CLLocationCoordinate2D a =
++      CLLocationCoordinate2DMake(region.center.latitude + latitudeDelta,
++                                 region.center.longitude + longitudeDelta);
++  CLLocationCoordinate2D b =
++      CLLocationCoordinate2DMake(region.center.latitude - latitudeDelta,
++                                 region.center.longitude - longitudeDelta);
++  GMSCoordinateBounds *bounds =
++      [[GMSCoordinateBounds alloc] initWithCoordinate:a coordinate:b];
+   return [map cameraForBounds:bounds insets:UIEdgeInsetsZero];
+ }
+ 
+ #pragma mark - Utils
+ 
+-- (CGRect) frameForMarker:(AIRGoogleMapMarker*) mrkView {
+-    CGPoint mrkAnchor = mrkView.realMarker.groundAnchor;
+-    CGPoint mrkPoint = [self.projection pointForCoordinate:mrkView.coordinate];
+-    CGSize mrkSize = mrkView.realMarker.iconView ? mrkView.realMarker.iconView.bounds.size : CGSizeMake(20, 30);
+-    CGRect mrkFrame = CGRectMake(mrkPoint.x, mrkPoint.y, mrkSize.width, mrkSize.height);
+-    mrkFrame.origin.y -= mrkAnchor.y * mrkSize.height;
+-    mrkFrame.origin.x -= mrkAnchor.x * mrkSize.width;
+-    return mrkFrame;
+-}
+-
+-- (NSDictionary*) getMarkersFramesWithOnlyVisible:(BOOL)onlyVisible {
+-    NSMutableDictionary* markersFrames = [NSMutableDictionary new];
+-    for (AIRGoogleMapMarker* mrkView in self.markers) {
+-        CGRect frame = [self frameForMarker:mrkView];
+-        CGPoint point = [self.projection pointForCoordinate:mrkView.coordinate];
+-        NSDictionary* frameDict = @{
+-                                    @"x": @(frame.origin.x),
+-                                    @"y": @(frame.origin.y),
+-                                    @"width": @(frame.size.width),
+-                                    @"height": @(frame.size.height)
+-                                    };
+-        NSDictionary* pointDict = @{
+-                                    @"x": @(point.x),
+-                                    @"y": @(point.y)
+-                                    };
+-        NSString* k = mrkView.identifier;
+-        BOOL isVisible = CGRectIntersectsRect(self.bounds, frame);
+-        if (k != nil && (!onlyVisible || isVisible)) {
+-            [markersFrames setObject:@{ @"frame": frameDict, @"point": pointDict } forKey:k];
+-        }
++- (CGRect)frameForMarker:(AIRGoogleMapMarker *)mrkView {
++  CGPoint mrkAnchor = mrkView.realMarker.groundAnchor;
++  CGPoint mrkPoint = [self.projection pointForCoordinate:mrkView.coordinate];
++  CGSize mrkSize = mrkView.realMarker.iconView
++                       ? mrkView.realMarker.iconView.bounds.size
++                       : CGSizeMake(20, 30);
++  CGRect mrkFrame =
++      CGRectMake(mrkPoint.x, mrkPoint.y, mrkSize.width, mrkSize.height);
++  mrkFrame.origin.y -= mrkAnchor.y * mrkSize.height;
++  mrkFrame.origin.x -= mrkAnchor.x * mrkSize.width;
++  return mrkFrame;
++}
++
++- (NSDictionary *)getMarkersFramesWithOnlyVisible:(BOOL)onlyVisible {
++  NSMutableDictionary *markersFrames = [NSMutableDictionary new];
++  for (AIRGoogleMapMarker *mrkView in self.markers) {
++    CGRect frame = [self frameForMarker:mrkView];
++    CGPoint point = [self.projection pointForCoordinate:mrkView.coordinate];
++    NSDictionary *frameDict = @{
++      @"x" : @(frame.origin.x),
++      @"y" : @(frame.origin.y),
++      @"width" : @(frame.size.width),
++      @"height" : @(frame.size.height)
++    };
++    NSDictionary *pointDict = @{@"x" : @(point.x), @"y" : @(point.y)};
++    NSString *k = mrkView.identifier;
++    BOOL isVisible = CGRectIntersectsRect(self.bounds, frame);
++    if (k != nil && (!onlyVisible || isVisible)) {
++      [markersFrames setObject:@{@"frame" : frameDict, @"point" : pointDict}
++                        forKey:k];
+     }
+-    return markersFrames;
++  }
++  return markersFrames;
+ }
+ 
+-- (AIRGoogleMapMarker*) markerAtPoint:(CGPoint)point {
+-    AIRGoogleMapMarker* mrk = nil;
+-    for (AIRGoogleMapMarker* mrkView in self.markers) {
+-        CGRect frame = [self frameForMarker:mrkView];
+-        if (CGRectContainsPoint(frame, point)) {
+-            mrk = mrkView;
+-            break;
+-        }
++- (AIRGoogleMapMarker *)markerAtPoint:(CGPoint)point {
++  AIRGoogleMapMarker *mrk = nil;
++  for (AIRGoogleMapMarker *mrkView in self.markers) {
++    CGRect frame = [self frameForMarker:mrkView];
++    if (CGRectContainsPoint(frame, point)) {
++      mrk = mrkView;
++      break;
+     }
+-    return mrk;
+-}
+-
+--(SEL)getActionForTarget:(NSObject*)target {
+-    SEL action = nil;
+-    uint32_t ivarCount;
+-    Ivar *ivars = class_copyIvarList([target class], &ivarCount);
+-    if (ivars) {
+-        for (uint32_t i = 0 ; i < ivarCount ; i++) {
+-            Ivar ivar = ivars[i];
+-            const char* type = ivar_getTypeEncoding(ivar);
+-            const char* ivarName = ivar_getName(ivar);
+-            NSString* name = [NSString stringWithCString: ivarName encoding: NSASCIIStringEncoding];
+-            if (type[0] == ':' && [name isEqualToString:@"_action"]) {
+-                SEL sel = ((SEL (*)(id, Ivar))object_getIvar)(target, ivar);
+-                action = sel;
+-                break;
+-            }
+-        }
++  }
++  return mrk;
++}
++
++- (SEL)getActionForTarget:(NSObject *)target {
++  SEL action = nil;
++  uint32_t ivarCount;
++  Ivar *ivars = class_copyIvarList([target class], &ivarCount);
++  if (ivars) {
++    for (uint32_t i = 0; i < ivarCount; i++) {
++      Ivar ivar = ivars[i];
++      const char *type = ivar_getTypeEncoding(ivar);
++      const char *ivarName = ivar_getName(ivar);
++      NSString *name = [NSString stringWithCString:ivarName
++                                          encoding:NSASCIIStringEncoding];
++      if (type[0] == ':' && [name isEqualToString:@"_action"]) {
++        SEL sel = ((SEL(*)(id, Ivar))object_getIvar)(target, ivar);
++        action = sel;
++        break;
++      }
+     }
+-    free(ivars);
+-    return action;
++  }
++  free(ivars);
++  return action;
+ }
+ 
+ #pragma mark - Overrides for Callout behavior
+ 
+--(void)overrideGestureRecognizersForView:(UIView*)view {
+-    NSArray* grs = view.gestureRecognizers;
+-    for (UIGestureRecognizer* gestureRecognizer in grs) {
+-        NSNumber* grHash = [NSNumber numberWithUnsignedInteger:gestureRecognizer.hash];
+-        if([self.origGestureRecognizersMeta objectForKey:grHash] != nil)
+-            continue; //already patched
+-
+-        //get original handlers
+-        NSArray* origTargets = [gestureRecognizer valueForKey:@"targets"];
+-        NSMutableArray* origTargetsActions = [[NSMutableArray alloc] init];
+-        BOOL isZoomTapGesture = NO;
+-        for (NSObject* trg in origTargets) {
+-            NSObject* target = [trg valueForKey:@"target"];
+-            SEL action = [self getActionForTarget:trg];
+-            isZoomTapGesture = [NSStringFromSelector(action) isEqualToString:@"handleZoomTapGesture:"];
+-            [origTargetsActions addObject:@{
+-                                            @"target": [NSValue valueWithNonretainedObject:target],
+-                                            @"action": NSStringFromSelector(action)
+-                                            }];
+-        }
+-        if (isZoomTapGesture && self.zoomTapEnabled == NO) {
+-            [view removeGestureRecognizer:gestureRecognizer];
+-            continue;
+-        }
+-
+-        //replace with extendedMapGestureHandler
+-        for (NSDictionary* origTargetAction in origTargetsActions) {
+-            NSValue* targetValue = [origTargetAction objectForKey:@"target"];
+-            NSObject* target = [targetValue nonretainedObjectValue];
+-            NSString* actionString = [origTargetAction objectForKey:@"action"];
+-            SEL action = NSSelectorFromString(actionString);
+-            [gestureRecognizer removeTarget:target action:action];
+-        }
+-        [gestureRecognizer addTarget:self action:@selector(extendedMapGestureHandler:)];
++- (void)overrideGestureRecognizersForView:(UIView *)view {
++  NSArray *grs = view.gestureRecognizers;
++  for (UIGestureRecognizer *gestureRecognizer in grs) {
++    NSNumber *grHash =
++        [NSNumber numberWithUnsignedInteger:gestureRecognizer.hash];
++    if ([self.origGestureRecognizersMeta objectForKey:grHash] != nil)
++      continue; // already patched
++
++    // get original handlers
++    NSArray *origTargets = [gestureRecognizer valueForKey:@"targets"];
++    NSMutableArray *origTargetsActions = [[NSMutableArray alloc] init];
++    BOOL isZoomTapGesture = NO;
++    for (NSObject *trg in origTargets) {
++      NSObject *target = [trg valueForKey:@"target"];
++      SEL action = [self getActionForTarget:trg];
++      isZoomTapGesture = [NSStringFromSelector(action)
++          isEqualToString:@"handleZoomTapGesture:"];
++      [origTargetsActions addObject:@{
++        @"target" : [NSValue valueWithNonretainedObject:target],
++        @"action" : NSStringFromSelector(action)
++      }];
++    }
++    if (isZoomTapGesture && self.zoomTapEnabled == NO) {
++      [view removeGestureRecognizer:gestureRecognizer];
++      continue;
++    }
+ 
+-        [self.origGestureRecognizersMeta setObject:@{@"targets": origTargetsActions}
+-                                            forKey:grHash];
++    // replace with extendedMapGestureHandler
++    for (NSDictionary *origTargetAction in origTargetsActions) {
++      NSValue *targetValue = [origTargetAction objectForKey:@"target"];
++      NSObject *target = [targetValue nonretainedObjectValue];
++      NSString *actionString = [origTargetAction objectForKey:@"action"];
++      SEL action = NSSelectorFromString(actionString);
++      [gestureRecognizer removeTarget:target action:action];
+     }
+-}
++    [gestureRecognizer addTarget:self
++                          action:@selector(extendedMapGestureHandler:)];
+ 
+-- (id)extendedMapGestureHandler:(UIGestureRecognizer*)gestureRecognizer {
+-    NSNumber* grHash = [NSNumber numberWithUnsignedInteger:gestureRecognizer.hash];
+-    UIWindow* win = [[[UIApplication sharedApplication] windows] firstObject];
+-    NSObject* bubbleProvider = [self valueForKey:@"bubbleProvider"]; //GMSbubbleEntityProvider
+-    CGRect bubbleAbsoluteFrame = [bubbleProvider accessibilityFrame];
+-    CGRect bubbleFrame = [win convertRect:bubbleAbsoluteFrame toView:self];
+-    UIView* bubbleView = [bubbleProvider valueForKey:@"view"];
++    [self.origGestureRecognizersMeta
++        setObject:@{@"targets" : origTargetsActions}
++           forKey:grHash];
++  }
++}
+ 
+-    BOOL performOriginalActions = YES;
+-    BOOL isTap = [gestureRecognizer isKindOfClass:[UITapGestureRecognizer class]] || [gestureRecognizer isMemberOfClass:[UITapGestureRecognizer class]];
+-    if (isTap) {
+-        BOOL isTapInsideBubble = NO;
++- (id)extendedMapGestureHandler:(UIGestureRecognizer *)gestureRecognizer {
++  NSNumber *grHash =
++      [NSNumber numberWithUnsignedInteger:gestureRecognizer.hash];
++  UIWindow *win = [[[UIApplication sharedApplication] windows] firstObject];
++  NSObject *bubbleProvider =
++      [self valueForKey:@"bubbleProvider"]; // GMSbubbleEntityProvider
++  CGRect bubbleAbsoluteFrame = [bubbleProvider accessibilityFrame];
++  CGRect bubbleFrame = [win convertRect:bubbleAbsoluteFrame toView:self];
++  UIView *bubbleView = [bubbleProvider valueForKey:@"view"];
++
++  BOOL performOriginalActions = YES;
++  BOOL isTap =
++      [gestureRecognizer isKindOfClass:[UITapGestureRecognizer class]] ||
++      [gestureRecognizer isMemberOfClass:[UITapGestureRecognizer class]];
++  if (isTap) {
++    BOOL isTapInsideBubble = NO;
+     CGPoint tapPoint = CGPointZero;
+     CGPoint tapPointInBubble = CGPointZero;
+ 
+-    NSArray* touches = [gestureRecognizer valueForKey:@"touches"];
+-    UITouch* oneTouch = [touches firstObject];
+-    NSArray* delayedTouches = [gestureRecognizer valueForKey:@"delayedTouches"];
+-    NSObject* delayedTouch = [delayedTouches firstObject]; //UIGestureDeleayedTouch
+-    UITouch* tapTouch = [delayedTouch valueForKey:@"stateWhenDelayed"];
++    NSArray *touches = [gestureRecognizer valueForKey:@"touches"];
++    UITouch *oneTouch = [touches firstObject];
++    NSArray *delayedTouches = [gestureRecognizer valueForKey:@"delayedTouches"];
++    NSObject *delayedTouch =
++        [delayedTouches firstObject]; // UIGestureDeleayedTouch
++    UITouch *tapTouch = [delayedTouch valueForKey:@"stateWhenDelayed"];
+     if (!tapTouch)
+-        tapTouch = oneTouch;
+-        tapPoint = [tapTouch locationInView:self];
+-        isTapInsideBubble = tapTouch != nil && CGRectContainsPoint(bubbleFrame, tapPoint);
+-        if (isTapInsideBubble) {
+-            tapPointInBubble = CGPointMake(tapPoint.x - bubbleFrame.origin.x, tapPoint.y - bubbleFrame.origin.y);
++      tapTouch = oneTouch;
++    tapPoint = [tapTouch locationInView:self];
++    isTapInsideBubble =
++        tapTouch != nil && CGRectContainsPoint(bubbleFrame, tapPoint);
++    if (isTapInsideBubble) {
++      tapPointInBubble = CGPointMake(tapPoint.x - bubbleFrame.origin.x,
++                                     tapPoint.y - bubbleFrame.origin.y);
++    }
++    if (isTapInsideBubble) {
++      // find bubble's marker
++      AIRGoogleMapMarker *markerView = nil;
++      AIRGMSMarker *marker = nil;
++      for (AIRGoogleMapMarker *mrk in self.markers) {
++        if ([mrk.calloutView isEqual:bubbleView]) {
++          markerView = mrk;
++          marker = markerView.realMarker;
++          break;
+         }
+-        if (isTapInsideBubble) {
+-            //find bubble's marker
+-            AIRGoogleMapMarker* markerView = nil;
+-            AIRGMSMarker* marker = nil;
+-            for (AIRGoogleMapMarker* mrk in self.markers) {
+-                if ([mrk.calloutView isEqual:bubbleView]) {
+-                    markerView = mrk;
+-                    marker = markerView.realMarker;
+-                    break;
+-                }
+-            }
+-
+-            //find real tap target subview
+-            UIView* realSubview = [(RCTView*)bubbleView hitTest:tapPointInBubble withEvent:nil];
+-            AIRGoogleMapCalloutSubview* realPressableSubview = nil;
+-            if (realSubview) {
+-                UIView* tmp = realSubview;
+-                while (tmp && tmp != win && tmp != bubbleView) {
+-                    if ([tmp respondsToSelector:@selector(onPress)]) {
+-                        realPressableSubview = (AIRGoogleMapCalloutSubview*) tmp;
+-                        break;
+-                    }
+-                    tmp = tmp.superview;
+-                }
+-            }
+-
+-            if (markerView) {
+-                BOOL isInsideCallout = [markerView.calloutView isPointInside:tapPointInBubble];
+-                if (isInsideCallout) {
+-                    [markerView didTapInfoWindowOfMarker:marker subview:realPressableSubview point:tapPointInBubble frame:bubbleFrame];
+-                } else {
+-                    AIRGoogleMapMarker* markerAtTapPoint = [self markerAtPoint:tapPoint];
+-                    if (markerAtTapPoint != nil) {
+-                        [self didTapMarker:markerAtTapPoint.realMarker];
+-                    } else {
+-                        CLLocationCoordinate2D coord = [self.projection coordinateForPoint:tapPoint];
+-                        [markerView hideCalloutView];
+-                        [self didTapAtCoordinate:coord];
+-                    }
+-                }
+-
+-                performOriginalActions = NO;
+-            }
++      }
++
++      // find real tap target subview
++      UIView *realSubview = [(RCTView *)bubbleView hitTest:tapPointInBubble
++                                                 withEvent:nil];
++      AIRGoogleMapCalloutSubview *realPressableSubview = nil;
++      if (realSubview) {
++        UIView *tmp = realSubview;
++        while (tmp && tmp != win && tmp != bubbleView) {
++          if ([tmp respondsToSelector:@selector(onPress)]) {
++            realPressableSubview = (AIRGoogleMapCalloutSubview *)tmp;
++            break;
++          }
++          tmp = tmp.superview;
++        }
++      }
++
++      if (markerView) {
++        BOOL isInsideCallout =
++            [markerView.calloutView isPointInside:tapPointInBubble];
++        if (isInsideCallout) {
++          [markerView didTapInfoWindowOfMarker:marker
++                                       subview:realPressableSubview
++                                         point:tapPointInBubble
++                                         frame:bubbleFrame];
++        } else {
++          AIRGoogleMapMarker *markerAtTapPoint = [self markerAtPoint:tapPoint];
++          if (markerAtTapPoint != nil) {
++            [self didTapMarker:markerAtTapPoint.realMarker];
++          } else {
++            CLLocationCoordinate2D coord =
++                [self.projection coordinateForPoint:tapPoint];
++            [markerView hideCalloutView];
++            [self didTapAtCoordinate:coord];
++          }
+         }
++
++        performOriginalActions = NO;
++      }
+     }
++  }
+ 
+-    if (performOriginalActions) {
+-        NSDictionary* origMeta = [self.origGestureRecognizersMeta objectForKey:grHash];
+-        NSDictionary* origTargets = [origMeta objectForKey:@"targets"];
+-        for (NSDictionary* origTarget in origTargets) {
+-            NSValue* targetValue = [origTarget objectForKey:@"target"];
+-            NSObject* target = [targetValue nonretainedObjectValue];
+-            NSString* actionString = [origTarget objectForKey:@"action"];
+-            SEL action = NSSelectorFromString(actionString);
++  if (performOriginalActions) {
++    NSDictionary *origMeta =
++        [self.origGestureRecognizersMeta objectForKey:grHash];
++    NSDictionary *origTargets = [origMeta objectForKey:@"targets"];
++    for (NSDictionary *origTarget in origTargets) {
++      NSValue *targetValue = [origTarget objectForKey:@"target"];
++      NSObject *target = [targetValue nonretainedObjectValue];
++      NSString *actionString = [origTarget objectForKey:@"action"];
++      SEL action = NSSelectorFromString(actionString);
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+-            [target performSelector:action withObject:gestureRecognizer];
++      [target performSelector:action withObject:gestureRecognizer];
+ #pragma clang diagnostic pop
+-        }
+     }
++  }
+ 
+-    return nil;
++  return nil;
+ }
+ 
+-
+ #pragma mark - KVO updates
+ 
+ - (void)observeValueForKeyPath:(NSString *)keyPath
+                       ofObject:(id)object
+                         change:(NSDictionary *)change
+                        context:(void *)context {
+-  if ([keyPath isEqualToString:@"myLocation"]){
++  if ([keyPath isEqualToString:@"myLocation"]) {
+     CLLocation *location = [object myLocation];
+ 
+-    id event = @{@"coordinate": @{
+-                    @"latitude": @(location.coordinate.latitude),
+-                    @"longitude": @(location.coordinate.longitude),
+-                    @"altitude": @(location.altitude),
+-                    @"timestamp": @(location.timestamp.timeIntervalSinceReferenceDate * 1000),
+-                    @"accuracy": @(location.horizontalAccuracy),
+-                    @"altitudeAccuracy": @(location.verticalAccuracy),
+-                    @"speed": @(location.speed),
+-                    @"heading": @(location.course),
+-                    }
+-                };
+-
+-  if (self.onUserLocationChange) self.onUserLocationChange(event);
++    id event = @{
++      @"coordinate" : @{
++        @"latitude" : @(location.coordinate.latitude),
++        @"longitude" : @(location.coordinate.longitude),
++        @"altitude" : @(location.altitude),
++        @"timestamp" :
++            @(location.timestamp.timeIntervalSinceReferenceDate * 1000),
++        @"accuracy" : @(location.horizontalAccuracy),
++        @"altitudeAccuracy" : @(location.verticalAccuracy),
++        @"speed" : @(location.speed),
++        @"heading" : @(location.course),
++      }
++    };
++
++    if (self.onUserLocationChange)
++      self.onUserLocationChange(event);
+   } else {
+     // This message is not for me; pass it on to super.
+-    [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
++    [super observeValueForKeyPath:keyPath
++                         ofObject:object
++                           change:change
++                          context:context];
+   }
+ }
+ 
+-+ (NSString *)GetIconUrl:(GMUPlacemark *) marker parser:(GMUKMLParser *) parser {
+++ (NSString *)GetIconUrl:(GMUPlacemark *)marker parser:(GMUKMLParser *)parser {
+ #ifdef HAVE_GOOGLE_MAPS_UTILS
+   if (marker.style.styleID != nil) {
+     for (GMUStyle *style in parser.styles) {
+@@ -842,7 +915,8 @@ id regionAsJSON(MKCoordinateRegion region) {
+ 
+   return marker.style.iconUrl;
+ #else
+-    REQUIRES_GOOGLE_MAPS_UTILS("GetIconUrl:parser:"); return @"";
++  REQUIRES_GOOGLE_MAPS_UTILS("GetIconUrl:parser:");
++  return @"";
+ #endif
+ }
+ 
+@@ -868,13 +942,14 @@ id regionAsJSON(MKCoordinateRegion region) {
+   [parser parse];
+ 
+   NSUInteger index = 0;
+-  NSMutableArray *markers = [[NSMutableArray alloc]init];
++  NSMutableArray *markers = [[NSMutableArray alloc] init];
+ 
+   for (GMUPlacemark *place in parser.placemarks) {
+ 
+-    CLLocationCoordinate2D location =((GMUPoint *) place.geometry).coordinate;
++    CLLocationCoordinate2D location = ((GMUPoint *)place.geometry).coordinate;
+ 
+-    AIRGoogleMapMarker *marker = (AIRGoogleMapMarker *)[[AIRGoogleMapMarkerManager alloc] view];
++    AIRGoogleMapMarker *marker =
++        (AIRGoogleMapMarker *)[[AIRGoogleMapMarkerManager alloc] view];
+     if (!marker.bridge) {
+       marker.bridge = _bridge;
+     }
+@@ -887,84 +962,86 @@ id regionAsJSON(MKCoordinateRegion region) {
+     marker.layer.backgroundColor = [UIColor clearColor].CGColor;
+     marker.layer.position = CGPointZero;
+ 
+-    [self insertReactSubview:(UIView *) marker atIndex:index];
++    [self insertReactSubview:(UIView *)marker atIndex:index];
+ 
+-    [markers addObject:@{@"id": marker.identifier,
+-                         @"title": marker.title,
+-                         @"description": marker.subtitle,
+-                         @"coordinate": @{
+-                             @"latitude": @(location.latitude),
+-                             @"longitude": @(location.longitude)
+-                             }
+-                         }];
++    [markers addObject:@{
++      @"id" : marker.identifier,
++      @"title" : marker.title,
++      @"description" : marker.subtitle,
++      @"coordinate" : @{
++        @"latitude" : @(location.latitude),
++        @"longitude" : @(location.longitude)
++      }
++    }];
+ 
+     index++;
+   }
+ 
+-  id event = @{@"markers": markers};
+-  if (self.onKmlReady) self.onKmlReady(event);
++  id event = @{@"markers" : markers};
++  if (self.onKmlReady)
++    self.onKmlReady(event);
+ #else
+-    REQUIRES_GOOGLE_MAPS_UTILS();
++  REQUIRES_GOOGLE_MAPS_UTILS();
+ #endif
+ }
+ 
+-
+-- (void) didChangeActiveBuilding: (nullable GMSIndoorBuilding *) building {
+-    if (!building) {
+-        if (!self.onIndoorBuildingFocused) {
+-            return;
+-        }
+-        self.onIndoorBuildingFocused(@{
+-            @"IndoorBuilding": @{
+-                    @"activeLevelIndex": @0,
+-                    @"underground": @false,
+-                    @"levels": [[NSMutableArray alloc]init]
+-            }
+-        });
+-    }
+-    NSInteger i = 0;
+-    NSMutableArray *arrayLevels = [[NSMutableArray alloc]init];
+-    for (GMSIndoorLevel *level in building.levels) {
+-        [arrayLevels addObject: @{
+-            @"index": @(i),
+-            @"name" : level.name,
+-            @"shortName" : level.shortName,
+-        }];
+-        i++;
+-    }
++- (void)didChangeActiveBuilding:(nullable GMSIndoorBuilding *)building {
++  if (!building) {
+     if (!self.onIndoorBuildingFocused) {
+-        return;
++      return;
+     }
+     self.onIndoorBuildingFocused(@{
+-        @"IndoorBuilding": @{
+-                @"activeLevelIndex": @(building.defaultLevelIndex),
+-                @"underground": @(building.underground),
+-                @"levels": arrayLevels
+-        }
++      @"IndoorBuilding" : @{
++        @"activeLevelIndex" : @0,
++        @"underground" : @false,
++        @"levels" : [[NSMutableArray alloc] init]
++      }
+     });
++  }
++  NSInteger i = 0;
++  NSMutableArray *arrayLevels = [[NSMutableArray alloc] init];
++  for (GMSIndoorLevel *level in building.levels) {
++    [arrayLevels addObject:@{
++      @"index" : @(i),
++      @"name" : level.name,
++      @"shortName" : level.shortName,
++    }];
++    i++;
++  }
++  if (!self.onIndoorBuildingFocused) {
++    return;
++  }
++  self.onIndoorBuildingFocused(@{
++    @"IndoorBuilding" : @{
++      @"activeLevelIndex" : @(building.defaultLevelIndex),
++      @"underground" : @(building.underground),
++      @"levels" : arrayLevels
++    }
++  });
+ }
+ 
+-- (void) didChangeActiveLevel: (nullable GMSIndoorLevel *)     level {
+-    if (!self.onIndoorLevelActivated || !self.indoorDisplay  || !level) {
+-        return;
++- (void)didChangeActiveLevel:(nullable GMSIndoorLevel *)level {
++  if (!self.onIndoorLevelActivated || !self.indoorDisplay || !level) {
++    return;
++  }
++  NSInteger i = 0;
++  for (GMSIndoorLevel *buildingLevel in self.indoorDisplay.activeBuilding
++           .levels) {
++    if (buildingLevel.name == level.name &&
++        buildingLevel.shortName == level.shortName) {
++      break;
+     }
+-    NSInteger i = 0;
+-    for (GMSIndoorLevel *buildingLevel in self.indoorDisplay.activeBuilding.levels) {
+-        if (buildingLevel.name == level.name && buildingLevel.shortName == level.shortName) {
+-            break;
+-        }
+-        i++;
++    i++;
++  }
++  self.onIndoorLevelActivated(@{
++    @"IndoorLevel" : @{
++      @"activeLevelIndex" : @(i),
++      @"name" : level.name,
++      @"shortName" : level.shortName
+     }
+-    self.onIndoorLevelActivated(@{
+-        @"IndoorLevel": @{
+-                @"activeLevelIndex": @(i),
+-                @"name": level.name,
+-                @"shortName": level.shortName
+-        }
+-    });
++  });
+ }
+ 
+-
+ @end
+ 
+ #endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTile.h
 new file mode 100644
 index 0000000..20969d1
@@ -23176,20 +25582,20 @@ index 0000000..2e5823b
 +    },
 +});
 diff --git a/node_modules/react-native-maps/lib/decorateMapComponent.d.ts b/node_modules/react-native-maps/lib/decorateMapComponent.d.ts
-index 4086885..e420ddb 100644
+index 87b44b2..4133386 100644
 --- a/node_modules/react-native-maps/lib/decorateMapComponent.d.ts
 +++ b/node_modules/react-native-maps/lib/decorateMapComponent.d.ts
-@@ -13,6 +13,7 @@ import { MapPolyline } from './MapPolyline';
+@@ -11,6 +11,7 @@ import { MapMarker } from './MapMarker';
+ import { MapPolygon } from './MapPolygon';
+ import { MapPolyline } from './MapPolyline';
  import { MapUrlTile } from './MapUrlTile';
- import { MapWMSTile } from './MapWMSTile';
- import { Commands } from './MapViewNativeComponent';
 +import { MapPMTile } from './MapPMTile';
+ import { MapWMSTile } from './MapWMSTile';
  export declare const SUPPORTED: ImplementationStatus;
  export declare const USES_DEFAULT_IMPLEMENTATION: ImplementationStatus;
- export declare const NOT_SUPPORTED: ImplementationStatus;
-@@ -31,6 +32,6 @@ type Providers = {
+@@ -30,6 +31,6 @@ type Providers = {
  export type UIManagerCommand = number;
- export type MapManagerCommand = keyof typeof Commands;
+ export type MapManagerCommand = any;
  export type NativeComponent<H = unknown> = HostComponent<H> | ReturnType<typeof createNotSupportedComponent>;
 -type Component = typeof MapCallout | typeof MapCalloutSubview | typeof MapCircle | typeof MapHeatmap | typeof MapLocalTile | typeof MapMarker | typeof MapOverlay | typeof MapPolygon | typeof MapPolyline | typeof MapUrlTile | typeof MapWMSTile;
 -type ComponentName = 'Callout' | 'CalloutSubview' | 'Circle' | 'Heatmap' | 'LocalTile' | 'Marker' | 'Overlay' | 'Polygon' | 'Polyline' | 'UrlTile' | 'WMSTile';
@@ -23197,7 +25603,7 @@ index 4086885..e420ddb 100644
 +type ComponentName = 'Callout' | 'CalloutSubview' | 'Circle' | 'Heatmap' | 'LocalTile' | 'Marker' | 'Overlay' | 'Polygon' | 'Polyline' | 'UrlTile' | 'PMTile' | 'WMSTile';
  export {};
 diff --git a/node_modules/react-native-maps/lib/index.d.ts b/node_modules/react-native-maps/lib/index.d.ts
-index 8ecb17f..95c4335 100644
+index 909dcbd..8cbb12b 100644
 --- a/node_modules/react-native-maps/lib/index.d.ts
 +++ b/node_modules/react-native-maps/lib/index.d.ts
 @@ -15,6 +15,8 @@ export { default as Circle, MapCircle } from './MapCircle';
@@ -23210,19 +25616,19 @@ index 8ecb17f..95c4335 100644
  export type { MapWMSTileProps } from './MapWMSTile';
  export { default as LocalTile, MapLocalTile } from './MapLocalTile';
 diff --git a/node_modules/react-native-maps/lib/index.js b/node_modules/react-native-maps/lib/index.js
-index ede2a1a..99f37fb 100644
+index 43f6193..1b3f545 100644
 --- a/node_modules/react-native-maps/lib/index.js
 +++ b/node_modules/react-native-maps/lib/index.js
 @@ -29,7 +29,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
      return (mod && mod.__esModule) ? mod : { "default": mod };
  };
  Object.defineProperty(exports, "__esModule", { value: true });
--exports.OverlayAnimated = exports.MarkerAnimated = exports.MAP_TYPES = exports.Animated = exports.Overlay = exports.Marker = exports.Geojson = exports.AnimatedRegion = exports.MapCalloutSubview = exports.CalloutSubview = exports.MapCallout = exports.Callout = exports.MapLocalTile = exports.LocalTile = exports.MapWMSTile = exports.WMSTile = exports.MapUrlTile = exports.UrlTile = exports.MapCircle = exports.Circle = exports.MapPolygon = exports.Polygon = exports.MapHeatmap = exports.Heatmap = exports.MapPolyline = exports.Polyline = exports.MapOverlay = exports.MapMarker = void 0;
+-exports.OverlayAnimated = exports.MarkerAnimated = exports.enableLatestRenderer = exports.MAP_TYPES = exports.Animated = exports.Overlay = exports.Marker = exports.Geojson = exports.AnimatedRegion = exports.MapCalloutSubview = exports.CalloutSubview = exports.MapCallout = exports.Callout = exports.MapLocalTile = exports.LocalTile = exports.MapWMSTile = exports.WMSTile = exports.MapUrlTile = exports.UrlTile = exports.MapCircle = exports.Circle = exports.MapPolygon = exports.Polygon = exports.MapHeatmap = exports.Heatmap = exports.MapPolyline = exports.Polyline = exports.MapOverlay = exports.MapMarker = void 0;
 +exports.OverlayAnimated = exports.MarkerAnimated = exports.enableLatestRenderer = exports.MAP_TYPES = exports.Animated = exports.Overlay = exports.Marker = exports.Geojson = exports.AnimatedRegion = exports.MapCalloutSubview = exports.CalloutSubview = exports.MapCallout = exports.Callout = exports.MapLocalTile = exports.LocalTile = exports.MapWMSTile = exports.WMSTile = exports.MapPMTile = exports.PMTile = exports.MapUrlTile = exports.UrlTile = exports.MapCircle = exports.Circle = exports.MapPolygon = exports.Polygon = exports.MapHeatmap = exports.Heatmap = exports.MapPolyline = exports.Polyline = exports.MapOverlay = exports.MapMarker = void 0;
  const MapView_1 = __importStar(require("./MapView"));
  Object.defineProperty(exports, "Animated", { enumerable: true, get: function () { return MapView_1.AnimatedMapView; } });
  Object.defineProperty(exports, "MAP_TYPES", { enumerable: true, get: function () { return MapView_1.MAP_TYPES; } });
-@@ -56,6 +56,9 @@ Object.defineProperty(exports, "MapCircle", { enumerable: true, get: function ()
+@@ -57,6 +57,9 @@ Object.defineProperty(exports, "MapCircle", { enumerable: true, get: function ()
  var MapUrlTile_1 = require("./MapUrlTile");
  Object.defineProperty(exports, "UrlTile", { enumerable: true, get: function () { return __importDefault(MapUrlTile_1).default; } });
  Object.defineProperty(exports, "MapUrlTile", { enumerable: true, get: function () { return MapUrlTile_1.MapUrlTile; } });
@@ -23233,13 +25639,14 @@ index ede2a1a..99f37fb 100644
  Object.defineProperty(exports, "WMSTile", { enumerable: true, get: function () { return __importDefault(MapWMSTile_1).default; } });
  Object.defineProperty(exports, "MapWMSTile", { enumerable: true, get: function () { return MapWMSTile_1.MapWMSTile; } });
 diff --git a/node_modules/react-native-maps/react-native-google-maps.podspec b/node_modules/react-native-maps/react-native-google-maps.podspec
-index 0745418..71d0dae 100644
+index 0da6fff..e890103 100644
 --- a/node_modules/react-native-maps/react-native-google-maps.podspec
 +++ b/node_modules/react-native-maps/react-native-google-maps.podspec
-@@ -19,4 +19,9 @@ Pod::Spec.new do |s|
+@@ -19,4 +19,10 @@ Pod::Spec.new do |s|
    s.dependency 'React-Core'
    s.dependency 'GoogleMaps', '7.4.0'
-   s.dependency 'Google-Maps-iOS-Utils', '4.2.2'
+   s.dependency 'Google-Maps-iOS-Utils', '4.1.0'
++
 +  s.dependency 'Protobuf'
 +  s.subspec 'NonARCFiles' do |ss|
 +    ss.source_files = "ios/AirGoogleMaps/VectorTile/VectorTile.pbobjc.m"
