@@ -426,10 +426,10 @@ export default function HomeScreen() {
                       offlineMode={isOffline}
                       isVector={tileMap.isVector}
                     />
-                  ) : !(tileMap.url.startsWith('http') && tileMap.url.includes('.pdf')) ? (
+                  ) : (
                     <UrlTile
                       key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                      urlTemplate={tileMap.url}
+                      urlTemplate={tileMap.url.endsWith('.pdf') ? '' : tileMap.url}
                       flipY={tileMap.flipY}
                       opacity={1 - tileMap.transparency}
                       tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
@@ -442,7 +442,7 @@ export default function HomeScreen() {
                       tileCacheMaxAge={604800}
                       offlineMode={isOffline}
                     />
-                  ) : null
+                  )
                 ) : null
               )}
             {/************* download mode ******************** */}
