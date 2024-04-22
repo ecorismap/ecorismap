@@ -103,12 +103,12 @@ export const useFieldList = (
     (index: number, value: string) => {
       if (format === 'REFERENCE') {
         const newValues = cloneDeep(pickerValues);
-        console.log('valu', value);
+        //console.log('valu', value);
         newValues[index] = value;
         setPickerValues(newValues);
 
         const newItemValues = cloneDeep(itemValues);
-        console.log('new', newItemValues);
+        //console.log('new', newItemValues);
         newItemValues[index].value = value;
         setItemValues(newItemValues);
       } else {

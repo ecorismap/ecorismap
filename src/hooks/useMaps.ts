@@ -18,6 +18,7 @@ import { tileToWebMercator } from '../utils/Tile';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';
 import { moveFile, unlink } from '../utils/File';
+
 export type UseMapsReturnType = {
   progress: string;
   mapListURL: string;
@@ -47,7 +48,8 @@ export type UseMapsReturnType = {
   importMapFile: (
     uri: string,
     name: string,
-    ext: 'json' | 'pdf'
+    ext: 'json' | 'pdf',
+    id?: string
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -282,7 +284,7 @@ export const useMaps = (): UseMapsReturnType => {
   };
 
   const importPdfMapFile = useCallback(
-    async (uri: string, name: string) => {
+    async (uri: string, name: string, id?: string) => {
       const { outputFiles } = await convert(uri.replace('file://', '')).catch((e) => {
         console.error(e);
         return { outputFiles: [] };
@@ -295,7 +297,7 @@ export const useMaps = (): UseMapsReturnType => {
       const newTileMaps = cloneDeep(maps);
       for (let i = 0; i < outputFiles.length; i++) {
         const outputFile = outputFiles[i];
-        const mapId = uuidv4();
+        const mapId = id ?? uuidv4();
         const pdfImage = 'file://' + outputFile.uri;
 
         const { y: pdfTopCoord } = outputFile.topLeft;
@@ -382,10 +384,10 @@ export const useMaps = (): UseMapsReturnType => {
         await Promise.all(batch);
 
         unlink(pdfImage);
-        const pdfName = outputFiles.length === 1 ? name : `${name}_page${(i + 1).toString().padStart(2, '0')}`;
-        const newTileMap: TileMapType = {
+
+        const tileMap: TileMapType = {
           id: mapId,
-          name: pdfName,
+          name: name,
           url: `file://${name}`,
           attribution: 'PDF',
           maptype: 'none',
@@ -411,8 +413,24 @@ export const useMaps = (): UseMapsReturnType => {
             },
           },
         };
+        if (outputFiles.length > 1) {
+          //複数ページの場合は名前を変える
+          tileMap.name = `${name}_page${(i + 1).toString().padStart(2, '0')}`;
+          newTileMaps.unshift(tileMap);
+        } else if (id === undefined) {
+          //単ページでローカル読み込みの場合は新規追加
+          newTileMaps.unshift(tileMap);
+        } else if (id) {
+          //単ページでファイルダウンロードの場合は置き換え
+          const index = newTileMaps.findIndex((item) => item.id === id);
+          const oldTileMap = newTileMaps[index];
+          tileMap.name = oldTileMap.name;
+          tileMap.url = oldTileMap.url;
+          tileMap.attribution = oldTileMap.attribution;
+          tileMap.transparency = oldTileMap.transparency;
+          newTileMaps[index] = tileMap;
+        }
 
-        newTileMaps.unshift(newTileMap);
         setProgress((50 + ((i + 1) / outputFiles.length) * 50).toFixed());
       }
       setProgress('10'); //次回のための初期値
@@ -423,7 +441,7 @@ export const useMaps = (): UseMapsReturnType => {
   );
 
   const importMapFile = useCallback(
-    async (uri: string, name: string, ext: 'json' | 'pdf') => {
+    async (uri: string, name: string, ext: 'json' | 'pdf', id?: string) => {
       if (ext === 'json') {
         return importJsonMapFile(uri);
       } else if (ext === 'pdf') {
@@ -444,7 +462,7 @@ export const useMaps = (): UseMapsReturnType => {
           pdfUri = result.uri;
         }
 
-        const result = await importPdfMapFile(pdfUri, name);
+        const result = await importPdfMapFile(pdfUri, name, id);
         unlink(tempPdf);
         return result;
       } else {

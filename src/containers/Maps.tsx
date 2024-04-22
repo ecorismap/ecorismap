@@ -56,14 +56,12 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
-      const name = item.name;
-      const uri = item.url;
-      const ext = getExt(item.url)?.toLowerCase();
-      const protocol = uri.split(':')[0];
+      const protocol = item.url.split(':')[0];
       if (protocol === 'http' || protocol === 'https' || protocol === 'pmtiles') {
+        const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf') {
           setIsLoading(true);
-          const { message } = await importMapFile(uri, name, ext);
+          const { message } = await importMapFile(item.url, item.name, ext, item.id);
           setIsLoading(false);
           if (message !== '') await AlertAsync(message);
         } else {

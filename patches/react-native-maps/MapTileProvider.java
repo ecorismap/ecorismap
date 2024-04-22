@@ -87,7 +87,7 @@ public class MapTileProvider implements TileProvider {
   }
 
   protected static final int BUFFER_SIZE = 16 * 1024;
-  protected static final int TARGET_TILE_SIZE = 512;
+  // protected static final int TARGET_TILE_SIZE = 512;
   protected UrlTileProvider tileProvider;
   protected String urlTemplate;
   protected int tileSize;
@@ -139,27 +139,36 @@ public class MapTileProvider implements TileProvider {
     byte[] image = null;
     int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
 
-    if (this.tileSize == 256 && this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
-      // Log.d("urlTile", "pullTilesFromHigherZoom");
-      image = pullTilesFromHigherZoom(x, y, zoom);
-    }
-
-    if (zoom > this.maximumNativeZ) {
-      // Log.d("urlTile", "scaleLowerZoomTile");
-      image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
-    }
-
-    if (image == null && zoom <= maximumZ) {
-      // Log.d("urlTile", "getTileImage");
+    if (this.maximumZ == 0 || zoom > this.maximumZ) return null;
+    int drawType = 0; // 0:original 1:high-resolution 2:overzoom
+    if (zoom < this.minimumZ) {
+      //Log.d("RNM:", "A");
+      image = generateTileFromHigherZoom(x, y, zoom);
+      drawType = 1;
+    } else if (zoom > this.maximumNativeZ && !this.doubleTileSize) {
+      //Log.d("RNM:", "B");
+      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ);
+      drawType = 2;
+    } else if (zoom > this.maximumNativeZ - 1 && this.doubleTileSize) {
+      //Log.d("RNM:", "C");
+      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ);
+      drawType = 2;
+    } else if (zoom <= maximumZ && !this.doubleTileSize) {
+      //Log.d("RNM:", "D");
       image = getTileImage(x, y, zoom);
+      drawType = 0;
+    } else if (zoom <= this.maximumNativeZ - 1 && this.doubleTileSize) {
+      //Log.d("RNM:", "E");
+      image = drawDoubleSizeTile(x, y, zoom);
+      drawType = 0;
     }
 
-    if (image == null && this.tileCachePath != null && this.offlineMode) {
-      Log.d("urlTile", "findLowerZoomTileForScaling");
-      int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
+    if (image == null && this.tileCachePath != null && this.offlineMode && drawType == 0) {
+      //Log.d("urlTile", "findLowerZoomTileForScaling");
+      int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1; 
       int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
       for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
-        image = scaleLowerZoomTile(x, y, zoom, tryZoom);
+        image = drawOverZoomTile(x, y, zoom, tryZoom);
         if (image != null) {
           break;
         }
@@ -190,18 +199,19 @@ public class MapTileProvider implements TileProvider {
     return image;
   }
 
-  byte[] pullTilesFromHigherZoom(int x, int y, int zoom) {
+  byte[] drawDoubleSizeTile(int x, int y, int zoom) {
     byte[] data;
-    Bitmap image = getNewBitmap();
+    Bitmap image = getNewBitmap(this.tileSize * 2, this.tileSize * 2);
     Canvas canvas = new Canvas(image);
     Paint paint = new Paint();
 
-    x = x * 2;
-    y = y * 2;
-    byte[] leftTop = getTileImage(x, y, zoom + 1);
-    byte[] leftBottom = getTileImage(x, y + 1, zoom + 1);
-    byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
-    byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
+    int X = x * 2;
+    int Y = y * 2;
+    int Z = zoom + 1;
+    byte[] leftTop = getTileImage(X, Y, Z);
+    byte[] leftBottom = getTileImage(X, Y + 1, Z);
+    byte[] rightTop = getTileImage(X + 1, Y, Z);
+    byte[] rightBottom = getTileImage(X + 1, Y + 1, Z);
 
     if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
       return null;
@@ -210,31 +220,102 @@ public class MapTileProvider implements TileProvider {
     Bitmap bitmap;
     if (leftTop != null) {
       bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
-      canvas.drawBitmap(bitmap, 0, 0, paint);
-      bitmap.recycle();
+      if (bitmap != null) {
+        canvas.drawBitmap(bitmap, 0, 0, paint);
+        bitmap.recycle();
+      }
     }
     if (leftBottom != null) {
       bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
-      canvas.drawBitmap(bitmap, 0, 256, paint);
-      bitmap.recycle();
+      if (bitmap != null) {
+        canvas.drawBitmap(bitmap, 0, this.tileSize, paint);
+        bitmap.recycle();
+      }
     }
     if (rightTop != null) {
       bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
-      canvas.drawBitmap(bitmap, 256, 0, paint);
-      bitmap.recycle();
+      if (bitmap != null) {
+        canvas.drawBitmap(bitmap, this.tileSize, 0, paint);
+        bitmap.recycle();
+      }
     }
     if (rightBottom != null) {
       bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
-      canvas.drawBitmap(bitmap, 256, 256, paint);
-      bitmap.recycle();
+      if (bitmap != null) {
+        canvas.drawBitmap(bitmap, this.tileSize, this.tileSize, paint);
+        bitmap.recycle();
+      }
     }
     data = bitmapToByteArray(image);
     image.recycle();
     return data;
   }
 
-  Bitmap getNewBitmap() {
-    Bitmap image = Bitmap.createBitmap(TARGET_TILE_SIZE, TARGET_TILE_SIZE, Bitmap.Config.ARGB_8888);
+  byte[] generateTileFromHigherZoom(int x, int y, int zoom) {
+    int X = x * 2;
+    int Y = y * 2;
+    int Z = zoom + 1;
+    byte[] leftTop = getTileImage(X, Y, Z);
+    byte[] leftBottom = getTileImage(X, Y + 1, Z);
+    byte[] rightTop = getTileImage(X + 1, Y, Z);
+    byte[] rightBottom = getTileImage(X + 1, Y + 1, Z);
+    // Log.d(
+    //   "urlTile",
+    //   "##" + x + " " + y + " " + zoom + " " + leftTop + " " + leftBottom + " " + rightTop + " " + rightBottom
+    // );
+
+    if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
+      // Log.d("urlTile", "generateTileFromHigherZoom: null " + x + " " + y + " " + zoom);
+      return null;
+    }
+    
+    int width = this.tileSize;
+    int height = this.tileSize;
+    //Log.d("######urlTile 2", width + " " + height);
+    byte[] data;
+    Paint paint = new Paint();
+    Bitmap combinedBitmap = getNewBitmap(width, height);
+    Canvas canvas = new Canvas(combinedBitmap);
+
+    if (leftTop != null) {
+      //Log.d("urlTile", "$$" + X + " " + Y + " " + Z);
+      Bitmap bitmapLeftTop = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
+      if (bitmapLeftTop != null) {
+        canvas.drawBitmap(bitmapLeftTop, null, new Rect(0, 0, width / 2, height / 2), paint);
+      }
+    }
+    if (leftBottom != null) {
+      //Log.d("urlTile", "$$" + X + " " + (Y + 1) + " " + Z + " " + leftBottom.length);
+      Bitmap bitmapLeftBottom = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
+      if (bitmapLeftBottom != null) {
+        canvas.drawBitmap(bitmapLeftBottom, null, new Rect(0, height / 2, width / 2, height), paint);
+      }
+    }
+    if (rightTop != null) {
+      //Log.d("urlTile", "$$" + (X + 1) + " " + Y + " " + Z + " " + rightTop.length);
+      Bitmap bitmapRightTop = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
+      if (bitmapRightTop != null) {
+        canvas.drawBitmap(bitmapRightTop, null, new Rect(width / 2, 0, width, height / 2), paint);
+      }
+    }
+    if (rightBottom != null) {
+      //Log.d("urlTile", "$$" + (X + 1) + " " + (Y + 1) + " " + Z + " " + rightBottom.length);
+      Bitmap bitmapRightBottom = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
+      if (bitmapRightBottom != null) {
+        canvas.drawBitmap(bitmapRightBottom, null, new Rect(width / 2, height / 2, width, height), paint);
+      }
+    }
+    
+    data = bitmapToByteArray(combinedBitmap);
+    combinedBitmap.recycle();
+  
+    boolean success = writeTileImage(data, x, y, zoom);
+    
+    return data;
+  }
+
+  Bitmap getNewBitmap(int width, int height) {
+    Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
     image.eraseColor(Color.TRANSPARENT);
     return image;
   }
@@ -252,19 +333,22 @@ public class MapTileProvider implements TileProvider {
     return data;
   }
 
-  byte[] scaleLowerZoomTile(int x, int y, int zoom, int maximumZoom) {
+  byte[] drawOverZoomTile(int x, int y, int zoom, int maximumZoom) {
     int overZoomLevel = zoom - maximumZoom;
     int zoomFactor = 1 << overZoomLevel;
-
+    
     int xParent = x >> overZoomLevel;
     int yParent = y >> overZoomLevel;
     int zoomParent = zoom - overZoomLevel;
-
+    
     int xOffset = x % zoomFactor;
     int yOffset = y % zoomFactor;
     byte[] data;
 
-    Bitmap image = getNewBitmap();
+    if (overZoomLevel > 3) {
+      return null;
+    }
+    Bitmap image = getNewBitmap(this.tileSize, this.tileSize);
     Canvas canvas = new Canvas(image);
     Paint paint = new Paint();
     data = getTileImage(xParent, yParent, zoomParent);
@@ -281,7 +365,7 @@ public class MapTileProvider implements TileProvider {
       xOffset * subTileSize + subTileSize,
       yOffset * subTileSize + subTileSize
     );
-    Rect targetRect = new Rect(0, 0, TARGET_TILE_SIZE, TARGET_TILE_SIZE);
+    Rect targetRect = new Rect(0, 0, this.tileSize, this.tileSize);
     canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
     sourceImage.recycle();
     data = bitmapToByteArray(image);
@@ -369,9 +453,11 @@ public class MapTileProvider implements TileProvider {
 
       return true;
     } catch (IOException e) {
+      Log.d("urlTile", "writeTileImage: " + e.getMessage());
       e.printStackTrace();
       return false;
     } catch (OutOfMemoryError e) {
+      Log.d("urlTile", "writeTileImage: " + e.getMessage());
       e.printStackTrace();
       return false;
     } finally {
