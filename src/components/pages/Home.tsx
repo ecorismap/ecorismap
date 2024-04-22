@@ -429,7 +429,7 @@ export default function HomeScreen() {
                   ) : (
                     <UrlTile
                       key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                      urlTemplate={tileMap.url.endsWith('.pdf') ? '' : tileMap.url}
+                      urlTemplate={tileMap.url.endsWith('.pdf') ? 'file://dummy/{z}/{x}/{y}.png' : tileMap.url}
                       flipY={tileMap.flipY}
                       opacity={1 - tileMap.transparency}
                       tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
