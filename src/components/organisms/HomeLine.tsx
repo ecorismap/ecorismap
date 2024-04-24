@@ -57,6 +57,7 @@ export const Line = React.memo(
           const label = tracking?.dataId === feature.id ? '' : generateLabel(layer, feature);
 
           if (!feature.visible) return null;
+          if (feature.coords.length === 0) return null;
           if (feature.coords.length === 1) {
             return (
               <HomeMapMemoStamp
