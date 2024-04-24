@@ -7953,10 +7953,10 @@ expo-localization@~14.3.0:
   dependencies:
     rtl-detect "^1.0.2"
 
-expo-location@~16.1.0:
-  version "16.1.0"
-  resolved "https://registry.yarnpkg.com/expo-location/-/expo-location-16.1.0.tgz#251a465790d6622f828fd18f0edb2a73b9664b72"
-  integrity sha512-/jfRyYrXb9vjr8HoYmVHnzEqnw+0jaoRbHsxj6ePPAbevXmvXZqYHFRtfZtQ+q32SB4X6kUAXu28eBcLS+tqaA==
+expo-location@16.5.3:
+  version "16.5.3"
+  resolved "https://registry.yarnpkg.com/expo-location/-/expo-location-16.5.3.tgz#074335b1800ff71afe9e5ffbe8e858f652fceb61"
+  integrity sha512-V+84TZIa5MWpIXPvurnlJS9VxuxF1d3ajufUeq2sTgUkI/PP0aLHwyk5wg05C4CwuvwoiaVV80WyEL23j1Mz0w==
 
 expo-media-library@~15.4.1:
   version "15.4.1"
