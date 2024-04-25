@@ -49,23 +49,28 @@ export const useProjects = (): UseProjectsReturnType => {
   }, [user]);
 
   const fetchProjects = useCallback(async () => {
-    if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
-    dispatch(setProjectsAction([]));
-    setIsLoading(true);
-    const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
-    setIsLoading(false);
-    if (!isOK || updatedProjects === undefined) {
-      return { isOK: false, message };
-    }
-    //nameでソート
+    try {
+      if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
+      dispatch(setProjectsAction([]));
+      setIsLoading(true);
+      const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
+      setIsLoading(false);
+      if (!isOK || updatedProjects === undefined) {
+        return { isOK: false, message };
+      }
+      //nameでソート
 
-    const sortedProjects = updatedProjects.sort((a, b) => {
-      if (a.name > b.name) return 1;
-      if (a.name < b.name) return -1;
-      return 0; //同じ場合
-    });
-    dispatch(setProjectsAction(sortedProjects));
-    return { isOK: true, message };
+      const sortedProjects = updatedProjects.sort((a, b) => {
+        if (a.name > b.name) return 1;
+        if (a.name < b.name) return -1;
+        return 0; //同じ場合
+      });
+      dispatch(setProjectsAction(sortedProjects));
+      return { isOK: true, message };
+    } catch (e: any) {
+      setIsLoading(false);
+      return { isOK: false, message: e.message };
+    }
   }, [dispatch, user]);
 
   return { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } as const;
