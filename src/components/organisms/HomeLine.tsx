@@ -51,12 +51,15 @@ export const Line = React.memo(
         {data.map((feature) => {
           const color = getColor(layer, feature, 0);
           const selected =
-            feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+            selectedRecord?.record?.id !== undefined &&
+            (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id);
+
           const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
           const labelPosition = feature.coords[feature.coords.length - 1];
           const label = tracking?.dataId === feature.id ? '' : generateLabel(layer, feature);
 
           if (!feature.visible) return null;
+          if (feature.coords.length === 0) return null;
           if (feature.coords.length === 1) {
             return (
               <HomeMapMemoStamp
