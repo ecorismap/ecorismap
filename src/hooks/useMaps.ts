@@ -399,19 +399,6 @@ export const useMaps = (): UseMapsReturnType => {
           maximumZ: 22,
           flipY: false,
           tileSize: tileSize,
-          boundary: {
-            center: {
-              latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
-              longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
-            },
-            zoom: baseZoomLevel - 1,
-            bounds: {
-              north: topLeftLatLon.latitude,
-              south: bottomRightLatLon.latitude,
-              west: topLeftLatLon.longitude,
-              east: bottomRightLatLon.longitude,
-            },
-          },
         };
         if (outputFiles.length > 1) {
           //複数ページの場合は名前を変える
@@ -430,6 +417,23 @@ export const useMaps = (): UseMapsReturnType => {
           tileMap.transparency = oldTileMap.transparency;
           newTileMaps[index] = tileMap;
         }
+        const boundary = {
+          center: {
+            latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
+            longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
+          },
+          zoom: baseZoomLevel - 1,
+          bounds: {
+            north: topLeftLatLon.latitude,
+            south: bottomRightLatLon.latitude,
+            west: topLeftLatLon.longitude,
+            east: bottomRightLatLon.longitude,
+          },
+        };
+        //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
+        const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
+        const boundaryJson = JSON.stringify(boundary);
+        await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
 
         setProgress((50 + ((i + 1) / outputFiles.length) * 50).toFixed());
       }

@@ -290,9 +290,9 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={{
             position: 'absolute',
-            right: 16,
+            right: 0,
             top: 0,
-            width: 25,
+            width: 60,
             height: 20,
             justifyContent: 'center',
             alignItems: 'center',
