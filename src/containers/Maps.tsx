@@ -12,6 +12,8 @@ import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
 import { Platform } from 'react-native';
+import { TILE_FOLDER } from '../constants/AppConstants';
+import { readAsStringAsync } from 'expo-file-system';
 
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -132,8 +134,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
   }, [navigation]);
 
   const jumpToBoundary = useCallback(
-    (boundary: boundaryType | undefined) => {
-      if (boundary === undefined) return;
+    async (mapId: string) => {
+      //boundary.jsonの読み込み
+      const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
+      const boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
+      if (boundaryJson === undefined) return;
+      const boundary: boundaryType = JSON.parse(boundaryJson);
+
       navigation.navigate('Home', {
         previous: 'Maps',
         jumpTo: {

@@ -26,7 +26,7 @@ export const MapItems = React.memo(() => {
               />
             </View>
           </View>
-          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item.boundary)}>
+          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item.id)}>
             <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
               <Text>{item.name}</Text>
             </View>
