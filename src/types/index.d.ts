@@ -221,7 +221,6 @@ export interface TileMapItemType {
   maximumZ: number;
   flipY: boolean;
   tileSize?: number;
-  boundary?: boundaryType;
 }
 
 export interface TileMapType extends TileMapItemType {
