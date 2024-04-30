@@ -20,6 +20,17 @@ index 88b8991..82cf08a 100644
 +  implementation 'com.google.protobuf:protobuf-javalite:3.21.11'
 +  implementation 'com.google.code.gson:gson:2.8.8'
  }
+diff --git a/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/results.bin b/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/transformed/classes/classes.dex
+new file mode 100644
+index 0000000..951aa5d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/021092eedd3e21ae93ebbb3d51c2e110/transformed/classes/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/results.bin b/node_modules/react-native-maps/android/build/.transforms/279c214ef4ebe55216dfc270539ae15e/results.bin
 new file mode 100644
 index 0000000..5ff383e
@@ -449,8 +460,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex b/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex
 new file mode 100644
-index 0000000..1b19868
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/7dc9afaefc01006862e286cc68b02fcc/transformed/classes/classes.dex differ
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/.transforms/886550d092f56c4694c7c6dc72acb6a6/results.bin b/node_modules/react-native-maps/android/build/.transforms/886550d092f56c4694c7c6dc72acb6a6/results.bin
 new file mode 100644
 index 0000000..0d259dd
@@ -641,7 +651,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..caee939
+index 0000000..fa623ce
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -4867,11 +4877,11 @@ index 0000000..2d3289c
 +int xml rn_dev_preferences 0x0
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..32f5c95
+index 0000000..a17f875
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Sun Apr 21 20:10:19 JST 2024
++#Fri Apr 26 15:46:00 JST 2024
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..801edc8
@@ -5254,7 +5264,7 @@ index 0000000..be68553
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider$AIRMapUrlTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class
 new file mode 100644
-index 0000000..1f3a9e0
+index 0000000..cbe1ed0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileWorker.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapTileWorker.class
 new file mode 100644
@@ -6374,7 +6384,7 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..579b277
+index 0000000..36fa0db
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/release/classes.jar
 new file mode 100644
@@ -9577,88 +9587,115 @@ index 0000000..e449122
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider$AIRMapUrlTileProvider.class.uniqueId19 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider$AIRMapUrlTileProvider.class.uniqueId19
 new file mode 100644
-index 0000000..e69de29
+index 0000000..be68553
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider$AIRMapUrlTileProvider.class.uniqueId19 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider.class.uniqueId12 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider.class.uniqueId12
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0304369
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapTileProvider.class.uniqueId12 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile.class.uniqueId26 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile.class.uniqueId26
 new file mode 100644
-index 0000000..e69de29
+index 0000000..4694256
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile.class.uniqueId26 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTileManager.class.uniqueId13 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTileManager.class.uniqueId13
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0491e3c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTileManager.class.uniqueId13 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId4 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId4
 new file mode 100644
-index 0000000..e69de29
+index 0000000..05b2762
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId16 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId16
 new file mode 100644
-index 0000000..e69de29
+index 0000000..ed00712
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId16 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId2 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId2
 new file mode 100644
-index 0000000..e69de29
+index 0000000..cb64527
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId2 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId6 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId6
 new file mode 100644
-index 0000000..e69de29
+index 0000000..dc9a4f5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId6 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId23 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId23
 new file mode 100644
-index 0000000..e69de29
+index 0000000..929b068
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId23 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId9 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId9
 new file mode 100644
-index 0000000..e69de29
+index 0000000..5317df8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId9 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f77548b
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId20 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId0 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId0
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6a7e0d1
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId0 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId10 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId10
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d9775d3
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId10 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId25 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId25
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8f4adf7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId25 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14
 new file mode 100644
-index 0000000..e69de29
+index 0000000..ec2aab4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId17 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId17
 new file mode 100644
-index 0000000..e69de29
+index 0000000..e4d5721
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId17 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId3 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId3
 new file mode 100644
-index 0000000..e69de29
+index 0000000..26be8f5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId3 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId8 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId8
 new file mode 100644
-index 0000000..e69de29
+index 0000000..02da350
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId8 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f1446de
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId22 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId11 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId11
 new file mode 100644
-index 0000000..e69de29
+index 0000000..6861c5a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId11 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18
 new file mode 100644
-index 0000000..e69de29
+index 0000000..0085be7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId18 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId24 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId24
 new file mode 100644
-index 0000000..e69de29
+index 0000000..f4c67e6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId24 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class.uniqueId15 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class.uniqueId15
 new file mode 100644
-index 0000000..e69de29
+index 0000000..8da44b8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider$AIRMapWMSTileProvider.class.uniqueId15 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider.class.uniqueId7 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider.class.uniqueId7
 new file mode 100644
-index 0000000..e69de29
+index 0000000..d6a35c8
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile$AIRMapGSUrlTileProvider.class.uniqueId7 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile.class.uniqueId21 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile.class.uniqueId21
 new file mode 100644
-index 0000000..e69de29
+index 0000000..58415d3
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTile.class.uniqueId21 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTileManager.class.uniqueId5 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTileManager.class.uniqueId5
 new file mode 100644
-index 0000000..e69de29
+index 0000000..06919c5
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapWMSTileManager.class.uniqueId5 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId1
 new file mode 100644
-index 0000000..e69de29
+index 0000000..002ccf6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId1 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..3a036d5
+index 0000000..9b410e4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileReleaseJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
@@ -11261,7 +11298,7 @@ index 0000000..1a4034a
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
-index 2b1a646..335e30f 100644
+index 2b1a646..a76251d 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
 @@ -1,49 +1,51 @@
@@ -11460,13 +11497,10 @@ index 2b1a646..335e30f 100644
 -      Log.d("urlTile", "getTileImage");
 -			image = getTileImage(x, y, zoom);
 -		}
--
--    if (image == null && this.tileCachePath != null && this.offlineMode) {
--      Log.d("urlTile", "findLowerZoomTileForScaling");
 +    this.context = context;
 +    this.customMode = customMode;
 +  }
-+
+ 
 +  @Override
 +  public Tile getTile(int x, int y, int zoom) {
 +    if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
@@ -11486,23 +11520,24 @@ index 2b1a646..335e30f 100644
 +      drawType = 2;
 +    } else if (zoom > this.maximumNativeZ - 1 && this.doubleTileSize) {
 +      //Log.d("RNM:", "C");
-+      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ);
++      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ - 1);
 +      drawType = 2;
-+    } else if (zoom <= maximumZ && !this.doubleTileSize) {
++    } else if (zoom <= this.maximumZ && !this.doubleTileSize) {
 +      //Log.d("RNM:", "D");
 +      image = getTileImage(x, y, zoom);
 +      drawType = 0;
-+    } else if (zoom <= this.maximumNativeZ - 1 && this.doubleTileSize) {
++    } else if (zoom <= this.maximumZ - 1 && this.doubleTileSize) {
 +      //Log.d("RNM:", "E");
 +      image = drawDoubleSizeTile(x, y, zoom);
 +      drawType = 0;
 +    }
-+
-+    if (image == null && this.tileCachePath != null && this.offlineMode && drawType == 0) {
++    //Log.d("RNM:", "zoom:" + zoom + " " + this.maximumNativeZ);
+     if (image == null && this.tileCachePath != null && this.offlineMode) {
+-      Log.d("urlTile", "findLowerZoomTileForScaling");
 +      //Log.d("urlTile", "findLowerZoomTileForScaling");
        int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
 -      int minimumZoomToSearch = Math.max(this.minimumZ, zoom - 3);
-+      int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
++      int minimumZoomToSearch = this.minimumZ >= zoomLevelToStart - 3 ? this.minimumZ : zoomLevelToStart - 3;
        for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
 -  			image = scaleLowerZoomTile(x, y, zoom, tryZoom);
 -	  		if (image != null) {
@@ -11512,6 +11547,28 @@ index 2b1a646..335e30f 100644
 +        if (image != null) {
 +          break;
 +        }
++      }
++    }
++
++    return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
++  }
++
++  byte[] getTileImage(int x, int y, int zoom) {
++    byte[] image = null;
++    if (this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++      if (image != null && !this.offlineMode) {
++        boolean needRefresh = checkForRefresh(x, y, zoom);
++        if (needRefresh) {
++          image = null;
++        }
++      }
++    }
++    if (image == null && !this.offlineMode && this.tileCachePath != null) {
++      // Log.d("urlTile", "Normal fetch");
++      image = fetchTile(x, y, zoom);
++      if (image != null) {
++        boolean success = writeTileImage(image, x, y, zoom);
        }
 -		}
 -
@@ -11587,28 +11644,6 @@ index 2b1a646..335e30f 100644
 -	}
 -
 -	byte[] pullTilesFromHigherZoom(int x, int y, int zoom) {
-+    }
-+
-+    return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
-+  }
-+
-+  byte[] getTileImage(int x, int y, int zoom) {
-+    byte[] image = null;
-+    if (this.tileCachePath != null) {
-+      image = readTileImage(x, y, zoom);
-+      if (image != null && !this.offlineMode) {
-+        boolean needRefresh = checkForRefresh(x, y, zoom);
-+        if (needRefresh) {
-+          image = null;
-+        }
-+      }
-+    }
-+    if (image == null && !this.offlineMode && this.tileCachePath != null) {
-+      // Log.d("urlTile", "Normal fetch");
-+      image = fetchTile(x, y, zoom);
-+      if (image != null) {
-+        boolean success = writeTileImage(image, x, y, zoom);
-+      }
 +    }
 +    return image;
 +  }
@@ -11757,7 +11792,7 @@ index 2b1a646..335e30f 100644
      image.eraseColor(Color.TRANSPARENT);
      return image;
    }
-@@ -279,12 +328,12 @@ public class MapTileProvider implements TileProvider {
+@@ -279,212 +328,202 @@ public class MapTileProvider implements TileProvider {
      try {
        bos.close();
      } catch (Exception e) {
@@ -11772,7 +11807,10 @@ index 2b1a646..335e30f 100644
      int overZoomLevel = zoom - maximumZoom;
      int zoomFactor = 1 << overZoomLevel;
  
-@@ -294,197 +343,187 @@ public class MapTileProvider implements TileProvider {
+     int xParent = x >> overZoomLevel;
+     int yParent = y >> overZoomLevel;
+-    int zoomParent = zoom - overZoomLevel;
++    int zoomParent = maximumZoom;
  
      int xOffset = x % zoomFactor;
      int yOffset = y % zoomFactor;
@@ -11780,9 +11818,9 @@ index 2b1a646..335e30f 100644
      byte[] data;
 -    Bitmap image = getNewBitmap();
 +
-+    if (overZoomLevel > 3) {
-+      return null;
-+    }
++    // if (overZoomLevel > 5) {
++    //   return null;
++    // }
 +    Bitmap image = getNewBitmap(this.tileSize, this.tileSize);
      Canvas canvas = new Canvas(image);
      Paint paint = new Paint();
@@ -22056,10 +22094,10 @@ index 0000000..5043e41
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
 new file mode 100644
-index 0000000..d8555c9
+index 0000000..4abd0d3
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
-@@ -0,0 +1,322 @@
+@@ -0,0 +1,332 @@
 +//
 +//  AIRGoogleMapURLTile.m
 +//  Created by Nick Italiano on 11/5/16.
@@ -22098,11 +22136,11 @@ index 0000000..d8555c9
 +    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
 +  } else if (zoom > self.maximumNativeZ - 1 && self.doubleTileSize) {
 +    drawType = 2;
-+    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
-+  } else if (zoom <= self.maximumNativeZ && !self.doubleTileSize) {
++    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ - 1];
++  } else if (zoom <= self.maximumZ && !self.doubleTileSize) {
 +    drawType = 0;
 +    data = [self getTile:zoom x:x y:y];
-+  } else if (zoom <= self.maximumNativeZ - 1 && self.doubleTileSize) {
++  } else if (zoom <= self.maximumZ - 1 && self.doubleTileSize) {
 +    // iOSの場合、doubleTileSizeがtrueの場合、tileSizeを小さくセットすることによって、
 +    // 一つ上のズームレベルのタイルを取得するという仕様になっている。
 +    // そのため、drawTypeは1でなく0でOK。
@@ -22112,17 +22150,27 @@ index 0000000..d8555c9
 +  // NSLog(@"drawType %d,%ld,%ld,%ld", drawType, zoom, self.maximumNativeZ,
 +  //       self.minimumZ);
 +
-+  if (!data && self.offlineMode && self.tileCachePath && drawType == 0) {
++  if (!data && self.offlineMode && self.tileCachePath) {
 +    // NSLog(@"RNM:offlineMode %ld,%ld,%ld", zoom, x, y);
-+    NSInteger zoomLevelToStart = (zoom > self.maximumZ) ? self.maximumZ : zoom;
++    // タイルダウンロードが16で固定ズームが18のため、その間を埋めるための処理
++    // 現在のzoomから3つ前までのタイルを探す
++    NSInteger zoomLevelToStart =
++        (zoom > self.maximumNativeZ) ? self.maximumNativeZ - 1 : zoom - 1;
 +    NSInteger minimumZoomToSearch = self.minimumZ >= zoomLevelToStart - 3
 +                                        ? self.minimumZ
 +                                        : zoomLevelToStart - 3;
-+    data = [self drawOverZoomTile:(NSUInteger)zoomLevelToStart
-+                                x:(NSUInteger)x
-+                                y:(NSUInteger)y
-+                             minZ:minimumZoomToSearch];
++    for (NSInteger tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch;
++         tryZoom--) {
++      data = [self drawOverZoomTile:(NSUInteger)zoom
++                                  x:(NSUInteger)x
++                                  y:(NSUInteger)y
++                               minZ:tryZoom];
++      if (data) {
++        break;
++      }
++    }
 +  }
++
 +  if (data) {
 +    UIImage *img = [[UIImage alloc] initWithData:data];
 +    return img;
@@ -22258,10 +22306,10 @@ index 0000000..d8555c9
 +  int zoomParent = tryZ - overZoomLevel;
 +  int xOffset = x % zoomFactor;
 +  int yOffset = y % zoomFactor;
-+
-+  if (overZoomLevel > 3) {
-+    return nil;
-+  }
++  // NSLog(@"RNM:overZoom %ld,%ld", tryZ, minZ);
++  // if (overZoomLevel > 5) {
++  //   return nil;
++  // }
 +  NSData *data = [self getTile:zoomParent x:xParent y:yParent];
 +  if (!data) {
 +    return nil;
