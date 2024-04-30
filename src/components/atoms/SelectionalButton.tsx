@@ -15,8 +15,8 @@ const SelectionalButton = React.memo((props: Props) => {
   const styles = StyleSheet.create({
     button: {
       alignItems: 'flex-end',
+      marginBottom: directionRow === 'column' ? 5 : 0,
       marginRight: directionRow === 'row' ? 5 : 0,
-      marginTop: directionRow === 'column' ? 5 : 0,
     },
     buttonLandscape: {
       alignItems: 'flex-end',
