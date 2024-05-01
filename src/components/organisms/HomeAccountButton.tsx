@@ -41,7 +41,7 @@ export const HomeAccountButton = () => {
       color: COLOR.WHITE,
       fontSize: 20,
       fontWeight: 'bold',
-      marginBottom: Platform.OS === 'web' ? 0 : 5,
+      marginBottom: Platform.OS === 'android' ? 5 : 0,
     },
   });
   return (
