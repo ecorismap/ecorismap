@@ -532,7 +532,7 @@ export default function HomeScreen() {
             tileMap.isVector
           ) {
             return null;
-          } else if (tileMap.url.endsWith('.pbf')) {
+          } else if (tileMap.url.endsWith('.pdf')) {
             return null;
           } else if (tileMap.url) {
             return {
