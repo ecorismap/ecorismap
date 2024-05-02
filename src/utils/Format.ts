@@ -37,6 +37,10 @@ export const formattedInputs = (
       result = value;
       break;
     }
+    case 'STRING_MULTI': {
+      result = value;
+      break;
+    }
     case 'LIST': {
       result = value;
       break;

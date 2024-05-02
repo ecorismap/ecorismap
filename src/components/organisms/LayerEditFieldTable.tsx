@@ -99,6 +99,7 @@ export const LayerEditFieldTable = () => {
                 item.format === 'RADIO' ||
                 item.format === 'CHECK' ||
                 item.format === 'STRING' ||
+                item.format === 'STRING_MULTI' ||
                 item.format === 'INTEGER' ||
                 item.format === 'REFERENCE' ||
                 item.format === 'TABLE' ||
