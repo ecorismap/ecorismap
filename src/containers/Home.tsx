@@ -239,16 +239,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   /*************** onXXXXMapView *********************/
 
   const onCloseBottomSheet = useCallback(async () => {
-    if (isEditingRecord && routeName === 'DataEdit') {
-      const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
-      if (ret) {
-        setIsEditingRecord(false);
-        //ToDo 写真の削除処理はどうする？
+    if (routeName === 'DataEdit') {
+      if (isEditingRecord) {
+        const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
+        if (ret) {
+          setIsEditingRecord(false);
+          unselectRecord();
+          //ToDo 写真の削除処理はどうする？
+        } else {
+          bottomSheetRef.current?.snapToIndex(2);
+        }
       } else {
-        bottomSheetRef.current?.snapToIndex(2);
+        unselectRecord();
       }
     }
-  }, [isEditingRecord, routeName, setIsEditingRecord]);
+  }, [isEditingRecord, routeName, setIsEditingRecord, unselectRecord]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
