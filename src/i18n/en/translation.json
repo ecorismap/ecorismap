@@ -648,7 +648,8 @@
       "clearMapMemo": "Erase all map notes?",
       "reOpenProject": "Do you want to open the project? \nAny unsaved data in the current project will be discarded.",
       "download": "Would you like to download the data? \nData that has not been uploaded will be discarded.",
-      "upload": "Do you want to upload your data?"
+      "upload": "Do you want to upload your data?",
+      "track_start": "Do you want to start recording the track?"
     },
     "navigation": {
       "download": "Map download",
