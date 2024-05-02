@@ -131,6 +131,17 @@ export default function DataEditScreen() {
                   onEndEditing={() => submitField(name, format)}
                 />
               );
+            case 'STRING_MULTI':
+              return (
+                <DataEditString
+                  key={index}
+                  name={name}
+                  multiline={true}
+                  value={data.field[name] as string | number | undefined}
+                  onChangeText={(value) => changeField(name, value)}
+                  onEndEditing={() => submitField(name, format)}
+                />
+              );
             case 'DATETIME':
               return (
                 <DataEditDatetime

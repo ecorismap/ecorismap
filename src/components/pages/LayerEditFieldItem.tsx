@@ -167,7 +167,11 @@ export default function LayerEditFieldItemScreen() {
 const ListButtons = () => {
   const { itemFormat, itemValues, pressAddValue } = useContext(LayerEditFieldItemContext);
   const editable =
-    ((itemFormat === 'STRING' || itemFormat === 'INTEGER' || itemFormat === 'DECIMAL') && itemValues.length < 1) ||
+    ((itemFormat === 'STRING' ||
+      itemFormat === 'STRING_MULTI' ||
+      itemFormat === 'INTEGER' ||
+      itemFormat === 'DECIMAL') &&
+      itemValues.length < 1) ||
     itemFormat === 'LIST' ||
     itemFormat === 'CHECK' ||
     itemFormat === 'TABLE' ||

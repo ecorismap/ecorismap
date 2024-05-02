@@ -64,29 +64,29 @@ export const changeFieldValue = (
   changedFormat: FormatType,
   list?: { value: string; isOther: boolean }[]
 ): string | number | PhotoType[] => {
-  if (originalFormat === 'INTEGER' && changedFormat === 'STRING') {
+  if (originalFormat === 'INTEGER' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
   } else if (originalFormat === 'INTEGER' && changedFormat === 'DECIMAL') {
     return originalData;
   } else if (originalFormat === 'INTEGER' && changedFormat === 'SERIAL') {
     return originalData;
-  } else if (originalFormat === 'SERIAL' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'SERIAL' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
   } else if (originalFormat === 'SERIAL' && changedFormat === 'INTEGER') {
     return originalData;
   } else if (originalFormat === 'SERIAL' && changedFormat === 'DECIMAL') {
     return originalData;
-  } else if (originalFormat === 'DECIMAL' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'DECIMAL' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData.toString();
-  } else if (originalFormat === 'DATETIME' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'DATETIME' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (originalFormat === 'DATESTRING' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'DATESTRING' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (originalFormat === 'TIMESTRING' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'TIMESTRING' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (originalFormat === 'TIMERANGE' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'TIMERANGE' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
-  } else if (originalFormat === 'NUMBERRANGE' && changedFormat === 'STRING') {
+  } else if (originalFormat === 'NUMBERRANGE' && (changedFormat === 'STRING' || changedFormat === 'STRING_MULTI')) {
     return originalData;
   } else if (originalFormat === 'STRING' && changedFormat === 'INTEGER') {
     return parseInt(originalData as string, 10);
@@ -107,6 +107,8 @@ export const getInitialFieldValue = (
 ): string | number | PhotoType[] => {
   switch (format) {
     case 'STRING':
+      return '';
+    case 'STRING_MULTI':
       return '';
     case 'LIST':
       return list === undefined || list[0] === undefined ? '' : list[0].value;
@@ -154,6 +156,8 @@ export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, gr
 export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
   switch (field.format) {
     case 'STRING':
+      return { [field.name]: field.defaultValue ?? '' };
+    case 'STRING_MULTI':
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL':
       if (options?.groupId) {
