@@ -25,7 +25,8 @@
       "photo": "Photo",
       "reference": "Reference",
       "table": "Table",
-      "listtable": "ListTable"
+      "listtable": "ListTable",
+      "string_multi": "String (multiple lines)"
     },
     "permission": {
       "private": "Private",
