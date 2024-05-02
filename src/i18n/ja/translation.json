@@ -182,7 +182,8 @@
       "saveProject": "プロジェクトの設定を保存しますか？",
       "discardProject": "プロジェクトの設定の変更を破棄しますか？",
       "deleteTiles": "ダウンロードした地図を削除しますか？",
-      "clearMapMemo": "地図のメモをすべて消去しますか？"
+      "clearMapMemo": "地図のメモをすべて消去しますか？",
+      "track_start": "トラックの記録を開始しますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",

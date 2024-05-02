@@ -637,6 +637,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
+      const ret = await ConfirmAsync(t('Home.confirm.track_start'));
+      if (!ret) return;
       const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
       if (!isOK) {
         await AlertAsync(message);

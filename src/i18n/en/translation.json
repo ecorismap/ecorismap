@@ -637,7 +637,8 @@
       "logout": "Do you want to log out?",
       "saveProject": "Do you want to save the project settings?",
       "track": "Do you want to stop recording the track?",
-      "clearMapMemo": "Erase all map notes?"
+      "clearMapMemo": "Erase all map notes?",
+      "track_start": "Do you want to start recording the track?"
     },
     "navigation": {
       "download": "Map download",
