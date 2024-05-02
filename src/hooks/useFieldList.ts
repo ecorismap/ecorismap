@@ -70,7 +70,7 @@ export const useFieldList = (
 
   useEffect(() => {
     let listItems: { value: string; isOther: boolean; customFieldValue: string }[] | undefined;
-    if (format === 'STRING' || format === 'INTEGER' || format === 'DECIMAL') {
+    if (format === 'STRING' || format === 'STRING_MULTI' || format === 'INTEGER' || format === 'DECIMAL') {
       listItems =
         targetLayer.field[fieldIndex].defaultValue !== undefined
           ? [{ value: String(targetLayer.field[fieldIndex].defaultValue), isOther: false, customFieldValue: '' }]

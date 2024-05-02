@@ -65,6 +65,7 @@ export const ROLETYPE = {
 
 export const DATAFORMAT = {
   STRING: t('constants.dataformat.string'),
+  STRING_MULTI: t('constants.dataformat.string_multi'),
   SERIAL: t('constants.dataformat.serial'),
   DATETIME: t('constants.dataformat.datetime'),
   DATESTRING: t('constants.dataformat.datestring'),
