@@ -877,3 +877,18 @@ export function interpolateLineString(line: Position[], interval: number) {
   }
   return points;
 }
+
+export function boundingBoxFromCoords(points: LatLng[]) {
+  const bbox = points.reduce(
+    (acc, point) => {
+      return {
+        north: Math.max(acc.north, point.latitude),
+        south: Math.min(acc.south, point.latitude),
+        east: Math.max(acc.east, point.longitude),
+        west: Math.min(acc.west, point.longitude),
+      };
+    },
+    { north: -90, south: 90, east: -180, west: 180 }
+  );
+  return bbox;
+}
