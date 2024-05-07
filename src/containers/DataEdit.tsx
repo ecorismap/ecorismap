@@ -16,6 +16,8 @@ import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { pickImage, takePhoto } from '../utils/Photo';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
+import { useWindow } from '../hooks/useWindow';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -48,6 +50,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const user = useSelector((state: AppState) => state.user);
   const { checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();
+  const { isLandscape, windowWidth } = useWindow();
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
@@ -257,35 +260,46 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   );
 
   const gotoHomeAndJump = useCallback(() => {
-    let coord = { latitude: 35, longitude: 135 };
-    switch (targetLayer.type) {
-      case 'POINT':
-        coord = targetRecord.coords as LocationType;
-        break;
-      case 'LINE': {
-        const coords = targetRecord.coords as LocationType[];
-        if (coords.length > 0) coord = targetRecord.centroid ?? coords[0];
-        break;
-      }
-      case 'POLYGON': {
-        const coords = targetRecord.coords as LocationType[];
-        if (coords.length > 0) coord = targetRecord.centroid ?? coords[0];
-        break;
-      }
+    let bounds = {
+      north: 36,
+      south: 35,
+      east: 136,
+      west: 135,
+    };
+    if (targetLayer.type === 'POINT') {
+      const coord = targetRecord.coords as LocationType;
+      bounds = {
+        north: coord.latitude + 0.0001,
+        south: coord.latitude - 0.0001,
+        east: coord.longitude + 0.0001,
+        west: coord.longitude - 0.0001,
+      };
+    } else if (targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
+      const coords = targetRecord.coords as LocationType[];
+      bounds = boundingBoxFromCoords(coords);
     }
-
+    const tempZoom = deltaToZoom(windowWidth, {
+      latitudeDelta: bounds.north - bounds.south,
+      longitudeDelta: bounds.east - bounds.west,
+    }).zoom;
+    //小さいオブジェクトだとズームが大きくなりすぎるので、最大20に制限する
+    const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
+    const featureWidth = bounds.east - bounds.west;
+    //調整後のズームでdeltaも調整
+    const delta = featureWidth * 2 ** (tempZoom - jumpZoom - 1);
+    const jumpRegion = {
+      latitude: (isLandscape ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
+      longitude: (isLandscape ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
+      latitudeDelta: delta,
+      longitudeDelta: delta,
+      zoom: jumpZoom,
+    };
     navigation.navigate('Home', {
-      jumpTo: {
-        latitude: coord.latitude,
-        longitude: coord.longitude,
-        latitudeDelta: 0.001, //デタラメな値だが,changeMapRegionで計算しなおす。svgの変換で正しい値が必要
-        longitudeDelta: 0.001,
-        zoom: 15,
-      },
+      jumpTo: jumpRegion,
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [navigation, targetLayer.type, targetRecord.centroid, targetRecord.coords]);
+  }, [isLandscape, navigation, targetLayer.type, targetRecord.coords, windowWidth]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;
