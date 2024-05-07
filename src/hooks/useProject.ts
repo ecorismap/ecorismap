@@ -19,7 +19,10 @@ export type UseProjectReturnType = {
   project: ProjectType | undefined;
   projectRegion: RegionType;
   downloadData: (shouldPhotoDownload: boolean) => Promise<void>;
-  uploadData: (isLicenseOK: boolean) => Promise<void>;
+  uploadData: (isLicenseOK: boolean) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
   syncPosition: (shouldSync: boolean) => void;
   clearProject: () => void;
   saveProjectSetting: (isLicenseOK: boolean) => Promise<void>;
@@ -66,7 +69,7 @@ export const useProject = (): UseProjectReturnType => {
   const uploadData = useCallback(
     async (isLicenseOK: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      await uploadDataToRepository(project, isLicenseOK, 'PublicAndPrivate');
+      return await uploadDataToRepository(project, isLicenseOK, 'PublicAndPrivate');
     },
     [project, uploadDataToRepository]
   );
