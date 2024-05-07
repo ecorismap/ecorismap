@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
@@ -23,7 +23,7 @@ export default function ProjectEditScreen() {
     changeText,
     changeMemberText,
     changeAdmin,
-    pressAddMember,
+    pressAddMembers,
     pressDeleteMember,
     pressSaveProject,
     pressOpenProject,
@@ -40,6 +40,7 @@ export default function ProjectEditScreen() {
       justifyContent: 'flex-end',
     },
   });
+  const [emails, setEmails] = useState('');
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
@@ -87,6 +88,21 @@ export default function ProjectEditScreen() {
           onChangeText={(value) => changeText('abstract', value)}
           onEndEditing={() => null}
         />
+
+        {!isProjectOpen && (isOwner || isNew) && (
+          <EditString
+            name={''}
+            value={emails}
+            placeholder={t('common.addMembers')}
+            style={{ backgroundColor: COLOR.WHITE, borderRadius: 5 }}
+            editable={!isProjectOpen}
+            onChangeText={setEmails}
+            onEndEditing={() => {
+              pressAddMembers(emails);
+              setEmails('');
+            }}
+          />
+        )}
         {isOwnerAdmin &&
           project.members.map((member, idx) => {
             return (
@@ -97,11 +113,9 @@ export default function ProjectEditScreen() {
                 verified={member.verified}
                 role={member.role}
                 editable={(isOwner && !isProjectOpen && idx !== 0) || (isNew && idx !== 0)}
-                visiblePlus={member.role === 'OWNER' && (isOwner || isNew)}
-                visibleMinus={member.role !== 'OWNER' && (isOwner || isNew)}
+                visibleMinus={member.role !== 'OWNER' && !isProjectOpen && (isOwner || isNew)}
                 onCheckAdmin={(checked) => changeAdmin(checked, idx)}
                 onChangeText={(value) => changeMemberText(value, idx)}
-                pressAddMember={(isOwner && !isProjectOpen) || isNew ? pressAddMember : () => null}
                 pressDeleteMember={(isOwner && !isProjectOpen) || isNew ? () => pressDeleteMember(idx) : () => null}
               />
             );
@@ -109,6 +123,7 @@ export default function ProjectEditScreen() {
       </ScrollView>
       <Loading visible={isLoading} text="" />
       <ProjectEditButtons
+        disabled={isEdited}
         isNew={isNew}
         isProjectOpen={isProjectOpen}
         isOwnerAdmin={isOwnerAdmin}

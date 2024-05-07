@@ -33,7 +33,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     changeText,
     changeMemberText,
     changeAdmin,
-    addMember,
+    addMembers,
     deleteMember,
     openProject,
     startProjectSetting,
@@ -281,18 +281,21 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     }
   }, [checkedProject, isNew, navigation, saveNewProject, saveUpdatedProject]);
 
-  const pressAddMember = useCallback(() => {
-    const { isOK, message } = validateMemberLicense(targetProject.license, targetProject.members.length);
-    if (!isOK) {
-      if (Platform.OS === 'web') {
-        Alert.alert('', message + t('ProjectEdit.alert.addMemberWeb'));
-      } else {
-        Alert.alert('', t('ProjectEdit.alert.addMember'));
+  const pressAddMembers = useCallback(
+    (emails: string) => {
+      const { isOK, message } = validateMemberLicense(targetProject.license, targetProject.members.length);
+      if (!isOK) {
+        if (Platform.OS === 'web') {
+          Alert.alert('', message + t('ProjectEdit.alert.addMemberWeb'));
+        } else {
+          Alert.alert('', t('ProjectEdit.alert.addMember'));
+        }
+        return;
       }
-      return;
-    }
-    addMember();
-  }, [addMember, targetProject.license, targetProject.members.length]);
+      addMembers(emails);
+    },
+    [addMembers, targetProject.license, targetProject.members.length]
+  );
 
   const pressDeleteMember = useCallback(
     (idx: number) => {
@@ -322,7 +325,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         changeText,
         changeMemberText,
         changeAdmin,
-        pressAddMember,
+        pressAddMembers,
         pressDeleteMember,
         pressSaveProject,
         pressOpenProject,

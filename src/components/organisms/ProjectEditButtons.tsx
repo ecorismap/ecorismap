@@ -4,6 +4,7 @@ import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 
 interface Props {
+  disabled: boolean;
   isNew: boolean;
   isProjectOpen: boolean;
   isOwnerAdmin: boolean;
@@ -14,6 +15,7 @@ interface Props {
 }
 export const ProjectEditButtons = React.memo((props: Props) => {
   const {
+    disabled,
     isNew,
     isProjectOpen,
     isOwnerAdmin,
@@ -27,23 +29,28 @@ export const ProjectEditButtons = React.memo((props: Props) => {
     <View style={styles.buttonContainer}>
       {!isNew && (
         <View style={{ marginHorizontal: 9 }}>
-          <Button name={PROJECTEDIT_BTN.OPEN} onPress={onPressOpenProject} backgroundColor={COLOR.BLUE} />
+          <Button
+            name={PROJECTEDIT_BTN.OPEN}
+            onPress={onPressOpenProject}
+            backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+            disabled
+          />
         </View>
       )}
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <Button
           name={PROJECTEDIT_BTN.SETTING}
           onPress={onPressSettingProject}
-          disabled={isProjectOpen}
-          backgroundColor={isProjectOpen ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isProjectOpen || disabled}
+          backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
         />
       )}
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.EXPORT}
-            backgroundColor={isProjectOpen ? COLOR.LIGHTBLUE : COLOR.BLUE}
-            disabled={isProjectOpen}
+            backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+            disabled={isProjectOpen || disabled}
             onPress={onPressExportProject}
           />
         </View>
@@ -52,8 +59,8 @@ export const ProjectEditButtons = React.memo((props: Props) => {
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.DELETE}
-            backgroundColor={isProjectOpen ? COLOR.LIGHTBLUE : COLOR.DARKRED}
-            disabled={isProjectOpen}
+            backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
+            disabled={isProjectOpen || disabled}
             onPress={onPressDeleteProject}
           />
         </View>
