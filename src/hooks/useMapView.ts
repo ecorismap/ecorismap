@@ -15,7 +15,7 @@ export type UseMapViewReturnType = {
   zoomDecimal: number;
   zoomIn: () => void;
   zoomOut: () => void;
-  changeMapRegion: (region: Region | ViewState, jumpTo?: boolean) => void;
+  changeMapRegion: (region: Region | ViewState | undefined, jumpTo?: boolean) => void;
 };
 
 export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewReturnType => {
@@ -77,7 +77,8 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
   }, [mapRegion, mapViewRef]);
 
   const changeMapRegion = useCallback(
-    (region: Region | ViewState | RegionType, jumpTo = false) => {
+    (region: Region | ViewState | RegionType | undefined, jumpTo = false) => {
+      if (region === undefined) return;
       if (Platform.OS === 'web') {
         if (isRegionType(region)) {
           dispatch(editSettingsAction({ mapRegion: region }));
@@ -95,40 +96,18 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
           const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
           dispatch(editSettingsAction({ mapRegion: newRegion }));
         } else if (jumpTo && isRegionType(region)) {
-          // const jumpRegion = {
-          //   latitude: region.latitude,
-          //   longitude: region.longitude,
-          //   latitudeDelta: region.latitudeDelta,
-          //   longitudeDelta: region.longitudeDelta,
-          // };
-          // (mapViewRef as MapView).animateToRegion(jumpRegion, 5);
-          (mapViewRef as MapView).animateCamera(
-            {
-              center: {
-                latitude: region.latitude,
-                longitude: region.longitude,
-              },
-              zoom: region.zoom,
+          (mapViewRef as MapView).setCamera({
+            center: {
+              latitude: region.latitude,
+              longitude: region.longitude,
             },
-            { duration: 5 }
-          );
+            zoom: region.zoom,
+          });
         }
       }
     },
     [dispatch, mapViewRef, windowWidth]
   );
-
-  // useEffect(() => {
-  //   //Dataを表示させたときにmapRegionを強制的に更新する。mapの見た目は更新されているがmapRegionは更新されていないバグ？のため
-
-  //   if (mapViewRef === null || screenState === 'expanded') return;
-  //   if (Platform.OS === 'web') {
-  //     (mapViewRef as MapRef).resize();
-  //   } else {
-  //     setTimeout(() => (mapViewRef as MapView).animateToRegion(mapRegion, 1), 100);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [screenState, isLandscape]);
 
   return { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } as const;
 };
