@@ -8,7 +8,7 @@ import {
   PanResponder,
 } from 'react-native';
 import MapView, { MapPressEvent, Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, RegionType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -56,6 +56,7 @@ import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPick
 import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
 import { HomeModalBrushPicker } from '../components/organisms/HomeModalBrushPicker';
 import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPicker';
+
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
@@ -795,12 +796,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
       setIsLoading(true);
-      await uploadData(storageLicenseResult.isOK);
-      setIsLoading(false);
-      await AlertAsync(t('Home.alert.upload'));
+      const { isOK, message } = await uploadData(storageLicenseResult.isOK);
+      if (!isOK) {
+        await AlertAsync(message);
+      } else {
+        await AlertAsync(t('Home.alert.upload'));
+      }
     } catch (e: any) {
-      setIsLoading(false);
       await AlertAsync(e.message);
+    } finally {
+      setIsLoading(false);
     }
   }, [isConnected, project, uploadData]);
 
@@ -903,18 +908,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     navigation.navigate('Home', { previous: 'Home', mode: undefined });
   }, [navigation]);
 
-  const ajustMapRegion = useCallback(
-    //画面がportraitの場合、画面の高さの1/4の緯度だけ下にずらす。landscapeの場合は、経度の1/4だけ右にずらす。
-    (region: RegionType) => {
-      if (isLandscape) {
-        return { ...region, longitude: region.longitude + mapRegion.longitudeDelta / 4 };
-      } else {
-        return { ...region, latitude: region.latitude - mapRegion.latitudeDelta / 4 };
-      }
-    },
-    [isLandscape, mapRegion.latitudeDelta, mapRegion.longitudeDelta]
-  );
-
   const pressExportPDF = useCallback(async () => {
     //console.log('pressExportPDF');
     let mapUri: string | Window | null;
@@ -988,31 +981,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //console.log('mode', route.params?.mode);
 
     if (route.params?.previous === 'Home') {
-      if (route.params?.jumpTo) {
-        const region = ajustMapRegion(route.params.jumpTo);
-        const zoomToJump = route.params.jumpTo.zoom;
-        changeMapRegion({ ...region, zoom: zoomToJump }, true);
-      }
+      //プロジェクトのホームにジャンプする場合
+      changeMapRegion(route.params.jumpTo, true);
     } else if (route.params?.previous === 'Settings') {
-      if (route.params?.jumpTo) {
-        const region = ajustMapRegion(route.params.jumpTo);
-        changeMapRegion({ ...region, zoom }, true);
-      }
+      //ecorismapを読み込んだときにプロジェクトのホームにジャンプする場合
+      changeMapRegion(route.params.jumpTo, true);
       setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'ProjectEdit') {
-      if (route.params?.jumpTo) {
-        const region = ajustMapRegion(route.params.jumpTo);
-        const zoomToJump = route.params.jumpTo.zoom;
-        changeMapRegion({ ...region, zoom: zoomToJump }, true);
-      }
+      //プロジェクトを開くときにプロジェクトのホームにジャンプする場合
+      changeMapRegion(route.params.jumpTo, true);
       setTimeout(() => bottomSheetRef.current?.close(), 300);
     } else if (route.params?.previous === 'DataEdit') {
-      if (route.params?.jumpTo) {
-        const region = ajustMapRegion(route.params.jumpTo);
-        changeMapRegion({ ...region, zoom }, true);
-      }
+      //データの範囲にジャンプする場合
+      changeMapRegion(route.params.jumpTo, true);
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
       } else {
@@ -1020,10 +1003,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
+        //ダウンロード画面を開いた場合
         setTimeout(() => bottomSheetRef.current?.close(), 500);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else if (route.params?.jumpTo) {
+        //PDFの範囲にジャンプする場合
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         toggleWebTerrainActive(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
