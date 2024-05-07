@@ -12,7 +12,7 @@ interface ProjectEditContextType {
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
-  pressAddMember: () => void;
+  pressAddMembers: (emails: string) => void;
   pressDeleteMember: (idx: number) => void;
   pressSaveProject: () => void;
   pressOpenProject: (isSetting: boolean) => void;

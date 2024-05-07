@@ -225,7 +225,8 @@
     "straight_curve": "Curve/straight line",
     "default": "Default",
     "common": "common",
-    "smoothLine": "smooth the lines"
+    "smoothLine": "smooth the lines",
+    "addMembers": "Add members (multiple members can be separated by commas, spaces, or new lines)"
   },
   "firebase": {
     "message": {
