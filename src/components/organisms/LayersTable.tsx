@@ -101,7 +101,7 @@ export const LayersTable = () => {
               color={COLOR.GRAY4}
               style={[styles.icon, { marginHorizontal: 5 }]}
               size={25}
-              name={'play-circle-outline'}
+              name={'folder-open-outline'}
               iconStyle={{ marginRight: 0 }}
             />
           </TouchableOpacity>
