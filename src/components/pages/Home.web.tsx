@@ -630,7 +630,7 @@ export default function HomeScreen() {
                 maxPitch={85}
                 onMove={(e) => onRegionChangeMapView(e.viewState)}
                 onLoad={onMapLoad}
-                cursor={featureButton === 'POINT' ? 'crosshair' : 'auto'}
+                cursor={currentDrawTool === 'PLOT_POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
                 onClick={onPressMapView}
                 //onMouseMove={onMouseMove}
