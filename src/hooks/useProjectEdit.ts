@@ -30,7 +30,7 @@ export type UseProjectEditReturnType = {
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
-  addMember: () => void;
+  addMembers: (emails: string) => void;
   deleteMember: (idx: number) => void;
 };
 
@@ -196,12 +196,24 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     [targetProject]
   );
 
-  const addMember = useCallback(() => {
-    const members = cloneDeep(targetProject.members);
-    members.push({ uid: '', email: '', verified: 'NO_ACCOUNT', role: 'MEMBER' });
-    setTargetProject({ ...targetProject, members });
-    setIsEdited(true);
-  }, [targetProject]);
+  const addMembers = useCallback(
+    (emails: string) => {
+      //,か、空白か、改行で区切る
+      const values = emails
+        .trim()
+        .split(/,|\s|\r\n|\r|\n/)
+        .filter((v) => v !== '');
+      const members = cloneDeep(targetProject.members);
+      values.forEach((email) => {
+        if (email === '') return;
+        if (members.find((v) => v.email === email)) return;
+        members.push({ uid: '', email: email, verified: 'NO_ACCOUNT', role: 'MEMBER' });
+      });
+      setTargetProject({ ...targetProject, members });
+      setIsEdited(true);
+    },
+    [targetProject]
+  );
 
   const deleteMember = useCallback(
     (idx: number) => {
@@ -233,7 +245,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     changeText,
     changeMemberText,
     changeAdmin,
-    addMember,
+    addMembers,
     deleteMember,
   } as const;
 };

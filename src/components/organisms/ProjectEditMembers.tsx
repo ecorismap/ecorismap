@@ -13,28 +13,14 @@ interface Props {
   editable: boolean;
   verified: 'OK' | 'HOLD' | 'NO_ACCOUNT';
   role: RoleType;
-  visiblePlus: boolean;
   visibleMinus: boolean;
   onChangeText: (name: string, value: string) => void;
   onCheckAdmin: (checked: boolean) => void;
-  pressAddMember: () => void;
   pressDeleteMember: () => void;
 }
 
 export const ProjectEditMembers = (props: Props) => {
-  const {
-    name,
-    value,
-    editable,
-    verified,
-    role,
-    visiblePlus,
-    visibleMinus,
-    onCheckAdmin,
-    onChangeText,
-    pressAddMember,
-    pressDeleteMember,
-  } = props;
+  const { name, value, editable, verified, role, visibleMinus, onCheckAdmin, onChangeText, pressDeleteMember } = props;
 
   return (
     <View style={styles.tr}>
@@ -49,7 +35,7 @@ export const ProjectEditMembers = (props: Props) => {
         />
       </View>
 
-      <View style={[styles.td, { flex: 3 }]}>
+      <View style={[styles.td, { flex: 2 }]}>
         <CheckBox
           disabled={!editable}
           label={t('common.admin')}
@@ -60,7 +46,7 @@ export const ProjectEditMembers = (props: Props) => {
         />
       </View>
 
-      {visibleMinus && (
+      {visibleMinus ? (
         <View style={[styles.td, { flex: 1 }]}>
           <Button
             style={{
@@ -71,18 +57,8 @@ export const ProjectEditMembers = (props: Props) => {
             onPress={pressDeleteMember}
           />
         </View>
-      )}
-      {visiblePlus && (
-        <View style={[styles.td, { flex: 1 }]}>
-          <Button
-            style={{
-              backgroundColor: COLOR.GRAY3,
-              padding: 0,
-            }}
-            name="plus"
-            onPress={pressAddMember}
-          />
-        </View>
+      ) : (
+        <View style={[styles.td, { flex: 1 }]} />
       )}
     </View>
   );
