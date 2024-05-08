@@ -33,7 +33,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             name={PROJECTEDIT_BTN.OPEN}
             onPress={onPressOpenProject}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
-            disabled
+            disabled={disabled}
           />
         </View>
       )}
