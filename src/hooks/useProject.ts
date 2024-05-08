@@ -52,7 +52,7 @@ export const useProject = (): UseProjectReturnType => {
   const downloadData = useCallback(
     async (shouldPhotoDownload: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (isOwnerAdmin && Platform.OS === 'ios') {
+      if (isOwnerAdmin && Platform.OS === 'web') {
         const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload);
         if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
       } else {
