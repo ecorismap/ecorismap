@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { FUNC_LOGIN, SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
@@ -6,6 +6,7 @@ import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Loading } from '../molecules/Loading';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Settings() {
   const {
@@ -28,6 +29,16 @@ export default function Settings() {
       flex: 1,
     },
   });
+
+  const navigation = useNavigation();
+
+  const headerLeftButton = useCallback(() => <></>, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => headerLeftButton(),
+    });
+  }, [headerLeftButton, navigation]);
 
   return (
     <View style={styles.container}>
