@@ -99,12 +99,17 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     }
 
     if (Platform.OS === 'web') {
-      navigation.navigate('Home');
+      if (route.params?.previous === 'AccountSettings') {
+        navigation.navigate('AccountSettings', { previous: 'Home' });
+      } else {
+        setAccountFormState('loginUserAccount');
+        navigation.navigate('Account', {});
+      }
       //window.open('https://ecoris-map.web.app', '_self');
     } else {
       navigation.navigate('Home');
     }
-  }, [accountFormState, logout, navigation]);
+  }, [accountFormState, logout, navigation, route.params?.previous, setAccountFormState]);
 
   const pressUpdateUserProfile = useCallback(
     async (displayName: string, photoURL: string) => {

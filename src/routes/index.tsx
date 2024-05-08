@@ -25,7 +25,7 @@ import { t } from '../i18n/config';
 import { FUNC_LOGIN } from '../constants/AppConstants';
 
 export type RootStackParamList = {
-  Account: { accountFormState?: AccountFormStateType; message?: string };
+  Account: { accountFormState?: AccountFormStateType; message?: string; previous?: keyof RootStackParamList };
   Home:
     | {
         tileMap?: TileMapType | undefined;
