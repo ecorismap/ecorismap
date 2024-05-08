@@ -989,6 +989,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setTimeout(() => bottomSheetRef.current?.close(), 300);
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
+    } else if (route.params?.previous === 'Projects') {
+      setTimeout(() => bottomSheetRef.current?.close(), 300);
+    } else if (route.params?.previous === 'AccountSettings') {
+      setTimeout(() => bottomSheetRef.current?.close(), 300);
     } else if (route.params?.previous === 'ProjectEdit') {
       //プロジェクトを開くときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
@@ -1018,7 +1022,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     }
     //プロジェクトのホームにジャンプする時にjumpToをリセットしないと更新されないので必要
-    navigation.setParams({ jumpTo: undefined });
+    navigation.setParams({ jumpTo: undefined, previous: undefined });
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
