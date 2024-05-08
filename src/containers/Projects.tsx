@@ -44,7 +44,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, [customerLicense, generateProject, isSettingProject, navigation, ownerProjectsCount]);
 
   const gotoBack = useCallback(async () => {
-    navigation.navigate('Home');
+    navigation.navigate('Home', { previous: 'Projects', mode: undefined });
   }, [navigation]);
 
   const gotoProject = useCallback(

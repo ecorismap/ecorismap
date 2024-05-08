@@ -63,7 +63,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
   }, [navigation]);
 
   const pressGotoHome = useCallback(() => {
-    navigation.navigate('Home');
+    navigation.navigate('Home', { previous: 'AccountSettings', mode: undefined });
   }, [navigation]);
 
   return (
