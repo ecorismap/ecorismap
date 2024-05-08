@@ -8,20 +8,24 @@ interface Props {
   name: string;
   value: string | number | undefined;
   editable?: boolean;
+  placeholder?: string;
+  style?: { [key: string]: string | number };
   onChangeText: (name: string, value: string) => void;
   onEndEditing: () => void;
 }
 
 export const EditString = (props: Props) => {
-  const { name, value, editable, onChangeText, onEndEditing } = props;
+  const { style, name, value, editable, placeholder, onChangeText, onEndEditing } = props;
 
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
         <TextInput
-          style={styles.input}
+          style={[styles.input, style]}
           label={name}
           value={value ? value.toString() : ''}
+          placeholder={placeholder ?? ''}
+          placeholderTextColor={COLOR.GRAY3}
           onChangeText={onChangeText}
           onEndEditing={onEndEditing}
           onBlur={onEndEditing}

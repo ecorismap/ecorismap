@@ -175,7 +175,8 @@
     "general": "一般",
     "default": "デフォルト",
     "common": "共通",
-    "smoothLine": "ラインを滑らかにする"
+    "smoothLine": "ラインを滑らかにする",
+    "addMembers": "メンバーを追加（カンマ、空白、改行区切りで複数可）"
   },
   "Home": {
     "confirm": {

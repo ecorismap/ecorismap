@@ -11,14 +11,14 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
 
   const pressUpdateUserProfile = useCallback(() => {
-    navigation.navigate('Account', { accountFormState: 'updateUserProfile' });
+    navigation.navigate('Account', { accountFormState: 'updateUserProfile', previous: 'AccountSettings' });
   }, [navigation]);
   const pressChangeUserPassword = useCallback(() => {
-    navigation.navigate('Account', { accountFormState: 'changeUserPassword' });
+    navigation.navigate('Account', { accountFormState: 'changeUserPassword', previous: 'AccountSettings' });
   }, [navigation]);
 
   const pressChangeEncryptPassword = useCallback(() => {
-    navigation.navigate('Account', { accountFormState: 'changeEncryptPassword' });
+    navigation.navigate('Account', { accountFormState: 'changeEncryptPassword', previous: 'AccountSettings' });
   }, [navigation]);
 
   const pressResetEncryptKey = useCallback(async () => {
@@ -27,6 +27,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
       navigation.navigate('Account', {
         accountFormState: 'resetEncryptKey',
         message: t('AccountSettings.message.resetEncryptKey'),
+        previous: 'AccountSettings',
       });
     }
   }, [navigation]);
@@ -37,6 +38,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
       navigation.navigate('Account', {
         accountFormState: 'deleteUserAccount',
         message: t('AccountSettings.message.deleteUserAccount'),
+        previous: 'AccountSettings',
       });
     }
   }, [navigation]);
@@ -51,6 +53,7 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
       navigation.navigate('Account', {
         accountFormState: 'deleteAllProjects',
         message: t('AccountSettings.message.deleteAllProjects'),
+        previous: 'AccountSettings',
       });
     }
   }, [navigation, projectId]);
