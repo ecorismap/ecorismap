@@ -148,9 +148,9 @@ export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): n
   return serials.length === 0 ? 1 : Math.max(...serials) + 1;
 };
 
-export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): number => {
+export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): string => {
   const serial = dataSet.find((data) => data.id === groupId)?.field[groupFieldName];
-  return serial === undefined ? -1 : (serial as number);
+  return serial === undefined ? '' : (serial as string);
 };
 
 export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
