@@ -1,4 +1,3 @@
-import { TILE_FOLDER } from '../constants/AppConstants';
 import { getTileRegion } from './Tile';
 import { TileMapType } from '../types';
 
@@ -18,20 +17,14 @@ export async function generateTileMap(
 
     for (let x = leftTileX; x <= rightTileX; x++) {
       for (const map of maps) {
-        let mapSrc;
-
-        const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
-
-        const mapUrl = mapUri
+        const mapUrl = map.url
           .replace('{z}', tileZoom.toString())
           .replace('{x}', x.toString())
           .replace('{y}', y.toString());
 
-        if (mapSrc) {
-          tileContents += `<img src="${mapUrl}" style="position: absolute; width: 256px; height: 256px; left: ${
-            256 * (x - leftTileX)
-          }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
-        }
+        tileContents += `<img src="${mapUrl}" style="position: absolute; width: 256px; height: 256px; left: ${
+          256 * (x - leftTileX)
+        }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
       }
     }
     tileContents += '</div>';
