@@ -55,3 +55,12 @@ export function tilesForZoom(
 
   return tiles;
 }
+
+export function getTileRegion(region: { minLon: number; maxLon: number; minLat: number; maxLat: number }, zoom = 15) {
+  const { minLon, minLat, maxLon, maxLat } = region;
+  const leftTileX = lonToTileX(minLon, zoom);
+  const rightTileX = lonToTileX(maxLon, zoom);
+  const bottomTileY = latToTileY(minLat, zoom);
+  const topTileY = latToTileY(maxLat, zoom);
+  return { leftTileX, rightTileX, bottomTileY, topTileY };
+}
