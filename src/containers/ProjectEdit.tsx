@@ -58,11 +58,18 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   } = useRepository();
   const { generateEcorisMapData, createExportSettings } = useEcorisMapFile();
 
+  const downloadDataForSetting = useCallback(async () => {
+    const shouldPhotoDownload = false;
+    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
+    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
+    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload, [], []);
+    if (!templateDataResult.isOK) throw new Error(templateDataResult.message);
+  }, [downloadCommonData, downloadTemplateData, targetProject]);
+
   const downloadDataForAdmin = useCallback(async () => {
     const shouldPhotoDownload = false;
     const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-
     const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
     if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
       throw new Error(publicDataResult.message);
@@ -80,19 +87,11 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
   }, [downloadAllPrivateData, downloadCommonData, downloadPublicData, downloadTemplateData, targetProject]);
 
-  const downloadDataForSetting = useCallback(async () => {
-    const shouldPhotoDownload = false;
-    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
-    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload, [], []);
-    if (!templateDataResult.isOK) throw new Error(templateDataResult.message);
-  }, [downloadCommonData, downloadTemplateData, targetProject]);
-
   const downloadDataForUser = useCallback(async () => {
     const shouldPhotoDownload = false;
+
     const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-
     const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
     if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
       throw new Error(publicDataResult.message);
