@@ -123,8 +123,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [layers]
   );
   const activeMemoRecordSet = useMemo(
-    () => dataSet.find(({ layerId }) => layerId === activeMemoLayer?.id),
-    [dataSet, activeMemoLayer]
+    () => dataSet.find(({ layerId, userId }) => layerId === activeMemoLayer?.id && userId === user.uid),
+    [dataSet, activeMemoLayer?.id, user.uid]
   );
   const memoLines = useMemo(
     () => (activeMemoRecordSet ? (activeMemoRecordSet.data as LineRecordType[]) : ([] as LineRecordType[])),
@@ -177,7 +177,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       setFuture([]);
       setMapMemoLines([]);
     },
-    [activeMemoLayer, activeMemoRecordSet, dispatch, generateRecord, memoLines]
+    [activeMemoLayer, activeMemoRecordSet, dispatch, generateRecord, memoLines, user.uid]
   );
 
   const clearMapMemoEditingLine = useCallback(() => {
