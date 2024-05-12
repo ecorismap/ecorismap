@@ -14,7 +14,7 @@ import {
 
 import { AppState } from '../modules';
 import * as Print from 'expo-print';
-import { latToTileY, lonToTileX, tileToWebMercator } from '../utils/Tile';
+import { getTileRegion, tileToWebMercator } from '../utils/Tile';
 import { useWindow } from './useWindow';
 import * as turf from '@turf/turf';
 import { generateLabel } from './useLayers';
@@ -25,10 +25,9 @@ import { isBrushTool, isStampTool, toPDFCoordinate, toPixel, toPoint } from '../
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
 import * as FileSystem from 'expo-file-system';
-import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
-import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { COLOR } from '../constants/AppConstants';
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../utils/Coords';
-import { exists } from '../utils/File';
+import { generateTileMap } from '../utils/PDF';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -307,18 +306,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     [convertCoordToPixel]
   );
 
-  const getTileRegion = useCallback(
-    (zoom = 15) => {
-      const { minLon, minLat, maxLon, maxLat } = pdfRegion;
-      const leftTileX = lonToTileX(minLon, zoom);
-      const rightTileX = lonToTileX(maxLon, zoom);
-      const bottomTileY = latToTileY(minLat, zoom);
-      const topTileY = latToTileY(maxLat, zoom);
-      return { leftTileX, rightTileX, bottomTileY, topTileY };
-    },
-    [pdfRegion]
-  );
-
   const getTileScale = useCallback(
     (tileZoom: number) => {
       const resolution = getTileResolution(tileZoom, mapRegion.latitude);
@@ -331,7 +318,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   const getTileShift = useCallback(
     (tileZoom: number) => {
       const { minLon, maxLat } = pdfRegion;
-      const { leftTileX, topTileY } = getTileRegion(tileZoom);
+      const { leftTileX, topTileY } = getTileRegion(pdfRegion, tileZoom);
       const { mercatorX, mercatorY } = tileToWebMercator(leftTileX, topTileY, tileZoom);
       const [x, y] = turf.toMercator([minLon, maxLat]);
       const resolution = getTileResolution(tileZoom, mapRegion.latitude);
@@ -340,7 +327,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       const shiftY = (mercatorY - y) * res;
       return { shiftX, shiftY };
     },
-    [pdfRegion, getTileRegion, getTileResolution, mapRegion.latitude]
+    [pdfRegion, getTileResolution, mapRegion.latitude]
   );
 
   const getBoundingBox = useCallback(() => {
@@ -423,60 +410,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       </div>`;
     return commentContents;
   }, [pageMargin.pixel, pageSize.heightPixel, pageSize.widthPixel]);
-
-  const generateTileMap = useCallback(async () => {
-    const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
-    const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(tileZoom);
-
-    let tileContents = '';
-    const maps = tileMaps.filter((m) => m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
-
-    for (let y = topTileY; y <= bottomTileY; y++) {
-      tileContents += '<div style="position: absolute; left: 0; top: 0;">';
-
-      for (let x = leftTileX; x <= rightTileX; x++) {
-        for (const map of maps) {
-          let mapSrc;
-
-          const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
-          if (await exists(mapUri)) {
-            mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
-              //console.error(e);
-              return undefined;
-            });
-          } else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
-            mapSrc = undefined;
-          } else {
-            const mapUrl = map.url
-              .replace('{z}', tileZoom.toString())
-              .replace('{x}', x.toString())
-              .replace('{y}', y.toString());
-
-            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${map.id}/${tileZoom}/${x}`, {
-              intermediates: true,
-            });
-            const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
-            if (resp.status === 200) {
-              mapSrc = await manipulateAsync(resp.uri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
-                //console.error(e);
-                return undefined;
-              });
-            }
-          }
-
-          if (mapSrc) {
-            tileContents += `<img src="data:image/png;base64,${
-              mapSrc.base64
-            }" style="position: absolute; width: 256px; height: 256px; left: ${256 * (x - leftTileX)}px; top: ${
-              256 * (y - topTileY)
-            }px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
-          }
-        }
-      }
-      tileContents += '</div>';
-    }
-    return tileContents;
-  }, [getTileRegion, pdfTileMapZoomLevel, tileMaps]);
 
   const generateStampSvg = useCallback(
     (
@@ -906,7 +839,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   const generateVectorMap = useCallback(
     (data: { dataSet: DataType[]; layers: LayerType[] }) => {
       const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
-      const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(tileZoom);
+      const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
       const width = 256 * (rightTileX - leftTileX + 1);
       const height = 256 * (bottomTileY - topTileY + 1);
       const { mercatorX: leftX, mercatorY: bottomY } = tileToWebMercator(leftTileX, bottomTileY + 1, tileZoom);
@@ -936,7 +869,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       svgContent += '</svg>';
       return svgContent;
     },
-    [generateLineSvg, generatePointSvg, generatePolygonSvg, getTileRegion, getTileScale, pdfTileMapZoomLevel]
+    [generateLineSvg, generatePointSvg, generatePolygonSvg, getTileScale, pdfRegion, pdfTileMapZoomLevel]
   );
 
   const generateVRT = useCallback(
@@ -1073,7 +1006,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       // タイル地図を作成するための HTML
       let mapContents = `<div style="position: absolute; left: ${pageMargin.pixel}; top:${pageMargin.pixel};width: ${pageSize.widthPixel}px;height: ${pageSize.heightPixel}px;overflow: hidden;">`;
       mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
-      mapContents += await generateTileMap();
+      mapContents += await generateTileMap(tileMaps, pdfRegion, pdfTileMapZoomLevel);
       mapContents += generateVectorMap(data);
       mapContents += '</div>';
       mapContents += '</div>';
@@ -1123,7 +1056,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       generateCompositionXML,
       generateNorthArrow,
       generateScaleBar,
-      generateTileMap,
       generateVectorMap,
       getTileScale,
       getTileShift,
@@ -1136,7 +1068,9 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       paperSize.widthMillimeter,
       paperSize.widthPixel,
       paperSize.widthPoint,
+      pdfRegion,
       pdfTileMapZoomLevel,
+      tileMaps,
     ]
   );
 
