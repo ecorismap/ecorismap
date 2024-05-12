@@ -169,16 +169,21 @@ export const deleteAllData = async (projectId: string) => {
 export const deleteData = async (
   projectId: string,
   layerId: string,
-  permission: PermissionType | 'TEMPLATE',
-  userId: string
+  permission?: PermissionType | 'TEMPLATE',
+  userId?: string
 ) => {
   try {
-    const querySnapshot = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('layerId', '==', layerId)
-      .where('userId', '==', userId)
-      .where('permission', '==', permission)
-      .get();
+    let querySnapshot;
+    if (permission === undefined || userId === undefined) {
+      querySnapshot = await firestore.collection(`projects/${projectId}/data`).where('layerId', '==', layerId).get();
+    } else {
+      querySnapshot = await firestore
+        .collection(`projects/${projectId}/data`)
+        .where('layerId', '==', layerId)
+        .where('userId', '==', userId)
+        .where('permission', '==', permission)
+        .get();
+    }
     if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
     const batch = firestore.batch();
     //@ts-ignore

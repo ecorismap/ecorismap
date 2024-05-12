@@ -247,12 +247,17 @@ export const useRepository = (): UseRepositoryReturnType => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
-      const targetLayers = getTargetLayers(layers, 'All');
-      //もともとあったレイヤが削除された場合、この処理ではそのレイヤのデータは削除されないままになってしまう。
-      //ToDO: レイヤを削除した場合は、そのレイヤのデータも削除する処理を追加する。or　レイヤid関係なく全てのデータを削除する処理を追加する。
-      for (const layer of targetLayers) {
+
+      const commonLayers = getTargetLayers(layers, 'Common');
+      for (const layer of commonLayers) {
+        //コモンレイヤと同じidのデータ（テンプレートと全員のデータ）を一旦すべて削除
+        await projectStore.deleteData(project.id, layer.id);
+      }
+      const templateLayers = getTargetLayers(layers, 'Template');
+      for (const layer of templateLayers) {
+        //テンプレートレイヤを一旦すべて削除。データは残す。
+        //ToDo: ただし構造が大きく変わる場合は、データも消さないとエラーになる可能性がある。
         await projectStore.deleteData(project.id, layer.id, 'TEMPLATE', user.uid);
-        await projectStore.deleteData(project.id, layer.id, 'COMMON', user.uid);
       }
       return { isOK: true, message: '' };
     },
