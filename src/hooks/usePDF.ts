@@ -28,6 +28,7 @@ import * as FileSystem from 'expo-file-system';
 import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../utils/Coords';
+import { exists } from '../utils/File';
 
 export type UseEcorisMapFileReturnType = {
   isPDFSettingsVisible: boolean;
@@ -438,7 +439,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
           let mapSrc;
 
           const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
-          if ((await FileSystem.getInfoAsync(mapUri)).exists) {
+          if (await exists(mapUri)) {
             mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
               //console.error(e);
               return undefined;
