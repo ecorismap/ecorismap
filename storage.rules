@@ -1,0 +1,24 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /projects/{projectId}/{layerId}/{userId}/{allPaths=**} {
+      allow get: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && isValidContentType(request.resource)
+        && isValidFileSize(request.resource);
+      allow delete: if isSignedIn()
+    }
+  }
+
+  function isSignedIn() {
+    return request.auth != null && request.auth.token.email_verified;
+  }
+ 
+  function isValidContentType(data) {
+    return data.contentType in ['image/png',"image/jpeg"];
+  }
+
+  function isValidFileSize(data) {
+    return data.size < 5 * 1024 * 1024
+  }
+}

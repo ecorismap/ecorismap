@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /projects/{project} {
+        function isSignedIn() {
+          return request.auth != null && request.auth.token.email_verified;
+        }
+        function verifyFields(required) {
+          return request.resource.data.keys().hasAll(required) &&
+            request.resource.data.keys().hasOnly(required);
+        }
+        function verifyUpdateFields(fields) {
+          return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+        }
+        allow create: if isSignedIn() 
+        && request.auth.uid == request.resource.data.ownerUid 
+        && verifyFields(["ownerUid", "adminsUid", "membersUid","encdata","encryptedAt"]);
+
+        allow update: if isSignedIn() 
+        && request.auth.uid == request.resource.data.ownerUid 
+        && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt"]);
+ 
+
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerUid;
+        allow read: if isSignedIn() && (request.auth.uid in resource.data.membersUid) || (request.auth.uid == resource.data.ownerUid);
+        match /settings/{settings} {
+          allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
+          allow write: if isSignedIn() 
+          && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+          && verifyFields(["editorUid","encdata","encryptedAt"]);
+        }
+        match /data/{data} {
+          allow create,update: if isSignedIn() 
+          && (
+             (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PRIVATE")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PUBLIC")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE"))
+          && request.auth.uid == request.resource.data.userId 
+          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"]);
+          
+          allow delete: if isSignedIn() 
+          && (request.auth.uid == resource.data.userId
+          || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid 
+          || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid);
+
+ 
+          allow read: if isSignedIn() 
+          && (
+             (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.auth.uid == resource.data.userId)
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "PUBLIC")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "COMMON")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && resource.data.permission == "TEMPLATE")
+          || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid) 
+          );
+        }
+        match /position/{position} {
+          allow read,write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
+        }
+    }
+
+    match /customers/{uid} {
+      allow read: if request.auth.uid == uid;
+
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth.uid == uid;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+      match /payments/{id} {
+        allow read: if request.auth.uid == uid;
+      }
+    }
+
+    match /products/{id} {
+      allow read: if true;
+
+      match /prices/{id} {
+        allow read: if true;
+      }
+
+      match /tax_rates/{id} {
+        allow read: if true;
+      }
+    }
+  
+  }
+}
