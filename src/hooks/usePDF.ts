@@ -1078,8 +1078,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     let html = '<table style="border: 1px solid black; border-collapse: collapse;">';
     html += '<thead>';
     html += '<tr>';
+    const cellWidth = 800 / field.length;
+    const fontSize = cellWidth > 80 ? 12 : 10;
     field.forEach((f) => {
-      html += `<th style="border: 1px solid black; padding: 10px;background-color: #f2f2f2;">${f.name}</th>`;
+      html += `<th style="border: 1px solid black; padding: 10px;background-color: #f2f2f2;font-size:${fontSize}px;"><div style="max-height:45px;max-width:${cellWidth}px;">${f.name}</div></th>`;
     });
     html += '</tr>';
     html += '</thead>';
@@ -1091,9 +1093,11 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       field.forEach((f) => {
         const fieldValue = record.field[f.name];
         if (isPhotoField(fieldValue)) {
-          html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue.map((p) => p.name).join(',')}</td>`;
+          html += `<td style="overflow-wrap: break-word;word-wrap: break-word;white-space: normal;border: 1px solid black; padding: 10px;font-size:${fontSize}px;"><div style="max-height:45px;max-width:${cellWidth}px;">${fieldValue
+            .map((p) => p.name)
+            .join(',')}</div></td>`;
         } else {
-          html += `<td style="border: 1px solid black; padding: 10px;">${fieldValue}</td>`;
+          html += `<td style="overflow-wrap: break-word;word-wrap: break-word;white-space: normal;border: 1px solid black; padding: 10px;font-size:${fontSize}px;"><div style="max-height:45px;max-width:${cellWidth}px;">${fieldValue}</div></td>`;
         }
       });
       html += '</tr>';
