@@ -725,7 +725,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await e3kit.cleanupEncryptKey();
       await logout();
       clearProject();
-      navigation.navigate('Account', {});
+      navigation.navigate('Account', {
+        accountFormState: 'loginUserAccount',
+      });
     } else {
       await e3kit.cleanupEncryptKey();
       await logout();
