@@ -96,5 +96,3 @@ export async function customShareAsync() {}
 
 export async function moveFile() {}
 export async function unlink() {}
-
-export async function exists() {}

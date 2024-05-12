@@ -168,7 +168,3 @@ export async function unlink(uri: string) {
     await RNFS.unlink(uri);
   }
 }
-
-export async function exists(uri: string) {
-  return await RNFS.exists(uri);
-}
