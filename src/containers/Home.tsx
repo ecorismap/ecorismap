@@ -734,21 +734,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       // 作成した PDF を共有
       if (Platform.OS === 'web') {
-        if (outputDataPDF) {
-          setIsLoading(true);
-          dataUri = await generateDataPDF({ dataSet, layers });
-          setIsLoading(false);
-          (dataUri as Window).document.title = fileName.replace('_map_', '_data_');
-          (dataUri as Window).print();
-          (dataUri as Window).close();
-        }
-        setIsLoading(true);
         mapUri = await generatePDF({ dataSet, layers });
-        setIsLoading(false);
+
         setTimeout(async () => {
           (mapUri as Window).document.title = fileName;
           (mapUri as Window).print();
           (mapUri as Window).close();
+          if (outputDataPDF) {
+            dataUri = await generateDataPDF({ dataSet, layers });
+
+            setTimeout(async () => {
+              (dataUri as Window).document.title = fileName.replace('_map_', '_data_');
+              (dataUri as Window).print();
+              (dataUri as Window).close();
+            }, 1000);
+          }
         }, 5000);
       } else {
         if (outputDataPDF) {
