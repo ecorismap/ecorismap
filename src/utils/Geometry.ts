@@ -677,7 +677,7 @@ export function createLayerFromGeoJson(
     id: uuidv4(),
     name: sanitize(fileName),
     type: featureType,
-    permission: 'PRIVATE',
+    permission: 'COMMON',
     colorStyle: {
       colorType: 'SINGLE',
       transparency: 0.8,
@@ -700,7 +700,7 @@ function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
     id: uuidv4(),
     name: sanitize(fileName),
     type: featureType,
-    permission: 'PRIVATE',
+    permission: 'COMMON',
     colorStyle: {
       colorType: 'SINGLE',
       transparency: 0.8,
@@ -740,7 +740,7 @@ export function createLayerFromCsv(csv: string, fileName: string, featureType: F
     id: uuidv4(),
     name: sanitize(fileName),
     type: featureType,
-    permission: 'PRIVATE',
+    permission: 'COMMON',
     colorStyle: {
       colorType: 'SINGLE',
       transparency: 0.8,
