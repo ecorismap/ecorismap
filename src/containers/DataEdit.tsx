@@ -294,10 +294,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (targetLayer.type === 'POINT') {
       const coord = targetRecord.coords as LocationType;
       jumpRegion = {
-        latitude: coord.latitude,
-        longitude: coord.longitude,
-        latitudeDelta: 0.001,
-        longitudeDelta: 0.001,
+        latitude: isLandscape ? coord.latitude : coord.latitude - mapRegion.latitudeDelta / 4,
+        longitude: isLandscape ? coord.longitude + mapRegion.longitudeDelta / 4 : coord.longitude,
+        latitudeDelta: mapRegion.latitudeDelta,
+        longitudeDelta: mapRegion.longitudeDelta,
         zoom: mapRegion.zoom,
       };
     } else if (targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
@@ -326,7 +326,16 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [isLandscape, mapRegion.zoom, navigation, targetLayer.type, targetRecord.coords, windowWidth]);
+  }, [
+    isLandscape,
+    mapRegion.latitudeDelta,
+    mapRegion.longitudeDelta,
+    mapRegion.zoom,
+    navigation,
+    targetLayer.type,
+    targetRecord.coords,
+    windowWidth,
+  ]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;
