@@ -226,7 +226,9 @@
     "default": "Default",
     "common": "common",
     "smoothLine": "smooth the lines",
-    "addMembers": "Add members (multiple members can be separated by commas, spaces, or new lines)"
+    "addMembers": "Add members (multiple members can be separated by commas, spaces, or new lines)",
+    "yes": "yes",
+    "no": "no"
   },
   "firebase": {
     "message": {
@@ -650,7 +652,8 @@
       "reOpenProject": "Do you want to open the project? \nAny unsaved data in the current project will be discarded.",
       "download": "Would you like to download the data? \nData that has not been uploaded will be discarded.",
       "upload": "Do you want to upload your data?",
-      "track_start": "Do you want to start recording the track?"
+      "track_start": "Do you want to start recording the track?",
+      "downloadAllUserData": "Do you also want to download other members' data?"
     },
     "navigation": {
       "download": "Map download",
