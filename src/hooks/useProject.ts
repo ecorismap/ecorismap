@@ -11,14 +11,14 @@ import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMa
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
-import { Platform } from 'react-native';
 
 export type UseProjectReturnType = {
   isSettingProject: boolean;
   isSynced: boolean;
+  isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  downloadData: (shouldPhotoDownload: boolean) => Promise<void>;
+  downloadData: (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => Promise<void>;
   uploadData: (isLicenseOK: boolean) => Promise<{
     isOK: boolean;
     message: string;
@@ -50,9 +50,9 @@ export const useProject = (): UseProjectReturnType => {
   } = useRepository();
 
   const downloadData = useCallback(
-    async (shouldPhotoDownload: boolean) => {
+    async (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (isOwnerAdmin && Platform.OS === 'web') {
+      if (downloadType === 'ADMIN') {
         const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload);
         if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
       } else {
@@ -63,7 +63,7 @@ export const useProject = (): UseProjectReturnType => {
       }
       dispatch(editSettingsAction({ photosToBeDeleted: [] }));
     },
-    [dispatch, downloadPrivateData, downloadPublicAndAllPrivateData, downloadPublicData, isOwnerAdmin, project]
+    [dispatch, downloadPrivateData, downloadPublicAndAllPrivateData, downloadPublicData, project]
   );
 
   const uploadData = useCallback(
@@ -124,6 +124,7 @@ export const useProject = (): UseProjectReturnType => {
   return {
     isSettingProject,
     isSynced,
+    isOwnerAdmin,
     project,
     projectRegion,
     downloadData,

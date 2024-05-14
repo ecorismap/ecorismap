@@ -128,6 +128,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
             await AlertAsync(t('ProjectEdit.alert.openProject'));
           }
         }
+
         setIsLoading(true);
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
         if (!loadE3kitGroupResult.isOK) throw new Error(loadE3kitGroupResult.message);
@@ -136,8 +137,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         if (!projectSettingsResult.isOK || projectSettingsResult.region === undefined)
           throw new Error(projectSettingsResult.message);
 
-        if (isOwnerAdmin && Platform.OS === 'web') {
-          isSetting ? await downloadDataForSetting() : await downloadDataForAdmin();
+        if (isSetting) {
+          await downloadDataForSetting();
+        } else if (Platform.OS === 'web') {
+          await downloadDataForAdmin();
         } else {
           await downloadDataForUser();
         }
@@ -163,7 +166,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       isOwner,
       loadE3kitGroup,
       downloadProjectSettings,
-      isOwnerAdmin,
       openProject,
       navigation,
       downloadDataForSetting,
