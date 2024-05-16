@@ -9,8 +9,8 @@ export const ConfirmAsync = async (
       '',
       message,
       [
-        { text: text.false, style: 'cancel', onPress: () => resolve(false) },
-        { text: text.true, onPress: () => resolve(true) },
+        { text: text.false, style: 'cancel', onPress: () => resolve(false), swalType: 'cancel' },
+        { text: text.true, onPress: () => resolve(true), swalType: 'confirm' },
       ],
       {
         cancelable: true,
@@ -21,7 +21,7 @@ export const ConfirmAsync = async (
 
 export const AlertAsync = async (message: string) =>
   new Promise((resolve) => {
-    Alert.alert('', message, [{ text: 'OK', onPress: () => resolve(true) }], {
+    Alert.alert('', message, [{ text: 'OK', onPress: () => resolve(true), swalType: 'confirm' }], {
       cancelable: true,
       onDismiss: () => resolve(false),
     });
