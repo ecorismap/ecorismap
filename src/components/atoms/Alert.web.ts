@@ -1,24 +1,42 @@
-// Alert.web.ts
-import { AlertButton, AlertStatic } from 'react-native';
+import { type AlertButton, type AlertOptions } from 'react-native';
 
-class WebAlert implements Pick<AlertStatic, 'alert'> {
-  public alert(title: string, message?: string, buttons?: AlertButton[]): void {
-    if (buttons === undefined || buttons.length === 0) {
-      //@ts-ignore
-      window.alert([title, message].filter(Boolean).join('\n'));
-      return;
-    }
-    //@ts-ignore
-    const result = window.confirm([title, message].filter(Boolean).join('\n'));
+import Swal from 'sweetalert2';
 
-    if (result === true) {
-      const confirm = buttons.find(({ style }) => style !== 'cancel');
-      confirm?.onPress?.();
-      return;
-    }
+export type CustomAlertButton = AlertButton & {
+  swalType?: 'deny' | 'cancel' | 'confirm';
+};
 
-    const cancel = buttons.find(({ style }) => style === 'cancel');
-    cancel?.onPress?.();
+class WebAlert {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public alert(title: string, message?: string, buttons?: CustomAlertButton[], options?: AlertOptions): void {
+    const confirmButton = buttons ? buttons.find((button) => button.swalType === 'confirm') : undefined;
+    const denyButton = buttons ? buttons.find((button) => button.swalType === 'deny') : undefined;
+    const cancelButton = buttons ? buttons.find((button) => button.swalType === 'cancel') : undefined;
+
+    Swal.fire({
+      title: title,
+      text: message,
+      showConfirmButton: !!confirmButton,
+      showDenyButton: !!denyButton,
+      showCancelButton: !!cancelButton,
+      confirmButtonText: confirmButton?.text,
+      denyButtonText: denyButton?.text,
+      cancelButtonText: cancelButton?.text,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        if (confirmButton?.onPress !== undefined) {
+          confirmButton.onPress();
+        }
+      } else if (result.isDenied) {
+        if (denyButton?.onPress !== undefined) {
+          denyButton.onPress();
+        }
+      } else if (result.isDismissed) {
+        if (cancelButton?.onPress !== undefined) {
+          cancelButton.onPress();
+        }
+      }
+    });
   }
 }
 

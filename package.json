@@ -128,6 +128,7 @@
     "redux-persist": "^6.0.0",
     "sanitize-filename": "^1.6.3",
     "styled-components": "^5.3.3",
+    "sweetalert2": "^11.11.0",
     "uuid": "^9.0.1",
     "xmlbuilder": "^15.1.1",
     "xmldom": "^0.6.0"
