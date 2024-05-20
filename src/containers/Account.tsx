@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
@@ -35,7 +35,13 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     restoreEncryptKey,
     resetEncryptKey,
     deleteAllProjects,
-  } = useAccount(route.params?.accountFormState, route.params?.message);
+  } = useAccount();
+
+  useEffect(() => {
+    setAccountFormState(route.params?.accountFormState ?? 'loginUserAccount');
+    setAccountMessage(route.params?.message ?? '');
+    navigation.setParams({ accountFormState: undefined, message: undefined });
+  }, [navigation, route.params?.accountFormState, route.params?.message, setAccountFormState, setAccountMessage]);
 
   const pressLoginUserAccount = useCallback(
     async (email: string, password: string) => {
