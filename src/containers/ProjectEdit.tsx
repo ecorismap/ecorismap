@@ -139,7 +139,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
         if (isSetting) {
           await downloadDataForSetting();
-        } else if (Platform.OS === 'web') {
+        } else if (Platform.OS === 'web' && isOwnerAdmin) {
           await downloadDataForAdmin();
         } else {
           await downloadDataForUser();
@@ -166,6 +166,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       isOwner,
       loadE3kitGroup,
       downloadProjectSettings,
+      isOwnerAdmin,
       openProject,
       navigation,
       downloadDataForSetting,
