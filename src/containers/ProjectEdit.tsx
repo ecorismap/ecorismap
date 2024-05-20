@@ -273,8 +273,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         navigation.navigate('Projects', { reload: true });
       } else {
         await saveUpdatedProject(checkedProjectResult.project);
-        await AlertAsync(t('hooks.message.updateProjectInfo'));
         setIsLoading(false);
+        await AlertAsync(t('hooks.message.updateProjectInfo'));
       }
     } catch (e: any) {
       setIsLoading(false);
