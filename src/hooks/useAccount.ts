@@ -21,9 +21,9 @@ import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 export type UseAccountReturnType = {
   user: UserType;
   accountMessage: string;
-  accountFormState: AccountFormStateType | undefined;
+  accountFormState: AccountFormStateType;
   isLoading: boolean;
-  setAccountFormState: Dispatch<SetStateAction<AccountFormStateType | undefined>>;
+  setAccountFormState: Dispatch<SetStateAction<AccountFormStateType>>;
   setAccountMessage: Dispatch<SetStateAction<string>>;
   initializeEncript: (authUser: FirebaseAuthTypes.User) => Promise<{
     isOK: boolean;
@@ -70,12 +70,12 @@ export type UseAccountReturnType = {
   }>;
 };
 
-export const useAccount = (accountFormState_?: AccountFormStateType, message?: string): UseAccountReturnType => {
+export const useAccount = (): UseAccountReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: AppState) => state.user);
   const [isLoading, setIsLoading] = useState(false);
-  const [accountMessage, setAccountMessage] = useState(message ? message : '');
-  const [accountFormState, setAccountFormState] = useState(accountFormState_);
+  const [accountMessage, setAccountMessage] = useState('');
+  const [accountFormState, setAccountFormState] = useState<AccountFormStateType>('loginUserAccount');
 
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
@@ -393,11 +393,6 @@ export const useAccount = (accountFormState_?: AccountFormStateType, message?: s
     },
     [deleteAllProjects, user]
   );
-
-  useEffect(() => {
-    setAccountFormState(accountFormState_ ?? 'loginUserAccount');
-    setAccountMessage(message ?? '');
-  }, [accountFormState_, message]);
 
   useEffect(() => {
     (async () => {
