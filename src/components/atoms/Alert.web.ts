@@ -22,6 +22,9 @@ class WebAlert {
       confirmButtonText: confirmButton?.text,
       denyButtonText: denyButton?.text,
       cancelButtonText: cancelButton?.text,
+      customClass: {
+        container: 'swal2-custom-container',
+      },
     }).then((result) => {
       if (result.isConfirmed) {
         if (confirmButton?.onPress !== undefined) {
