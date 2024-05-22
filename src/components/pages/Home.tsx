@@ -35,7 +35,6 @@ import { isMapMemoDrawTool, nearDegree } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
-import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
@@ -46,6 +45,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -500,7 +500,7 @@ export default function HomeScreen() {
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
           {<HomeAttributionText bottom={8} attribution={attribution} />}
-          {!(isDownloadPage || isExportPDFPage) && <HomeCommonTools />}
+          {!(isDownloadPage || isExportPDFPage) && <HomeInfoToolButton />}
           {!(isDownloadPage || isExportPDFPage) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}

@@ -8,7 +8,7 @@ import {
   PanResponder,
 } from 'react-native';
 import MapView, { MapPressEvent, Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -56,6 +56,7 @@ import { HomeModalStampPicker } from '../components/organisms/HomeModalStampPick
 import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
 import { HomeModalBrushPicker } from '../components/organisms/HomeModalBrushPicker';
 import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPicker';
+import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -124,6 +125,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     currentPolygonTool,
     featureButton,
     isDrawLineVisible,
+    visibleInfoPicker,
+    currentInfoTool,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -142,6 +145,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     hideDrawLine,
     resetDrawTools,
     toggleWebTerrainActive,
+    setVisibleInfoPicker,
+    setCurrentInfoTool,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -365,8 +370,25 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeColorTypeToIndividual, editableMapMemo, setDrawTool, setMapMemoTool]
   );
 
+  const selectInfoTool = useCallback(
+    (value: InfoToolType) => {
+      if (value === 'NONE') {
+        setCurrentInfoTool('NONE');
+        toggleWebTerrainActive(true);
+      } else {
+        setCurrentInfoTool(value);
+        toggleWebTerrainActive(false);
+        if (Platform.OS !== 'web') toggleHeadingUp(false);
+      }
+      resetDrawTools();
+      setDrawTool('NONE');
+    },
+    [resetDrawTools, setCurrentInfoTool, setDrawTool, toggleHeadingUp, toggleWebTerrainActive]
+  );
+
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
+      setCurrentInfoTool('NONE');
       if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
         if (currentDrawTool === value) {
           if (isEditingDraw) {
@@ -400,18 +422,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
 
           setDrawTool(value);
-        }
-      } else if (isInfoTool(value)) {
-        if (currentDrawTool === value) {
-          resetDrawTools();
-          setDrawTool('NONE');
-          toggleWebTerrainActive(true);
-        } else {
-          setDrawTool(value);
-          setMapMemoTool('NONE');
-          toggleWebTerrainActive(false);
-          if (Platform.OS !== 'web') toggleHeadingUp(false);
-          await runTutrial('INFOTOOL');
         }
       } else if (value === 'SELECT') {
         if (currentDrawTool === value) {
@@ -480,11 +490,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isSelectedDraw,
       resetDrawTools,
       runTutrial,
+      setCurrentInfoTool,
       setDrawTool,
-      setMapMemoTool,
       showHisyouToolSetting,
-      toggleHeadingUp,
-      toggleWebTerrainActive,
     ]
   );
 
@@ -1175,12 +1183,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           //console.log('#######################');
           //@ts-ignore
           isPencilTouch.current = !!e.nativeEvent.altitudeAngle;
-          if (currentDrawTool === 'MOVE') {
+          if (currentInfoTool !== 'NONE') {
+            //情報ツールの場合
+            await getInfoOfFeature(e);
+          } else if (currentDrawTool === 'MOVE') {
             hideDrawLine();
           } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
             await addLocationPoint();
-          } else if (isInfoTool(currentDrawTool)) {
-            await getInfoOfFeature(e);
           } else if (currentDrawTool !== 'NONE') {
             if (isPencilTouch.current === false && isPencilModeActive) {
               hideDrawLine();
@@ -1189,6 +1198,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             }
             pressSvgView(e);
           } else if (featureButton === 'MEMO') {
+            //MapMemoの場合
             if (isMapMemoDrawTool(currentMapMemoTool) && isPencilTouch.current === false && isPencilModeActive) {
               setIsPinch(true);
               return;
@@ -1227,6 +1237,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       addLocationPoint,
       currentDrawTool,
+      currentInfoTool,
       currentMapMemoTool,
       featureButton,
       getInfoOfFeature,
@@ -1295,6 +1306,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isSynced,
         isShowingProjectButtons,
         isSettingProject,
+        currentInfoTool,
         currentMapMemoTool,
         visibleMapMemoColor,
         currentPen,
@@ -1348,12 +1360,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         termsOfUseOK,
         termsOfUseCancel,
         selectMapMemoTool,
+        selectInfoTool,
         setPen,
         setVisibleMapMemoColor,
         setVisibleMapMemoPen,
         setVisibleMapMemoStamp,
         setVisibleMapMemoBrush,
         setVisibleMapMemoEraser,
+        setVisibleInfoPicker,
         selectPenColor,
         pressUndoMapMemo,
         pressRedoMapMemo,
@@ -1401,7 +1415,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         selectMapMemoTool={selectMapMemoTool}
         setVisibleMapMemoEraser={setVisibleMapMemoEraser}
       />
-
+      <HomeModalInfoPicker
+        modalVisible={visibleInfoPicker}
+        currentInfoTool={currentInfoTool}
+        selectInfoTool={selectInfoTool}
+        setVisibleInfoPicker={setVisibleInfoPicker}
+      />
       <HomeModalPDFSettings
         visible={isPDFSettingsVisible}
         pdfOrientation={pdfOrientation}

@@ -32,7 +32,6 @@ import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
-import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
@@ -48,6 +47,7 @@ import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 import Dexie from 'dexie';
+import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 
 export default function HomeScreen() {
   const {
@@ -729,7 +729,7 @@ export default function HomeScreen() {
 
           {!FUNC_LOGIN || isDownloadPage ? null : <HomeAccountButton />}
 
-          {!isDownloadPage && <HomeCommonTools />}
+          {!isDownloadPage && <HomeInfoToolButton />}
           {!isDownloadPage && featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {!isDownloadPage && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!isDownloadPage && <HomeButtons />}
