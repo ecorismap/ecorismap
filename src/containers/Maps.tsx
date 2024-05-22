@@ -116,8 +116,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
     setIsLoading(true);
     setTimeout(async () => {
       const { message } = await importMapFile(uri, name, ext);
-      if (message !== '') await AlertAsync(message);
       setIsLoading(false);
+      if (message !== '') await AlertAsync(message);
     }, 10);
   }, [importMapFile]);
 
