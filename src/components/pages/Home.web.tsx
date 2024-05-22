@@ -28,7 +28,6 @@ import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
 import { HomeContext } from '../../contexts/Home';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
-import { HomeCommonTools } from '../organisms/HomeCommonTools';
 import { isPointRecordType } from '../../utils/Data';
 import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
@@ -44,6 +43,7 @@ import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 import Dexie from 'dexie';
+import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 
 export default function HomeScreen() {
   const {
@@ -699,7 +699,7 @@ export default function HomeScreen() {
             </View>
           </div>
 
-          <HomeCommonTools />
+          <HomeInfoToolButton />
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
           <HomeButtons />

@@ -169,7 +169,13 @@
     "general": "一般",
     "default": "デフォルト",
     "common": "共通",
-    "smoothLine": "ラインを滑らかにする"
+    "smoothLine": "ラインを滑らかにする",
+    "selectInfoTool": "選択タイプ",
+    "selectionType": "選択タイプ",
+    "selectAllInfo": "すべて",
+    "selectPointInfo": "ポイントのみ",
+    "selectLineInfo": "ラインのみ",
+    "selectPolygonInfo": "ポリゴンのみ"
   },
   "Home": {
     "confirm": {
