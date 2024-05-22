@@ -287,13 +287,13 @@ export default function HomeScreen() {
             justifyContent: 'center',
             alignItems: 'center',
           }}
-          onPress={() => bottomSheetRef.current?.close()}
+          onPress={onCloseBottomSheet}
         >
           <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
         </TouchableOpacity>
       </View>
     );
-  }, [bottomSheetRef]);
+  }, [onCloseBottomSheet]);
 
   useEffect(() => {
     if (!mapViewRef.current) return;
