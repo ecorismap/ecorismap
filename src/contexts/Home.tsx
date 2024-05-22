@@ -24,6 +24,7 @@ import {
   ScaleType,
   PaperOrientationType,
   PaperSizeType,
+  InfoToolType,
 } from '../types';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
@@ -131,12 +132,15 @@ export interface HomeContextType {
   termsOfUseOK: () => void;
   termsOfUseCancel: () => void;
   selectMapMemoTool: (value: MapMemoToolType | undefined) => void;
+  selectInfoTool: (value: InfoToolType) => void;
+  currentInfoTool: InfoToolType;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoStamp: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoBrush: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoEraser: React.Dispatch<React.SetStateAction<boolean>>;
+  setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
