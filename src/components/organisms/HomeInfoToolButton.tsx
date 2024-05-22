@@ -1,50 +1,45 @@
-import React, { useState } from 'react';
-import { COLOR, DRAWTOOL } from '../../constants/AppConstants';
-import { DrawToolType, InfoToolType } from '../../types';
-import { isInfoTool } from '../../utils/General';
-
+import React, { useContext } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
+import { HomeContext } from '../../contexts/Home';
+import { useWindow } from '../../hooks/useWindow';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../atoms';
-import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
+import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 
-interface Props {
-  disabled: boolean;
-  isPositionRight: boolean;
-  currentDrawTool: DrawToolType;
-  selectDrawTool: (value: DrawToolType) => void;
-}
+export const HomeInfoToolButton = () => {
+  const { isEditingDraw, isSelectedDraw, currentInfoTool, selectInfoTool, setVisibleInfoPicker } =
+    useContext(HomeContext);
+  const { isLandscape } = useWindow();
+  const insets = useSafeAreaInsets();
+  const disabled = isEditingDraw || isSelectedDraw;
+  const styles = StyleSheet.create({
+    buttonContainer: {
+      // elevation: 101,
+      left: 9 + insets.left,
+      marginHorizontal: 0,
+      position: 'absolute',
+      top: Platform.OS === 'ios' && !isLandscape ? 260 : 240,
+      // zIndex: 101,
+    },
 
-export const HomeInfoToolButton = (props: Props) => {
-  const { disabled, isPositionRight, currentDrawTool, selectDrawTool } = props;
-  const [currentTool, setCurrentTool] = useState<InfoToolType>(
-    isInfoTool(currentDrawTool) ? currentDrawTool : 'ALL_INFO'
-  );
-
+    selectionalButton: {
+      alignSelf: 'flex-start',
+      marginTop: 2,
+    },
+  });
   return (
-    <SelectionalLongPressButton selectedButton={currentTool} directionRow={'row'} isPositionRight={isPositionRight}>
-      <Button
-        id={'ALL_INFO'}
-        name={DRAWTOOL.ALL_INFO}
-        backgroundColor={currentDrawTool === 'ALL_INFO' ? COLOR.ALFARED : disabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
-        borderRadius={10}
-        disabled={disabled}
-        onPressCustom={() => {
-          setCurrentTool('ALL_INFO');
-          selectDrawTool('ALL_INFO');
-        }}
-      />
-      <Button
-        id={'FEATURETYPE_INFO'}
-        name={DRAWTOOL.FEATURETYPE_INFO}
-        backgroundColor={
-          currentDrawTool === 'FEATURETYPE_INFO' ? COLOR.ALFARED : disabled ? COLOR.ALFAGRAY : COLOR.ALFABLUE
-        }
-        borderRadius={10}
-        disabled={disabled}
-        onPressCustom={() => {
-          setCurrentTool('FEATURETYPE_INFO');
-          selectDrawTool('FEATURETYPE_INFO');
-        }}
-      />
-    </SelectionalLongPressButton>
+    <View style={styles.buttonContainer}>
+      <View style={styles.selectionalButton}>
+        <Button
+          id={'ALL_INFO'}
+          name={INFOTOOL.ALL_INFO}
+          backgroundColor={disabled ? COLOR.ALFAGRAY : currentInfoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFARED}
+          borderRadius={10}
+          disabled={disabled}
+          onPress={() => setVisibleInfoPicker(true)}
+          onLongPress={() => selectInfoTool('NONE')}
+        />
+      </View>
+    </View>
   );
 };

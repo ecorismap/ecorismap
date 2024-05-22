@@ -220,7 +220,12 @@
     "straight_curve": "Curve/straight line",
     "default": "Default",
     "common": "common",
-    "smoothLine": "smooth the lines"
+    "smoothLine": "smooth the lines",
+    "selectInfoTool": "selection type",
+    "selectPointInfo": "points only",
+    "selectLineInfo": "line only",
+    "selectPolygonInfo": "polygon only",
+    "selectAllInfo": "all"
   },
   "firebase": {
     "message": {
