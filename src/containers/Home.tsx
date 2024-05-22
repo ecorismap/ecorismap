@@ -815,15 +815,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       setIsLoading(true);
       const { isOK, message } = await uploadData(storageLicenseResult.isOK);
+      setIsLoading(false);
       if (!isOK) {
         await AlertAsync(message);
       } else {
         await AlertAsync(t('Home.alert.upload'));
       }
     } catch (e: any) {
-      await AlertAsync(e.message);
-    } finally {
       setIsLoading(false);
+      await AlertAsync(e.message);
     }
   }, [isConnected, project, uploadData]);
 
