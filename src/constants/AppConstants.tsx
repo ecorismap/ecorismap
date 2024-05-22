@@ -161,14 +161,16 @@ export const POLYGONTOOL = {
 
 export const INFOTOOL = {
   ALL_INFO: 'cursor-default-click',
-  FEATURETYPE_INFO: 'cursor-default-click-outline',
+  POINT_INFO: 'scatter-plot',
+  LINE_INFO: 'chart-timeline-variant',
+  POLYGON_INFO: 'pentagon-outline',
+  NONE: 'none',
 } as const;
 
 export const DRAWTOOL = {
   ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
-  ...INFOTOOL,
   SELECT: 'select',
   MOVE_POINT: 'map-marker-right',
   DELETE_POINT: 'map-marker-remove',

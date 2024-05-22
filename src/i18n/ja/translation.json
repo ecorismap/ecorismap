@@ -178,7 +178,12 @@
     "smoothLine": "ラインを滑らかにする",
     "addMembers": "メンバーを追加（カンマ、空白、改行区切りで複数可）",
     "yes": "はい",
-    "no": "いいえ"
+    "no": "いいえ",
+    "selectionType": "選択タイプ",
+    "selectAllInfo": "すべて",
+    "selectPointInfo": "ポイントのみ",
+    "selectLineInfo": "ラインのみ",
+    "selectPolygonInfo": "ポリゴンのみ"
   },
   "Home": {
     "confirm": {

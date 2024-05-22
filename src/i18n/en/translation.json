@@ -228,7 +228,11 @@
     "smoothLine": "smooth the lines",
     "addMembers": "Add members (multiple members can be separated by commas, spaces, or new lines)",
     "yes": "yes",
-    "no": "no"
+    "no": "no",
+    "selectPointInfo": "points only",
+    "selectLineInfo": "line only",
+    "selectPolygonInfo": "polygon only",
+    "selectAllInfo": "all"
   },
   "firebase": {
     "message": {

@@ -378,7 +378,7 @@ export type PolygonToolType = keyof typeof POLYGONTOOL;
 export type DrawToolType = keyof typeof DRAWTOOL;
 export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
-
+export type InfoToolType = keyof typeof INFOTOOL;
 export type MapMemoToolType = keyof typeof MAPMEMOTOOL;
 export type PenType = keyof typeof PEN;
 export type StampType = keyof typeof STAMP;
