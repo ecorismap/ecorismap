@@ -12,7 +12,17 @@ class WebAlert {
     const confirmButton = buttons ? buttons.find((button) => button.swalType === 'confirm') : undefined;
     const denyButton = buttons ? buttons.find((button) => button.swalType === 'deny') : undefined;
     const cancelButton = buttons ? buttons.find((button) => button.swalType === 'cancel') : undefined;
-
+    if (confirmButton === undefined && denyButton === undefined && cancelButton === undefined) {
+      Swal.fire({
+        title: title,
+        text: message,
+        showConfirmButton: true,
+        customClass: {
+          container: 'swal2-custom-container',
+        },
+      });
+      return;
+    }
     Swal.fire({
       title: title,
       text: message,
