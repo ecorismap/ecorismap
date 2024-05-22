@@ -10,6 +10,7 @@ import {
   DrawLineType,
   DrawToolType,
   FeatureButtonType,
+  InfoToolType,
   LayerType,
   LineRecordType,
   LineToolType,
@@ -64,6 +65,10 @@ export type UseDrawToolReturnType = {
   currentPolygonTool: PolygonToolType;
   featureButton: FeatureButtonType;
   isDrawLineVisible: boolean;
+  visibleInfoPicker: boolean;
+  currentInfoTool: InfoToolType;
+  setCurrentInfoTool: React.Dispatch<React.SetStateAction<InfoToolType>>;
+  setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setDrawTool: React.Dispatch<React.SetStateAction<DrawToolType>>;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
@@ -124,6 +129,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [currentPolygonTool, setPolygonTool] = useState<PolygonToolType>('PLOT_POLYGON');
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
+  const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
+  const [currentInfoTool, setCurrentInfoTool] = useState<InfoToolType>('NONE');
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
   const drawLine = useRef<DrawLineType[]>([]);
@@ -407,7 +414,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       let layer;
       let recordSet;
       let recordIndex;
-      if (feature === undefined && (featureButton === 'POINT' || currentDrawTool === 'ALL_INFO')) {
+      if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POINT_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
           const selectedFeature = selectPointFeatureByLatLon(
@@ -429,7 +436,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       if (
         feature === undefined &&
-        (featureButton === 'LINE' || featureButton === 'MEMO' || currentDrawTool === 'ALL_INFO')
+        (featureButton === 'MEMO' || currentInfoTool === 'ALL_INFO' || currentInfoTool === 'LINE_INFO')
       ) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
 
@@ -451,7 +458,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         }
       }
 
-      if (feature === undefined && (featureButton === 'POLYGON' || currentDrawTool === 'ALL_INFO')) {
+      if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POLYGON_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
           const selectedFeature = selectPolygonFeatureByLatLon(
@@ -478,7 +485,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { layer, feature, recordSet, recordIndex };
     },
     [
-      currentDrawTool,
+      currentInfoTool,
       featureButton,
       findLayer,
       lineDataSet,
@@ -803,6 +810,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectLine,
     featureButton,
     isDrawLineVisible,
+    visibleInfoPicker,
+    currentInfoTool,
     deleteDraw,
     undoDraw,
     savePoint,
@@ -821,5 +830,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     hideDrawLine,
     showDrawLine,
     toggleWebTerrainActive,
+    setVisibleInfoPicker,
+    setCurrentInfoTool,
   } as const;
 };
