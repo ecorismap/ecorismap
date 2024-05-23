@@ -31,7 +31,6 @@ export const HomeInfoToolButton = () => {
     <View style={styles.buttonContainer}>
       <View style={styles.selectionalButton}>
         <Button
-          id={'ALL_INFO'}
           name={INFOTOOL.ALL_INFO}
           backgroundColor={disabled ? COLOR.ALFAGRAY : currentInfoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFARED}
           borderRadius={10}
