@@ -282,16 +282,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (ret) {
           setIsEditingRecord(false);
           unselectRecord();
-          bottomSheetRef.current?.close();
           //ToDo 写真の削除処理はどうする？
         } else {
           bottomSheetRef.current?.snapToIndex(2);
+          return;
         }
       } else {
         unselectRecord();
-        bottomSheetRef.current?.close();
       }
     }
+    bottomSheetRef.current?.close();
   }, [isEditingRecord, routeName, setIsEditingRecord, unselectRecord]);
 
   const onRegionChangeMapView = useCallback(
