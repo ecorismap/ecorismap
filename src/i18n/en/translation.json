@@ -110,6 +110,13 @@
     "alert": {
       "referenceData": "Please save your changes once.",
       "copyData": "I copied it."
+    },
+    "tooltip": {
+      "jump": "jump to data",
+      "google": "View on Google Maps",
+      "copy": "copy data",
+      "save": "keep",
+      "delete": "delete"
     }
   },
   "common": {
@@ -232,7 +239,10 @@
     "selectPointInfo": "points only",
     "selectLineInfo": "line only",
     "selectPolygonInfo": "polygon only",
-    "selectAllInfo": "all"
+    "selectAllInfo": "all",
+    "drawtool": "draw tools",
+    "InfoTool": "Feature selection",
+    "line": "line"
   },
   "firebase": {
     "message": {
@@ -452,6 +462,11 @@
     },
     "navigation": {
       "title": "Map selection"
+    },
+    "tooltip": {
+      "import": "import",
+      "add": "Add map",
+      "download": "export"
     }
   },
   "Projects": {
@@ -487,6 +502,11 @@
     },
     "navigation": {
       "title": "Layer settings"
+    },
+    "tooltip": {
+      "delete": "Delete layer",
+      "export": "Export settings",
+      "save": "keep"
     }
   },
   "Data": {
@@ -499,6 +519,10 @@
     },
     "navigation": {
       "title": " "
+    },
+    "tooltip": {
+      "export": "export",
+      "delete": "Data deletion"
     }
   },
   "hooks": {
@@ -662,6 +686,12 @@
     "navigation": {
       "download": "Map download",
       "exportPDF": "PDF output"
+    },
+    "tooltip": {
+      "addLocationPoint": "Add points to current location",
+      "plotPoint": "add points",
+      "movePoint": "Move the point by long pressing",
+      "deletePoint": "remove points"
     }
   },
   "LayerEditFeatureStyle": {
@@ -738,6 +768,12 @@
   "Licenses": {
     "navigation": {
       "title": "Open Source License"
+    }
+  },
+  "Layer": {
+    "tooltip": {
+      "add": "Add layer",
+      "import": "import"
     }
   }
 }

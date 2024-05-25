@@ -4,6 +4,7 @@ import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 
 import { Button } from '../atoms';
+import { t } from '../../i18n/config';
 
 export const LayerEditButton = () => {
   const { isEdited, pressSaveLayer, pressDeleteLayer, pressExportLayer } = useContext(LayerEditContext);
@@ -15,6 +16,7 @@ export const LayerEditButton = () => {
         backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEdited || !editable}
         onPress={pressDeleteLayer}
+        tooltipText={t('LayerEdit.tooltip.delete')}
       />
 
       <Button
@@ -22,12 +24,14 @@ export const LayerEditButton = () => {
         onPress={pressExportLayer}
         backgroundColor={!isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
         disabled={isEdited}
+        tooltipText={t('LayerEdit.tooltip.export')}
       />
       <Button
         name={LAYEREDIT_BTN.SAVE}
         onPress={pressSaveLayer}
         backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
         disabled={!isEdited}
+        tooltipText={t('LayerEdit.tooltip.save')}
       />
     </View>
   );

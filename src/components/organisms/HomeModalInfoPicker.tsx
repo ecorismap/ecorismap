@@ -112,7 +112,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
-                    id={'ALL_INFO'}
                     name={INFOTOOL.ALL_INFO}
                     backgroundColor={infoTool === 'ALL_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -127,7 +126,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
-                    id={'POINT_INFO'}
                     name={INFOTOOL.POINT_INFO}
                     backgroundColor={infoTool === 'POINT_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -142,7 +140,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
-                    id={'LINE_INFO'}
                     name={INFOTOOL.LINE_INFO}
                     backgroundColor={infoTool === 'LINE_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
@@ -157,7 +154,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
-                    id={'POLYGON_INFO'}
                     name={INFOTOOL.POLYGON_INFO}
                     backgroundColor={infoTool === 'POLYGON_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
