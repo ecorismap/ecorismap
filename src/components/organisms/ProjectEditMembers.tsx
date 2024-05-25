@@ -54,6 +54,7 @@ export const ProjectEditMembers = (props: Props) => {
               padding: 0,
             }}
             name="minus"
+            size={14}
             onPress={pressDeleteMember}
           />
         </View>
@@ -77,6 +78,7 @@ const MemberTextInput = React.memo((props: any) => {
           }}
           disabled={true}
           name={verified ? 'account-check' : 'account-alert'}
+          size={14}
         />
       </View>
       <TextInput {...props} />

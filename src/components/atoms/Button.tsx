@@ -73,7 +73,6 @@ const Button = React.memo((props: Props) => {
       bottom: 45,
       padding: 5,
       position: 'absolute',
-      zIndex: 1,
     },
     tooltipText: {
       color: COLOR.WHITE,
@@ -91,7 +90,7 @@ const Button = React.memo((props: Props) => {
   }, [tooltipTimeout]);
 
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={{ alignItems: 'center', zIndex: 10000 }}>
       {showTooltip && tooltipText && (
         <View style={[styles.tooltip, tooltipPosition]}>
           <Text style={styles.tooltipText}>{tooltipText}</Text>

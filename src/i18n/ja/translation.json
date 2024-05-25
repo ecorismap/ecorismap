@@ -235,7 +235,17 @@
       "addLocationPoint": "現在地にポイントを追加",
       "plotPoint": "ポイントを追加",
       "movePoint": "ポイントを長押しで移動",
-      "deletePoint": "ポイントを削除"
+      "deletePoint": "ポイントを削除",
+      "projects": "プロジェクト一覧",
+      "setting": "アカウント設定",
+      "logout": "ログアウト",
+      "saveProject": "プロジェクトの設定を保存",
+      "discardProect": " プロジェクトの変更を破棄",
+      "jumpProject": "プロジェクトのホームにジャンプ",
+      "downloadData": "データをダウンロード",
+      "uploadData": "データをアップロード",
+      "syncPosition": "現在地を共有",
+      "closeProject": "プロジェクトを閉じる"
     }
   },
   "AccountSettings": {
@@ -384,6 +394,10 @@
     },
     "alert": {
       "addProject": "プロジェクトを追加するには、アップグレードしてください。"
+    },
+    "tooltip": {
+      "reloadProjects": "リロード",
+      "createProject": "プロジェクト作成"
     }
   },
   "ProjectEdit": {
@@ -402,6 +416,12 @@
     "confirm": {
       "deleteProject": "プロジェクトを削除しますか？",
       "gotoBack": "変更を破棄しますか？"
+    },
+    "tooltip": {
+      "open": "プロジェクトを開く",
+      "setting": "プロジェクトを編集",
+      "export": "プロジェクトのデータをエクスポート",
+      "delete": "プロジェクトを削除"
     }
   },
   "Maps": {
