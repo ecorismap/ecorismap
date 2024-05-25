@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -18,6 +18,7 @@ interface Props {
   borderWidth?: number;
   style?: any;
   tooltipText?: string;
+  tooltipPosition?: any;
 }
 
 const Button = React.memo((props: Props) => {
@@ -34,14 +35,24 @@ const Button = React.memo((props: Props) => {
     borderWidth,
     style,
     tooltipText,
+    tooltipPosition,
   } = props;
+
   const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const handlePressIn = () => {
-    setShowTooltip(true);
+    const timeout = setTimeout(() => {
+      setShowTooltip(true);
+    }, 500); // 500ms の遅延を設定
+    tooltipTimeout.current = timeout;
   };
 
   const handlePressOut = () => {
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout.current!);
+      tooltipTimeout.current = null;
+    }
     setShowTooltip(false);
   };
 
@@ -52,9 +63,9 @@ const Button = React.memo((props: Props) => {
       borderColor: borderColor || COLOR.BLACK,
       borderRadius: borderRadius || 50,
       borderWidth: borderWidth || 0,
-      height: 35,
+      height: (35 * size) / 20,
       justifyContent: 'center',
-      width: 35,
+      width: (35 * size) / 20,
     },
     tooltip: {
       backgroundColor: COLOR.BLACK,
@@ -67,14 +78,23 @@ const Button = React.memo((props: Props) => {
     tooltipText: {
       color: COLOR.WHITE,
       fontSize: 12,
+      minWidth: (tooltipText?.length || 0) * 12,
     },
   });
 
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeout) {
+        clearTimeout(tooltipTimeout.current!);
+      }
+    };
+  }, [tooltipTimeout]);
+
   return (
     <View style={{ alignItems: 'center' }}>
-      {showTooltip && (
-        <View style={styles.tooltip}>
-          <Text style={styles.tooltipText}>{tooltipText || 'Tooltip'}</Text>
+      {showTooltip && tooltipText && (
+        <View style={[styles.tooltip, tooltipPosition]}>
+          <Text style={styles.tooltipText}>{tooltipText}</Text>
         </View>
       )}
       <Pressable

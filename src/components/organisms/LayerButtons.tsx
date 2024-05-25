@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { LAYERS_BTN } from '../../constants/AppConstants';
 import { LayersContext } from '../../contexts/Layers';
 import { Button } from '../atoms';
+import { t } from '../../i18n/config';
 
 export const LayerButtons = () => {
   const { gotoLayerEditForAdd, pressImportLayerAndData } = useContext(LayersContext);
@@ -10,10 +11,10 @@ export const LayerButtons = () => {
   return (
     <View style={styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.IMPORT} onPress={pressImportLayerAndData} />
+        <Button name={LAYERS_BTN.IMPORT} onPress={pressImportLayerAndData} tooltipText={t('Layer.tooltip.import')} />
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.ADD} onPress={gotoLayerEditForAdd} />
+        <Button name={LAYERS_BTN.ADD} onPress={gotoLayerEditForAdd} tooltipText={t('Layer.tooltip.add')} />
       </View>
     </View>
   );

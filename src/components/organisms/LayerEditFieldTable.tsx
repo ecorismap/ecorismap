@@ -29,7 +29,6 @@ export const LayerEditFieldTitle = () => {
             backgroundColor: COLOR.GRAY3,
             padding: 0,
           }}
-          size={30}
           name="plus"
           disabled={!editable}
           onPress={pressAddField}
@@ -90,6 +89,7 @@ export const LayerEditFieldTable = () => {
                   padding: 0,
                 }}
                 name="minus"
+                size={16}
                 disabled={!editable}
                 onPress={() => pressDeleteField(index!)}
               />
@@ -111,6 +111,7 @@ export const LayerEditFieldTable = () => {
                     padding: 0,
                   }}
                   name="play"
+                  size={16}
                   onPress={() => gotoLayerEditFieldItem(index!, item)}
                 />
               )}

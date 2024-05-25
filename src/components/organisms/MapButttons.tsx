@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { MAPS_BTN } from '../../constants/AppConstants';
 import { MapsContext } from '../../contexts/Maps';
 import { Button } from '../atoms';
+import { t } from '../../i18n/config';
 
 export const MapButtons = React.memo(() => {
   const { pressOpenEditMap, pressImportMaps, pressExportMaps } = useContext(MapsContext);
@@ -11,9 +12,14 @@ export const MapButtons = React.memo(() => {
     <View style={styles.buttonContainer}>
       {/* <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} /> */}
 
-      <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} />
-      <Button name={MAPS_BTN.MAP_ADD} onPress={() => pressOpenEditMap(null)} />
-      <Button name={MAPS_BTN.EXPORT} onPress={pressExportMaps} />
+      <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} tooltipText={t('Maps.tooltip.import')} />
+      <Button name={MAPS_BTN.MAP_ADD} onPress={() => pressOpenEditMap(null)} tooltipText={t('Maps.tooltip.add')} />
+      <Button
+        name={MAPS_BTN.EXPORT}
+        onPress={pressExportMaps}
+        tooltipText={t('Maps.tooltip.download')}
+        tooltipPosition={{ right: 1 }}
+      />
     </View>
   );
 });

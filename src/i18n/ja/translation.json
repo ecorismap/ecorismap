@@ -175,7 +175,10 @@
     "selectAllInfo": "すべて",
     "selectPointInfo": "ポイントのみ",
     "selectLineInfo": "ラインのみ",
-    "selectPolygonInfo": "ポリゴンのみ"
+    "selectPolygonInfo": "ポリゴンのみ",
+    "drawtool": "ドローツール",
+    "InfoTool": "地物選択",
+    "line": "ライン"
   },
   "Home": {
     "confirm": {
@@ -214,6 +217,12 @@
     "navigation": {
       "download": "地図のダウンロード",
       "exportPDF": "PDFの出力"
+    },
+    "tooltip": {
+      "addLocationPoint": "現在地にポイントを追加",
+      "plotPoint": "ポイントを追加",
+      "movePoint": "ポイントを長押しで移動",
+      "deletePoint": "ポイントを削除"
     }
   },
   "AccountSettings": {
@@ -394,6 +403,11 @@
     },
     "confirm": {
       "deleteMap": "削除しますか？"
+    },
+    "tooltip": {
+      "import": "インポート",
+      "add": "地図追加",
+      "download": "エクスポート"
     }
   },
   "MapList": {
@@ -413,6 +427,11 @@
     "confirm": {
       "deleteLayer": "レイヤを削除しますか？レイヤ内のデータも削除されます。",
       "gotoBack": "変更を破棄して戻りますか？"
+    },
+    "tooltip": {
+      "delete": "レイヤ削除",
+      "export": "設定のエクスポート",
+      "save": "保存"
     }
   },
   "LayerEditFeatureStyle": {
@@ -505,6 +524,11 @@
     },
     "confirm": {
       "deleteData": "データを削除しますか？"
+    },
+    "tooltip": {
+      "add": "データ追加",
+      "export": "エクスポート",
+      "delete": "データ削除"
     }
   },
   "DataEdit": {
@@ -524,6 +548,13 @@
     "alert": {
       "referenceData": "一旦変更を保存してください。",
       "copyData": "コピーしました。"
+    },
+    "tooltip": {
+      "jump": "データにジャンプ",
+      "google": "グーグルマップで表示",
+      "copy": "データをコピー",
+      "save": "保存",
+      "delete": "削除"
     }
   },
   "firebase": {
@@ -728,6 +759,12 @@
   "Licenses": {
     "navigation": {
       "title": "オープンソースライセンス"
+    }
+  },
+  "Layer": {
+    "tooltip": {
+      "add": "レイヤ追加",
+      "import": "インポート"
     }
   }
 }
