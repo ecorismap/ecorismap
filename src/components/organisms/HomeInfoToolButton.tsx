@@ -5,6 +5,7 @@ import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../atoms';
 import { COLOR, INFOTOOL } from '../../constants/AppConstants';
+import { t } from '../../i18n/config';
 
 export const HomeInfoToolButton = () => {
   const { isEditingDraw, isSelectedDraw, currentInfoTool, selectInfoTool, setVisibleInfoPicker } =
@@ -37,6 +38,8 @@ export const HomeInfoToolButton = () => {
           disabled={disabled}
           onPress={() => setVisibleInfoPicker(true)}
           onLongPress={() => selectInfoTool('NONE')}
+          tooltipText={t('common.InfoTool')}
+          tooltipPosition={{ left: 1 }}
         />
       </View>
     </View>

@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { COLOR, DATA_BTN } from '../../constants/AppConstants';
 import { DataContext } from '../../contexts/Data';
 import { Button } from '../atoms';
+import { t } from '../../i18n/config';
 
 export const DataButton = () => {
   const { layer, projectId, isChecked, pressAddData, pressDeleteData, pressExportData } = useContext(DataContext);
@@ -13,7 +14,12 @@ export const DataButton = () => {
     <>
       <View style={styles.button}>
         {(layer.type === 'NONE' || layer.type === 'POINT') && (
-          <Button name={DATA_BTN.ADD} onPress={pressAddData} backgroundColor={COLOR.BLUE} />
+          <Button
+            name={DATA_BTN.ADD}
+            onPress={pressAddData}
+            backgroundColor={COLOR.BLUE}
+            tooltipText={t('Data.tooltip.add')}
+          />
         )}
         {!exportDisabled && (
           <Button
@@ -21,6 +27,7 @@ export const DataButton = () => {
             onPress={pressExportData}
             backgroundColor={isChecked ? COLOR.BLUE : COLOR.LIGHTBLUE}
             disabled={!isChecked}
+            tooltipText={t('Data.tooltip.export')}
           />
         )}
         <Button
@@ -28,6 +35,7 @@ export const DataButton = () => {
           onPress={pressDeleteData}
           backgroundColor={isChecked ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!isChecked}
+          tooltipText={t('Data.tooltip.delete')}
         />
       </View>
     </>

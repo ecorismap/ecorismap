@@ -10,6 +10,7 @@ import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
+import { t } from '../../i18n/config';
 
 export const HomeDrawTools = () => {
   const {
@@ -47,20 +48,14 @@ export const HomeDrawTools = () => {
       top: Platform.OS === 'ios' ? 360 : 330,
       // zIndex: 101,
     },
-
-    selectionalButton: {
-      alignSelf: 'flex-start',
-      marginTop: 2,
-    },
   });
 
   return (
     <View style={styles.buttonContainer}>
-      <View style={styles.selectionalButton}>
+      <View>
         {featureButton === 'POINT' && (
           <View style={styles.button}>
             <Button
-              id={'ADD_LOCATION_POINT'}
               name={POINTTOOL.ADD_LOCATION_POINT}
               disabled={isEditingDraw || isSelectedDraw}
               backgroundColor={
@@ -72,6 +67,8 @@ export const HomeDrawTools = () => {
               }
               borderRadius={10}
               onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
+              tooltipText={t('Home.tooltip.addLocationPoint')}
+              tooltipPosition={{ left: 1 }}
             />
           </View>
         )}
@@ -83,6 +80,8 @@ export const HomeDrawTools = () => {
               backgroundColor={currentDrawTool === 'PLOT_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
               borderRadius={10}
               onPress={() => selectDrawTool('PLOT_POINT')}
+              tooltipText={t('Home.tooltip.plotPoint')}
+              tooltipPosition={{ left: 1 }}
             />
           </View>
         )}
@@ -94,6 +93,8 @@ export const HomeDrawTools = () => {
               borderRadius={10}
               disabled={false}
               onPress={() => selectDrawTool('MOVE_POINT')}
+              tooltipText={t('Home.tooltip.movePoint')}
+              tooltipPosition={{ left: 1 }}
             />
           </View>
         )}
@@ -107,6 +108,8 @@ export const HomeDrawTools = () => {
               borderRadius={10}
               disabled={isEditingDraw}
               onPress={() => selectDrawTool('DELETE_POINT')}
+              tooltipText={t('Home.tooltip.deletePoint')}
+              tooltipPosition={{ left: 1 }}
             />
           </View>
         )}
@@ -131,7 +134,7 @@ export const HomeDrawTools = () => {
         )}
       </View>
       {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
-        <View style={styles.selectionalButton}>
+        <View>
           <HisyouToolButton
             isEditing={isEditingDraw}
             isSelected={isSelectedDraw}
