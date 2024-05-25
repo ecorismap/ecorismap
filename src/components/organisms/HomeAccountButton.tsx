@@ -4,6 +4,7 @@ import { Button, SelectionalButton } from '../atoms';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';
+import { t } from '../../i18n/config';
 
 export const HomeAccountButton = () => {
   const { user, gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(HomeContext);
@@ -87,6 +88,8 @@ export const HomeAccountButton = () => {
                 name={HOME_ACCOUNT_BTN.PROJECTS}
                 backgroundColor={COLOR.ORANGE}
                 onPressCustom={gotoProjects}
+                tooltipText={t('Home.tooltip.projects')}
+                tooltipPosition={{ right: 1 }}
               />
             )}
             <Button
@@ -94,12 +97,16 @@ export const HomeAccountButton = () => {
               name={HOME_ACCOUNT_BTN.SETTING}
               backgroundColor={COLOR.ORANGE}
               onPressCustom={gotoAccount}
+              tooltipText={t('Home.tooltip.setting')}
+              tooltipPosition={{ right: 1 }}
             />
             <Button
               id="LOGOUT"
               name={HOME_ACCOUNT_BTN.LOGOUT}
               backgroundColor={COLOR.ORANGE}
               onPressCustom={pressLogout}
+              tooltipText={t('Home.tooltip.logout')}
+              tooltipPosition={{ right: 1 }}
             />
           </SelectionalButton>
         </>

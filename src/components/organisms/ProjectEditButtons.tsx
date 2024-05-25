@@ -2,6 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
+import { t } from '../../i18n/config';
 
 interface Props {
   disabled: boolean;
@@ -34,6 +35,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             onPress={onPressOpenProject}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={disabled}
+            tooltipText={t('ProjectEdit.tooltip.open')}
           />
         </View>
       )}
@@ -43,6 +45,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           onPress={onPressSettingProject}
           disabled={isProjectOpen || disabled}
           backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          tooltipText={t('ProjectEdit.tooltip.setting')}
         />
       )}
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
@@ -52,6 +55,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={isProjectOpen || disabled}
             onPress={onPressExportProject}
+            tooltipText={t('ProjectEdit.tooltip.export')}
           />
         </View>
       )}
@@ -62,6 +66,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
             disabled={isProjectOpen || disabled}
             onPress={onPressDeleteProject}
+            tooltipText={t('ProjectEdit.tooltip.delete')}
           />
         </View>
       )}

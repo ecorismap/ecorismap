@@ -475,6 +475,10 @@
     },
     "navigation": {
       "title": "Project list"
+    },
+    "tooltip": {
+      "reloadProjects": "reload",
+      "createProject": "Create project"
     }
   },
   "ProjectEdit": {
@@ -493,6 +497,12 @@
     },
     "navigation": {
       "title": "project"
+    },
+    "tooltip": {
+      "open": "Open project",
+      "setting": "Edit project",
+      "export": "Export project data",
+      "delete": "Delete project"
     }
   },
   "LayerEdit": {
@@ -691,7 +701,16 @@
       "addLocationPoint": "Add points to current location",
       "plotPoint": "add points",
       "movePoint": "Move the point by long pressing",
-      "deletePoint": "remove points"
+      "deletePoint": "remove points",
+      "projects": "Project list",
+      "setting": "account settings",
+      "logout": "Logout",
+      "discardProect": "Discard project changes",
+      "jumpProject": "Jump to project home",
+      "downloadData": "Download data",
+      "uploadData": "Upload data",
+      "syncPosition": "Share your location",
+      "closeProject": "Close project"
     }
   },
   "LayerEditFeatureStyle": {
