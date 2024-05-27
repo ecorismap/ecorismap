@@ -232,7 +232,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
 
     //GeoJSON
-    if (targetLayer.type !== 'NONE') {
+    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
       const geojson = generateGeoJson(
         exportedRecords,
         targetLayer.field,
@@ -245,10 +245,17 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
     }
     //CSV
-    const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type, isMapMemoLayer);
-    const csvData = csv;
-    const csvName = `${targetLayer.name}_${time}.csv`;
-    exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: '' });
+    if (
+      targetLayer.type === 'POINT' ||
+      targetLayer.type === 'LINE' ||
+      targetLayer.type === 'POLYGON' ||
+      targetLayer.type === 'NONE'
+    ) {
+      const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type, isMapMemoLayer);
+      const csvData = csv;
+      const csvName = `${targetLayer.name}_${time}.csv`;
+      exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: '' });
+    }
     //GPX
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
       const gpx = generateGPX(exportedRecords, targetLayer.type);
