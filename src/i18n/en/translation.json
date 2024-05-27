@@ -38,7 +38,9 @@
       "line": "Line",
       "polygon": "Polgon",
       "none": "None",
-      "memo": "memo"
+      "memo": "memo",
+      "group": "group",
+      "layergroup": "layer group"
     },
     "roletype": {
       "member": "Member",

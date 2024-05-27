@@ -147,6 +147,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           type: 'JSON',
           folder: sanitize(layer.name),
         });
+        if (layer.type === 'LAYERGROUP') continue;
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
         const sortedRecords = isMapMemoLayer ? sortGroupData(records) : records;

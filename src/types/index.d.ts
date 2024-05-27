@@ -173,6 +173,8 @@ export interface LayerType {
   visible: boolean;
   active: boolean;
   field: FieldType[];
+  groupId?: string;
+  expanded?: boolean;
 }
 
 export type LatLonDMSKey = 'latitude' | 'longitude';
