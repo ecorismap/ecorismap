@@ -38,7 +38,9 @@
       "line": "ライン",
       "polygon": "ポリゴン",
       "none": "なし",
-      "memo": "メモ"
+      "memo": "メモ",
+      "group": "グループ",
+      "layergroup": "レイヤグループ"
     },
     "roletype": {
       "member": "メンバー",
