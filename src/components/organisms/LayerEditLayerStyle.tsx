@@ -16,16 +16,18 @@ export const LayerStyle = () => {
     <View style={styles.tr}>
       <View style={styles.td}>
         <View style={styles.tr2}>
-          <Text style={styles.title}>{`${t('common.style')}`}</Text>
-          {layer.type !== 'NONE' && (
-            <TouchableOpacity style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
-              {layer.type === 'POINT' && (
-                <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />
-              )}
-              {layer.type === 'LINE' && <LineView color={layer.colorStyle.color} />}
-              {layer.type === 'POLYGON' && <PolygonView color={layer.colorStyle.color} />}
-              <MaterialIcons color={COLOR.GRAY4} style={styles.icon} size={25} name={'color-lens'} />
-            </TouchableOpacity>
+          {layer.type !== 'NONE' && layer.type !== 'LAYERGROUP' && (
+            <>
+              <Text style={styles.title}>{`${t('common.style')}`}</Text>
+              <TouchableOpacity style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
+                {layer.type === 'POINT' && (
+                  <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />
+                )}
+                {layer.type === 'LINE' && <LineView color={layer.colorStyle.color} />}
+                {layer.type === 'POLYGON' && <PolygonView color={layer.colorStyle.color} />}
+                <MaterialIcons color={COLOR.GRAY4} style={styles.icon} size={25} name={'color-lens'} />
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </View>

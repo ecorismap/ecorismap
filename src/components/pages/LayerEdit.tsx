@@ -12,7 +12,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 export default function LayerEditScreen() {
   //console.log('render LayerEdit');
-  const { gotoBack } = useContext(LayerEditContext);
+  const { layer, gotoBack } = useContext(LayerEditContext);
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -31,8 +31,8 @@ export default function LayerEditScreen() {
       <ScrollView>
         <LayerName />
         <LayerStyle />
-        <LayerEditFieldTitle />
-        <LayerEditFieldTable />
+        {layer.type !== 'LAYERGROUP' && <LayerEditFieldTitle />}
+        {layer.type !== 'LAYERGROUP' && <LayerEditFieldTable />}
       </ScrollView>
       <LayerEditButton />
     </View>

@@ -173,7 +173,9 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const json = JSON.parse(jsonDecompressed);
       if (!isLayerType(json)) throw new Error('invalid json file');
       const importedLayer = updateLayerActiveAndIds(json);
-      if (importedLayer.type === 'NONE') {
+      if (importedLayer.type === 'LAYERGROUP') {
+        dispatch(addLayerAction(importedLayer));
+      } else if (importedLayer.type === 'NONE') {
         const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
         if (csvFile === undefined) throw new Error('invalid zip file');
         const csvStrings = await loaded.files[csvFile].async('text');
@@ -191,7 +193,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
       }
     },
-    [importCsv, importGeoJson]
+    [dispatch, importCsv, importGeoJson]
   );
 
   const loadJson = useCallback(
