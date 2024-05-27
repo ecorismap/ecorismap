@@ -82,6 +82,7 @@ export const FEATURETYPE = {
   LINE: t('constants.featuretype.line'),
   POLYGON: t('constants.featuretype.polygon'),
   NONE: t('constants.featuretype.none'),
+  LAYERGROUP: t('constants.featuretype.layergroup'),
 } as const;
 
 export const COLORTYPE = {

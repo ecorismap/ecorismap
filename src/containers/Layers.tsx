@@ -16,7 +16,8 @@ import { getExt } from '../utils/General';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   //console.log('render LayerContainer');
-  const { layers, changeLabel, changeVisible, changeCustomLabel, changeActiveLayer, changeLayerOrder } = useLayers();
+  const { layers, changeExpand, changeLabel, changeVisible, changeCustomLabel, changeActiveLayer, changeLayerOrder } =
+    useLayers();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
@@ -114,6 +115,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     <LayersContext.Provider
       value={{
         layers,
+        changeExpand,
         changeVisible,
         changeLabel,
         changeCustomLabel,
