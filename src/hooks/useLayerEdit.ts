@@ -10,7 +10,7 @@ import { formattedInputs } from '../utils/Format';
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
-import { addLayerAction, deleteLayerAction, updateLayerAction } from '../modules/layers';
+import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import sanitize from 'sanitize-filename';
 
@@ -151,9 +151,21 @@ export const useLayerEdit = (
   }, [projectId, targetLayer.id]);
 
   const deleteLayer = useCallback(() => {
-    dispatch(deleteDataAction(dataSet));
-    dispatch(deleteLayerAction(targetLayer));
-  }, [dataSet, dispatch, targetLayer]);
+    if (targetLayer.type === 'LAYERGROUP') {
+      const childLayers = layers
+        .map((l) => {
+          if (l.groupId === targetLayer.id) {
+            return { ...l, groupId: undefined };
+          }
+          return l;
+        })
+        .filter((l) => l.id !== targetLayer.id);
+      dispatch(setLayersAction(childLayers));
+    } else {
+      dispatch(deleteDataAction(dataSet));
+      dispatch(deleteLayerAction(targetLayer));
+    }
+  }, [dataSet, dispatch, layers, targetLayer]);
 
   const changeLayerName = useCallback(
     (val: string) => {
