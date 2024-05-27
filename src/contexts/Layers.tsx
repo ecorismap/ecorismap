@@ -3,6 +3,7 @@ import { LayerType } from '../types';
 
 interface LayersContextType {
   layers: LayerType[];
+  changeExpand: (layer: LayerType) => void;
   changeVisible: (layer: LayerType) => void;
   changeLabel: (layer: LayerType, labelValue: string) => void;
   changeCustomLabel: (layer: LayerType, labelValue: string) => void;
