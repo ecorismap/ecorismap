@@ -657,11 +657,11 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       pixels: { pixelX: number; pixelY: number }[],
       color: string,
       strokeWidth: number,
-      arrowStyle: ArrowStyleType,
+      arrowStyle: ArrowStyleType | undefined,
       tileScale: number
     ) => {
       let svg = '';
-      if (arrowStyle === 'NONE') return svg;
+      if (arrowStyle === 'NONE' || arrowStyle === undefined) return svg;
       const p0 = [pixels[0].pixelX, pixels[0].pixelY];
       const p1 = [pixels[1].pixelX, pixels[1].pixelY];
       const p2 = [pixels[pixels.length - 2].pixelX, pixels[pixels.length - 2].pixelY];
@@ -727,7 +727,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         strokeWidth = 1.5;
       }
 
-      const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+      const arrowStyle = feature.field._strokeStyle as ArrowStyleType | undefined;
       const pixels = convertCoordsToPixels(
         feature.coords as LocationType[],
         leftX,
