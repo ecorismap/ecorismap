@@ -34,7 +34,7 @@ export default function LayerEditScreen() {
       <ScrollView>
         <LayerName />
         <LayerStyle />
-        {FUNC_LOGIN && !isClosedProject && <LayerEditRadio />}
+        {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
         {layer.type !== 'LAYERGROUP' && <LayerEditFieldTitle />}
         {layer.type !== 'LAYERGROUP' && <LayerEditFieldTable />}
       </ScrollView>

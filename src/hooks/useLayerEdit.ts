@@ -188,6 +188,9 @@ export const useLayerEdit = (
       const m = cloneDeep(targetLayer);
       if (m.type !== itemValue) {
         m.type = itemValue;
+        if (itemValue === 'LAYERGROUP') {
+          m.permission = 'COMMON';
+        }
         setTargetLayer(m);
         setIsEdited(true);
       }
