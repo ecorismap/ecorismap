@@ -357,6 +357,7 @@ export interface DataFS {
   permission: PermissionType | 'TEMPLATE';
   encdata: string[];
   encryptedAt: firebase.firestore.Timestamp;
+  chunkIndex: number;
 }
 
 export interface PositionFS {
