@@ -257,7 +257,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       for (const layer of templateLayers) {
         //テンプレートレイヤを一旦すべて削除。データは残す。
         //ToDo: ただし構造が大きく変わる場合は、データも消さないとエラーになる可能性がある。
-        await projectStore.deleteData(project.id, layer.id, 'TEMPLATE', user.uid);
+        await projectStore.deleteData(project.id, layer.id, 'TEMPLATE');
       }
       return { isOK: true, message: '' };
     },
@@ -292,10 +292,10 @@ export const useRepository = (): UseRepositoryReturnType => {
       const targetLayers = getTargetLayers(layers, uploadType);
 
       for (const layer of targetLayers) {
-        //自分のデータ削除
-        if (!isSettingProject) {
-          await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
-        }
+        // //自分のデータ削除 //uploadDataHelperで削除するので不要
+        // if (!isSettingProject) {
+        //   await projectStore.deleteData(project.id, layer.id, layer.permission, user.uid);
+        // }
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
         const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
@@ -308,40 +308,17 @@ export const useRepository = (): UseRepositoryReturnType => {
           })
         );
 
-        if (uploadType === 'Template') {
-          const { isOK, message } = await projectStore.uploadTemplateData(project.id, {
-            layerId: layer.id,
-            userId: user.uid,
-            permission: 'TEMPLATE',
-            data: updatedData,
-          });
-          if (!isOK) {
-            //ToDo 処理続けるかどうか？
-            return { isOK: false, message: message };
-          }
-        } else if (uploadType === 'Common') {
-          const { isOK, message } = await projectStore.uploadCommonData(project.id, {
-            layerId: layer.id,
-            userId: user.uid,
-            permission: layer.permission,
-            data: updatedData,
-          });
-          if (!isOK) {
-            //ToDo 処理続けるかどうか？
-            return { isOK: false, message: message };
-          }
-        } else {
-          const { isOK, message } = await projectStore.uploadData(project.id, {
-            layerId: layer.id,
-            userId: user.uid,
-            permission: layer.permission,
-            data: updatedData,
-          });
-          if (!isOK) {
-            //ToDo 処理続けるかどうか？
-            return { isOK: false, message: message };
-          }
+        const { isOK, message } = await projectStore.uploadDataHelper(project.id, {
+          layerId: layer.id,
+          userId: user.uid,
+          permission: uploadType === 'Template' ? 'TEMPLATE' : layer.permission,
+          data: updatedData,
+        });
+        if (!isOK) {
+          //ToDo 処理続けるかどうか？
+          return { isOK: false, message: message };
         }
+
         if (!isSettingProject) {
           dispatch(
             updateRecordsAction({

@@ -19,6 +19,7 @@ import {
 } from '../../types';
 //@ts-ignore
 import sizeof from 'firestore-size';
+import obj_sizeof from 'object-sizeof';
 import { decryptEThree as dec, encryptEThree as enc } from '../virgilsecurity/e3kit';
 import firebase, { firestore, functions } from './firebase';
 import { t } from '../../i18n/config';
@@ -174,15 +175,23 @@ export const deleteData = async (
 ) => {
   try {
     let querySnapshot;
-    if (permission === undefined || userId === undefined) {
-      querySnapshot = await firestore.collection(`projects/${projectId}/data`).where('layerId', '==', layerId).get();
-    } else {
+
+    if (permission === 'TEMPLATE') {
+      //他の管理者が作成したテンプレートも含め削除する
+      querySnapshot = await firestore
+        .collection(`projects/${projectId}/data`)
+        .where('layerId', '==', layerId)
+        .where('permission', '==', 'TEMPLATE')
+        .get();
+    } else if (permission !== undefined && userId !== undefined) {
       querySnapshot = await firestore
         .collection(`projects/${projectId}/data`)
         .where('layerId', '==', layerId)
         .where('userId', '==', userId)
         .where('permission', '==', permission)
         .get();
+    } else {
+      querySnapshot = await firestore.collection(`projects/${projectId}/data`).where('layerId', '==', layerId).get();
     }
     if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
     const batch = firestore.batch();
@@ -236,9 +245,35 @@ export const downloadProjectSettings = async (projectId: string) => {
 };
 
 const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) => {
+  const dataMap = new Map<string, { [index: number]: string[] }>();
+  const metadataMap = new Map<string, { userId: string; encryptedAt: firebase.firestore.Timestamp }>();
+
+  // チャンクをグループ化
+  projectDataSet.docs.forEach((v: any) => {
+    const { encdata, layerId, chunkIndex, userId, encryptedAt } = v.data() as DataFS;
+
+    if (!dataMap.has(layerId)) {
+      dataMap.set(layerId, {});
+    }
+    // chunkIndexがない場合、0とする
+    const index = chunkIndex !== undefined ? chunkIndex : 0;
+    dataMap.get(layerId)![index] = encdata;
+
+    if (!metadataMap.has(layerId)) {
+      metadataMap.set(layerId, { userId, encryptedAt });
+    }
+  });
+
   const dataSet = await Promise.all(
-    projectDataSet.docs.map(async (v: any) => {
-      const { encdata, userId, layerId, encryptedAt } = v.data() as DataFS;
+    Array.from(dataMap.entries()).map(async ([layerId, chunkMap]) => {
+      const { userId, encryptedAt } = metadataMap.get(layerId)!;
+
+      // チャンクを正しい順序で結合
+      const encdata = Object.keys(chunkMap)
+        .sort((a, b) => Number(a) - Number(b))
+        .map((index) => chunkMap[Number(index)])
+        .flat();
+
       const data = await dec(toDate(encryptedAt), encdata, userId, projectId);
       if (data !== undefined) {
         return { userId, layerId, ...data } as DataType;
@@ -249,120 +284,91 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
       }
     })
   );
+
   return dataSet.filter((v: any): v is DataType => v !== null);
 };
 
-export const uploadData = async (projectId: string, data: ProjectDataType) => {
-  try {
-    const { userId, layerId, permission, ...others } = data;
-    const encdata = await enc(others, userId, projectId);
-    const dataFS: DataFS = {
-      userId,
-      layerId,
-      permission,
-      encdata,
-      encryptedAt: firebase.firestore.Timestamp.now(),
-    };
-    const KBytes = sizeof(dataFS) / 1024;
-    //console.log(others);
-    //console.log(KBytes);
-    if (KBytes > 1000) {
-      return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
+const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
+  let currentChunk: string[] = [];
+  let currentChunkSize = 0;
+  const chunks: string[][] = [];
+
+  for (const encdata of encdataArray) {
+    const encdataSize = obj_sizeof(encdata);
+    if (currentChunkSize + encdataSize > chunkSize) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+      currentChunkSize = 0;
     }
-    //console.log(dataFS);
-    await firestore.collection(`projects/${projectId}/data`).add(dataFS);
-    return { isOK: true, message: '' };
-  } catch (error) {
-    return {
-      isOK: false,
-      message: `${error}
-    データのアップロードに失敗しました`,
-    };
+    currentChunk.push(encdata);
+    currentChunkSize += encdataSize;
   }
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
 };
 
-export const uploadCommonData = async (projectId: string, data: ProjectDataType) => {
-  try {
-    const { userId, layerId, permission, ...others } = data;
-    const encdata = await enc(others, userId, projectId);
+const MAX_SIZE_KB = 5000;
+const CHUNK_SIZE = 900 * 1024; // 900KB
+
+const uploadChunks = async (
+  projectId: string,
+  chunks: string[][],
+  userId: string,
+  layerId: string,
+  permission: PermissionType | 'TEMPLATE'
+) => {
+  const batch = firestore.batch();
+  for (let i = 0; i < chunks.length; i++) {
     const dataFS: DataFS = {
       userId,
       layerId,
       permission,
-      encdata,
+      encdata: chunks[i],
       encryptedAt: firebase.firestore.Timestamp.now(),
+      chunkIndex: i,
     };
-    const KBytes = sizeof(dataFS) / 1024;
-    //console.log(others);
-    //console.log(KBytes);
-    if (KBytes > 1000) {
-      return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
-    }
-    //console.log(dataFS);
-
-    const querySnapshot = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'COMMON')
-      .where('layerId', '==', layerId)
-      .get();
-    if (querySnapshot.docs.length === 0) {
-      await firestore.collection(`projects/${projectId}/data`).add(dataFS);
-    } else if (querySnapshot.docs.length === 1) {
-      await querySnapshot.docs[0].ref.set(dataFS);
-    } else {
-      throw new Error('COMMONデータが複数存在します');
-    }
-
-    return { isOK: true, message: '' };
-  } catch (error) {
-    return {
-      isOK: false,
-      message: `${error}
-    データのアップロードに失敗しました`,
-    };
+    const docRef = firestore.collection(`projects/${projectId}/data`).doc();
+    //@ts-ignore
+    batch.set(docRef, dataFS);
   }
+  await batch.commit();
 };
 
-export const uploadTemplateData = async (projectId: string, data: ProjectDataType) => {
-  try {
-    const { userId, layerId, permission, ...others } = data;
-    const encdata = await enc(others, userId, projectId);
-    const dataFS: DataFS = {
-      userId,
-      layerId,
-      permission,
-      encdata,
-      encryptedAt: firebase.firestore.Timestamp.now(),
-    };
-    const KBytes = sizeof(dataFS) / 1024;
-    //console.log(others);
-    //console.log(KBytes);
-    if (KBytes > 1000) {
-      return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
-    }
-    //console.log(dataFS);
+const deleteExistingData = async (
+  projectId: string,
+  userId: string,
+  layerId: string,
+  permission: PermissionType | 'TEMPLATE'
+) => {
+  const batch = firestore.batch();
+  const querySnapshot = await firestore
+    .collection(`projects/${projectId}/data`)
+    .where('permission', '==', permission)
+    .where('layerId', '==', layerId)
+    .where('userId', '==', userId)
+    .get();
+  //@ts-ignore
+  querySnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+};
 
-    const querySnapshot = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'TEMPLATE')
-      .where('layerId', '==', layerId)
-      .get();
-    if (querySnapshot.docs.length === 0) {
-      await firestore.collection(`projects/${projectId}/data`).add(dataFS);
-    } else if (querySnapshot.docs.length === 1) {
-      await querySnapshot.docs[0].ref.set(dataFS);
-    } else {
-      throw new Error('TEMPLATEデータが複数存在します');
-    }
+export const uploadDataHelper = async (projectId: string, data: ProjectDataType) => {
+  const { userId, layerId, permission, ...others } = data;
+  const encdataArray = await enc(others, userId, projectId);
+  const KBytes = sizeof(encdataArray) / 1024;
 
-    return { isOK: true, message: '' };
-  } catch (error) {
-    return {
-      isOK: false,
-      message: `${error}
-    データのアップロードに失敗しました`,
-    };
+  if (KBytes > MAX_SIZE_KB) {
+    return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
   }
+
+  const chunks = chunkData(encdataArray, CHUNK_SIZE);
+  await deleteExistingData(projectId, userId, layerId, permission);
+  await uploadChunks(projectId, chunks, userId, layerId, permission);
+
+  return { isOK: true, message: '' };
 };
 
 export const downloadCommonData = async (projectId: string) => {
