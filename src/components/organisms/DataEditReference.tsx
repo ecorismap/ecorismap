@@ -6,6 +6,7 @@ import { LayerType, PhotoType, RecordType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { Button } from '../atoms';
 import { DataEditContext } from '../../contexts/DataEdit';
+import { ScrollView } from 'react-native-gesture-handler';
 
 interface Props {
   name: string;
@@ -62,9 +63,17 @@ export const DataEditReference = (props: Props) => {
   }, [primaryKey, refField]);
 
   return refLayer && refField && primaryKey ? (
-    <View style={{ flexDirection: 'column', flex: 1 }}>
+    <View style={{ flexDirection: 'column', marginVertical: 10, borderTopWidth: 5, borderColor: COLOR.GRAY2 }}>
       <View style={styles.tr3}>
-        <View style={{ margin: 5, flex: 100, paddingHorizontal: 10 }}>
+        <View
+          style={{
+            margin: 5,
+            flex: 1,
+            paddingHorizontal: 10,
+            height: 40,
+            justifyContent: 'center',
+          }}
+        >
           <Text style={styles.title}>{name}</Text>
         </View>
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
@@ -74,14 +83,19 @@ export const DataEditReference = (props: Props) => {
                 backgroundColor: COLOR.GRAY3,
                 padding: 0,
               }}
+              size={20}
               name="plus"
               onPress={() => pressAddReferenceData(refLayer, addDefaultRecord, fields)}
             />
           )}
         </View>
       </View>
-      <DataTitle layer={refLayer} />
-      <DataItems data={refData} layer={refLayer} onPress={(index: number) => onPress(refData[index], refLayer)} />
+      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={{ flex: 1, flexDirection: 'column' }}>
+          <DataTitle layer={refLayer} />
+          <DataItems data={refData} layer={refLayer} onPress={(index: number) => onPress(refData[index], refLayer)} />
+        </View>
+      </ScrollView>
     </View>
   ) : null;
 };
@@ -116,11 +130,7 @@ const DataItems = React.memo((props: Props_DataItems) => {
     <View style={{ flex: 1, flexDirection: 'column' }}>
       {data.map((item, index) => {
         return (
-          <TouchableOpacity
-            key={item.id}
-            style={{ flex: 1, height: 45, flexDirection: 'row' }}
-            onPress={() => onPress(index)}
-          >
+          <TouchableOpacity key={item.id} style={{ height: 45, flexDirection: 'row' }} onPress={() => onPress(index)}>
             {layer.field.map(({ name, format }, field_index) => (
               <View key={field_index} style={[styles.td, { flex: 1, width: 120 }]}>
                 <Text adjustsFontSizeToFit={true} numberOfLines={2}>
@@ -173,7 +183,6 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLOR.GRAY3,
-    flex: 1,
     fontSize: 12,
   },
   tr3: {
@@ -181,6 +190,6 @@ const styles = StyleSheet.create({
     //borderColor: COLOR.GRAY1,
     //borderWidth: 1,
     flexDirection: 'row',
-    height: 30,
+    //height: 30,
   },
 });
