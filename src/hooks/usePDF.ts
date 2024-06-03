@@ -645,7 +645,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       return `<circle cx="${pixelX}" cy="${pixelY}" r="${
         4 / tileScale
       }" style="fill:${color}; stroke:white; stroke-width:${0.2 / tileScale};"></circle>
-            <text x="${pixelX + 0.5}" y="${pixelY + 0.5}" fill="${color}" font-size="${
+            <text x="${pixelX + 8}" y="${pixelY + 8}" fill="${color}" font-size="${
         12 / tileScale
       }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="0.2" paint-order="stroke">${label}</text>`;
     },
