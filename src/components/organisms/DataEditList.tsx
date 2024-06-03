@@ -27,8 +27,8 @@ export const DataEditList = (props: Props) => {
 
   const selectedItem = useMemo(() => {
     const item = value ? value.toString() : '';
-    return !otherSelected && listItemValues.includes(item) ? item : otherItem !== undefined ? otherItem.value : '';
-  }, [listItemValues, otherItem, otherSelected, value]);
+    return listItemValues.includes(item) ? item : otherItem !== undefined ? otherItem.value : '';
+  }, [listItemValues, otherItem, value]);
 
   useEffect(() => {
     //選択されている値が「その他」の場合テキストの値をセットする必要がある。

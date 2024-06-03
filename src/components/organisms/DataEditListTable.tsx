@@ -139,6 +139,7 @@ const ValueList = (props: Props_List) => {
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,
               }}
+              size={15}
               name="minus"
               onPress={() => deleteValue(index)}
             />

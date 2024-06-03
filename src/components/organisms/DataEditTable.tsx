@@ -49,6 +49,7 @@ export const DataEditTable = (props: Props_DataEditTable) => {
               backgroundColor: COLOR.GRAY3,
               padding: 0,
             }}
+            size={20}
             name="plus"
             onPress={addValue}
           />
@@ -114,6 +115,7 @@ const ValueList = (props: Props_List) => {
                 backgroundColor: COLOR.DARKRED,
                 padding: 0,
               }}
+              size={15}
               name="minus"
               onPress={() => deleteValue(rowIndex)}
             />
@@ -168,6 +170,6 @@ const styles = StyleSheet.create({
     //borderColor: COLOR.GRAY1,
     //borderWidth: 1,
     flexDirection: 'row',
-    height: 30,
+    height: 45,
   },
 });
