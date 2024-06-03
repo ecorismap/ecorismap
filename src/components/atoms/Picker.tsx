@@ -69,12 +69,18 @@ const CustomPicker = React.memo((props: Props) => {
     <View style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
-        <TouchableOpacity onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View>
+        <TouchableOpacity onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <View style={{ flex: 10 }}>
             <ModalSelector
               ref={selectorRef}
               data={items}
-              initValueTextStyle={{ color: COLOR.BLACK, minWidth: 100, textAlign: 'left', paddingLeft: 6 }}
+              initValueTextStyle={{
+                color: COLOR.BLACK,
+                minWidth: 100,
+                textAlign: 'left',
+                paddingLeft: 6,
+                justifyContent: 'center',
+              }}
               selectStyle={{ borderWidth: 0 }}
               //overlayStyle={{ backgroundColor: COLOR.DARKGREEN }}
               accessible={enabled}
@@ -86,7 +92,7 @@ const CustomPicker = React.memo((props: Props) => {
             />
           </View>
           {dropdownIcon === false ? null : (
-            <View style={{ alignItems: 'flex-end', flex: 1 }}>
+            <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 10 }}>
               <MaterialCommunityIcons
                 color={COLOR.GRAY4}
                 style={[styles.icon, { marginHorizontal: 3 }]}
