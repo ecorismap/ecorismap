@@ -302,7 +302,16 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [isLandscape, mapRegion.zoom, navigation, targetLayer.type, targetRecord.coords, windowWidth]);
+  }, [
+    isLandscape,
+    mapRegion.latitudeDelta,
+    mapRegion.longitudeDelta,
+    mapRegion.zoom,
+    navigation,
+    targetLayer.type,
+    targetRecord.coords,
+    windowWidth,
+  ]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;
