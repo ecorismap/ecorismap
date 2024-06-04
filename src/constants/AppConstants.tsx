@@ -49,6 +49,7 @@ export const TASK = {
 
 export const STORAGE = {
   TRACKLOG: 'TRACKLOG',
+  TIME_STAMP: 'TIME_STAMP',
 } as const;
 
 export const ROLETYPE = {
