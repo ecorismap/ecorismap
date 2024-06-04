@@ -4,9 +4,13 @@ import { LocationType } from '../types';
 import lineDistance from '@turf/line-distance';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/helpers';
-
+import { AppState } from 'react-native';
 export const clearSavedLocations = async () => {
   await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify([]));
+};
+
+export const clearLastTimeStamp = async () => {
+  await AsyncStorage.setItem(STORAGE.TIME_STAMP, '0');
 };
 
 export const getSavedLocations = async (): Promise<LocationType[]> => {
@@ -18,20 +22,39 @@ export const getSavedLocations = async (): Promise<LocationType[]> => {
   }
 };
 
-export const addLocations = async (locations: LocationObject[]) => {
-  const savedLocations = await getSavedLocations();
-  const updatedLocations = updateLocations(savedLocations, locations);
-  const updatedLocationsString = JSON.stringify(updatedLocations);
-  //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
-
-  await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
-  return updatedLocations;
+const getLastTimeStamp = async () => {
+  //storageに保存されていた数字を返す
+  try {
+    const item = await AsyncStorage.getItem(STORAGE.TIME_STAMP);
+    return item ? parseInt(item, 10) : 0;
+  } catch (e) {
+    return 0;
+  }
+};
+export const checkAndStoreLocations = async (locations: LocationObject[]) => {
+  const lastTimeStamp = await getLastTimeStamp();
+  const checkedLocations = checkLocations(lastTimeStamp, locations);
+  const newLastTimeStamp =
+    checkedLocations.length !== 0 ? checkedLocations[checkedLocations.length - 1].timestamp ?? 0 : 0;
+  await AsyncStorage.setItem(STORAGE.TIME_STAMP, newLastTimeStamp.toString());
+  console.log('AppState.currentState', AppState.currentState);
+  if (AppState.currentState === 'background') {
+    console.log('AppState.currentState', AppState.currentState);
+    //バックグラウンドの場合は、保存する
+    const savedLocations = await getSavedLocations();
+    const updatedLocationsString = JSON.stringify([...savedLocations, ...checkedLocations]);
+    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+    return [];
+  } else {
+    return checkedLocations;
+  }
 };
 
-export const updateLocations = (savedLocations: LocationType[], locations: LocationObject[]) => {
+export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
   //console.log(savedLocation);
-  if (locations.length === 0) return savedLocations;
-  const lastTimeStamp = savedLocations.length !== 0 ? savedLocations[savedLocations.length - 1].timestamp : 0;
+  if (locations.length === 0) return [];
+
   //同じ場所が繰り返して配信されることがあるので、最後の時間以前のデータは破棄する。
   //LocationTaskConsumer.javaで同様の対処されているが、対処が不十分(getLastLocationの処理が原因？）とiOSにはその処理が入っていない
   const newLocations = locations
@@ -39,9 +62,8 @@ export const updateLocations = (savedLocations: LocationType[], locations: Locat
     .filter((v) => v.timestamp! > lastTimeStamp!);
   //ログの取り始めは、精度が悪いので、精度が30m以下になるまでは破棄する
   //console.log('newLocations', newLocations);
-  if (savedLocations.length === 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30) return [];
-  const updatedLocations = [...savedLocations, ...newLocations];
-  return updatedLocations;
+  if (lastTimeStamp === 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30) return [];
+  return newLocations;
 };
 
 export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {
