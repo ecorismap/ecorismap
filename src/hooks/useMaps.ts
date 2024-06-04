@@ -297,7 +297,7 @@ export const useMaps = (): UseMapsReturnType => {
       const newTileMaps = cloneDeep(maps);
       for (let i = 0; i < outputFiles.length; i++) {
         const outputFile = outputFiles[i];
-        const mapId = id ?? uuidv4();
+        const mapId = id === undefined || outputFiles.length > 1 ? uuidv4() : id;
         const pdfImage = 'file://' + outputFile.uri;
 
         const { y: pdfTopCoord } = outputFile.topLeft;
