@@ -323,6 +323,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType | undefined) => {
+      setCurrentInfoTool('NONE');
       if (value === undefined) {
         setMapMemoTool('NONE');
       } else {
@@ -338,7 +339,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setMapMemoTool(value);
       }
     },
-    [changeColorTypeToIndividual, editableMapMemo, setDrawTool, setMapMemoTool]
+    [changeColorTypeToIndividual, editableMapMemo, setCurrentInfoTool, setDrawTool, setMapMemoTool]
   );
 
   const selectInfoTool = useCallback(
@@ -353,8 +354,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       resetDrawTools();
       setDrawTool('NONE');
+      setMapMemoTool('NONE');
     },
-    [resetDrawTools, setCurrentInfoTool, setDrawTool, toggleHeadingUp, toggleWebTerrainActive]
+    [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleWebTerrainActive]
   );
 
   const selectDrawTool = useCallback(
