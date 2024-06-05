@@ -7,13 +7,7 @@ import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import {
-  checkAndStoreLocations,
-  clearLastTimeStamp,
-  clearSavedLocations,
-  getLineLength,
-  getSavedLocations,
-} from '../utils/Location';
+import { checkAndStoreLocations, clearLastTimeStamp, clearSavedLocations, getLineLength } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { isMapView } from '../utils/Map';
@@ -21,7 +15,7 @@ import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { LocationHeadingObject, LocationSubscription } from 'expo-location';
 import { TASK } from '../constants/AppConstants';
-import { AppState as RNAppState, Platform, AppStateStatus } from 'react-native';
+import { Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { AlertAsync } from '../components/molecules/AlertAsync';
@@ -347,7 +341,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         );
       }
       setCurrentLocation(currentCoords);
-
+      //console.log(trackingRecord);
       const trackingCoords =
         trackingRecord === undefined ? locations : [...(trackingRecord.coords as LocationType[]), ...locations];
       const distance = getLineLength(trackingCoords);
@@ -382,31 +376,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
       if (hasStarted) {
-        //アプリがkillされている間にストレージに保存されているトラックを更新する
-        //console.log('### app killed and restart tracking');
-        const savedLocations = await getSavedLocations();
-        updateTrackLog(savedLocations);
-        await clearSavedLocations();
-        //再起動時にトラックを止めるならこちら
-        //await stopTracking();
-        //console.log('### start tracking ');
-        setTrackingState('on');
-        await toggleGPS('follow');
+        setTrackingState('off');
+        await toggleTracking('off');
       }
     })();
-
-    const subscription = RNAppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
-        if (hasStarted) {
-          //アプリがバックグラウンドになっている間にストレージに保存されているトラックを更新する
-          //console.log('### AppState change to active');
-          const savedLocations = await getSavedLocations();
-          updateTrackLog(savedLocations);
-          await clearSavedLocations();
-        }
-      }
-    });
 
     return () => {
       if (gpsSubscriber.current !== undefined) {
@@ -417,7 +390,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         headingSubscriber.current.remove();
         headingSubscriber.current = undefined;
       }
-      subscription.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
