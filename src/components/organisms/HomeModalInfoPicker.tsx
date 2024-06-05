@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
@@ -15,7 +15,7 @@ interface Props {
 
 export const HomeModalInfoPicker = React.memo((props: Props) => {
   const { currentInfoTool, modalVisible, selectInfoTool, setVisibleInfoPicker } = props;
-  const [infoTool, setInfoTool] = React.useState<InfoToolType>('NONE');
+  const [infoTool, setInfoTool] = useState<InfoToolType>('NONE');
 
   useEffect(() => {
     const defaultInfoTool = currentInfoTool === 'NONE' ? 'ALL_INFO' : currentInfoTool;
