@@ -135,6 +135,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     shallowEqual
   );
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
+  const [currentDistance, setCurrentDistance] = useState(0);
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
@@ -352,10 +353,15 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         );
       }
       setCurrentLocation(currentCoords);
+
       //console.log(trackingRecord);
-      const trackingCoords =
-        trackingRecord === undefined ? locations : [...(trackingRecord.coords as LocationType[]), ...locations];
-      const distance = getLineLength(trackingCoords);
+      const beforeCoords = trackingRecord === undefined ? [] : (trackingRecord.coords as LocationType[]);
+      const trackingCoords = [...beforeCoords, ...locations];
+      //beforeCoordsの最後の座標からlocationsの最後の座標までの距離を計算
+      const coords = beforeCoords.length === 0 ? locations : [beforeCoords[beforeCoords.length - 1], ...locations];
+      const distance = getLineLength(coords) + currentDistance;
+      setCurrentDistance(distance);
+
       dispatch(
         updateTrackFieldAction({
           layerId: tracking.layerId,
@@ -366,7 +372,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         })
       );
     },
-    [dataUser.uid, dispatch, gpsState, mapViewRef, tracking, trackingRecord]
+    [currentDistance, dataUser.uid, dispatch, gpsState, mapViewRef, tracking, trackingRecord]
   );
 
   useEffect(() => {
