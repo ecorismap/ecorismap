@@ -105,7 +105,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   useEffect(() => {
     //データの初期化。以降はchangeRecordで行う。
 
-    setTargetRecord(record);
+    setTargetRecord(dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record);
     const allUserRecordSet = dataSet
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
       .filter((d) => (d.field._group ? d.field._group === '' : true));

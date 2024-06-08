@@ -493,7 +493,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             allOK = false;
             continue;
           }
-          if (file.size / 1024 > 1000) {
+          if (file.size / 1024 > 3000) {
             await AlertAsync(t('hooks.message.cannotImportData'));
             allOK = false;
             continue;
@@ -900,7 +900,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('hooks.message.cannotGetFileSize'));
         return;
       }
-      if (file.size / 1024 > 1000) {
+      if (file.size / 1024 > 3000) {
         await AlertAsync(t('hooks.message.cannotImportData'));
         return;
       }
