@@ -7,7 +7,13 @@ import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import { checkAndStoreLocations, clearLastTimeStamp, clearSavedLocations, getLineLength } from '../utils/Location';
+import {
+  checkAndStoreLocations,
+  clearLastTimeStamp,
+  clearSavedLocations,
+  getLineLength,
+  getSavedLocations,
+} from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { isMapView } from '../utils/Map';
@@ -15,10 +21,12 @@ import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
 import { LocationHeadingObject, LocationSubscription } from 'expo-location';
 import { TASK } from '../constants/AppConstants';
-import { Platform } from 'react-native';
+import { AppState as RNAppState, Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
 import { AlertAsync } from '../components/molecules/AlertAsync';
+import * as Notifications from 'expo-notifications';
+import { useRecord } from './useRecord';
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -33,10 +41,11 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   try {
     // have to add it sequentially, parses/serializes existing JSON
     const checkedLocations = await checkAndStoreLocations(locations);
+    //console.log('0000000000');
     //フォアグラウンドの場合は、更新イベントが発生する
     locationEventsEmitter.emit('update', checkedLocations);
   } catch (error) {
-    console.log('[tracking]', 'Something went wrong when saving a new location...', error);
+    //console.log('[tracking]', 'Something went wrong when saving a new location...', error);
   }
 });
 
@@ -72,6 +81,7 @@ export type UseLocationReturnType = {
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
+  const { addRecordWithCheck } = useRecord();
   const [magnetometer, setMagnetometer] = useState<LocationHeadingObject | null>(null);
 
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
@@ -137,23 +147,36 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
 
-  const confirmLocationPermittion = useCallback(async () => {
+  const confirmLocationPermission = useCallback(async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
+      if (notificationStatus !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));
+        return;
       }
-      if (Platform.OS === 'ios') await Location.requestBackgroundPermissionsAsync();
 
-      return status;
+      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      if (foregroundStatus !== 'granted') {
+        await AlertAsync(t('hooks.message.permitAccessGPS'));
+        return;
+      }
+
+      if (Platform.OS === 'ios') {
+        const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+        if (backgroundStatus !== 'granted') {
+          await AlertAsync(t('hooks.message.permitAccessGPS'));
+          return;
+        }
+      }
+
+      return foregroundStatus;
     } catch (e: any) {
-      // eslint-disable-next-line no-console
-      console.log(e.message);
+      console.log(e.message); // エラーメッセージをコンソールに出力
     }
   }, []);
 
   const startGPS = useCallback(async () => {
-    if ((await confirmLocationPermittion()) !== 'granted') return;
+    if ((await confirmLocationPermission()) !== 'granted') return;
     //GPSもトラッキングもOFFの場合
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) =>
@@ -165,7 +188,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         updateHeading.current(pos);
       });
     }
-  }, [confirmLocationPermittion, gpsAccuracyOption]);
+  }, [confirmLocationPermission, gpsAccuracyOption]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -196,7 +219,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   }, [dispatch]);
 
   const startTracking = useCallback(async () => {
-    if ((await confirmLocationPermittion()) !== 'granted') return;
+    if ((await confirmLocationPermission()) !== 'granted') return;
     if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
         ...trackingAccuracyOption,
@@ -205,17 +228,18 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         foregroundService: {
           notificationTitle: 'EcorisMap',
           notificationBody: t('hooks.notification.inTracking'),
+          killServiceOnDestroy: false,
         },
       });
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => updateHeading.current(pos));
     }
-  }, [confirmLocationPermittion, trackingAccuracyOption]);
+  }, [confirmLocationPermission, trackingAccuracyOption]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');
-    if ((await confirmLocationPermittion()) !== 'granted') return;
+    if ((await confirmLocationPermission()) !== 'granted') return;
     // console.log('moveCurrentPosition2');
 
     const location = await Location.getLastKnownPositionAsync();
@@ -230,7 +254,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       { duration: 5 }
     );
     //console.log('moveCurrentPosition4', location.coords);
-  }, [confirmLocationPermittion, mapViewRef]);
+  }, [confirmLocationPermission, mapViewRef]);
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
@@ -326,11 +350,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const updateTrackLog = useCallback(
-    (locations: LocationType[]) => {
+    async (locations: LocationType[]) => {
       if (tracking === undefined) return;
       if (locations.length === 0) return;
       const currentCoords = locations[locations.length - 1];
-      if (gpsState === 'follow') {
+      if (gpsState === 'follow' && RNAppState.currentState === 'active') {
         (mapViewRef as MapView).animateCamera(
           {
             center: {
@@ -360,8 +384,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           coords: trackingCoords,
         })
       );
+      await clearSavedLocations();
+
+      if (trackingCoords.length > 1000) {
+        //1000点を超えたら新しいデータを作成
+        addRecordWithCheck('LINE', trackingCoords.slice(-1), { isTrack: true });
+      }
     },
-    [currentDistance, dataUser.uid, dispatch, gpsState, mapViewRef, tracking, trackingRecord]
+    [addRecordWithCheck, currentDistance, dataUser.uid, dispatch, gpsState, mapViewRef, tracking, trackingRecord]
   );
 
   useEffect(() => {
@@ -382,8 +412,16 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
       if (hasStarted) {
-        setTrackingState('off');
-        await toggleTracking('off');
+        //アプリがkillされている間にストレージに保存されているトラックを更新する
+        //console.log('### app killed and restart tracking');
+        const savedLocations = await getSavedLocations();
+        updateTrackLog(savedLocations);
+        await clearSavedLocations();
+        //再起動時にトラックを止めるならこちら
+        //await stopTracking();
+        //console.log('### start tracking ');
+        setTrackingState('on');
+        await toggleGPS('follow');
       }
     })();
 
