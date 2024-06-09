@@ -7,13 +7,7 @@ import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { DEGREE_INTERVAL } from '../constants/AppConstants';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import {
-  checkAndStoreLocations,
-  clearLastTimeStamp,
-  clearSavedLocations,
-  getLineLength,
-  getSavedLocations,
-} from '../utils/Location';
+import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
 import { AppState } from '../modules';
 import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { isMapView } from '../utils/Map';
@@ -41,8 +35,7 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   try {
     // have to add it sequentially, parses/serializes existing JSON
     const checkedLocations = await checkAndStoreLocations(locations);
-    //console.log('0000000000');
-    //フォアグラウンドの場合は、更新イベントが発生する
+    //killされていなければ更新イベントが発生する
     locationEventsEmitter.emit('update', checkedLocations);
   } catch (error) {
     //console.log('[tracking]', 'Something went wrong when saving a new location...', error);
@@ -81,8 +74,9 @@ export type UseLocationReturnType = {
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
-  const { addRecordWithCheck } = useRecord();
+  const { addRecord, generateRecord } = useRecord();
   const [magnetometer, setMagnetometer] = useState<LocationHeadingObject | null>(null);
+  const [dividedTrackLogCount, setDividedTrackLogCount] = useState<number>(0);
 
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
@@ -136,13 +130,13 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     [projectId, user]
   );
   const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
-  const trackingRecord = useSelector(
-    (state: AppState) =>
-      state.dataSet.find((d) => d.layerId === tracking?.layerId)?.data.find((d) => d.id === tracking?.dataId),
-    shallowEqual
+  const trackingLayer = useSelector((state: AppState) => state.layers.find((l) => l.id === tracking?.layerId));
+  const dataSet = useSelector((state: AppState) => state.dataSet);
+  const trackingRecord = useMemo(
+    () => dataSet.find((d) => d.layerId === tracking?.layerId)?.data.find((d) => d.id === tracking?.dataId),
+    [dataSet, tracking?.dataId, tracking?.layerId]
   );
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
-  const [currentDistance, setCurrentDistance] = useState(0);
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
@@ -294,13 +288,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
         await moveCurrentPosition();
-        await clearSavedLocations();
-        await clearLastTimeStamp();
+        await clearStoredLocations();
         await startTracking();
       } else if (trackingState_ === 'off') {
         await stopTracking();
-        await clearSavedLocations();
-        await clearLastTimeStamp();
+        await clearStoredLocations();
         //記録のないトラックは削除
         if (tracking !== undefined) {
           //const trackingRecord = findRecord(tracking.layerId, dataUser.uid, tracking.dataId, 'LINE');
@@ -350,10 +342,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const updateTrackLog = useCallback(
-    async (locations: LocationType[]) => {
+    async (data: { distance: number; trackLog: LocationType[]; lastTimeStamp: number }) => {
+      const { trackLog, distance, lastTimeStamp } = data;
       if (tracking === undefined) return;
-      if (locations.length === 0) return;
-      const currentCoords = locations[locations.length - 1];
+      if (trackLog.length === 0) return;
+
+      const currentCoords = trackLog[trackLog.length - 1];
       if (gpsState === 'follow' && RNAppState.currentState === 'active') {
         (mapViewRef as MapView).animateCamera(
           {
@@ -367,35 +361,49 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       }
       setCurrentLocation(currentCoords);
 
-      //console.log(trackingRecord);
-      const beforeCoords = trackingRecord === undefined ? [] : (trackingRecord.coords as LocationType[]);
-      const trackingCoords = [...beforeCoords, ...locations];
-      //beforeCoordsの最後の座標からlocationsの最後の座標までの距離を計算
-      const coords = beforeCoords.length === 0 ? locations : [beforeCoords[beforeCoords.length - 1], ...locations];
-      const distance = getLineLength(coords) + currentDistance;
-      setCurrentDistance(distance);
-
       dispatch(
         updateTrackFieldAction({
           layerId: tracking.layerId,
           userId: dataUser.uid,
           dataId: tracking.dataId,
           field: { cmt: `${t('common.distance')} ${distance.toFixed(2)}km` },
-          coords: trackingCoords,
+          coords: trackLog,
         })
       );
-      await clearSavedLocations();
 
-      if (trackingCoords.length > 1000) {
+      if (trackLog.length > 1000) {
         //1000点を超えたら新しいデータを作成
-        addRecordWithCheck('LINE', trackingCoords.slice(-1), { isTrack: true });
+        setDividedTrackLogCount((prev) => prev + 1);
+        if (trackingLayer === undefined) return;
+        const trackingRecordSet = dataSet.find((d) => d.layerId === tracking.layerId)!.data;
+        //最後の位置情報で新しいデータを作成
+        const record = generateRecord('LINE', trackingLayer, trackingRecordSet, trackLog.slice(-1));
+        addRecord(trackingLayer, record, { isTrack: true });
+
+        await storeLocations({
+          distance: 0,
+          trackLog: trackLog.slice(-1),
+          lastTimeStamp: lastTimeStamp,
+        });
       }
     },
-    [addRecordWithCheck, currentDistance, dataUser.uid, dispatch, gpsState, mapViewRef, tracking, trackingRecord]
+    // dataSetは更新されると再レンダリングされるのでdividedTrackLogCountを依存に入れる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      addRecord,
+      dividedTrackLogCount,
+      dataUser.uid,
+      dispatch,
+      generateRecord,
+      gpsState,
+      mapViewRef,
+      tracking,
+      trackingLayer,
+    ]
   );
 
   useEffect(() => {
-    //console.log('#define locationEventsEmitter update function');
+    console.log('#define locationEventsEmitter update function');
 
     const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLog);
     return () => {
@@ -414,14 +422,13 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (hasStarted) {
         //アプリがkillされている間にストレージに保存されているトラックを更新する
         //console.log('### app killed and restart tracking');
-        const savedLocations = await getSavedLocations();
+        const savedLocations = await getStoredLocations();
         updateTrackLog(savedLocations);
-        await clearSavedLocations();
+        setTrackingState('on');
+        await toggleGPS('follow');
         //再起動時にトラックを止めるならこちら
         //await stopTracking();
         //console.log('### start tracking ');
-        setTrackingState('on');
-        await toggleGPS('follow');
       }
     })();
 
