@@ -13,7 +13,7 @@ import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet'
 import { isMapView } from '../utils/Map';
 import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
-import { LocationHeadingObject, LocationSubscription } from 'expo-location';
+import { LocationSubscription } from 'expo-location';
 import { TASK } from '../constants/AppConstants';
 import { AppState as RNAppState, Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
@@ -42,31 +42,12 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   }
 });
 
-// TaskManager.defineTask(TASK.FETCH_LOCATION, async ({ data }: TaskManager.TaskManagerTaskBody<object>) => {
-//   //console.log('saveAndEmitLocation');
-//   if (isLocationObject(data) && data.locations.length > 0) {
-//     const savedLocations = await getSavedLocations();
-//     const updatedLocations = updateLocations(savedLocations, data.locations);
-//     const updatedLocationsString = JSON.stringify(updatedLocations);
-//     //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
-
-//     await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
-//     //console.log('update', updatedLocations);
-//     locationEventsEmitter.emit('update', updatedLocations);
-//     //console.log(dataSizeInMB);
-//     //if (dataSizeInMB > 2) {
-//     //console.warn('データサイズが2MBを超えています。保存されません。');
-//     //AlertAsync(t('hooks.alert.dataSizeOver'));
-//     //}
-//   }
-// });
-
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
   gpsState: LocationStateType;
   trackingState: TrackingStateType;
   headingUp: boolean;
-  magnetometer: Location.LocationHeadingObject | null;
+  magnetometer: number;
   toggleHeadingUp: (headingUp_: boolean) => void;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
@@ -75,12 +56,14 @@ export type UseLocationReturnType = {
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
   const { addRecord, generateRecord } = useRecord();
-  const [magnetometer, setMagnetometer] = useState<LocationHeadingObject | null>(null);
+  const [magnetometer, setMagnetometer] = useState(0);
   const [dividedTrackLogCount, setDividedTrackLogCount] = useState<number>(0);
 
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
-  const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>((pos) => setMagnetometer(pos));
+  // const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>(() => {
+  //   setMagnetometer(0);
+  // });
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
   const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
 
@@ -179,7 +162,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-        updateHeading.current(pos);
+        setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
       });
     }
   }, [confirmLocationPermission, gpsAccuracyOption]);
@@ -227,7 +210,9 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       });
     }
     if (headingSubscriber.current === undefined) {
-      headingSubscriber.current = await Location.watchHeadingAsync((pos) => updateHeading.current(pos));
+      headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+      });
     }
   }, [confirmLocationPermission, trackingAccuracyOption]);
 
@@ -317,28 +302,33 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const toggleHeadingUp = useCallback(
-    (headingUp_: boolean) => {
+    async (headingUp_: boolean) => {
       if (mapViewRef === null) return;
       if (headingUp_) {
-        updateHeading.current = (pos: Location.LocationHeadingObject) => {
-          //console.log(pos)
+        if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
+        headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+          const angle = Math.abs((-1.0 * nearDegree(pos.trueHeading, DEGREE_INTERVAL)) % 360);
           (mapViewRef as MapView).animateCamera(
             {
-              heading: Math.abs((-1.0 * nearDegree(pos.trueHeading, DEGREE_INTERVAL)) % 360),
+              heading: angle,
             },
             { duration: 300 }
           );
-          setMagnetometer(pos);
-        };
+        });
+        setMagnetometer(0);
       } else {
-        updateHeading.current = (pos: Location.LocationHeadingObject) => setMagnetometer(pos);
+        if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
+        headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+          setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+        });
+
         (mapViewRef as MapView).animateCamera({
           heading: 0,
         });
       }
       setHeadingUp(headingUp_);
     },
-    [mapViewRef, setMagnetometer]
+    [mapViewRef]
   );
 
   const updateTrackLog = useCallback(
@@ -371,8 +361,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         })
       );
 
-      if (trackLog.length > 1000) {
-        //1000点を超えたら新しいデータを作成
+      if (trackLog.length > 3000) {
+        //3000点を超えたら新しいデータを作成
         setDividedTrackLogCount((prev) => prev + 1);
         if (trackingLayer === undefined) return;
         const trackingRecordSet = dataSet.find((d) => d.layerId === tracking.layerId)!.data;
@@ -403,7 +393,30 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   useEffect(() => {
-    console.log('#define locationEventsEmitter update function');
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'active' && trackingState === 'on' && currentLocation !== null) {
+        (mapViewRef as MapView).animateCamera(
+          {
+            center: {
+              latitude: currentLocation.latitude,
+              longitude: currentLocation.longitude,
+            },
+          },
+          { duration: 5 }
+        );
+      }
+    };
+
+    const subscription = RNAppState.addEventListener('change', handleAppStateChange);
+
+    // Cleanup the event listener on unmount
+    return () => {
+      subscription.remove();
+    };
+  }, [currentLocation, mapViewRef, trackingState]);
+
+  useEffect(() => {
+    //console.log('#define locationEventsEmitter update function');
 
     const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLog);
     return () => {
@@ -422,13 +435,15 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (hasStarted) {
         //アプリがkillされている間にストレージに保存されているトラックを更新する
         //console.log('### app killed and restart tracking');
-        const savedLocations = await getStoredLocations();
-        updateTrackLog(savedLocations);
-        setTrackingState('on');
-        await toggleGPS('follow');
+
         //再起動時にトラックを止めるならこちら
         //await stopTracking();
-        //console.log('### start tracking ');
+
+        const savedLocations = await getStoredLocations();
+
+        updateTrackLog(savedLocations);
+        setTrackingState('on');
+        await toggleGPS('show');
       }
     })();
 
