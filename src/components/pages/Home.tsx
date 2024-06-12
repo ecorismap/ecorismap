@@ -3,7 +3,7 @@ import { StyleSheet, View, Platform, Text, TouchableOpacity } from 'react-native
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR, DEGREE_INTERVAL, TILE_FOLDER } from '../../constants/AppConstants';
+import { COLOR, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
@@ -28,7 +28,7 @@ import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
-import { isMapMemoDrawTool, nearDegree } from '../../utils/General';
+import { isMapMemoDrawTool } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
@@ -338,10 +338,7 @@ export default function HomeScreen() {
           >
             {/************** Current Marker ****************** */}
             {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-              <CurrentMarker
-                currentLocation={currentLocation}
-                angle={magnetometer && !headingUp ? nearDegree(magnetometer.trueHeading, DEGREE_INTERVAL) : 0}
-              />
+              <CurrentMarker currentLocation={currentLocation} angle={magnetometer} />
             )}
 
             {/* 表示を正しく更新するには順番とzIndexが重要 */}
