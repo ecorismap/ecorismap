@@ -519,6 +519,7 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
+        enableContentPanningGesture={false}
         style={[{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
       >
         <Animated.View style={animatedStyle}>
