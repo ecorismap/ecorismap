@@ -30,7 +30,6 @@ import {
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
 import { Position } from '@turf/turf';
-import * as Location from 'expo-location';
 import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 
 export interface HomeContextType {
@@ -51,7 +50,7 @@ export interface HomeContextType {
   gpsState: string;
   trackingState: TrackingStateType;
   currentLocation: LocationType | null;
-  magnetometer: Location.LocationHeadingObject | null;
+  magnetometer: number;
   headingUp: boolean;
   zoom: number;
   zoomDecimal: number;

@@ -27,22 +27,31 @@ export const getStoredLocations = async (): Promise<{
 };
 
 export const checkAndStoreLocations = async (locations: LocationObject[]) => {
-  //バックグラウンドの場合は、保存する
-  const { distance, trackLog, lastTimeStamp } = await getStoredLocations();
-  const checkedLocations = checkLocations(lastTimeStamp, locations);
-  const updatedDistance = distance + getLineLength(checkedLocations);
-  const updatedTrackLog = [...trackLog, ...checkedLocations];
-  const updatedLastTimeStamp =
-    updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
-  const updatedLocations = {
-    lastTimeStamp: updatedLastTimeStamp,
-    distance: updatedDistance,
-    trackLog: updatedTrackLog,
-  };
-  const updatedLocationsString = JSON.stringify(updatedLocations);
-  //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
-  await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
-  return updatedLocations;
+  try {
+    //バックグラウンドの場合は、保存する
+    const { distance, trackLog, lastTimeStamp } = await getStoredLocations();
+    const checkedLocations = checkLocations(lastTimeStamp, locations);
+
+    const updatedTrackLog = [...trackLog, ...checkedLocations];
+    const updatedDistance =
+      distance +
+      (trackLog.length === 0
+        ? getLineLength(checkedLocations)
+        : getLineLength([trackLog[trackLog.length - 1], ...checkedLocations]));
+    const updatedLastTimeStamp =
+      updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
+    const updatedLocations = {
+      lastTimeStamp: updatedLastTimeStamp,
+      distance: updatedDistance,
+      trackLog: updatedTrackLog,
+    };
+    const updatedLocationsString = JSON.stringify(updatedLocations);
+    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
+    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
+    return updatedLocations;
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
