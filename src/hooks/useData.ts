@@ -9,6 +9,7 @@ import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import dayjs from 'dayjs';
 import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
+import { useRoute } from '@react-navigation/native';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -50,6 +51,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
   const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const { isRunningProject } = usePermission();
+  const route = useRoute();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<boolean[]>([]);
 
@@ -281,13 +283,16 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
+    //console.log('useData useEffect');
+    if (route.name !== 'Data') return;
     if (dataSet === undefined) return;
+
     const data = dataSet.flatMap((d) => (d.layerId === targetLayer.id ? d.data : []));
 
     setCheckList(new Array(data.length).fill(false));
     //console.log(data);
     setAllUserRecordSet(data);
-  }, [dataSet, targetLayer.id]);
+  }, [dataSet, route.name, targetLayer.id]);
 
   return {
     allUserRecordSet,
