@@ -260,8 +260,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         unselectRecord();
       }
     }
+    //DataEditとDataのuseEffectを呼び出さないために、Layersに戻る
+    navigation.navigate('Layers');
     bottomSheetRef.current?.close();
-  }, [isEditingRecord, routeName, setIsEditingRecord, unselectRecord]);
+  }, [isEditingRecord, navigation, routeName, setIsEditingRecord, unselectRecord]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
