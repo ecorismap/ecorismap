@@ -125,11 +125,7 @@
     "point": "point",
     "track": "track",
     "polygon": "polygon",
-    "message": {
-      "failGetUids": "Failed to get user ID",
-      "failGetProjects": "Failed to get project",
-      "cannotLoadProject": "Some projects cannot be loaded. \nAsk the project owner to reset your account."
-    },
+    "message": {},
     "login": "Login",
     "manual": "manual",
     "issue": "defect report",
@@ -197,7 +193,6 @@
     "customField": "custom field",
     "custom": "CUSTOM",
     "memo": "memo",
-    "EncryptPassword": "encrypted password",
     "customLabel": "custom label",
     "vectortile": "vector tiles",
     "size": "size",
@@ -235,9 +230,7 @@
     "default": "Default",
     "common": "common",
     "smoothLine": "smooth the lines",
-    "addMembers": "Add members (multiple members can be separated by commas, spaces, or new lines)",
-    "yes": "yes",
-    "no": "no",
+    "selectInfoTool": "selection type",
     "selectPointInfo": "points only",
     "selectLineInfo": "line only",
     "selectPolygonInfo": "polygon only",
@@ -293,7 +286,7 @@
       "clearTileCache": "Clear map cache and download files?",
       "clearPhotoCache": "Clear photo cache?",
       "fileNew": "Clear current data?",
-      "fileOpen": "Load data file (.ecorismap or .zip)? \nCurrent data and settings will be overwritten."
+      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
     },
     "alert": {
       "saveDataToLocalStorage": "Saved.",
@@ -477,10 +470,6 @@
     },
     "navigation": {
       "title": "Project list"
-    },
-    "tooltip": {
-      "reloadProjects": "reload",
-      "createProject": "Create project"
     }
   },
   "ProjectEdit": {
@@ -499,12 +488,6 @@
     },
     "navigation": {
       "title": "project"
-    },
-    "tooltip": {
-      "open": "Open project",
-      "setting": "Edit project",
-      "export": "Export project data",
-      "delete": "Delete project"
     }
   },
   "LayerEdit": {
@@ -549,7 +532,7 @@
       "dataSizeOver": "The data size exceeds 2MB. \nNot saved."
     },
     "message": {
-      "pleaseLogin": "Please log in again.",
+      "pleaseLogin": "Please login",
       "cannotUploadData": "Cannot upload because the layer settings have been updated.",
       "noCopyProject": "No project to copy",
       "unknownError": "Unknown error.",
@@ -643,11 +626,11 @@
       "invalidPolygon": "Can't save for invalid line.",
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
-      "cannotEditCommon": "Common layers cannot be edited",
       "cannotInRunningProject": "Not possible when project is open",
       "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
       "encryptKeyFailed": "Check encryption password",
-      "notSupportPDF": "The web version does not support PDF import."
+      "notSupportPDF": "The web version does not support PDF import.",
+      "saveTracking": "There are unsaved track logs. \nDo you want to save?"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
@@ -675,8 +658,7 @@
       "clearMapMemo": "I deleted the map notes.",
       "individualColor": "Changed the color type to [Individual]. \nIf you want to undo it, change it from the layer style.",
       "storage": "Loading data is full. \nDelete unnecessary data.",
-      "cannotEdit": "There are no editable layers.",
-      "noInternet": "Not connected to the internet. \nPlease connect and try again."
+      "cannotEdit": "There are no editable layers."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
@@ -689,11 +671,7 @@
       "saveProject": "Do you want to save the project settings?",
       "track": "Do you want to stop recording the track?",
       "clearMapMemo": "Erase all map notes?",
-      "reOpenProject": "Do you want to open the project? \nAny unsaved data in the current project will be discarded.",
-      "download": "Would you like to download the data? \nData that has not been uploaded will be discarded.",
-      "upload": "Do you want to upload your data?",
-      "track_start": "Do you want to start recording the track?",
-      "downloadAllUserData": "Do you also want to download other members' data?"
+      "track_start": "Do you want to start recording the track?"
     },
     "navigation": {
       "download": "Map download",
@@ -703,16 +681,7 @@
       "addLocationPoint": "Add points to current location",
       "plotPoint": "add points",
       "movePoint": "Move the point by long pressing",
-      "deletePoint": "remove points",
-      "projects": "Project list",
-      "setting": "account settings",
-      "logout": "Logout",
-      "discardProect": "Discard project changes",
-      "jumpProject": "Jump to project home",
-      "downloadData": "Download data",
-      "uploadData": "Upload data",
-      "syncPosition": "Share your location",
-      "closeProject": "Close project"
+      "deletePoint": "remove points"
     }
   },
   "LayerEditFeatureStyle": {
