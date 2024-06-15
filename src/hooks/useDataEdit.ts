@@ -23,6 +23,7 @@ import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { v4 as uuidv4 } from 'uuid';
 import { deleteLocalPhoto } from '../utils/Photo';
+import { useRoute } from '@react-navigation/native';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -82,6 +83,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   const { deleteRecordPhotos } = usePhoto();
   const { selectRecord, setIsEditingRecord } = useRecord();
+  const route = useRoute();
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -105,7 +107,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   useEffect(() => {
     //データの初期化。以降はchangeRecordで行う。
+    if (route.name !== 'DataEdit') return;
 
+    //console.log('useDataEdit useEffect');
     setTargetRecord(dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record);
     const allUserRecordSet = dataSet
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
@@ -119,7 +123,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       const newLatLon = toLatLonDMS(record.coords as LocationType);
       setLatLon(newLatLon);
     }
-  }, [dataSet, layer, layer.id, layer.type, record, selectRecord]);
+  }, [dataSet, layer, layer.id, layer.type, record, route, selectRecord]);
 
   const changeRecord = useCallback(
     (value: number) => {

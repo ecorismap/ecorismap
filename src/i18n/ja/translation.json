@@ -769,7 +769,8 @@
       "encryptKeyFailed": "暗号化パスワードを確認してください",
       "cannotInRunningProject": "プロジェクトを開いている時はできません",
       "cannotSaveInTracking": "トラックの記録中は変更できません。",
-      "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。"
+      "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。",
+      "saveTracking": "保存されていないトラックログがあります。保存しますか？"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"
