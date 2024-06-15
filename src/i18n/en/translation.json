@@ -628,7 +628,9 @@
       "invalidPoint": "Can't save for invalid point.",
       "cannotInRunningProject": "Not possible when project is open",
       "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
-      "notSupportPDF": "The web version does not support PDF import."
+      "encryptKeyFailed": "Check encryption password",
+      "notSupportPDF": "The web version does not support PDF import.",
+      "saveTracking": "There are unsaved track logs. \nDo you want to save?"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
