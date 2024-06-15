@@ -18,7 +18,7 @@ import { TASK } from '../constants/AppConstants';
 import { AppState as RNAppState, Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
 import * as TaskManager from 'expo-task-manager';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 
@@ -58,12 +58,9 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const { addRecord, generateRecord } = useRecord();
   const [magnetometer, setMagnetometer] = useState(0);
   const [dividedTrackLogCount, setDividedTrackLogCount] = useState<number>(0);
-
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
-  // const updateHeading = useRef<(pos: Location.LocationHeadingObject) => void>(() => {
-  //   setMagnetometer(0);
-  // });
+
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
   const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
 
@@ -162,6 +159,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        if (RNAppState.currentState === 'background') return;
         setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
       });
     }
@@ -211,6 +209,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        if (RNAppState.currentState === 'background') return;
         setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
       });
     }
@@ -338,7 +337,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (trackLog.length === 0) return;
 
       const currentCoords = trackLog[trackLog.length - 1];
-      if (gpsState === 'follow' && RNAppState.currentState === 'active') {
+
+      if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
           {
             center: {
@@ -393,29 +393,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   useEffect(() => {
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active' && trackingState === 'on' && currentLocation !== null) {
-        (mapViewRef as MapView).animateCamera(
-          {
-            center: {
-              latitude: currentLocation.latitude,
-              longitude: currentLocation.longitude,
-            },
-          },
-          { duration: 5 }
-        );
-      }
-    };
-
-    const subscription = RNAppState.addEventListener('change', handleAppStateChange);
-
-    // Cleanup the event listener on unmount
-    return () => {
-      subscription.remove();
-    };
-  }, [currentLocation, mapViewRef, trackingState]);
-
-  useEffect(() => {
     //console.log('#define locationEventsEmitter update function');
 
     const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLog);
@@ -437,17 +414,20 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         //console.log('### app killed and restart tracking');
 
         //再起動時にトラックを止めるならこちら
-        //await stopTracking();
 
-        const savedLocations = await getStoredLocations();
-
-        updateTrackLog(savedLocations);
-        setTrackingState('on');
-        await toggleGPS('show');
+        await stopTracking();
       }
+      const savedLocations = await getStoredLocations();
+      if (savedLocations.trackLog.length > 1) {
+        const ret = await ConfirmAsync(t('hooks.message.saveTracking'));
+        if (ret) updateTrackLog(savedLocations);
+      }
+      clearStoredLocations();
     })();
 
     return () => {
+      Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+
       if (gpsSubscriber.current !== undefined) {
         gpsSubscriber.current.remove();
         gpsSubscriber.current = undefined;

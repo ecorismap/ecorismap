@@ -40,6 +40,7 @@ export const checkAndStoreLocations = async (locations: LocationObject[]) => {
         : getLineLength([trackLog[trackLog.length - 1], ...checkedLocations]));
     const updatedLastTimeStamp =
       updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
+
     const updatedLocations = {
       lastTimeStamp: updatedLastTimeStamp,
       distance: updatedDistance,
