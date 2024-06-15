@@ -342,6 +342,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const onDragMapView = useCallback(async () => {
+    //console.log('onDragMapView');
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
