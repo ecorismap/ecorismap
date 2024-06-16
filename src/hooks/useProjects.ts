@@ -4,7 +4,7 @@ import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction } from '../modules/projects';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
 
@@ -35,7 +35,7 @@ export const useProjects = (): UseProjectsReturnType => {
     //ライセンスは不正防止のためadd後にfunctionsで更新するが、ひとまず入れておく。本当は、Listnerで更新した方が良い。
     if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
     const project: ProjectType = {
-      id: uuidv4(),
+      id: ulid(),
       name: '',
       members: [{ uid: user.uid, email: user.email, verified: 'HOLD', role: 'OWNER' }],
       ownerUid: user.uid,

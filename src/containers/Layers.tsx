@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { LayerType } from '../types';
 import Layers from '../components/pages/Layers';
 import { TEMPLATE_LAYER } from '../modules/layers';
@@ -75,7 +75,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     }
     navigation.navigate('LayerEdit', {
       previous: 'Layers',
-      targetLayer: { ...TEMPLATE_LAYER, id: uuidv4() },
+      targetLayer: { ...TEMPLATE_LAYER, id: ulid() },
       isEdited: true,
     });
   }, [isRunningProject, navigation]);

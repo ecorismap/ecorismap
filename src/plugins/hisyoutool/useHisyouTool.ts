@@ -19,7 +19,7 @@ import {
   legendsToProperties,
   propertiesToLegends,
 } from './utils';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { addRecordsAction, deleteRecordsAction } from '../../modules/dataSet';
 import { AppState } from '../../modules';
@@ -221,7 +221,7 @@ export const useHisyouTool = (
 
       //新規ラインの場合
       drawLine.current.push({
-        id: uuidv4(),
+        id: ulid(),
         layerId: undefined,
         record: undefined,
         xy: [pXY],
@@ -424,7 +424,7 @@ export const useHisyouTool = (
         //console.log(updatedField);
 
         const propertyRecord: RecordType = {
-          id: uuidv4(),
+          id: ulid(),
           userId: dataUser.uid,
           displayName: dataUser.displayName,
           redraw: false,

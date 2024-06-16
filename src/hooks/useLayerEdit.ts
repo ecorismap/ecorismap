@@ -3,7 +3,7 @@ import { ColorStyle, FeatureType, FieldType, FormatType, LayerType, PermissionTy
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 
 import { cloneDeep } from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { formattedInputs } from '../utils/Format';
@@ -267,7 +267,7 @@ export const useLayerEdit = (
 
   const addField = useCallback(() => {
     const m = cloneDeep(targetLayer);
-    m.field.push({ id: uuidv4(), name: '', format: 'STRING' });
+    m.field.push({ id: ulid(), name: '', format: 'STRING' });
     setTargetLayer(m);
     setIsEdited(true);
   }, [targetLayer]);
