@@ -3,7 +3,7 @@ import { GestureResponderEvent, Platform } from 'react-native';
 import { useDispatch } from 'react-redux';
 import MapView from 'react-native-maps';
 import { Position } from '@turf/turf';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { t } from '../i18n/config';
 //import * as turf from '@turf/turf';
 import {
@@ -648,22 +648,22 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
       if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
         selectLine.current = [...selectLine.current, pXY];
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isPlotTool(currentDrawTool)) {
         moveSvgPlotTool(pXY);
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isFreehandTool(currentDrawTool)) {
         moveSvgFreehandTool(pXY);
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isHisyouTool(currentDrawTool)) {
         moveSvgHisyouTool(pXY);
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
     },
@@ -677,25 +677,25 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
       if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
         selectEditableFeatures();
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isPlotTool(currentDrawTool)) {
         releaseSvgPlotTool(pXY);
         if (drawLine.current.length > 0) isEditingDraw.current = true;
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isFreehandTool(currentDrawTool)) {
         releaseSvgFreehandTool();
         if (drawLine.current.length > 0) isEditingDraw.current = true;
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
       if (isHisyouTool(currentDrawTool)) {
         releaseSvgHisyouTool();
         if (drawLine.current.length > 0) isEditingDraw.current = true;
-        setRedraw(uuidv4());
+        setRedraw(ulid());
         return;
       }
     },
@@ -769,7 +769,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       resetDrawTools();
       setDrawTool('NONE');
     }
-    setRedraw(uuidv4());
+    setRedraw(ulid());
   }, [currentDrawTool, mapRegion, mapSize, mapViewRef, resetDrawTools]);
 
   const toggleWebTerrainActive = useCallback(

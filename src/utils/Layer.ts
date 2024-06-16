@@ -2,7 +2,7 @@ import { cloneDeep } from 'lodash';
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 import { RecordType, LayerType } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { hex2rgba } from './Color';
 
 export const getColor = (layer: LayerType, feature: RecordType, transparency: number) => {
@@ -165,9 +165,9 @@ export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'Public
 export function updateLayerActiveAndIds(layer: LayerType) {
   const newLayer = cloneDeep(layer);
   newLayer.active = false;
-  newLayer.id = uuidv4();
+  newLayer.id = ulid();
   newLayer.field.forEach((f) => {
-    f.id = uuidv4();
+    f.id = ulid();
   });
   return newLayer;
 }

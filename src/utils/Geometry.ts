@@ -1,5 +1,5 @@
 import { parse } from 'fast-xml-parser';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import xmlBuilder from 'xmlbuilder';
 import {
   RecordType,
@@ -58,7 +58,7 @@ export const Csv2Data = (
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
 
       return {
-        id: uuidv4(),
+        id: ulid(),
         userId: userId,
         displayName: displayName,
         redraw: false,
@@ -106,7 +106,7 @@ export const Gpx2Data = (
           const time = dayjs(d.time);
           const ele = isNaN(d.ele) || d.ele === '' ? undefined : d.ele;
           const record: RecordType = {
-            id: uuidv4(),
+            id: ulid(),
             userId: userId,
             displayName: displayName,
             redraw: false,
@@ -156,7 +156,7 @@ export const Gpx2Data = (
           const time = trk.time !== undefined ? dayjs(trk.time) : dayjs(firstTrkptTime);
 
           const record: RecordType = {
-            id: uuidv4(),
+            id: ulid(),
             userId: userId,
             displayName: displayName,
             redraw: false,
@@ -615,7 +615,7 @@ function createGeometryFromPolygonGeoJson(coordinates: Position[][]) {
 
 function createBase(userId: string | undefined, displayName: string | null) {
   return {
-    id: uuidv4(),
+    id: ulid(),
     userId: userId,
     displayName: displayName,
     redraw: false,
@@ -661,7 +661,7 @@ export function createLayerFromGeoJson(
     featureType = 'NONE';
   }
   return {
-    id: uuidv4(),
+    id: ulid(),
     name: sanitize(fileName),
     type: featureType,
     permission: 'COMMON',
@@ -684,7 +684,7 @@ export function createLayerFromGeoJson(
 
 function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
   return {
-    id: uuidv4(),
+    id: ulid(),
     name: sanitize(fileName),
     type: featureType,
     permission: 'COMMON',
@@ -702,9 +702,9 @@ function createGpxLayer(fileName: string, featureType: FeatureType): LayerType {
     visible: true,
     active: false,
     field: [
-      { id: uuidv4(), name: 'name', format: 'STRING' },
-      { id: uuidv4(), name: 'time', format: 'DATETIME' },
-      { id: uuidv4(), name: 'cmt', format: 'STRING' },
+      { id: ulid(), name: 'name', format: 'STRING' },
+      { id: ulid(), name: 'time', format: 'DATETIME' },
+      { id: ulid(), name: 'cmt', format: 'STRING' },
     ],
   };
 }
@@ -715,7 +715,7 @@ function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | 
   const properties = geojson.features[0].properties;
   if (properties === null) return [];
   const fields = Object.keys(properties).map((fieldName) => ({
-    id: uuidv4(),
+    id: ulid(),
     name: fieldName,
     format: 'STRING' as FormatType,
   }));
@@ -724,7 +724,7 @@ function createAllStringFieldsFromGeoJson(geojson: FeatureCollection<Geometry | 
 
 export function createLayerFromCsv(csv: string, fileName: string, featureType: FeatureType): LayerType {
   return {
-    id: uuidv4(),
+    id: ulid(),
     name: sanitize(fileName),
     type: featureType,
     permission: 'COMMON',
@@ -748,7 +748,7 @@ export function createLayerFromCsv(csv: string, fileName: string, featureType: F
 function createAllStringFieldsFromCsv(csv: string) {
   const csvFields = csv.split('\n')[0].split(',');
   const fields = csvFields.map((fieldName) => ({
-    id: uuidv4(),
+    id: ulid(),
     name: fieldName,
     format: 'STRING' as FormatType,
   }));

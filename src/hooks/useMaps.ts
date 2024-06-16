@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { TileMapItemType, TileMapType } from '../types';
 import { Platform } from 'react-native';
@@ -180,7 +180,7 @@ export const useMaps = (): UseMapsReturnType => {
     let newTileMap: TileMapType;
     if (editTileMap === null) {
       newTileMap = {
-        id: uuidv4(),
+        id: ulid(),
         name: '',
         url: '',
         attribution: '',
@@ -297,7 +297,7 @@ export const useMaps = (): UseMapsReturnType => {
       const newTileMaps = cloneDeep(maps);
       for (let i = 0; i < outputFiles.length; i++) {
         const outputFile = outputFiles[i];
-        const mapId = id === undefined || outputFiles.length > 1 ? uuidv4() : id;
+        const mapId = id === undefined || outputFiles.length > 1 ? ulid() : id;
         const pdfImage = 'file://' + outputFile.uri;
 
         const { y: pdfTopCoord } = outputFile.topLeft;
@@ -450,7 +450,7 @@ export const useMaps = (): UseMapsReturnType => {
         return importJsonMapFile(uri);
       } else if (ext === 'pdf') {
         let pdfUri = uri;
-        const tempPdf = `${FileSystem.cacheDirectory}${uuidv4()}.pdf`;
+        const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
         if (uri.startsWith('file://') === false) {
           //uriからbasicauth部分を取得
           const auth = uri.split('@')[0].split('//')[1];

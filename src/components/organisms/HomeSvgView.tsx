@@ -3,7 +3,7 @@ import { Platform, View } from 'react-native';
 
 import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
@@ -70,7 +70,7 @@ export const SvgView = React.memo(() => {
             strokeColor = 'blue';
           }
           return (
-            <G key={uuidv4()}>
+            <G key={ulid()}>
               {properties.includes('EDIT') && (
                 <Path id={`path${idx}`} d={pointsToSvg(xy)} stroke={'blue'} strokeWidth="4" fill="none" />
               )}

@@ -3,7 +3,7 @@ import MapList from '../components/pages/MapList';
 import { useMaps } from '../hooks/useMaps';
 import { Props_MapList } from '../routes';
 import { TileMapItemType } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { MapListContext } from '../contexts/MapList';
 
@@ -13,7 +13,7 @@ export default function MapListContainer({ navigation }: Props_MapList) {
   const [reload, setReload] = useState(false);
 
   const addMap = (map: TileMapItemType) => {
-    const tileMap = { ...map, id: uuidv4(), visible: true, maptype: 'none' as const };
+    const tileMap = { ...map, id: ulid(), visible: true, maptype: 'none' as const };
     saveMap(tileMap);
     navigation.navigate('Maps');
   };

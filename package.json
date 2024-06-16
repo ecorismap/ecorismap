@@ -77,6 +77,7 @@
     "expo-localization": "~14.3.0",
     "expo-location": "16.5.3",
     "expo-media-library": "~15.4.1",
+    "expo-notifications": "~0.20.1",
     "expo-print": "12.6.0",
     "expo-sharing": "~11.5.0",
     "expo-splash-screen": "~0.20.5",
@@ -129,6 +130,7 @@
     "sanitize-filename": "^1.6.3",
     "styled-components": "^5.3.3",
     "sweetalert2": "^11.11.0",
+    "ulid": "^2.3.0",
     "uuid": "^9.0.1",
     "xmlbuilder": "^15.1.1",
     "xmldom": "^0.6.0"

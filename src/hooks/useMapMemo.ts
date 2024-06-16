@@ -4,7 +4,7 @@ import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { Position } from '@turf/turf';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import {
   checkDistanceFromLine,
   getSnappedLine,
@@ -230,7 +230,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         mapMemoEditingLine.current = [pXY];
       }
 
-      setRedraw(uuidv4());
+      setRedraw(ulid());
     },
     [currentMapMemoTool, findSnappedLine, snapWithLine]
   );
@@ -261,7 +261,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           mapMemoEditingLine.current = [...mapMemoEditingLine.current, pXY];
         }
       }
-      setRedraw(uuidv4());
+      setRedraw(ulid());
     },
     [currentMapMemoTool, isStraightStyle, snapWithLine]
   );

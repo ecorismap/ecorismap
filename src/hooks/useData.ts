@@ -4,7 +4,7 @@ import { ExportType, LayerType, PhotoType, RecordType } from '../types';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
 import { AppState } from '../modules';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 import dayjs from 'dayjs';
 import { usePermission } from './usePermission';
@@ -184,7 +184,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const addDefaultRecord = useCallback(
     (fields?: { [key: string]: string | number | PhotoType[] }) => {
-      const id = uuidv4();
+      const id = ulid();
       const field = getDefaultField(targetLayer, ownRecordSet, id);
 
       const newData: RecordType = {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { AppState } from '../modules';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
@@ -73,7 +73,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
   const addTileRegions = useCallback(() => {
     if (tileMap === undefined) return;
     const tileRegion = cloneDeep(downloadArea);
-    tileRegion.id = uuidv4();
+    tileRegion.id = ulid();
     tileRegion.tileMapId = tileMap.id;
 
     dispatch(editSettingsAction({ tileRegions: [...tileRegions, tileRegion] }));
