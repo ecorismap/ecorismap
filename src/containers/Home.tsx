@@ -75,7 +75,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const routeName = getFocusedRouteNameFromRoute(route);
-
+  const [isModalInfoToolHidden, setIsModalInfoToolHidden] = useState(false);
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
@@ -1326,6 +1326,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isUndoable,
         isRedoable,
         mapMemoLines,
+        isModalInfoToolHidden,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -1425,8 +1426,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       <HomeModalInfoPicker
         modalVisible={visibleInfoPicker}
         currentInfoTool={currentInfoTool}
+        isModalInfoToolHidden={isModalInfoToolHidden}
         selectInfoTool={selectInfoTool}
         setVisibleInfoPicker={setVisibleInfoPicker}
+        setIsModalInfoToolHidden={setIsModalInfoToolHidden}
       />
       <HomeModalPDFSettings
         visible={isPDFSettingsVisible}
