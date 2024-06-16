@@ -165,7 +165,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const changeChecked = useCallback(
     (index: number) => {
-      //console.log(checkList, index);
       const updatedCheckList = [...checkList];
       updatedCheckList[index].checked = !checkList[index].checked;
       setCheckList(updatedCheckList);

@@ -82,6 +82,7 @@ export const DataTable = React.memo(() => {
               borderRadius={0}
               name={checkList[index].checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
               onPress={() => changeChecked(index, !checkList[index].checked)}
+              size={25}
             />
           </View>
 
@@ -234,6 +235,7 @@ const DataTitle = React.memo((props: Props) => {
           borderRadius={0}
           name={checkedAll ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
           onPress={onCheckAll}
+          size={25}
         />
       </View>
       {projectId !== undefined && (
