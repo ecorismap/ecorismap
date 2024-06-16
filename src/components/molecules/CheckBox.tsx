@@ -16,11 +16,24 @@ interface Props {
   onCheck: (checked: boolean) => void;
   style?: { [key: string]: string | number };
   radio?: boolean;
+  numberOfLines?: number;
 }
 
 export const CheckBox = React.memo((props: Props) => {
-  const { label, labelAlign, labelSize, labelWeight, labelColor, checked, disabled, width, onCheck, style, radio } =
-    props;
+  const {
+    label,
+    labelAlign,
+    labelSize,
+    labelWeight,
+    labelColor,
+    checked,
+    disabled,
+    width,
+    onCheck,
+    style,
+    radio,
+    numberOfLines,
+  } = props;
 
   const checkedIcon = useMemo(() => (radio ? 'checkbox-marked-circle-outline' : 'checkbox-marked-outline'), [radio]);
   const uncheckedIcon = useMemo(() => (radio ? 'checkbox-blank-circle-outline' : 'checkbox-blank-outline'), [radio]);
@@ -65,7 +78,7 @@ export const CheckBox = React.memo((props: Props) => {
               //backgroundColor: COLOR.BLUE,
             }}
             //adjustsFontSizeToFit={true}
-            numberOfLines={1}
+            numberOfLines={numberOfLines ?? 1}
           >
             {label}
           </Text>

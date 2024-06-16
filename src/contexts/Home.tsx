@@ -102,6 +102,7 @@ export interface HomeContextType {
     strokeColor: string;
     strokeWidth: number;
   }[];
+  isModalInfoToolHidden: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
