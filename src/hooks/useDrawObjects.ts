@@ -1,6 +1,6 @@
 import { MutableRefObject, useCallback, useRef } from 'react';
 import { Position } from '@turf/turf';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import {
   checkDistanceFromLine,
   findNearNodeIndex,
@@ -129,7 +129,7 @@ export const useDrawObjects = (
     (pXY: Position) => {
       //console.log('New Line');
       drawLine.current.push({
-        id: uuidv4(),
+        id: ulid(),
         layerId: undefined,
         record: undefined,
         xy: [pXY],
@@ -442,7 +442,7 @@ export const useDrawObjects = (
 
       //新規ラインの場合
       drawLine.current.push({
-        id: uuidv4(),
+        id: ulid(),
         layerId: undefined,
         record: undefined,
         xy: [pXY],

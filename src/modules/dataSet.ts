@@ -1,6 +1,6 @@
 import produce, { enableES5 } from 'immer';
 enableES5();
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { DataType, RecordType, LocationType, PhotoType } from '../types';
 
 export const DEFAULT_DATA: RecordType = {
@@ -15,9 +15,9 @@ export const DEFAULT_DATA: RecordType = {
 
 export function createDataSetInitialState(): DataType[] {
   return [
-    { layerId: uuidv4(), userId: undefined, data: [] },
-    { layerId: uuidv4(), userId: undefined, data: [] },
-    { layerId: uuidv4(), userId: undefined, data: [] },
+    { layerId: ulid(), userId: undefined, data: [] },
+    { layerId: ulid(), userId: undefined, data: [] },
+    { layerId: ulid(), userId: undefined, data: [] },
   ];
 }
 

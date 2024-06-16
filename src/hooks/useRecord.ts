@@ -18,7 +18,7 @@ import {
 import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { createSelector } from 'reselect';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { getDefaultField } from '../utils/Data';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
@@ -224,7 +224,7 @@ export const useRecord = (): UseRecordReturnType => {
       coords: LocationType | LocationType[],
       options?: { groupId?: string }
     ) => {
-      const id = uuidv4();
+      const id = ulid();
       const field = getDefaultField(editingLayer, editingRecordSet, id, options);
       const centroid = Array.isArray(coords)
         ? featureType === 'LINE'
