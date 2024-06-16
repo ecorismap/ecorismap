@@ -30,9 +30,16 @@ export const DataEditRecordSelector = (props: Props) => {
         backgroundColor={COLOR.MAIN}
         color={COLOR.BLACK}
         onPress={onPressPrevious}
+        size={30}
       />
       <Text>{`${recordNumber}/${maxRecordNumber}`}</Text>
-      <Button name="arrow-right-bold-outline" backgroundColor={COLOR.MAIN} color={COLOR.BLACK} onPress={onPressNext} />
+      <Button
+        name="arrow-right-bold-outline"
+        backgroundColor={COLOR.MAIN}
+        color={COLOR.BLACK}
+        onPress={onPressNext}
+        size={30}
+      />
     </View>
   );
 };
@@ -42,6 +49,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     flexDirection: 'row',
+    height: 35,
     justifyContent: 'center',
     marginLeft: 0,
   },

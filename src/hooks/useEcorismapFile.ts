@@ -30,7 +30,7 @@ import JSZip from 'jszip';
 import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
 import { useRepository } from './useRepository';
 import sanitize from 'sanitize-filename';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -278,7 +278,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //複数の管理者がデータをアップロードするときに、同じidが発生する？ので書き換える。要調査
       const newDataSet = dataSet.map((d) => {
         const newData = d.data.map((v) => {
-          return { ...v, id: uuidv4(), userId: dataUser.uid, displayName: dataUser.displayName };
+          return { ...v, id: ulid(), userId: dataUser.uid, displayName: dataUser.displayName };
         });
         return { ...d, userId: dataUser.uid, data: newData };
       });

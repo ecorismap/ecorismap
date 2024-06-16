@@ -21,7 +21,7 @@ import * as FileSystem from 'expo-file-system';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { deleteLocalPhoto } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 
@@ -198,7 +198,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     ) => {
       //console.log('$$$', uri);
       const updatedRecord = cloneDeep(targetRecord);
-      const photoId = uuidv4();
+      const photoId = ulid();
       const photoField = updatedRecord.field[fieldName] as PhotoType[];
       photoField.push({
         id: photoId,
@@ -323,7 +323,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   const copyRecord = useCallback(
     (originalRecord: RecordType) => {
-      const id = uuidv4();
+      const id = ulid();
       // const field = getDefaultField(targetLayer, ownRecordSet, id);
 
       const newData: RecordType = {

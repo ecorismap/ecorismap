@@ -18,7 +18,7 @@ import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
 import { isPoint, LatLonDMS } from './Coords';
 import { t } from '../i18n/config';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
@@ -307,7 +307,7 @@ export const createRecordSetFromTemplate = (
       if (alreadyHasData) return undefined;
       const updatedRecordSet = recordSet.data.map((d) => ({
         ...d,
-        id: uuidv4(),
+        id: ulid(),
         userId: user.uid,
         displayName: user.displayName,
       }));

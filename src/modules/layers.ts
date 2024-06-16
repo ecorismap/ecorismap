@@ -3,7 +3,7 @@ enableES5();
 import { COLOR } from '../constants/AppConstants';
 import { t } from '../i18n/config';
 import { LayerType } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 
 export const TEMPLATE_LAYER: LayerType = {
   id: '',
@@ -29,7 +29,7 @@ export const TEMPLATE_LAYER: LayerType = {
 export function createLayersInitialState(): LayerType[] {
   return [
     {
-      id: uuidv4(),
+      id: ulid(),
       name: t('common.point'),
       type: 'POINT',
       permission: 'PRIVATE',
@@ -46,14 +46,14 @@ export function createLayersInitialState(): LayerType[] {
       visible: true,
       active: true,
       field: [
-        { id: uuidv4(), name: 'name', format: 'SERIAL' },
-        { id: uuidv4(), name: 'time', format: 'DATETIME' },
-        { id: uuidv4(), name: 'cmt', format: 'STRING' },
-        { id: uuidv4(), name: 'photo', format: 'PHOTO' },
+        { id: ulid(), name: 'name', format: 'SERIAL' },
+        { id: ulid(), name: 'time', format: 'DATETIME' },
+        { id: ulid(), name: 'cmt', format: 'STRING' },
+        { id: ulid(), name: 'photo', format: 'PHOTO' },
       ],
     },
     {
-      id: uuidv4(),
+      id: ulid(),
       name: t('common.track'),
       type: 'LINE',
       permission: 'PRIVATE',
@@ -71,13 +71,13 @@ export function createLayersInitialState(): LayerType[] {
       visible: true,
       active: true,
       field: [
-        { id: uuidv4(), name: 'name', format: 'SERIAL' },
-        { id: uuidv4(), name: 'time', format: 'DATETIME' },
-        { id: uuidv4(), name: 'cmt', format: 'STRING' },
+        { id: ulid(), name: 'name', format: 'SERIAL' },
+        { id: ulid(), name: 'time', format: 'DATETIME' },
+        { id: ulid(), name: 'cmt', format: 'STRING' },
       ],
     },
     {
-      id: uuidv4(),
+      id: ulid(),
       name: t('common.polygon'),
       type: 'POLYGON',
       permission: 'PRIVATE',
@@ -95,9 +95,9 @@ export function createLayersInitialState(): LayerType[] {
       visible: true,
       active: true,
       field: [
-        { id: uuidv4(), name: 'name', format: 'SERIAL' },
-        { id: uuidv4(), name: 'time', format: 'DATETIME' },
-        { id: uuidv4(), name: 'cmt', format: 'STRING' },
+        { id: ulid(), name: 'name', format: 'SERIAL' },
+        { id: ulid(), name: 'time', format: 'DATETIME' },
+        { id: ulid(), name: 'cmt', format: 'STRING' },
       ],
     },
   ];

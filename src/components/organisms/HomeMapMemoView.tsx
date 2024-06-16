@@ -4,7 +4,7 @@ import { pointsToSvg } from '../../utils/Coords';
 import { HomeContext } from '../../contexts/Home';
 import { View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
-import { v4 as uuidv4 } from 'uuid';
+import { ulid } from 'ulid';
 import { MapMemoToolType } from '../../types';
 
 export const MapMemoView = React.memo(() => {
@@ -47,7 +47,7 @@ export const MapMemoView = React.memo(() => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <RenderStamp stampPos={stampPos} currentMapMemoTool={currentMapMemoTool} strokeColor={strokeColor} />
         {isBrushTool(currentMapMemoTool) && (
-          <G key={uuidv4()}>
+          <G key={ulid()}>
             <Path
               id={`path`}
               d={pointsToSvg(mapMemoEditingLine)}
@@ -109,7 +109,7 @@ const RenderStamp = React.memo(
         return <Circle cx={stampPos.x} cy={stampPos.y} r="4" stroke="#ffffffaa" strokeWidth="1" fill={strokeColor} />;
       case 'KARI':
         return (
-          <G key={uuidv4()}>
+          <G key={ulid()}>
             <Line
               x1={stampPos.x - 4}
               y1={stampPos.y - 4}
@@ -130,7 +130,7 @@ const RenderStamp = React.memo(
         );
       case 'HOVERING':
         return (
-          <G key={uuidv4()}>
+          <G key={ulid()}>
             <Circle cx={stampPos.x} cy={stampPos.y} r="7" stroke={strokeColor} strokeWidth="1" fill="#ffffffaa" />
             <Text
               x={stampPos.x}
