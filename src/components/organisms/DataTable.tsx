@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
-import { CheckBox } from '../molecules/CheckBox';
 import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
@@ -18,6 +17,8 @@ export const DataTable = React.memo(() => {
     projectId,
     layer,
     isMapMemoLayer,
+    sortedOrder,
+    sortedName,
     gotoDataEdit,
     changeChecked,
     changeVisible,
@@ -25,12 +26,12 @@ export const DataTable = React.memo(() => {
     changeOrder,
     changeCheckedAll,
     changeVisibleAll,
+    setSortedOrder,
+    setSortedName,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
   const [visibleAll, setVisibleAll] = useState(true);
-  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
-  const [sortedName, setSortedName] = useState<string>('');
 
   const onCheckAll = useCallback(() => {
     setCheckedAll(!checkedAll);
@@ -57,7 +58,7 @@ export const DataTable = React.memo(() => {
       setSortedOrder(sortOrder);
       changeOrder(colName, sortOrder);
     },
-    [changeOrder, sortedName, sortedOrder]
+    [changeOrder, setSortedName, setSortedOrder, sortedName, sortedOrder]
   );
   //@ts-ignore
   const renderItem = useCallback(
@@ -79,8 +80,8 @@ export const DataTable = React.memo(() => {
               color={COLOR.GRAY4}
               style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
               borderRadius={0}
-              name={checkList[index] ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-              onPress={() => changeChecked(index, !checkList[index])}
+              name={checkList[index].checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              onPress={() => changeChecked(index, !checkList[index].checked)}
             />
           </View>
 
@@ -227,7 +228,13 @@ const DataTitle = React.memo((props: Props) => {
         />
       </View>
       <View style={[styles.th, { width: 60 }]}>
-        <CheckBox style={{ backgroundColor: COLOR.GRAY1 }} checked={checkedAll} onCheck={onCheckAll} />
+        <Button
+          color={COLOR.GRAY4}
+          style={{ backgroundColor: COLOR.GRAY1 }}
+          borderRadius={0}
+          name={checkedAll ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+          onPress={onCheckAll}
+        />
       </View>
       {projectId !== undefined && (
         <TouchableOpacity

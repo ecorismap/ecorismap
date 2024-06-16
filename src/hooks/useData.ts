@@ -14,9 +14,11 @@ import { useRoute } from '@react-navigation/native';
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
-  checkList: boolean[];
+  checkList: { id: number; checked: boolean }[];
   checkedRecords: RecordType[];
   isMapMemoLayer: boolean;
+  sortedOrder: SortOrderType;
+  sortedName: string;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
   changeChecked: (index: number) => void;
@@ -41,6 +43,8 @@ export type UseDataReturnType = {
     message: string;
   };
   updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
+  setSortedOrder: (order: SortOrderType) => void;
+  setSortedName: (name: string) => void;
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -53,7 +57,9 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const { isRunningProject } = usePermission();
   const route = useRoute();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
-  const [checkList, setCheckList] = useState<boolean[]>([]);
+  const [checkList, setCheckList] = useState<{ id: number; checked: boolean }[]>([]);
+  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
+  const [sortedName, setSortedName] = useState<string>('');
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -63,9 +69,12 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     () => allUserRecordSet.filter((d) => d.userId === dataUser.uid),
     [allUserRecordSet, dataUser.uid]
   );
-  const isChecked = useMemo(() => checkList.some((d) => d), [checkList]);
+  const isChecked = useMemo(() => checkList.some(({ checked }) => checked), [checkList]);
 
-  const checkedRecords = useMemo(() => allUserRecordSet.filter((_, i) => checkList[i]), [allUserRecordSet, checkList]);
+  const checkedRecords = useMemo(
+    () => allUserRecordSet.filter((_, i) => checkList[i].checked),
+    [allUserRecordSet, checkList]
+  );
 
   const isMapMemoLayer = useMemo(
     () => allUserRecordSet.some((r) => r.field._strokeColor !== undefined),
@@ -92,33 +101,23 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     [isRunningProject, tracking, user.uid]
   );
 
-  const updateOwnRecordSetOrder = useCallback(
-    (allUserRecordSet_: RecordType[]) => {
-      const ownRecordSet_ = allUserRecordSet_.filter((d) => d.userId === dataUser.uid);
-
-      dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: dataUser.uid, data: ownRecordSet_ }));
-    },
-    [dataUser.uid, dispatch, targetLayer.id]
-  );
-
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType) => {
       let sortedData: RecordType[] = [];
-      let idx: number[] = [];
-
+      const data = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
       if (order === 'UNSORTED') {
-        sortedData = dataSet.map((d) => (d.layerId === targetLayer.id ? d.data : [])).flat();
-        idx = sortedData.map((_, i) => i);
+        const newCheckList = data.map((_, idx) => checkList.find(({ id }) => idx === id)!);
+        setCheckList(newCheckList);
+        setAllUserRecordSet(data);
       } else {
-        const result = sortData(allUserRecordSet, colName, order);
+        const result = sortData(data, colName, order);
         sortedData = result.data;
-        idx = result.idx;
+        const newCheckList = result.idx.map((d) => checkList.find(({ id }) => d === id)!);
+        setCheckList(newCheckList);
+        setAllUserRecordSet(sortedData);
       }
-      const sortedCheckList = idx.map((d) => checkList[d]);
-      setCheckList(sortedCheckList);
-      setAllUserRecordSet(sortedData);
     },
-    [allUserRecordSet, checkList, dataSet, targetLayer.id]
+    [checkList, dataSet, targetLayer.id]
   );
 
   const changeVisibleAll = useCallback(
@@ -159,18 +158,29 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
 
   const changeCheckedAll = useCallback(
     (checked: boolean) => {
-      setCheckList(checkList.map(() => checked));
+      setCheckList(checkList.map((d) => ({ ...d, checked: checked })));
     },
     [checkList]
   );
 
   const changeChecked = useCallback(
     (index: number) => {
+      //console.log(checkList, index);
       const updatedCheckList = [...checkList];
-      updatedCheckList[index] = !checkList[index];
+      updatedCheckList[index].checked = !checkList[index].checked;
       setCheckList(updatedCheckList);
     },
     [checkList]
+  );
+
+  const updateOwnRecordSetOrder = useCallback(
+    (allUserRecordSet_: RecordType[]) => {
+      changeCheckedAll(false);
+      const ownRecordSet_ = allUserRecordSet_.filter((d) => d.userId === dataUser.uid);
+
+      dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: dataUser.uid, data: ownRecordSet_ }));
+    },
+    [changeCheckedAll, dataUser.uid, dispatch, targetLayer.id]
   );
 
   const addDefaultRecord = useCallback(
@@ -205,6 +215,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     } else {
       deletedRecords = checkedRecords;
     }
+
     dispatch(
       deleteRecordsAction({
         layerId: targetLayer.id,
@@ -283,15 +294,21 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
-    //console.log('useData useEffect');
     if (route.name !== 'Data') return;
     if (dataSet === undefined) return;
 
     const data = dataSet.flatMap((d) => (d.layerId === targetLayer.id ? d.data : []));
+    const sortedData = data;
 
-    setCheckList(new Array(data.length).fill(false));
-    //console.log(data);
-    setAllUserRecordSet(data);
+    if (checkList.length === 0 || data.length !== checkList.length) {
+      setCheckList(data.map((_, idx) => ({ id: idx, checked: false })));
+      setAllUserRecordSet(sortedData);
+      setSortedOrder('UNSORTED');
+      setSortedName('');
+    } else {
+      changeOrder(sortedName, sortedOrder);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSet, route.name, targetLayer.id]);
 
   return {
@@ -300,6 +317,8 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     checkList,
     checkedRecords,
     isMapMemoLayer,
+    sortedOrder,
+    sortedName,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -310,5 +329,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
+    setSortedOrder,
+    setSortedName,
   } as const;
 };
