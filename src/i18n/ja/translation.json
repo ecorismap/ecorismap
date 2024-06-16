@@ -225,6 +225,11 @@
       "plotPoint": "ポイントを追加",
       "movePoint": "ポイントを長押しで移動",
       "deletePoint": "ポイントを削除"
+    },
+    "modal": {
+      "infoTool": {
+        "checkbox": "次回は表示しない。ボタンを長押しで再表示します。"
+      }
     }
   },
   "AccountSettings": {

@@ -8,8 +8,14 @@ import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 
 export const HomeInfoToolButton = () => {
-  const { isEditingDraw, isSelectedDraw, currentInfoTool, selectInfoTool, setVisibleInfoPicker } =
-    useContext(HomeContext);
+  const {
+    isEditingDraw,
+    isSelectedDraw,
+    currentInfoTool,
+    isModalInfoToolHidden,
+    selectInfoTool,
+    setVisibleInfoPicker,
+  } = useContext(HomeContext);
   const { isLandscape } = useWindow();
   const insets = useSafeAreaInsets();
   const disabled = isEditingDraw || isSelectedDraw;
@@ -36,8 +42,14 @@ export const HomeInfoToolButton = () => {
           backgroundColor={disabled ? COLOR.ALFAGRAY : currentInfoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFARED}
           borderRadius={10}
           disabled={disabled}
-          onPress={() => setVisibleInfoPicker(true)}
-          onLongPress={() => selectInfoTool('NONE')}
+          onPress={() =>
+            isModalInfoToolHidden
+              ? currentInfoTool === 'NONE'
+                ? selectInfoTool('ALL_INFO')
+                : selectInfoTool('NONE')
+              : setVisibleInfoPicker(true)
+          }
+          onLongPress={() => setVisibleInfoPicker(true)}
           tooltipText={t('common.InfoTool')}
           tooltipPosition={{ left: 1 }}
         />
