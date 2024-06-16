@@ -7,8 +7,10 @@ interface DataContextType {
   data: RecordType[];
   layer: LayerType;
   isChecked: boolean;
-  checkList: boolean[];
+  checkList: { id: number; checked: boolean }[];
   isMapMemoLayer: boolean;
+  sortedName: string;
+  sortedOrder: SortOrderType;
   pressAddData: () => void;
   pressDeleteData: () => void;
   pressExportData: () => void;
@@ -20,5 +22,7 @@ interface DataContextType {
   gotoDataEdit: (index: number) => void;
   gotoBack: () => void;
   updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
+  setSortedName: (name: string) => void;
+  setSortedOrder: (order: SortOrderType) => void;
 }
 export const DataContext = createContext({} as DataContextType);
