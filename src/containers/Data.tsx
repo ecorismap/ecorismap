@@ -24,6 +24,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     checkList,
     checkedRecords,
     isMapMemoLayer,
+    sortedName,
+    sortedOrder,
     changeVisible,
     changeVisibleAll,
     changeChecked,
@@ -34,6 +36,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
+    setSortedName,
+    setSortedOrder,
   } = useData(route.params.targetLayer);
   const { isOwnerAdmin } = usePermission();
 
@@ -104,6 +108,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         isChecked,
         checkList,
         isMapMemoLayer,
+        sortedName,
+        sortedOrder,
         changeOrder,
         changeChecked,
         changeCheckedAll,
@@ -115,6 +121,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         gotoDataEdit,
         gotoBack,
         updateOwnRecordSetOrder,
+        setSortedName,
+        setSortedOrder,
       }}
     >
       <Data />

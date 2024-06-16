@@ -682,6 +682,11 @@
       "plotPoint": "add points",
       "movePoint": "Move the point by long pressing",
       "deletePoint": "remove points"
+    },
+    "modal": {
+      "infoTool": {
+        "checkbox": "It will not be displayed next time. \nPress and hold the button to redisplay."
+      }
     }
   },
   "LayerEditFeatureStyle": {

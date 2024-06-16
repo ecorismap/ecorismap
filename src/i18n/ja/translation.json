@@ -248,6 +248,11 @@
       "uploadData": "データをアップロード",
       "syncPosition": "現在地を共有",
       "closeProject": "プロジェクトを閉じる"
+    },
+    "modal": {
+      "infoTool": {
+        "checkbox": "次回は表示しない。ボタンを長押しで再表示します。"
+      }
     }
   },
   "AccountSettings": {
