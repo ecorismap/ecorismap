@@ -112,6 +112,7 @@
     "react-native-fs": "^2.20.0",
     "react-native-gdalwarp": "link:./modules/react-native-gdalwarp",
     "react-native-gesture-handler": "^2.13.4",
+    "react-native-get-random-values": "^1.11.0",
     "react-native-maps": "1.7.1",
     "react-native-modal-selector": "^2.1.2",
     "react-native-reanimated": "~3.3.0",
