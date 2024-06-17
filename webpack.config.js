@@ -8,5 +8,11 @@ module.exports = async function (env, argv) {
     },
     argv
   );
+  config.module.rules.push({
+    test: /.m?js/,
+    resolve: {
+      fullySpecified: false,
+    },
+  });
   return config;
 };
