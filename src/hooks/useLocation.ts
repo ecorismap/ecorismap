@@ -66,6 +66,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
   const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
+  const appState = useRef(RNAppState.currentState);
 
   const gpsAccuracyOption = useMemo(() => {
     switch (gpsAccuracy) {
@@ -162,7 +163,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-        if (RNAppState.currentState === 'background') return;
         setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
       });
     }
@@ -216,7 +216,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-        if (RNAppState.currentState === 'background') return;
         setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
       });
     }
@@ -404,11 +403,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   useEffect(() => {
-    //console.log('#define locationEventsEmitter update function');
+    // console.log('#define locationEventsEmitter update function');
 
     const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLog);
     return () => {
-      //console.log('clean locationEventsEmitter');
+      // console.log('clean locationEventsEmitter');
       eventSubscription && eventSubscription.remove();
     };
   }, [updateTrackLog]);
@@ -450,6 +449,36 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        //console.log('App has come to the foreground!');
+        if (trackingState === 'on') {
+          if (headingSubscriber.current === undefined) {
+            //console.log('add heading');
+            headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+              setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+            });
+          }
+        }
+      } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
+        //console.log('App has come to the background!');
+        if (headingSubscriber.current !== undefined) {
+          //console.log('remove heading');
+          headingSubscriber.current.remove();
+          headingSubscriber.current = undefined;
+        }
+      }
+
+      appState.current = nextAppState;
+      //console.log('AppState', appState.current);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [trackingState]);
 
   return {
     currentLocation,
