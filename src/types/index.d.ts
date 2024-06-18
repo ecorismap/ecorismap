@@ -70,6 +70,11 @@ export interface DataType {
   data: RecordType[];
 }
 
+export interface TrackLogType {
+  distance: number;
+  trackLog: LocationType[];
+  lastTimeStamp: number;
+}
 export interface ProjectDataType extends DataType {
   userId: string;
   permission: PermissionType;

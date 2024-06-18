@@ -21,6 +21,7 @@ import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
+import { updateTrackLogAction } from '../modules/trackLog';
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -55,9 +56,9 @@ export type UseLocationReturnType = {
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
+  const trackLog = useSelector((state: AppState) => state.trackLog);
   const { addRecord, generateRecord } = useRecord();
   const [magnetometer, setMagnetometer] = useState(0);
-  const [dividedTrackLogCount, setDividedTrackLogCount] = useState<number>(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
 
@@ -189,9 +190,32 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     } catch (e) {
       console.log(e);
     } finally {
+      // //記録のないトラックは削除
+
+      if (tracking) {
+        dispatch(
+          updateTrackFieldAction({
+            layerId: tracking.layerId,
+            userId: dataUser.uid,
+            dataId: tracking.dataId,
+            field: { cmt: `${t('common.distance')} ${trackLog.distance.toFixed(2)}km` },
+            coords: trackLog.trackLog,
+          })
+        );
+        if (trackingRecord !== undefined && trackLog.trackLog.length === 0) {
+          dispatch(
+            deleteRecordsAction({
+              layerId: tracking.layerId,
+              userId: dataUser.uid,
+              data: [trackingRecord],
+            })
+          );
+        }
+      }
+      dispatch(updateTrackLogAction({ distance: 0, trackLog: [], lastTimeStamp: 0 }));
       dispatch(editSettingsAction({ tracking: undefined }));
     }
-  }, [dispatch]);
+  }, [dataUser.uid, dispatch, trackLog.distance, trackLog.trackLog, tracking, trackingRecord]);
 
   const startTracking = useCallback(async () => {
     if ((await confirmLocationPermission()) !== 'granted') return;
@@ -276,27 +300,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       } else if (trackingState_ === 'off') {
         await stopTracking();
         await clearStoredLocations();
-        //記録のないトラックは削除
-        if (tracking !== undefined) {
-          //const trackingRecord = findRecord(tracking.layerId, dataUser.uid, tracking.dataId, 'LINE');
-          if (
-            trackingRecord !== undefined &&
-            Array.isArray(trackingRecord.coords) &&
-            trackingRecord.coords.length === 0
-          ) {
-            dispatch(
-              deleteRecordsAction({
-                layerId: tracking.layerId,
-                userId: dataUser.uid,
-                data: [trackingRecord],
-              })
-            );
-          }
-        }
       }
       setTrackingState(trackingState_);
     },
-    [dataUser.uid, dispatch, moveCurrentPosition, startTracking, stopTracking, tracking, trackingRecord]
+    [moveCurrentPosition, startTracking, stopTracking]
   );
 
   const toggleHeadingUp = useCallback(
@@ -331,7 +338,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const updateTrackLog = useCallback(
     async (data: { distance: number; trackLog: LocationType[]; lastTimeStamp: number }) => {
-      const { trackLog, distance, lastTimeStamp } = data;
+      const { trackLog, lastTimeStamp, distance } = data;
       if (tracking === undefined) return;
       if (trackLog.length === 0) return;
 
@@ -350,23 +357,26 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       }
       setCurrentLocation(currentCoords);
 
-      dispatch(
-        updateTrackFieldAction({
-          layerId: tracking.layerId,
-          userId: dataUser.uid,
-          dataId: tracking.dataId,
-          field: { cmt: `${t('common.distance')} ${distance.toFixed(2)}km` },
-          coords: trackLog,
-        })
-      );
+      dispatch(updateTrackLogAction(data));
 
       if (trackLog.length > 3000) {
+        if (tracking) {
+          dispatch(
+            updateTrackFieldAction({
+              layerId: tracking.layerId,
+              userId: dataUser.uid,
+              dataId: tracking.dataId,
+              field: { cmt: `${t('common.distance')} ${distance.toFixed(2)}km` },
+              coords: trackLog,
+            })
+          );
+        }
         //3000点を超えたら新しいデータを作成
-        setDividedTrackLogCount((prev) => prev + 1);
+        //setDividedTrackLogCount((prev) => prev + 1);
         if (trackingLayer === undefined) return;
         const trackingRecordSet = dataSet.find((d) => d.layerId === tracking.layerId)!.data;
         //最後の位置情報で新しいデータを作成
-        const record = generateRecord('LINE', trackingLayer, trackingRecordSet, trackLog.slice(-1));
+        const record = generateRecord('LINE', trackingLayer, trackingRecordSet, []);
         addRecord(trackingLayer, record, { isTrack: true });
 
         await storeLocations({
@@ -376,19 +386,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         });
       }
     },
-    // dataSetは更新されると再レンダリングされるのでdividedTrackLogCountを依存に入れる
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      addRecord,
-      dividedTrackLogCount,
-      dataUser.uid,
-      dispatch,
-      generateRecord,
-      gpsState,
-      mapViewRef,
-      tracking,
-      trackingLayer,
-    ]
+    [addRecord, dataSet, dataUser.uid, dispatch, generateRecord, gpsState, mapViewRef, tracking, trackingLayer]
   );
 
   useEffect(() => {
