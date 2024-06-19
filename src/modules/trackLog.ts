@@ -5,7 +5,7 @@ import { TrackLogType } from '../types';
 export function createTrackLogInitialState(): TrackLogType {
   return {
     distance: 0,
-    trackLog: [],
+    track: [],
     lastTimeStamp: 0,
   };
 }

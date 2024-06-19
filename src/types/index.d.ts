@@ -72,7 +72,7 @@ export interface DataType {
 
 export interface TrackLogType {
   distance: number;
-  trackLog: LocationType[];
+  track: LocationType[];
   lastTimeStamp: number;
 }
 export interface ProjectDataType extends DataType {
