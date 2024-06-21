@@ -186,10 +186,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     gpsState,
     trackingState,
     headingUp,
-    magnetometer,
+    azimuth,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
+    checkUnsavedTrackLog,
   } = useLocation(mapViewRef.current);
 
   const {
@@ -652,6 +653,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
+      const result = await checkUnsavedTrackLog();
+      if (!result.isOK) {
+        await AlertAsync(result.message);
+        return;
+      }
       const ret = await ConfirmAsync(t('Home.confirm.track_start'));
       if (!ret) return;
       const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
@@ -669,7 +675,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await toggleGPS('off');
       }
     }
-  }, [addRecordWithCheck, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [addRecordWithCheck, checkUnsavedTrackLog, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
@@ -1082,7 +1088,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gpsState,
         trackingState,
         currentLocation,
-        magnetometer,
+        azimuth,
         headingUp,
         zoom,
         zoomDecimal,
