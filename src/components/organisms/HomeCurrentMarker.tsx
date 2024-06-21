@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 
@@ -17,14 +17,27 @@ const decimalToDMS = (coord: number) => {
 
 interface Props {
   currentLocation: LocationType;
-  angle: number;
+  azimuth: number;
+  headingUp: boolean;
 }
 
-export const CurrentMarker = (props: Props) => {
-  const { currentLocation, angle } = props;
+const areEqual = (prevProps: Props, nextProps: Props) => {
+  // Compare azimuth with a tolerance of 3 degrees
+  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > 3;
+  const locationChanged = prevProps.currentLocation !== nextProps.currentLocation;
+  const headingUpChanged = prevProps.headingUp !== nextProps.headingUp;
 
+  return !azimuthChanged && !locationChanged && !headingUpChanged;
+};
+
+export const CurrentMarker = React.memo((props: Props) => {
+  const { currentLocation, azimuth, headingUp } = props;
+  //console.log('AAA', azimuth);
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
+  const markerAngle = useMemo(() => {
+    return headingUp ? 0 : azimuth;
+  }, [azimuth, headingUp]);
 
   return (
     <Marker
@@ -37,7 +50,7 @@ export const CurrentMarker = (props: Props) => {
     >
       <View
         style={{
-          transform: [{ rotate: `${angle ? angle : 0}deg` }],
+          transform: [{ rotate: `${markerAngle}deg` }],
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -59,7 +72,7 @@ export const CurrentMarker = (props: Props) => {
       </Callout>
     </Marker>
   );
-};
+}, areEqual);
 
 const styles = StyleSheet.create({
   calloutStyle: {

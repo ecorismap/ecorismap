@@ -60,7 +60,7 @@ export default function HomeScreen() {
     gpsState,
     trackingState,
     currentLocation,
-    magnetometer,
+    azimuth,
     headingUp,
     zoom,
     zoomDecimal,
@@ -340,7 +340,7 @@ export default function HomeScreen() {
           >
             {/************** Current Marker ****************** */}
             {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-              <CurrentMarker currentLocation={currentLocation} angle={magnetometer} />
+              <CurrentMarker currentLocation={currentLocation} azimuth={azimuth} headingUp={headingUp} />
             )}
             {/* 表示を正しく更新するには順番とzIndexが重要 */}
             {/************** Point Line Polygon ****************** */}
@@ -460,7 +460,7 @@ export default function HomeScreen() {
 
           <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
-          <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
+          <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
 
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 

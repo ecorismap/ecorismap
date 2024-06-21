@@ -10,12 +10,13 @@ interface Props {
 
 export const TrackLog = React.memo((props: Props) => {
   const { data } = props;
+  //console.log(data);
   if (data === undefined) return null;
 
   return (
     <Polyline
       tappable={false}
-      coordinates={data.trackLog}
+      coordinates={data.track}
       strokeColor={COLOR.TRACK}
       strokeWidth={4}
       lineCap="butt"
