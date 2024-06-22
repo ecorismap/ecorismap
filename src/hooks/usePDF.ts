@@ -25,7 +25,6 @@ import { isBrushTool, isStampTool, toPDFCoordinate, toPixel, toPoint } from '../
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
 import * as FileSystem from 'expo-file-system';
-import { COLOR } from '../constants/AppConstants';
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../utils/Coords';
 import { generateTileMap } from '../utils/PDF';
 
@@ -67,7 +66,6 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
   const pdfPaperSizes: PaperSizeType[] = ['A4', 'A3', 'A2', 'A1', 'A0'];
   const pdfScales: ScaleType[] = ['500', '1000', '1500', '2500', '5000', '10000', '25000', '50000', '100000'];
   const pdfOrientations: PaperOrientationType[] = ['PORTRAIT', 'LANDSCAPE'];
-  const tracking = useSelector((state: AppState) => state.settings.tracking);
 
   const pageScale = useMemo(() => {
     const scaleInt = parseInt(pdfScale, 10);
@@ -709,13 +707,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       height: number,
       lineColor: string
     ) => {
-      let label = generateLabel(layer, feature);
+      const label = generateLabel(layer, feature);
 
       let strokeWidth;
-      if (tracking?.dataId === feature.id) {
-        strokeWidth = 4;
-        label = '';
-      } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+      if (layer.colorStyle.colorType === 'INDIVIDUAL') {
         if (feature.field._strokeWidth !== undefined) {
           strokeWidth = feature.field._strokeWidth as number;
         } else {
@@ -757,7 +752,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       }" paint-order="stroke">${label}</text>`;
       return svg;
     },
-    [convertCoordsToPixels, generateArrowSvg, tracking?.dataId]
+    [convertCoordsToPixels, generateArrowSvg]
   );
 
   const generateLineSvg = useCallback(
@@ -772,8 +767,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       width: number,
       height: number
     ) => {
-      const color = getColor(layer, feature, 0);
-      const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : color;
+      const lineColor = getColor(layer, feature, 0);
       if (isStampTool(feature.field._stamp as string)) {
         return generateStampSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
       } else if (isBrushTool(feature.field._strokeStyle as string)) {
@@ -782,7 +776,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         return generatePolyLineSvg(feature, layer, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
       }
     },
-    [generateBrushSvg, generatePolyLineSvg, generateStampSvg, tracking?.dataId]
+    [generateBrushSvg, generatePolyLineSvg, generateStampSvg]
   );
 
   const generatePolygonSvg = useCallback(

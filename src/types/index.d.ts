@@ -141,11 +141,6 @@ export interface PolygonRecordType {
   field: { [key: string]: string | number | PhotoType[] };
 }
 
-export interface TrackingType {
-  layerId: string;
-  dataId: string;
-}
-
 export interface ColorStyle {
   colorType: ColorTypesType;
   transparency: number;
@@ -303,7 +298,6 @@ export interface SettingsType {
   projectName: string | undefined;
   projectRegion: RegionType;
   memberLocation: MemberLocationType[];
-  tracking: TrackingType | undefined;
   isEditingRecord: boolean;
   selectedRecord:
     | {

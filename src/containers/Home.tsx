@@ -94,7 +94,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     activePolygonLayer,
     selectRecord,
     unselectRecord,
-    addRecordWithCheck,
     checkRecordEditable,
     calculateStorageSize,
     setIsEditingRecord,
@@ -191,6 +190,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleTracking,
     toggleHeadingUp,
     checkUnsavedTrackLog,
+    saveTrackLog,
   } = useLocation(mapViewRef.current);
 
   const {
@@ -660,22 +660,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       const ret = await ConfirmAsync(t('Home.confirm.track_start'));
       if (!ret) return;
-      const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
-      if (!isOK) {
-        await AlertAsync(message);
-        return;
-      }
+
       await toggleTracking('on');
       await toggleGPS('follow');
       setFeatureButton('NONE');
     } else if (trackingState === 'on') {
       const ret = await ConfirmAsync(t('Home.confirm.track'));
       if (ret) {
+        const result = await saveTrackLog();
+        if (!result.isOK) {
+          await AlertAsync(result.message);
+        }
         await toggleTracking('off');
         await toggleGPS('off');
       }
     }
-  }, [addRecordWithCheck, checkUnsavedTrackLog, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [checkUnsavedTrackLog, saveTrackLog, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');

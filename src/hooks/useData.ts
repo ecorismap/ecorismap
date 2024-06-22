@@ -53,7 +53,6 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: AppState) => state.user, shallowEqual);
   const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const { isRunningProject } = usePermission();
   const route = useRoute();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);
@@ -89,16 +88,13 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       if (isRunningProject && feature && feature.userId !== user.uid) {
         return { isOK: false, message: t('hooks.message.cannotEditOthers') };
       }
-      if (tracking !== undefined && tracking.dataId === feature?.id) {
-        return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
-      }
       if (!targetLayer_.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [isRunningProject, tracking, user.uid]
+    [isRunningProject, user.uid]
   );
 
   const changeOrder = useCallback(
