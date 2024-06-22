@@ -4,6 +4,7 @@ import Svg, { Path, G } from 'react-native-svg';
 
 import { Marker, Callout } from 'react-native-maps';
 import { LocationType } from '../../types';
+import { t } from '../../i18n/config';
 
 // Helper function to convert decimal degrees to DMS (degrees, minutes, seconds)
 const decimalToDMS = (coord: number) => {
@@ -19,6 +20,7 @@ interface Props {
   currentLocation: LocationType;
   azimuth: number;
   headingUp: boolean;
+  distance: number;
 }
 
 const areEqual = (prevProps: Props, nextProps: Props) => {
@@ -31,7 +33,7 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
 };
 
 export const CurrentMarker = React.memo((props: Props) => {
-  const { currentLocation, azimuth, headingUp } = props;
+  const { currentLocation, azimuth, headingUp, distance } = props;
   //console.log('AAA', azimuth);
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
@@ -47,6 +49,7 @@ export const CurrentMarker = React.memo((props: Props) => {
       }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={true}
+      style={{ zIndex: 1001 }}
     >
       <View
         style={{
@@ -68,6 +71,7 @@ export const CurrentMarker = React.memo((props: Props) => {
           <Text>Longitude: {decimalToDMS(currentLocation.longitude)}</Text>
           {/* <Text>Altitude: {currentLocation.altitude} m</Text> */}
           <Text>Accuracy: {Math.floor(accuracy)} m</Text>
+          <Text>{`${t('common.distance')}: ${distance === 0 ? ' - ' : distance.toFixed(2)}km`}</Text>
         </View>
       </Callout>
     </Marker>
@@ -78,6 +82,7 @@ const styles = StyleSheet.create({
   calloutStyle: {
     borderRadius: 5,
     borderWidth: 2,
+    height: 95,
     padding: 5,
     width: 200,
   },

@@ -2,7 +2,7 @@ import produce, { enableES5 } from 'immer';
 import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 enableES5();
 import { TUTRIALS } from '../constants/Tutrials';
-import { TileRegionType, MemberLocationType, TrackingType, SettingsType, RoleType } from '../types';
+import { TileRegionType, MemberLocationType, SettingsType, RoleType } from '../types';
 
 export function createSettingsInitialState(): SettingsType {
   return {
@@ -32,7 +32,6 @@ export function createSettingsInitialState(): SettingsType {
       zoom: 15,
     },
     memberLocation: [] as MemberLocationType[],
-    tracking: undefined as TrackingType | undefined,
     selectedRecord: undefined,
     plugins: {},
     photosToBeDeleted: [],

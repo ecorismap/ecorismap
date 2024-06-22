@@ -340,7 +340,12 @@ export default function HomeScreen() {
           >
             {/************** Current Marker ****************** */}
             {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-              <CurrentMarker currentLocation={currentLocation} azimuth={azimuth} headingUp={headingUp} />
+              <CurrentMarker
+                currentLocation={currentLocation}
+                azimuth={azimuth}
+                headingUp={headingUp}
+                distance={trackLog.distance}
+              />
             )}
             {/* 表示を正しく更新するには順番とzIndexが重要 */}
             {/************** Point Line Polygon ****************** */}
