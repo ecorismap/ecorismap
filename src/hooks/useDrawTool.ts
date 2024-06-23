@@ -423,7 +423,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             radius
           );
           //console.log(selectedFeature);
-          if (selectedFeature !== undefined && selectedFeature.visible) {
+          if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
             if (!selectedLayer?.visible) continue;
             layer = selectedLayer;
@@ -446,7 +446,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
             radius
           );
-          if (selectedFeature !== undefined && selectedFeature.visible) {
+
+          if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
             if (!selectedLayer?.visible) continue;
             layer = selectedLayer;
@@ -466,7 +467,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
             xyToLatLon(pXY, mapRegion, mapSize, mapViewRef),
             radius
           );
-          if (selectedFeature !== undefined && selectedFeature.visible) {
+          if (selectedFeature !== undefined) {
             const selectedLayer = findLayer(layerId);
             if (!selectedLayer?.visible) continue;
             layer = selectedLayer;

@@ -106,7 +106,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     activePolygonLayer,
     selectRecord,
     unselectRecord,
-    addRecordWithCheck,
     checkRecordEditable,
     calculateStorageSize,
     setIsEditingRecord,
@@ -198,10 +197,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     gpsState,
     trackingState,
     headingUp,
-    magnetometer,
+    azimuth,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
+    checkUnsavedTrackLog,
+    saveTrackLog,
   } = useLocation(mapViewRef.current);
   //現在位置の共有関連
   const { uploadLocation } = useSyncLocation(projectId);
@@ -684,24 +685,29 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //runTutrial('HOME_BTN_TRACK');
     if (trackingState === 'off') {
-      const ret = await ConfirmAsync(t('Home.confirm.track_start'));
-      if (!ret) return;
-      const { isOK, message } = addRecordWithCheck('LINE', [], { isTrack: true });
-      if (!isOK) {
-        await AlertAsync(message);
+      const result = await checkUnsavedTrackLog();
+      if (!result.isOK) {
+        await AlertAsync(result.message);
         return;
       }
+      const ret = await ConfirmAsync(t('Home.confirm.track_start'));
+      if (!ret) return;
+
       await toggleTracking('on');
       await toggleGPS('follow');
       setFeatureButton('NONE');
     } else if (trackingState === 'on') {
       const ret = await ConfirmAsync(t('Home.confirm.track'));
       if (ret) {
+        const result = await saveTrackLog();
+        if (!result.isOK) {
+          await AlertAsync(result.message);
+        }
         await toggleTracking('off');
         await toggleGPS('off');
       }
     }
-  }, [addRecordWithCheck, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [checkUnsavedTrackLog, saveTrackLog, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
@@ -1296,7 +1302,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gpsState,
         trackingState,
         currentLocation,
-        magnetometer,
+        azimuth,
         headingUp,
         zoom,
         zoomDecimal,

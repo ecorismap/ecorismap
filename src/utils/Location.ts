@@ -1,58 +1,28 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE } from '../constants/AppConstants';
-import { LocationType } from '../types';
+import { LocationType, TrackLogType } from '../types';
 import lineDistance from '@turf/line-distance';
 import { LocationObject } from 'expo-location';
-import * as turf from '@turf/helpers';
+import * as turf from '@turf/turf';
+export const updateTrackLog = (locations: LocationObject[], trackLog: TrackLogType): TrackLogType => {
+  //バックグラウンドの場合は、保存する
+  const { distance, track, lastTimeStamp } = trackLog;
+  const checkedLocations = checkLocations(lastTimeStamp, locations);
 
-export const storeLocations = async (data: { distance: number; trackLog: LocationType[]; lastTimeStamp: number }) => {
-  await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify(data));
-};
+  const updatedTrackLog = [...track, ...checkedLocations];
+  const updatedDistance =
+    distance +
+    (track.length === 0
+      ? getLineLength(checkedLocations)
+      : getLineLength([track[track.length - 1], ...checkedLocations]));
+  const updatedLastTimeStamp =
+    updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
 
-export const clearStoredLocations = async () => {
-  await AsyncStorage.setItem(STORAGE.TRACKLOG, JSON.stringify({ distance: 0, trackLog: [], lastTimeStamp: 0 }));
-};
+  const updatedLocations = {
+    lastTimeStamp: updatedLastTimeStamp,
+    distance: updatedDistance,
+    track: updatedTrackLog,
+  };
 
-export const getStoredLocations = async (): Promise<{
-  distance: number;
-  trackLog: LocationType[];
-  lastTimeStamp: number;
-}> => {
-  try {
-    const item = await AsyncStorage.getItem(STORAGE.TRACKLOG);
-    return item ? JSON.parse(item) : { distance: 0, trackLog: [], lastTimeStamp: 0 };
-  } catch (e) {
-    return { distance: 0, trackLog: [], lastTimeStamp: 0 };
-  }
-};
-
-export const checkAndStoreLocations = async (locations: LocationObject[]) => {
-  try {
-    //バックグラウンドの場合は、保存する
-    const { distance, trackLog, lastTimeStamp } = await getStoredLocations();
-    const checkedLocations = checkLocations(lastTimeStamp, locations);
-
-    const updatedTrackLog = [...trackLog, ...checkedLocations];
-    const updatedDistance =
-      distance +
-      (trackLog.length === 0
-        ? getLineLength(checkedLocations)
-        : getLineLength([trackLog[trackLog.length - 1], ...checkedLocations]));
-    const updatedLastTimeStamp =
-      updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
-
-    const updatedLocations = {
-      lastTimeStamp: updatedLastTimeStamp,
-      distance: updatedDistance,
-      trackLog: updatedTrackLog,
-    };
-    const updatedLocationsString = JSON.stringify(updatedLocations);
-    //const dataSizeInMB = Buffer.byteLength(updatedLocationsString) / (1024 * 1024);
-    await AsyncStorage.setItem(STORAGE.TRACKLOG, updatedLocationsString);
-    return updatedLocations;
-  } catch (e) {
-    console.log(e);
-  }
+  return updatedLocations;
 };
 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {

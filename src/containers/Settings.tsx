@@ -9,7 +9,7 @@ import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
@@ -27,7 +27,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const layers = useSelector((state: AppState) => state.layers);
   const dataSet = useSelector((state: AppState) => state.dataSet);
   const maps = useSelector((state: AppState) => state.tileMaps);
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
@@ -51,12 +50,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     //   await AlertAsync(t('hooks.message.cannotInRunningProject'));
     //   return;
     // }
-    if (tracking !== undefined) {
-      await AlertAsync(t('hooks.message.cannotLoadDataInTrackking'));
-      return;
-    }
     setIsFileSaveOpen(true);
-  }, [tracking]);
+  }, []);
 
   const pressFileSaveCancel = useCallback(() => {
     setIsFileSaveOpen(false);
@@ -86,10 +81,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    if (tracking !== undefined) {
-      await AlertAsync(t('hooks.message.cannotLoadDataInTrackking'));
-      return;
-    }
+
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
       const file = await DocumentPicker.getDocumentAsync({});
@@ -114,15 +106,11 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         });
       }
     }
-  }, [isRunningProject, navigation, openEcorisMapFile, tracking]);
+  }, [isRunningProject, navigation, openEcorisMapFile]);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
     if (ret) {
-      if (tracking !== undefined) {
-        return { isOK: false, message: t('hooks.message.cannotInTracking') };
-      }
-
       const { isOK, message } = await clearEcorisMap();
 
       if (!isOK) {
@@ -131,7 +119,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         navigation.navigate('Home', { previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
-  }, [clearEcorisMap, navigation, tracking]);
+  }, [clearEcorisMap, navigation]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
