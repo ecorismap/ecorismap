@@ -18,6 +18,7 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { updateTrackLogAction } from '../modules/trackLog';
+import { cleanupLine } from '../utils/Coords';
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -300,8 +301,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     (locations: LocationObject[]) => {
       const { track, distance, lastTimeStamp } = updateTrackLog(locations, trackLog);
       if (track.length === 0) return;
+      dispatch(updateTrackLogAction({ distance, track, lastTimeStamp }));
 
       const currentCoords = track[track.length - 1];
+      setCurrentLocation(currentCoords);
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
@@ -314,70 +317,39 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           { duration: 5 }
         );
       }
-      setCurrentLocation(currentCoords);
-
-      dispatch(updateTrackLogAction({ distance, track, lastTimeStamp }));
     },
     [dispatch, gpsState, mapViewRef, trackLog]
   );
 
-  // if (track.length > 3000) {
-  //   if (tracking) {
-  //     dispatch(
-  //       updateTrackFieldAction({
-  //         layerId: tracking.layerId,
-  //         userId: dataUser.uid,
-  //         dataId: tracking.dataId,
-  //         field: { cmt: `${t('common.distance')} ${distance.toFixed(2)}km` },
-  //         coords: track,
-  //       })
-  //     );
-  //   }
-  //   //3000点を超えたら新しいデータを作成
-  //   if (trackingLayer === undefined) return;
-  //   const trackingRecordSet = dataSet.find((d) => d.layerId === tracking.layerId)!.data;
-  //   //最後の位置情報で新しいデータを作成
-  //   const record = generateRecord('LINE', trackingLayer, trackingRecordSet, []);
-  //   addRecord(trackingLayer, record, { isTrack: true });
-  //   dispatch(
-  //     updateTrackLogAction({
-  //       distance: 0,
-  //       track: track.slice(-1),
-  //       lastTimeStamp: lastTimeStamp,
-  //     })
-  //   );
-  // }
-
   const saveTrackLog = useCallback(async () => {
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
-    // dispatch(
-    //   updateTrackFieldAction({
-    //     layerId: tracking.layerId,
-    //     userId: dataUser.uid,
-    //     dataId: tracking.dataId,
-    //     field: { cmt: `${t('common.distance')} ${trackLog.distance.toFixed(2)}km` },
-    //     coords: trackLog.track,
-    //   })
-    // );
-    const ret = addRecordWithCheck('LINE', trackLog.track as LocationType[]);
+
+    // const retOrg = addRecordWithCheck('LINE', trackLog.track);
+    // if (!retOrg.isOK) {
+    //   return { isOK: retOrg.isOK, message: retOrg.message };
+    // }
+    const cleanupedLine = cleanupLine(trackLog.track as LocationType[]);
+    const ret = addRecordWithCheck('LINE', cleanupedLine);
     if (!ret.isOK) {
       return { isOK: ret.isOK, message: ret.message };
     }
+
     dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
     return { isOK: true, message: '' };
-  }, [addRecordWithCheck, dispatch, trackLog.track]);
+  }, [addRecordWithCheck, dispatch, trackLog]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {
       const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
       if (ans) {
-        const ret = addRecordWithCheck('LINE', trackLog.track as LocationType[]);
+        const ret = await saveTrackLog();
         if (!ret.isOK) return ret;
+      } else {
+        dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
       }
-      dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
     }
     return { isOK: true, message: '' };
-  }, [addRecordWithCheck, dispatch, trackLog.track]);
+  }, [dispatch, saveTrackLog, trackLog.track.length]);
 
   useEffect(() => {
     // console.log('#define locationEventsEmitter update function');

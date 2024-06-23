@@ -898,3 +898,34 @@ export function boundingBoxFromCoords(points: LatLng[]) {
   );
   return bbox;
 }
+
+export function smoothLine(line: LocationType[], windowSize: number): LocationType[] {
+  return line.map((_, index, array) => {
+    const start = Math.max(0, index - Math.floor(windowSize / 2));
+    const end = Math.min(array.length, start + windowSize);
+    const window = array.slice(start, end);
+
+    const avgLat = window.reduce((sum, p) => sum + p.latitude, 0) / window.length;
+    const avgLon = window.reduce((sum, p) => sum + p.longitude, 0) / window.length;
+
+    return {
+      latitude: avgLat,
+      longitude: avgLon,
+    };
+  });
+}
+
+export const cleanupLine = (line: LocationType[]): LocationType[] => {
+  if (line.length === 0) return line;
+
+  const smoothedLine = smoothLine(line, 3);
+  // トラックをGeoJSON LineStringに変換
+  const lineString = turf.lineString(smoothedLine.map((point) => [point.longitude, point.latitude]));
+
+  const simplifiedLine = turf.simplify(lineString, { tolerance: 0.000001, highQuality: true });
+  const newTrack = simplifiedLine.geometry.coordinates.map((coord) => ({
+    longitude: coord[0],
+    latitude: coord[1],
+  }));
+  return newTrack;
+};
