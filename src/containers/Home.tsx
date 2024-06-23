@@ -67,7 +67,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const user = useSelector((state: AppState) => state.user);
   const projectName = useSelector((state: AppState) => state.settings.projectName, shallowEqual);
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
   const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
@@ -739,10 +738,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.logout'));
       if (!ret) return;
     }
-    if (tracking !== undefined) {
-      await AlertAsync(t('hooks.message.finishTrackking'));
-      return;
-    }
     if (Platform.OS === 'web') {
       await e3kit.cleanupEncryptKey();
       await logout();
@@ -756,7 +751,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       clearProject();
       navigation.navigate('Home');
     }
-  }, [clearProject, isSettingProject, logout, navigation, tracking]);
+  }, [clearProject, isSettingProject, logout, navigation]);
 
   const pressZoomIn = useCallback(() => {
     hideDrawLine();
@@ -850,14 +845,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressCloseProject = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
     if (ret) {
-      if (tracking !== undefined) {
-        await AlertAsync(t('hooks.message.finishTrackking'));
-        return;
-      }
       clearProject();
       setIsShowingProjectButtons(false);
     }
-  }, [clearProject, tracking]);
+  }, [clearProject]);
 
   const pressSaveProjectSetting = useCallback(async () => {
     try {
