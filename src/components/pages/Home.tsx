@@ -42,6 +42,7 @@ import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+import { TrackLog } from '../organisms/HomeTrackLog';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -59,7 +60,7 @@ export default function HomeScreen() {
     gpsState,
     trackingState,
     currentLocation,
-    magnetometer,
+    azimuth,
     headingUp,
     zoom,
     zoomDecimal,
@@ -112,6 +113,7 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
+  const trackLog = useSelector((state: AppState) => state.trackLog);
 
   const navigationHeaderHeight = useMemo(
     () => (isDownloadPage || isExportPDFPage ? 56 : 0),
@@ -338,13 +340,15 @@ export default function HomeScreen() {
           >
             {/************** Current Marker ****************** */}
             {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
-              <CurrentMarker currentLocation={currentLocation} angle={magnetometer} />
+              <CurrentMarker
+                currentLocation={currentLocation}
+                azimuth={azimuth}
+                headingUp={headingUp}
+                distance={trackLog.distance}
+              />
             )}
-
             {/* 表示を正しく更新するには順番とzIndexが重要 */}
-
             {/************** Point Line Polygon ****************** */}
-
             {pointDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
               if (!layer?.visible) return null;
@@ -362,6 +366,7 @@ export default function HomeScreen() {
               );
             })}
 
+            <TrackLog data={trackLog} />
             {lineDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
               if (!layer?.visible) return null;
@@ -376,7 +381,6 @@ export default function HomeScreen() {
                 />
               );
             })}
-
             {polygonDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
               if (!layer?.visible) return null;
@@ -391,9 +395,7 @@ export default function HomeScreen() {
                 />
               );
             })}
-
             {/************* TILE MAP ******************** */}
-
             {tileMaps
               .slice(0)
               .reverse()
@@ -463,7 +465,7 @@ export default function HomeScreen() {
 
           <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
 
-          <HomeCompassButton magnetometer={magnetometer} headingUp={headingUp} onPressCompass={pressCompass} />
+          <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
 
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 

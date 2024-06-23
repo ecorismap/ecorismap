@@ -7,8 +7,6 @@ import { LayerType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
-import { shallowEqual, useSelector } from 'react-redux';
-import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
 import { exportFile } from '../utils/File';
 import dayjs from 'dayjs';
@@ -16,7 +14,6 @@ import sanitize from 'sanitize-filename';
 import { Platform } from 'react-native';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const {
     targetLayer,
     isEdited,
@@ -42,30 +39,22 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   );
 
   const pressSaveLayer = useCallback(() => {
-    if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-      Alert.alert('', t('hooks.message.cannotSaveInTracking'));
-      return;
-    }
     const checkLayerInputsResult = checkLayerInputs(targetLayer);
     if (!checkLayerInputsResult.isOK) {
       Alert.alert('', checkLayerInputsResult.message);
       return;
     }
     saveLayer();
-  }, [route.params.targetLayer.id, saveLayer, targetLayer, tracking]);
+  }, [saveLayer, targetLayer]);
 
   const pressDeleteLayer = useCallback(async () => {
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
     if (ret) {
-      if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-        await AlertAsync(t('hooks.message.cannotDeleteInTracking'));
-        return;
-      }
       deleteLayer();
       await deleteLayerPhotos();
       navigation.navigate('Layers');
     }
-  }, [deleteLayer, deleteLayerPhotos, navigation, route.params.targetLayer.id, tracking]);
+  }, [deleteLayer, deleteLayerPhotos, navigation]);
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');

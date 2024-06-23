@@ -70,6 +70,11 @@ export interface DataType {
   data: RecordType[];
 }
 
+export interface TrackLogType {
+  distance: number;
+  track: LocationType[];
+  lastTimeStamp: number;
+}
 export interface ProjectDataType extends DataType {
   userId: string;
   permission: PermissionType;
@@ -134,11 +139,6 @@ export interface PolygonRecordType {
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
-}
-
-export interface TrackingType {
-  layerId: string;
-  dataId: string;
 }
 
 export interface ColorStyle {
@@ -298,7 +298,6 @@ export interface SettingsType {
   projectName: string | undefined;
   projectRegion: RegionType;
   memberLocation: MemberLocationType[];
-  tracking: TrackingType | undefined;
   isEditingRecord: boolean;
   selectedRecord:
     | {
