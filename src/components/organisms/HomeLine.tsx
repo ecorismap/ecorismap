@@ -1,12 +1,10 @@
 import React from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
-import { ArrowStyleType, LayerType, LineRecordType, RecordType, TrackingType } from '../../types';
+import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
 import { getColor } from '../../utils/Layer';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel } from '../../hooks/useLayers';
-import { AppState } from '../../modules';
-import { useSelector } from 'react-redux';
 import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
@@ -20,11 +18,9 @@ interface Props {
   selectedRecord: { layerId: string; record: RecordType } | undefined;
 }
 
-const getStrokeWidth = (layer: LayerType, feature: LineRecordType, tracking: TrackingType | undefined) => {
+const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
   let strokeWidth;
-  if (tracking?.dataId === feature.id) {
-    strokeWidth = 4;
-  } else if (layer.colorStyle.colorType === 'INDIVIDUAL') {
+  if (layer.colorStyle.colorType === 'INDIVIDUAL') {
     if (feature.field._strokeWidth !== undefined) {
       strokeWidth = feature.field._strokeWidth as number;
     } else {
@@ -42,7 +38,6 @@ export const Line = React.memo(
   (props: Props) => {
     //console.log('render Line', now());
     const { data, layer, zoom, zIndex, selectedRecord } = props;
-    const tracking = useSelector((state: AppState) => state.settings.tracking);
 
     if (data === undefined || data.length === 0) return null;
 
@@ -54,9 +49,9 @@ export const Line = React.memo(
             selectedRecord?.record?.id !== undefined &&
             (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id);
 
-          const lineColor = tracking?.dataId === feature.id ? COLOR.TRACK : selected ? COLOR.YELLOW : color;
+          const lineColor = selected ? COLOR.YELLOW : color;
           const labelPosition = feature.coords[feature.coords.length - 1];
-          const label = tracking?.dataId === feature.id ? '' : generateLabel(layer, feature);
+          const label = generateLabel(layer, feature);
 
           if (!feature.visible) return null;
           if (feature.coords.length === 0) return null;
@@ -79,7 +74,7 @@ export const Line = React.memo(
               />
             );
           } else {
-            const strokeWidth = getStrokeWidth(layer, feature, tracking);
+            const strokeWidth = getStrokeWidth(layer, feature);
             return (
               <PolylineComponent
                 key={'line' + feature.id}

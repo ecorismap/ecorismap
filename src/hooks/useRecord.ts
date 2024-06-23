@@ -50,10 +50,7 @@ export type UseRecordReturnType = {
   ) => void;
   addRecordWithCheck: (
     featureType: FeatureType,
-    locations: LocationType | LocationType[],
-    options?: {
-      isTrack?: boolean;
-    }
+    locations: LocationType | LocationType[]
   ) => {
     isOK: boolean;
     message: string;
@@ -120,8 +117,6 @@ export const useRecord = (): UseRecordReturnType => {
   const polygonDataSet = useSelector((state) => selectPolygonData(state) as PolygonDataType[]);
 
   const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord, shallowEqual);
-
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);
@@ -191,16 +186,13 @@ export const useRecord = (): UseRecordReturnType => {
       if (isRunningProject && feature && feature.userId !== user.uid) {
         return { isOK: false, message: t('hooks.message.cannotEditOthers') };
       }
-      if (tracking !== undefined && tracking.dataId === feature?.id) {
-        return { isOK: false, message: t('hooks.message.cannotEditInTracking') };
-      }
       if (!targetLayer.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [isRunningProject, tracking, user.uid]
+    [isRunningProject, user.uid]
   );
 
   const isLayerEditable = useCallback(
@@ -269,11 +261,8 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const addRecord = useCallback(
-    (layer: LayerType, record: RecordType, options?: { isTrack?: boolean }) => {
+    (layer: LayerType, record: RecordType) => {
       dispatch(addRecordsAction({ layerId: layer.id, userId: dataUser.uid, data: [record] }));
-      if (options?.isTrack) {
-        dispatch(editSettingsAction({ tracking: { layerId: layer.id, dataId: record.id } }));
-      }
     },
     [dataUser.uid, dispatch]
   );
@@ -292,13 +281,13 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const addRecordWithCheck = useCallback(
-    (featureType: FeatureType, locations: LocationType | LocationType[], options?: { isTrack?: boolean }) => {
+    (featureType: FeatureType, locations: LocationType | LocationType[]) => {
       const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureType);
       if (!isOK || layer === undefined || recordSet === undefined) {
         return { isOK: false, message, layer: undefined, record: undefined };
       }
       const record = generateRecord(featureType, layer, recordSet, locations);
-      addRecord(layer, record, options);
+      addRecord(layer, record);
 
       return { isOK, message, layer, record };
     },

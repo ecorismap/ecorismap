@@ -50,7 +50,7 @@ export interface HomeContextType {
   gpsState: string;
   trackingState: TrackingStateType;
   currentLocation: LocationType | null;
-  magnetometer: number;
+  azimuth: number;
   headingUp: boolean;
   zoom: number;
   zoomDecimal: number;

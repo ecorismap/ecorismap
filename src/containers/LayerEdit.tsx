@@ -7,8 +7,6 @@ import { LayerType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
-import { shallowEqual, useSelector } from 'react-redux';
-import { AppState } from '../modules';
 import { checkLayerInputs } from '../utils/Layer';
 import { usePermission } from '../hooks/usePermission';
 import { exportFile } from '../utils/File';
@@ -17,7 +15,6 @@ import sanitize from 'sanitize-filename';
 import { Platform } from 'react-native';
 
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
   const {
     targetLayer,
     isEdited,
@@ -49,25 +46,17 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
       AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-      Alert.alert('', t('hooks.message.cannotSaveInTracking'));
-      return;
-    }
     const checkLayerInputsResult = checkLayerInputs(targetLayer);
     if (!checkLayerInputsResult.isOK) {
       Alert.alert('', checkLayerInputsResult.message);
       return;
     }
     saveLayer();
-  }, [isRunningProject, route.params.targetLayer.id, saveLayer, targetLayer, tracking]);
+  }, [isRunningProject, saveLayer, targetLayer]);
 
   const pressDeleteLayer = useCallback(async () => {
     if (isRunningProject) {
       await AlertAsync(t('hooks.message.cannotInRunningProject'));
-      return;
-    }
-    if (tracking !== undefined && tracking.layerId === route.params.targetLayer.id) {
-      await AlertAsync(t('hooks.message.cannotDeleteInTracking'));
       return;
     }
     const ret = await ConfirmAsync(t('LayerEdit.confirm.deleteLayer'));
@@ -76,7 +65,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
       await deleteLayerPhotos();
       navigation.navigate('Layers');
     }
-  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigation, route.params.targetLayer.id, tracking]);
+  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigation]);
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');

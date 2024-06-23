@@ -1,7 +1,7 @@
 import produce, { enableES5 } from 'immer';
 enableES5();
 import { ulid } from 'ulid';
-import { DataType, RecordType, LocationType, PhotoType } from '../types';
+import { DataType, RecordType } from '../types';
 
 export const DEFAULT_DATA: RecordType = {
   id: '',
@@ -29,8 +29,6 @@ export const SET_RECORDSET = 'dataSet/setRecordSet' as const;
 export const ADD_RECORDS = 'dataSet/addRecords' as const;
 export const UPDATE_RECORDS = 'dataSet/updateRecords' as const;
 export const DELETE_RECORDS = 'dataSet/deleteRecords' as const;
-export const UPDATE_TRACKFIELD = 'dataSet/updateTrackField' as const;
-
 export const setDataSetAction = (payload: DataType[]) => ({
   type: SET_DATASET,
   value: payload,
@@ -63,16 +61,7 @@ export const deleteRecordsAction = (payload: DataType) => ({
   type: DELETE_RECORDS,
   value: payload,
 });
-export const updateTrackFieldAction = (payload: {
-  layerId: string;
-  userId: string | undefined;
-  dataId: string;
-  field: { [key: string]: string | number | PhotoType[] };
-  coords: LocationType[];
-}) => ({
-  type: UPDATE_TRACKFIELD,
-  value: payload,
-});
+
 export type Action =
   | Readonly<ReturnType<typeof setDataSetAction>>
   | Readonly<ReturnType<typeof addDataAction>>
@@ -81,8 +70,7 @@ export type Action =
   | Readonly<ReturnType<typeof setRecordSetAction>>
   | Readonly<ReturnType<typeof addRecordsAction>>
   | Readonly<ReturnType<typeof updateRecordsAction>>
-  | Readonly<ReturnType<typeof deleteRecordsAction>>
-  | Readonly<ReturnType<typeof updateTrackFieldAction>>;
+  | Readonly<ReturnType<typeof deleteRecordsAction>>;
 
 const reducer = produce((draft, action: Action) => {
   switch (action.type) {
@@ -143,33 +131,6 @@ const reducer = produce((draft, action: Action) => {
       if (dataIndex !== -1) {
         //以前とdisplayNameが変更になっていても削除ではdisplayNameの更新はされない
         draft[dataIndex].data = draft[dataIndex].data.filter((d) => !data.find((v) => v.id === d.id));
-      }
-      break;
-    }
-    case UPDATE_TRACKFIELD: {
-      const {
-        layerId,
-        userId,
-        dataId,
-        field,
-        coords,
-      }: {
-        layerId: string;
-        userId: string | undefined;
-        dataId: string;
-        field: { [key: string]: string | number | PhotoType[] };
-        coords: LocationType[];
-      } = action.value;
-
-      const dataIndex = draft.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      if (dataIndex !== -1) {
-        const updateDataIndex = draft[dataIndex].data.findIndex((n) => n.id === dataId);
-        if (updateDataIndex !== -1) {
-          draft[dataIndex].data[updateDataIndex].coords = coords;
-          Object.entries(field).forEach(([key, value]) => {
-            draft[dataIndex].data[updateDataIndex].field[key] = value;
-          });
-        }
       }
       break;
     }

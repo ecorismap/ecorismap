@@ -415,6 +415,7 @@ export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], area
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return pointFeatures
       .map((feature) => {
+        if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePoint, areaPolygon);
@@ -432,6 +433,7 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
     return lineFeatures
       .map((feature) => {
         let featureLine;
+        if (!feature.visible) return undefined;
         if (feature.coords.length === 1) {
           featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
         } else if (feature.coords.length > 1) {
@@ -456,6 +458,7 @@ export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[]
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return polygonFeatures
       .map((feature) => {
+        if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePolygon, areaPolygon);
@@ -473,6 +476,7 @@ export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], poi
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = pointFeatures
       .map((feature) => {
+        if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePoint, bufferPolygon);
@@ -494,6 +498,7 @@ export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointC
     const features = lineFeatures
       .map((feature) => {
         let featureLine;
+        if (!feature.visible) return undefined;
         if (feature.coords.length === 1) {
           featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
         } else if (feature.coords.length > 1) {
@@ -524,6 +529,7 @@ export const selectPolygonFeatureByLatLon = (
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = polygonFeatures
       .map((feature) => {
+        if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore
         const intersects = turf.booleanIntersects(featurePolygon, bufferPolygon);
@@ -892,3 +898,34 @@ export function boundingBoxFromCoords(points: LatLng[]) {
   );
   return bbox;
 }
+
+export function smoothLine(line: LocationType[], windowSize: number): LocationType[] {
+  return line.map((_, index, array) => {
+    const start = Math.max(0, index - Math.floor(windowSize / 2));
+    const end = Math.min(array.length, start + windowSize);
+    const window = array.slice(start, end);
+
+    const avgLat = window.reduce((sum, p) => sum + p.latitude, 0) / window.length;
+    const avgLon = window.reduce((sum, p) => sum + p.longitude, 0) / window.length;
+
+    return {
+      latitude: avgLat,
+      longitude: avgLon,
+    };
+  });
+}
+
+export const cleanupLine = (line: LocationType[]): LocationType[] => {
+  if (line.length === 0) return line;
+
+  const smoothedLine = smoothLine(line, 3);
+  // トラックをGeoJSON LineStringに変換
+  const lineString = turf.lineString(smoothedLine.map((point) => [point.longitude, point.latitude]));
+
+  const simplifiedLine = turf.simplify(lineString, { tolerance: 0.000001, highQuality: true });
+  const newTrack = simplifiedLine.geometry.coordinates.map((coord) => ({
+    longitude: coord[0],
+    latitude: coord[1],
+  }));
+  return newTrack;
+};

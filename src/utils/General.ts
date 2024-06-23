@@ -60,9 +60,11 @@ export function isMapMemoDrawTool(tool: string) {
 }
 
 export function nearDegree(deg: number, interval: number) {
-  const q = Math.trunc((deg % interval) / (interval / 2.0)) * interval;
-  const r = Math.trunc(deg / interval);
-  return r * interval + q;
+  // const q = Math.trunc((deg % interval) / (interval / 2.0)) * interval;
+  // const r = Math.trunc(deg / interval);
+  // return r * interval + q;
+  //console.log(deg, Math.round(deg / interval) * interval);
+  return Math.floor(deg / interval) * interval;
 }
 
 export function toPixel(millimeter: number) {

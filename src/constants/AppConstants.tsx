@@ -53,11 +53,6 @@ export const TASK = {
   FETCH_LOCATION: 'FETCH_LOCATION',
 };
 
-export const STORAGE = {
-  TRACKLOG: 'TRACKLOG',
-  TIME_STAMP: 'TIME_STAMP',
-} as const;
-
 export const ROLETYPE = {
   MEMBER: t('constants.roletype.member'),
   ADMIN: t('constants.roletype.admin'),
