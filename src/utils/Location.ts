@@ -1,8 +1,7 @@
 import { LocationType, TrackLogType } from '../types';
 import lineDistance from '@turf/line-distance';
 import { LocationObject } from 'expo-location';
-import * as turf from '@turf/helpers';
-
+import * as turf from '@turf/turf';
 export const updateTrackLog = (locations: LocationObject[], trackLog: TrackLogType): TrackLogType => {
   //バックグラウンドの場合は、保存する
   const { distance, track, lastTimeStamp } = trackLog;
