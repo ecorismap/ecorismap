@@ -4,16 +4,12 @@ import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
-import { DEGREE_INTERVAL } from '../constants/AppConstants';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { editSettingsAction } from '../modules/settings';
-import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateTrackLog } from '../utils/Location';
 import { AppState } from '../modules';
-import { deleteRecordsAction, updateTrackFieldAction } from '../modules/dataSet';
 import { isMapView } from '../utils/Map';
-import { nearDegree } from '../utils/General';
 import { t } from '../i18n/config';
-import { LocationSubscription } from 'expo-location';
+import { LocationObject, LocationSubscription } from 'expo-location';
 import { TASK } from '../constants/AppConstants';
 import { AppState as RNAppState, Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
@@ -21,6 +17,8 @@ import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
+import { updateTrackLogAction } from '../modules/trackLog';
+import { cleanupLine } from '../utils/Coords';
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -34,9 +32,9 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
 
   try {
     // have to add it sequentially, parses/serializes existing JSON
-    const checkedLocations = await checkAndStoreLocations(locations);
+    //const checkedLocations = await checkAndStoreLocations(locations);
     //killされていなければ更新イベントが発生する
-    locationEventsEmitter.emit('update', checkedLocations);
+    locationEventsEmitter.emit('update', locations);
   } catch (error) {
     //console.log('[tracking]', 'Something went wrong when saving a new location...', error);
   }
@@ -47,23 +45,32 @@ export type UseLocationReturnType = {
   gpsState: LocationStateType;
   trackingState: TrackingStateType;
   headingUp: boolean;
-  magnetometer: number;
+  azimuth: number;
   toggleHeadingUp: (headingUp_: boolean) => void;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
+  checkUnsavedTrackLog: () => Promise<{ isOK: boolean; message: string }>;
+  saveTrackLog: () => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
 };
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
-  const { addRecord, generateRecord } = useRecord();
-  const [magnetometer, setMagnetometer] = useState(0);
-  const [dividedTrackLogCount, setDividedTrackLogCount] = useState<number>(0);
+  const trackLog = useSelector((state: AppState) => state.trackLog);
+  const { addRecordWithCheck } = useRecord();
+  const [azimuth, setAzimuth] = useState(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
 
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
   const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
+  const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
+  const [headingUp, setHeadingUp] = useState(false);
+  const [gpsState, setGpsState] = useState<LocationStateType>('off');
+  const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
 
   const gpsAccuracyOption = useMemo(() => {
     switch (gpsAccuracy) {
@@ -104,24 +111,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
   }, [gpsAccuracy]);
 
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
-  const dataUser = useMemo(
-    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
-    [projectId, user]
-  );
-  const tracking = useSelector((state: AppState) => state.settings.tracking, shallowEqual);
-  const trackingLayer = useSelector((state: AppState) => state.layers.find((l) => l.id === tracking?.layerId));
-  const dataSet = useSelector((state: AppState) => state.dataSet);
-  const trackingRecord = useMemo(
-    () => dataSet.find((d) => d.layerId === tracking?.layerId)?.data.find((d) => d.id === tracking?.dataId),
-    [dataSet, tracking?.dataId, tracking?.layerId]
-  );
-  const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
-  const [headingUp, setHeadingUp] = useState(false);
-  const [gpsState, setGpsState] = useState<LocationStateType>('off');
-  const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
-
   const confirmLocationPermission = useCallback(async () => {
     try {
       const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
@@ -160,7 +149,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-        setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+        setAzimuth(pos.trueHeading);
       });
     }
   }, [confirmLocationPermission, gpsAccuracyOption]);
@@ -188,10 +177,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       }
     } catch (e) {
       console.log(e);
-    } finally {
-      dispatch(editSettingsAction({ tracking: undefined }));
     }
-  }, [dispatch]);
+  }, []);
 
   const startTracking = useCallback(async () => {
     if ((await confirmLocationPermission()) !== 'granted') return;
@@ -209,7 +196,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-        setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+        setAzimuth(pos.trueHeading);
       });
     }
   }, [confirmLocationPermission, trackingAccuracyOption]);
@@ -271,32 +258,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
         await moveCurrentPosition();
-        await clearStoredLocations();
+        dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
         await startTracking();
       } else if (trackingState_ === 'off') {
         await stopTracking();
-        await clearStoredLocations();
-        //記録のないトラックは削除
-        if (tracking !== undefined) {
-          //const trackingRecord = findRecord(tracking.layerId, dataUser.uid, tracking.dataId, 'LINE');
-          if (
-            trackingRecord !== undefined &&
-            Array.isArray(trackingRecord.coords) &&
-            trackingRecord.coords.length === 0
-          ) {
-            dispatch(
-              deleteRecordsAction({
-                layerId: tracking.layerId,
-                userId: dataUser.uid,
-                data: [trackingRecord],
-              })
-            );
-          }
-        }
       }
       setTrackingState(trackingState_);
     },
-    [dataUser.uid, dispatch, moveCurrentPosition, startTracking, stopTracking, tracking, trackingRecord]
+    [dispatch, moveCurrentPosition, startTracking, stopTracking]
   );
 
   const toggleHeadingUp = useCallback(
@@ -305,19 +274,18 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (headingUp_) {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
         headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-          const angle = Math.abs((-1.0 * nearDegree(pos.trueHeading, DEGREE_INTERVAL)) % 360);
           (mapViewRef as MapView).animateCamera(
             {
-              heading: angle,
+              heading: Math.abs((-1.0 * pos.trueHeading) % 360),
             },
             { duration: 300 }
           );
+          setAzimuth(pos.trueHeading);
         });
-        setMagnetometer(0);
       } else {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
         headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-          setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+          setAzimuth(pos.trueHeading);
         });
 
         (mapViewRef as MapView).animateCamera({
@@ -329,13 +297,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     [mapViewRef]
   );
 
-  const updateTrackLog = useCallback(
-    async (data: { distance: number; trackLog: LocationType[]; lastTimeStamp: number }) => {
-      const { trackLog, distance, lastTimeStamp } = data;
-      if (tracking === undefined) return;
-      if (trackLog.length === 0) return;
+  const updateTrackLogEvent = useCallback(
+    (locations: LocationObject[]) => {
+      const { track, distance, lastTimeStamp } = updateTrackLog(locations, trackLog);
+      if (track.length === 0) return;
+      dispatch(updateTrackLogAction({ distance, track, lastTimeStamp }));
 
-      const currentCoords = trackLog[trackLog.length - 1];
+      const currentCoords = track[track.length - 1];
+      setCurrentLocation(currentCoords);
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
@@ -348,58 +317,49 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           { duration: 5 }
         );
       }
-      setCurrentLocation(currentCoords);
-
-      dispatch(
-        updateTrackFieldAction({
-          layerId: tracking.layerId,
-          userId: dataUser.uid,
-          dataId: tracking.dataId,
-          field: { cmt: `${t('common.distance')} ${distance.toFixed(2)}km` },
-          coords: trackLog,
-        })
-      );
-
-      if (trackLog.length > 3000) {
-        //3000点を超えたら新しいデータを作成
-        setDividedTrackLogCount((prev) => prev + 1);
-        if (trackingLayer === undefined) return;
-        const trackingRecordSet = dataSet.find((d) => d.layerId === tracking.layerId)!.data;
-        //最後の位置情報で新しいデータを作成
-        const record = generateRecord('LINE', trackingLayer, trackingRecordSet, trackLog.slice(-1));
-        addRecord(trackingLayer, record, { isTrack: true });
-
-        await storeLocations({
-          distance: 0,
-          trackLog: trackLog.slice(-1),
-          lastTimeStamp: lastTimeStamp,
-        });
-      }
     },
-    // dataSetは更新されると再レンダリングされるのでdividedTrackLogCountを依存に入れる
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [
-      addRecord,
-      dividedTrackLogCount,
-      dataUser.uid,
-      dispatch,
-      generateRecord,
-      gpsState,
-      mapViewRef,
-      tracking,
-      trackingLayer,
-    ]
+    [dispatch, gpsState, mapViewRef, trackLog]
   );
+
+  const saveTrackLog = useCallback(async () => {
+    if (trackLog.track.length < 2) return { isOK: true, message: '' };
+
+    // const retOrg = addRecordWithCheck('LINE', trackLog.track);
+    // if (!retOrg.isOK) {
+    //   return { isOK: retOrg.isOK, message: retOrg.message };
+    // }
+    const cleanupedLine = cleanupLine(trackLog.track as LocationType[]);
+    const ret = addRecordWithCheck('LINE', cleanupedLine);
+    if (!ret.isOK) {
+      return { isOK: ret.isOK, message: ret.message };
+    }
+
+    dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
+    return { isOK: true, message: '' };
+  }, [addRecordWithCheck, dispatch, trackLog]);
+
+  const checkUnsavedTrackLog = useCallback(async () => {
+    if (trackLog.track.length > 1) {
+      const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
+      if (ans) {
+        const ret = await saveTrackLog();
+        if (!ret.isOK) return ret;
+      } else {
+        dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
+      }
+    }
+    return { isOK: true, message: '' };
+  }, [dispatch, saveTrackLog, trackLog.track.length]);
 
   useEffect(() => {
     // console.log('#define locationEventsEmitter update function');
 
-    const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLog);
+    const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLogEvent);
     return () => {
       // console.log('clean locationEventsEmitter');
       eventSubscription && eventSubscription.remove();
     };
-  }, [updateTrackLog]);
+  }, [updateTrackLogEvent]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -409,19 +369,13 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
       if (hasStarted) {
-        //アプリがkillされている間にストレージに保存されているトラックを更新する
-        //console.log('### app killed and restart tracking');
-
-        //再起動時にトラックを止めるならこちら
-
+        //再起動時にトラックを止める
         await stopTracking();
       }
-      const savedLocations = await getStoredLocations();
-      if (savedLocations.trackLog.length > 1) {
-        const ret = await ConfirmAsync(t('hooks.message.saveTracking'));
-        if (ret) updateTrackLog(savedLocations);
+      const { isOK, message } = await checkUnsavedTrackLog();
+      if (!isOK) {
+        await AlertAsync(message);
       }
-      clearStoredLocations();
     })();
 
     return () => {
@@ -447,7 +401,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           if (headingSubscriber.current === undefined) {
             //console.log('add heading');
             headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-              setMagnetometer(nearDegree(pos.trueHeading, DEGREE_INTERVAL));
+              setAzimuth(pos.trueHeading);
             });
           }
         }
@@ -474,9 +428,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     gpsState,
     trackingState,
     headingUp,
-    magnetometer,
+    azimuth,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
+    checkUnsavedTrackLog,
+    saveTrackLog,
   } as const;
 };
