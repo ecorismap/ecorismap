@@ -11,7 +11,7 @@ interface Props {
 export const TrackLog = React.memo((props: Props) => {
   const { data } = props;
   //console.log(data);
-  if (data === undefined) return null;
+  if (data === undefined || data.track.length === 0) return null;
 
   return (
     <Polyline
