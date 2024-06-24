@@ -289,14 +289,12 @@ export const generateCSV = (
 
   const properties = dataSet.map((record) => {
     let fieldCSV = field
-      .map(({ name, format }) => {
+      .map(({ name }) => {
         const fieldValue = record.field[name];
         if (isPhotoField(fieldValue)) {
           return `"${fieldValue.map((p) => p.name).join(',')}"`;
-        } else if (format === 'CHECK' || format === 'TABLE') {
-          return `"${fieldValue}"`;
         } else {
-          return fieldValue;
+          return `"${fieldValue}"`;
         }
       })
       .join(',');
