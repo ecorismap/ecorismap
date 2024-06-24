@@ -191,6 +191,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleHeadingUp,
     checkUnsavedTrackLog,
     saveTrackLog,
+    confirmLocationPermission,
   } = useLocation(mapViewRef.current);
 
   const {
@@ -660,7 +661,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
       const ret = await ConfirmAsync(t('Home.confirm.track_start'));
       if (!ret) return;
-
+      if ((await confirmLocationPermission()) !== 'granted') return;
       await toggleTracking('on');
       await toggleGPS('follow');
       setFeatureButton('NONE');
@@ -675,11 +676,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await toggleGPS('off');
       }
     }
-  }, [checkUnsavedTrackLog, saveTrackLog, setFeatureButton, toggleGPS, toggleTracking, trackingState]);
+  }, [
+    checkUnsavedTrackLog,
+    confirmLocationPermission,
+    saveTrackLog,
+    setFeatureButton,
+    toggleGPS,
+    toggleTracking,
+    trackingState,
+  ]);
 
   const pressGPS = useCallback(async () => {
     //runTutrial('HOME_BTN_GPS');
     if (gpsState === 'off') {
+      if ((await confirmLocationPermission()) !== 'granted') return;
       await toggleGPS('follow');
     } else if (gpsState === 'follow') {
       if (trackingState === 'on') {
@@ -690,7 +700,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } else if (gpsState === 'show') {
       await toggleGPS('follow');
     }
-  }, [gpsState, toggleGPS, trackingState]);
+  }, [confirmLocationPermission, gpsState, toggleGPS, trackingState]);
 
   const pressDeleteTiles = useCallback(async () => {
     if (route.params?.tileMap !== undefined) {
