@@ -916,7 +916,7 @@ export function smoothLine(line: LocationType[], windowSize: number): LocationTy
 }
 
 export const cleanupLine = (line: LocationType[]): LocationType[] => {
-  if (line.length === 0) return line;
+  if (line.length < 10) return line;
 
   const smoothedLine = smoothLine(line, 3);
   // トラックをGeoJSON LineStringに変換

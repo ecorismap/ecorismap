@@ -57,6 +57,7 @@ export type UseLocationReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
 };
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
@@ -119,34 +120,26 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const confirmLocationPermission = useCallback(async () => {
     try {
-      const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
-      if (notificationStatus !== 'granted') {
-        await AlertAsync(t('hooks.message.permitAccessGPS'));
-        return;
+      if (Platform.OS === 'android') {
+        const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
+        if (notificationStatus !== 'granted') {
+          await AlertAsync(t('hooks.message.permitAccessGPS'));
+          return;
+        }
       }
-
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));
         return;
       }
 
-      if (Platform.OS === 'ios') {
-        const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-        if (backgroundStatus !== 'granted') {
-          await AlertAsync(t('hooks.message.permitAccessGPS'));
-          return;
-        }
-      }
-
-      return foregroundStatus;
+      return 'granted' as Location.PermissionStatus.GRANTED;
     } catch (e: any) {
       console.log(e.message); // エラーメッセージをコンソールに出力
     }
   }, []);
 
   const startGPS = useCallback(async () => {
-    if ((await confirmLocationPermission()) !== 'granted') return;
     //GPSもトラッキングもOFFの場合
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) =>
@@ -158,7 +151,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [confirmLocationPermission, gpsAccuracyOption]);
+  }, [gpsAccuracyOption]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -192,7 +185,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   }, [projectId, user]);
 
   const startTracking = useCallback(async () => {
-    if ((await confirmLocationPermission()) !== 'granted') return;
     if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
         ...trackingAccuracyOption,
@@ -210,13 +202,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [confirmLocationPermission, trackingAccuracyOption]);
+  }, [trackingAccuracyOption]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');
-    if ((await confirmLocationPermission()) !== 'granted') return;
     // console.log('moveCurrentPosition2');
-
     const location = await Location.getLastKnownPositionAsync();
     // console.log('moveCurrentPosition3', location);
     if (location === null) return;
@@ -229,20 +219,17 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       { duration: 5 }
     );
     //console.log('moveCurrentPosition4', location.coords);
-  }, [confirmLocationPermission, mapViewRef]);
+  }, [mapViewRef]);
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
-      setGpsState(gpsState_);
       if (gpsState_ === 'off') {
         await stopGPS();
         if (isLoggedIn(user) && hasOpened(projectId)) {
           projectStore.deleteCurrentPosition(user.uid, projectId);
           setCurrentLocation(null);
         }
-        return;
-      }
-      if (gpsState_ === 'follow') {
+      } else if (gpsState_ === 'follow') {
         await moveCurrentPosition();
         updateGpsPosition.current = (pos: Location.LocationObject) => {
           (mapViewRef as MapView).animateCamera(
@@ -256,12 +243,15 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           );
           setCurrentLocation(pos.coords);
         };
+        await startGPS();
       } else if (gpsState_ === 'show') {
         updateGpsPosition.current = (pos: Location.LocationObject) => {
           setCurrentLocation(pos.coords);
         };
+        await startGPS();
       }
-      await startGPS();
+
+      setGpsState(gpsState_);
     },
     [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, user]
   );
@@ -449,5 +439,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     toggleHeadingUp,
     checkUnsavedTrackLog,
     saveTrackLog,
+    confirmLocationPermission,
   } as const;
 };
