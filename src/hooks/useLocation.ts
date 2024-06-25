@@ -402,7 +402,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         //console.log('App has come to the foreground!');
-        if (trackingState === 'on') {
+        if (gpsState === 'show' || gpsState === 'follow') {
           if (headingSubscriber.current === undefined) {
             //console.log('add heading');
             headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
@@ -426,7 +426,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     return () => {
       subscription.remove();
     };
-  }, [trackingState]);
+  }, [gpsState]);
 
   return {
     currentLocation,

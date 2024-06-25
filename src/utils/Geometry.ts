@@ -34,9 +34,59 @@ import { Position } from '@turf/turf';
 import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
 
+export const detectCsvType = (csv: string): { type: FeatureType; column: number } => {
+  const csvFields = csv.split('\n')[0].split(',');
+  const geometryColumn = csvFields.findIndex((field) => field === 'geometry');
+  if (geometryColumn === -1) {
+    return { type: 'NONE', column: -1 };
+  }
+  const firstRowGeometry = csv.split('\n')[1].split(',')[geometryColumn];
+  if (firstRowGeometry.includes('POINT')) {
+    return { type: 'POINT', column: geometryColumn };
+  } else if (firstRowGeometry.includes('LINESTRING')) {
+    return { type: 'LINE', column: geometryColumn };
+  } else if (firstRowGeometry.includes('POLYGON')) {
+    return { type: 'POLYGON', column: geometryColumn };
+  } else {
+    return { type: 'NONE', column: -1 };
+  }
+};
+
+function parseCSVLine(line: string) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        // エスケープされた引用符
+        current += char;
+        i++; // 次の文字をスキップ
+      } else {
+        // 引用符の開始または終了
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // フィールドの区切り
+      result.push(current.trim());
+      current = '';
+    } else {
+      // 通常の文字
+      current += char;
+    }
+  }
+
+  // 最後のフィールドを追加
+  result.push(current.trim());
+
+  return result;
+}
+
 export const Csv2Data = (
   csv: string,
-  type: FeatureType,
   fileName: string,
   userId: string | undefined,
   displayName: string | null,
@@ -44,18 +94,57 @@ export const Csv2Data = (
 ) => {
   try {
     //console.log(type);
+    const { type, column } = detectCsvType(csv);
     const layer = importedLayer === undefined ? createLayerFromCsv(csv, fileName, type) : cloneDeep(importedLayer);
-
+    const header = csv.split('\n')[0].split(',');
     const body = csv.split('\n').slice(1);
+    const offset = header[0].includes('displayName') ? 1 : 0;
 
     const importedData: RecordType[] = body.map((line) => {
-      const data = line.split(',');
+      //カンマで区切るが""で囲まれた,は残す。最初と最後の"を削除
+      const data = parseCSVLine(line);
+
       //layer.fieldとdataの配列からfieldを作成
       const fields = layer.field
         .map((field, idx) => {
-          return { [field.name]: data[idx] };
+          return { [field.name]: data[idx + offset] };
         })
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
+      let coords;
+      if (type === 'POINT') {
+        const geometry = data[column].replace('POINT(', '').replace(')', '').split(' ');
+        const { isOK: latIsOK, result: lat } = formattedInputs(geometry[1], 'latitude-decimal', false);
+        const { isOK: lonIsOK, result: lon } = formattedInputs(geometry[0], 'longitude-decimal', false);
+        coords = {
+          latitude: latIsOK ? Number(lat as string) : 0,
+          longitude: lonIsOK ? Number(lon as string) : 0,
+        };
+      } else if (type === 'LINE') {
+        const geometry = data[column].replace('LINESTRING(', '').replace(')', '').split(',');
+        coords = geometry.map((xy) => {
+          const [lon, lat] = xy.split(' ');
+          const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
+          const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
+          return {
+            latitude: latIsOK ? Number(latResult as string) : 0,
+            longitude: lonIsOK ? Number(lonResult as string) : 0,
+          };
+        });
+      } else if (type === 'POLYGON') {
+        const geometry = data[column].replace('POLYGON((', '').replace('))', '').split(',');
+        const polygon = geometry.map((xy) => {
+          const [lon, lat] = xy.split(' ');
+          const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
+          const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
+          return {
+            latitude: latIsOK ? Number(latResult as string) : 0,
+            longitude: lonIsOK ? Number(lonResult as string) : 0,
+          };
+        });
+        coords = polygon;
+      } else {
+        coords = { latitude: 0, longitude: 0 };
+      }
 
       return {
         id: ulid(),
@@ -63,17 +152,14 @@ export const Csv2Data = (
         displayName: displayName,
         redraw: false,
         visible: true,
-        coords: {
-          latitude: 0,
-          longitude: 0,
-        },
+        coords: coords,
         field: fields,
       };
     });
-
     //csvから
     return { layer: layer, recordSet: importedData };
   } catch (e) {
+    console.log(e);
     return undefined;
   }
 };
