@@ -64,8 +64,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   );
 
   const importCsv = useCallback(
-    (csv: string, featureType: FeatureType, importFileName: string, importedLayer?: LayerType) => {
-      const data = Csv2Data(csv, featureType, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
+    (csv: string, importFileName: string, importedLayer?: LayerType) => {
+      const data = Csv2Data(csv, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
       if (data === undefined) return;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
@@ -156,7 +156,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     async (uri: string, name: string) => {
       //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
       const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      importCsv(csvStrings, 'NONE', name);
+      importCsv(csvStrings, name);
     },
     [importCsv]
   );
@@ -173,24 +173,30 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const json = JSON.parse(jsonDecompressed);
       if (!isLayerType(json)) throw new Error('invalid json file');
       const importedLayer = updateLayerActiveAndIds(json);
+      const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
+      const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
+
       if (importedLayer.type === 'LAYERGROUP') {
         dispatch(addLayerAction(importedLayer));
       } else if (importedLayer.type === 'NONE') {
-        const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
         if (csvFile === undefined) throw new Error('invalid zip file');
         const csvStrings = await loaded.files[csvFile].async('text');
         const csv = JSON.parse(csvStrings);
         //ToDo 有効なcsvファイルかチェック
-        importCsv(csv, importedLayer.type, name, importedLayer);
-      } else {
-        const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
-        if (geojsonFile === undefined) throw new Error('invalid zip file');
+        importCsv(csv, name, importedLayer);
+      } else if (geojsonFile !== undefined) {
         const geojsonStrings = await loaded.files[geojsonFile].async('text');
         const geojson = JSON.parse(geojsonStrings);
         //ToDo 有効なgeojsonファイルかチェック
         importGeoJson(geojson, importedLayer.type, name, importedLayer);
         //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
         importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+      } else if (csvFile !== undefined) {
+        const csv = await loaded.files[csvFile].async('text');
+        //ToDo 有効なcsvファイルかチェック
+        importCsv(csv, name, importedLayer);
+      } else {
+        throw new Error('invalid zip file');
       }
     },
     [dispatch, importCsv, importGeoJson]
