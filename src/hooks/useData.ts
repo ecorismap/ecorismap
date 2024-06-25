@@ -289,7 +289,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
   }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
-    if (route.name !== 'Data') return;
+    if (route.name !== 'Data' && route.name !== 'DataEdit') return;
     if (dataSet === undefined) return;
 
     const data = dataSet.flatMap((d) => (d.layerId === targetLayer.id ? d.data : []));
