@@ -74,6 +74,7 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     penColor,
+    currentInfoTool,
     onRegionChangeMapView,
     onDrop,
     pressStopDownloadTiles,
@@ -605,7 +606,7 @@ export default function HomeScreen() {
               isPointTool(currentDrawTool) ||
               currentDrawTool === 'SELECT' ||
               currentDrawTool === 'DELETE_POINT' ||
-              isInfoTool(currentDrawTool)
+              isInfoTool(currentInfoTool)
                 ? panResponder.panHandlers
                 : {})}
             >
