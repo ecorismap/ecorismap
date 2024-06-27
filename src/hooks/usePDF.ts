@@ -21,7 +21,15 @@ import { generateLabel } from './useLayers';
 import { getColor } from '../utils/Layer';
 import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
-import { isBrushTool, isStampTool, toPDFCoordinate, toPixel, toPoint } from '../utils/General';
+import {
+  isBrushTool,
+  isLocationType,
+  isLocationTypeArray,
+  isStampTool,
+  toPDFCoordinate,
+  toPixel,
+  toPoint,
+} from '../utils/General';
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
 import * as FileSystem from 'expo-file-system';
@@ -421,16 +429,9 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       height: number,
       color: string
     ) => {
+      if (!isLocationTypeArray(feature.coords)) return '';
       // 緯度経度からピクセル座標に変換
-      const pixels = convertCoordsToPixels(
-        feature.coords as LocationType[],
-        leftX,
-        rightX,
-        bottomY,
-        topY,
-        width,
-        height
-      );
+      const pixels = convertCoordsToPixels(feature.coords, leftX, rightX, bottomY, topY, width, height);
 
       const stamp = feature.field._stamp as string;
       let svg = '';
@@ -510,7 +511,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       height: number,
       color: string
     ) => {
-      const latlon = latLonObjectsToLatLonArray(feature.coords as LocationType[]);
+      if (!isLocationTypeArray(feature.coords)) return '';
+      const latlon = latLonObjectsToLatLonArray(feature.coords);
       const brushLatLon = interpolateLineString(latlon, (pageScale.value / 10000) * 0.1);
 
       const brush = feature.field._strokeStyle as string;
@@ -626,17 +628,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       width: number,
       height: number
     ) => {
+      if (!isLocationType(feature.coords)) return '';
       const label = generateLabel(layer, feature);
       const color = getColor(layer, feature, 0);
-      const pixels = convertCoordsToPixels(
-        [feature.coords] as LocationType[],
-        leftX,
-        rightX,
-        bottomY,
-        topY,
-        width,
-        height
-      );
+      const pixels = convertCoordsToPixels([feature.coords], leftX, rightX, bottomY, topY, width, height);
       const pixelX = pixels[0].pixelX;
       const pixelY = pixels[0].pixelY;
 
@@ -707,6 +702,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       height: number,
       lineColor: string
     ) => {
+      if (!isLocationTypeArray(feature.coords)) return '';
       const label = generateLabel(layer, feature);
 
       let strokeWidth;
@@ -723,15 +719,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       }
 
       const arrowStyle = feature.field._strokeStyle as ArrowStyleType | undefined;
-      const pixels = convertCoordsToPixels(
-        feature.coords as LocationType[],
-        leftX,
-        rightX,
-        bottomY,
-        topY,
-        width,
-        height
-      );
+      const pixels = convertCoordsToPixels(feature.coords, leftX, rightX, bottomY, topY, width, height);
       let points = '';
       pixels.forEach((p) => {
         points += `${p.pixelX},${p.pixelY} `;
@@ -791,21 +779,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       width: number,
       height: number
     ) => {
+      if (!isLocationTypeArray(feature.coords)) return '';
       const label = generateLabel(layer, feature);
       const color = getColor(layer, feature, 0);
       const transparency = layer.colorStyle.transparency;
       const polygonColor = getColor(layer, feature, transparency);
       const strokeWidth = layer.colorStyle.lineWidth || 1.5;
 
-      const pixels = convertCoordsToPixels(
-        feature.coords as LocationType[],
-        leftX,
-        rightX,
-        bottomY,
-        topY,
-        width,
-        height
-      );
+      const pixels = convertCoordsToPixels(feature.coords, leftX, rightX, bottomY, topY, width, height);
       const outerPath = 'M ' + pixels.map((p) => `${p.pixelX},${p.pixelY}`).join(' L ') + ' Z';
       let innerPaths = '';
 

@@ -188,6 +188,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const findSnappedLine = useCallback(
     (pXY: Position) => {
       for (const line of memoLines) {
+        if (line.coords === undefined) continue;
         if (line.field._stamp !== '') continue;
         if (isBrushTool(line.field._strokeStyle as string)) continue;
         const lineXY = latLonObjectsToXYArray(line.coords, mapRegion, mapSize, mapViewRef);
@@ -346,6 +347,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         if (!isBrushTool(line.field._strokeStyle as string)) return;
         const lineArray = latLonObjectsToLatLonArray(line.coords);
 
@@ -375,6 +377,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         if (!Object.keys(STAMP).includes(line.field._stamp as string)) return;
         const stampLatLon = latLonObjectsToLatLonArray(line.coords)[0];
         const stampGeometry = buffer(turf.point(stampLatLon), mapRegion.latitudeDelta);
@@ -416,6 +419,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
       const otherLines: { idx: number; line: LineRecordType }[] = [];
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         const lineArray = latLonObjectsToLatLonArray(line.coords);
         if (lineArray.length === 1) lineArray.push([lineArray[0][0] + 0.0000001, lineArray[0][1] + 0.0000001]);
         const stampLineGeometry = turf.lineString(lineArray);

@@ -70,7 +70,16 @@ export const Point = React.memo(
   }
 );
 
-const PointComponent = React.memo((props: any) => {
+interface PointComponentProps {
+  feature: PointRecordType;
+  selectedRecord: { layerId: string; record: RecordType } | undefined;
+  draggable: boolean;
+  onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
+  layer: LayerType;
+  zoom: number;
+}
+
+const PointComponent = React.memo((props: PointComponentProps) => {
   const { feature, selectedRecord, draggable, onDragEndPoint, layer, zoom } = props;
   //console.log(feature.field[layer.label]);
 
@@ -82,6 +91,7 @@ const PointComponent = React.memo((props: any) => {
   const pointColor = useMemo(() => (selected ? COLOR.YELLOW : color), [color, selected]);
   const borderColor = useMemo(() => (selected ? COLOR.BLACK : COLOR.WHITE), [selected]);
 
+  if (!feature.coords) return null;
   return (
     <Marker
       tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue

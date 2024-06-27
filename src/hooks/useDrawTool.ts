@@ -194,6 +194,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     (layerId: string, features: PointRecordType[]) => {
       features.forEach((record) => {
         //console.log(record.coords, mapRegion, mapSize);
+        if (record.coords === undefined) return;
         drawLine.current.push({
           id: record.id,
           layerId: layerId,
@@ -209,31 +210,33 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const convertLineFeatureToDrawLine = useCallback(
     (layerId: string, features: LineRecordType[]) => {
-      features.forEach((record) =>
-        drawLine.current.push({
+      features.forEach((record) => {
+        if (record.coords === undefined) return;
+        return drawLine.current.push({
           id: record.id,
           layerId: layerId,
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize, mapViewRef),
           latlon: latLonObjectsToLatLonArray(record.coords),
           properties: [],
-        })
-      );
+        });
+      });
     },
     [mapRegion, mapSize, mapViewRef]
   );
   const convertPolygonFeatureToDrawLine = useCallback(
     (layerId: string, features: PolygonRecordType[]) => {
-      features.forEach((record) =>
-        drawLine.current.push({
+      features.forEach((record) => {
+        if (record.coords === undefined) return;
+        return drawLine.current.push({
           id: record.id,
           layerId: layerId,
           record: record,
           xy: latLonObjectsToXYArray(record.coords, mapRegion, mapSize, mapViewRef),
           latlon: latLonObjectsToLatLonArray(record.coords),
           properties: [],
-        })
-      );
+        });
+      });
     },
     [mapRegion, mapSize, mapViewRef]
   );
