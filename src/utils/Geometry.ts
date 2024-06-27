@@ -33,22 +33,28 @@ import {
 import { Position } from '@turf/turf';
 import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
+import { isLocationType, isLocationTypeArray } from './General';
 
+export const getGeometryType = (geometryString: string): FeatureType => {
+  if (geometryString.includes('POINT')) {
+    return 'POINT';
+  } else if (geometryString.includes('LINESTRING')) {
+    return 'LINE';
+  } else if (geometryString.includes('POLYGON')) {
+    return 'POLYGON';
+  } else {
+    return 'NONE';
+  }
+};
 export const detectCsvType = (csv: string): { type: FeatureType; column: number } => {
   const csvFields = csv.split('\n')[0].split(',');
   const geometryColumn = csvFields.findIndex((field) => field === 'geometry');
   if (geometryColumn === -1) {
     return { type: 'NONE', column: -1 };
-  }
-  const firstRowGeometry = csv.split('\n')[1].split(',')[geometryColumn];
-  if (firstRowGeometry.includes('POINT')) {
-    return { type: 'POINT', column: geometryColumn };
-  } else if (firstRowGeometry.includes('LINESTRING')) {
-    return { type: 'LINE', column: geometryColumn };
-  } else if (firstRowGeometry.includes('POLYGON')) {
-    return { type: 'POLYGON', column: geometryColumn };
   } else {
-    return { type: 'NONE', column: -1 };
+    const firstRowGeometry = csv.split('\n')[1].split(',')[geometryColumn];
+    const geometryType = getGeometryType(firstRowGeometry);
+    return { type: geometryType, column: geometryColumn };
   }
 };
 
@@ -112,38 +118,53 @@ export const Csv2Data = (
         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
       let coords;
       if (type === 'POINT') {
-        const geometry = data[column].replace('POINT(', '').replace(')', '').split(' ');
-        const { isOK: latIsOK, result: lat } = formattedInputs(geometry[1], 'latitude-decimal', false);
-        const { isOK: lonIsOK, result: lon } = formattedInputs(geometry[0], 'longitude-decimal', false);
-        coords = {
-          latitude: latIsOK ? Number(lat as string) : 0,
-          longitude: lonIsOK ? Number(lon as string) : 0,
-        };
+        const geometryType = getGeometryType(data[column]);
+        if (geometryType !== 'POINT') {
+          coords = undefined;
+        } else {
+          const geometry = data[column].replace('POINT(', '').replace(')', '').split(' ');
+          const { isOK: latIsOK, result: lat } = formattedInputs(geometry[1], 'latitude-decimal', false);
+          const { isOK: lonIsOK, result: lon } = formattedInputs(geometry[0], 'longitude-decimal', false);
+          coords = {
+            latitude: latIsOK ? Number(lat as string) : 0,
+            longitude: lonIsOK ? Number(lon as string) : 0,
+          };
+        }
       } else if (type === 'LINE') {
-        const geometry = data[column].replace('LINESTRING(', '').replace(')', '').split(',');
-        coords = geometry.map((xy) => {
-          const [lon, lat] = xy.split(' ');
-          const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
-          const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
-          return {
-            latitude: latIsOK ? Number(latResult as string) : 0,
-            longitude: lonIsOK ? Number(lonResult as string) : 0,
-          };
-        });
+        const geometryType = getGeometryType(data[column]);
+        if (geometryType !== 'LINE') {
+          coords = undefined;
+        } else {
+          const geometry = data[column].replace('LINESTRING(', '').replace(')', '').split(',');
+          coords = geometry.map((xy) => {
+            const [lon, lat] = xy.split(' ');
+            const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
+            const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
+            return {
+              latitude: latIsOK ? Number(latResult as string) : 0,
+              longitude: lonIsOK ? Number(lonResult as string) : 0,
+            };
+          });
+        }
       } else if (type === 'POLYGON') {
-        const geometry = data[column].replace('POLYGON((', '').replace('))', '').split(',');
-        const polygon = geometry.map((xy) => {
-          const [lon, lat] = xy.split(' ');
-          const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
-          const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
-          return {
-            latitude: latIsOK ? Number(latResult as string) : 0,
-            longitude: lonIsOK ? Number(lonResult as string) : 0,
-          };
-        });
-        coords = polygon;
+        const geometryType = getGeometryType(data[column]);
+        if (geometryType !== 'POLYGON') {
+          coords = undefined;
+        } else {
+          const geometry = data[column].replace('POLYGON((', '').replace('))', '').split(',');
+          const polygon = geometry.map((xy) => {
+            const [lon, lat] = xy.split(' ');
+            const { isOK: latIsOK, result: latResult } = formattedInputs(lat, 'latitude-decimal', false);
+            const { isOK: lonIsOK, result: lonResult } = formattedInputs(lon, 'longitude-decimal', false);
+            return {
+              latitude: latIsOK ? Number(latResult as string) : 0,
+              longitude: lonIsOK ? Number(lonResult as string) : 0,
+            };
+          });
+          coords = polygon;
+        }
       } else {
-        coords = { latitude: 0, longitude: 0 };
+        coords = undefined;
       }
 
       return {
@@ -283,30 +304,46 @@ export const GeoJson2Data = (
     switch (type) {
       case 'POINT':
         importedData = geojson.features
-          .filter((feature): feature is Feature<Point> => feature.geometry?.type === 'Point')
+          .filter(
+            (feature): feature is Feature<Point> => feature.geometry === null || feature.geometry.type === 'Point'
+          )
           .map((feature) => {
             return {
               ...createBase(userId, displayName),
-              coords: latlonToLatLonObject(feature.geometry.coordinates),
+              coords: feature.geometry === null ? undefined : latlonToLatLonObject(feature.geometry.coordinates),
               field: createFields(layer.field, feature),
             };
           });
         break;
       case 'MULTIPOINT':
         importedData = geojson.features
-          .filter((feature): feature is Feature<MultiPoint> => feature.geometry?.type === 'MultiPoint')
-          .map((feature) =>
-            feature.geometry.coordinates.map((partCoords) => ({
-              ...createBase(userId, displayName),
-              coords: latlonToLatLonObject(partCoords),
-              field: createFields(layer.field, feature),
-            }))
+          .filter(
+            (feature): feature is Feature<MultiPoint> =>
+              feature.geometry === null || feature.geometry.type === 'MultiPoint'
           )
+          .map((feature) => {
+            if (feature.geometry === null) {
+              return {
+                ...createBase(userId, displayName),
+                coords: undefined,
+                field: createFields(layer.field, feature),
+              };
+            } else {
+              return feature.geometry.coordinates.map((partCoords) => ({
+                ...createBase(userId, displayName),
+                coords: feature.geometry === null ? undefined : latlonToLatLonObject(partCoords),
+                field: createFields(layer.field, feature),
+              }));
+            }
+          })
           .flat();
         break;
       case 'LINE':
         importedData = geojson.features
-          .filter((feature): feature is Feature<LineString> => feature.geometry?.type === 'LineString')
+          .filter(
+            (feature): feature is Feature<LineString> =>
+              feature.geometry === null || feature.geometry.type === 'LineString'
+          )
           .map((feature) => ({
             ...createBase(userId, displayName),
             ...createGeometryFromLineStringGeoJson(feature.geometry.coordinates),
@@ -315,20 +352,33 @@ export const GeoJson2Data = (
         break;
       case 'MULTILINE':
         importedData = geojson.features
-          .filter((feature): feature is Feature<MultiLineString> => feature.geometry?.type === 'MultiLineString')
-          .map((feature) =>
-            feature.geometry.coordinates.map((partCoords) => ({
-              ...createBase(userId, displayName),
-              ...createGeometryFromLineStringGeoJson(partCoords),
-              field: createFields(layer.field, feature),
-            }))
+          .filter(
+            (feature): feature is Feature<MultiLineString> =>
+              feature.geometry === null || feature.geometry.type === 'MultiLineString'
           )
+          .map((feature) => {
+            if (feature.geometry === null) {
+              return {
+                ...createBase(userId, displayName),
+                coords: undefined,
+                field: createFields(layer.field, feature),
+              };
+            } else {
+              return feature.geometry.coordinates.map((partCoords) => ({
+                ...createBase(userId, displayName),
+                ...createGeometryFromLineStringGeoJson(partCoords),
+                field: createFields(layer.field, feature),
+              }));
+            }
+          })
           .flat();
         break;
 
       case 'POLYGON':
         importedData = geojson.features
-          .filter((feature): feature is Feature<Polygon> => feature.geometry?.type === 'Polygon')
+          .filter(
+            (feature): feature is Feature<Polygon> => feature.geometry === null || feature.geometry.type === 'Polygon'
+          )
           .map((feature) => ({
             ...createBase(userId, displayName),
             ...createGeometryFromPolygonGeoJson(feature.geometry.coordinates),
@@ -337,18 +387,28 @@ export const GeoJson2Data = (
         break;
       case 'MULTIPOLYGON':
         importedData = geojson.features
-          .filter((feature): feature is Feature<MultiPolygon> => feature.geometry?.type === 'MultiPolygon')
-          .map((feature) =>
-            feature.geometry.coordinates.map((partCoords) => ({
-              ...createBase(userId, displayName),
-              ...createGeometryFromPolygonGeoJson(partCoords),
-              field: createFields(layer.field, feature),
-            }))
+          .filter(
+            (feature): feature is Feature<MultiPolygon> =>
+              feature.geometry === null || feature.geometry.type === 'MultiPolygon'
           )
+          .map((feature) => {
+            if (feature.geometry === null) {
+              return {
+                ...createBase(userId, displayName),
+                coords: undefined,
+                field: createFields(layer.field, feature),
+              };
+            } else {
+              return feature.geometry.coordinates.map((partCoords) => ({
+                ...createBase(userId, displayName),
+                ...createGeometryFromPolygonGeoJson(partCoords),
+                field: createFields(layer.field, feature),
+              }));
+            }
+          })
           .flat();
         break;
     }
-
     return importedData;
   } catch (e) {
     console.log(e);
@@ -396,32 +456,42 @@ export const generateCSV = (
       geometries = dataSet.map(() => '');
       break;
     case 'POINT':
-      geometries = dataSet.map(
-        ({ coords }) => `"POINT(${(coords as LocationType).longitude} ${(coords as LocationType).latitude})"`
-      );
+      geometries = dataSet.map(({ coords }) => {
+        if (isLocationType(coords)) {
+          return `"POINT(${coords.longitude} ${coords.latitude})"`;
+        } else {
+          return '';
+        }
+      });
       break;
     case 'LINE':
       geometries = dataSet.map(({ coords }) => {
-        if ((coords as LocationType[]).length === 1) {
-          //MapMemoのSTAMPの場合
-          return `"POINT(${(coords as LocationType[])[0].longitude} ${(coords as LocationType[])[0].latitude})"`;
+        if (isLocationTypeArray(coords)) {
+          if (coords.length === 1) {
+            //MapMemoのSTAMPの場合
+            return `"POINT(${coords[0].longitude} ${coords[0].latitude})"`;
+          }
+          const linestring = coords.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
+          return `"LINESTRING(${linestring})"`;
+        } else {
+          return '';
         }
-        const linestring = (coords as LocationType[]).map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
-        return `"LINESTRING(${linestring})"`;
       });
       break;
     case 'POLYGON':
       geometries = dataSet.map(({ coords, holes }) => {
-        const polygonstring = (coords as LocationType[])
-          .map((coord) => `${coord.longitude} ${coord.latitude}`)
-          .join(',');
-        const holestring = (holes !== undefined ? (Object.values(holes) as LocationType[][]) : [])
-          .map((hole) => {
-            const hole_one = hole.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
-            return `(${hole_one})`;
-          })
-          .join(',');
-        return `"POLYGON((${polygonstring}),${holestring})"`;
+        if (isLocationTypeArray(coords)) {
+          const polygonstring = coords.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
+          const holestring = (holes !== undefined ? (Object.values(holes) as LocationType[][]) : [])
+            .map((hole) => {
+              const hole_one = hole.map((coord) => `${coord.longitude} ${coord.latitude}`).join(',');
+              return `(${hole_one})`;
+            })
+            .join(',');
+          return `"POLYGON((${polygonstring}),${holestring})"`;
+        } else {
+          return '';
+        }
       });
       break;
   }
@@ -444,35 +514,36 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
   switch (type) {
     case 'POINT':
       data.forEach((point) => {
-        const time =
-          point.field.time === undefined || point.field.time === '' ? undefined : dayjs(point.field.time as string);
-        const wpt = gpx
-          .ele('wpt')
-          .att('lat', (point.coords as LocationType).latitude)
-          .att('lon', (point.coords as LocationType).longitude);
+        if (isLocationType(point.coords)) {
+          const time =
+            point.field.time === undefined || point.field.time === '' ? undefined : dayjs(point.field.time as string);
+          const wpt = gpx.ele('wpt').att('lat', point.coords.latitude).att('lon', point.coords.longitude);
 
-        wpt.ele('name', point.field.name);
-        wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
-        (point.coords as LocationType).ele && wpt.ele('ele', (point.coords as LocationType).ele);
-        wpt.ele('cmt', point.field.cmt);
+          wpt.ele('name', point.field.name);
+          wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+          if (point.coords.ele) wpt.ele('ele', point.coords.ele);
+          wpt.ele('cmt', point.field.cmt);
+        }
       });
       break;
     case 'LINE':
       data.forEach((line, id) => {
-        const time =
-          line.field.time === undefined || line.field.time === '' ? undefined : dayjs(line.field.time as string);
-        const trk = gpx.ele('trk');
-        trk.ele('name', line.field.name ?? id.toString());
-        //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
-        trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
-        trk.ele('cmt', line.field.cmt ?? '');
-        const trkseg = trk.ele('trkseg');
-        (line.coords as LocationType[]).forEach((coord) => {
-          //console.log(dayjs.unix(coord.timestamp!).toISOString());
-          const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-          coord.timestamp && trkpt.ele('time', dayjs(coord.timestamp).toISOString());
-          coord.ele && trkpt.ele('ele', coord.ele);
-        });
+        if (isLocationTypeArray(line.coords)) {
+          const time =
+            line.field.time === undefined || line.field.time === '' ? undefined : dayjs(line.field.time as string);
+          const trk = gpx.ele('trk');
+          trk.ele('name', line.field.name ?? id.toString());
+          //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
+          trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
+          trk.ele('cmt', line.field.cmt ?? '');
+          const trkseg = trk.ele('trkseg');
+          line.coords.forEach((coord) => {
+            //console.log(dayjs.unix(coord.timestamp!).toISOString());
+            const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
+            coord.timestamp && trkpt.ele('time', dayjs(coord.timestamp).toISOString());
+            coord.ele && trkpt.ele('ele', coord.ele);
+          });
+        }
       });
       break;
   }
@@ -530,14 +601,16 @@ export const generateGeoJson = (
     case 'POINT':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
-        const coordinates = [(record.coords as LocationType).longitude, (record.coords as LocationType).latitude];
+
         const feature = {
           type: 'Feature',
           properties: { ...properties, _visible: record.visible, _id: record.id },
-          geometry: {
-            type: 'Point',
-            coordinates: coordinates,
-          },
+          geometry: isLocationType(record.coords)
+            ? {
+                type: 'Point',
+                coordinates: [record.coords.longitude, record.coords.latitude],
+              }
+            : null,
         };
         return feature;
       });
@@ -558,81 +631,57 @@ export const generateGeoJson = (
               _qgisColor: record.field._strokeColor ? rgbaString2qgis(record.field._strokeColor as string) : '',
             }
           : { _visible: record.visible, _id: record.id };
+        let geometry;
+        if (isLocationTypeArray(record.coords)) {
+          if (record.coords.length === 1) {
+            //MapMemoのSTAMPの場合
 
-        if ((record.coords as LocationType[]).length === 1) {
-          //MapMemoのSTAMPの場合
-          const coordinates = [
-            (record.coords as LocationType[])[0].longitude,
-            (record.coords as LocationType[])[0].latitude,
-          ];
-          const feature = {
-            type: 'Feature',
-            properties: {
-              ...properties,
-              ...mapMemoProperties,
-            },
-            geometry: {
+            geometry = {
               type: 'Point',
-              coordinates: coordinates,
-            },
-          };
-          return feature;
+              coordinates: [record.coords[0].longitude, record.coords[0].latitude],
+            };
+          } else {
+            geometry = {
+              type: 'LineString',
+              coordinates: record.coords.map((coords) => [coords.longitude, coords.latitude]),
+            };
+          }
+        } else {
+          geometry = null;
         }
-        const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
         const feature = {
           type: 'Feature',
           properties: {
             ...properties,
             ...mapMemoProperties,
           },
-          geometry: {
-            type: 'LineString',
-            coordinates: coordinates,
-          },
+          geometry: geometry,
         };
         return feature;
       });
       break;
-    //ラインをポイントに変換してaccuracyとtimeを属性に　デバッグ用
-    // case FEATURETYPE.LINE:
-    //   features = data
-    //     .map((line) => {
-    //       const properties = field
-    //         .map(({ name }) => ({ [name]: line.field[name] }))
-    //         .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-    //       return (line.coords as LocationType[]).map((pos) => {
-    //         const coordinates = [pos.longitude, pos.latitude];
-    //         const feature = {
-    //           type: 'Feature',
-    //           properties: {
-    //             ...properties,
-    //             accuracy: pos.accuracy,
-    //             time: dayjs(pos.timestamp).format('YYYY-MM-DD_HH_mm_ss'),
-    //           },
-    //           geometry: {
-    //             type: 'Point',
-    //             coordinates: coordinates,
-    //           },
-    //         };
-    //         return feature;
-    //       });
-    //     })
-    //     .flat();
-    //   break;
+
     case 'POLYGON':
       features = data.map((record) => {
         const properties = generateProperties(record, field);
-        const coordinates = (record.coords as LocationType[]).map((coords) => [coords.longitude, coords.latitude]);
-        const holes = (record.holes !== undefined ? (Object.values(record.holes) as LocationType[][]) : []).map(
-          (hole) => hole.map((coords) => [coords.longitude, coords.latitude])
-        );
+        let geometry;
+        if (isLocationTypeArray(record.coords)) {
+          const coordinates = record.coords.map((coords) => [coords.longitude, coords.latitude]);
+          const holes = (record.holes !== undefined ? (Object.values(record.holes) as LocationType[][]) : []).map(
+            (hole) => hole.map((coords) => [coords.longitude, coords.latitude])
+          );
+          geometry = {
+            type: 'Polygon',
+            coordinates: [coordinates, ...holes],
+          };
+        } else {
+          geometry = null;
+        }
+
         const feature = {
           type: 'Feature',
           properties: { ...properties, _visible: record.visible, _id: record.id },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [coordinates, ...holes],
-          },
+          geometry: geometry,
         };
         return feature;
       });
@@ -659,15 +708,21 @@ export const generateGeoJson = (
         const properties = field
           .map(({ name }) => ({ [name]: d.field[name] }))
           .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-        const coords = d.coords as LocationType[];
-        const coordinates = coords[coords.length - 1];
+        let geometry;
+        if (isLocationTypeArray(d.coords)) {
+          const coords = d.coords;
+          const coordinates = coords[coords.length - 1];
+          geometry = {
+            type: 'Point',
+            coordinates: [coordinates.longitude, coordinates.latitude],
+          };
+        } else {
+          geometry = null;
+        }
         const feature = {
           type: 'Feature',
           properties: { ...properties, _visible: d.visible, _id: d.id },
-          geometry: {
-            type: 'Point',
-            coordinates: [coordinates.longitude, coordinates.latitude],
-          },
+          geometry: geometry,
         };
         return feature;
       });
@@ -676,13 +731,15 @@ export const generateGeoJson = (
   return { ...geojson, features: features };
 };
 
-function createGeometryFromLineStringGeoJson(coordinates: Position[]) {
+function createGeometryFromLineStringGeoJson(coordinates: Position[] | undefined) {
+  if (coordinates === undefined) return { coords: undefined, centroid: undefined };
   const coords = coordinates.map((xy) => latlonToLatLonObject(xy));
   const centroid = calcLineMidPoint(coords);
   return { coords, centroid };
 }
 
 function createGeometryFromPolygonGeoJson(coordinates: Position[][]) {
+  if (coordinates === undefined) return { coords: undefined, holes: undefined, centroid: undefined };
   const polygon = turf.polygon(coordinates);
   const simplified = simplify(polygon, {
     tolerance: 0.00001,
@@ -837,4 +894,25 @@ function createAllStringFieldsFromCsv(csv: string) {
     format: 'STRING' as FormatType,
   }));
   return fields;
+}
+
+export function detectGeoJsonType(geojson: FeatureCollection<Geometry | null, GeoJsonProperties>): GeoJsonFeatureType {
+  const geometry = geojson.features[0].geometry;
+  if (geometry === null) return 'NONE';
+  switch (geometry.type) {
+    case 'Point':
+      return 'POINT';
+    case 'MultiPoint':
+      return 'MULTIPOINT';
+    case 'LineString':
+      return 'LINE';
+    case 'MultiLineString':
+      return 'MULTILINE';
+    case 'Polygon':
+      return 'POLYGON';
+    case 'MultiPolygon':
+      return 'MULTIPOLYGON';
+    default:
+      return 'NONE';
+  }
 }

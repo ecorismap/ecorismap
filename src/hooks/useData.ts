@@ -189,7 +189,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
         displayName: dataUser.displayName,
         visible: true,
         redraw: false,
-        coords: { latitude: 0, longitude: 0 },
+        coords: undefined,
         field: { ...field, ...fields },
       };
       dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
