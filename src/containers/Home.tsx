@@ -262,10 +262,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         unselectRecord();
       }
     }
-    //DataEditとDataのuseEffectを呼び出さないために、Layersに戻る
-    navigation.navigate('Layers');
     bottomSheetRef.current?.close();
-  }, [isEditingRecord, navigation, routeName, setIsEditingRecord, unselectRecord]);
+  }, [isEditingRecord, routeName, setIsEditingRecord, unselectRecord]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
@@ -727,8 +725,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       return;
     }
     bottomSheetRef.current?.snapToIndex(2);
-    navigation.navigate('Layers');
-  }, [isEditingRecord, navigation]);
+    if (routeName === undefined || routeName === 'Settings' || routeName === 'Licenses') {
+      navigation.navigate('Layers');
+    }
+  }, [isEditingRecord, navigation, routeName]);
 
   const gotoMaps = useCallback(async () => {
     if (isEditingRecord) {
