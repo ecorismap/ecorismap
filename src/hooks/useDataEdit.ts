@@ -101,21 +101,29 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     if (route.name !== 'DataEdit') return;
 
     //console.log('useDataEdit useEffect');
-    const newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
-    setTargetRecord(newRecord);
+
     const allUserRecordSet = dataSet
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
       .filter((d) => (d.field._group ? d.field._group === '' : true));
-
+    let newRecord: RecordType;
+    if (targetRecordSet.length > 0) {
+      //drawToolで編集された場合
+      newRecord = allUserRecordSet[recordNumber - 1];
+    } else {
+      newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
+    }
+    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
+    setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
-    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
     setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
       const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
-  }, [dataSet, layer, record, route.name]);
+    //targetRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSet, layer, record, recordNumber, route.name]);
 
   const changeRecord = useCallback(
     (value: number) => {
