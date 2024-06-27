@@ -26,6 +26,7 @@ export const Polygon = React.memo(
       <>
         {data.map((feature) => {
           if (!feature.visible) return null;
+          if (!feature.coords) return null;
           if (feature.coords.length < 3) return null;
           const label = generateLabel(layer, feature);
           const transparency = layer.colorStyle.transparency;
@@ -103,8 +104,18 @@ export const Polygon = React.memo(
   }
 );
 
-const PolygonComponent = React.memo((props: any) => {
+interface PolygonComponentProps {
+  label: string;
+  color: string;
+  featureColor: string;
+  strokeWidth: number;
+  zIndex: number;
+  feature: PolygonRecordType;
+}
+
+const PolygonComponent = React.memo((props: PolygonComponentProps) => {
   const { label, color, featureColor, strokeWidth, zIndex, feature } = props;
+  if (!feature.coords || !feature.centroid) return null;
   return (
     <>
       <Poly

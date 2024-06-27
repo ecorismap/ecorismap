@@ -26,6 +26,7 @@ export const Point = React.memo(
       <>
         {data.map((feature) => {
           if (!feature.visible) return null;
+          if (!feature.coords) return null;
           const label = generateLabel(layer, feature);
 
           const labelColor = getColor(layer, feature, 0);

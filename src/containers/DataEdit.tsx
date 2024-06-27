@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 // eslint-disable-next-line react-native/split-platform-components
 import { Linking, Platform, PlatformIOSStatic } from 'react-native';
-import { LayerType, LocationType, PhotoType, RecordType } from '../types';
+import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
@@ -18,6 +18,7 @@ import { pickImage, takePhoto } from '../utils/Photo';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
 import { useWindow } from '../hooks/useWindow';
+import { isLocationType, isLocationTypeArray } from '../utils/General';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -268,18 +269,19 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       zoom: 10,
     };
     if (targetLayer.type === 'POINT') {
-      const coord = targetRecord.coords as LocationType;
+      if (!isLocationType(targetRecord.coords)) return;
+      const coord = targetRecord.coords;
       jumpRegion = {
-        latitude: isLandscape ? coord.latitude : coord.latitude - mapRegion.latitudeDelta / 4,
-        longitude: isLandscape ? coord.longitude + mapRegion.longitudeDelta / 4 : coord.longitude,
+        latitude: coord.latitude,
+        longitude: coord.longitude,
         latitudeDelta: mapRegion.latitudeDelta,
         longitudeDelta: mapRegion.longitudeDelta,
         zoom: mapRegion.zoom,
       };
     } else if (targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-      const coords = targetRecord.coords as LocationType[];
+      if (!isLocationTypeArray(targetRecord.coords)) return;
+      const coords = targetRecord.coords;
       const bounds = boundingBoxFromCoords(coords);
-
       const tempZoom = deltaToZoom(windowWidth, {
         latitudeDelta: bounds.north - bounds.south,
         longitudeDelta: bounds.east - bounds.west,
@@ -319,11 +321,13 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
 
     switch (targetLayer.type) {
       case 'POINT':
-        lat = (targetRecord.coords as LocationType).latitude;
-        lng = (targetRecord.coords as LocationType).longitude;
+        if (!isLocationType(targetRecord.coords)) return;
+        lat = targetRecord.coords.latitude;
+        lng = targetRecord.coords.longitude;
         break;
       case 'LINE': {
-        const coords = targetRecord.coords as LocationType[];
+        if (!isLocationTypeArray(targetRecord.coords)) return;
+        const coords = targetRecord.coords;
         if (coords.length > 0) {
           lat = coords[0].latitude;
           lng = coords[0].longitude;
@@ -331,7 +335,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       }
       case 'POLYGON': {
-        const coords = targetRecord.coords as LocationType[];
+        if (!isLocationTypeArray(targetRecord.coords)) return;
+        const coords = targetRecord.coords;
         if (coords.length > 0) {
           lat = coords[0].latitude;
           lng = coords[0].longitude;

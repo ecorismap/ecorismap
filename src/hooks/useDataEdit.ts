@@ -1,14 +1,5 @@
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import {
-  DMSKey,
-  LatLonDMSKey,
-  LatLonDMSType,
-  LayerType,
-  LocationType,
-  PhotoType,
-  RecordType,
-  SelectedPhotoType,
-} from '../types';
+import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
 import { AppState } from '../modules';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +15,7 @@ import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
 import { deleteLocalPhoto } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
+import { isLocationType } from '../utils/General';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -118,8 +110,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTargetLayer(layer);
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
     setRecordNumber(initialRecordNumber);
-    if (layer.type === 'POINT') {
-      const newLatLon = toLatLonDMS(record.coords as LocationType);
+    if (layer.type === 'POINT' && isLocationType(record.coords)) {
+      const newLatLon = toLatLonDMS(record.coords);
       setLatLon(newLatLon);
     }
   }, [dataSet, layer, layer.id, layer.type, record, route, selectRecord]);
@@ -131,8 +123,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       selectRecord(targetLayer.id, newRecord);
       setTargetRecord(newRecord);
       setRecordNumber(value);
-      if (targetLayer.type === 'POINT') {
-        const newLatLon = toLatLonDMS(newRecord.coords as LocationType);
+      if (targetLayer.type === 'POINT' && isLocationType(newRecord.coords)) {
+        const newLatLon = toLatLonDMS(newRecord.coords);
         setLatLon(newLatLon);
       }
     },
