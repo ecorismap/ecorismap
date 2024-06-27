@@ -7,7 +7,7 @@ import { DataEditContext } from '../../contexts/DataEdit';
 import { t } from '../../i18n/config';
 
 export const DataEditButtons = () => {
-  const { isEditingRecord, pressSaveData, pressCopyData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps } =
+  const { layer, isEditingRecord, pressCopyData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps } =
     useContext(DataEditContext);
 
   return (
@@ -40,13 +40,15 @@ export const DataEditButtons = () => {
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.copy')}
         />
-        <Button
-          name={DATAEDIT_BTN.SAVE}
-          onPress={pressSaveData}
-          backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!isEditingRecord}
-          tooltipText={t('DataEdit.tooltip.save')}
-        />
+        {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
+          <Button
+            name={DATAEDIT_BTN.EDIT}
+            onPress={() => null}
+            backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+            disabled={isEditingRecord}
+            tooltipText={t('DataEdit.tooltip.edit')}
+          />
+        )}
       </View>
     </>
   );
