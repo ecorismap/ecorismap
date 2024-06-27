@@ -8,7 +8,7 @@ import { cloneDeep } from 'lodash';
 import { useDispatch } from 'react-redux';
 import { updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
-import { isPoint } from '../utils/Coords';
+import { isLocationType } from '../utils/General';
 
 export type UsePointToolReturnType = {
   addCurrentPoint: () => Promise<{
@@ -51,7 +51,7 @@ export const usePointTool = (): UsePointToolReturnType => {
   const updatePointPosition = useCallback(
     (targetLayer: LayerType, feature: RecordType, coordinate: LatLng) => {
       const data = cloneDeep(feature);
-      if (!isPoint(data.coords)) return;
+      if (!isLocationType(data.coords)) return;
 
       data.coords.latitude = coordinate.latitude;
       data.coords.longitude = coordinate.longitude;

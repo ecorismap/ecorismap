@@ -20,11 +20,6 @@ import { Platform } from 'react-native';
 
 import { Position, along, bearing, length } from '@turf/turf';
 
-export const isPoint = (coords: any): coords is LocationType => {
-  if (!coords) return false;
-  return 'latitude' in coords && 'longitude' in coords;
-};
-
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
   const latitude = decimal2dms(location.latitude);
   const longitude = decimal2dms(location.longitude);
