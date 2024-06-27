@@ -21,6 +21,7 @@ import { Platform } from 'react-native';
 import { Position, along, bearing, length } from '@turf/turf';
 
 export const isPoint = (coords: any): coords is LocationType => {
+  if (!coords) return false;
   return 'latitude' in coords && 'longitude' in coords;
 };
 
@@ -415,6 +416,7 @@ export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], area
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return pointFeatures
       .map((feature) => {
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
         //@ts-ignore
@@ -433,6 +435,7 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
     return lineFeatures
       .map((feature) => {
         let featureLine;
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         if (feature.coords.length === 1) {
           featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
@@ -458,6 +461,7 @@ export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[]
     const areaPolygon = turf.multiPolygon([[areaLineCoords]]);
     return polygonFeatures
       .map((feature) => {
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore
@@ -476,6 +480,7 @@ export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], poi
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = pointFeatures
       .map((feature) => {
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
         //@ts-ignore
@@ -498,6 +503,7 @@ export const selectLineFeatureByLatLon = (lineFeatures: LineRecordType[], pointC
     const features = lineFeatures
       .map((feature) => {
         let featureLine;
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         if (feature.coords.length === 1) {
           featureLine = turf.point([feature.coords[0].longitude, feature.coords[0].latitude]);
@@ -529,6 +535,7 @@ export const selectPolygonFeatureByLatLon = (
     const bufferPolygon = turf.buffer(turf.point(pointCoords), radius);
     const features = polygonFeatures
       .map((feature) => {
+        if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
         //@ts-ignore

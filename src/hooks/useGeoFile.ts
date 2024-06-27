@@ -6,7 +6,7 @@ import { AppState } from '../modules';
 import { addLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system';
 
-import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson, Csv2Data } from '../utils/Geometry';
+import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson, Csv2Data, detectGeoJsonType } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { addDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
@@ -104,9 +104,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     async (uri: string, name: string) => {
       const geojsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const geojson = JSON.parse(geojsonStrings);
-      geoJsonFeatureTypes.forEach((featureType) => {
-        importGeoJson(geojson, featureType, name);
-      });
+      const featureType = detectGeoJsonType(geojson);
+      importGeoJson(geojson, featureType, name);
     },
     [importGeoJson]
   );
@@ -130,9 +129,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         const kmlString = await file.async('string');
         const xml = parser.parseFromString(kmlString, 'text/xml');
         const geojson = kml(xml);
-        geoJsonFeatureTypes.forEach((featureType) => {
-          importGeoJson(geojson, featureType, name);
-        });
+        const featureType = detectGeoJsonType(geojson);
+        importGeoJson(geojson, featureType, name);
       }
     },
     [importGeoJson]

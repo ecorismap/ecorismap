@@ -1,5 +1,5 @@
 import { BRUSH, ERASER, INFOTOOL, LINETOOL, PEN, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
-import { InfoToolType, LineToolType, PointToolType, PolygonToolType } from '../types';
+import { InfoToolType, LineToolType, LocationType, PointToolType, PolygonToolType, RecordType } from '../types';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
   const chunks = [];
@@ -77,4 +77,12 @@ export function toPoint(millimeter: number) {
 
 export function toPDFCoordinate(millimeter: number) {
   return Math.round((150 * millimeter) / 25.4);
+}
+
+export function isLocationType(coords: RecordType['coords']): coords is LocationType {
+  return coords !== undefined && !Array.isArray(coords) && 'latitude' in coords && 'longitude' in coords;
+}
+
+export function isLocationTypeArray(coords: RecordType['coords']): coords is LocationType[] {
+  return Array.isArray(coords) && coords.length > 0 && 'latitude' in coords[0] && 'longitude' in coords[0];
 }
