@@ -62,6 +62,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
+  const [oldRecord, setOldRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
@@ -106,11 +107,12 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
       .filter((d) => (d.field._group ? d.field._group === '' : true));
     let newRecord: RecordType;
-    if (targetRecordSet.length > 0) {
-      //drawToolで編集された場合
+    if (targetRecordSet.length > 0 && oldRecord.id === record.id) {
+      //drawToolで編集された場合.copyの場合はrecord.idとoldRecord.idが異なる
       newRecord = allUserRecordSet[recordNumber - 1];
     } else {
       newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
+      setOldRecord(record);
     }
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
     setTargetRecord(newRecord);
@@ -121,7 +123,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
-    //targetRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
+    //targetRecordとoldRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataSet, layer, record, recordNumber, route.name]);
 
