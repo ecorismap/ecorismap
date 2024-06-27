@@ -101,7 +101,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     if (route.name !== 'DataEdit') return;
 
     //console.log('useDataEdit useEffect');
-    setTargetRecord(dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record);
+    const newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
+    setTargetRecord(newRecord);
     const allUserRecordSet = dataSet
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
       .filter((d) => (d.field._group ? d.field._group === '' : true));
@@ -111,10 +112,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
     setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
-      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSTemplate;
+      const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
-  }, [dataSet, layer, layer.id, layer.type, record, route, selectRecord]);
+  }, [dataSet, layer, record, route.name]);
 
   const changeRecord = useCallback(
     (value: number) => {
@@ -215,6 +216,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTemporaryAddedPhotoList([]);
     const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
     const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
+
     const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
 
     dispatch(
