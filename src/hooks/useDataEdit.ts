@@ -110,8 +110,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTargetLayer(layer);
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
     setRecordNumber(initialRecordNumber);
-    if (layer.type === 'POINT' && isLocationType(record.coords)) {
-      const newLatLon = toLatLonDMS(record.coords);
+    if (layer.type === 'POINT') {
+      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
   }, [dataSet, layer, layer.id, layer.type, record, route, selectRecord]);
@@ -123,8 +123,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       selectRecord(targetLayer.id, newRecord);
       setTargetRecord(newRecord);
       setRecordNumber(value);
-      if (targetLayer.type === 'POINT' && isLocationType(newRecord.coords)) {
-        const newLatLon = toLatLonDMS(newRecord.coords);
+      if (targetLayer.type === 'POINT') {
+        const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
         setLatLon(newLatLon);
       }
     },
