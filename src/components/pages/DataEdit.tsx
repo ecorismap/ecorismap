@@ -25,6 +25,8 @@ import { DataEditContext } from '../../contexts/DataEdit';
 import { useSelector } from 'react-redux';
 import { AppState } from '../../modules';
 import { ScrollView } from 'react-native-gesture-handler';
+import { Button } from '../atoms';
+import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -35,6 +37,8 @@ export default function DataEditScreen() {
     isDecimal,
     recordNumber,
     maxRecordNumber,
+    isEditingRecord,
+    pressSaveData,
     changeLatLonType,
     changeLatLon,
     changeField,
@@ -91,6 +95,20 @@ export default function DataEditScreen() {
     [gotoBack]
   );
 
+  const headerRightButton = useCallback(() => {
+    return (
+      <View style={styles.headerRight}>
+        <Button
+          name={DATAEDIT_BTN.SAVE}
+          onPress={pressSaveData}
+          backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!isEditingRecord}
+          tooltipText={t('DataEdit.tooltip.save')}
+        />
+      </View>
+    );
+  }, [isEditingRecord, pressSaveData]);
+
   useEffect(() => {
     //デバイスだとheaderTitleにbackButtonが表示されてしまうバグ？のためheaderLeftだけで処理する
     //Selectorをセンタリングするのが目的
@@ -98,14 +116,14 @@ export default function DataEditScreen() {
       navigation.setOptions({
         headerTitle: () => headerTitleButton(),
         headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-        // headerRight: () => headerRightButton(),
+        headerRight: () => headerRightButton(),
       });
     } else {
       navigation.setOptions({
         headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButtonzForDevice(props),
       });
     }
-  }, [headerLeftButton, headerLeftButtonzForDevice, headerTitleButton, navigation]);
+  }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <KeyboardAvoidingView style={styles.container} behavior={'padding'} enabled keyboardVerticalOffset={10}>
@@ -334,5 +352,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  headerRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginRight: 10,
   },
 });

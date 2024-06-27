@@ -293,6 +293,7 @@ export const DATAEDIT_BTN = {
   DELETE: 'delete',
   COPY: 'content-copy',
   SAVE: 'content-save',
+  EDIT: 'pencil',
 } as const;
 
 export const DATA_BTN = {

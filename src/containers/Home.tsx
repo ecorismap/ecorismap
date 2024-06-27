@@ -725,7 +725,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       return;
     }
     bottomSheetRef.current?.snapToIndex(2);
-    if (routeName === undefined || routeName === 'Settings' || routeName === 'Licenses') {
+    if (routeName === undefined || routeName === 'Settings' || routeName === 'Licenses' || routeName === 'Maps') {
       navigation.navigate('Layers');
     }
   }, [isEditingRecord, navigation, routeName]);

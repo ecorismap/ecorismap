@@ -118,7 +118,8 @@
       "google": "View on Google Maps",
       "copy": "copy data",
       "save": "keep",
-      "delete": "delete"
+      "delete": "delete",
+      "edit": "Edit position"
     }
   },
   "common": {
