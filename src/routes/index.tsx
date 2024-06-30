@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { ColorStyle, LayerType, RecordType, RegionType, TileMapType } from '../types';
+import { ColorStyle, LayerType, PointRecordType, RecordType, RegionType, TileMapType } from '../types';
 import Home from '../containers/Home';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
@@ -13,7 +13,9 @@ export type RootStackParamList = {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
         previous: keyof RootStackParamList;
-        mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | undefined;
+        mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | 'editPosition' | undefined;
+        layer?: LayerType;
+        records?: PointRecordType[];
       }
     | undefined;
   Settings: { previous: keyof RootStackParamList };

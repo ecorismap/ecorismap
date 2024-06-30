@@ -171,6 +171,7 @@ export const DRAWTOOL = {
   MOVE_POINT: 'map-marker-right',
   DELETE_POINT: 'map-marker-remove',
   MOVE: 'cursor-move',
+  FINISH_EDIT_POSITION: 'undo-variant',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',

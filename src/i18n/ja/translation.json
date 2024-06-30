@@ -224,7 +224,8 @@
       "addLocationPoint": "現在地にポイントを追加",
       "plotPoint": "ポイントを追加",
       "movePoint": "ポイントを長押しで移動",
-      "deletePoint": "ポイントを削除"
+      "deletePoint": "ポイントを削除",
+      "finishEditPosition": "編集を終了"
     },
     "modal": {
       "infoTool": {
@@ -550,7 +551,8 @@
       "changeRecord": "変更を破棄しますか？",
       "gotoBack": "変更を破棄しますか？",
       "close": "変更を破棄しますか？",
-      "copyData": "データをコピーしますか？"
+      "copyData": "データをコピーしますか？",
+      "deletePosition": "位置を削除しますか？"
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",
