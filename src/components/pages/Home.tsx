@@ -82,6 +82,9 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     penColor,
+    editPositionMode,
+    editPositionLayer,
+    editPositionRecord,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -107,6 +110,7 @@ export default function HomeScreen() {
     isPencilModeActive,
     isPencilTouch,
     pressPDFSettingsOpen,
+    isEditingRecord,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -227,23 +231,25 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            width: 60,
-            height: 25,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          onPress={onCloseBottomSheet}
-        >
-          <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
-        </TouchableOpacity>
+        {!isEditingRecord && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              width: 60,
+              height: 25,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={onCloseBottomSheet}
+          >
+            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
-  }, [onCloseBottomSheet]);
+  }, [isEditingRecord, onCloseBottomSheet]);
 
   useEffect(() => {
     //console.log('#useeffect3');
@@ -356,8 +362,11 @@ export default function HomeScreen() {
                   data={d.data}
                   layer={layer}
                   zoom={zoom}
+                  editPositionMode={editPositionMode}
+                  editPositionLayer={editPositionLayer}
+                  editPositionRecord={editPositionRecord}
+                  currentDrawTool={currentDrawTool}
                   selectedRecord={selectedRecord}
-                  draggable={currentDrawTool === 'MOVE_POINT'}
                   onDragEndPoint={onDragEndPoint}
                 />
               );
@@ -467,7 +476,7 @@ export default function HomeScreen() {
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
           {<HomeAttributionText bottom={8} attribution={attribution} />}
-          {!(downloadMode || exportPDFMode) && <HomeInfoToolButton />}
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}

@@ -103,6 +103,11 @@ export interface HomeContextType {
     strokeWidth: number;
   }[];
   isModalInfoToolHidden: boolean;
+  editPositionMode: boolean;
+  editPositionLayer: LayerType | undefined;
+  editPositionRecord: RecordType | undefined;
+  isEditingRecord: boolean;
+
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
