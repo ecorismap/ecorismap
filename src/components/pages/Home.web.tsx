@@ -75,6 +75,9 @@ export default function HomeScreen() {
     visibleMapMemoColor,
     penColor,
     currentInfoTool,
+    editPositionMode,
+    editPositionRecord,
+    editPositionLayer,
     onRegionChangeMapView,
     onDrop,
     pressStopDownloadTiles,
@@ -93,6 +96,7 @@ export default function HomeScreen() {
     bottomSheetRef,
     onCloseBottomSheet,
     pressPDFSettingsOpen,
+    isEditingRecord,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: AppState) => state.layers);
@@ -278,23 +282,25 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            width: 60,
-            height: 20,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          onPress={onCloseBottomSheet}
-        >
-          <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
-        </TouchableOpacity>
+        {!isEditingRecord && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              width: 60,
+              height: 20,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={onCloseBottomSheet}
+          >
+            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
-  }, [onCloseBottomSheet]);
+  }, [isEditingRecord, onCloseBottomSheet]);
 
   useEffect(() => {
     if (!mapViewRef.current) return;
@@ -665,7 +671,10 @@ export default function HomeScreen() {
                         zoom={zoom}
                         selectedRecord={selectedRecord}
                         onDragEndPoint={onDragEndPoint}
-                        draggable={currentDrawTool === 'MOVE_POINT'}
+                        currentDrawTool={currentDrawTool}
+                        editPositionMode={editPositionMode}
+                        editPositionLayer={editPositionLayer}
+                        editPositionRecord={editPositionRecord}
                       />
                     )
                   );
@@ -700,7 +709,7 @@ export default function HomeScreen() {
             </View>
           </div>
 
-          <HomeInfoToolButton />
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
           <HomeButtons />

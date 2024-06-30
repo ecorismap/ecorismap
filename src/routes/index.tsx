@@ -15,7 +15,7 @@ export type RootStackParamList = {
         previous: keyof RootStackParamList;
         mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | 'editPosition' | undefined;
         layer?: LayerType;
-        records?: PointRecordType[];
+        record?: PointRecordType;
       }
     | undefined;
   Settings: { previous: keyof RootStackParamList };

@@ -450,7 +450,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       mode: 'editPosition',
       jumpTo: jumpRegion,
       layer: targetLayer,
-      records: [targetRecord as PointRecordType],
+      record: targetRecord as PointRecordType,
     });
   }, [
     checkRecordEditable,

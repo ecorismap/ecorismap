@@ -12,14 +12,28 @@ interface Props {
   layer: LayerType;
   zoom: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  draggable: boolean;
+  editPositionMode: boolean;
+  editPositionRecord: RecordType | undefined;
+  editPositionLayer: LayerType | undefined;
+  currentDrawTool: string;
+
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
 }
 
 export const Point = React.memo(
   (props: Props) => {
     //console.log('render Point');
-    const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
+    const {
+      data,
+      layer,
+      zoom,
+      selectedRecord,
+      editPositionMode,
+      editPositionLayer,
+      editPositionRecord,
+      currentDrawTool,
+      onDragEndPoint,
+    } = props;
 
     return (
       <>
@@ -29,7 +43,10 @@ export const Point = React.memo(
               key={`point-${feature.id}-${feature.redraw}`}
               feature={feature}
               selectedRecord={selectedRecord}
-              draggable={draggable}
+              editPositionMode={editPositionMode}
+              editPositionRecord={editPositionRecord}
+              editPositionLayer={editPositionLayer}
+              currentDrawTool={currentDrawTool}
               onDragEndPoint={onDragEndPoint}
               layer={layer}
               zoom={zoom}
@@ -44,7 +61,10 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
-    if (prevProps.draggable !== nextProps.draggable) return false;
+    if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
+    if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;
+    if (prevProps.editPositionLayer !== nextProps.editPositionLayer) return false;
+    if (prevProps.currentDrawTool !== nextProps.currentDrawTool) return false;
     if (prevProps.onDragEndPoint !== nextProps.onDragEndPoint) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
@@ -73,14 +93,27 @@ export const Point = React.memo(
 interface PointComponentProps {
   feature: PointRecordType;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  draggable: boolean;
+  editPositionMode: boolean;
+  editPositionRecord: RecordType | undefined;
+  editPositionLayer: LayerType | undefined;
+  currentDrawTool: string;
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
   layer: LayerType;
   zoom: number;
 }
 
 const PointComponent = React.memo((props: PointComponentProps) => {
-  const { feature, selectedRecord, draggable, onDragEndPoint, layer, zoom } = props;
+  const {
+    feature,
+    selectedRecord,
+    onDragEndPoint,
+    layer,
+    zoom,
+    editPositionLayer,
+    editPositionMode,
+    editPositionRecord,
+    currentDrawTool,
+  } = props;
   //console.log(feature.field[layer.label]);
 
   const selected = useMemo(() => feature.id === selectedRecord?.record?.id, [feature.id, selectedRecord?.record?.id]);
@@ -90,7 +123,16 @@ const PointComponent = React.memo((props: PointComponentProps) => {
 
   const pointColor = useMemo(() => (selected ? COLOR.YELLOW : color), [color, selected]);
   const borderColor = useMemo(() => (selected ? COLOR.BLACK : COLOR.WHITE), [selected]);
-
+  const draggable = useMemo(
+    () =>
+      currentDrawTool === 'MOVE_POINT' &&
+      (!editPositionMode ||
+        (editPositionMode &&
+          editPositionRecord !== undefined &&
+          editPositionLayer?.id === layer.id &&
+          editPositionRecord.id === feature.id)),
+    [currentDrawTool, editPositionLayer?.id, editPositionMode, editPositionRecord, feature.id, layer.id]
+  );
   if (!feature.coords) return null;
   return (
     <Marker

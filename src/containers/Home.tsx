@@ -134,7 +134,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleWebTerrainActive,
     setVisibleInfoPicker,
     setCurrentInfoTool,
-    convertPointFeatureToDrawLine,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -260,11 +259,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           return;
         }
       } else {
-        unselectRecord();
+        if (route.params?.mode !== 'editPosition') unselectRecord();
       }
     }
     bottomSheetRef.current?.close();
-  }, [isEditingRecord, routeName, setIsEditingRecord, unselectRecord]);
+  }, [isEditingRecord, route.params?.mode, routeName, setIsEditingRecord, unselectRecord]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
@@ -308,6 +307,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     async (event: MapPressEvent | MapLayerMouseEvent) => {
       if (isMapMemoDrawTool(currentMapMemoTool)) return;
       if (isInfoTool(currentDrawTool)) return;
+      if (currentDrawTool !== 'NONE') return;
       await getInfoOfVectorTile(event);
     },
     [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile]
@@ -602,11 +602,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (route.params?.mode === 'editPosition') {
           const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
           if (ret) {
-            const { layer, records } = route.params;
-            if (layer === undefined || records === undefined) {
+            const { layer, record } = route.params;
+            if (layer === undefined || record === undefined) {
               return;
             }
-            updatePointPosition(layer, records[0], undefined);
+            updatePointPosition(layer, record, undefined);
             finishEditPosition();
           }
         } else {
@@ -617,11 +617,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (currentDrawTool === 'PLOT_POINT') {
         if (route.params?.mode === 'editPosition') {
           const point = xyArrayToLatLonObjects([getPXY(e)], mapRegion, mapSize, mapViewRef.current);
-          const { layer, records } = route.params;
-          if (layer === undefined || records === undefined || point === undefined) {
-            return;
-          }
-          updatePointPosition(layer, records[0], point[0]);
+          const { layer, record } = route.params;
+          if (layer === undefined || record === undefined || point === undefined) return;
+
+          updatePointPosition(layer, record, point[0]);
           finishEditPosition();
         } else {
           //ポイントはすぐに保存する
@@ -875,7 +874,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('previous', route.params?.previous);
     // console.log('tileMap', route.params?.tileMap);
     //console.log('mode', route.params?.mode);
-    console.log('route', route.params);
+
     if (route.params?.previous === 'Home') {
       //プロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
@@ -895,12 +894,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           bottomSheetRef.current?.snapToIndex(1);
         }
       } else if (route.params?.mode === 'editPosition') {
-        if (route.params?.layer === undefined || route.params?.records === undefined) return;
+        if (route.params?.layer === undefined || route.params?.record === undefined) return;
 
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         selectFeatureButton('POINT');
+        setCurrentInfoTool('NONE');
         changeMapRegion(route.params.jumpTo, true);
-        convertPointFeatureToDrawLine(route.params.layer.id, route.params.records);
+        //convertPointFeatureToDrawLine(route.params.layer.id, route.params.records);
+        selectRecord(route.params.layer.id, route.params.record);
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
@@ -1066,9 +1067,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
                 return;
               }
               const point = await getCurrentPoint();
-              const { layer, records } = route.params;
-              if (layer === undefined || records === undefined || point === undefined) return;
-              updatePointPosition(layer, records[0], point);
+              const { layer, record } = route.params;
+              if (layer === undefined || record === undefined || point === undefined) return;
+              updatePointPosition(layer, record, point);
               finishEditPosition();
             } else {
               await addLocationPoint();
@@ -1088,7 +1089,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             }
             onPanResponderGrantMapMemo(e);
           } else {
-            unselectRecord();
+            //unselectRecord();
           }
         },
         onPanResponderMove: (e: GestureResponderEvent, gesture) => {
@@ -1139,7 +1140,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressSvgView,
       route.params,
       showDrawLine,
-      unselectRecord,
       updatePointPosition,
     ]
   );
@@ -1204,6 +1204,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isRedoable,
         mapMemoLines,
         isModalInfoToolHidden,
+        editPositionMode: route.params?.mode === 'editPosition',
+        editPositionLayer: route.params?.layer,
+        editPositionRecord: route.params?.record,
+        isEditingRecord,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
