@@ -50,8 +50,8 @@ export default function HomeScreen() {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isDownloadPage,
-    isExportPDFPage,
+    downloadMode,
+    exportPDFMode,
     pdfArea,
     pdfOrientation,
     pdfPaperSize,
@@ -180,7 +180,7 @@ export default function HomeScreen() {
           </View>
         </View>
       );
-    } else if (isExportPDFPage) {
+    } else if (exportPDFMode) {
       return (
         <View style={styles.headerRight}>
           <Button name="cog" onPress={pressPDFSettingsOpen} />
@@ -193,7 +193,7 @@ export default function HomeScreen() {
         </View>
       );
     }
-  }, [downloadProgress, isDownloading, isExportPDFPage, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
+  }, [downloadProgress, isDownloading, exportPDFMode, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
 
   const vectorStyle = async (file: PMTiles) => {
     const metadata = await file.getMetadata();
@@ -383,14 +383,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     //console.log('#useeffect3');
-    if (isDownloadPage) {
+    if (downloadMode) {
       navigation.setOptions({
         title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
         headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
         headerRight: () => headerRightButton(),
       });
-    } else if (isExportPDFPage) {
+    } else if (exportPDFMode) {
       navigation.setOptions({
         title: t('Home.navigation.exportPDF', 'PDFの出力'),
         headerShown: true,
@@ -401,7 +401,7 @@ export default function HomeScreen() {
       navigation.setOptions({ headerShown: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDownloadPage, isExportPDFPage, isDownloading, downloadProgress, savedTileSize]);
+  }, [downloadMode, exportPDFMode, isDownloading, downloadProgress, savedTileSize]);
 
   const maptilerdem = {
     maxzoom: 12,
@@ -694,7 +694,7 @@ export default function HomeScreen() {
                     )
                   );
                 })}
-                {isExportPDFPage && <PDFArea pdfArea={pdfArea} />}
+                {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
                 <ScaleControl maxWidth={300} unit={'metric'} position="bottom-left" />
               </Map>
             </View>
@@ -704,8 +704,8 @@ export default function HomeScreen() {
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
           <HomeButtons />
-          {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
-          {isExportPDFPage && (
+          {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
               pdfOrientation={pdfOrientation}

@@ -38,7 +38,7 @@ import { importDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { latLonToXY } from '../utils/Coords';
+import { latLonToXY, xyArrayToLatLonObjects } from '../utils/Coords';
 import { Position } from '@turf/turf';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -134,6 +134,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleWebTerrainActive,
     setVisibleInfoPicker,
     setCurrentInfoTool,
+    convertPointFeatureToDrawLine,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -178,7 +179,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setMapMemoLineSmoothed,
   } = useMapMemo(mapViewRef.current);
 
-  const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
+  const { addCurrentPoint, resetPointPosition, updatePointPosition, getCurrentPoint } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -241,8 +242,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [tileMaps]
   );
 
-  const isDownloadPage = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
-  const isExportPDFPage = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
+  const downloadMode = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
+  const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
 
   /*************** onXXXXMapView *********************/
 
@@ -535,6 +536,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
+  const finishEditPosition = useCallback(() => {
+    bottomSheetRef.current?.snapToIndex(2);
+    selectFeatureButton('NONE');
+    navigation.setParams({ mode: undefined });
+  }, [navigation, selectFeatureButton]);
   /**************** press ******************/
 
   const pressUndoDraw = useCallback(async () => {
@@ -580,35 +586,78 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
   }, [deleteDraw, drawLine]);
 
+  const getPXY = (event: GestureResponderEvent): Position => {
+    const offset = [
+      event.nativeEvent.locationX - event.nativeEvent.pageX,
+      event.nativeEvent.locationY - event.nativeEvent.pageY,
+    ];
+    return [event.nativeEvent.pageX + offset[0], event.nativeEvent.pageY + offset[1]];
+  };
+
   const onReleaseSvgView = useCallback(
     async (e: GestureResponderEvent) => {
       releaseSvgView(e);
       if (featureButton !== 'POINT') return;
       if (currentDrawTool === 'DELETE_POINT') {
-        //ポイントはすぐに削除する
-        await pressDeleteDraw();
+        if (route.params?.mode === 'editPosition') {
+          const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
+          if (ret) {
+            const { layer, records } = route.params;
+            if (layer === undefined || records === undefined) {
+              return;
+            }
+            updatePointPosition(layer, records[0], undefined);
+            finishEditPosition();
+          }
+        } else {
+          //ポイントはすぐに削除する
+          await pressDeleteDraw();
+        }
       }
       if (currentDrawTool === 'PLOT_POINT') {
-        //ポイントはすぐに保存する
-        const result = savePoint();
-        if (result === undefined) return;
-        const { isOK, message, layer, recordSet } = result;
-        if (!isOK) {
-          await AlertAsync(message);
-          return;
-        }
-        setDrawTool('NONE');
-        if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-          bottomSheetRef.current?.snapToIndex(2);
-          navigation.navigate('DataEdit', {
-            previous: 'Data',
-            targetData: recordSet[0],
-            targetLayer: layer,
-          });
+        if (route.params?.mode === 'editPosition') {
+          const point = xyArrayToLatLonObjects([getPXY(e)], mapRegion, mapSize, mapViewRef.current);
+          const { layer, records } = route.params;
+          if (layer === undefined || records === undefined || point === undefined) {
+            return;
+          }
+          updatePointPosition(layer, records[0], point[0]);
+          finishEditPosition();
+        } else {
+          //ポイントはすぐに保存する
+          const result = savePoint();
+          if (result === undefined) return;
+          const { isOK, message, layer, recordSet } = result;
+          if (!isOK) {
+            await AlertAsync(message);
+            return;
+          }
+          setDrawTool('NONE');
+          if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+            bottomSheetRef.current?.snapToIndex(2);
+            navigation.navigate('DataEdit', {
+              previous: 'Data',
+              targetData: recordSet[0],
+              targetLayer: layer,
+            });
+          }
         }
       }
     },
-    [currentDrawTool, featureButton, navigation, pressDeleteDraw, releaseSvgView, savePoint, setDrawTool]
+    [
+      currentDrawTool,
+      featureButton,
+      finishEditPosition,
+      mapRegion,
+      mapSize,
+      navigation,
+      pressDeleteDraw,
+      releaseSvgView,
+      route.params,
+      savePoint,
+      setDrawTool,
+      updatePointPosition,
+    ]
   );
 
   const onDragEndPoint = useCallback(
@@ -627,8 +676,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
       updatePointPosition(layer, feature, coordinate);
+      if (route.params?.mode === 'editPosition') {
+        finishEditPosition();
+      }
     },
-    [checkRecordEditable, resetPointPosition, updatePointPosition]
+    [checkRecordEditable, finishEditPosition, resetPointPosition, route.params?.mode, updatePointPosition]
   );
 
   const pressDownloadTiles = useCallback(async () => {
@@ -724,11 +776,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-    bottomSheetRef.current?.snapToIndex(2);
+    finishEditPosition();
     if (routeName === undefined || routeName === 'Settings' || routeName === 'Licenses' || routeName === 'Maps') {
       navigation.navigate('Layers');
     }
-  }, [isEditingRecord, navigation, routeName]);
+  }, [finishEditPosition, isEditingRecord, navigation, routeName]);
 
   const gotoMaps = useCallback(async () => {
     if (isEditingRecord) {
@@ -823,7 +875,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // console.log('previous', route.params?.previous);
     // console.log('tileMap', route.params?.tileMap);
     //console.log('mode', route.params?.mode);
-
+    console.log('route', route.params);
     if (route.params?.previous === 'Home') {
       //プロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
@@ -834,12 +886,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       toggleWebTerrainActive(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'DataEdit') {
-      //データの範囲にジャンプする場合
-      changeMapRegion(route.params.jumpTo, true);
-      if (isLandscape) {
-        bottomSheetRef.current?.snapToIndex(2);
-      } else {
-        bottomSheetRef.current?.snapToIndex(1);
+      if (route.params?.mode === 'jumpTo') {
+        //データの範囲にジャンプする場合
+        changeMapRegion(route.params.jumpTo, true);
+        if (isLandscape) {
+          bottomSheetRef.current?.snapToIndex(2);
+        } else {
+          bottomSheetRef.current?.snapToIndex(1);
+        }
+      } else if (route.params?.mode === 'editPosition') {
+        if (route.params?.layer === undefined || route.params?.records === undefined) return;
+
+        setTimeout(() => bottomSheetRef.current?.close(), 300);
+        selectFeatureButton('POINT');
+        changeMapRegion(route.params.jumpTo, true);
+        convertPointFeatureToDrawLine(route.params.layer.id, route.params.records);
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
@@ -859,7 +920,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap]);
+  }, [route.params?.jumpTo, route.params?.previous, route.params?.tileMap, route.params?.mode]);
 
   useEffect(() => {
     return bottomSheetRef.current?.close();
@@ -992,13 +1053,26 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           //console.log('#######################');
           //@ts-ignore
           isPencilTouch.current = !!e.nativeEvent.altitudeAngle;
+          if (route.params?.mode === 'editPosition') hideDrawLine();
           if (currentInfoTool !== 'NONE') {
             //情報ツールの場合
             await getInfoOfFeature(e);
           } else if (currentDrawTool === 'MOVE') {
             hideDrawLine();
           } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
-            await addLocationPoint();
+            if (route.params?.mode === 'editPosition') {
+              if (Platform.OS === 'web') {
+                await AlertAsync(t('Home.alert.gpsWeb'));
+                return;
+              }
+              const point = await getCurrentPoint();
+              const { layer, records } = route.params;
+              if (layer === undefined || records === undefined || point === undefined) return;
+              updatePointPosition(layer, records[0], point);
+              finishEditPosition();
+            } else {
+              await addLocationPoint();
+            }
           } else if (currentDrawTool !== 'NONE') {
             if (isPencilTouch.current === false && isPencilModeActive) {
               hideDrawLine();
@@ -1031,6 +1105,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         },
         onPanResponderRelease: async (e: GestureResponderEvent) => {
           isPencilTouch.current = undefined;
+          if (route.params?.mode === 'editPosition') showDrawLine();
+
           if (currentDrawTool === 'MOVE') {
             showDrawLine();
           } else if (isPinch) {
@@ -1049,6 +1125,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentInfoTool,
       currentMapMemoTool,
       featureButton,
+      finishEditPosition,
+      getCurrentPoint,
       getInfoOfFeature,
       hideDrawLine,
       isPencilModeActive,
@@ -1059,8 +1137,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       onPanResponderReleaseMapMemo,
       onReleaseSvgView,
       pressSvgView,
+      route.params,
       showDrawLine,
       unselectRecord,
+      updatePointPosition,
     ]
   );
 
@@ -1076,8 +1156,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         drawLine: drawLine.current,
         editingLine: editingLineXY.current,
         selectLine: selectLine.current,
-        isDownloadPage,
-        isExportPDFPage,
+        downloadMode,
+        exportPDFMode,
         memberLocations,
         mapViewRef,
         mapType,
@@ -1172,6 +1252,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         onCloseBottomSheet,
         togglePencilMode,
         pressPDFSettingsOpen,
+        finishEditPosition,
       }}
     >
       <Home />

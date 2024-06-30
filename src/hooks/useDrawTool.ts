@@ -119,6 +119,7 @@ export type UseDrawToolReturnType = {
   hideDrawLine: () => void;
   showDrawLine: () => void;
   toggleWebTerrainActive: (isActive: boolean) => void;
+  convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -193,7 +194,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const convertPointFeatureToDrawLine = useCallback(
     (layerId: string, features: PointRecordType[]) => {
       features.forEach((record) => {
-        //console.log(record.coords, mapRegion, mapSize);
         if (record.coords === undefined) return;
         drawLine.current.push({
           id: record.id,
@@ -607,22 +607,25 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (drawLine.current.length === 0) setDrawLineVisible(true);
   }, []);
 
+  const getPXY = (event: GestureResponderEvent): Position => {
+    const offset = [
+      event.nativeEvent.locationX - event.nativeEvent.pageX,
+      event.nativeEvent.locationY - event.nativeEvent.pageY,
+    ];
+    return [event.nativeEvent.pageX + offset[0], event.nativeEvent.pageY + offset[1]];
+  };
+
   const pressSvgView = useCallback(
     (event: GestureResponderEvent) => {
-      //console.log(selectedTool);
-
       if (!event.nativeEvent.touches.length) return;
-      //console.log('#', gesture.numberActiveTouches);
-      //locationXを使用するとボタンと重なったときにボタンの座標になってしまうのでpageXを使用。
-      //pageとmapのlocationとのズレをoffsetで修正
+
       offset.current = [
         event.nativeEvent.locationX - event.nativeEvent.pageX,
         event.nativeEvent.locationY - event.nativeEvent.pageY,
       ];
-      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+      const pXY = getPXY(event);
 
       if (currentDrawTool === 'SELECT' || currentDrawTool === 'DELETE_POINT') {
-        // //選択解除
         editingObjectIndex.current = -1;
         drawLine.current = [];
         selectLine.current = [pXY];
@@ -836,5 +839,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     toggleWebTerrainActive,
     setVisibleInfoPicker,
     setCurrentInfoTool,
+    convertPointFeatureToDrawLine,
   } as const;
 };

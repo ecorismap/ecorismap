@@ -12,19 +12,18 @@ export const LayerEditButton = () => {
   return (
     <View style={styles.buttonContainer}>
       <Button
-        name={LAYEREDIT_BTN.DELETE}
-        backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
-        disabled={isEdited || !editable}
-        onPress={pressDeleteLayer}
-        tooltipText={t('LayerEdit.tooltip.delete')}
-      />
-
-      <Button
         name={LAYEREDIT_BTN.EXPORT}
         onPress={pressExportLayer}
         backgroundColor={!isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
         disabled={isEdited}
         tooltipText={t('LayerEdit.tooltip.export')}
+      />
+      <Button
+        name={LAYEREDIT_BTN.DELETE}
+        backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEdited || !editable}
+        onPress={pressDeleteLayer}
+        tooltipText={t('LayerEdit.tooltip.delete')}
       />
     </View>
   );

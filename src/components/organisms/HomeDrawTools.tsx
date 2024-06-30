@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, DRAWTOOL, MAPMEMOTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
 import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
@@ -11,6 +11,7 @@ import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from '../../i18n/config';
+import { useRoute } from '@react-navigation/native';
 
 export const HomeDrawTools = () => {
   const {
@@ -29,10 +30,30 @@ export const HomeDrawTools = () => {
     pressSaveDraw,
     pressDeleteDraw,
     togglePencilMode,
+    finishEditPosition,
   } = useContext(HomeContext);
+  const route = useRoute();
   const insets = useSafeAreaInsets();
 
   const { isHisyouToolActive } = useHisyouToolSetting();
+
+  const editPosition = useMemo(() => {
+    // @ts-ignore
+    return route.params?.mode === 'editPosition';
+    // @ts-ignore
+  }, [route.params?.mode]);
+
+  const editOldPosition = useMemo(() => {
+    // @ts-ignore
+    return editPosition && route.params?.jumpTo;
+    // @ts-ignore
+  }, [editPosition, route.params?.jumpTo]);
+
+  const editNewPosition = useMemo(() => {
+    // @ts-ignore
+    return editPosition && !route.params?.jumpTo;
+    // @ts-ignore
+  }, [editPosition, route.params?.jumpTo]);
 
   const styles = StyleSheet.create({
     button: {
@@ -53,7 +74,7 @@ export const HomeDrawTools = () => {
   return (
     <View style={styles.buttonContainer}>
       <View>
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && (!editPosition || editNewPosition) && (
           <View style={styles.button}>
             <Button
               name={POINTTOOL.ADD_LOCATION_POINT}
@@ -72,7 +93,8 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+
+        {featureButton === 'POINT' && (!editPosition || editNewPosition) && (
           <View style={styles.button}>
             <Button
               id={'PLOT_POINT'}
@@ -85,7 +107,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && (!editPosition || editOldPosition) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.MOVE_POINT}
@@ -98,7 +120,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && (!editPosition || editOldPosition) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.DELETE_POINT}
@@ -109,6 +131,19 @@ export const HomeDrawTools = () => {
               disabled={isEditingDraw}
               onPress={() => selectDrawTool('DELETE_POINT')}
               tooltipText={t('Home.tooltip.deletePoint')}
+              tooltipPosition={{ left: 1 }}
+            />
+          </View>
+        )}
+
+        {featureButton === 'POINT' && editPosition && (
+          <View style={styles.button}>
+            <Button
+              name={DRAWTOOL.FINISH_EDIT_POSITION}
+              backgroundColor={COLOR.ALFABLUE}
+              borderRadius={10}
+              onPress={finishEditPosition}
+              tooltipText={t('Home.tooltip.finishEditPosition')}
               tooltipPosition={{ left: 1 }}
             />
           </View>

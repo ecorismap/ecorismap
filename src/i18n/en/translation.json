@@ -107,7 +107,8 @@
       "changeRecord": "Do you want to discard your changes?",
       "gotoBack": "Do you want to discard your changes?",
       "close": "Do you want to discard your changes?",
-      "copyData": "Do you want to copy the data?"
+      "copyData": "Do you want to copy the data?",
+      "deletePosition": "Do you want to delete the location?"
     },
     "alert": {
       "referenceData": "Please save your changes once.",
@@ -682,7 +683,8 @@
       "addLocationPoint": "Add points to current location",
       "plotPoint": "add points",
       "movePoint": "Move the point by long pressing",
-      "deletePoint": "remove points"
+      "deletePoint": "remove points",
+      "finishEditPosition": "Finish editing"
     },
     "modal": {
       "infoTool": {

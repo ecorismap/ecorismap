@@ -39,8 +39,8 @@ export interface HomeContextType {
   mapType: MapType;
   tileMaps: TileMapType[];
   isOffline: boolean;
-  isDownloadPage: boolean;
-  isExportPDFPage: boolean;
+  downloadMode: boolean;
+  exportPDFMode: boolean;
   downloadProgress: string;
   savedTileSize: string;
   restored: boolean;
@@ -152,6 +152,7 @@ export interface HomeContextType {
   onCloseBottomSheet: () => void;
   togglePencilMode: () => void;
   pressPDFSettingsOpen: () => void;
+  finishEditPosition: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

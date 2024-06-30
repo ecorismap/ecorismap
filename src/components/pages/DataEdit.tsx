@@ -66,10 +66,18 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 35 }} />
+        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 28 }}>
+          <Button
+            name={DATAEDIT_BTN.SAVE}
+            onPress={pressSaveData}
+            backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
+            disabled={!isEditingRecord}
+            tooltipText={t('DataEdit.tooltip.save')}
+          />
+        </View>
       </View>
     ),
-    [gotoBack, maxRecordNumber, onChangeRecord, recordNumber]
+    [gotoBack, isEditingRecord, maxRecordNumber, onChangeRecord, pressSaveData, recordNumber]
   );
 
   const headerTitleButton = useCallback(
@@ -95,8 +103,8 @@ export default function DataEditScreen() {
     [gotoBack]
   );
 
-  const headerRightButton = useCallback(() => {
-    return (
+  const headerRightButton = useCallback(
+    () => (
       <View style={styles.headerRight}>
         <Button
           name={DATAEDIT_BTN.SAVE}
@@ -106,8 +114,9 @@ export default function DataEditScreen() {
           tooltipText={t('DataEdit.tooltip.save')}
         />
       </View>
-    );
-  }, [isEditingRecord, pressSaveData]);
+    ),
+    [isEditingRecord, pressSaveData]
+  );
 
   useEffect(() => {
     //デバイスだとheaderTitleにbackButtonが表示されてしまうバグ？のためheaderLeftだけで処理する

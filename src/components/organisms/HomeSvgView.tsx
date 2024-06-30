@@ -168,7 +168,7 @@ const LineDefs = () => {
           markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
-          <Circle cx="5" cy="5" r="4" fill="yellow" stroke="black" strokeWidth="1" />
+          <Circle cx="5" cy="5" r="3" fill="yellow" stroke="black" strokeWidth="1" />
         </Marker>
 
         <Marker
