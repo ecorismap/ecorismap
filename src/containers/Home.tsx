@@ -19,14 +19,19 @@ import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
 import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
-import { getExt, isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../utils/General';
+import {
+  getExt,
+  isFreehandTool,
+  isInfoTool,
+  isLineTool,
+  isMapMemoDrawTool,
+  isPlotTool,
+  isPointTool,
+  isPolygonTool,
+} from '../utils/General';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
-import { isHisyouTool } from '../plugins/hisyoutool/utils';
-import { ModalHisyouToolSetting } from '../plugins/hisyoutool/ModalHisyouToolSetting';
-import { PLUGIN } from '../constants/AppConstants';
-import { useHisyouToolSetting } from '../plugins/hisyoutool/useHisyouToolSetting';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
@@ -55,7 +60,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const isPencilTouch = useRef<boolean | undefined>(undefined);
+
   const tileMaps = useSelector((state: AppState) => state.tileMaps);
   const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
   const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
@@ -70,7 +75,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
-  const [isPinch, setIsPinch] = useState(false);
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -114,15 +118,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isDrawLineVisible,
     visibleInfoPicker,
     currentInfoTool,
+    isPencilTouch,
+    isPinch,
     setDrawTool,
     setPointTool,
     setLineTool,
     setPolygonTool,
     setFeatureButton,
-    pressSvgView,
-    moveSvgView,
-    releaseSvgView,
-    savePoint,
     saveLine,
     savePolygon,
     deleteDraw,
@@ -134,6 +136,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     toggleWebTerrainActive,
     setVisibleInfoPicker,
     setCurrentInfoTool,
+    setIsPinch,
+    handleGrantDeletePoint,
+    handleGrantSelect,
+    handleReleaseSelect,
+    handleGrantPlot,
+    handleMovePlot,
+    handleReleasePlotPoint,
+    handleReleasePlotLinePolygon,
+    handleGrantFreehand,
+    handleMoveFreehand,
+    handleReleaseFreehand,
+    getPXY,
+    savePoint,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -165,9 +180,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setVisibleMapMemoEraser,
     setArrowStyle,
     selectPenColor,
-    onPanResponderGrantMapMemo,
-    onPanResponderMoveMapMemo,
-    onPanResponderReleaseMapMemo,
+    handleGrantMapMemo,
+    handleMoveMapMemo,
+    handleReleaseMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
@@ -193,14 +208,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     saveTrackLog,
     confirmLocationPermission,
   } = useLocation(mapViewRef.current);
-
-  const {
-    visibleHisyouToolSetting,
-    hisyouLayerId,
-    pressHisyouToolSettingOK,
-    pressHisyouToolSettingCancel,
-    showHisyouToolSetting,
-  } = useHisyouToolSetting();
 
   const {
     isPDFSettingsVisible,
@@ -284,9 +291,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         const e = event as MapLayerMouseEvent;
         const map = (mapViewRef.current as MapRef).getMap();
         const features = map.queryRenderedFeatures([e.point.x, e.point.y]);
+        const vectorTileFeatures = features.filter((feature) => {
+          const layer = map.getLayer(feature.layer.id);
+          //@ts-ignore
+          return layer && layer.source && map.getSource(layer.source).type === 'vector';
+        });
         position = [e.point.x, e.point.y];
         //@ts-ignore
-        properties = features ? features.map((f) => f.properties) : [];
+        properties = vectorTileFeatures ? vectorTileFeatures.map((f) => f.properties) : [];
       } else {
         const e = event as MapPressEvent;
         latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
@@ -305,12 +317,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressMapView = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
-      if (isMapMemoDrawTool(currentMapMemoTool)) return;
-      if (isInfoTool(currentDrawTool)) return;
-      if (currentDrawTool !== 'NONE') return;
+      if (isMapMemoDrawTool(currentMapMemoTool) || isInfoTool(currentInfoTool) || currentDrawTool !== 'NONE') return;
       await getInfoOfVectorTile(event);
     },
-    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile]
+    [currentDrawTool, currentInfoTool, currentMapMemoTool, getInfoOfVectorTile]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -436,15 +446,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
           setDrawTool(value);
         }
-      } else if (isHisyouTool(value)) {
-        if (value === 'SETTING') {
-          showHisyouToolSetting();
-        } else if (currentDrawTool === value) {
-          if (isEditingDraw) return;
-          setDrawTool('NONE');
-        } else {
-          setDrawTool(value);
-        }
       } else {
         if (value === 'MOVE') {
           if (currentDrawTool === value) {
@@ -468,7 +469,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       runTutrial,
       setCurrentInfoTool,
       setDrawTool,
-      showHisyouToolSetting,
     ]
   );
 
@@ -571,116 +571,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       });
     }
   }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
-
-  const pressDeleteDraw = useCallback(async () => {
-    if (drawLine.current.length === 0) return;
-    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
-    if (ret) {
-      const { isOK, message } = deleteDraw();
-
-      if (!isOK) {
-        await AlertAsync(message);
-        return;
-      }
-      bottomSheetRef.current?.close();
-    }
-  }, [deleteDraw, drawLine]);
-
-  const getPXY = (event: GestureResponderEvent): Position => {
-    const offset = [
-      event.nativeEvent.locationX - event.nativeEvent.pageX,
-      event.nativeEvent.locationY - event.nativeEvent.pageY,
-    ];
-    return [event.nativeEvent.pageX + offset[0], event.nativeEvent.pageY + offset[1]];
-  };
-
-  const onReleaseSvgView = useCallback(
-    async (e: GestureResponderEvent) => {
-      releaseSvgView(e);
-      if (featureButton !== 'POINT') return;
-      if (currentDrawTool === 'DELETE_POINT') {
-        if (route.params?.mode === 'editPosition') {
-          const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
-          if (ret) {
-            const { layer, record } = route.params;
-            if (layer === undefined || record === undefined) {
-              return;
-            }
-            updatePointPosition(layer, record, undefined);
-            finishEditPosition();
-          }
-        } else {
-          //ポイントはすぐに削除する
-          await pressDeleteDraw();
-        }
-      }
-      if (currentDrawTool === 'PLOT_POINT') {
-        if (route.params?.mode === 'editPosition') {
-          const point = xyArrayToLatLonObjects([getPXY(e)], mapRegion, mapSize, mapViewRef.current);
-          const { layer, record } = route.params;
-          if (layer === undefined || record === undefined || point === undefined) return;
-
-          updatePointPosition(layer, record, point[0]);
-          finishEditPosition();
-        } else {
-          //ポイントはすぐに保存する
-          const result = savePoint();
-          if (result === undefined) return;
-          const { isOK, message, layer, recordSet } = result;
-          if (!isOK) {
-            await AlertAsync(message);
-            return;
-          }
-          setDrawTool('NONE');
-          if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-            bottomSheetRef.current?.snapToIndex(2);
-            navigation.navigate('DataEdit', {
-              previous: 'Data',
-              targetData: recordSet[0],
-              targetLayer: layer,
-            });
-          }
-        }
-      }
-    },
-    [
-      currentDrawTool,
-      featureButton,
-      finishEditPosition,
-      mapRegion,
-      mapSize,
-      navigation,
-      pressDeleteDraw,
-      releaseSvgView,
-      route.params,
-      savePoint,
-      setDrawTool,
-      updatePointPosition,
-    ]
-  );
-
-  const onDragEndPoint = useCallback(
-    async (e: any, layer: LayerType, feature: RecordType) => {
-      const coordinate =
-        Platform.OS === 'web' ? { longitude: e.lngLat.lng, latitude: e.lngLat.lat } : e.nativeEvent.coordinate;
-      const ret = await ConfirmAsync(t('Home.confirm.drag'));
-      if (!ret) {
-        resetPointPosition(layer, feature);
-        return;
-      }
-      const { isOK, message } = checkRecordEditable(layer, feature);
-      if (!isOK) {
-        resetPointPosition(layer, feature);
-        await AlertAsync(message);
-        return;
-      }
-      updatePointPosition(layer, feature, coordinate);
-      if (route.params?.mode === 'editPosition') {
-        finishEditPosition();
-      }
-    },
-    [checkRecordEditable, finishEditPosition, resetPointPosition, route.params?.mode, updatePointPosition]
-  );
 
   const pressDownloadTiles = useCallback(async () => {
     downloadTiles();
@@ -867,6 +757,348 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setIsPDFSettingsVisible(true);
   }, [setIsPDFSettingsVisible]);
 
+  const onDragEndPoint = useCallback(
+    async (e: any, layer: LayerType, feature: RecordType) => {
+      const coordinate =
+        Platform.OS === 'web' ? { longitude: e.lngLat.lng, latitude: e.lngLat.lat } : e.nativeEvent.coordinate;
+      const ret = await ConfirmAsync(t('Home.confirm.drag'));
+      if (!ret) {
+        resetPointPosition(layer, feature);
+        return;
+      }
+      const { isOK, message } = checkRecordEditable(layer, feature);
+      if (!isOK) {
+        resetPointPosition(layer, feature);
+        await AlertAsync(message);
+        return;
+      }
+      updatePointPosition(layer, feature, coordinate);
+      if (route.params?.mode === 'editPosition') {
+        finishEditPosition();
+      }
+    },
+    [checkRecordEditable, finishEditPosition, resetPointPosition, route.params?.mode, updatePointPosition]
+  );
+
+  const getInfoOfFeature = useCallback(
+    async (event: GestureResponderEvent) => {
+      if (isEditingRecord) {
+        await AlertAsync(t('Home.alert.discardChanges'));
+        return;
+      }
+
+      const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
+
+      if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
+        unselectRecord();
+        return;
+      }
+      selectRecord(layer.id, { ...feature });
+
+      if (isLandscape) {
+        bottomSheetRef.current?.snapToIndex(2);
+      } else {
+        bottomSheetRef.current?.snapToIndex(1);
+      }
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: { ...feature },
+        targetLayer: { ...layer },
+      });
+    },
+    [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
+  );
+
+  const addLocationPoint = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      await AlertAsync(t('Home.alert.gpsWeb'));
+      return;
+    }
+    if (gpsState === 'off' && trackingState === 'off') {
+      await AlertAsync(t('Home.alert.gps'));
+      return;
+    }
+
+    const { isOK, message, layer, record } = await addCurrentPoint();
+    if (!isOK || layer === undefined || record === undefined) {
+      await AlertAsync(message);
+    } else {
+      bottomSheetRef.current?.snapToIndex(2);
+
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: record,
+        targetLayer: layer,
+      });
+    }
+    selectDrawTool(currentDrawTool);
+  }, [addCurrentPoint, currentDrawTool, gpsState, navigation, selectDrawTool, trackingState]);
+
+  const addLocationPointInEditPosition = useCallback(
+    async (layer: LayerType, record: RecordType) => {
+      if (Platform.OS === 'web') {
+        await AlertAsync(t('Home.alert.gpsWeb'));
+        return;
+      }
+      const point = await getCurrentPoint();
+      if (point === undefined) return;
+      updatePointPosition(layer, record, point);
+      finishEditPosition();
+    },
+    [finishEditPosition, getCurrentPoint, updatePointPosition]
+  );
+
+  const handleAddLocationPoint = useCallback(async () => {
+    if (route.params?.mode === 'editPosition') {
+      const { layer, record } = route.params;
+      if (layer === undefined || record === undefined) return;
+      await addLocationPointInEditPosition(layer, record);
+    } else {
+      await addLocationPoint();
+    }
+  }, [addLocationPoint, addLocationPointInEditPosition, route.params]);
+
+  const handlePanResponderGrant = useCallback(
+    async (event: GestureResponderEvent) => {
+      //@ts-ignore
+      isPencilTouch.current = !!event.nativeEvent.altitudeAngle;
+      if (!event.nativeEvent.touches.length) return;
+
+      const pXY = getPXY(event);
+
+      if (route.params?.mode === 'editPosition') hideDrawLine();
+      if (isPencilModeActive && isPencilTouch.current === false) {
+        hideDrawLine();
+        setIsPinch(true);
+      } else if (currentInfoTool !== 'NONE') {
+        await getInfoOfFeature(event);
+      } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
+        await handleAddLocationPoint();
+      } else if (currentDrawTool === 'MOVE') {
+        hideDrawLine();
+      } else if (currentDrawTool === 'DELETE_POINT') {
+        const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
+        if (!ret) return;
+        handleGrantDeletePoint(pXY);
+        if (route.params?.mode === 'editPosition') {
+          const { layer, record } = route.params;
+          if (layer === undefined || record === undefined) return;
+          updatePointPosition(layer, record, undefined);
+          finishEditPosition();
+        } else {
+          const { isOK, message } = deleteDraw();
+          if (!isOK) {
+            await AlertAsync(message);
+            return;
+          }
+          bottomSheetRef.current?.close();
+        }
+      } else if (currentDrawTool === 'SELECT') {
+        handleGrantSelect(pXY);
+      } else if (isPlotTool(currentDrawTool)) {
+        handleGrantPlot(pXY);
+      } else if (isFreehandTool(currentDrawTool)) {
+        const { finished, ...result } = handleGrantFreehand(pXY);
+        if (finished) {
+          const { isOK, message, layer, recordSet } = result;
+          if (!isOK && message !== undefined) {
+            await AlertAsync(message);
+          } else {
+            setDrawTool('NONE');
+            if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+              bottomSheetRef.current?.snapToIndex(2);
+              navigation.navigate('DataEdit', {
+                previous: 'Data',
+                targetData: recordSet[0],
+                targetLayer: layer,
+              });
+            }
+          }
+        }
+      } else if (featureButton === 'MEMO') {
+        if (isMapMemoDrawTool(currentMapMemoTool) && !isPencilTouch.current && isPencilModeActive) {
+          setIsPinch(true);
+        } else {
+          handleGrantMapMemo(event);
+        }
+      }
+    },
+    [
+      currentDrawTool,
+      currentInfoTool,
+      currentMapMemoTool,
+      deleteDraw,
+      featureButton,
+      finishEditPosition,
+      getInfoOfFeature,
+      getPXY,
+      handleAddLocationPoint,
+      handleGrantDeletePoint,
+      handleGrantFreehand,
+      handleGrantMapMemo,
+      handleGrantPlot,
+      handleGrantSelect,
+      hideDrawLine,
+      isPencilModeActive,
+      isPencilTouch,
+      navigation,
+      route.params,
+      setDrawTool,
+      setIsPinch,
+      updatePointPosition,
+    ]
+  );
+  const handlePanResponderMove = useCallback(
+    //@ts-ignore
+    (event: GestureResponderEvent, gesture) => {
+      if (!event.nativeEvent.touches.length) return;
+      const pXY = getPXY(event);
+
+      if (currentDrawTool === 'MOVE' || isPinch) {
+        return;
+      }
+      if (gesture.numberActiveTouches === 2) {
+        setIsPinch(true);
+      } else if (isMapMemoDrawTool(currentMapMemoTool)) {
+        handleMoveMapMemo(event);
+      } else if (isPlotTool(currentDrawTool)) {
+        handleMovePlot(pXY);
+      } else if (isFreehandTool(currentDrawTool)) {
+        handleMoveFreehand(pXY);
+      }
+    },
+    [
+      currentDrawTool,
+      currentMapMemoTool,
+      getPXY,
+      handleMoveFreehand,
+      handleMoveMapMemo,
+      handleMovePlot,
+      isPinch,
+      setIsPinch,
+    ]
+  );
+
+  const pressDeleteDraw = useCallback(async () => {
+    if (drawLine.current.length === 0) return;
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+    if (ret) {
+      const { isOK, message } = deleteDraw();
+
+      if (!isOK) {
+        await AlertAsync(message);
+        return;
+      }
+      bottomSheetRef.current?.close();
+    }
+  }, [deleteDraw, drawLine]);
+
+  const handlePanResponderRelease = useCallback(
+    async (event: GestureResponderEvent) => {
+      isPencilTouch.current = undefined;
+
+      const pXY = getPXY(event);
+
+      if (route.params?.mode === 'editPosition') showDrawLine();
+
+      if (isPinch) {
+        showDrawLine();
+        setIsPinch(false);
+      } else if (currentDrawTool === 'MOVE') {
+        showDrawLine();
+      } else if (currentDrawTool === 'SELECT') {
+        handleReleaseSelect(pXY);
+      } else if (currentDrawTool === 'PLOT_POINT') {
+        handleReleasePlotPoint();
+        if (route.params?.mode === 'editPosition') {
+          const point = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
+          const { layer, record } = route.params;
+          if (layer === undefined || record === undefined || point === undefined) return;
+
+          updatePointPosition(layer, record, point[0]);
+          finishEditPosition();
+        } else {
+          const result = savePoint();
+          if (result === undefined) return;
+          const { isOK, message, layer, recordSet } = result;
+          if (!isOK) {
+            await AlertAsync(message);
+            return;
+          }
+          setDrawTool('NONE');
+          if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+            bottomSheetRef.current?.snapToIndex(2);
+            navigation.navigate('DataEdit', {
+              previous: 'Data',
+              targetData: recordSet[0],
+              targetLayer: layer,
+            });
+          }
+        }
+      } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
+        const finished = handleReleasePlotLinePolygon();
+        if (finished) {
+          const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
+          const { isOK, message, layer, recordSet } = result;
+          if (!isOK) {
+            await AlertAsync(message);
+            return;
+          } else {
+            setDrawTool('NONE');
+            if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+              bottomSheetRef.current?.snapToIndex(2);
+              navigation.navigate('DataEdit', {
+                previous: 'Data',
+                targetData: recordSet[0],
+                targetLayer: layer,
+              });
+            }
+          }
+        }
+      } else if (isFreehandTool(currentDrawTool)) {
+        handleReleaseFreehand();
+      } else if (currentMapMemoTool !== 'NONE') {
+        handleReleaseMapMemo(event);
+      }
+    },
+    [
+      currentDrawTool,
+      currentMapMemoTool,
+      finishEditPosition,
+      getPXY,
+      handleReleaseFreehand,
+      handleReleaseMapMemo,
+      handleReleasePlotLinePolygon,
+      handleReleasePlotPoint,
+      handleReleaseSelect,
+      isPencilTouch,
+      isPinch,
+      mapRegion,
+      mapSize,
+      navigation,
+      route.params,
+      saveLine,
+      savePoint,
+      savePolygon,
+      setDrawTool,
+      setIsPinch,
+      showDrawLine,
+      updatePointPosition,
+    ]
+  );
+
+  const panResponder: PanResponderInstance = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: handlePanResponderGrant,
+        onPanResponderMove: handlePanResponderMove,
+        onPanResponderRelease: handlePanResponderRelease,
+      }),
+    [handlePanResponderGrant, handlePanResponderMove, handlePanResponderRelease]
+  );
+
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
 
@@ -990,159 +1222,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const addLocationPoint = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      await AlertAsync(t('Home.alert.gpsWeb'));
-      return;
-    }
-    if (gpsState === 'off' && trackingState === 'off') {
-      await AlertAsync(t('Home.alert.gps'));
-      return;
-    }
-
-    const { isOK, message, layer, record } = await addCurrentPoint();
-    if (!isOK || layer === undefined || record === undefined) {
-      await AlertAsync(message);
-    } else {
-      bottomSheetRef.current?.snapToIndex(2);
-
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: record,
-        targetLayer: layer,
-      });
-    }
-    selectDrawTool(currentDrawTool);
-  }, [addCurrentPoint, currentDrawTool, gpsState, navigation, selectDrawTool, trackingState]);
-
-  const getInfoOfFeature = useCallback(
-    async (event: GestureResponderEvent) => {
-      if (isEditingRecord) {
-        await AlertAsync(t('Home.alert.discardChanges'));
-        return;
-      }
-
-      const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
-
-      if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
-        unselectRecord();
-        return;
-      }
-      selectRecord(layer.id, { ...feature });
-
-      if (isLandscape) {
-        bottomSheetRef.current?.snapToIndex(2);
-      } else {
-        bottomSheetRef.current?.snapToIndex(1);
-      }
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: { ...feature },
-        targetLayer: { ...layer },
-      });
-    },
-    [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
-  );
-
-  const panResponder: PanResponderInstance = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: async (e: GestureResponderEvent) => {
-          //console.log('#######################');
-          //@ts-ignore
-          isPencilTouch.current = !!e.nativeEvent.altitudeAngle;
-          if (route.params?.mode === 'editPosition') hideDrawLine();
-          if (currentInfoTool !== 'NONE') {
-            //情報ツールの場合
-            await getInfoOfFeature(e);
-          } else if (currentDrawTool === 'MOVE') {
-            hideDrawLine();
-          } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
-            if (route.params?.mode === 'editPosition') {
-              if (Platform.OS === 'web') {
-                await AlertAsync(t('Home.alert.gpsWeb'));
-                return;
-              }
-              const point = await getCurrentPoint();
-              const { layer, record } = route.params;
-              if (layer === undefined || record === undefined || point === undefined) return;
-              updatePointPosition(layer, record, point);
-              finishEditPosition();
-            } else {
-              await addLocationPoint();
-            }
-          } else if (currentDrawTool !== 'NONE') {
-            if (isPencilTouch.current === false && isPencilModeActive) {
-              hideDrawLine();
-              setIsPinch(true);
-              return;
-            }
-            pressSvgView(e);
-          } else if (featureButton === 'MEMO') {
-            //MapMemoの場合
-            if (isMapMemoDrawTool(currentMapMemoTool) && isPencilTouch.current === false && isPencilModeActive) {
-              setIsPinch(true);
-              return;
-            }
-            onPanResponderGrantMapMemo(e);
-          } else {
-            //unselectRecord();
-          }
-        },
-        onPanResponderMove: (e: GestureResponderEvent, gesture) => {
-          //@ts-ignore
-          if (currentDrawTool === 'MOVE') {
-          } else if (isPinch) {
-          } else if (gesture.numberActiveTouches === 2) {
-            setIsPinch(true);
-          } else if (isMapMemoDrawTool(currentMapMemoTool)) {
-            onPanResponderMoveMapMemo(e);
-          } else if (currentDrawTool !== 'NONE') {
-            moveSvgView(e);
-          }
-        },
-        onPanResponderRelease: async (e: GestureResponderEvent) => {
-          isPencilTouch.current = undefined;
-          if (route.params?.mode === 'editPosition') showDrawLine();
-
-          if (currentDrawTool === 'MOVE') {
-            showDrawLine();
-          } else if (isPinch) {
-            showDrawLine();
-            setIsPinch(false);
-          } else if (currentMapMemoTool !== 'NONE') {
-            onPanResponderReleaseMapMemo(e);
-          } else if (currentDrawTool !== 'NONE') {
-            onReleaseSvgView(e);
-          }
-        },
-      }),
-    [
-      addLocationPoint,
-      currentDrawTool,
-      currentInfoTool,
-      currentMapMemoTool,
-      featureButton,
-      finishEditPosition,
-      getCurrentPoint,
-      getInfoOfFeature,
-      hideDrawLine,
-      isPencilModeActive,
-      isPinch,
-      moveSvgView,
-      onPanResponderGrantMapMemo,
-      onPanResponderMoveMapMemo,
-      onPanResponderReleaseMapMemo,
-      onReleaseSvgView,
-      pressSvgView,
-      route.params,
-      showDrawLine,
-      updatePointPosition,
-    ]
-  );
 
   return (
     <HomeContext.Provider
@@ -1321,14 +1400,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setOutputDataPDF={setOutputDataPDF}
         pressOK={() => setIsPDFSettingsVisible(false)}
       />
-      {PLUGIN.HISYOUTOOL && (
-        <ModalHisyouToolSetting
-          visible={visibleHisyouToolSetting}
-          hisyouLayerId={hisyouLayerId}
-          pressOK={pressHisyouToolSettingOK}
-          pressCancel={pressHisyouToolSettingCancel}
-        />
-      )}
     </HomeContext.Provider>
   );
 }

@@ -5,15 +5,11 @@ import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
-import { HisyouSVG } from '../../plugins/hisyoutool/HisyouSvg';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
-import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
 import { HomeContext } from '../../contexts/Home';
-import { HISYOUTOOL } from '../../plugins/hisyoutool/Constants';
 
 export const SvgView = React.memo(() => {
   const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject } = useContext(HomeContext);
-  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const editingStartStyle = '';
   const editingMidStyle = '';
@@ -34,7 +30,7 @@ export const SvgView = React.memo(() => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.map(({ xy, properties }, idx: number) => {
-          let startStyle =
+          const startStyle =
             currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
               ? ''
               : properties.includes('EDIT')
@@ -48,27 +44,14 @@ export const SvgView = React.memo(() => {
                 ? `url(#plot)`
                 : ''
               : '';
-          let endStyle = properties.includes('POINT') ? `url(#point)` : properties.includes('EDIT') ? `url(#last)` : '';
-          if (isHisyouToolActive) {
-            if (
-              !properties.includes('HISYOU') &&
-              (properties.includes('HISYOU_NOEDIT') || Object.keys(HISYOUTOOL).some((p) => properties.includes(p)))
-            ) {
-              startStyle = '';
-            }
-            if (properties.includes('arrow')) {
-              endStyle = 'url(#arrow)';
-            }
-            if (properties.includes('TOMARI')) {
-              endStyle = `url(#dot)`;
-            }
-          }
+          const endStyle = properties.includes('POINT')
+            ? `url(#point)`
+            : properties.includes('EDIT')
+            ? `url(#last)`
+            : '';
 
-          let strokeColor = properties.includes('EDIT') ? 'lightblue' : '#F7C114';
+          const strokeColor = properties.includes('EDIT') ? 'lightblue' : '#F7C114';
 
-          if (Object.keys(HISYOUTOOL).some((p) => properties.includes(p)) || properties.includes('HISYOU_NOEDIT')) {
-            strokeColor = 'blue';
-          }
           return (
             <G key={ulid()}>
               {properties.includes('EDIT') && (
@@ -91,8 +74,6 @@ export const SvgView = React.memo(() => {
                 markerMid={midStyle}
                 markerEnd={endStyle}
               />
-
-              {isHisyouToolActive && <HisyouSVG id={idx} properties={properties} strokeColor={'brown'} />}
             </G>
           );
         })}

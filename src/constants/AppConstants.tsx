@@ -5,7 +5,7 @@ export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.4.0beta';
 
 export const PLUGIN = {
-  HISYOUTOOL: false,
+  HISYOUTOOL: true,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
@@ -167,7 +167,7 @@ export const DRAWTOOL = {
   ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
-  SELECT: 'select',
+  SELECT: 'cursor-default-click-outline',
   MOVE_POINT: 'map-marker-right',
   DELETE_POINT: 'map-marker-remove',
   MOVE: 'cursor-move',
@@ -176,7 +176,6 @@ export const DRAWTOOL = {
   SAVE: 'content-save',
   DELETE: 'delete',
   NONE: 'none',
-  // ...HISYOUTOOL,
 } as const;
 
 export const PEN = {
