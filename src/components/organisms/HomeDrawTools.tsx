@@ -1,8 +1,6 @@
 import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, MAPMEMOTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
-import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
-import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
+import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -16,7 +14,6 @@ import { useRoute } from '@react-navigation/native';
 export const HomeDrawTools = () => {
   const {
     isEditingDraw,
-    isEditingObject,
     isSelectedDraw,
     currentDrawTool,
     currentLineTool,
@@ -27,15 +24,12 @@ export const HomeDrawTools = () => {
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
-    pressSaveDraw,
     pressDeleteDraw,
     togglePencilMode,
     finishEditPosition,
   } = useContext(HomeContext);
   const route = useRoute();
   const insets = useSafeAreaInsets();
-
-  const { isHisyouToolActive } = useHisyouToolSetting();
 
   const editPosition = useMemo(() => {
     // @ts-ignore
@@ -150,7 +144,7 @@ export const HomeDrawTools = () => {
         )}
         {featureButton === 'LINE' && (
           <HomeLineToolButton
-            disabled={isHisyouToolActive}
+            disabled={false}
             isPositionRight={false}
             currentDrawTool={currentDrawTool}
             currentLineTool={currentLineTool}
@@ -168,17 +162,6 @@ export const HomeDrawTools = () => {
           />
         )}
       </View>
-      {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
-        <View>
-          <HisyouToolButton
-            isEditing={isEditingDraw}
-            isSelected={isSelectedDraw}
-            isPositionRight={false}
-            currentDrawTool={currentDrawTool}
-            selectDrawTool={selectDrawTool}
-          />
-        </View>
-      )}
 
       {featureButton !== 'POINT' && (
         <View style={styles.button}>
@@ -214,7 +197,7 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && (
+      {/* {featureButton !== 'POINT' && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.SAVE}
@@ -224,7 +207,7 @@ export const HomeDrawTools = () => {
             onPress={pressSaveDraw}
           />
         </View>
-      )}
+      )} */}
       {featureButton !== 'POINT' && (
         <View style={styles.button}>
           <Button
@@ -240,9 +223,9 @@ export const HomeDrawTools = () => {
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.DELETE}
-            backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            backgroundColor={!isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
             borderRadius={10}
-            disabled={isEditingDraw || !isSelectedDraw}
+            disabled={!isSelectedDraw}
             onPress={pressDeleteDraw}
           />
         </View>
