@@ -114,7 +114,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
       setOldRecord(record);
     }
+
     if (newRecord === undefined) return;
+
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);

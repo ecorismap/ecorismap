@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 // eslint-disable-next-line react-native/split-platform-components
 import { Linking, Platform, PlatformIOSStatic } from 'react-native';
-import { LayerType, PhotoType, PointRecordType, RecordType } from '../types';
+import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
@@ -283,10 +283,11 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (!isLocationTypeArray(targetRecord_.coords)) return jumpRegion;
       const coords = targetRecord_.coords;
       const bounds = boundingBoxFromCoords(coords);
-      const tempZoom = deltaToZoom(windowWidth_, {
-        latitudeDelta: bounds.north - bounds.south,
-        longitudeDelta: bounds.east - bounds.west,
-      }).zoom;
+      const tempZoom =
+        deltaToZoom(windowWidth_, {
+          latitudeDelta: bounds.north - bounds.south,
+          longitudeDelta: bounds.east - bounds.west,
+        }).zoom - 2;
       const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
       const featureWidth = bounds.east - bounds.west;
       const delta = featureWidth * 2 ** (tempZoom - jumpZoom - 1);
@@ -450,7 +451,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       mode: 'editPosition',
       jumpTo: jumpRegion,
       layer: targetLayer,
-      record: targetRecord as PointRecordType,
+      record: targetRecord,
     });
   }, [
     checkRecordEditable,

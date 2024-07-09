@@ -125,6 +125,7 @@ export interface HomeContextType {
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;
+  pressDeletePosition: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;

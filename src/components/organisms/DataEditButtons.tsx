@@ -27,7 +27,7 @@ export const DataEditButtons = () => {
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.google')}
         />
-        {layer.type === 'POINT' && (
+        {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
           <Button
             name={DATAEDIT_BTN.EDIT}
             onPress={pressEditPosition}

@@ -481,7 +481,7 @@ export default function HomeScreen() {
             <HomeDrawTools />
           )}
           {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
-          {!(downloadMode || exportPDFMode) && <HomeButtons />}
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
           {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
           {exportPDFMode && (
             <HomePDFButtons
