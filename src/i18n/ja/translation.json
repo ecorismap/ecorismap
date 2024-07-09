@@ -37,7 +37,7 @@
       "point": "ポイント",
       "line": "ライン",
       "polygon": "ポリゴン",
-      "none": "なし",
+      "none": "位置情報なし",
       "memo": "メモ",
       "group": "グループ",
       "layergroup": "レイヤグループ"
@@ -225,7 +225,8 @@
       "plotPoint": "ポイントを追加",
       "movePoint": "ポイントを長押しで移動",
       "deletePoint": "ポイントを削除",
-      "finishEditPosition": "編集を終了"
+      "finishEditPosition": "編集を終了",
+      "deletePosition": "座標を削除"
     },
     "modal": {
       "infoTool": {
@@ -552,7 +553,7 @@
       "gotoBack": "変更を破棄しますか？",
       "close": "変更を破棄しますか？",
       "copyData": "データをコピーしますか？",
-      "deletePosition": "位置を削除しますか？"
+      "deletePosition": "座標を削除しますか？データは削除されません。"
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",

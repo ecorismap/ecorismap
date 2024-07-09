@@ -137,8 +137,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setVisibleInfoPicker,
     setCurrentInfoTool,
     setIsPinch,
-    handleGrantDeletePoint,
-    handleGrantSelect,
+    handleReleaseDeletePoint,
     handleReleaseSelect,
     handleGrantPlot,
     handleMovePlot,
@@ -149,6 +148,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     handleReleaseFreehand,
     getPXY,
     savePoint,
+    selectObjectByFeature,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -372,6 +372,35 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleWebTerrainActive]
   );
 
+  /************** select button ************/
+
+  const selectFeatureButton = useCallback(
+    (value: FeatureButtonType) => {
+      setDrawTool('NONE');
+      setMapMemoTool('NONE');
+      toggleWebTerrainActive(value === 'NONE');
+      setFeatureButton(value);
+      resetDrawTools();
+      clearMapMemoHistory();
+      if (Platform.OS !== 'web') toggleHeadingUp(false);
+    },
+    [
+      setDrawTool,
+      setMapMemoTool,
+      toggleWebTerrainActive,
+      setFeatureButton,
+      resetDrawTools,
+      clearMapMemoHistory,
+      toggleHeadingUp,
+    ]
+  );
+
+  const finishEditPosition = useCallback(() => {
+    bottomSheetRef.current?.snapToIndex(2);
+    selectFeatureButton('NONE');
+    navigation.setParams({ mode: undefined });
+  }, [navigation, selectFeatureButton]);
+
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
       setCurrentInfoTool('NONE');
@@ -384,6 +413,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           //ドローツールをオフ
           resetDrawTools();
           setDrawTool('NONE');
+          if (route.params?.mode === 'editPosition') finishEditPosition();
         } else {
           //ドローツールをオン
 
@@ -463,9 +493,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       activePolygonLayer,
       currentDrawTool,
       featureButton,
+      finishEditPosition,
       isEditingDraw,
       isSelectedDraw,
       resetDrawTools,
+      route.params?.mode,
       runTutrial,
       setCurrentInfoTool,
       setDrawTool,
@@ -513,39 +545,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [importGeoFile, isRunningProject]
   );
 
-  /************** select button ************/
-
-  const selectFeatureButton = useCallback(
-    (value: FeatureButtonType) => {
-      setDrawTool('NONE');
-      setMapMemoTool('NONE');
-      toggleWebTerrainActive(value === 'NONE');
-      setFeatureButton(value);
-      resetDrawTools();
-      clearMapMemoHistory();
-      if (Platform.OS !== 'web') toggleHeadingUp(false);
-    },
-    [
-      setDrawTool,
-      setMapMemoTool,
-      toggleWebTerrainActive,
-      setFeatureButton,
-      resetDrawTools,
-      clearMapMemoHistory,
-      toggleHeadingUp,
-    ]
-  );
-
-  const finishEditPosition = useCallback(() => {
-    bottomSheetRef.current?.snapToIndex(2);
-    selectFeatureButton('NONE');
-    navigation.setParams({ mode: undefined });
-  }, [navigation, selectFeatureButton]);
   /**************** press ******************/
 
   const pressUndoDraw = useCallback(async () => {
-    undoDraw();
-  }, [undoDraw]);
+    const finished = undoDraw();
+    if (route.params?.mode === 'editPosition') {
+      if (finished) finishEditPosition();
+    }
+  }, [finishEditPosition, route.params?.mode, undoDraw]);
 
   const pressSaveDraw = useCallback(() => {
     let result;
@@ -866,7 +873,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
       const pXY = getPXY(event);
 
-      if (route.params?.mode === 'editPosition') hideDrawLine();
+      //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
         hideDrawLine();
         setIsPinch(true);
@@ -876,42 +883,34 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await handleAddLocationPoint();
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
-      } else if (currentDrawTool === 'DELETE_POINT') {
-        const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
-        if (!ret) return;
-        handleGrantDeletePoint(pXY);
-        if (route.params?.mode === 'editPosition') {
-          const { layer, record } = route.params;
-          if (layer === undefined || record === undefined) return;
-          updatePointPosition(layer, record, undefined);
-          finishEditPosition();
-        } else {
-          const { isOK, message } = deleteDraw();
-          if (!isOK) {
-            await AlertAsync(message);
-            return;
-          }
-          bottomSheetRef.current?.close();
-        }
-      } else if (currentDrawTool === 'SELECT') {
-        handleGrantSelect(pXY);
       } else if (isPlotTool(currentDrawTool)) {
         handleGrantPlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
-        const { finished, ...result } = handleGrantFreehand(pXY);
+        const finished = handleGrantFreehand(pXY);
         if (finished) {
-          const { isOK, message, layer, recordSet } = result;
-          if (!isOK && message !== undefined) {
-            await AlertAsync(message);
+          if (route.params?.mode === 'editPosition') {
+            const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
+            const { isOK, message } = result;
+            if (!isOK) {
+              await AlertAsync(message);
+              return;
+            }
+            finishEditPosition();
           } else {
-            setDrawTool('NONE');
-            if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-              bottomSheetRef.current?.snapToIndex(2);
-              navigation.navigate('DataEdit', {
-                previous: 'Data',
-                targetData: recordSet[0],
-                targetLayer: layer,
-              });
+            const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
+            const { isOK, message, layer, recordSet } = result;
+            if (!isOK && message !== undefined) {
+              await AlertAsync(message);
+            } else {
+              setDrawTool('NONE');
+              if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+                bottomSheetRef.current?.snapToIndex(2);
+                navigation.navigate('DataEdit', {
+                  previous: 'Data',
+                  targetData: recordSet[0],
+                  targetLayer: layer,
+                });
+              }
             }
           }
         }
@@ -927,25 +926,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentDrawTool,
       currentInfoTool,
       currentMapMemoTool,
-      deleteDraw,
       featureButton,
       finishEditPosition,
       getInfoOfFeature,
       getPXY,
       handleAddLocationPoint,
-      handleGrantDeletePoint,
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
-      handleGrantSelect,
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,
       navigation,
-      route.params,
+      route.params?.mode,
+      saveLine,
+      savePolygon,
       setDrawTool,
       setIsPinch,
-      updatePointPosition,
     ]
   );
   const handlePanResponderMove = useCallback(
@@ -979,19 +976,30 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
+  const pressDeletePosition = useCallback(async () => {
+    if (route.params?.mode !== 'editPosition') return;
+    const { layer, record } = route.params;
+    if (layer === undefined || record === undefined) return;
+    const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
+    if (!ret) return;
+    updatePointPosition(layer, record, undefined);
+    finishEditPosition();
+  }, [finishEditPosition, route.params, updatePointPosition]);
+
   const pressDeleteDraw = useCallback(async () => {
     if (drawLine.current.length === 0) return;
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
-      const { isOK, message } = deleteDraw();
+      const { isOK, message, layer } = deleteDraw();
 
-      if (!isOK) {
+      if (!isOK || layer === undefined) {
         await AlertAsync(message);
         return;
       }
       bottomSheetRef.current?.close();
+      navigation.navigate('Data', { targetLayer: layer });
     }
-  }, [deleteDraw, drawLine]);
+  }, [deleteDraw, drawLine, navigation]);
 
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
@@ -1008,6 +1016,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         showDrawLine();
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
+      } else if (currentDrawTool === 'DELETE_POINT') {
+        const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
+        if (!ret) return;
+        handleReleaseDeletePoint(pXY);
+
+        const { isOK, message, layer } = deleteDraw();
+        if (!isOK || layer === undefined) {
+          await AlertAsync(message);
+          return;
+        }
+
+        bottomSheetRef.current?.close();
+        navigation.navigate('Data', { targetLayer: layer });
       } else if (currentDrawTool === 'PLOT_POINT') {
         handleReleasePlotPoint();
         if (route.params?.mode === 'editPosition') {
@@ -1038,12 +1059,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
         const finished = handleReleasePlotLinePolygon();
         if (finished) {
-          const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
-          const { isOK, message, layer, recordSet } = result;
-          if (!isOK) {
-            await AlertAsync(message);
-            return;
+          if (route.params?.mode === 'editPosition') {
+            const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
+            const { isOK, message } = result;
+            if (!isOK) {
+              await AlertAsync(message);
+              return;
+            }
+            finishEditPosition();
           } else {
+            const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
+            const { isOK, message, layer, recordSet } = result;
+            if (!isOK) {
+              await AlertAsync(message);
+              return;
+            }
             setDrawTool('NONE');
             if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
               bottomSheetRef.current?.snapToIndex(2);
@@ -1064,8 +1094,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       currentDrawTool,
       currentMapMemoTool,
+      deleteDraw,
       finishEditPosition,
       getPXY,
+      handleReleaseDeletePoint,
       handleReleaseFreehand,
       handleReleaseMapMemo,
       handleReleasePlotLinePolygon,
@@ -1129,11 +1161,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (route.params?.layer === undefined || route.params?.record === undefined) return;
 
         setTimeout(() => bottomSheetRef.current?.close(), 300);
-        selectFeatureButton('POINT');
+        const featureType = route.params.layer.type as FeatureButtonType;
+        selectFeatureButton(featureType);
         setCurrentInfoTool('NONE');
         changeMapRegion(route.params.jumpTo, true);
-        //convertPointFeatureToDrawLine(route.params.layer.id, route.params.records);
-        selectRecord(route.params.layer.id, route.params.record);
+
+        if (featureType === 'POINT') {
+          selectRecord(route.params.layer.id, route.params.record);
+        } else if (featureType === 'LINE' || featureType === 'POLYGON') {
+          selectObjectByFeature(route.params.layer, route.params.record);
+          setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+        }
       }
     } else if (route.params?.previous === 'Maps') {
       if (route.params?.tileMap) {
@@ -1309,6 +1347,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressUndoDraw,
         pressSaveDraw,
         pressDeleteDraw,
+        pressDeletePosition,
         gotoMaps,
         gotoSettings,
         gotoLayers,

@@ -37,7 +37,7 @@
       "point": "Point",
       "line": "Line",
       "polygon": "Polgon",
-      "none": "None",
+      "none": "No location information",
       "memo": "memo",
       "group": "group",
       "layergroup": "layer group"
@@ -108,7 +108,7 @@
       "gotoBack": "Do you want to discard your changes?",
       "close": "Do you want to discard your changes?",
       "copyData": "Do you want to copy the data?",
-      "deletePosition": "Do you want to delete the location?"
+      "deletePosition": "Do you want to delete the coordinates? \nNo data will be deleted."
     },
     "alert": {
       "referenceData": "Please save your changes once.",
@@ -684,7 +684,8 @@
       "plotPoint": "add points",
       "movePoint": "Move the point by long pressing",
       "deletePoint": "remove points",
-      "finishEditPosition": "Finish editing"
+      "finishEditPosition": "Finish editing",
+      "deletePosition": "delete coordinates"
     },
     "modal": {
       "infoTool": {

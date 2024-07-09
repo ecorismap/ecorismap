@@ -712,7 +712,7 @@ export default function HomeScreen() {
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
-          <HomeButtons />
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
           {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
           {exportPDFMode && (
             <HomePDFButtons
