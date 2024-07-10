@@ -146,6 +146,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     handleGrantFreehand,
     handleMoveFreehand,
     handleReleaseFreehand,
+    handleGrantSplitLine,
     getPXY,
     savePoint,
     selectObjectByFeature,
@@ -428,7 +429,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               await AlertAsync(t('Home.alert.cannotEdit'));
               return;
             }
-            await runTutrial(`LINETOOL_${value}`);
+            //await runTutrial(`LINETOOL_${value}`);
           } else if (isPolygonTool(value)) {
             if (activePolygonLayer === undefined) {
               await AlertAsync(t('Home.alert.cannotEdit'));
@@ -883,6 +884,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await handleAddLocationPoint();
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
+      } else if (currentDrawTool === 'SPLIT_LINE') {
+        handleGrantSplitLine(pXY);
+        if (route.params?.mode === 'editPosition') finishEditPosition();
       } else if (isPlotTool(currentDrawTool)) {
         handleGrantPlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
@@ -934,6 +938,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
+      handleGrantSplitLine,
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,

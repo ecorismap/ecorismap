@@ -39,7 +39,7 @@ export const SvgView = React.memo(() => {
               ? ''
               : `url(#delete)`;
           const midStyle =
-            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
+            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' || currentDrawTool === 'SPLIT_LINE'
               ? properties.includes('EDIT')
                 ? `url(#plot)`
                 : ''

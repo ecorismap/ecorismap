@@ -43,6 +43,17 @@ export const HomeLineToolButton = (props: Props) => {
           selectDrawTool('FREEHAND_LINE');
         }}
       />
+      <Button
+        id={'SPLIT_LINE'}
+        name={LINETOOL.SPLIT_LINE}
+        disabled={disabled}
+        backgroundColor={disabled ? COLOR.ALFAGRAY : currentDrawTool === 'SPLIT_LINE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+        borderRadius={10}
+        onPressCustom={() => {
+          setLineTool('SPLIT_LINE');
+          selectDrawTool('SPLIT_LINE');
+        }}
+      />
     </SelectionalLongPressButton>
   );
 };
