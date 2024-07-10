@@ -30,6 +30,7 @@ interface DataEditContextType {
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] }
   ) => void;
+  pressEditPosition: () => void;
   gotoHomeAndJump: () => void;
   gotoGoogleMaps: () => void;
   gotoBack: () => void;

@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
-
 import { Marker, Callout } from 'react-native-maps';
 import { LocationType } from '../../types';
 import { t } from '../../i18n/config';
@@ -34,22 +33,44 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
 
 export const CurrentMarker = React.memo((props: Props) => {
   const { currentLocation, azimuth, headingUp, distance } = props;
-  //console.log('AAA', azimuth);
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
   const markerAngle = useMemo(() => {
     return headingUp ? 0 : azimuth;
   }, [azimuth, headingUp]);
 
+  const [isCalloutVisible, setIsCalloutVisible] = useState(false);
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    if (isCalloutVisible && markerRef.current) {
+      //@ts-ignore
+      markerRef.current.showCallout();
+    } else if (!isCalloutVisible && markerRef.current) {
+      //@ts-ignore
+      markerRef.current.hideCallout();
+    }
+  }, [currentLocation, azimuth, headingUp, distance, isCalloutVisible]);
+
+  const handleMarkerPress = () => {
+    setIsCalloutVisible(true);
+  };
+
+  const handleCalloutPress = () => {
+    setIsCalloutVisible(false);
+  };
+
   return (
     <Marker
+      ref={markerRef}
       coordinate={{
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
       }}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={true}
+      tracksViewChanges={false}
       style={{ zIndex: 1001 }}
+      onPress={handleMarkerPress}
     >
       <View
         style={{
@@ -65,11 +86,10 @@ export const CurrentMarker = React.memo((props: Props) => {
         </Svg>
       </View>
 
-      <Callout>
+      <Callout onPress={handleCalloutPress}>
         <View style={styles.calloutStyle}>
           <Text>Latitude: {decimalToDMS(currentLocation.latitude)}</Text>
           <Text>Longitude: {decimalToDMS(currentLocation.longitude)}</Text>
-          {/* <Text>Altitude: {currentLocation.altitude} m</Text> */}
           <Text>Accuracy: {Math.floor(accuracy)} m</Text>
           <Text>{`${t('common.distance')}: ${distance === 0 ? ' - ' : distance.toFixed(2)}km`}</Text>
         </View>

@@ -50,8 +50,8 @@ export default function HomeScreen() {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
-    isDownloadPage,
-    isExportPDFPage,
+    downloadMode,
+    exportPDFMode,
     downloadProgress,
     savedTileSize,
     restored,
@@ -82,6 +82,9 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     penColor,
+    editPositionMode,
+    editPositionLayer,
+    editPositionRecord,
     onRegionChangeMapView,
     onPressMapView,
     onDragMapView,
@@ -107,6 +110,7 @@ export default function HomeScreen() {
     isPencilModeActive,
     isPencilTouch,
     pressPDFSettingsOpen,
+    isEditingRecord,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: AppState) => state.layers);
@@ -115,10 +119,7 @@ export default function HomeScreen() {
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
   const trackLog = useSelector((state: AppState) => state.trackLog);
 
-  const navigationHeaderHeight = useMemo(
-    () => (isDownloadPage || isExportPDFPage ? 56 : 0),
-    [isDownloadPage, isExportPDFPage]
-  );
+  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 
   const styles = StyleSheet.create({
     container: {
@@ -167,7 +168,7 @@ export default function HomeScreen() {
           </View>
         </View>
       );
-    } else if (isExportPDFPage) {
+    } else if (exportPDFMode) {
       return (
         <View style={[styles.headerRight, { marginRight: -10 }]}>
           <Button name="cog" onPress={pressPDFSettingsOpen} />
@@ -183,7 +184,7 @@ export default function HomeScreen() {
   }, [
     downloadProgress,
     isDownloading,
-    isExportPDFPage,
+    exportPDFMode,
     pressPDFSettingsOpen,
     pressStopDownloadTiles,
     savedTileSize,
@@ -230,34 +231,36 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            width: 60,
-            height: 25,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-          onPress={onCloseBottomSheet}
-        >
-          <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
-        </TouchableOpacity>
+        {!isEditingRecord && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              width: 60,
+              height: 25,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+            onPress={onCloseBottomSheet}
+          >
+            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
-  }, [onCloseBottomSheet]);
+  }, [isEditingRecord, onCloseBottomSheet]);
 
   useEffect(() => {
     //console.log('#useeffect3');
-    if (isDownloadPage) {
+    if (downloadMode) {
       navigation.setOptions({
         title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
         headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
         headerRight: () => headerRightButton(),
       });
-    } else if (isExportPDFPage) {
+    } else if (exportPDFMode) {
       navigation.setOptions({
         title: t('Home.navigation.exportPDF', 'PDF'),
         headerShown: true,
@@ -269,8 +272,8 @@ export default function HomeScreen() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    isDownloadPage,
-    isExportPDFPage,
+    downloadMode,
+    exportPDFMode,
     isDownloading,
     downloadProgress,
     savedTileSize,
@@ -359,8 +362,11 @@ export default function HomeScreen() {
                   data={d.data}
                   layer={layer}
                   zoom={zoom}
+                  editPositionMode={editPositionMode}
+                  editPositionLayer={editPositionLayer}
+                  editPositionRecord={editPositionRecord}
+                  currentDrawTool={currentDrawTool}
                   selectedRecord={selectedRecord}
-                  draggable={currentDrawTool === 'MOVE_POINT'}
                   onDragEndPoint={onDragEndPoint}
                 />
               );
@@ -445,7 +451,7 @@ export default function HomeScreen() {
                 ) : null
               )}
             {/************* download mode ******************** */}
-            {isDownloadPage && (
+            {downloadMode && (
               <DownloadArea
                 zoom={zoom}
                 downloading={isDownloading}
@@ -455,7 +461,7 @@ export default function HomeScreen() {
               />
             )}
             {/************* exportPDF mode ******************** */}
-            {isExportPDFPage && <PDFArea pdfArea={pdfArea} />}
+            {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
           {mapRegion && (
             <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
@@ -470,14 +476,14 @@ export default function HomeScreen() {
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
           {<HomeAttributionText bottom={8} attribution={attribution} />}
-          {!(isDownloadPage || isExportPDFPage) && <HomeInfoToolButton />}
-          {!(isDownloadPage || isExportPDFPage) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
+          {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}
-          {!(isDownloadPage || isExportPDFPage) && featureButton === 'MEMO' && <HomeMapMemoTools />}
-          {!(isDownloadPage || isExportPDFPage) && <HomeButtons />}
-          {isDownloadPage && <HomeDownloadButton onPress={pressDeleteTiles} />}
-          {isExportPDFPage && (
+          {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
+          {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
+          {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
+          {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
               pdfOrientation={pdfOrientation}
