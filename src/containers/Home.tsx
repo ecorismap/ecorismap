@@ -423,7 +423,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               await AlertAsync(t('Home.alert.cannotEdit'));
               return;
             }
-            await runTutrial(`POINTTOOL_${value}`);
+            //await runTutrial(`POINTTOOL_${value}`);
           } else if (isLineTool(value)) {
             if (activeLineLayer === undefined) {
               await AlertAsync(t('Home.alert.cannotEdit'));
@@ -435,7 +435,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               await AlertAsync(t('Home.alert.cannotEdit'));
               return;
             }
-            await runTutrial(`POLYGONTOOL_${value}`);
+            //await runTutrial(`POLYGONTOOL_${value}`);
           }
 
           setDrawTool(value);
@@ -453,7 +453,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             return;
           }
           setDrawTool(value);
-          await runTutrial('SELECTIONTOOL');
+          //await runTutrial('SELECTIONTOOL');
         }
       } else if (value === 'DELETE_POINT') {
         if (currentDrawTool === value) {
@@ -499,7 +499,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isSelectedDraw,
       resetDrawTools,
       route.params?.mode,
-      runTutrial,
       setCurrentInfoTool,
       setDrawTool,
     ]

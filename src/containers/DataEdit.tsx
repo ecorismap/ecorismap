@@ -287,7 +287,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         deltaToZoom(windowWidth_, {
           latitudeDelta: bounds.north - bounds.south,
           longitudeDelta: bounds.east - bounds.west,
-        }).zoom - 2;
+        }).zoom - 1;
       const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
       const featureWidth = bounds.east - bounds.west;
       const delta = featureWidth * 2 ** (tempZoom - jumpZoom - 1);
