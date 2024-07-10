@@ -316,8 +316,8 @@
       "info": "Clear the current data."
     },
     "pdf_save": {
-      "info": "Output the current map and data to pdf.",
-      "text": "output pdf"
+      "info": "Output the current map and data to PDF.",
+      "text": "PDF output"
     },
     "gps_settings": {
       "info": "Change GPS accuracy. \nIt also affects battery consumption.",
