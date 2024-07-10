@@ -1,4 +1,4 @@
-import { decimal2dms, dms2decimal, isPoint, toLatLonDMS, pointsToSvg, calcCentroid, isNearWithPlot } from '../Coords';
+import { decimal2dms, dms2decimal, toLatLonDMS, pointsToSvg, calcCentroid, isNearWithPlot } from '../Coords';
 
 describe('decimal2dms', () => {
   it('return dms value from decimal', () => {
@@ -22,13 +22,6 @@ describe('dms2decimal', () => {
     expect(dms2decimal(135, 0, 0)).toBe(135.0);
     expect(dms2decimal(-135, 0, 0)).toBe(-135.0);
     expect(dms2decimal(35, 0, 0)).toBe(35.0);
-  });
-});
-
-describe('isPoint', () => {
-  it('return boolean', () => {
-    expect(isPoint({})).toBe(false);
-    expect(isPoint({ latitude: 35, longitude: 135 })).toBe(true);
   });
 });
 

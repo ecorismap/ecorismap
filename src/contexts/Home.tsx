@@ -41,8 +41,8 @@ export interface HomeContextType {
   mapType: MapType;
   tileMaps: TileMapType[];
   isOffline: boolean;
-  isDownloadPage: boolean;
-  isExportPDFPage: boolean;
+  downloadMode: boolean;
+  exportPDFMode: boolean;
   downloadProgress: string;
   savedTileSize: string;
   restored: boolean;
@@ -109,6 +109,11 @@ export interface HomeContextType {
     strokeWidth: number;
   }[];
   isModalInfoToolHidden: boolean;
+  editPositionMode: boolean;
+  editPositionLayer: LayerType | undefined;
+  editPositionRecord: RecordType | undefined;
+  isEditingRecord: boolean;
+
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
@@ -138,6 +143,7 @@ export interface HomeContextType {
   pressUndoDraw: () => void;
   pressSaveDraw: () => void;
   pressDeleteDraw: () => void;
+  pressDeletePosition: () => void;
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
@@ -170,6 +176,7 @@ export interface HomeContextType {
   onCloseBottomSheet: () => void;
   togglePencilMode: () => void;
   pressPDFSettingsOpen: () => void;
+  finishEditPosition: () => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

@@ -1,0 +1,35 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": null,
+      "properties": {
+        "name": "Unknown Location",
+        "description": "This feature has no known geometry"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [139.7671, 35.6812]
+      },
+      "properties": {
+        "name": "Tokyo",
+        "country": "Japan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-74.006, 40.7128]
+      },
+      "properties": {
+        "name": "New York City",
+        "country": "USA"
+      }
+    }
+  ]
+}

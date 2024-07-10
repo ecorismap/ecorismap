@@ -1,14 +1,5 @@
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import {
-  DMSKey,
-  LatLonDMSKey,
-  LatLonDMSType,
-  LayerType,
-  LocationType,
-  PhotoType,
-  RecordType,
-  SelectedPhotoType,
-} from '../types';
+import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
 import { AppState } from '../modules';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +15,7 @@ import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
 import { deleteLocalPhoto } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
+import { isLocationType } from '../utils/General';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -71,6 +63,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
+  const [oldRecord, setOldRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
@@ -110,20 +103,33 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     if (route.name !== 'DataEdit') return;
 
     //console.log('useDataEdit useEffect');
-    setTargetRecord(dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record);
+
     const allUserRecordSet = dataSet
       .flatMap((d) => (d.layerId === layer.id ? d.data : []))
       .filter((d) => (d.field._group ? d.field._group === '' : true));
+    let newRecord: RecordType;
+    if (targetRecordSet.length > 0 && oldRecord.id === record.id) {
+      //drawToolで編集された場合.copyの場合はrecord.idとoldRecord.idが異なる
+      newRecord = allUserRecordSet[recordNumber - 1];
+    } else {
+      newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
+      setOldRecord(record);
+    }
 
+    if (newRecord === undefined) return;
+
+    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
+    setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
-    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
     setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
-      const newLatLon = toLatLonDMS(record.coords as LocationType);
+      const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
-  }, [dataSet, layer, layer.id, layer.type, record, route, selectRecord]);
+    //targetRecordとoldRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataSet, layer, record, recordNumber, route.name]);
 
   const changeRecord = useCallback(
     (value: number) => {
@@ -133,7 +139,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       setTargetRecord(newRecord);
       setRecordNumber(value);
       if (targetLayer.type === 'POINT') {
-        const newLatLon = toLatLonDMS(newRecord.coords as LocationType);
+        const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
         setLatLon(newLatLon);
       }
     },
@@ -236,6 +242,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTemporaryAddedPhotoList([]);
     const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
     const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
+
     const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
 
     dispatch(

@@ -149,6 +149,7 @@ export const POINTTOOL = {
 export const LINETOOL = {
   PLOT_LINE: 'vector-line',
   FREEHAND_LINE: 'draw',
+  SPLIT_LINE: 'content-cut',
 } as const;
 
 export const POLYGONTOOL = {
@@ -168,15 +169,16 @@ export const DRAWTOOL = {
   ...POINTTOOL,
   ...LINETOOL,
   ...POLYGONTOOL,
-  SELECT: 'select',
+  SELECT: 'cursor-default-click-outline',
   MOVE_POINT: 'map-marker-right',
   DELETE_POINT: 'map-marker-remove',
+  DELETE_POSITION: 'map-marker-remove-outline',
   MOVE: 'cursor-move',
+  FINISH_EDIT_POSITION: 'undo-variant',
   UNDO: 'undo-variant',
   SAVE: 'content-save',
   DELETE: 'delete',
   NONE: 'none',
-  // ...HISYOUTOOL,
 } as const;
 
 export const PEN = {
@@ -294,6 +296,7 @@ export const DATAEDIT_BTN = {
   DELETE: 'delete',
   COPY: 'content-copy',
   SAVE: 'content-save',
+  EDIT: 'pencil',
 } as const;
 
 export const DATA_BTN = {

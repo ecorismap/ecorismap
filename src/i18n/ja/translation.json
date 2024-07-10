@@ -37,7 +37,7 @@
       "point": "ポイント",
       "line": "ライン",
       "polygon": "ポリゴン",
-      "none": "なし",
+      "none": "位置情報なし",
       "memo": "メモ",
       "group": "グループ",
       "layergroup": "レイヤグループ"
@@ -247,7 +247,9 @@
       "downloadData": "データをダウンロード",
       "uploadData": "データをアップロード",
       "syncPosition": "現在地を共有",
-      "closeProject": "プロジェクトを閉じる"
+      "closeProject": "プロジェクトを閉じる",
+      "finishEditPosition": "編集を終了",
+      "deletePosition": "座標を削除"
     },
     "modal": {
       "infoTool": {
@@ -583,7 +585,8 @@
       "changeRecord": "変更を破棄しますか？",
       "gotoBack": "変更を破棄しますか？",
       "close": "変更を破棄しますか？",
-      "copyData": "データをコピーしますか？"
+      "copyData": "データをコピーしますか？",
+      "deletePosition": "座標を削除しますか？データは削除されません。"
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",
@@ -594,7 +597,8 @@
       "google": "グーグルマップで表示",
       "copy": "データをコピー",
       "save": "保存",
-      "delete": "削除"
+      "delete": "削除",
+      "edit": "位置を編集"
     }
   },
   "firebase": {
