@@ -22,6 +22,7 @@ import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { updateTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
+import { isLocationTypeArray } from '../utils/General';
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -327,13 +328,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const saveTrackLog = useCallback(async () => {
+    if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
 
     // const retOrg = addRecordWithCheck('LINE', trackLog.track);
     // if (!retOrg.isOK) {
     //   return { isOK: retOrg.isOK, message: retOrg.message };
     // }
-    const cleanupedLine = cleanupLine(trackLog.track as LocationType[]);
+    const cleanupedLine = cleanupLine(trackLog.track);
     const ret = addRecordWithCheck('LINE', cleanupedLine);
     if (!ret.isOK) {
       return { isOK: ret.isOK, message: ret.message };

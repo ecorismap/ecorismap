@@ -46,6 +46,7 @@ export const Line = React.memo((props: Props) => {
   const lineRecords: LineRecordType[] = [];
   data.forEach((feature) => {
     if (!feature.visible) return;
+    if (!feature.coords) return;
     if (feature.coords.length === 1) {
       stampRecords.push(feature);
     } else if (isBrushTool(feature.field._strokeStyle as string)) {
@@ -66,13 +67,15 @@ export const Line = React.memo((props: Props) => {
 
   return (
     <>
-      {stampRecords.map((feature) => (
-        <HomeMapMemoStamp
-          key={'stamp' + feature.id}
-          feature={{ ...feature, coords: feature.coords[0] }}
-          selectedRecord={selectedRecord}
-        />
-      ))}
+      {stampRecords.map((feature) =>
+        feature.coords === undefined ? null : (
+          <HomeMapMemoStamp
+            key={'stamp' + feature.id}
+            feature={{ ...feature, coords: feature.coords[0] }}
+            selectedRecord={selectedRecord}
+          />
+        )
+      )}
       {brushRecords.map((feature) => {
         const color = getColor(layer, feature, 0);
         const selected =
@@ -89,6 +92,7 @@ export const Line = React.memo((props: Props) => {
         );
       })}
       {arrowRecords.map((feature) => {
+        if (feature.coords === undefined) return null;
         const color = getColor(layer, feature, 0);
         const selected =
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;

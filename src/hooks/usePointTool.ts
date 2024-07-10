@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { LayerType, RecordType } from '../types';
+import { LayerType, LocationType, RecordType } from '../types';
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
 import { t } from '../i18n/config';
@@ -8,7 +8,6 @@ import { cloneDeep } from 'lodash';
 import { useDispatch } from 'react-redux';
 import { updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
-import { isPoint } from '../utils/Coords';
 
 export type UsePointToolReturnType = {
   addCurrentPoint: () => Promise<{
@@ -18,20 +17,27 @@ export type UsePointToolReturnType = {
     record: RecordType | undefined;
   }>;
   resetPointPosition: (targetLayer: LayerType, feature: RecordType) => void;
-  updatePointPosition: (targetLayer: LayerType, feature: RecordType, coordinate: LatLng) => void;
+  updatePointPosition: (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | undefined) => void;
+  getCurrentPoint: () => Promise<LocationType | undefined>;
 };
 
 export const usePointTool = (): UsePointToolReturnType => {
   const dispatch = useDispatch();
   const { addRecordWithCheck } = useRecord();
 
-  const addCurrentPoint = useCallback(async () => {
+  const getCurrentPoint = useCallback(async () => {
     const location = await Location.getLastKnownPositionAsync();
-    if (location === null) {
+    if (location === null) return undefined;
+    return toLocationType(location);
+  }, []);
+
+  const addCurrentPoint = useCallback(async () => {
+    const location = await getCurrentPoint();
+    if (location === undefined) {
       return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, record: undefined };
     }
-    return addRecordWithCheck('POINT', toLocationType(location)!);
-  }, [addRecordWithCheck]);
+    return addRecordWithCheck('POINT', location);
+  }, [addRecordWithCheck, getCurrentPoint]);
 
   const resetPointPosition = useCallback(
     (targetLayer: LayerType, feature: RecordType) => {
@@ -49,12 +55,9 @@ export const usePointTool = (): UsePointToolReturnType => {
   );
 
   const updatePointPosition = useCallback(
-    (targetLayer: LayerType, feature: RecordType, coordinate: LatLng) => {
+    (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | undefined) => {
       const data = cloneDeep(feature);
-      if (!isPoint(data.coords)) return;
-
-      data.coords.latitude = coordinate.latitude;
-      data.coords.longitude = coordinate.longitude;
+      data.coords = coordinate ? { latitude: coordinate.latitude, longitude: coordinate.longitude } : undefined;
       dispatch(updateRecordsAction({ layerId: targetLayer.id, userId: feature.userId, data: [data] }));
     },
     [dispatch]
@@ -64,5 +67,6 @@ export const usePointTool = (): UsePointToolReturnType => {
     addCurrentPoint,
     resetPointPosition,
     updatePointPosition,
+    getCurrentPoint,
   } as const;
 };

@@ -58,9 +58,9 @@ export type UseMapMemoReturnType = {
   setArrowStyle: Dispatch<SetStateAction<ArrowStyleType>>;
   selectPenColor: (hue: number, sat: number, val: number, alpha: number) => void;
   clearMapMemoHistory: () => void;
-  onPanResponderGrantMapMemo: (event: GestureResponderEvent) => void;
-  onPanResponderMoveMapMemo: (event: GestureResponderEvent) => void;
-  onPanResponderReleaseMapMemo: (event: GestureResponderEvent) => void;
+  handleGrantMapMemo: (event: GestureResponderEvent) => void;
+  handleMoveMapMemo: (event: GestureResponderEvent) => void;
+  handleReleaseMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
@@ -188,6 +188,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const findSnappedLine = useCallback(
     (pXY: Position) => {
       for (const line of memoLines) {
+        if (line.coords === undefined) continue;
         if (line.field._stamp !== '') continue;
         if (isBrushTool(line.field._strokeStyle as string)) continue;
         const lineXY = latLonObjectsToXYArray(line.coords, mapRegion, mapSize, mapViewRef);
@@ -200,7 +201,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [mapRegion, mapSize, mapViewRef, memoLines]
   );
 
-  const onPanResponderGrantMapMemo = useCallback(
+  const handleGrantMapMemo = useCallback(
     (event: GestureResponderEvent) => {
       if (timer.current) {
         clearTimeout(timer.current);
@@ -235,7 +236,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [currentMapMemoTool, findSnappedLine, snapWithLine]
   );
 
-  const onPanResponderMoveMapMemo = useCallback(
+  const handleMoveMapMemo = useCallback(
     (event: GestureResponderEvent) => {
       if (!event.nativeEvent.touches.length) return;
       const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
@@ -266,7 +267,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     [currentMapMemoTool, isStraightStyle, snapWithLine]
   );
 
-  const onPanResponderReleaseMapMemo = useCallback(() => {
+  const handleReleaseMapMemo = useCallback(() => {
     const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
     if (isPenTool(currentMapMemoTool)) {
@@ -346,6 +347,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         if (!isBrushTool(line.field._strokeStyle as string)) return;
         const lineArray = latLonObjectsToLatLonArray(line.coords);
 
@@ -375,6 +377,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
 
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         if (!Object.keys(STAMP).includes(line.field._stamp as string)) return;
         const stampLatLon = latLonObjectsToLatLonArray(line.coords)[0];
         const stampGeometry = buffer(turf.point(stampLatLon), mapRegion.latitudeDelta);
@@ -416,6 +419,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
       const otherLines: { idx: number; line: LineRecordType }[] = [];
       memoLines.forEach((line, idx) => {
+        if (line.coords === undefined) return;
         const lineArray = latLonObjectsToLatLonArray(line.coords);
         if (lineArray.length === 1) lineArray.push([lineArray[0][0] + 0.0000001, lineArray[0][1] + 0.0000001]);
         const stampLineGeometry = turf.lineString(lineArray);
@@ -591,9 +595,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setVisibleMapMemoEraser,
     setArrowStyle,
     selectPenColor,
-    onPanResponderGrantMapMemo,
-    onPanResponderMoveMapMemo,
-    onPanResponderReleaseMapMemo,
+    handleGrantMapMemo,
+    handleMoveMapMemo,
+    handleReleaseMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,

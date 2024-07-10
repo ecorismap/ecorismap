@@ -16,9 +16,10 @@ import {
 import dayjs from '../i18n/dayjs';
 import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
-import { isPoint, LatLonDMS } from './Coords';
+import { LatLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { ulid } from 'ulid';
+import { isLocationType } from './General';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
@@ -261,12 +262,15 @@ export const checkCoordsInput = (latlon: LatLonDMSType, isDecimal: boolean) => {
 };
 
 export const updateRecordCoords = (record: RecordType, latlon: LatLonDMSType, isDecimal: boolean) => {
-  const updateRecord = cloneDeep(record);
-  if (isPoint(updateRecord.coords)) {
+  if (isLocationType(record.coords) || record.coords === undefined) {
     const latLonDms = LatLonDMS(latlon, isDecimal);
-    updateRecord.coords.latitude = parseFloat(latLonDms.latitude.decimal);
-    updateRecord.coords.longitude = parseFloat(latLonDms.longitude.decimal);
-    return updateRecord;
+    return {
+      ...record,
+      coords: {
+        latitude: parseFloat(latLonDms.latitude.decimal),
+        longitude: parseFloat(latLonDms.longitude.decimal),
+      },
+    };
   } else {
     return record;
   }

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 // eslint-disable-next-line react-native/split-platform-components
 import { Linking, Platform, PlatformIOSStatic } from 'react-native';
-import { LayerType, LocationType, PhotoType, RecordType } from '../types';
+import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
@@ -19,6 +19,7 @@ import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
 import { useWindow } from '../hooks/useWindow';
+import { isLocationType, isLocationTypeArray } from '../utils/General';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -283,59 +284,58 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     [cancelUpdate, changeRecord, isEditingRecord]
   );
 
-  const gotoHomeAndJump = useCallback(() => {
-    let jumpRegion = {
-      latitude: 35,
-      longitude: 135,
-      latitudeDelta: 0.1,
-      longitudeDelta: 0.1,
-      zoom: 10,
-    };
-    if (targetLayer.type === 'POINT') {
-      const coord = targetRecord.coords as LocationType;
-      jumpRegion = {
-        latitude: isLandscape ? coord.latitude : coord.latitude - mapRegion.latitudeDelta / 4,
-        longitude: isLandscape ? coord.longitude + mapRegion.longitudeDelta / 4 : coord.longitude,
-        latitudeDelta: mapRegion.latitudeDelta,
-        longitudeDelta: mapRegion.longitudeDelta,
-        zoom: mapRegion.zoom,
-      };
-    } else if (targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-      const coords = targetRecord.coords as LocationType[];
-      const bounds = boundingBoxFromCoords(coords);
+  const getJumpRegion = (
+    targetLayer_: { type: string },
+    targetRecord_: { coords: any },
+    mapRegion_: { latitudeDelta: number; longitudeDelta: number; zoom: number },
+    windowWidth_: number,
+    isLandscape_: boolean
+  ) => {
+    let jumpRegion;
 
-      const tempZoom = deltaToZoom(windowWidth, {
-        latitudeDelta: bounds.north - bounds.south,
-        longitudeDelta: bounds.east - bounds.west,
-      }).zoom;
-      //小さいオブジェクトだとズームが大きくなりすぎるので、最大20に制限する
+    if (targetLayer_.type === 'POINT') {
+      if (!isLocationType(targetRecord_.coords)) return jumpRegion;
+      const coord = targetRecord_.coords;
+      jumpRegion = {
+        latitude: coord.latitude,
+        longitude: coord.longitude,
+        latitudeDelta: mapRegion_.latitudeDelta,
+        longitudeDelta: mapRegion_.longitudeDelta,
+        zoom: mapRegion_.zoom,
+      };
+    } else if (targetLayer_.type === 'LINE' || targetLayer_.type === 'POLYGON') {
+      if (!isLocationTypeArray(targetRecord_.coords)) return jumpRegion;
+      const coords = targetRecord_.coords;
+      const bounds = boundingBoxFromCoords(coords);
+      const tempZoom =
+        deltaToZoom(windowWidth_, {
+          latitudeDelta: bounds.north - bounds.south,
+          longitudeDelta: bounds.east - bounds.west,
+        }).zoom - 1;
       const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
       const featureWidth = bounds.east - bounds.west;
-      //調整後のズームでdeltaも調整
       const delta = featureWidth * 2 ** (tempZoom - jumpZoom - 1);
       jumpRegion = {
-        latitude: (isLandscape ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
-        longitude: (isLandscape ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
+        latitude: (isLandscape_ ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
+        longitude: (isLandscape_ ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
         latitudeDelta: delta,
         longitudeDelta: delta,
         zoom: jumpZoom,
       };
     }
+
+    return jumpRegion;
+  };
+
+  const gotoHomeAndJump = useCallback(() => {
+    const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
+    if (jumpRegion === undefined) return;
     navigation.navigate('Home', {
       jumpTo: jumpRegion,
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [
-    isLandscape,
-    mapRegion.latitudeDelta,
-    mapRegion.longitudeDelta,
-    mapRegion.zoom,
-    navigation,
-    targetLayer.type,
-    targetRecord.coords,
-    windowWidth,
-  ]);
+  }, [isLandscape, mapRegion, navigation, targetLayer, targetRecord, windowWidth]);
 
   const gotoGoogleMaps = useCallback(() => {
     let lat = 35;
@@ -343,11 +343,13 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
 
     switch (targetLayer.type) {
       case 'POINT':
-        lat = (targetRecord.coords as LocationType).latitude;
-        lng = (targetRecord.coords as LocationType).longitude;
+        if (!isLocationType(targetRecord.coords)) return;
+        lat = targetRecord.coords.latitude;
+        lng = targetRecord.coords.longitude;
         break;
       case 'LINE': {
-        const coords = targetRecord.coords as LocationType[];
+        if (!isLocationTypeArray(targetRecord.coords)) return;
+        const coords = targetRecord.coords;
         if (coords.length > 0) {
           lat = coords[0].latitude;
           lng = coords[0].longitude;
@@ -355,7 +357,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       }
       case 'POLYGON': {
-        const coords = targetRecord.coords as LocationType[];
+        if (!isLocationTypeArray(targetRecord.coords)) return;
+        const coords = targetRecord.coords;
         if (coords.length > 0) {
           lat = coords[0].latitude;
           lng = coords[0].longitude;
@@ -455,6 +458,36 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     [isEditingRecord, navigation, targetLayer, targetRecord]
   );
 
+  const pressEditPosition = useCallback(() => {
+    if (isEditingRecord) {
+      Alert.alert('', '一旦変更を保存してください。');
+      return;
+    }
+    const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
+    if (!isOK) {
+      Alert.alert('', message);
+      return;
+    }
+    const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
+
+    navigation.navigate('Home', {
+      previous: 'DataEdit',
+      mode: 'editPosition',
+      jumpTo: jumpRegion,
+      layer: targetLayer,
+      record: targetRecord,
+    });
+  }, [
+    checkRecordEditable,
+    isEditingRecord,
+    isLandscape,
+    mapRegion,
+    navigation,
+    targetLayer,
+    targetRecord,
+    windowWidth,
+  ]);
+
   return (
     <DataEditContext.Provider
       value={{
@@ -482,6 +515,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         pressDeleteData,
         pressCopyData,
         pressAddReferenceData,
+        pressEditPosition,
         gotoHomeAndJump,
         gotoGoogleMaps,
         gotoBack,

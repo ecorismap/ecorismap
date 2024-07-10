@@ -29,15 +29,14 @@ export default function SplitScreen() {
         animation: 'none',
       }}
     >
-      <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
-      <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
-
-      <Stack.Screen name="Maps" component={Maps} options={{ title: t('Maps.navigation.title') }} />
-      <Stack.Screen name="MapList" component={MapList} options={{ title: t('MapList.navigation.title') }} />
       <Stack.Screen name="Layers" component={Layers} options={{ title: t('Layers.navigation.title') }} />
       <Stack.Screen name="Data" component={Data} options={{ title: t('Data.navigation.title') }} />
       <Stack.Screen name="DataEdit" component={DataEdit} options={{ title: t('DataEdit.navigation.title') }} />
       <Stack.Screen name="LayerEdit" component={LayerEdit} options={{ title: t('LayerEdit.navigation.title') }} />
+      <Stack.Screen name="Maps" component={Maps} options={{ title: t('Maps.navigation.title') }} />
+      <Stack.Screen name="MapList" component={MapList} options={{ title: t('MapList.navigation.title') }} />
+      <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
+      <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />
       <Stack.Screen
         name="LayerEditFeatureStyle"
         component={LayerEditFeatureStyle}
