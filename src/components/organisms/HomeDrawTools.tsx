@@ -20,6 +20,7 @@ export const HomeDrawTools = () => {
     currentPolygonTool,
     featureButton,
     isPencilModeActive,
+    editPositionMode,
     selectDrawTool,
     setLineTool,
     setPolygonTool,
@@ -32,25 +33,19 @@ export const HomeDrawTools = () => {
   const route = useRoute();
   const insets = useSafeAreaInsets();
 
-  const editPosition = useMemo(() => {
-    // @ts-ignore
-    return route.params?.mode === 'editPosition';
-    // @ts-ignore
-  }, [route.params?.mode]);
-
   //座標がある場合
   const editPositionWithCoord = useMemo(() => {
     // @ts-ignore
-    return editPosition && route.params?.jumpTo;
+    return editPositionMode && route.params?.withCoord;
     // @ts-ignore
-  }, [editPosition, route.params?.jumpTo]);
+  }, [editPositionMode, route.params?.withCoord]);
 
   //座標がない場合
   const editPositionWithoutCoord = useMemo(() => {
     // @ts-ignore
-    return editPosition && !route.params?.jumpTo;
+    return editPositionMode && !route.params?.withCoord;
     // @ts-ignore
-  }, [editPosition, route.params?.jumpTo]);
+  }, [editPositionMode, route.params?.withCoord]);
 
   const styles = StyleSheet.create({
     button: {
@@ -71,7 +66,7 @@ export const HomeDrawTools = () => {
   return (
     <View style={styles.buttonContainer}>
       <View>
-        {featureButton === 'POINT' && (!editPosition || editPositionWithoutCoord) && (
+        {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
           <View style={styles.button}>
             <Button
               name={POINTTOOL.ADD_LOCATION_POINT}
@@ -91,7 +86,7 @@ export const HomeDrawTools = () => {
           </View>
         )}
 
-        {featureButton === 'POINT' && (!editPosition || editPositionWithoutCoord) && (
+        {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
           <View style={styles.button}>
             <Button
               id={'PLOT_POINT'}
@@ -104,7 +99,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (!editPosition || editPositionWithCoord) && (
+        {featureButton === 'POINT' && (!editPositionMode || editPositionWithCoord) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.MOVE_POINT}
@@ -117,7 +112,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && !editPosition && (
+        {featureButton === 'POINT' && !editPositionMode && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.DELETE_POINT}
@@ -154,7 +149,7 @@ export const HomeDrawTools = () => {
         )}
       </View>
 
-      {featureButton !== 'POINT' && !editPosition && (
+      {featureButton !== 'POINT' && !editPositionMode && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.SELECT}
@@ -211,7 +206,7 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && !editPosition && (
+      {featureButton !== 'POINT' && !editPositionMode && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.DELETE}
@@ -223,7 +218,7 @@ export const HomeDrawTools = () => {
         </View>
       )}
 
-      {featureButton === 'POINT' && editPosition && (
+      {featureButton === 'POINT' && editPositionMode && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.FINISH_EDIT_POSITION}

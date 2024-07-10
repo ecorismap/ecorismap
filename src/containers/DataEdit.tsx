@@ -452,6 +452,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       jumpTo: jumpRegion,
       layer: targetLayer,
       record: targetRecord,
+      withCoord: jumpRegion !== undefined,
     });
   }, [
     checkRecordEditable,
