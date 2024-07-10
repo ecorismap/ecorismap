@@ -12,14 +12,28 @@ interface Props {
   layer: LayerType;
   zoom: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
-  draggable: boolean;
+
+  editPositionMode: boolean;
+  editPositionRecord: RecordType | undefined;
+  editPositionLayer: LayerType | undefined;
+  currentDrawTool: string;
   onDragEndPoint: (e: MarkerDragEvent, layer: LayerType, feature: RecordType) => void;
 }
 
 export const Point = React.memo(
   (props: Props) => {
     //console.log('render Point');
-    const { data, layer, zoom, selectedRecord, draggable, onDragEndPoint } = props;
+    const {
+      data,
+      selectedRecord,
+      onDragEndPoint,
+      layer,
+      zoom,
+      editPositionLayer,
+      editPositionMode,
+      editPositionRecord,
+      currentDrawTool,
+    } = props;
     if (data === undefined) return null;
 
     return (
@@ -33,6 +47,13 @@ export const Point = React.memo(
           const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
           const color = selected ? COLOR.YELLOW : labelColor;
           const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
+          const draggable =
+            currentDrawTool === 'MOVE_POINT' &&
+            (!editPositionMode ||
+              (editPositionMode &&
+                editPositionRecord !== undefined &&
+                editPositionLayer?.id === layer.id &&
+                editPositionRecord.id === feature.id));
 
           return (
             // @ts-ignore */
@@ -60,7 +81,10 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
-    if (prevProps.draggable !== nextProps.draggable) return false;
+    if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
+    if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;
+    if (prevProps.editPositionLayer !== nextProps.editPositionLayer) return false;
+    if (prevProps.currentDrawTool !== nextProps.currentDrawTool) return false;
     if (prevProps.onDragEndPoint !== nextProps.onDragEndPoint) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する

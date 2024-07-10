@@ -1,8 +1,6 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, DRAWTOOL, MAPMEMOTOOL, PLUGIN, POINTTOOL } from '../../constants/AppConstants';
-import { HisyouToolButton } from '../../plugins/hisyoutool/HisyouToolButton';
-import { useHisyouToolSetting } from '../../plugins/hisyoutool/useHisyouToolSetting';
+import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -11,11 +9,11 @@ import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from '../../i18n/config';
+import { useRoute } from '@react-navigation/native';
 
 export const HomeDrawTools = () => {
   const {
     isEditingDraw,
-    isEditingObject,
     isSelectedDraw,
     currentDrawTool,
     currentLineTool,
@@ -26,13 +24,33 @@ export const HomeDrawTools = () => {
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
-    pressSaveDraw,
     pressDeleteDraw,
+    pressDeletePosition,
     togglePencilMode,
+    finishEditPosition,
   } = useContext(HomeContext);
+  const route = useRoute();
   const insets = useSafeAreaInsets();
 
-  const { isHisyouToolActive } = useHisyouToolSetting();
+  const editPosition = useMemo(() => {
+    // @ts-ignore
+    return route.params?.mode === 'editPosition';
+    // @ts-ignore
+  }, [route.params?.mode]);
+
+  //座標がある場合
+  const editPositionWithCoord = useMemo(() => {
+    // @ts-ignore
+    return editPosition && route.params?.jumpTo;
+    // @ts-ignore
+  }, [editPosition, route.params?.jumpTo]);
+
+  //座標がない場合
+  const editPositionWithoutCoord = useMemo(() => {
+    // @ts-ignore
+    return editPosition && !route.params?.jumpTo;
+    // @ts-ignore
+  }, [editPosition, route.params?.jumpTo]);
 
   const styles = StyleSheet.create({
     button: {
@@ -53,7 +71,7 @@ export const HomeDrawTools = () => {
   return (
     <View style={styles.buttonContainer}>
       <View>
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && (!editPosition || editPositionWithoutCoord) && (
           <View style={styles.button}>
             <Button
               name={POINTTOOL.ADD_LOCATION_POINT}
@@ -72,7 +90,8 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+
+        {featureButton === 'POINT' && (!editPosition || editPositionWithoutCoord) && (
           <View style={styles.button}>
             <Button
               id={'PLOT_POINT'}
@@ -85,7 +104,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && (!editPosition || editPositionWithCoord) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.MOVE_POINT}
@@ -98,7 +117,7 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
-        {featureButton === 'POINT' && (
+        {featureButton === 'POINT' && !editPosition && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.DELETE_POINT}
@@ -113,9 +132,10 @@ export const HomeDrawTools = () => {
             />
           </View>
         )}
+
         {featureButton === 'LINE' && (
           <HomeLineToolButton
-            disabled={isHisyouToolActive}
+            disabled={false}
             isPositionRight={false}
             currentDrawTool={currentDrawTool}
             currentLineTool={currentLineTool}
@@ -133,19 +153,8 @@ export const HomeDrawTools = () => {
           />
         )}
       </View>
-      {PLUGIN.HISYOUTOOL && featureButton === 'LINE' && (
-        <View>
-          <HisyouToolButton
-            isEditing={isEditingDraw}
-            isSelected={isSelectedDraw}
-            isPositionRight={false}
-            currentDrawTool={currentDrawTool}
-            selectDrawTool={selectDrawTool}
-          />
-        </View>
-      )}
 
-      {featureButton !== 'POINT' && (
+      {featureButton !== 'POINT' && !editPosition && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.SELECT}
@@ -179,14 +188,15 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && (
+      {featureButton === 'POINT' && editPositionWithCoord && (
         <View style={styles.button}>
           <Button
-            name={DRAWTOOL.SAVE}
-            backgroundColor={!isEditingDraw || isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            name={DRAWTOOL.DELETE_POSITION}
+            backgroundColor={COLOR.ALFABLUE}
             borderRadius={10}
-            disabled={!isEditingDraw || isEditingObject}
-            onPress={pressSaveDraw}
+            onPress={pressDeletePosition}
+            tooltipText={t('Home.tooltip.deletePosition')}
+            tooltipPosition={{ left: 1 }}
           />
         </View>
       )}
@@ -201,14 +211,27 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && (
+      {featureButton !== 'POINT' && !editPosition && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.DELETE}
-            backgroundColor={isEditingDraw || !isSelectedDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            backgroundColor={!isEditingDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
             borderRadius={10}
-            disabled={isEditingDraw || !isSelectedDraw}
+            disabled={!isEditingDraw}
             onPress={pressDeleteDraw}
+          />
+        </View>
+      )}
+
+      {featureButton === 'POINT' && editPosition && (
+        <View style={styles.button}>
+          <Button
+            name={DRAWTOOL.FINISH_EDIT_POSITION}
+            backgroundColor={COLOR.ALFABLUE}
+            borderRadius={10}
+            onPress={finishEditPosition}
+            tooltipText={t('Home.tooltip.finishEditPosition')}
+            tooltipPosition={{ left: 1 }}
           />
         </View>
       )}
