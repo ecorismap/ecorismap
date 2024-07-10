@@ -389,8 +389,8 @@
       "info": "現在のデータをクリアします。"
     },
     "pdf_save": {
-      "text": "pdfの出力",
-      "info": "現在の地図とデータをpdfに出力します。"
+      "text": "PDFの出力",
+      "info": "現在の地図とデータをPDFに出力します。"
     },
     "gps_settings": {
       "text": "GPSの設定",

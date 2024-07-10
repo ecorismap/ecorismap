@@ -68,7 +68,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         longitude: currentLocation.longitude,
       }}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={false}
+      tracksViewChanges={true}
       style={{ zIndex: 1001 }}
       onPress={handleMarkerPress}
     >
