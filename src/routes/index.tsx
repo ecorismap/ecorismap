@@ -34,6 +34,7 @@ export type RootStackParamList = {
         mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | 'editPosition' | undefined;
         layer?: LayerType;
         record?: RecordType;
+        withCoord?: boolean;
       }
     | undefined;
   AccountSettings: { previous: keyof RootStackParamList };
