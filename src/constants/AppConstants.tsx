@@ -148,6 +148,7 @@ export const POINTTOOL = {
 export const LINETOOL = {
   PLOT_LINE: 'vector-line',
   FREEHAND_LINE: 'draw',
+  SPLIT_LINE: 'content-cut',
 } as const;
 
 export const POLYGONTOOL = {

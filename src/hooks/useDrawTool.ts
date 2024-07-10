@@ -137,6 +137,7 @@ export type UseDrawToolReturnType = {
   handleReleasePlotPoint: () => void;
   handleReleasePlotLinePolygon: () => boolean;
   selectObjectByFeature: (layer: LayerType, feature: RecordType) => void;
+  handleGrantSplitLine: (pXY: Position) => void;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -180,6 +181,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     getEditableLayerAndRecordSetWithCheck,
     generateRecord,
     findLayer,
+    findRecord,
   } = useRecord();
 
   const convertPointFeatureToDrawLine = useCallback(
@@ -802,7 +804,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         const updatedRecord: RecordType = { ...line.record, coords, centroid };
         const recordLayer = findLayer(line.layerId);
         if (recordLayer === undefined) continue;
-        updateRecord(recordLayer, updatedRecord);
+        //recordが存在する場合は更新。存在しない場合は新規追加。splitLineに対応するため
+        const targetRecord = findRecord(recordLayer.id, line.record.userId, line.record.id, 'LINE');
+        if (targetRecord !== undefined) {
+          updateRecord(recordLayer, updatedRecord);
+        } else {
+          addRecord(recordLayer, updatedRecord);
+        }
         savedRecordSet.push(updatedRecord);
       } else {
         const record = generateRecord('LINE', layer, recordSet, latlonArrayToLatLonObjects(line.latlon));
@@ -813,7 +821,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
+  }, [
+    addRecord,
+    findLayer,
+    findRecord,
+    generateRecord,
+    getEditableLayerAndRecordSetWithCheck,
+    resetDrawTools,
+    updateRecord,
+  ]);
 
   const savePolygon = useCallback(() => {
     //削除したものを取り除く
@@ -1168,6 +1184,38 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(ulid());
   }, [createNewFreehandObject, editFreehandObject]);
 
+  const handleGrantSplitLine = useCallback(
+    (pXY: Position) => {
+      const index = editingObjectIndex.current;
+      const lineXY = drawLine.current[index].xy;
+      const { isNear } = checkDistanceFromLine(pXY, lineXY);
+      if (!isNear) return;
+
+      let nodeIndex = findNearNodeIndex(pXY, lineXY);
+      if (nodeIndex === -1) {
+        //console.log('make interporate node');
+        const { index: idx } = getSnappedPositionWithLine(pXY, lineXY, {
+          isXY: true,
+        });
+        lineXY.splice(idx + 1, 0, pXY);
+        nodeIndex = idx + 1;
+      }
+      const record = drawLine.current[index].record;
+      const newLine = {
+        ...drawLine.current[index],
+        id: ulid(),
+        latlon: xyArrayToLatLonArray(lineXY.slice(0, nodeIndex + 1), mapRegion, mapSize, mapViewRef),
+        record: record ? { ...record, id: ulid() } : undefined,
+      };
+      drawLine.current.push(newLine);
+      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY.slice(nodeIndex), mapRegion, mapSize, mapViewRef);
+
+      //保存する
+      saveLine();
+    },
+    [mapRegion, mapSize, mapViewRef, saveLine]
+  );
+
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
     if (drawLine.current.length > 0 && refreshDrawLine.current) {
@@ -1224,6 +1272,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleReleasePlotPoint,
     handleReleasePlotLinePolygon,
     handleReleaseFreehand,
+    handleGrantSplitLine,
     selectObjectByFeature,
   } as const;
 };
