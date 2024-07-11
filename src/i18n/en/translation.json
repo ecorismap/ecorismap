@@ -108,7 +108,8 @@
       "gotoBack": "Do you want to discard your changes?",
       "close": "Do you want to discard your changes?",
       "copyData": "Do you want to copy the data?",
-      "deletePosition": "Do you want to delete the coordinates? \nNo data will be deleted."
+      "deletePosition": "Do you want to delete the coordinates? \nNo data will be deleted.",
+      "splitLine": "Do you want to split the line?"
     },
     "alert": {
       "referenceData": "Please save your changes once.",
