@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Callout } from 'react-native-maps';
@@ -25,7 +25,9 @@ interface Props {
 const areEqual = (prevProps: Props, nextProps: Props) => {
   // Compare azimuth with a tolerance of 3 degrees
   const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > 3;
-  const locationChanged = prevProps.currentLocation !== nextProps.currentLocation;
+  const locationChanged =
+    prevProps.currentLocation.latitude !== nextProps.currentLocation.latitude ||
+    prevProps.currentLocation.longitude !== nextProps.currentLocation.longitude;
   const headingUpChanged = prevProps.headingUp !== nextProps.headingUp;
 
   return !azimuthChanged && !locationChanged && !headingUpChanged;
@@ -39,26 +41,15 @@ export const CurrentMarker = React.memo((props: Props) => {
     return headingUp ? 0 : azimuth;
   }, [azimuth, headingUp]);
 
-  const [isCalloutVisible, setIsCalloutVisible] = useState(false);
+  // State to force marker redraw
   const markerRef = useRef(null);
 
   useEffect(() => {
-    if (isCalloutVisible && markerRef.current) {
+    if (markerRef.current) {
       //@ts-ignore
-      markerRef.current.showCallout();
-    } else if (!isCalloutVisible && markerRef.current) {
-      //@ts-ignore
-      markerRef.current.hideCallout();
+      markerRef.current.redraw();
     }
-  }, [currentLocation, azimuth, headingUp, distance, isCalloutVisible]);
-
-  const handleMarkerPress = () => {
-    setIsCalloutVisible(true);
-  };
-
-  const handleCalloutPress = () => {
-    setIsCalloutVisible(false);
-  };
+  }, [azimuth, currentLocation, headingUp]);
 
   return (
     <Marker
@@ -68,9 +59,8 @@ export const CurrentMarker = React.memo((props: Props) => {
         longitude: currentLocation.longitude,
       }}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={true}
       style={{ zIndex: 1001 }}
-      onPress={handleMarkerPress}
+      tracksViewChanges={false}
     >
       <View
         style={{
@@ -85,8 +75,7 @@ export const CurrentMarker = React.memo((props: Props) => {
           </G>
         </Svg>
       </View>
-
-      <Callout onPress={handleCalloutPress}>
+      <Callout>
         <View style={styles.calloutStyle}>
           <Text>Latitude: {decimalToDMS(currentLocation.latitude)}</Text>
           <Text>Longitude: {decimalToDMS(currentLocation.longitude)}</Text>
