@@ -138,6 +138,7 @@ export type UseDrawToolReturnType = {
   handleReleasePlotLinePolygon: () => boolean;
   selectObjectByFeature: (layer: LayerType, feature: RecordType) => void;
   handleGrantSplitLine: (pXY: Position) => void;
+  checkSplitLine: (pXY: Position) => boolean;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -1184,12 +1185,19 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(ulid());
   }, [createNewFreehandObject, editFreehandObject]);
 
+  const checkSplitLine = useCallback((pXY: Position) => {
+    const index = editingObjectIndex.current;
+    const lineXY = drawLine.current[index].xy;
+    const { isNear } = checkDistanceFromLine(pXY, lineXY);
+    if (!isNear) return false;
+
+    return true;
+  }, []);
+
   const handleGrantSplitLine = useCallback(
     (pXY: Position) => {
       const index = editingObjectIndex.current;
       const lineXY = drawLine.current[index].xy;
-      const { isNear } = checkDistanceFromLine(pXY, lineXY);
-      if (!isNear) return;
 
       let nodeIndex = findNearNodeIndex(pXY, lineXY);
       if (nodeIndex === -1) {
@@ -1209,7 +1217,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       };
       drawLine.current.push(newLine);
       drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY.slice(nodeIndex), mapRegion, mapSize, mapViewRef);
-
       //保存する
       saveLine();
     },
@@ -1274,5 +1281,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleReleaseFreehand,
     handleGrantSplitLine,
     selectObjectByFeature,
+    checkSplitLine,
   } as const;
 };
