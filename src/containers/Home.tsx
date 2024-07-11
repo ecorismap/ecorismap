@@ -161,6 +161,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     getPXY,
     savePoint,
     selectObjectByFeature,
+    checkSplitLine,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -1073,8 +1074,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
       } else if (currentDrawTool === 'SPLIT_LINE') {
-        handleGrantSplitLine(pXY);
-        if (route.params?.mode === 'editPosition') finishEditPosition();
+        const isOK = checkSplitLine(pXY);
+        if (isOK) {
+          const ret = await ConfirmAsync(t('DataEdit.confirm.splitLine'));
+          if (ret) {
+            handleGrantSplitLine(pXY);
+            if (route.params?.mode === 'editPosition') finishEditPosition();
+          }
+        }
       } else if (isPlotTool(currentDrawTool)) {
         handleGrantPlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
@@ -1115,6 +1122,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     },
     [
+      checkSplitLine,
       currentDrawTool,
       currentInfoTool,
       currentMapMemoTool,
