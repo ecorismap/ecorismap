@@ -3,7 +3,6 @@ import { ArrowStyleType, LineRecordType, MapMemoToolType, PenType } from '../typ
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppState } from '../modules';
-import { Position } from '@turf/turf';
 import { ulid } from 'ulid';
 import {
   checkDistanceFromLine,
@@ -27,6 +26,7 @@ import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
+import { Position } from 'geojson';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;

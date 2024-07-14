@@ -18,7 +18,8 @@ import booleanValid from '@turf/boolean-valid';
 import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
 
-import { Position, along, bearing, length } from '@turf/turf';
+import { along, bearing, length } from '@turf/turf';
+import { Position } from 'geojson';
 
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
   const latitude = decimal2dms(location.latitude);
