@@ -2,16 +2,18 @@
 
 #import <React/RCTBundleURLProvider.h>
 
-#import <React/RCTLinkingManager.h>
-#import <React/RCTConvert.h>
 #import <GoogleMaps/GoogleMaps.h>
+#import <React/RCTConvert.h>
+#import <React/RCTLinkingManager.h>
 
 @implementation AppDelegate
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
-{
-  NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps" ofType:@"plist"];
-  NSDictionary *plistDictionary = [NSDictionary dictionaryWithContentsOfFile:filePath];
+- (BOOL)application:(UIApplication *)application
+    didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps"
+                                                       ofType:@"plist"];
+  NSDictionary *plistDictionary =
+      [NSDictionary dictionaryWithContentsOfFile:filePath];
   NSString *mapsAPIKey = [plistDictionary objectForKey:@"APIKey"];
   [GMSServices provideAPIKey:mapsAPIKey];
 
@@ -20,48 +22,75 @@
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};
 
-  return [super application:application didFinishLaunchingWithOptions:launchOptions];
-
+  return [super application:application
+      didFinishLaunchingWithOptions:launchOptions];
 }
 
-- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
-{
+- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge {
+  return [self bundleURL];
+}
+
+- (NSURL *)bundleURL {
 #if DEBUG
-  return [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
+  return
+      [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index"];
 #else
-  return [[NSBundle mainBundle] URLForResource:@"main" withExtension:@"jsbundle"];
+  return [[NSBundle mainBundle] URLForResource:@"main"
+                                 withExtension:@"jsbundle"];
 #endif
 }
 
 // Linking API
-- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options {
-  return [super application:application openURL:url options:options] || [RCTLinkingManager application:application openURL:url options:options];
+- (BOOL)application:(UIApplication *)application
+            openURL:(NSURL *)url
+            options:
+                (NSDictionary<UIApplicationOpenURLOptionsKey, id> *)options {
+  return [super application:application openURL:url options:options] ||
+         [RCTLinkingManager application:application
+                                openURL:url
+                                options:options];
 }
 
 // Universal Links
-- (BOOL)application:(UIApplication *)application continueUserActivity:(nonnull NSUserActivity *)userActivity restorationHandler:(nonnull void (^)(NSArray<id<UIUserActivityRestoring>> * _Nullable))restorationHandler {
-  BOOL result = [RCTLinkingManager application:application continueUserActivity:userActivity restorationHandler:restorationHandler];
-  return [super application:application continueUserActivity:userActivity restorationHandler:restorationHandler] || result;
+- (BOOL)application:(UIApplication *)application
+    continueUserActivity:(nonnull NSUserActivity *)userActivity
+      restorationHandler:
+          (nonnull void (^)(NSArray<id<UIUserActivityRestoring>> *_Nullable))
+              restorationHandler {
+  BOOL result = [RCTLinkingManager application:application
+                          continueUserActivity:userActivity
+                            restorationHandler:restorationHandler];
+  return [super application:application
+             continueUserActivity:userActivity
+               restorationHandler:restorationHandler] ||
+         result;
 }
 
-// Explicitly define remote notification delegates to ensure compatibility with some third-party libraries
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
-{
-  return [super application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
+// Explicitly define remote notification delegates to ensure compatibility with
+// some third-party libraries
+- (void)application:(UIApplication *)application
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+  return [super application:application
+      didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
 }
 
-// Explicitly define remote notification delegates to ensure compatibility with some third-party libraries
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
-{
-  return [super application:application didFailToRegisterForRemoteNotificationsWithError:error];
+// Explicitly define remote notification delegates to ensure compatibility with
+// some third-party libraries
+- (void)application:(UIApplication *)application
+    didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
+  return [super application:application
+      didFailToRegisterForRemoteNotificationsWithError:error];
 }
 
-// Explicitly define remote notification delegates to ensure compatibility with some third-party libraries
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
-{
-  return [super application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
+// Explicitly define remote notification delegates to ensure compatibility with
+// some third-party libraries
+- (void)application:(UIApplication *)application
+    didReceiveRemoteNotification:(NSDictionary *)userInfo
+          fetchCompletionHandler:
+              (void (^)(UIBackgroundFetchResult))completionHandler {
+  return [super application:application
+      didReceiveRemoteNotification:userInfo
+            fetchCompletionHandler:completionHandler];
 }
-
-
 
 @end

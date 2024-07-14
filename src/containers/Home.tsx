@@ -44,7 +44,6 @@ import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
 import { latLonToXY, xyArrayToLatLonObjects } from '../utils/Coords';
-import { Position } from '@turf/turf';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { usePDF } from '../hooks/usePDF';
@@ -55,6 +54,7 @@ import { HomeModalPenPicker } from '../components/organisms/HomeModalPenPicker';
 import { HomeModalBrushPicker } from '../components/organisms/HomeModalBrushPicker';
 import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPicker';
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
+import { Position } from 'geojson';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
