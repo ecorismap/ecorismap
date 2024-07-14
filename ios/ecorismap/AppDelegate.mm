@@ -11,6 +11,7 @@
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  [FIRApp configure];
   NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps"
                                                        ofType:@"plist"];
   NSDictionary *plistDictionary =
