@@ -28,8 +28,8 @@ import {
 } from '../types';
 import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
 
-import { Position } from '@turf/turf';
 import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
+import { Position } from 'geojson';
 
 export interface HomeContextType {
   pointDataSet: PointDataType[];
