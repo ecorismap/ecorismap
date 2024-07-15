@@ -1,11 +1,11 @@
 import Pbf from 'pbf';
 import VectorTile from '@mapbox/vector-tile';
-import { Position } from '@turf/turf';
 import { pointToLineDistance, booleanPointInPolygon, distance, polygon, point, lineString } from '@turf/turf';
 import * as FileSystem from 'expo-file-system';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { Buffer } from 'buffer';
 import { getMetersPerPixelAtZoomLevel } from './Coords';
+import { Position } from 'geojson';
 
 //const pmtile = new PMTiles('https://www.ecoris.co.jp/map/kitakami_h30.pmtiles');
 
