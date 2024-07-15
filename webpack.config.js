@@ -16,6 +16,7 @@ module.exports = async function (env, argv) {
     },
   });
   // https://github.com/expo/expo-webpack-integrations/issues/10
+  //  from "react-native-reanimated": "^3.14.0",
   config.module.rules.forEach((rule) => {
     if (rule.oneOf instanceof Array) {
       rule.oneOf[rule.oneOf.length - 1].exclude = [/\.(js|mjs|jsx|cjs|ts|tsx)$/, /\.html$/, /\.json$/];
