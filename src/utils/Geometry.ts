@@ -29,8 +29,8 @@ import {
   Polygon,
   GeoJsonProperties,
   Geometry,
+  Position,
 } from 'geojson';
-import { Position } from '@turf/turf';
 import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
