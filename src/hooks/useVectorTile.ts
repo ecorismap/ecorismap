@@ -1,9 +1,9 @@
-import { Position } from '@turf/turf';
 import { useCallback, useState } from 'react';
 import { latToTileY, lonToTileX } from '../utils/Tile';
 import { fetchVectorTileInfo } from '../utils/VectorTile';
 import { AppState } from '../modules';
 import { useSelector } from 'react-redux';
+import { Position } from 'geojson';
 
 export type UseVectorTileReturnType = {
   vectorTileInfo:

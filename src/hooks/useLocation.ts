@@ -426,7 +426,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     });
 
     return () => {
-      subscription.remove();
+      subscription && subscription.remove();
     };
   }, [gpsState]);
 

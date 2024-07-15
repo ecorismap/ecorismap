@@ -2,7 +2,6 @@ import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, use
 import { GestureResponderEvent, Platform } from 'react-native';
 import { useDispatch } from 'react-redux';
 import MapView from 'react-native-maps';
-import { Position } from '@turf/turf';
 import { ulid } from 'ulid';
 import { t } from '../i18n/config';
 //import * as turf from '@turf/turf';
@@ -56,6 +55,7 @@ import { MapRef } from 'react-map-gl';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
 import { isPointTool } from '../utils/General';
+import { Position } from 'geojson';
 
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
