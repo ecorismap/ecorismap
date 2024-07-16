@@ -381,6 +381,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         if (!Object.keys(STAMP).includes(line.field._stamp as string)) return;
         const stampLatLon = latLonObjectsToLatLonArray(line.coords)[0];
         const stampGeometry = buffer(turf.point(stampLatLon), mapRegion.latitudeDelta);
+        if (stampGeometry === undefined) return;
         let polygonGeometry;
         if (eraserLineLatLonArray.length < 4) {
           //3点以下の場合は、4点のラインにしてバッファを作成して判定する
@@ -394,7 +395,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
           polygonGeometry = turf.polygon([eraserLineLatLonArray]);
         }
-
+        if (polygonGeometry === undefined) return;
         if (booleanContains(polygonGeometry, stampGeometry) || booleanIntersects(polygonGeometry, stampGeometry)) {
           deletedLines.push({ idx, line });
         }
@@ -436,7 +437,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
           polygonGeometry = turf.polygon([eraserLineLatLonArray]);
         }
-
+        if (polygonGeometry === undefined) return;
         if (
           booleanContains(polygonGeometry, stampLineGeometry) ||
           booleanIntersects(polygonGeometry, stampLineGeometry)
