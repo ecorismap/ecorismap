@@ -29,7 +29,7 @@ import {
   isPointTool,
   isPolygonTool,
 } from '../utils/General';
-import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl/maplibre';
 import { t } from '../i18n/config';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';

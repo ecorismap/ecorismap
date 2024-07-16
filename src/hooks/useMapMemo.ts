@@ -15,7 +15,7 @@ import {
   xyArrayToLatLonArray,
 } from '../utils/Coords';
 import MapView from 'react-native-maps';
-import { MapRef } from 'react-map-gl';
+import { MapRef } from 'react-map-gl/maplibre';
 import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
 import { booleanContains, booleanIntersects, buffer } from '@turf/turf';
