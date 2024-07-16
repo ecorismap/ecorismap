@@ -10967,8 +10967,8 @@ __metadata:
     mockdate: ^3.0.5
     pako: ^2.1.0
     patch-package: ^6.4.7
-    pbf: ^3.2.1
-    pmtiles: ^2.10.0
+    pbf: 3.2.1
+    pmtiles: 2.10.0
     postinstall-postinstall: ^2.1.0
     prettier: 2.8.8
     prop-types: ^15.8.1
@@ -10995,7 +10995,7 @@ __metadata:
     react-native-svg: ^15.4.0
     react-native-vector-icons: ^10.1.0
     react-native-web: ^0.19.12
-    react-native-zip-archive: ^7.0.0
+    react-native-zip-archive: 6.0.8
     react-redux: 8.1.3
     react-test-renderer: 18.2.0
     reanimated-color-picker: ^3.0.4
@@ -17087,7 +17087,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pbf@npm:^3.2.1":
+"pbf@npm:3.2.1, pbf@npm:^3.2.1":
   version: 3.2.1
   resolution: "pbf@npm:3.2.1"
   dependencies:
@@ -17199,7 +17199,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pmtiles@npm:^2.10.0":
+"pmtiles@npm:2.10.0":
   version: 2.10.0
   resolution: "pmtiles@npm:2.10.0"
   dependencies:
@@ -18369,13 +18369,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-zip-archive@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "react-native-zip-archive@npm:7.0.0"
+"react-native-zip-archive@npm:6.0.8":
+  version: 6.0.8
+  resolution: "react-native-zip-archive@npm:6.0.8"
   peerDependencies:
     react: ">=16.8.6"
     react-native: ">=0.60.0"
-  checksum: 788e54ae9899b5ab0c3475c24ce93ca3514a1c02d14048fd34245af496a9af996be3115d50fdbb14f219d4ea8f7dcc2b483fe848fa9a1d133bbaf88fd357bcf6
+  checksum: c725e8f154c8858fb60138909cd3dafe85e5ee01c0a7e323804aaba7b2186ac7f8f28bf47398f49770a1e91504a8810773f0ed03a55380cccf45d8d53dac4681
   languageName: node
   linkType: hard
 
