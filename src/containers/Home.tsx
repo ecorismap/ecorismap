@@ -21,7 +21,7 @@ import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
-import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
 import {

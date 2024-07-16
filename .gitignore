@@ -65,9 +65,6 @@ buck-out/
 web-build/
 dist/
 
-# Cypress
-serviceAccount.json
-cypress.env.json
 
 #firebase
 .env

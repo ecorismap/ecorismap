@@ -1,7 +1,7 @@
 import React from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 import { LocationType } from '../../types';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 
 interface Props {
   currentLocation: LocationType;

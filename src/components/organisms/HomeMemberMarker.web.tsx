@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, View, Image, StyleSheet, Text } from 'react-native';
 import { MemberLocationType } from '../../types';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
