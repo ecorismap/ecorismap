@@ -12,7 +12,7 @@ import {
   RegionType,
 } from '../types';
 import * as turf from '@turf/turf';
-import { MapRef } from 'react-map-gl';
+import { MapRef } from 'react-map-gl/maplibre';
 import MapView, { LatLng } from 'react-native-maps';
 import booleanValid from '@turf/boolean-valid';
 import fitCurve from 'fit-curve';

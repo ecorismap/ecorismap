@@ -5,7 +5,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
-import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl';
+import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import maplibregl, { LayerSpecification, RequestParameters, ResponseCallback } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';

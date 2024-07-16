@@ -1,4 +1,4 @@
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import MapView, { Region } from 'react-native-maps';
 import { RegionType, TileMapItemType, TileMapType } from '../types';
 

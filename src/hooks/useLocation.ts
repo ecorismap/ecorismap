@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
-import { MapRef } from 'react-map-gl';
+import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateTrackLog } from '../utils/Location';

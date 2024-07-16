@@ -4,7 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { bearing } from '@turf/turf';
 import * as turf from '@turf/helpers';
 import { ArrowStyleType } from '../../types';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 import { LatLng } from 'react-native-maps';
 
 interface Props {
