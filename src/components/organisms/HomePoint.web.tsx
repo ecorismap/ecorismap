@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { RecordType, LayerType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
-import { Marker, MarkerDragEvent } from 'react-map-gl';
+import { Marker, MarkerDragEvent } from 'react-map-gl/maplibre';
 import { getColor } from '../../utils/Layer';
 import { generateLabel } from '../../hooks/useLayers';
 

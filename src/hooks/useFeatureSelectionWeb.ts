@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import MapView from 'react-native-maps';
-import { MapRef } from 'react-map-gl';
+import { MapRef } from 'react-map-gl/maplibre';
 import { RecordType } from '../types';
 
 export type UseFeatureSelectionWebType = {
