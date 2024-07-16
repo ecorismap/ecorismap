@@ -7,7 +7,7 @@ import Routes from './routes';
 import { persistor, store } from './store';
 
 if (Platform.OS !== 'web') {
-  LogBox.ignoreLogs(['Animated: `useNativeDriver`', 'VirtualizedLists']);
+  LogBox.ignoreLogs(['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet']);
 }
 
 export default function App() {

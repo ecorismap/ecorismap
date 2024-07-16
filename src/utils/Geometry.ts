@@ -1,4 +1,4 @@
-import { parse } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 import { ulid } from 'ulid';
 import xmlBuilder from 'xmlbuilder';
 import {
@@ -195,13 +195,14 @@ export const Gpx2Data = (
   try {
     //console.log(type);
     const newLayer: LayerType = createGpxLayer(fileName, type);
-
-    const json = parse(gpx, {
+    const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: '',
     });
-    const gpxkey = Object.keys(json)[0];
-    //console.log(json[gpxkey]);
+    const json = parser.parse(gpx);
+    //console.log(json);
+    const gpxkey = json.gpx ? 'gpx' : 'GPX';
+    //console.log(gpxkey);
     let importedData: RecordType[] = [];
 
     switch (type) {

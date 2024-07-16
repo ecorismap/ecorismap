@@ -7,8 +7,8 @@ import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
-import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl';
-import maplibregl, { LayerSpecification, RequestParameters, ResponseCallback } from 'maplibre-gl';
+import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import maplibregl, { LayerSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
@@ -46,7 +46,7 @@ import { PMTiles } from '../../utils/pmtiles';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
-import Dexie from 'dexie';
+// import Dexie from 'dexie';
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 
 export default function HomeScreen() {
@@ -129,51 +129,53 @@ export default function HomeScreen() {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
-  // データベースの定義
-  const db = new Dexie('TilesDatabase');
-  db.version(1).stores({
-    tiles: 'url, blob', // Blobデータとして画像を保存
-  });
+  // // データベースの定義
+  // const db = new Dexie('TilesDatabase');
+  // db.version(1).stores({
+  //   tiles: 'url, blob', // Blobデータとして画像を保存
+  // });
 
-  // IndexedDBに画像をBlobとして保存
-  const saveImageToIndexedDB = async (url: string, blob: Blob) => {
-    //@ts-ignore
-    await db.tiles.put({ url, blob });
-    //console.log('IndexedDBに保存', url);
-  };
+  // // IndexedDBに画像をBlobとして保存
+  // const saveImageToIndexedDB = async (url: string, blob: Blob) => {
+  //   //@ts-ignore
+  //   await db.tiles.put({ url, blob });
+  //   //console.log('IndexedDBに保存', url);
+  // };
 
-  const getLocalTile = async (url: string) => {
-    //@ts-ignore
-    const tile = await db.tiles.get(url);
-    if (tile?.blob) {
-      //console.log('IndexedDBから取得', url);
-      return tile.blob.arrayBuffer(); // BlobをArrayBufferに変換
-    }
-    return null;
-  };
+  // const getLocalTile = async (url: string) => {
+  //   //@ts-ignore
+  //   const tile = await db.tiles.get(url);
+  //   if (tile?.blob) {
+  //     //console.log('IndexedDBから取得', url);
+  //     return tile.blob.arrayBuffer(); // BlobをArrayBufferに変換
+  //   }
+  //   return null;
+  // };
 
-  maplibregl.addProtocol('custom', (params: RequestParameters, callback: ResponseCallback<any>) => {
-    getLocalTile(params.url).then((tileBuffer) => {
-      if (tileBuffer) {
-        callback(null, tileBuffer, null, null);
-      } else {
-        fetch(`https://${params.url.split('://')[2]}`)
-          .then(async (response) => {
-            if (!response.ok) {
-              throw new Error(`Tile fetch error: ${response.statusText}`);
-            }
-            const blob = await response.blob();
-            saveImageToIndexedDB(params.url, blob); // Blobとして保存
-            const arrayBuffer = await blob.arrayBuffer();
-            callback(null, arrayBuffer, null, null);
-          })
-          .catch((e) => {
-            callback(new Error(e.message));
-          });
-      }
-    });
-    return { cancel: () => {} };
-  });
+  // const loadFn: maplibregl.AddProtocolAction = (params: RequestParameters, callback: any) => {
+  //   getLocalTile(params.url).then((tileBuffer) => {
+  //     if (tileBuffer) {
+  //       callback(null, tileBuffer, null, null);
+  //     } else {
+  //       fetch(`https://${params.url.split('://')[2]}`)
+  //         .then(async (response) => {
+  //           if (!response.ok) {
+  //             throw new Error(`Tile fetch error: ${response.statusText}`);
+  //           }
+  //           const blob = await response.blob();
+  //           saveImageToIndexedDB(params.url, blob); // Blobとして保存
+  //           const arrayBuffer = await blob.arrayBuffer();
+  //           callback(null, arrayBuffer, null, null);
+  //         })
+  //         .catch((e) => {
+  //           callback(new Error(e.message));
+  //         });
+  //     }
+  //   });
+  //   return { cancel: () => {} };
+  // };
+
+  // maplibregl.addProtocol('custom', loadFn);
 
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
@@ -351,9 +353,11 @@ export default function HomeScreen() {
                 layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
               }
               if (!hasStyleJson) {
-                const source = map.getSource(tileMap.id) as mapboxgl.VectorSource;
-                source.minzoom = header.minZoom;
-                source.maxzoom = header.maxZoom;
+                const source = map.getSource(tileMap.id);
+                if (source) {
+                  source.minzoom = header.minZoom;
+                  source.maxzoom = header.maxZoom;
+                }
               }
               map.addLayer(layerStyle);
             });
@@ -438,6 +442,16 @@ export default function HomeScreen() {
     map.touchPitch.enable();
     if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
     map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+    //夕日のように
+
+    map.setSky({
+      'sky-color': '#f0f8ff',
+      'sky-horizon-blend': 0.8,
+      'horizon-color': '#f0f8ff',
+      'horizon-fog-blend': 0.5,
+      'fog-color': '#f0f8ff',
+      'fog-ground-blend': 0.5,
+    });
 
     //二回目以降の設定
     map.on('style.load', function () {
@@ -446,7 +460,7 @@ export default function HomeScreen() {
     });
   };
 
-  const mapStyle: string | mapboxgl.Style | undefined = useMemo(() => {
+  const mapStyle = useMemo(() => {
     const sources = tileMaps
       .slice(0)
       .reverse()
@@ -633,6 +647,7 @@ export default function HomeScreen() {
                 ref={mapViewRef as React.MutableRefObject<MapRef>}
                 {...mapRegion}
                 style={{ width: '100%', height: '100%' }}
+                //@ts-ignore
                 mapStyle={mapStyle}
                 maxPitch={85}
                 onMove={(e) => onRegionChangeMapView(e.viewState)}

@@ -27,7 +27,7 @@ import {
   PaperSizeType,
   InfoToolType,
 } from '../types';
-import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl';
+import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl/maplibre';
 
 import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 import { Position } from 'geojson';

@@ -3,6 +3,5 @@
   "compilerOptions": {
     "module": "esnext",
     "strict": true
-  },
-  "exclude": ["cypress"]
+  }
 }
