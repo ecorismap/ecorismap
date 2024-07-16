@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { Layer, Source } from 'react-map-gl';
+import { Layer, Source } from 'react-map-gl/maplibre';
 import { TileRegionType } from '../../types';
 
 interface Props {

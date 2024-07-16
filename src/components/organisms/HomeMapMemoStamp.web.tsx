@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { RecordType, PointRecordType } from '../../types';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 
 import Svg, { Circle, Line, Polygon, Rect, Text } from 'react-native-svg';
 

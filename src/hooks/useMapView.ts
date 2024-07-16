@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useCallback } from 'react';
 import MapView, { Region } from 'react-native-maps';
-import { MapRef, ViewState } from 'react-map-gl';
+import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Platform } from 'react-native';
 import { isMapRef, isMapView, isRegion, isRegionType, isViewState } from '../utils/Map';
 import { useWindow } from './useWindow';

@@ -4,7 +4,7 @@ import { LineRecordType } from '../../types';
 import Svg, { Circle, Path, Polygon } from 'react-native-svg';
 
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../../utils/Coords';
-import { Marker } from 'react-map-gl';
+import { Marker } from 'react-map-gl/maplibre';
 
 interface Props {
   lineColor: string;

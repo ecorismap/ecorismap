@@ -6,8 +6,6 @@
     "plugin:react/recommended",
     "@react-native",
     "plugin:react-native/all",
-    // "plugin:jest/recommended",
-    "plugin:cypress/recommended",
     "prettier"
   ],
   "globals": {
