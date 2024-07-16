@@ -19,7 +19,7 @@ import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
 
 import { along, bearing, length } from '@turf/turf';
-import { Position } from 'geojson';
+import { Geometry, Polygon, Position } from 'geojson';
 
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
   const latitude = decimal2dms(location.latitude);
@@ -283,6 +283,7 @@ export const findNearNodeIndex = (xyPoint: Position, xyLine: Position[]) => {
     const turfPoint = turf.point([xyPoint[0] / ADJUST_VALUE, xyPoint[1] / ADJUST_VALUE]);
     const turfLine = turf.lineString(xyLine.map((d) => [d[0] / ADJUST_VALUE, d[1] / ADJUST_VALUE]));
     const bufferPolygon = turf.buffer(turfPoint, RESPONSE_AREA / ADJUST_VALUE);
+    if (bufferPolygon === undefined) return -1;
     const nodeIndex = turfLine.geometry.coordinates.findIndex((xy) =>
       turf.booleanPointInPolygon(turf.point(xy), bufferPolygon)
     );
@@ -709,13 +710,21 @@ export const makeValidPolygon = (xyLine: Position[]) => {
   }
 };
 
+function isPolygon(geometry: Geometry): geometry is Polygon {
+  return geometry.type === 'Polygon';
+}
+
 export const makeBufferPolygon = (xyLine: Position[]): Position[] => {
   try {
     const ADJUST_VALUE = 1000.0;
     const turfPolygon = turf.polygon([xyLine.map((p) => [p[0] / ADJUST_VALUE, p[1] / ADJUST_VALUE])]);
 
     const bufferPolygon = turf.buffer(turfPolygon, 100 / ADJUST_VALUE);
-    return bufferPolygon.geometry.coordinates[0].map((p) => [p[0] * ADJUST_VALUE, p[1] * ADJUST_VALUE]);
+
+    if (bufferPolygon === undefined) return xyLine;
+    const geometry = bufferPolygon.geometry;
+    if (isPolygon(geometry)) return xyLine;
+    return geometry.coordinates[0].map((p: Position[]) => [Number(p[0]) * ADJUST_VALUE, Number(p[1]) * ADJUST_VALUE]);
   } catch (e) {
     console.log(e);
     return xyLine;
