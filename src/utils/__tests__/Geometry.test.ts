@@ -9,7 +9,7 @@ import { expectedLineGpx, expectedPointGpx, line_record, point_record } from '..
 import { LayerType } from '../../types';
 //@ts-ignore
 import MockDate from 'mockdate';
-jest.mock('uuid', () => ({ v4: () => '1234' }));
+jest.mock('ulid', () => ({ ulid: () => '1234' }));
 MockDate.set('2000-01-01');
 
 describe('Gpx2Data', () => {
@@ -35,7 +35,7 @@ describe('Gpx2Data', () => {
         id: '1234',
         label: 'name',
         name: 'test.gpx',
-        permission: 'PRIVATE',
+        permission: 'COMMON',
         type: 'LINE',
         visible: true,
       },
@@ -183,7 +183,9 @@ describe('generateCSV', () => {
       'St.1,2020-01-01T09:28:38+09:00,,"",POINT(140.71658064854364 38.24715800176878)',
       'St.3,5時,,"test.jpg",POINT(140.71548306286388 38.24101016421964)',
     ];
-    expect(generateCSV(point_record, layers[0].field, 'POINT').split(String.fromCharCode(10))).toStrictEqual(expected);
+    expect(generateCSV(point_record, layers[0].field, 'POINT', false).split(String.fromCharCode(10))).toStrictEqual(
+      expected
+    );
   });
 });
 
@@ -198,7 +200,7 @@ describe('generateGPX', () => {
 
 describe('generateGeoJson', () => {
   it('return geojson from data', () => {
-    expect(generateGeoJson(point_record, layers[1].field, 'POINT', 'test')).toStrictEqual({
+    expect(generateGeoJson(point_record, layers[1].field, 'POINT', 'test', false)).toStrictEqual({
       crs: { properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' }, type: 'name' },
       features: [
         {
