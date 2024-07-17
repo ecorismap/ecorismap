@@ -653,6 +653,11 @@ export default function HomeScreen() {
                 }
                 touchZoomRotate={featureButton === 'NONE'}
                 dragRotate={featureButton === 'NONE'}
+                terrain={{
+                  source: 'rasterdem',
+                  exaggeration: 1.5,
+                }}
+                sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
                 <NavigationControl
