@@ -67,15 +67,21 @@ export const Line = React.memo((props: Props) => {
 
   return (
     <>
-      {stampRecords.map((feature) =>
-        feature.coords === undefined ? null : (
+      {stampRecords.map((feature) => {
+        if (feature.coords === undefined) return null;
+        const color = getColor(layer, feature, 0);
+        const selected =
+          feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
+        const lineColor = selected ? COLOR.YELLOW : color;
+        return (
           <HomeMapMemoStamp
             key={'stamp' + feature.id}
             feature={{ ...feature, coords: feature.coords[0] }}
-            selectedRecord={selectedRecord}
+            lineColor={lineColor}
+            selected={selected}
           />
-        )
-      )}
+        );
+      })}
       {brushRecords.map((feature) => {
         const color = getColor(layer, feature, 0);
         const selected =

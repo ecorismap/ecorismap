@@ -61,7 +61,8 @@ export const Line = React.memo(
               <HomeMapMemoStamp
                 key={'stamp' + feature.id}
                 feature={{ ...feature, coords: feature.coords[0] }}
-                selectedRecord={selectedRecord}
+                lineColor={lineColor}
+                selected={selected}
               />
             );
           } else if (isBrushTool(feature.field._strokeStyle as string)) {

@@ -156,6 +156,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
     (value: string) => {
       setColorStyle({ ...colorStyle, customFieldValue: value });
       setCustomFieldValue(value);
+      setIsEdited(true);
     },
     [colorStyle]
   );

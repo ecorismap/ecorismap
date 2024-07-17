@@ -24,8 +24,11 @@ export const getColor = (layer: LayerType, feature: RecordType, transparency: nu
       color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
     }
   } else if (colorStyle.colorType === 'INDIVIDUAL') {
+    const individualColorField =
+      layer.colorStyle.fieldName === '__CUSTOM' ? layer.colorStyle.customFieldValue : layer.colorStyle.fieldName;
     color =
-      (feature.field._strokeColor as string) ?? (transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)');
+      (feature.field[individualColorField] as string) ??
+      (transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)');
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
     color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
@@ -67,10 +70,12 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
       colorRule = ['match', ['get', fieldName], ...conditionalColors, defaultColor];
     }
   } else if (colorType === 'INDIVIDUAL') {
+    const individualColorField =
+      layer_.colorStyle.fieldName === '__CUSTOM' ? layer_.colorStyle.customFieldValue : layer_.colorStyle.fieldName;
     colorRule = [
       'coalesce',
       layer_.colorStyle.colorType === 'INDIVIDUAL'
-        ? ['get', '_strokeColor']
+        ? ['get', individualColorField]
         : transparency
         ? 'rgba(0,0,0,0)'
         : 'rgba(0,0,0,1)',
