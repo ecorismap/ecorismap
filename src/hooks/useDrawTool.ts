@@ -1052,7 +1052,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       } else {
         //Terrainが有効の時やビューが回転していると、boundsが正確に取れなくてSVGのラインを正しく変換できないので無効にする。
-        mapView.setTerrain();
+        mapView.setTerrain(null);
         dispatch(editSettingsAction({ mapRegion: { ...mapRegion, pitch: 0, bearing: 0 } }));
       }
     },
