@@ -300,7 +300,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return;
       }
       const selectLineCoords = xyArrayToLatLonArray([pXY], mapRegion, mapSize, mapViewRef);
-
       let features = [];
       if (featureButton === 'POINT') {
         features = selectPointFeatures(selectLineCoords, recordSet);
@@ -909,10 +908,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           }
         }
       }
-      if (
-        feature === undefined &&
-        (featureButton === 'MEMO' || currentInfoTool === 'ALL_INFO' || currentInfoTool === 'LINE_INFO')
-      ) {
+      if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'LINE_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
 
         for (const { layerId, data } of lineDataSet) {
@@ -962,7 +958,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     },
     [
       currentInfoTool,
-      featureButton,
       findLayer,
       lineDataSet,
       mapRegion,
