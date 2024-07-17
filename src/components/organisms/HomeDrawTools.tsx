@@ -162,7 +162,7 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && (
+      {featureButton !== 'POINT' && isEditingDraw && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.MOVE}
@@ -195,24 +195,24 @@ export const HomeDrawTools = () => {
           />
         </View>
       )}
-      {featureButton !== 'POINT' && (
+      {featureButton !== 'POINT' && isEditingDraw && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.UNDO}
-            backgroundColor={isEditingDraw ? COLOR.ALFABLUE : COLOR.ALFAGRAY}
+            backgroundColor={COLOR.ALFABLUE}
             borderRadius={10}
-            disabled={!isEditingDraw}
+            disabled={false}
             onPress={pressUndoDraw}
           />
         </View>
       )}
-      {featureButton !== 'POINT' && !editPositionMode && (
+      {featureButton !== 'POINT' && isEditingDraw && !editPositionMode && (
         <View style={styles.button}>
           <Button
             name={DRAWTOOL.DELETE}
-            backgroundColor={!isEditingDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE}
+            backgroundColor={COLOR.ALFABLUE}
             borderRadius={10}
-            disabled={!isEditingDraw}
+            disabled={false}
             onPress={pressDeleteDraw}
           />
         </View>
