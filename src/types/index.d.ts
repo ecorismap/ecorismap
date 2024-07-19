@@ -161,6 +161,7 @@ export interface FieldType {
   format: FormatType;
   list?: { value: string; isOther: boolean; customFieldValue: string }[];
   defaultValue?: string | number;
+  useLastValue?: boolean;
 }
 
 export interface LayerType {

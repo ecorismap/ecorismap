@@ -13,6 +13,8 @@ interface LayerEditFieldItemContextType {
   primaryFieldValues: string[];
   customFieldReference: string;
   customFieldPrimary: string;
+  useLastValue: boolean;
+  changeUseLastValue: (value: boolean) => void;
   changeCustomFieldReference: (value: string) => void;
   changeCustomFieldPrimary: (value: string) => void;
   changeValue: (index: number, value: string) => void;

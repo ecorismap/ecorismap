@@ -17,7 +17,8 @@ export type UseFieldListReturnType = {
   primaryFieldValues: string[];
   customFieldReference: string;
   customFieldPrimary: string;
-
+  useLastValue: boolean;
+  changeUseLastValue: (value: boolean) => void;
   changeCustomFieldReference: (value: string) => void;
   changeCustomFieldPrimary: (value: string) => void;
   changeValue: (index: number, value: string) => void;
@@ -38,6 +39,7 @@ export const useFieldList = (
   const [isEdited, setIsEdited] = useState(isEdited_);
   const [customFieldReference, setCustomFieldReference] = useState('');
   const [customFieldPrimary, setCustomFieldPrimary] = useState('');
+  const [useLastValue, setUseLastValue] = useState(false);
 
   const format = useMemo(() => targetLayer.field[fieldIndex].format, [fieldIndex, targetLayer.field]);
 
@@ -96,8 +98,19 @@ export const useFieldList = (
       listItems = targetLayer.field[fieldIndex].list;
     }
     setItemValues(listItems === undefined ? [] : listItems);
+
+    if (format === 'STRING' || format === 'INTEGER') {
+      setUseLastValue(targetLayer.field[fieldIndex].useLastValue ?? false);
+    }
   }, [fieldIndex, format, targetLayer]);
 
+  const changeUseLastValue = useCallback(
+    (value: boolean) => {
+      setUseLastValue(value);
+      setIsEdited(true);
+    },
+    [setUseLastValue]
+  );
   const changeValue = useCallback(
     (index: number, value: string) => {
       if (format === 'REFERENCE') {
@@ -189,6 +202,8 @@ export const useFieldList = (
     primaryFieldValues,
     customFieldReference,
     customFieldPrimary,
+    useLastValue,
+    changeUseLastValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,
