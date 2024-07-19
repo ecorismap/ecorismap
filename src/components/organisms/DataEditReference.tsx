@@ -51,7 +51,7 @@ export const DataEditReference = (props: Props) => {
 
   const { allUserRecordSet, addDefaultRecord } = useData(refLayer);
   const refData = useMemo(() => {
-    return allUserRecordSet.filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index]));
+    return allUserRecordSet.filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index])).reverse();
   }, [allUserRecordSet, primaryKey, refField]);
 
   const fields = useMemo(() => {

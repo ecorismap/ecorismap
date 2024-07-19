@@ -180,7 +180,8 @@
     "selectPolygonInfo": "ポリゴンのみ",
     "drawtool": "ドローツール",
     "InfoTool": "地物選択",
-    "line": "ライン"
+    "line": "ライン",
+    "useLastValue": "最後の値を使用する"
   },
   "Home": {
     "confirm": {
