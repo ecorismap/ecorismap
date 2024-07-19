@@ -547,7 +547,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     if (activeMemoLayer === undefined || activeMemoLayer.colorStyle.colorType === 'INDIVIDUAL') return false;
     const newLayer = {
       ...activeMemoLayer,
-      colorStyle: { ...activeMemoLayer.colorStyle, colorType: 'INDIVIDUAL' as const },
+      colorStyle: {
+        ...activeMemoLayer.colorStyle,
+        colorType: 'INDIVIDUAL' as const,
+        fieldName: '__CUSTOM',
+        customFieldValue: '_strokeColor',
+      },
       label: '',
     };
     dispatch(updateLayerAction(newLayer));

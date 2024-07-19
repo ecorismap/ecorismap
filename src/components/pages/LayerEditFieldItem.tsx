@@ -7,6 +7,7 @@ import { Button, Picker, RectButton2, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { ScrollView } from 'react-native-gesture-handler';
+import { CheckBox } from '../molecules/CheckBox';
 
 export default function LayerEditFieldItemScreen() {
   const {
@@ -21,6 +22,8 @@ export default function LayerEditFieldItemScreen() {
     primaryFieldValues,
     customFieldReference,
     customFieldPrimary,
+    useLastValue,
+    changeUseLastValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,
@@ -43,123 +46,137 @@ export default function LayerEditFieldItemScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.tr3}>
-        {itemFormat === 'REFERENCE' ? (
-          <>
-            <View style={[styles.td3, { flex: 1 }]}>
-              <Text style={[styles.title, { textAlign: 'center' }]}>{'reference layer'}</Text>
-            </View>
-            <View style={[styles.td3, { flex: 1 }]}>
-              <Text style={[styles.title, { textAlign: 'center' }]}>{'reference field'}</Text>
-            </View>
-            <View style={[styles.td3, { flex: 1 }]}>
-              <Text style={[styles.title, { textAlign: 'center' }]}>{'primary field'}</Text>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={[styles.td3, { flex: 4 }]}>
-              <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
-            </View>
-            <View style={styles.td3} />
-            <View style={styles.td3} />
-          </>
-        )}
+      <View style={styles.checkbox}>
+        <CheckBox
+          label={t('common.useLastValue')}
+          labelSize={14}
+          labelColor="black"
+          width={300}
+          checked={useLastValue}
+          onCheck={changeUseLastValue}
+        />
       </View>
-      <ScrollView>
-        {itemFormat === 'REFERENCE' && (
-          <>
-            <View style={styles.tr}>
-              <View style={[styles.td, { flex: 3 }]}>
-                <Picker
-                  enabled={editable}
-                  selectedValue={pickerValues[0]}
-                  onValueChange={(itemValue) => changeValue(0, itemValue as string)}
-                  itemLabelArray={refLayerNames}
-                  itemValueArray={refLayerIds}
-                  maxIndex={refLayerIds.length - 1}
-                />
-                <Picker
-                  enabled={pickerValues[0] !== ''}
-                  selectedValue={pickerValues[1]}
-                  onValueChange={(itemValue) => changeValue(1, itemValue as string)}
-                  itemLabelArray={refFieldNames}
-                  itemValueArray={refFieldValues}
-                  maxIndex={refFieldNames.length - 1}
-                />
-                <Picker
-                  enabled={editable}
-                  selectedValue={pickerValues[2]}
-                  onValueChange={(itemValue) => changeValue(2, itemValue as string)}
-                  itemLabelArray={primaryFieldNames}
-                  itemValueArray={primaryFieldValues}
-                  maxIndex={primaryFieldNames.length - 1}
-                />
-              </View>
-            </View>
-            <View style={styles.tr}>
-              <View style={[styles.td, { flex: 3 }]}>
-                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]} />
-                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
-                  {pickerValues[1] === '__CUSTOM' && (
-                    <TextInput
-                      label={t('common.customField')}
-                      placeholder={'field1|field2'}
-                      placeholderTextColor={COLOR.GRAY3}
-                      value={customFieldReference}
-                      onChangeText={changeCustomFieldReference}
-                      style={styles.input}
-                      editable={true}
-                    />
-                  )}
+      {!useLastValue && (
+        <>
+          <View style={styles.tr3}>
+            {itemFormat === 'REFERENCE' ? (
+              <>
+                <View style={[styles.td3, { flex: 1 }]}>
+                  <Text style={[styles.title, { textAlign: 'center' }]}>{'reference layer'}</Text>
                 </View>
-                <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
-                  {pickerValues[2] === '__CUSTOM' && (
-                    <TextInput
-                      label={t('common.customField')}
-                      placeholder={'field1|field2'}
-                      placeholderTextColor={COLOR.GRAY3}
-                      value={customFieldPrimary}
-                      onChangeText={changeCustomFieldPrimary}
-                      style={styles.input}
-                      editable={true}
-                    />
-                  )}
+                <View style={[styles.td3, { flex: 1 }]}>
+                  <Text style={[styles.title, { textAlign: 'center' }]}>{'reference field'}</Text>
                 </View>
-              </View>
-            </View>
-          </>
-        )}
+                <View style={[styles.td3, { flex: 1 }]}>
+                  <Text style={[styles.title, { textAlign: 'center' }]}>{'primary field'}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={[styles.td3, { flex: 4 }]}>
+                  <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.value')}`}</Text>
+                </View>
+                <View style={styles.td3} />
+                <View style={styles.td3} />
+              </>
+            )}
+          </View>
+          <ScrollView>
+            {itemFormat === 'REFERENCE' && (
+              <>
+                <View style={styles.tr}>
+                  <View style={[styles.td, { flex: 3 }]}>
+                    <Picker
+                      enabled={editable}
+                      selectedValue={pickerValues[0]}
+                      onValueChange={(itemValue) => changeValue(0, itemValue as string)}
+                      itemLabelArray={refLayerNames}
+                      itemValueArray={refLayerIds}
+                      maxIndex={refLayerIds.length - 1}
+                    />
+                    <Picker
+                      enabled={pickerValues[0] !== ''}
+                      selectedValue={pickerValues[1]}
+                      onValueChange={(itemValue) => changeValue(1, itemValue as string)}
+                      itemLabelArray={refFieldNames}
+                      itemValueArray={refFieldValues}
+                      maxIndex={refFieldNames.length - 1}
+                    />
+                    <Picker
+                      enabled={editable}
+                      selectedValue={pickerValues[2]}
+                      onValueChange={(itemValue) => changeValue(2, itemValue as string)}
+                      itemLabelArray={primaryFieldNames}
+                      itemValueArray={primaryFieldValues}
+                      maxIndex={primaryFieldNames.length - 1}
+                    />
+                  </View>
+                </View>
+                <View style={styles.tr}>
+                  <View style={[styles.td, { flex: 3 }]}>
+                    <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]} />
+                    <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
+                      {pickerValues[1] === '__CUSTOM' && (
+                        <TextInput
+                          label={t('common.customField')}
+                          placeholder={'field1|field2'}
+                          placeholderTextColor={COLOR.GRAY3}
+                          value={customFieldReference}
+                          onChangeText={changeCustomFieldReference}
+                          style={styles.input}
+                          editable={true}
+                        />
+                      )}
+                    </View>
+                    <View style={[styles.td, { borderBottomWidth: 0, borderLeftWidth: 1, borderRightWidth: 1 }]}>
+                      {pickerValues[2] === '__CUSTOM' && (
+                        <TextInput
+                          label={t('common.customField')}
+                          placeholder={'field1|field2'}
+                          placeholderTextColor={COLOR.GRAY3}
+                          value={customFieldPrimary}
+                          onChangeText={changeCustomFieldPrimary}
+                          style={styles.input}
+                          editable={true}
+                        />
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </>
+            )}
 
-        {itemFormat !== 'REFERENCE' &&
-          itemValues?.map((item, index: number) => (
-            <View key={index} style={styles.tr}>
-              <View style={[styles.td, { flex: 4 }]}>
-                <TextInput
-                  style={styles.input}
-                  value={item.value.toString()}
-                  editable={editable && !item.isOther}
-                  onChangeText={(value: string) => changeValue(index, value)}
-                />
-              </View>
-              <View style={styles.td}>
-                <Button
-                  style={{
-                    backgroundColor: COLOR.DARKRED,
-                    padding: 0,
-                  }}
-                  name="minus"
-                  disabled={!editable}
-                  onPress={() => pressDeleteValue(index)}
-                />
-              </View>
-              <View style={styles.td}>
-                <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
-              </View>
-            </View>
-          ))}
-        {itemFormat !== 'REFERENCE' && <ListButtons />}
-      </ScrollView>
+            {itemFormat !== 'REFERENCE' &&
+              itemValues?.map((item, index: number) => (
+                <View key={index} style={styles.tr}>
+                  <View style={[styles.td, { flex: 4 }]}>
+                    <TextInput
+                      style={styles.input}
+                      value={item.value.toString()}
+                      editable={editable && !item.isOther}
+                      onChangeText={(value: string) => changeValue(index, value)}
+                    />
+                  </View>
+                  <View style={styles.td}>
+                    <Button
+                      style={{
+                        backgroundColor: COLOR.DARKRED,
+                        padding: 0,
+                      }}
+                      name="minus"
+                      disabled={!editable}
+                      onPress={() => pressDeleteValue(index)}
+                    />
+                  </View>
+                  <View style={styles.td}>
+                    <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
+                  </View>
+                </View>
+              ))}
+            {itemFormat !== 'REFERENCE' && <ListButtons />}
+          </ScrollView>
+        </>
+      )}
     </View>
   );
 }
@@ -196,6 +213,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     margin: 10,
   },
+  checkbox: {
+    //backgroundColor: COLOR.BLUE,
+    flexDirection: 'column',
+    height: 45,
+    //justifyContent: 'space-between',
+    margin: 2,
+    width: 180,
+  },
   container: {
     flex: 1,
     justifyContent: 'flex-start',
@@ -208,6 +233,7 @@ const styles = StyleSheet.create({
     height: 40,
     paddingHorizontal: 12,
   },
+
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -218,7 +244,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 0,
   },
-
   td3: {
     alignItems: 'center',
     borderColor: COLOR.GRAY2,

@@ -113,15 +113,14 @@ export default function LayerEditFeatureStyleScreen() {
 
         {colorStyle.colorType === 'CATEGORIZED' && (
           <View>
-            {colorStyle.colorType === 'CATEGORIZED' && (
-              <SimplePicker
-                label={t('common.fieldName')}
-                value={colorStyle.fieldName}
-                onValueChange={changeFieldName}
-                itemValueArray={fieldValues}
-                itemLabelArray={fieldLabels}
-              />
-            )}
+            <SimplePicker
+              label={t('common.fieldName')}
+              value={colorStyle.fieldName}
+              onValueChange={changeFieldName}
+              itemValueArray={fieldValues}
+              itemLabelArray={fieldLabels}
+            />
+
             {isCustom && (
               <View style={styles.td}>
                 <TextInput
@@ -143,6 +142,30 @@ export default function LayerEditFeatureStyleScreen() {
               itemLabelArray={colorRampLabels}
             />
             <ColorTable />
+          </View>
+        )}
+        {colorStyle.colorType === 'INDIVIDUAL' && (
+          <View>
+            <SimplePicker
+              label={t('common.fieldName')}
+              value={colorStyle.fieldName}
+              onValueChange={changeFieldName}
+              itemValueArray={fieldValues}
+              itemLabelArray={fieldLabels}
+            />
+            {isCustom && (
+              <View style={styles.td}>
+                <TextInput
+                  label={t('common.customField')}
+                  placeholder={'field1|field2'}
+                  placeholderTextColor={COLOR.GRAY3}
+                  value={customFieldValue}
+                  onChangeText={changeCustomFieldValue}
+                  style={styles.input}
+                  editable={true}
+                />
+              </View>
+            )}
           </View>
         )}
       </ScrollView>

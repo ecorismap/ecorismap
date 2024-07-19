@@ -17,6 +17,8 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
     primaryFieldValues,
     customFieldReference,
     customFieldPrimary,
+    useLastValue,
+    changeUseLastValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
     changeValue,
@@ -30,9 +32,10 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
       isEdited: isEdited,
       fieldIndex: route.params.fieldIndex,
       itemValues: itemValues,
+      useLastValue: useLastValue,
       targetLayer: route.params.targetLayer,
     });
-  }, [isEdited, itemValues, navigation, route.params.fieldIndex, route.params.targetLayer]);
+  }, [isEdited, itemValues, navigation, route.params.fieldIndex, route.params.targetLayer, useLastValue]);
 
   return (
     <LayerEditFieldItemContext.Provider
@@ -48,6 +51,8 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
         primaryFieldValues,
         customFieldReference,
         customFieldPrimary,
+        useLastValue,
+        changeUseLastValue,
         changeCustomFieldReference,
         changeCustomFieldPrimary,
         changeValue,
