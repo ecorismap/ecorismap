@@ -38,7 +38,8 @@ export const useLayerEdit = (
   isStyleEdited: boolean,
   fieldIndex: number | undefined,
   itemValues: { value: string; isOther: boolean; customFieldValue: string }[] | undefined,
-  colorStyle: ColorStyle | undefined
+  colorStyle: ColorStyle | undefined,
+  useLastValue: boolean | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
@@ -82,6 +83,7 @@ export const useLayerEdit = (
       } else {
         newTargetLayer.field[fieldIndex].list = itemValues;
       }
+      newTargetLayer.field[fieldIndex].useLastValue = useLastValue;
       setIsEdited(true);
       setTargetLayer(newTargetLayer);
     }

@@ -15,6 +15,7 @@ interface Props {
 
 export const HomeMapMemoBrush = React.memo((props: Props) => {
   const { lineColor, feature, zoom, selected } = props;
+  if (feature.coords === undefined) return null;
   const latlon = latLonObjectsToLatLonArray(feature.coords);
   const points = interpolateLineString(latlon, 1 / 2 ** (zoom - 10));
   //turfで

@@ -240,7 +240,8 @@
     "selectAllInfo": "all",
     "drawtool": "draw tools",
     "InfoTool": "Feature selection",
-    "line": "line"
+    "line": "line",
+    "useLastValue": "use last value"
   },
   "firebase": {
     "message": {
