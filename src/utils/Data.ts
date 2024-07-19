@@ -145,20 +145,41 @@ export const getInitialFieldValue = (
   }
 };
 
+export const getDataLastValue = (dataSet: RecordType[], fieldName: string) => {
+  const value = dataSet[dataSet.length - 1]?.field[fieldName];
+  return value as string | number | undefined;
+};
+
+export const getGroupLastValue = (dataSet: RecordType[], groupFieldName: string, groupId: string) => {
+  const groupDataSet = dataSet.filter((data) => data.id === groupId);
+  if (groupDataSet === undefined) return '';
+  const value = groupDataSet[groupDataSet.length - 1]?.field[groupFieldName] ?? '';
+  return value as string | number | undefined;
+};
+
 export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): number => {
   const serials = dataSet.map((data) => data.field[serialFieldName]).filter((v) => v) as number[];
   return serials.length === 0 ? 1 : Math.max(...serials) + 1;
 };
 
-export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): string => {
-  const serial = dataSet.find((data) => data.id === groupId)?.field[groupFieldName];
-  return serial === undefined ? '' : (serial as string);
+export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): number => {
+  const groupDataSet = dataSet.filter((data) => data.id === groupId);
+  if (groupDataSet === undefined) return 1;
+  const serials = groupDataSet.map((data) => data.field[groupFieldName]).filter((v) => v) as number[];
+  return serials.length === 0 ? 1 : Math.max(...serials) + 1;
 };
 
 export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
   switch (field.format) {
-    case 'STRING':
-      return { [field.name]: field.defaultValue ?? '' };
+    case 'STRING': {
+      let value;
+      if (options?.groupId) {
+        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : field.defaultValue;
+      } else {
+        value = field.useLastValue ? getDataLastValue(dataSet, field.name) : field.defaultValue;
+      }
+      return { [field.name]: value ?? '' };
+    }
     case 'STRING_MULTI':
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL':
@@ -169,8 +190,15 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
         const serial = getDataSerial(dataSet, field.name);
         return { [field.name]: serial };
       }
-    case 'INTEGER':
-      return { [field.name]: field.defaultValue ?? 0 };
+    case 'INTEGER': {
+      let value;
+      if (options?.groupId) {
+        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : field.defaultValue;
+      } else {
+        value = field.useLastValue ? getDataLastValue(dataSet, field.name) : field.defaultValue;
+      }
+      return { [field.name]: value ?? 0 };
+    }
     case 'DECIMAL':
       return { [field.name]: field.defaultValue ?? 0 };
     case 'NUMBERRANGE':

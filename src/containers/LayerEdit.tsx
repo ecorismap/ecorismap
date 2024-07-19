@@ -37,7 +37,8 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     route.params.isEdited,
     route.params.fieldIndex,
     route.params.itemValues,
-    route.params.colorStyle
+    route.params.colorStyle,
+    route.params.useLastValue
   );
   const { isRunningProject } = usePermission();
 

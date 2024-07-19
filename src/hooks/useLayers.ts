@@ -124,7 +124,7 @@ export const useLayers = (): UseLayersReturnType => {
           currentLayer.expanded = previousLayer.expanded;
           dispatch(setLayersAction(newLayers));
           return;
-        } else if (currentLayer.groupId) {
+        } else if (previousLayer.type === 'LAYERGROUP' && currentLayer.groupId) {
           // 子レイヤーがグループから出る場合、親の上に移動する
           const groupParentIndex = newLayers.findIndex((layer) => layer.id === currentLayer.groupId);
           if (groupParentIndex !== -1) {

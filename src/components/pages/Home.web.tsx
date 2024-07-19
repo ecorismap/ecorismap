@@ -125,7 +125,14 @@ export default function HomeScreen() {
       ),
     };
   });
-
+  const skyStyle = {
+    'sky-color': '#79bffc',
+    'sky-horizon-blend': 0.6,
+    'horizon-color': '#f0f8ff',
+    'horizon-fog-blend': 1,
+    'fog-color': '#034580',
+    'fog-ground-blend': 0.85,
+  };
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -442,21 +449,13 @@ export default function HomeScreen() {
     map.touchPitch.enable();
     if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
     map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
-    //夕日のように
-
-    map.setSky({
-      'sky-color': '#f0f8ff',
-      'sky-horizon-blend': 0.8,
-      'horizon-color': '#f0f8ff',
-      'horizon-fog-blend': 0.5,
-      'fog-color': '#f0f8ff',
-      'fog-ground-blend': 0.5,
-    });
+    map.setSky(skyStyle);
 
     //二回目以降の設定
     map.on('style.load', function () {
       if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
       map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+      map.setSky(skyStyle);
     });
   };
 
@@ -598,6 +597,7 @@ export default function HomeScreen() {
         source: 'rasterdem',
         exaggeration: 1.5,
       },
+      sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileMaps]);
@@ -664,6 +664,11 @@ export default function HomeScreen() {
                 }
                 touchZoomRotate={featureButton === 'NONE'}
                 dragRotate={featureButton === 'NONE'}
+                terrain={{
+                  source: 'rasterdem',
+                  exaggeration: 1.5,
+                }}
+                sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
                 <NavigationControl

@@ -131,18 +131,19 @@ export const DataTable = React.memo(() => {
               </TouchableOpacity>
             ))
           )}
-          {/* {isMapMemoLayer &&
-            ['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom'].map((name, field_index) => (
+          {isMapMemoLayer &&
+            //['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom']
+            ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
               <View key={field_index} style={[styles.td, { flex: 2, width: 120 }]}>
                 <Text adjustsFontSizeToFit={true} numberOfLines={2}>
                   {item.field[name] === undefined ? '' : (item.field[name] as string)}
                 </Text>
               </View>
-            ))} */}
+            ))}
         </View>
       );
     },
-    [changeChecked, changeVisible, checkList, gotoDataEdit, layer.field, projectId]
+    [changeChecked, changeVisible, checkList, gotoDataEdit, isMapMemoLayer, layer.field, projectId]
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
@@ -206,7 +207,7 @@ interface Props {
 const DataTitle = React.memo((props: Props) => {
   //propsから変数を取り出す
   const {
-    //isMapMemoLayer,
+    isMapMemoLayer,
     visibleAll,
     onVisibleAll,
     checkedAll,
@@ -273,12 +274,13 @@ const DataTitle = React.memo((props: Props) => {
           </TouchableOpacity>
         ))
       )}
-      {/* {isMapMemoLayer &&
-        ['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom'].map((name, field_index) => (
+      {isMapMemoLayer &&
+        //['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom']
+        ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
           <View key={field_index} style={[styles.th, { flex: 2, width: 120 }]}>
             <Text>{name}</Text>
           </View>
-        ))} */}
+        ))}
     </View>
   );
 });
