@@ -1,30 +1,24 @@
-import produce, { enableES5 } from 'immer';
-enableES5();
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TrackLogType } from '../types';
 
-export function createTrackLogInitialState(): TrackLogType {
-  return {
-    distance: 0,
-    track: [],
-    lastTimeStamp: 0,
-  };
-}
+export const tracLogInitialState: TrackLogType = {
+  distance: 0,
+  track: [],
+  lastTimeStamp: 0,
+};
 
-export const UPDATE_TRACKLOG = 'trackLog/updateTrackLog' as const;
+const reducers = {
+  // @ts-ignore Unused state parameter
+  updateTrackLogAction: (state, action: PayloadAction<TrackLogType>) => {
+    return action.payload;
+  },
+};
 
-export const updateTrackLogAction = (payload: TrackLogType) => ({
-  type: UPDATE_TRACKLOG,
-  value: payload,
+const trackLogSlice = createSlice({
+  name: 'trackLog',
+  initialState: tracLogInitialState,
+  reducers,
 });
-export type Action = Readonly<ReturnType<typeof updateTrackLogAction>>;
 
-const reducer = produce((draft, action: Action) => {
-  switch (action.type) {
-    case UPDATE_TRACKLOG: {
-      return action.value;
-    }
-    default:
-      return draft;
-  }
-}, createTrackLogInitialState());
-export default reducer;
+export const { updateTrackLogAction } = trackLogSlice.actions;
+export default trackLogSlice.reducer;

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { LayerType, RecordType } from '../types';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import dayjs from '../i18n/dayjs';
@@ -21,7 +21,7 @@ export type UseLayersReturnType = {
 export const useLayers = (): UseLayersReturnType => {
   const dispatch = useDispatch();
 
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
 
   const changeLabel = useCallback(
     (layer: LayerType, labelValue: string) => {

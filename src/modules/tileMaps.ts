@@ -1,42 +1,35 @@
-import produce, { enableES5 } from 'immer';
-enableES5();
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TileMapType } from '../types';
 import { JP, BASE } from '../constants/Maps';
 import i18n from '../i18n/config';
 
-export function createTileMapsInitialState(): TileMapType[] {
+const createTileMapsInitialState = (): TileMapType[] => {
   if (i18n.language.includes('ja')) {
     return [...JP, ...BASE];
   } else {
     return BASE;
   }
-}
+};
 
-export const SET = 'tileMaps/set' as const;
-export const ADD = 'tileMaps/add' as const;
-export const DELETE = 'tileMaps/delete' as const;
+export const tileMapsInitialState = createTileMapsInitialState();
 
-export const setTileMapsAction = (payload: TileMapType[]) => ({ type: SET, value: payload });
-export const addTileMapAction = (payload: TileMapType) => ({ type: ADD, value: payload });
-export const deleteTileMapAction = (payload: TileMapType) => ({ type: DELETE, value: payload });
+const reducers = {
+  setTileMapsAction: (_state: TileMapType[], action: PayloadAction<TileMapType[]>) => {
+    return action.payload;
+  },
+  addTileMapAction: (state: TileMapType[], action: PayloadAction<TileMapType>) => {
+    state.push(action.payload);
+  },
+  deleteTileMapAction: (state: TileMapType[], action: PayloadAction<TileMapType>) => {
+    return state.filter((n) => n.id !== action.payload.id);
+  },
+};
 
-export type Action =
-  | Readonly<ReturnType<typeof setTileMapsAction>>
-  | Readonly<ReturnType<typeof addTileMapAction>>
-  | Readonly<ReturnType<typeof deleteTileMapAction>>;
+const tileMapsSlice = createSlice({
+  name: 'tileMaps',
+  initialState: tileMapsInitialState,
+  reducers,
+});
 
-const reducer = produce((draft, action: Action) => {
-  switch (action.type) {
-    case SET:
-      return action.value;
-    case ADD:
-      draft.push(action.value);
-      break;
-    case DELETE: {
-      return draft.filter((n) => n.id !== action.value.id);
-    }
-    default:
-      return draft;
-  }
-}, createTileMapsInitialState());
-export default reducer;
+export const { setTileMapsAction, addTileMapAction, deleteTileMapAction } = tileMapsSlice.actions;
+export default tileMapsSlice.reducer;
