@@ -2,7 +2,7 @@ import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, use
 import { ArrowStyleType, LineRecordType, MapMemoToolType, PenType } from '../types';
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { ulid } from 'ulid';
 import {
   checkDistanceFromLine,
@@ -89,8 +89,8 @@ export type MapMemoStateType = {
 export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoReturnType => {
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
-  const user = useSelector((state: AppState) => state.user);
-  const layers = useSelector((state: AppState) => state.layers);
+  const user = useSelector((state: RootState) => state.user);
+  const layers = useSelector((state: RootState) => state.layers);
   const [history, setHistory] = useState<HistoryType[]>([]);
   const [future, setFuture] = useState<HistoryType[]>([]);
   const [penColor, setPenColor] = useState('rgba(0,0,0,0.7)');
@@ -113,7 +113,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const snappedLine = useRef<{ coordsXY: Position[]; id: string } | undefined>(undefined);
   const snappedStartPoint = useRef<Position>([]);
   const offset = useRef([0, 0]);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
+  const dataSet = useSelector((state: RootState) => state.dataSet);
   const MAX_HISTORY = 10;
   const timer = useRef<NodeJS.Timeout | undefined>(undefined);
 

@@ -23,7 +23,7 @@ import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
 import { t } from '../../i18n/config';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { useSelector } from 'react-redux';
-import { AppState } from '../../modules';
+import { RootState } from '../../store';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
@@ -50,7 +50,7 @@ export default function DataEditScreen() {
   } = useContext(DataEditContext);
 
   const navigation = useNavigation();
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
   const headerLeftButtonzForDevice = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', flex: 3, justifyContent: 'center' }}>

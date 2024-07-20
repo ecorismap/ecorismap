@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { LayerType } from '../types';
 import Data from '../components/pages/Data';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useData } from '../hooks/useData';
 import { Props_Data } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -15,7 +15,7 @@ import { usePermission } from '../hooks/usePermission';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {

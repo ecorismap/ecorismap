@@ -30,7 +30,7 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
-import { AppState } from '../../modules';
+import { RootState } from '../../store';
 import { isMapMemoDrawTool } from '../../utils/General';
 import { TileMapType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
@@ -122,11 +122,11 @@ export default function HomeScreen() {
     isEditingRecord,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
-  const trackLog = useSelector((state: AppState) => state.trackLog);
+  const trackLog = useSelector((state: RootState) => state.trackLog);
 
   const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 

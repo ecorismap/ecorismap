@@ -1,33 +1,18 @@
-import { combineReducers } from 'redux';
+import dataSetReducer from './dataSet';
+import settingsReducer from './settings';
+import layersReducer from './layers';
+import userReducer from './user';
+import projectsReducer from './projects';
+import tileMapsReducer from './tileMaps';
+import trackLogReducer from './trackLog';
+import { combineReducers } from '@reduxjs/toolkit';
 
-import * as dataSet from './dataSet';
-import * as settings from './settings';
-import * as layers from './layers';
-import * as user from './user';
-import * as projects from './projects';
-import * as tileMaps from './tileMaps';
-import * as trackLog from './trackLog';
-
-export function createInitialState() {
-  return {
-    dataSet: dataSet.createDataSetInitialState(),
-    layers: layers.createLayersInitialState(),
-    settings: settings.createSettingsInitialState(),
-    user: user.createUserInitialState(),
-    projects: projects.createProjectsInitialState(),
-    tileMaps: tileMaps.createTileMapsInitialState(),
-    trackLog: trackLog.createTrackLogInitialState(),
-  };
-}
-
-export type AppState = Readonly<ReturnType<typeof createInitialState>>;
-
-export default combineReducers<AppState>({
-  dataSet: dataSet.default,
-  layers: layers.default,
-  settings: settings.default,
-  user: user.default,
-  projects: projects.default,
-  tileMaps: tileMaps.default,
-  trackLog: trackLog.default,
+export default combineReducers({
+  dataSet: dataSetReducer,
+  layers: layersReducer,
+  settings: settingsReducer,
+  user: userReducer,
+  projects: projectsReducer,
+  tileMaps: tileMapsReducer,
+  trackLog: trackLogReducer,
 });

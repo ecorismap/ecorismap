@@ -4,7 +4,7 @@ import { COLORTYPE, COLORRAMP, COLOR } from '../constants/AppConstants';
 import { ColorRampType, ColorStyle, ColorTypesType, RecordType, LayerType, FeatureType } from '../types';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgbaString } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
@@ -43,7 +43,7 @@ export type UseFeatureStyleReturnType = {
 
 export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
   const dispatch = useDispatch();
-  const allUserData = useSelector((state: AppState) =>
+  const allUserData = useSelector((state: RootState) =>
     state.dataSet
       .map((d) => d.layerId === layer_.id && d.data)
       .filter((v): v is RecordType[] => v !== false)

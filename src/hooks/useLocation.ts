@@ -6,10 +6,10 @@ import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { updateTrackLog } from '../utils/Location';
-import { AppState } from '../modules';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
+import { RootState } from '../store';
 import { isMapView } from '../utils/Map';
 import { t } from '../i18n/config';
 import { LocationObject, LocationSubscription } from 'expo-location';
@@ -63,17 +63,17 @@ export type UseLocationReturnType = {
 
 export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
 
-  const trackLog = useSelector((state: AppState) => state.trackLog);
+  const trackLog = useSelector((state: RootState) => state.trackLog);
   const { addRecordWithCheck } = useRecord();
   const [azimuth, setAzimuth] = useState(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
 
   const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
-  const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
+  const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
   const [headingUp, setHeadingUp] = useState(false);

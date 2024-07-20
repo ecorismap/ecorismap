@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { shallowEqual, useSelector } from 'react-redux';
 
-import { AppState } from '../modules';
+import { RootState } from '../store';
 
 export type UseLayersReturnType = {
   isOwnerAdmin: boolean;
@@ -12,9 +12,9 @@ export type UseLayersReturnType = {
 };
 
 export const usePermission = (): UseLayersReturnType => {
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const role = useSelector((state: AppState) => state.settings.role, shallowEqual);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const role = useSelector((state: RootState) => state.settings.role, shallowEqual);
+  const isSettingProject = useSelector((state: RootState) => state.settings.isSettingProject, shallowEqual);
   const isClosedProject = useMemo(() => projectId === undefined, [projectId]);
   const isRunningProject = useMemo(() => !isClosedProject && !isSettingProject, [isClosedProject, isSettingProject]);
 

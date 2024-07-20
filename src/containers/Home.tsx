@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
-  AppState as RNAppState,
-  AppStateStatus,
+  RootState as RNRootState,
+  RootStateStatus,
   GestureResponderEvent,
   Platform,
   PanResponderInstance,
@@ -13,7 +13,7 @@ import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
 import { Props_Home } from '../routes';
@@ -68,16 +68,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const user = useSelector((state: AppState) => state.user);
-  const projectName = useSelector((state: AppState) => state.settings.projectName, shallowEqual);
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
-  const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
-  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
-  const memberLocations = useSelector((state: AppState) => state.settings.memberLocation, shallowEqual);
-  const layers = useSelector((state: AppState) => state.layers);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
+  const tileMaps = useSelector((state: RootState) => state.tileMaps);
+  const user = useSelector((state: RootState) => state.user);
+  const projectName = useSelector((state: RootState) => state.settings.projectName, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const mapType = useSelector((state: RootState) => state.settings.mapType, shallowEqual);
+  const isOffline = useSelector((state: RootState) => state.settings.isOffline, shallowEqual);
+  const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
+  const memberLocations = useSelector((state: RootState) => state.settings.memberLocation, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers);
+  const dataSet = useSelector((state: RootState) => state.dataSet);
   const routeName = getFocusedRouteNameFromRoute(route);
   const [isModalInfoToolHidden, setIsModalInfoToolHidden] = useState(false);
   const { isRunningProject } = usePermission();
@@ -1433,8 +1433,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     })();
 
     //バックグラウンド時に読み込む場合
-    const subscription = RNAppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
+    const subscription = RNRootState.addEventListener('change', async (nextRootState: RootStateStatus) => {
+      if (nextRootState === 'active') {
         await importExternalFiles();
         const size = await calculateStorageSize();
         //console.log('size', size, 'MB');
