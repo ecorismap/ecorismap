@@ -1,5 +1,4 @@
-import produce, { enableES5 } from 'immer';
-enableES5();
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ulid } from 'ulid';
 import { DataType, RecordType } from '../types';
 
@@ -13,130 +12,83 @@ export const DEFAULT_DATA: RecordType = {
   field: {},
 };
 
-export function createDataSetInitialState(): DataType[] {
-  return [
-    { layerId: ulid(), userId: undefined, data: [] },
-    { layerId: ulid(), userId: undefined, data: [] },
-    { layerId: ulid(), userId: undefined, data: [] },
-  ];
-}
+export const dataSetInitialState: DataType[] = [
+  { layerId: ulid(), userId: undefined, data: [] },
+  { layerId: ulid(), userId: undefined, data: [] },
+  { layerId: ulid(), userId: undefined, data: [] },
+];
 
-export const SET_DATASET = 'dataSet/setDataSet' as const;
-export const ADD_DATA = 'dataSet/addData' as const;
-export const UPDATE_DATA = 'dataSet/updataData' as const;
-export const DELETE_DATA = 'dataSet/deleteData' as const;
-export const SET_RECORDSET = 'dataSet/setRecordSet' as const;
-export const ADD_RECORDS = 'dataSet/addRecords' as const;
-export const UPDATE_RECORDS = 'dataSet/updateRecords' as const;
-export const DELETE_RECORDS = 'dataSet/deleteRecords' as const;
-export const setDataSetAction = (payload: DataType[]) => ({
-  type: SET_DATASET,
-  value: payload,
-});
-export const addDataAction = (payload: DataType[]) => ({
-  type: ADD_DATA,
-  value: payload,
-});
-export const updateDataAction = (payload: DataType[]) => ({
-  type: UPDATE_DATA,
-  value: payload,
-});
-export const deleteDataAction = (payload: DataType[]) => ({
-  type: DELETE_DATA,
-  value: payload,
-});
-export const setRecordSetAction = (payload: DataType) => ({
-  type: SET_RECORDSET,
-  value: payload,
-});
-export const addRecordsAction = (payload: DataType) => ({
-  type: ADD_RECORDS,
-  value: payload,
-});
-export const updateRecordsAction = (payload: DataType) => ({
-  type: UPDATE_RECORDS,
-  value: payload,
-});
-export const deleteRecordsAction = (payload: DataType) => ({
-  type: DELETE_RECORDS,
-  value: payload,
-});
-
-export type Action =
-  | Readonly<ReturnType<typeof setDataSetAction>>
-  | Readonly<ReturnType<typeof addDataAction>>
-  | Readonly<ReturnType<typeof updateDataAction>>
-  | Readonly<ReturnType<typeof deleteDataAction>>
-  | Readonly<ReturnType<typeof setRecordSetAction>>
-  | Readonly<ReturnType<typeof addRecordsAction>>
-  | Readonly<ReturnType<typeof updateRecordsAction>>
-  | Readonly<ReturnType<typeof deleteRecordsAction>>;
-
-const reducer = produce((draft, action: Action) => {
-  switch (action.type) {
-    case SET_DATASET: {
-      return action.value;
+const reducers = {
+  setDataSetAction: (_state: DataType[], action: PayloadAction<DataType[]>) => {
+    return action.payload;
+  },
+  addDataAction: (state: DataType[], action: PayloadAction<DataType[]>) => {
+    state.push(...action.payload);
+  },
+  updateDataAction: (state: DataType[], action: PayloadAction<DataType[]>) => {
+    if (state.length === 0) return action.payload;
+    const newData = action.payload.filter((v) => !state.find((d) => v.layerId === d.layerId && v.userId === d.userId));
+    const updatedData = state.map((d) => {
+      return action.payload.find((v) => v.layerId === d.layerId && v.userId === d.userId) || d;
+    });
+    return [...updatedData, ...newData];
+  },
+  deleteDataAction: (state: DataType[], action: PayloadAction<DataType[]>) => {
+    return state.filter((d) => !action.payload.find((v: DataType) => v.layerId === d.layerId && v.userId === d.userId));
+  },
+  setRecordSetAction: (state: DataType[], action: PayloadAction<DataType>) => {
+    const { layerId, userId, data } = action.payload;
+    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
+    if (dataIndex !== -1) {
+      state[dataIndex].data = data;
     }
-    case ADD_DATA: {
-      draft.push(...action.value);
-      break;
+  },
+  addRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
+    const { layerId, userId, data } = action.payload;
+    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    if (dataIndex !== -1) {
+      state[dataIndex].data.push(...data);
+    } else {
+      state.push(action.payload);
     }
-    case UPDATE_DATA: {
-      if (draft.length === 0) return action.value;
-      const newData = action.value.filter((v) => !draft.find((d) => v.layerId === d.layerId && v.userId === d.userId));
-      const updatedData = draft.map((d) => {
-        return action.value.find((v) => v.layerId === d.layerId && v.userId === d.userId) || d;
+  },
+  updateRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
+    const { layerId, userId, data } = action.payload;
+    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
+    if (dataIndex !== -1) {
+      state[dataIndex].data = state[dataIndex].data.map((d) => {
+        const updateData = data.find((v) => v.id === d.id);
+        return updateData ? updateData : d;
       });
-      return [...updatedData, ...newData];
     }
-    case DELETE_DATA: {
-      return draft.filter((d) => !action.value.find((v: DataType) => v.layerId === d.layerId && v.userId === d.userId));
+  },
+  deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
+    const { layerId, userId, data } = action.payload;
+    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    console.assert(dataIndex !== -1, { dataIndex, error: 'DELETE_RECORDS' });
+    if (dataIndex !== -1) {
+      state[dataIndex].data = state[dataIndex].data.filter((d) => !data.find((v) => v.id === d.id));
     }
-    case SET_RECORDSET: {
-      const { layerId, userId, data }: DataType = action.value;
-      const dataIndex = draft.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
-      if (dataIndex !== -1) {
-        draft[dataIndex].data = data;
-      }
-      break;
-    }
-    case ADD_RECORDS: {
-      const { layerId, userId, data }: DataType = action.value;
-      const dataIndex = draft.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      if (dataIndex !== -1) {
-        draft[dataIndex].data.push(...data);
-      } else {
-        //プロジェクトをダウンロードしてすぐはデータがないので以下が必要
-        draft.push(action.value);
-      }
-      break;
-    }
-    case UPDATE_RECORDS: {
-      const { layerId, userId, data }: DataType = action.value;
-      const dataIndex = draft.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
-      if (dataIndex !== -1) {
-        draft[dataIndex].data = draft[dataIndex].data.map((d) => {
-          const updateData = data.find((v) => v.id === d.id);
-          return updateData ? updateData : d;
-        });
-      }
-      break;
-    }
-    case DELETE_RECORDS: {
-      const { layerId, userId, data }: DataType = action.value;
-      const dataIndex = draft.findIndex((d) => d.layerId === layerId && d.userId === userId);
-      console.assert(dataIndex !== -1, { dataIndex, error: 'DELETE_RECORDS' });
-      if (dataIndex !== -1) {
-        //以前とdisplayNameが変更になっていても削除ではdisplayNameの更新はされない
-        draft[dataIndex].data = draft[dataIndex].data.filter((d) => !data.find((v) => v.id === d.id));
-      }
-      break;
-    }
+  },
+};
 
-    default:
-      return draft;
-  }
-}, createDataSetInitialState());
-export default reducer;
+const dataSetSlice = createSlice({
+  name: 'dataSet',
+  initialState: dataSetInitialState,
+  reducers,
+});
+
+export const {
+  setDataSetAction,
+  addDataAction,
+  updateDataAction,
+  deleteDataAction,
+  setRecordSetAction,
+  addRecordsAction,
+  updateRecordsAction,
+  deleteRecordsAction,
+} = dataSetSlice.actions;
+
+export default dataSetSlice.reducer;

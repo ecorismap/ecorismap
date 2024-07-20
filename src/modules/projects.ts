@@ -1,44 +1,31 @@
-import produce, { enableES5 } from 'immer';
-enableES5();
-
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ProjectType } from '../types';
 
-export function createProjectsInitialState(): ProjectType[] {
-  return [];
-}
+export const projectsInitialState: ProjectType[] = [];
 
-export const SET = 'projects/set' as const;
-export const ADD = 'projects/add' as const;
-export const UPDATE = 'projects/update' as const;
-export const DELETE = 'projects/delete' as const;
-
-export const setProjectsAction = (payload: ProjectType[]) => ({ type: SET, value: payload });
-export const addProjectAction = (payload: ProjectType) => ({ type: ADD, value: payload });
-export const updateProjectAction = (payload: ProjectType) => ({ type: UPDATE, value: payload });
-export const deleteProjectAction = (payload: ProjectType) => ({ type: DELETE, value: payload });
-
-export type Action =
-  | Readonly<ReturnType<typeof setProjectsAction>>
-  | Readonly<ReturnType<typeof addProjectAction>>
-  | Readonly<ReturnType<typeof updateProjectAction>>
-  | Readonly<ReturnType<typeof deleteProjectAction>>;
-
-const reducer = produce((draft, action: Action) => {
-  switch (action.type) {
-    case SET: {
-      return action.value;
+const reducers = {
+  setProjectsAction: (_state: ProjectType[], action: PayloadAction<ProjectType[]>) => {
+    return action.payload;
+  },
+  addProjectAction: (state: ProjectType[], action: PayloadAction<ProjectType>) => {
+    state.push(action.payload);
+  },
+  updateProjectAction: (state: ProjectType[], action: PayloadAction<ProjectType>) => {
+    const index = state.findIndex((project) => project.id === action.payload.id);
+    if (index !== -1) {
+      state[index] = action.payload;
     }
-    case ADD:
-      draft.push(action.value);
-      break;
-    case UPDATE: {
-      return draft.map((n) => (n.id !== action.value.id ? n : action.value));
-    }
-    case DELETE: {
-      return draft.filter((n) => n.id !== action.value.id);
-    }
-    default:
-      return draft;
-  }
-}, createProjectsInitialState());
-export default reducer;
+  },
+  deleteProjectAction: (state: ProjectType[], action: PayloadAction<ProjectType>) => {
+    return state.filter((project) => project.id !== action.payload.id);
+  },
+};
+
+const projectsSlice = createSlice({
+  name: 'projects',
+  initialState: projectsInitialState,
+  reducers,
+});
+
+export const { setProjectsAction, addProjectAction, updateProjectAction, deleteProjectAction } = projectsSlice.actions;
+export default projectsSlice.reducer;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { LayerType } from '../types';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 
@@ -32,7 +32,7 @@ export const useFieldList = (
   fieldIndex: number,
   isEdited_: boolean
 ): UseFieldListReturnType => {
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
 
   const [pickerValues, setPickerValues] = useState(['', '', '']);
   const [itemValues, setItemValues] = useState<{ value: string; isOther: boolean; customFieldValue: string }[]>([]);

@@ -1,5 +1,5 @@
 import { COLOR } from '../../constants/AppConstants';
-import reducer, { setLayersAction, addLayerAction, updateLayerAction, deleteLayerAction } from '../layers';
+import reducer, { setLayers, addLayerAction, updateLayer, deleteLayerAction } from '../layers';
 import { LayerType } from '../../types';
 describe('modules/layers', () => {
   const state: LayerType[] = [
@@ -54,7 +54,7 @@ describe('modules/layers', () => {
         ],
       },
     ];
-    const action = setLayersAction(layer);
+    const action = setLayers(layer);
     expect(reducer(state, action)).toEqual(layer);
   });
 
@@ -111,7 +111,7 @@ describe('modules/layers', () => {
         { id: '0-3', name: 'photo', format: 'PHOTO' },
       ],
     };
-    const action = updateLayerAction(layer);
+    const action = updateLayer(layer);
     expect(reducer(state, action)).toEqual([layer]);
   });
   test('should delete the layer from state.', () => {

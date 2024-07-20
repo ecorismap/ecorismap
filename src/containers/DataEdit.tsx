@@ -11,7 +11,7 @@ import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
 import { DataEditContext } from '../contexts/DataEdit';
 import { shallowEqual, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
 import { checkCoordsInput, checkFieldInput } from '../utils/Data';
 import { pickImage, takePhoto } from '../utils/Photo';
@@ -47,8 +47,8 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     changeLatLon,
     cancelUpdate,
   } = useDataEdit(route.params.targetData, route.params.targetLayer);
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
   const { checkRecordEditable } = useRecord();
   const { keyboardShown } = useKeyboard();
   const { isLandscape, windowWidth, mapRegion } = useWindow();
