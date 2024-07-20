@@ -17,6 +17,7 @@ export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
 
   const getToken = firebaseRN.app().functions('asia-northeast1').httpsCallable('getVirgilJwt');
+  //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
   try {
     //@ts-ignore
