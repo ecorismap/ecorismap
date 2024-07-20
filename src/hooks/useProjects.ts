@@ -3,7 +3,7 @@ import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction } from '../modules/projects';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { ulid } from 'ulid';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
@@ -22,8 +22,8 @@ export type UseProjectsReturnType = {
 
 export const useProjects = (): UseProjectsReturnType => {
   const dispatch = useDispatch();
-  const user = useSelector((state: AppState) => state.user);
-  const projects = useSelector((state: AppState) => state.projects);
+  const user = useSelector((state: RootState) => state.user);
+  const projects = useSelector((state: RootState) => state.projects);
   const [isLoading, setIsLoading] = useState(false);
 
   const ownerProjectsCount = useCallback(() => {

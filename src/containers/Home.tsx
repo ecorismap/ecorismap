@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
-  RootState as RNRootState,
-  RootStateStatus,
+  AppState as RNAppState,
+  AppStateStatus,
   GestureResponderEvent,
   Platform,
   PanResponderInstance,
@@ -1433,8 +1433,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     })();
 
     //バックグラウンド時に読み込む場合
-    const subscription = RNRootState.addEventListener('change', async (nextRootState: RootStateStatus) => {
-      if (nextRootState === 'active') {
+    const subscription = RNAppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
         await importExternalFiles();
         const size = await calculateStorageSize();
         //console.log('size', size, 'MB');

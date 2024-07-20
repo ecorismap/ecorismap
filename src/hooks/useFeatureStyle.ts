@@ -49,7 +49,7 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
       .filter((v): v is RecordType[] => v !== false)
       .flat()
   );
-  const displayNames = useSelector((state: AppState) =>
+  const displayNames = useSelector((state: RootState) =>
     state.dataSet
       .map((d) => d.layerId === layer_.id && d.data.length > 0 && d.data[0].displayName)
       .filter((v): v is string => v !== false)

@@ -4,10 +4,10 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
-import { createLayersInitialState, setLayersAction } from '../modules/layers';
-import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
+import { layersInitialState, setLayersAction } from '../modules/layers';
+import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
 import { addProjectAction, deleteProjectAction, updateProjectAction } from '../modules/projects';
 import { cloneDeep } from 'lodash';
@@ -132,16 +132,16 @@ export type UseRepositoryReturnType = {
 
 export const useRepository = (): UseRepositoryReturnType => {
   const dispatch = useDispatch();
-  const user = useSelector((state: AppState) => state.user);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
-  const layers = useSelector((state: AppState) => state.layers);
-  const mapRegion = useSelector((state: AppState) => state.settings.mapRegion, shallowEqual);
-  const tileMaps = useSelector((state: AppState) => state.tileMaps);
-  const mapType = useSelector((state: AppState) => state.settings.mapType, shallowEqual);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
-  //const drawTools = useSelector((state: AppState) => state.settings.drawTools);
-  const plugins = useSelector((state: AppState) => state.settings.plugins, shallowEqual);
-  const updatedAt = useSelector((state: AppState) => state.settings.updatedAt, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
+  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const layers = useSelector((state: RootState) => state.layers);
+  const mapRegion = useSelector((state: RootState) => state.settings.mapRegion, shallowEqual);
+  const tileMaps = useSelector((state: RootState) => state.tileMaps);
+  const mapType = useSelector((state: RootState) => state.settings.mapType, shallowEqual);
+  const isSettingProject = useSelector((state: RootState) => state.settings.isSettingProject, shallowEqual);
+  //const drawTools = useSelector((state: RootState) => state.settings.drawTools);
+  const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
+  const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
   const { photosToBeDeleted } = usePhoto();
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
@@ -362,8 +362,8 @@ export const useRepository = (): UseRepositoryReturnType => {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
       const { isOK, message } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
-        layers: createLayersInitialState(),
-        tileMaps: createTileMapsInitialState(),
+        layers: layersInitialState,
+        tileMaps: tileMapsInitialState,
         mapType: 'none',
         mapRegion: {
           latitude: 35,
