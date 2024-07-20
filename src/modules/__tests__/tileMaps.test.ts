@@ -1,4 +1,4 @@
-import reducer, { addTileMapAction, createTileMapsInitialState, setTileMapsAction } from '../tileMaps';
+import reducer, { addTileMapAction, tileMapsInitialState, setTileMapsAction } from '../tileMaps';
 import { TileMapType } from '../../types';
 jest.mock('i18next', () => ({
   useTranslation: () => ({
@@ -19,7 +19,7 @@ jest.mock('i18next', () => ({
 
 describe('modules/tileMaps', () => {
   test('should set the tileMaps to state', () => {
-    const state = createTileMapsInitialState();
+    const state = tileMapsInitialState;
     const tileMaps: TileMapType[] = [
       {
         id: 'hillshademap',
