@@ -1,13 +1,12 @@
 import reducer, {
-  addRecords,
-  deleteDataA,
-  deleteRecords,
+  addRecordsAction,
+  deleteDataAction,
+  deleteRecordsAction,
   setDataSetAction,
-  setRecordSet,
+  setRecordSetAction,
   updateDataAction,
-  updateTrackFieldAction,
-  updateRecords,
-  addData,
+  updateRecordsAction,
+  addDataAction,
 } from '../dataSet';
 import { DataType } from '../../types';
 describe('modules/dataSet', () => {
@@ -41,7 +40,7 @@ describe('modules/dataSet', () => {
 
   test('should add the data to state', () => {
     const data: DataType[] = [{ layerId: '3', userId: '34-56', data: [] }];
-    const action = addData(data);
+    const action = addDataAction(data);
     expect(reducer(state, action)).toEqual([
       { data: [], layerId: '0', userId: undefined },
       { data: [], layerId: '1', userId: undefined },
@@ -85,7 +84,7 @@ describe('modules/dataSet', () => {
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
     ];
-    const action = deleteDataA(data);
+    const action = deleteDataAction(data);
     expect(reducer(state, action)).toEqual([
       {
         data: [
@@ -110,7 +109,7 @@ describe('modules/dataSet', () => {
       userId: '0',
       data: [],
     };
-    const action = setRecordSet(data);
+    const action = setRecordSetAction(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -134,7 +133,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = addRecords(data);
+    const action = addRecordsAction(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -181,7 +180,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = updateRecords(data);
+    const action = updateRecordsAction(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -219,7 +218,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = deleteRecords(data);
+    const action = deleteRecordsAction(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -227,43 +226,6 @@ describe('modules/dataSet', () => {
         layerId: '2',
         userId: '0',
         data: [],
-      },
-    ]);
-  });
-
-  test('should update the field at state', () => {
-    const data = {
-      layerId: '2',
-      userId: '0',
-      dataId: '0',
-      coords: [
-        { latitude: 0, longitude: 0 },
-        { latitude: 1, longitude: 1 },
-      ],
-      field: { cmt: '1km' },
-    };
-
-    const action = updateTrackFieldAction(data);
-    expect(reducer(state, action)).toEqual([
-      { layerId: '0', userId: undefined, data: [] },
-      { layerId: '1', userId: undefined, data: [] },
-      {
-        layerId: '2',
-        userId: '0',
-        data: [
-          {
-            id: '0',
-            userId: '34-56',
-            displayName: 'user1',
-            visible: true,
-            redraw: false,
-            coords: [
-              { latitude: 0, longitude: 0 },
-              { latitude: 1, longitude: 1 },
-            ],
-            field: { cmt: '1km' },
-          },
-        ],
       },
     ]);
   });
