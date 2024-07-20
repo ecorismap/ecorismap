@@ -12,7 +12,7 @@ import {
   ArrowStyleType,
 } from '../types';
 
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import * as Print from 'expo-print';
 import { getTileRegion, tileToWebMercator } from '../utils/Tile';
 import { useWindow } from './useWindow';
@@ -62,7 +62,7 @@ export type UseEcorisMapFileReturnType = {
 };
 
 export const usePDF = (): UseEcorisMapFileReturnType => {
-  const tileMaps = useSelector((state: AppState) => state.tileMaps);
+  const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const { mapRegion } = useWindow();
   const [outputVRT, setOutputVRT] = useState(false);
   const [outputDataPDF, setOutputDataPDF] = useState(false);

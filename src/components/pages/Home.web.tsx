@@ -28,7 +28,7 @@ import { useDropzone } from 'react-dropzone';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
-import { AppState } from '../../modules';
+import { RootState } from '../../store';
 import { HomeContext } from '../../contexts/Home';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
@@ -109,7 +109,7 @@ export default function HomeScreen() {
     isEditingRecord,
   } = useContext(HomeContext);
   //console.log('render Home');
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
   const { mapRegion, windowWidth, isLandscape, windowHeight } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });

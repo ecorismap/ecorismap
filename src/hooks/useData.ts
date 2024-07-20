@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ExportType, LayerType, PhotoType, RecordType } from '../types';
 import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
@@ -50,9 +50,9 @@ export type UseDataReturnType = {
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
   //console.log(targetLayer);
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user, shallowEqual);
-  const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user, shallowEqual);
+  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
   const { isRunningProject } = usePermission();
   const route = useRoute();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);

@@ -10,7 +10,7 @@ import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
 import { useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
 import { exportGeoFile } from '../utils/File';
@@ -19,15 +19,15 @@ import { usePermission } from '../hooks/usePermission';
 import { SettingsModalFileSave } from '../components/organisms/SettingsModalFileSave';
 import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
-import { editSettingsAction } from '../modules/settings';
+import { editSettings } from '../modules/settings';
 import { GpsAccuracyType } from '../types';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const dispatch = useDispatch();
-  const layers = useSelector((state: AppState) => state.layers);
-  const dataSet = useSelector((state: AppState) => state.dataSet);
-  const maps = useSelector((state: AppState) => state.tileMaps);
-  const gpsAccuracy = useSelector((state: AppState) => state.settings.gpsAccuracy);
+  const layers = useSelector((state: RootState) => state.layers);
+  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const maps = useSelector((state: RootState) => state.tileMaps);
+  const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
 
@@ -179,7 +179,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
 
   const pressGPSSettingsOK = useCallback(
     (value: GpsAccuracyType) => {
-      dispatch(editSettingsAction({ gpsAccuracy: value }));
+      dispatch(editSettings({ gpsAccuracy: value }));
       setIsGPSSettingsOpen(false);
     },
     [dispatch]

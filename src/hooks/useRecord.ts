@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import {
   DataType,
   FeatureType,
@@ -17,7 +17,6 @@ import {
 } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
-import { createSelector } from 'reselect';
 import { ulid } from 'ulid';
 import { getDefaultField } from '../utils/Data';
 import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
@@ -25,6 +24,7 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createSelector } from '@reduxjs/toolkit';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -99,15 +99,13 @@ export type UseRecordReturnType = {
 export const useRecord = (): UseRecordReturnType => {
   const dispatch = useDispatch();
 
-  const layers = useSelector((state: AppState) => state.layers);
-  const user = useSelector((state: AppState) => state.user);
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers);
+  const user = useSelector((state: RootState) => state.user);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
 
   const selectDataByLayerType = (layerType: string) =>
-    // eslint-disable-next-line @typescript-eslint/no-shadow
-    createSelector([(state) => state.dataSet, (_) => layers], (dataSet, layers) =>
-      //@ts-ignore
-      layers.map((layer) => (layer.type === layerType ? dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
+    createSelector([(state: RootState) => state.dataSet, (_) => layers], (dataSet, layers_) =>
+      layers_.map((layer) => (layer.type === layerType ? dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
     );
   const selectPointData = selectDataByLayerType('POINT');
   const selectLineData = selectDataByLayerType('LINE');
@@ -116,7 +114,7 @@ export const useRecord = (): UseRecordReturnType => {
   const lineDataSet = useSelector((state) => selectLineData(state) as LineDataType[]);
   const polygonDataSet = useSelector((state) => selectPolygonData(state) as PolygonDataType[]);
 
-  const selectedRecord = useSelector((state: AppState) => state.settings.selectedRecord, shallowEqual);
+  const selectedRecord = useSelector((state: RootState) => state.settings.selectedRecord, shallowEqual);
 
   const { isRunningProject } = usePermission();
   const activePointLayer = useMemo(() => layers.find((d) => d.active && d.type === 'POINT'), [layers]);

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ulid } from 'ulid';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { tileGridForRegion } from '../utils/Tile';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -34,7 +34,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setProgress] = useState('0');
   const [savedTileSize, setTileSize] = useState('0');
-  const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
+  const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
   const downloadRegion = useMemo(() => {
     const minLon = mapRegion.longitude - mapRegion.latitudeDelta / 4;
     const minLat = mapRegion.latitude - mapRegion.latitudeDelta / 4;
