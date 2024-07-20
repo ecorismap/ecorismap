@@ -179,7 +179,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       console.log(e);
     } finally {
       if (isLoggedIn(user) && hasOpened(projectId)) {
-        projectStore.deleteCurrentPosition(user.uid, projectId);
+        projectStore.deleteCurrentPosition(user.uid!, projectId);
         setCurrentLocation(null);
       }
     }
@@ -227,7 +227,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (gpsState_ === 'off') {
         await stopGPS();
         if (isLoggedIn(user) && hasOpened(projectId)) {
-          projectStore.deleteCurrentPosition(user.uid, projectId);
+          projectStore.deleteCurrentPosition(user.uid!, projectId);
           setCurrentLocation(null);
         }
       } else if (gpsState_ === 'follow') {
