@@ -1,7 +1,7 @@
 import { LayerType, PhotoType, RecordType } from '../types';
 
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useCallback } from 'react';
 import { editSettingsAction } from '../modules/settings';
 import { getPhotoFields } from '../utils/Layer';
@@ -27,7 +27,7 @@ export type UsePhotoReturnType = {
 
 export const usePhoto = (): UsePhotoReturnType => {
   const dispatch = useDispatch();
-  const photosToBeDeleted = useSelector((state: AppState) => state.settings.photosToBeDeleted, shallowEqual);
+  const photosToBeDeleted = useSelector((state: RootState) => state.settings.photosToBeDeleted, shallowEqual);
   //console.log('####photosToBeDeleted###', photosToBeDeleted);
 
   const clearToBeDeletedPhotos = useCallback(() => {

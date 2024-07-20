@@ -1,6 +1,6 @@
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
@@ -55,10 +55,10 @@ export type UseDataEditReturnType = {
 
 export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
-  const isEditingRecord = useSelector((state: AppState) => state.settings.isEditingRecord, shallowEqual);
-  const dataSet = useSelector((state: AppState) => state.dataSet, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
+  const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
+  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
   //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);

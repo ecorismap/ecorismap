@@ -1,7 +1,7 @@
 import { DEFAULT_MAP_LIST_URL } from '../../constants/AppConstants';
 import { TUTRIALS } from '../../constants/Tutrials';
 import { MemberLocationType, RoleType, SettingsType, TileRegionType, TrackingType } from '../../types';
-import reducer, { editSettingsAction } from '../settings';
+import reducer, { editSettings } from '../settings';
 describe('modules/settings', () => {
   const state: SettingsType = {
     tutrials: TUTRIALS,
@@ -39,7 +39,7 @@ describe('modules/settings', () => {
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';
-    const action = editSettingsAction({ role: role });
+    const action = editSettings({ role: role });
     expect(reducer(state, action)).toEqual({ ...state, role: role });
   });
   test('should set the mapRegion to state', () => {
@@ -50,7 +50,7 @@ describe('modules/settings', () => {
       longitudeDelta: 0.00922,
       zoom: 1,
     };
-    const action = editSettingsAction({ mapRegion: mapRegion });
+    const action = editSettings({ mapRegion: mapRegion });
     expect(reducer(state, action)).toEqual({ ...state, mapRegion: mapRegion });
   });
 });

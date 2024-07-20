@@ -4,7 +4,7 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { TUTRIALS_MESSAGE } from '../constants/Tutrials';
 import { t } from '../i18n/config';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { Tutrials } from '../types';
 
@@ -16,7 +16,7 @@ export type UseTutrialReturnType = {
 };
 
 export const useTutrial = (): UseTutrialReturnType => {
-  const tutrials = useSelector((state: AppState) => state.settings.tutrials, shallowEqual);
+  const tutrials = useSelector((state: RootState) => state.settings.tutrials, shallowEqual);
   const isTermsOfUseOpen = useMemo(() => tutrials.TERMS_OF_USE, [tutrials.TERMS_OF_USE]);
   const dispatch = useDispatch();
 

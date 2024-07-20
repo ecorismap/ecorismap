@@ -1,13 +1,13 @@
 import reducer, {
-  addRecordsAction,
-  deleteDataAction,
-  deleteRecordsAction,
+  addRecords,
+  deleteDataA,
+  deleteRecords,
   setDataSetAction,
-  setRecordSetAction,
+  setRecordSet,
   updateDataAction,
   updateTrackFieldAction,
-  updateRecordsAction,
-  addDataAction,
+  updateRecords,
+  addData,
 } from '../dataSet';
 import { DataType } from '../../types';
 describe('modules/dataSet', () => {
@@ -41,7 +41,7 @@ describe('modules/dataSet', () => {
 
   test('should add the data to state', () => {
     const data: DataType[] = [{ layerId: '3', userId: '34-56', data: [] }];
-    const action = addDataAction(data);
+    const action = addData(data);
     expect(reducer(state, action)).toEqual([
       { data: [], layerId: '0', userId: undefined },
       { data: [], layerId: '1', userId: undefined },
@@ -85,7 +85,7 @@ describe('modules/dataSet', () => {
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
     ];
-    const action = deleteDataAction(data);
+    const action = deleteDataA(data);
     expect(reducer(state, action)).toEqual([
       {
         data: [
@@ -110,7 +110,7 @@ describe('modules/dataSet', () => {
       userId: '0',
       data: [],
     };
-    const action = setRecordSetAction(data);
+    const action = setRecordSet(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -134,7 +134,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = addRecordsAction(data);
+    const action = addRecords(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -181,7 +181,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = updateRecordsAction(data);
+    const action = updateRecords(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },
@@ -219,7 +219,7 @@ describe('modules/dataSet', () => {
         },
       ],
     };
-    const action = deleteRecordsAction(data);
+    const action = deleteRecords(data);
     expect(reducer(state, action)).toEqual([
       { layerId: '0', userId: undefined, data: [] },
       { layerId: '1', userId: undefined, data: [] },

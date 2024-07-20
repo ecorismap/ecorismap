@@ -5,7 +5,7 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { cloneDeep } from 'lodash';
 import { ulid } from 'ulid';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { formattedInputs } from '../utils/Format';
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
@@ -42,11 +42,11 @@ export const useLayerEdit = (
   useLastValue: boolean | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const layers = useSelector((state: AppState) => state.layers);
-  const user = useSelector((state: AppState) => state.user);
-  const dataSet = useSelector((state: AppState) => state.dataSet.filter((d) => d.layerId === layer.id));
-  const isNewLayer = useSelector((state: AppState) => state.layers.every((d) => d.id !== layer.id));
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers);
+  const user = useSelector((state: RootState) => state.user);
+  const dataSet = useSelector((state: RootState) => state.dataSet.filter((d) => d.layerId === layer.id));
+  const isNewLayer = useSelector((state: RootState) => state.layers.every((d) => d.id !== layer.id));
 
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [isEdited, setIsEdited] = useState(isStyleEdited);
