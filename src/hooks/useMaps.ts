@@ -6,7 +6,7 @@ import { TileMapItemType, TileMapType } from '../types';
 import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
@@ -59,14 +59,14 @@ export type UseMapsReturnType = {
 
 export const useMaps = (): UseMapsReturnType => {
   const dispatch = useDispatch();
-  const isOffline = useSelector((state: AppState) => state.settings.isOffline, shallowEqual);
-  const mapListURL = useSelector((state: AppState) => state.settings.mapListURL, shallowEqual);
-  const maps = useSelector((state: AppState) => state.tileMaps);
-  const tileRegions = useSelector((state: AppState) => state.settings.tileRegions, shallowEqual);
+  const isOffline = useSelector((state: RootState) => state.settings.isOffline, shallowEqual);
+  const mapListURL = useSelector((state: RootState) => state.settings.mapListURL, shallowEqual);
+  const maps = useSelector((state: RootState) => state.tileMaps);
+  const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
   const [progress, setProgress] = useState('10');
-  const mapList = useSelector((state: AppState) => state.settings.mapList, shallowEqual);
+  const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
 
   const fetchMapList = useCallback(
     async (signal: AbortSignal) => {

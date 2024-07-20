@@ -12,14 +12,17 @@ import {
   TileMapType,
 } from '../types';
 
-import { AppState } from '../modules';
-import { setLayersAction, createLayersInitialState } from '../modules/layers';
+import { RootState } from '../store';
+import { layersInitialState, setLayersAction } from '../modules/layers';
+import { dataSetInitialState } from '../modules/dataSet';
+import { tileMapsInitialState } from '../modules/tileMaps';
+import { settingsInitialState } from '../modules/settings';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
-import { setDataSetAction, createDataSetInitialState } from '../modules/dataSet';
+import { setDataSetAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
-import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
-import { createSettingsInitialState, setSettingsAction } from '../modules/settings';
+import { setTileMapsAction } from '../modules/tileMaps';
+import { setSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
 import { getExt } from '../utils/General';
 
@@ -68,11 +71,11 @@ export type UseEcorisMapFileReturnType = {
 
 export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dispatch = useDispatch();
-  const settings = useSelector((state: AppState) => state.settings);
+  const settings = useSelector((state: RootState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
 
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user, shallowEqual);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
@@ -343,12 +346,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
   const clearEcorisMap = useCallback(async () => {
     //レイヤ、データ、地図情報、設定をリセット。設定のtutrialは現在の状況を引き継ぐ
-    dispatch(setLayersAction(createLayersInitialState()));
-    dispatch(setDataSetAction(createDataSetInitialState()));
-    dispatch(setTileMapsAction(createTileMapsInitialState()));
-    const initialSettings = createSettingsInitialState();
-    const newSettings = { ...initialSettings, tutrials: settings.tutrials };
-    dispatch(setSettingsAction(newSettings));
+    dispatch(setLayersAction(layersInitialState));
+    dispatch(setDataSetAction(dataSetInitialState));
+    dispatch(setTileMapsAction(tileMapsInitialState));
+    dispatch(setSettingsAction({ ...settingsInitialState, tutrials: settings.tutrials }));
     //ログインしていない前提なので、プロジェクトで使うかもしれない写真、地図キャッシュは消さない
     // const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
     // if (uri) {

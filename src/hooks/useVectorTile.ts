@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { latToTileY, lonToTileX } from '../utils/Tile';
 import { fetchVectorTileInfo } from '../utils/VectorTile';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { useSelector } from 'react-redux';
 import { Position } from 'geojson';
 
@@ -30,7 +30,7 @@ export type UseVectorTileReturnType = {
 };
 
 export const useVectorTile = (): UseVectorTileReturnType => {
-  const tileMaps = useSelector((state: AppState) => state.tileMaps);
+  const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const [vectorTileInfo, setVectorTileInfo] = useState<
     | {
         position: Position;
