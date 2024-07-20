@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { Checkout_sessions, License, Price, Product } from '../types';
-import { firestore, functions } from '../lib/firebase/firebase';
+import { firestore, functions } from '../lib/firebase/firebase.web';
 import firebase from 'firebase/compat/app';
 import { Platform } from 'react-native';
 
@@ -15,7 +15,7 @@ export type UsePurchasesWebReturnType = {
 };
 
 export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
-  const currentUser = useSelector((state: AppState) => state.user.uid);
+  const currentUser = useSelector((state: RootState) => state.user.uid);
   const [products, setProducts] = useState<{ product: Product; prices: { priceId: string; price: Price }[] }[]>([]);
   const [customerLicense, setCustomerLicense] = useState<License | undefined>(undefined);
   const [customerPortal, setCustomerPortal] = useState<string | undefined>(undefined);

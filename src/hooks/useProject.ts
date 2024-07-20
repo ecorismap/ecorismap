@@ -1,13 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { ProjectType, RegionType } from '../types';
-import { createLayersInitialState, setLayersAction } from '../modules/layers';
-import { createDataSetInitialState, setDataSetAction } from '../modules/dataSet';
+import { layersInitialState, setLayersAction } from '../modules/layers';
+import { dataSetInitialState, setDataSetAction } from '../modules/dataSet';
 import { useRepository } from './useRepository';
 import { hasOpened } from '../utils/Project';
-import { createTileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
+import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
@@ -30,12 +30,12 @@ export type UseProjectReturnType = {
 
 export const useProject = (): UseProjectReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
-  const isSynced = useSelector((state: AppState) => state.settings.isSynced, shallowEqual);
-  const isSettingProject = useSelector((state: AppState) => state.settings.isSettingProject, shallowEqual);
-  const projectRegion = useSelector((state: AppState) => state.settings.projectRegion, shallowEqual);
-  const projects = useSelector((state: AppState) => state.projects);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
+  const isSynced = useSelector((state: RootState) => state.settings.isSynced, shallowEqual);
+  const isSettingProject = useSelector((state: RootState) => state.settings.isSettingProject, shallowEqual);
+  const projectRegion = useSelector((state: RootState) => state.settings.projectRegion, shallowEqual);
+  const projects = useSelector((state: RootState) => state.projects);
   const project = useMemo(() => projects.find((d) => d.id === projectId), [projectId, projects]);
   const role = useMemo(() => project?.members.find((v) => v.uid === user.uid)?.role, [project?.members, user.uid]);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
@@ -96,13 +96,12 @@ export const useProject = (): UseProjectReturnType => {
         isSynced: false,
         projectId: undefined,
         projectName: undefined,
-        tracking: undefined,
         photosToBeDeleted: [],
       })
     );
-    dispatch(setLayersAction(createLayersInitialState()));
-    dispatch(setDataSetAction(createDataSetInitialState()));
-    dispatch(setTileMapsAction(createTileMapsInitialState()));
+    dispatch(setLayersAction(layersInitialState));
+    dispatch(setDataSetAction(dataSetInitialState));
+    dispatch(setTileMapsAction(tileMapsInitialState));
   }, [dispatch]);
 
   const saveProjectSetting = useCallback(

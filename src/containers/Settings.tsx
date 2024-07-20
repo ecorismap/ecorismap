@@ -19,8 +19,8 @@ import { usePermission } from '../hooks/usePermission';
 import { SettingsModalFileSave } from '../components/organisms/SettingsModalFileSave';
 import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
-import { editSettings } from '../modules/settings';
 import { GpsAccuracyType } from '../types';
+import { editSettingsAction } from '../modules/settings';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const dispatch = useDispatch();
@@ -179,7 +179,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
 
   const pressGPSSettingsOK = useCallback(
     (value: GpsAccuracyType) => {
-      dispatch(editSettings({ gpsAccuracy: value }));
+      dispatch(editSettingsAction({ gpsAccuracy: value }));
       setIsGPSSettingsOpen(false);
     },
     [dispatch]

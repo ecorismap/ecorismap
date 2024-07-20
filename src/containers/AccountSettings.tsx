@@ -3,12 +3,12 @@ import { shallowEqual, useSelector } from 'react-redux';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import AccountSettings from '../components/pages/AccountSettings';
 import { t } from '../i18n/config';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { Props_AccountSettings } from '../routes';
 import { AccountSettingsContext } from '../contexts/AccountSettings';
 
 export default function AccountSettingsContainers({ navigation }: Props_AccountSettings) {
-  const projectId = useSelector((state: AppState) => state.settings.projectId, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
 
   const pressUpdateUserProfile = useCallback(() => {
     navigation.navigate('Account', { accountFormState: 'updateUserProfile', previous: 'AccountSettings' });

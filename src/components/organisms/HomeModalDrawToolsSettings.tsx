@@ -17,7 +17,7 @@ interface Props {
 export const HomeModalDrawToolsSettings = React.memo((props: Props) => {
   //console.log('render ModalTileMap');
   const { visible, settings, pressOK, pressCancel } = props;
-  const layers = useSelector((state: AppState) => state.layers);
+  const layers = useSelector((state: RootState) => state.layers);
 
   const actionLayerCondition = (layer: LayerType) => {
     return (

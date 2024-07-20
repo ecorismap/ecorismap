@@ -1,17 +1,17 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import * as firebase from '../lib/firebase/sign-in';
-import { createUserInitialState, setUserAction } from '../modules/user';
+import { userInitialState, setUserAction } from '../modules/user';
 import { Platform } from 'react-native';
 import { initFirebaseAuth } from '../lib/firebase/sign-in.web';
 
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import { AccountFormStateType, UserType } from '../types';
 import { formattedInputs } from '../utils/Format';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { isLoggedIn } from '../utils/Account';
-import { createProjectsInitialState, setProjectsAction } from '../modules/projects';
+import { projectsInitialState, setProjectsAction } from '../modules/projects';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
@@ -72,7 +72,7 @@ export type UseAccountReturnType = {
 
 export const useAccount = (): UseAccountReturnType => {
   const dispatch = useDispatch();
-  const user = useSelector((state: AppState) => state.user);
+  const user = useSelector((state: RootState) => state.user);
   const [isLoading, setIsLoading] = useState(false);
   const [accountMessage, setAccountMessage] = useState('');
   const [accountFormState, setAccountFormState] = useState<AccountFormStateType>('loginUserAccount');
@@ -172,8 +172,8 @@ export const useAccount = (): UseAccountReturnType => {
 
   const logout = useCallback(async () => {
     await firebase.signOut();
-    dispatch(setUserAction(createUserInitialState()));
-    dispatch(setProjectsAction(createProjectsInitialState()));
+    dispatch(setUserAction(userInitialState));
+    dispatch(setProjectsAction(projectsInitialState));
   }, [dispatch]);
 
   const resetUserPassword = useCallback(async (email: string) => {

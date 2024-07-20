@@ -3,7 +3,7 @@ import { toDate, uploadCurrentPosition } from '../lib/firebase/firestore';
 import { LocationType, MemberLocationType, PositionFS } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { AppState } from '../modules';
+import { RootState } from '../store';
 import dayjs from '../i18n/dayjs';
 import { decryptEThree as dec } from '../lib/virgilsecurity/e3kit';
 import { isLoggedIn } from '../utils/Account';
@@ -14,8 +14,8 @@ export type UseSyncLocationReturnType = { uploadLocation: (currentLocation: Loca
 
 export const useSyncLocation = (projectId: string | undefined): UseSyncLocationReturnType => {
   const dispatch = useDispatch();
-  const isSynced = useSelector((state: AppState) => state.settings.isSynced, shallowEqual);
-  const user = useSelector((state: AppState) => state.user);
+  const isSynced = useSelector((state: RootState) => state.settings.isSynced, shallowEqual);
+  const user = useSelector((state: RootState) => state.user);
   const syncSubscriber = useRef<any>(undefined);
   const lastUploadTime = useRef<dayjs.Dayjs>(dayjs());
 
