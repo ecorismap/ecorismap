@@ -11,6 +11,8 @@ describe('modules/project', () => {
       members: [{ uid: '0123', email: 'abc@test.com', verified: 'OK', role: 'OWNER' }],
       membersUid: ['0123'],
       abstract: 'this is test0 project',
+      storage: { count: 0 },
+      license: 'Free',
     },
   ];
   test('should set the project to state', () => {
@@ -23,6 +25,8 @@ describe('modules/project', () => {
         membersUid: ['4567'],
         members: [{ uid: '4567', email: 'def@test.com', verified: 'OK', role: 'OWNER' }],
         abstract: 'this is test1 project',
+        storage: { count: 0 },
+        license: 'Free',
       },
     ];
 
@@ -38,6 +42,8 @@ describe('modules/project', () => {
       membersUid: ['4567'],
       members: [{ uid: '4567', email: 'def@test.com', verified: 'OK', role: 'OWNER' }],
       abstract: 'this is test1 project',
+      storage: { count: 0 },
+      license: 'Free',
     };
     const action = addProjectAction(project);
     expect(reducer(state, action)).toEqual([...state, project]);
@@ -52,6 +58,8 @@ describe('modules/project', () => {
       members: [{ uid: '0123', email: 'abc@test.com', verified: 'OK', role: 'OWNER' }],
       membersUid: ['0123'],
       abstract: 'this is test0 project',
+      storage: { count: 0 },
+      license: 'Free',
     };
     const action = updateProjectAction(project);
     expect(reducer(state, action)).toEqual([project]);
@@ -65,6 +73,8 @@ describe('modules/project', () => {
       members: [{ uid: '0123', email: 'abc@test.com', verified: 'OK', role: 'OWNER' }],
       membersUid: ['0123'],
       abstract: 'this is test0 project',
+      storage: { count: 0 },
+      license: 'Free',
     };
     const action = deleteProjectAction(project);
     expect(reducer(state, action)).toEqual([]);
