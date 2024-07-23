@@ -292,6 +292,50 @@ export const Gpx2Data = (
   }
 };
 
+function isWGS84(geojson: any) {
+  // crsプロパティが存在しない場合、デフォルトでWGS84とみなす
+  if (!geojson.crs) {
+    return true;
+  }
+
+  // crsプロパティが存在する場合、WGS84かどうかをチェック
+  if (geojson.crs.type === 'name') {
+    // OGC CRS URNs
+    if (
+      geojson.crs.properties.name === 'urn:ogc:def:crs:OGC:1.3:CRS84' ||
+      geojson.crs.properties.name === 'urn:ogc:def:crs:OGC:2:84'
+    ) {
+      return true;
+    }
+    // EPSG コード
+    if (geojson.crs.properties.name === 'EPSG:4326') {
+      return true;
+    }
+  } else if (geojson.crs.type === 'EPSG') {
+    // 古い形式のEPSG指定
+    if (geojson.crs.properties.code === 4326) {
+      return true;
+    }
+  }
+
+  // 上記のいずれにも該当しない場合、WGS84ではないとみなす
+  return false;
+}
+
+// GeoJSONオブジェクト全体をチェックする関数
+function checkGeoJSONCRS(geojson: any) {
+  if (typeof geojson !== 'object' || geojson === null) {
+    return false;
+  }
+
+  // ルートレベルでcrsをチェック
+  if (isWGS84(geojson)) {
+    return true;
+  }
+
+  return false;
+}
+
 export const GeoJson2Data = (
   geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
   layer: LayerType,
@@ -302,6 +346,10 @@ export const GeoJson2Data = (
   try {
     let importedData: RecordType[] = [];
 
+    const isValidGeojson = checkGeoJSONCRS(geojson);
+    if (!isValidGeojson) {
+      return undefined;
+    }
     switch (type) {
       case 'POINT':
         importedData = geojson.features

@@ -89,13 +89,14 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           : cloneDeep(importedLayer);
       const recordSet = GeoJson2Data(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
 
-      if (recordSet === undefined) return;
-      if (recordSet.length === 0) return;
+      if (recordSet === undefined) return false;
+      if (recordSet.length === 0) return false;
       //ToDo Layerとデータの整合性のチェック
       //console.log(layer);
       //SET_LAYERSだとレンダリング時にしかdispatchの値が更新されず、連続で呼び出した際に不具合があるためADDする
       dispatch(addLayerAction(layer));
       dispatch(addDataAction([{ layerId: layer.id, userId: dataUser.uid, data: recordSet }]));
+      return true;
     },
     [dispatch, dataUser.displayName, dataUser.uid]
   );
@@ -105,7 +106,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const geojsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const geojson = JSON.parse(geojsonStrings);
       const featureType = detectGeoJsonType(geojson);
-      importGeoJson(geojson, featureType, name);
+      return importGeoJson(geojson, featureType, name);
     },
     [importGeoJson]
   );
@@ -214,7 +215,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const loadFile = useCallback(
     async (name: string, uri: string) => {
       const ext = getExt(name)?.toLowerCase();
-
+      let result = true;
       switch (ext) {
         case 'csv': {
           await loadCsv(uri, name);
@@ -241,12 +242,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           break;
         }
         case 'geojson': {
-          await loadGeojson(uri, name);
+          result = await loadGeojson(uri, name);
           break;
         }
         default:
           throw new Error('invalid extension');
       }
+      return result;
     },
     [loadCsv, loadGeojson, loadGpx, loadJson, loadKml, loadKmz, loadZip]
   );
@@ -257,8 +259,12 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         //console.log(file);
         setIsLoading(true);
 
-        await loadFile(name, uri);
-        return { isOK: true, message: t('hooks.message.receiveFile') };
+        const result = await loadFile(name, uri);
+        if (result) {
+          return { isOK: true, message: t('hooks.message.receiveFile') };
+        } else {
+          return { isOK: false, message: t('hooks.message.failLoadFile') };
+        }
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       } finally {
