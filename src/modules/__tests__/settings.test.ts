@@ -9,7 +9,7 @@ describe('modules/settings', () => {
     isSynced: false,
     isEditingRecord: false,
     isOffline: false,
-    updatedAt: new Date('2000/1/1'),
+    updatedAt: new Date('2000/1/1').toISOString(),
     role: undefined as RoleType | undefined,
     mapType: 'standard',
     tileRegions: [] as TileRegionType[],
@@ -35,6 +35,7 @@ describe('modules/settings', () => {
     photosToBeDeleted: [],
     mapListURL: DEFAULT_MAP_LIST_URL,
     mapList: [],
+    gpsAccuracy: 'HIGH',
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';
