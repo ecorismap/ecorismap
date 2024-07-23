@@ -634,7 +634,8 @@
       "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
       "encryptKeyFailed": "Check encryption password",
       "notSupportPDF": "The web version does not support PDF import.",
-      "saveTracking": "There are unsaved track logs. \nDo you want to save?"
+      "saveTracking": "There are unsaved track logs. \nDo you want to save?",
+      "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
