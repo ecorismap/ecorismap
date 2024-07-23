@@ -350,7 +350,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       if (!isOK) {
         return { isOK: false, message };
       }
-      dispatch(editSettingsAction({ updatedAt: timestamp }));
+      dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
       return { isOK: true, message: '' };
     },
     [dispatch, layers, mapRegion, mapType, plugins, tileMaps, updatedAt, user]

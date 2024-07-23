@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { Checkout_sessions, License, Price, Product } from '../types';
-import { firestore, functions } from '../lib/firebase/firebase.web';
-import firebase from 'firebase/compat/app';
+import { firestore, functions } from '../lib/firebase/firebase';
 import { Platform } from 'react-native';
 
 export type UsePurchasesWebReturnType = {
@@ -25,6 +24,7 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
     if (Platform.OS !== 'web') return;
     const createPortalLink = functions.httpsCallable('ext-firestore-stripe-payments-createPortalLink');
     const { data: link } = await createPortalLink({ returnUrl: window.location.origin });
+    //@ts-ignore
     setCustomerPortal(link.url);
   }, []);
 
@@ -32,7 +32,7 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
     let subscription;
     let productData;
 
-    (firestore as firebase.firestore.Firestore)
+    firestore
       .collection('customers')
       .doc(currentUser)
       .collection('subscriptions')
@@ -70,7 +70,7 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
       },
     };
 
-    const docRef = await (firestore as firebase.firestore.Firestore)
+    const docRef = await firestore
       .collection('customers')
       .doc(currentUser)
       .collection('checkout_sessions')
@@ -90,7 +90,7 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
   };
 
   const getProductData = useCallback(async () => {
-    const querySnapshot = await (firestore as firebase.firestore.Firestore)
+    const querySnapshot = await firestore
       .collection('products')
       .where('active', '==', true)
       .orderBy('metadata.no')
