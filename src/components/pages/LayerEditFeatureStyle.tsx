@@ -172,6 +172,7 @@ export default function LayerEditFeatureStyleScreen() {
 
       <HomeMapMemoColorPicker
         color={colorStyle.color}
+        withAlpha={true}
         modalVisible={modalVisible}
         pressSelectColorOK={pressSelectColorOK}
         pressSelectColorCancel={pressSelectColorCancel}
