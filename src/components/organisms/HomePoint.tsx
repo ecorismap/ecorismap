@@ -142,7 +142,8 @@ const PointComponent = React.memo((props: PointComponentProps) => {
       coordinate={feature.coords}
       opacity={0.8}
       anchor={{ x: 0.5, y: 0.8 }}
-      style={{ zIndex: selected ? 1000 : -1, alignItems: 'center' }}
+      style={{ zIndex: selected ? 1000 : 1, alignItems: 'center' }}
+      //zIndex={selected ? 1000 : 1}
     >
       {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
       {/*labelの表示非表示でanchorがずれないようにzoom<=8でラベルを空白にする*/}

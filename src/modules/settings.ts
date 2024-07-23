@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 import { TileRegionType, MemberLocationType, SettingsType, RoleType } from '../types';
+import dayjs from 'dayjs';
 
 export const settingsInitialState: SettingsType = {
   tutrials: TUTRIALS,
@@ -9,7 +10,7 @@ export const settingsInitialState: SettingsType = {
   isSynced: false,
   isEditingRecord: false,
   isOffline: false,
-  updatedAt: new Date('2000/1/1'),
+  updatedAt: dayjs('2000-01-01').toISOString(),
   role: undefined as RoleType | undefined,
   mapType: 'standard',
   tileRegions: [] as TileRegionType[],
