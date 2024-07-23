@@ -277,7 +277,7 @@ export interface ProjectType {
 }
 
 export interface ProjectSettingsType {
-  updatedAt: Date;
+  updatedAt: string;
   mapType: MapType;
   mapRegion: RegionType;
   layers: LayerType[];
@@ -287,7 +287,7 @@ export interface ProjectSettingsType {
 
 export interface SettingsType {
   tutrials: Tutrials;
-  updatedAt: Date;
+  updatedAt: string;
   role: RoleType | undefined;
   mapType: MapType;
   mapRegion: RegionType;
