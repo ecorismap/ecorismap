@@ -61,8 +61,11 @@ export const rgbaString2rgbaString = (rgbaString: string, transparency: number):
   if (r) {
     c = r.slice(1, 5);
   }
-
-  return `rgba(${c[0]},${c[1]},${c[2]},${transparency})`;
+  if (transparency === 1) {
+    return rgbaString;
+  } else {
+    return `rgba(${c[0]},${c[1]},${c[2]},${transparency})`;
+  }
 };
 
 export const hsv2rgbaString = (H: number, S: number, V: number, alpha?: number) => {
