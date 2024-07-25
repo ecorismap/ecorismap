@@ -5956,10 +5956,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-community/slider@npm:4.5.2":
-  version: 4.5.2
-  resolution: "@react-native-community/slider@npm:4.5.2"
-  checksum: 99023660756a1a876fc3d9c1a7cec13f7e414abee3452e1e03d2794bc7f46a9d689740bed5c3889914adf6ed85a55c6017e2f0d73b5de353025ba52bba6e79e1
+"@react-native-community/slider@npm:4.4.2":
+  version: 4.4.2
+  resolution: "@react-native-community/slider@npm:4.4.2"
+  checksum: 1ae613f594a8ea9d7243b3125d26b36aab4e4c2dd9eba1bf66c4f31878e74fae055cd35a1babc46b262240885bb61fa321610417bb2a6d9f77a330136ff33293
   languageName: node
   linkType: hard
 
@@ -13929,7 +13929,7 @@ __metadata:
     "@react-native-community/hooks": ^3.0.0
     "@react-native-community/image-editor": ^4.2.0
     "@react-native-community/netinfo": ^11.3.1
-    "@react-native-community/slider": 4.5.2
+    "@react-native-community/slider": 4.4.2
     "@react-native-firebase/app": ^20.1.0
     "@react-native-firebase/app-check": ^20.1.0
     "@react-native-firebase/auth": ^20.1.0
