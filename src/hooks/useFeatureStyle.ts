@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 
 import { COLORTYPE, COLORRAMP, COLOR } from '../constants/AppConstants';
-import { ColorRampType, ColorStyle, ColorTypesType, RecordType, LayerType, FeatureType } from '../types';
+import { ColorRampType, ColorStyle, ColorTypesType, LayerType, FeatureType } from '../types';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -9,6 +9,7 @@ import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgbaString } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
+import { createSelector } from '@reduxjs/toolkit';
 
 export type UseFeatureStyleReturnType = {
   isEdited: boolean;
@@ -41,19 +42,29 @@ export type UseFeatureStyleReturnType = {
   saveColorStyle: () => void;
 };
 
+// メモ化されたセレクターを作成
+const selectDataSetForLayer = createSelector(
+  (state: RootState) => state.dataSet,
+  (state: RootState, layerId: string) => layerId,
+  (dataSet, layerId) => dataSet.filter((d) => d.layerId === layerId)
+);
+
 export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
   const dispatch = useDispatch();
-  const allUserData = useSelector((state: RootState) =>
-    state.dataSet
-      .map((d) => d.layerId === layer_.id && d.data)
-      .filter((v): v is RecordType[] => v !== false)
-      .flat()
+  // メモ化されたセレクターを使用
+  const layerDataSet = useSelector((state: RootState) => selectDataSetForLayer(state, layer_.id));
+
+  // 複雑な計算を useMemo でメモ化
+  const allUserData = useMemo(() => layerDataSet.flatMap((d) => d.data), [layerDataSet]);
+
+  const displayNames = useMemo(
+    () =>
+      layerDataSet
+        .map((d) => d.data.length > 0 && d.data[0].displayName)
+        .filter((v): v is string => typeof v === 'string'),
+    [layerDataSet]
   );
-  const displayNames = useSelector((state: RootState) =>
-    state.dataSet
-      .map((d) => d.layerId === layer_.id && d.data.length > 0 && d.data[0].displayName)
-      .filter((v): v is string => v !== false)
-  );
+
   const [colorStyle, setColorStyle] = useState<ColorStyle>(layer_.colorStyle);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer_);
   const [isEdited, setIsEdited] = useState(isEdited_);
