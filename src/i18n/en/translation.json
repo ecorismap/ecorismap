@@ -241,7 +241,8 @@
     "drawtool": "draw tools",
     "InfoTool": "Feature selection",
     "line": "line",
-    "useLastValue": "use last value"
+    "useLastValue": "use last value",
+    "useOutline": "Show frame only"
   },
   "firebase": {
     "message": {

@@ -630,7 +630,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ) => {
       if (!isLocationType(feature.coords)) return '';
       const label = generateLabel(layer, feature);
-      const color = getColor(layer, feature, 0);
+      const color = getColor(layer, feature);
       const pixels = convertCoordsToPixels([feature.coords], leftX, rightX, bottomY, topY, width, height);
       const pixelX = pixels[0].pixelX;
       const pixelY = pixels[0].pixelY;
@@ -755,7 +755,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       width: number,
       height: number
     ) => {
-      const lineColor = getColor(layer, feature, 0);
+      const lineColor = getColor(layer, feature);
       if (isStampTool(feature.field._stamp as string)) {
         return generateStampSvg(feature, tileScale, leftX, rightX, bottomY, topY, width, height, lineColor);
       } else if (isBrushTool(feature.field._strokeStyle as string)) {
@@ -781,9 +781,9 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ) => {
       if (!isLocationTypeArray(feature.coords)) return '';
       const label = generateLabel(layer, feature);
-      const color = getColor(layer, feature, 0);
+      const strokeColor = getColor(layer, feature);
       const transparency = layer.colorStyle.transparency;
-      const polygonColor = getColor(layer, feature, transparency);
+      const polygonColor = getColor(layer, feature);
       const strokeWidth = layer.colorStyle.lineWidth || 1.5;
 
       const pixels = convertCoordsToPixels(feature.coords, leftX, rightX, bottomY, topY, width, height);
@@ -797,12 +797,12 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         });
       }
 
-      return `<path d="${outerPath} ${innerPaths}" fill="${polygonColor}" stroke="${color}" stroke-width="${
-        strokeWidth / tileScale
-      }" />
+      return `<path d="${outerPath} ${innerPaths}" fill="${
+        transparency ? 'rgba(0,0,0,0)' : polygonColor
+      }" stroke="${strokeColor}" stroke-width="${strokeWidth / tileScale}" />
             <text x="${pixels[pixels.length - 1].pixelX + 5}" y="${
         pixels[pixels.length - 1].pixelY + 5
-      }" fill="${color}" font-size="${
+      }" fill="${strokeColor}" font-size="${
         12 / tileScale
       }" font-family="Arial" text-anchor="start" stroke="white" stroke-width="${
         0.2 / tileScale

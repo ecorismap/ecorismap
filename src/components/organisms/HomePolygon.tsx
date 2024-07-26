@@ -29,11 +29,11 @@ export const Polygon = React.memo(
           if (!feature.coords) return null;
           if (feature.coords.length < 3) return null;
           const label = generateLabel(layer, feature);
-          const transparency = layer.colorStyle.transparency;
-          const color = getColor(layer, feature, 0);
+          const transparency = Boolean(layer.colorStyle.transparency);
+          const strokeColor = getColor(layer, feature);
           const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
-          const pointColor = selected ? COLOR.YELLOW : color;
-          const polygonColor = selected ? COLOR.ALFAYELLOW : getColor(layer, feature, transparency);
+          const pointColor = selected ? COLOR.YELLOW : strokeColor;
+          const fillColor = selected ? COLOR.ALFAYELLOW : transparency ? 'rgba(0,0,0,0)' : getColor(layer, feature);
           const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
           let strokeWidth;
           if (layer.colorStyle.colorType === 'INDIVIDUAL') {
@@ -53,8 +53,8 @@ export const Polygon = React.memo(
               <PolygonComponent
                 key={feature.id}
                 label={label}
-                color={color}
-                featureColor={polygonColor}
+                strokeColor={strokeColor}
+                fillColor={fillColor}
                 strokeWidth={strokeWidth}
                 zIndex={zIndex}
                 feature={feature}
@@ -65,7 +65,7 @@ export const Polygon = React.memo(
               <Marker key={feature.id} coordinate={feature.centroid ?? feature.coords[0]} tracksViewChanges={selected}>
                 <View style={{ alignItems: 'center' }}>
                   {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
-                  <PointLabel label={label} size={15} color={color} borderColor={COLOR.WHITE} />
+                  <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} />
                   <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
                 </View>
               </Marker>
@@ -106,15 +106,15 @@ export const Polygon = React.memo(
 
 interface PolygonComponentProps {
   label: string;
-  color: string;
-  featureColor: string;
+  strokeColor: string;
+  fillColor: string;
   strokeWidth: number;
   zIndex: number;
   feature: PolygonRecordType;
 }
 
 const PolygonComponent = React.memo((props: PolygonComponentProps) => {
-  const { label, color, featureColor, strokeWidth, zIndex, feature } = props;
+  const { label, strokeColor, fillColor, strokeWidth, zIndex, feature } = props;
   if (!feature.coords || !feature.centroid) return null;
   return (
     <>
@@ -124,12 +124,18 @@ const PolygonComponent = React.memo((props: PolygonComponentProps) => {
         coordinates={feature.coords as LatLng[]}
         //Firestoreがネストした配列を受け付けないため、表示するときに一元から二次元配列に変換する
         holes={feature.holes ? (Object.values(feature.holes) as LatLng[][]) : undefined}
-        strokeColor={color}
-        fillColor={featureColor}
+        strokeColor={strokeColor}
+        fillColor={fillColor}
         strokeWidth={strokeWidth}
         zIndex={zIndex}
       />
-      <PolygonLabel key={'label' + feature.id} coordinate={feature.centroid} label={label} size={15} color={color} />
+      <PolygonLabel
+        key={'label' + feature.id}
+        coordinate={feature.centroid}
+        label={label}
+        size={15}
+        color={strokeColor}
+      />
     </>
   );
 });

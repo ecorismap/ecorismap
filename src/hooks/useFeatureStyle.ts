@@ -27,7 +27,7 @@ export type UseFeatureStyleReturnType = {
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
   changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue) => void;
-  changeTransparency: (value: number) => void;
+  changeTransparency: (value: boolean) => void;
   changeLineWidth: (value: number) => void;
   changeFieldName: (itemValue: ItemValue) => void;
   changeColorRamp: (itemValue: ItemValue) => void;
@@ -116,11 +116,9 @@ export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatu
   );
 
   const changeTransparency = useCallback(
-    (value: number) => {
-      if (colorStyle.transparency !== value) {
-        setColorStyle({ ...colorStyle, transparency: value });
-        setIsEdited(true);
-      }
+    (value: boolean) => {
+      setColorStyle({ ...colorStyle, transparency: value });
+      setIsEdited(true);
     },
     [colorStyle]
   );

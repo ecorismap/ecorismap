@@ -43,7 +43,7 @@ export const Point = React.memo(
           if (!feature.coords) return null;
           const label = generateLabel(layer, feature);
 
-          const labelColor = getColor(layer, feature, 0);
+          const labelColor = getColor(layer, feature);
           const selected = selectedRecord !== undefined && feature.id === selectedRecord.record?.id;
           const color = selected ? COLOR.YELLOW : labelColor;
           const borderColor = selected ? COLOR.BLACK : COLOR.WHITE;
