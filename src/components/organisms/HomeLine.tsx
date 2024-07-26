@@ -45,7 +45,7 @@ export const Line = React.memo(
       <>
         {data.map((feature) => {
           if (feature.coords === undefined) return null;
-          const color = getColor(layer, feature, 0);
+          const color = getColor(layer, feature);
           const selected =
             selectedRecord?.record?.id !== undefined &&
             (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id);

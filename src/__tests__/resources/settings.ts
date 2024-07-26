@@ -1,6 +1,6 @@
 import { DEFAULT_MAP_LIST_URL } from '../../constants/AppConstants';
 import { TUTRIALS } from '../../constants/Tutrials';
-import { MemberLocationType, RoleType, TileRegionType, TrackingType } from '../../types';
+import { MemberLocationType, RoleType, TileRegionType } from '../../types';
 
 export const settings = {
   tutrials: TUTRIALS,
@@ -29,7 +29,6 @@ export const settings = {
     zoom: 15,
   },
   memberLocation: [] as MemberLocationType[],
-  tracking: undefined as TrackingType | undefined,
   selectedRecord: undefined,
   plugins: {},
   photosToBeDeleted: [],

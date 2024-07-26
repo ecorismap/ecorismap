@@ -119,7 +119,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
   const selected = useMemo(() => feature.id === selectedRecord?.record?.id, [feature.id, selectedRecord?.record?.id]);
   const label = useMemo(() => generateLabel(layer, feature), [feature, layer]);
 
-  const color = useMemo(() => getColor(layer, feature, 0), [feature, layer]);
+  const color = useMemo(() => getColor(layer, feature), [feature, layer]);
 
   const pointColor = useMemo(() => (selected ? COLOR.YELLOW : color), [color, selected]);
   const borderColor = useMemo(() => (selected ? COLOR.BLACK : COLOR.WHITE), [selected]);

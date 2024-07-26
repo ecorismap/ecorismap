@@ -69,10 +69,10 @@ export const Line = React.memo((props: Props) => {
     <>
       {stampRecords.map((feature) => {
         if (feature.coords === undefined) return null;
-        const color = getColor(layer, feature, 0);
+
         const selected =
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
-        const lineColor = selected ? COLOR.YELLOW : color;
+        const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoStamp
             key={'stamp' + feature.id}
@@ -83,10 +83,9 @@ export const Line = React.memo((props: Props) => {
         );
       })}
       {brushRecords.map((feature) => {
-        const color = getColor(layer, feature, 0);
         const selected =
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
-        const lineColor = selected ? COLOR.YELLOW : color;
+        const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         return (
           <HomeMapMemoBrush
             key={'brush' + feature.id}
@@ -99,10 +98,9 @@ export const Line = React.memo((props: Props) => {
       })}
       {arrowRecords.map((feature) => {
         if (feature.coords === undefined) return null;
-        const color = getColor(layer, feature, 0);
         const selected =
           feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id;
-        const lineColor = selected ? COLOR.YELLOW : color;
+        const lineColor = selected ? COLOR.YELLOW : getColor(layer, feature);
         const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
         const strokeWidth = getStrokeWidth(layer, feature);
         return (
