@@ -177,7 +177,7 @@ describe('useData', () => {
   test('データ追加ボタンを押すとデータが追加される', () => {
     const { result } = renderHook(() => useData(layer));
     act(() => {
-      result.current.addRecord();
+      result.current.addDefaultRecord();
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
