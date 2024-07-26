@@ -74,8 +74,6 @@ describe('useDataEdit', () => {
   test('写真をデータに追加する', async () => {
     const record = point_record[0];
     const layer = layers[0];
-    const recordSet = point_record;
-    const recordIndex = 0;
     const photo = {
       uri: 'test.jpg',
       thumbnail: 'test_thumbnail.jpg',
@@ -83,7 +81,7 @@ describe('useDataEdit', () => {
       height: 300,
       name: 'test.jpg',
     };
-    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer, recordSet, recordIndex));
+    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer));
 
     act(() => {
       result.current.addPhoto('photo', photo);
@@ -119,8 +117,6 @@ describe('useDataEdit', () => {
   test('写真を除く', async () => {
     const record = point_record[1];
     const layer = layers[0];
-    const recordSet = point_record;
-    const recordIndex = 1;
 
     const photo: SelectedPhotoType = {
       id: '123456789',
@@ -135,7 +131,7 @@ describe('useDataEdit', () => {
       fieldName: 'photo',
       hasLocal: false,
     };
-    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer, recordSet, recordIndex));
+    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer));
 
     act(() => {
       result.current.removePhoto(photo);
@@ -155,8 +151,6 @@ describe('useDataEdit', () => {
   test('写真を選択する', async () => {
     const record = point_record[1];
     const layer = layers[0];
-    const recordSet = point_record;
-    const recordIndex = 1;
 
     const photo: PhotoType = {
       id: '123456789',
@@ -169,7 +163,7 @@ describe('useDataEdit', () => {
       key: null,
     };
 
-    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer, recordSet, recordIndex));
+    const { result, waitForNextUpdate } = renderHook(() => useDataEdit(record, layer));
 
     act(() => {
       result.current.selectPhoto('photo', photo, 0);
