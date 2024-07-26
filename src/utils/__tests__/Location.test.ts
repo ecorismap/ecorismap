@@ -1,5 +1,5 @@
 import { LocationObject } from 'expo-location';
-import { updateLocations, isLocationObject, getLineLength, toLocationType } from '../Location';
+import { isLocationObject, getLineLength, toLocationType } from '../Location';
 import { LocationType } from '../../types';
 
 describe('updateLocations', () => {

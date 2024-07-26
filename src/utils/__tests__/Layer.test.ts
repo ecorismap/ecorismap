@@ -42,7 +42,7 @@ describe('getColor', () => {
   };
 
   it('return single feature color', () => {
-    expect(getColor(layer, feature, 0)).toBe('rgba(255, 0, 0, 1)');
+    expect(getColor(layer, feature)).toBe('rgba(255, 0, 0, 1)');
   });
   it('return categorized feature color', () => {
     const layer2: LayerType = {
@@ -58,7 +58,7 @@ describe('getColor', () => {
       },
     };
 
-    expect(getColor(layer2, feature, 0)).toBe('rgba(0, 255, 0, 1)');
+    expect(getColor(layer2, feature)).toBe('rgba(0, 255, 0, 1)');
   });
   // it('return user feature color', () => {
   //   const layer3: LayerType = {

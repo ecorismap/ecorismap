@@ -5,38 +5,36 @@ import { RecordType, LayerType } from '../types';
 import { ulid } from 'ulid';
 import { hex2rgba } from './Color';
 
-export const getColor = (layer: LayerType, feature: RecordType, transparency: number) => {
+export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
   //rgbaになっている場合は、hex2rgbaの中でレイヤの透過率を反映する。
   const colorStyle = layer.colorStyle;
 
   let color = COLOR.WHITE;
   if (colorStyle.colorType === 'SINGLE') {
-    color = hex2rgba(colorStyle.color, 1 - transparency);
+    color = hex2rgba(colorStyle.color);
   } else if (colorStyle.colorType === 'CATEGORIZED') {
     if (colorStyle.fieldName === '__CUSTOM') {
       const fieldNames = colorStyle.customFieldValue.split('|');
       const customValue = fieldNames.map((name) => feature.field[name]).join('|');
       const colorObj = colorStyle.colorList.find(({ value }) => value === customValue);
-      color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
+      color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
     } else {
       const colorObj = colorStyle.colorList.find(({ value }) => value === feature.field[colorStyle.fieldName]);
-      color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
+      color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
     }
   } else if (colorStyle.colorType === 'INDIVIDUAL') {
     const individualColorField =
       layer.colorStyle.fieldName === '__CUSTOM' ? layer.colorStyle.customFieldValue : layer.colorStyle.fieldName;
-    color =
-      (feature.field[individualColorField] as string) ??
-      (transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)');
+    color = (feature.field[individualColorField] as string) ?? 'rgba(0,0,0,1)';
   } else if (colorStyle.colorType === 'USER') {
     const colorObj = colorStyle.colorList.find(({ value }) => value === feature.displayName);
-    color = colorObj ? hex2rgba(colorObj.color, 1 - transparency) : 'rgba(0,0,0,0)';
+    color = colorObj ? hex2rgba(colorObj.color) : 'rgba(0,0,0,0)';
   }
   return color;
 };
 
-export function getColorRule(layer_: LayerType, transparency: number, displayName?: string) {
+export function getColorRule(layer_: LayerType, displayName?: string) {
   let colorRule: any;
   //const colorStyle = layer_.colorStyle;
   const colorType = layer_.colorStyle.colorType;
@@ -45,14 +43,14 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
   const customFieldValue = layer_.colorStyle.customFieldValue;
   const color = layer_.colorStyle.color;
   if (colorType === 'SINGLE') {
-    colorRule = hex2rgba(color, 1 - transparency) ?? 'rgba(255,0,0,0)';
+    colorRule = hex2rgba(color) ?? 'rgba(255,0,0,0)';
   } else if (colorType === 'CATEGORIZED') {
     if (fieldName === '__CUSTOM') {
       const fieldNames = customFieldValue.split('|');
       const defaultColor = 'rgba(0,0,0,0)';
       const conditionalColors = colorList
         .map(({ value, color: c }) => {
-          const colorValue = hex2rgba(c, 1 - transparency) ?? defaultColor;
+          const colorValue = hex2rgba(c) ?? defaultColor;
           return [value + '|', colorValue];
         })
         .flat();
@@ -63,7 +61,7 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
 
       const conditionalColors = colorList
         .map(({ value, color: c }) => {
-          const colorValue = hex2rgba(c, 1 - transparency) ?? defaultColor;
+          const colorValue = hex2rgba(c) ?? defaultColor;
           return [value, colorValue];
         })
         .flat();
@@ -74,17 +72,13 @@ export function getColorRule(layer_: LayerType, transparency: number, displayNam
       layer_.colorStyle.fieldName === '__CUSTOM' ? layer_.colorStyle.customFieldValue : layer_.colorStyle.fieldName;
     colorRule = [
       'coalesce',
-      layer_.colorStyle.colorType === 'INDIVIDUAL'
-        ? ['get', individualColorField]
-        : transparency
-        ? 'rgba(0,0,0,0)'
-        : 'rgba(0,0,0,1)',
-      transparency ? `rgba(0,0,0,${1 - transparency})` : 'rgba(0,0,0,1)',
+      layer_.colorStyle.colorType === 'INDIVIDUAL' ? ['get', individualColorField] : 'rgba(0,0,0,1)',
+      'rgba(0,0,0,1)',
     ];
   } else if (colorType === 'USER') {
     const defaultColor = 'rgba(0,0,0,0)';
     const colorObj = colorList.find(({ value }) => value === displayName);
-    colorRule = colorObj !== undefined ? hex2rgba(colorObj.color, 1 - transparency) ?? defaultColor : defaultColor;
+    colorRule = colorObj !== undefined ? hex2rgba(colorObj.color) ?? defaultColor : defaultColor;
   }
   return colorRule;
 }

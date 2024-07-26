@@ -142,7 +142,7 @@ export interface PolygonRecordType {
 
 export interface ColorStyle {
   colorType: ColorTypesType;
-  transparency: number;
+  transparency: number | boolean; //互換性のためnumberを残す
   color: string;
   fieldName: string;
   customFieldValue: string;

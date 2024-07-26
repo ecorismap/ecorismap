@@ -19,7 +19,7 @@ interface LayerEditFeatureStyleContextType {
   setIsCustom: React.Dispatch<React.SetStateAction<boolean>>;
   changeCustomFieldValue: (value: string) => void;
   changeColorType: (itemValue: ItemValue, itemIndex: number) => void;
-  changeTransparency: (value: number) => void;
+  changeTransparency: (value: boolean) => void;
   changeLineWidth: (value: number) => void;
   changeFieldName: (itemValue: ItemValue, itemIndex: number) => void;
   changeColorRamp: (itemValue: ItemValue, itemIndex: number) => void;
