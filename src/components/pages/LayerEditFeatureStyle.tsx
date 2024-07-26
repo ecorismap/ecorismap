@@ -13,6 +13,7 @@ import { TextInput } from '../atoms';
 import { ScrollView } from 'react-native-gesture-handler';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import { CheckBox } from '../molecules/CheckBox';
 
 export default function LayerEditFeatureStyleScreen() {
   const {
@@ -95,16 +96,16 @@ export default function LayerEditFeatureStyleScreen() {
         />
         {layerType === 'POLYGON' && (
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
-            <Slider
-              style={{ paddingHorizontal: 10 }}
-              label={t('common.transparency')}
-              labelColor={COLOR.BLACK}
-              initialValue={colorStyle.transparency}
-              step={0.1}
-              minimumValue={0}
-              maximumValue={1}
-              onSlidingComplete={changeTransparency}
-            />
+            <View style={styles.checkbox}>
+              <CheckBox
+                label={t('common.useOutline')}
+                labelSize={14}
+                labelColor="black"
+                width={300}
+                checked={Boolean(colorStyle.transparency)} //数値だった頃の互換性のためBoolean()を使用
+                onCheck={changeTransparency}
+              />
+            </View>
           </View>
         )}
         {colorStyle.colorType === 'SINGLE' && (
@@ -182,10 +183,17 @@ export default function LayerEditFeatureStyleScreen() {
 }
 
 const styles = StyleSheet.create({
+  checkbox: {
+    flexDirection: 'column',
+    height: 45,
+    margin: 2,
+    width: 180,
+  },
   container: {
     flex: 1,
     justifyContent: 'flex-end',
   },
+
   input: {
     backgroundColor: COLOR.GRAY0,
     borderRadius: 5,
@@ -195,7 +203,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingLeft: 10,
   },
-
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,

@@ -54,20 +54,6 @@ export const rgbaString2qgis = (rgbaString: string): string => {
   return `#${A}${R}${G}${B}`;
 };
 
-//rgbaStrinのtransparentを更新する
-export const rgbaString2rgbaString = (rgbaString: string, transparency: number): string => {
-  const r = rgbaString.match(/^rgba\((\d+),(\d+),(\d+),([\d\.]+)\)$/i);
-  let c: string[] = [];
-  if (r) {
-    c = r.slice(1, 5);
-  }
-  if (transparency === 1) {
-    return rgbaString;
-  } else {
-    return `rgba(${c[0]},${c[1]},${c[2]},${transparency})`;
-  }
-};
-
 export const hsv2rgbaString = (H: number, S: number, V: number, alpha?: number) => {
   const { R, G, B, A } = hsv2rgba(H, S, V, alpha);
   return `rgba(${R},${G},${B},${A})`;
@@ -100,7 +86,7 @@ const zeroPadding = (num: string, length: number) => {
   return ('0000000000' + num).slice(-length);
 };
 
-export const hex2rgba = (hex: string, alpha = 1) => {
+export const hex2rgba = (hex: string) => {
   // ロングバージョンの場合（例：#FF0000）
   let r = hex.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
   let c: number[] = [];
@@ -118,9 +104,9 @@ export const hex2rgba = (hex: string, alpha = 1) => {
   }
   // 該当しない場合は、そのまま返す。仕様変更でhexはrgbaになっている可能性があるため。
   if (c.length === 0) {
-    return rgbaString2rgbaString(hex, alpha);
+    return hex;
   }
-  return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha})`;
+  return `rgba(${c[0]}, ${c[1]}, ${c[2]}, 1)`;
 };
 
 export const getRandomColor = (): string => {

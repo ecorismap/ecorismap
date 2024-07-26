@@ -2,21 +2,21 @@ import { t } from '../i18n/config';
 import { LayerType } from '../types';
 import { getColorRule } from './Layer';
 
-export const getColorExpression = (layer_: LayerType, displayName: string, transparency: number) => {
+export const getColorExpression = (layer_: LayerType, displayName: string) => {
   const colorExpression = [
     'case',
     ['boolean', ['feature-state', 'clicked'], false],
     'rgba(255, 255, 0, 0.7)',
     ['boolean', ['feature-state', 'hover'], false],
     'rgba(255, 255, 0, 0.7)',
-    getColorRule(layer_, transparency, displayName),
+    getColorRule(layer_, displayName),
   ];
 
   return colorExpression;
 };
 
 export const getLabelStyle = (layer_: LayerType, userId: string, displayName: string) => {
-  const colorExpression = getColorExpression(layer_, displayName, 0);
+  const colorExpression = getColorExpression(layer_, displayName);
 
   // Prepare the text-field based on the label value
   let textField;
@@ -66,7 +66,7 @@ export const getLabelStyle = (layer_: LayerType, userId: string, displayName: st
 };
 
 export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string) => {
-  const colorExpression = getColorExpression(layer_, displayName, 0);
+  const colorExpression = getColorExpression(layer_, displayName);
 
   return {
     id: `${layer_.id}_${userId}`,
@@ -87,13 +87,14 @@ export const getDataStyleLine = (layer_: LayerType, userId: string, displayName:
 };
 
 export const getDataStylePolygon = (layer_: LayerType, userId: string, displayName: string) => {
-  const fillColorExpression = getColorExpression(layer_, displayName, layer_.colorStyle.transparency);
+  const transparency = Boolean(layer_.colorStyle.transparency);
+  const fillColorExpression = getColorExpression(layer_, displayName);
 
   return {
     id: `${layer_.id}_${userId}`,
     type: 'fill',
     paint: {
-      'fill-color': fillColorExpression,
+      'fill-color': transparency ? 'rgba(0,0,0,0)' : fillColorExpression,
     },
     layout: {
       visibility: 'visible',
@@ -103,7 +104,7 @@ export const getDataStylePolygon = (layer_: LayerType, userId: string, displayNa
 };
 
 export const getDataStylePolygonOutline = (layer_: LayerType, userId: string, displayName: string) => {
-  const colorExpression = getColorExpression(layer_, displayName, 0);
+  const colorExpression = getColorExpression(layer_, displayName);
 
   return {
     id: `outline-${layer_.id}_${userId}`,
