@@ -84,7 +84,7 @@ export function decodeUri(uri: string) {
   const arr = uri.split(',');
   const base64 = arr[arr.length - 1];
   //return decodeURIComponent(escape(Base64.atob(base64)));
-  const buffer = Base64.atob(base64);
+  const buffer = Buffer.from(Base64.atob(base64), 'binary');
   const encoding = jschardet.detect(buffer).encoding;
   return iconv.decode(buffer, encoding);
 }
