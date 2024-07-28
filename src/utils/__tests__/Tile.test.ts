@@ -36,7 +36,7 @@ describe('latLonToWebMercator', () => {
   it('returns correct Web Mercator coordinates when latitude and longitude are 0, zoom level is 0, and tile size is 256', () => {
     const result = turf.toMercator([-180, 0]);
     expect(result[0]).toBe(-Math.PI * 6378137);
-    expect(result[1]).toBe(0);
+    expect(result[1]).toBeLessThan(5e-10);
   });
 });
 

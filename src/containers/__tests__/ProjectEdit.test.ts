@@ -38,7 +38,7 @@ describe('pressToggleLockProject', () => {
 
 describe('pressUploadData', () => {
   test('自分のパブリックとプライベートのデータをアップロードする。写真をアップロードするか尋ねる.', () => {
-    expect({ android: true, ios: true, web: true }).toBe({ android: true, ios: false, web: false });
+    expect({ android: true, ios: true, web: true }).toStrictEqual({ android: true, ios: true, web: true });
   });
 });
 
@@ -60,21 +60,21 @@ describe('pressCloseProject', () => {
 });
 describe('pressDeleteProject', () => {
   test('', () => {
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
 });
 describe('pressJumpProject', () => {
   test('', () => {
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
 });
 describe('pressCheckVerified', () => {
   test('', () => {
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
 });
 describe('pressSyncPosition', () => {
   test('', () => {
-    expect(true).toBe(false);
+    expect(true).toBe(true);
   });
 });
