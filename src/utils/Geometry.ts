@@ -460,7 +460,7 @@ export const GeoJson2Data = (
     }
     return importedData;
   } catch (e) {
-    console.log(e);
+    //console.log(e);
     return undefined;
   }
 };
