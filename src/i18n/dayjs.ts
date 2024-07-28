@@ -9,10 +9,12 @@ import LocalizedFormat from 'dayjs/plugin/localizedFormat';
 import 'dayjs/locale/ja';
 import { Platform } from 'react-native';
 
+const languageCode = Localization.getLocales()[0]?.languageCode;
+
 // プラグイン拡張
 dayjs.extend(LocalizedFormat);
 dayjs.extend(customParseFormat);
-dayjs.locale(Localization.locale.split('-')[0]);
+dayjs.locale(languageCode ?? 'ja');
 dayjs.extend(localeData);
 //console.log(Localization.locale, dayjs().format('L'));
 
