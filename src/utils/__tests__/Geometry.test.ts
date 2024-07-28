@@ -180,8 +180,8 @@ describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
       '\ufeff' + 'name,time,cmt,photo,geometry',
-      'St.1,2020-01-01T09:28:38+09:00,,"",POINT(140.71658064854364 38.24715800176878)',
-      'St.3,5時,,"test.jpg",POINT(140.71548306286388 38.24101016421964)',
+      '"St.1","2020-01-01T09:28:38+09:00","","","POINT(140.71658064854364 38.24715800176878)"',
+      '"St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT', false).split(String.fromCharCode(10))).toStrictEqual(
       expected

@@ -12,7 +12,7 @@ jest.mock('react-redux', () => ({
   useSelector: () => mockSelector(),
 }));
 
-jest.mock('uuid', () => ({ v4: () => '123456789' }));
+jest.mock('ulid', () => ({ ulid: () => '123456789' }));
 
 const user: UserType = {
   uid: '0',
@@ -68,8 +68,8 @@ describe('useGeoFile', () => {
     expect(mockDispatch).toHaveBeenCalledTimes(2);
     expect(ret).toStrictEqual({ isOK: true, message: 'hooks.message.receiveFile' });
     expect(mockDispatch.mock.calls[0][0]).toEqual({
-      type: 'layers/add',
-      value: {
+      type: 'layers/addLayerAction',
+      payload: {
         active: false,
         colorStyle: {
           color: '#ff0000',
@@ -78,20 +78,21 @@ describe('useGeoFile', () => {
           colorType: 'SINGLE',
           customFieldValue: '',
           fieldName: '',
+          lineWidth: 1.5,
           transparency: 0.8,
         },
         field: [{ format: 'STRING', id: '123456789', name: 'name' }],
         id: '123456789',
         label: '',
         name: 'test.geojson',
-        permission: 'PRIVATE',
+        permission: 'COMMON',
         type: 'POINT',
         visible: true,
       },
     });
     expect(mockDispatch.mock.calls[1][0]).toEqual({
-      type: 'dataSet/addData',
-      value: [
+      type: 'dataSet/addDataAction',
+      payload: [
         {
           data: [
             {

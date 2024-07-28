@@ -1,9 +1,9 @@
 name: Hello
 on: [push]
 jobs:
-  build:
+  hello:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Hello
         run: echo Hello, world!
