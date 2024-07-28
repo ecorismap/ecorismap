@@ -105,7 +105,7 @@
     "react-native-device-info": "^11.1.0",
     "react-native-draggable-flatlist": "^4.0.1",
     "react-native-fs": "^2.20.0",
-    "react-native-gdalwarp": "link:./modules/react-native-gdalwarp",
+    "react-native-gdalwarp": "file:./modules/react-native-gdalwarp",
     "react-native-gesture-handler": "~2.16.1",
     "react-native-get-random-values": "^1.11.0",
     "react-native-maps": "1.14.0",
