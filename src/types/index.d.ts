@@ -1,6 +1,5 @@
 import { Position } from '@turf/turf';
-//@ts-ignore
-import firebase from 'firebase/compat/app';
+import { Timestamp } from '@firebase/firestore-types';
 import {
   COLORRAMP,
   COLORTYPE,
@@ -339,7 +338,7 @@ export interface ProjectFS {
   adminsUid: string[];
   membersUid: string[];
   encdata: string[];
-  encryptedAt: firebase.firestore.Timestamp;
+  encryptedAt: Timestamp;
   storage?: { count: number };
   license?: License;
 }
@@ -348,7 +347,7 @@ export type UpdateProjectFS = Omit<ProjectFS, 'ownerUid'>;
 export interface ProjectSettingsFS {
   editorUid: string;
   encdata: string[];
-  encryptedAt: firebase.firestore.Timestamp;
+  encryptedAt: Timestamp;
 }
 
 export interface DataFS {
@@ -356,13 +355,13 @@ export interface DataFS {
   layerId: string;
   permission: PermissionType | 'TEMPLATE';
   encdata: string[];
-  encryptedAt: firebase.firestore.Timestamp;
+  encryptedAt: Timestamp;
   chunkIndex: number;
 }
 
 export interface PositionFS {
   encdata: string[];
-  encryptedAt: firebase.firestore.Timestamp;
+  encryptedAt: Timestamp;
 }
 
 export type DrawLineType = {

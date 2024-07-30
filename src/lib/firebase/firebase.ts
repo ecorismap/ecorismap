@@ -5,11 +5,9 @@ import firestoreRN, { FirebaseFirestoreTypes } from '@react-native-firebase/fire
 import { FirebaseFunctionsTypes } from '@react-native-firebase/functions';
 import storageRN, { FirebaseStorageTypes } from '@react-native-firebase/storage';
 
-import firebase from 'firebase/compat/app';
-
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 
-export default firebase;
+export default firebaseRN;
 export let firestore: FirebaseFirestoreTypes.Module;
 export let functions: FirebaseFunctionsTypes.Module;
 export let storage: FirebaseStorageTypes.Module;
