@@ -129,8 +129,8 @@ describe('useLayers', () => {
       result.current.changeActiveLayer(0);
     });
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [{ ...result.current.layers[0], active: false }, ...result.current.layers.slice(1)],
+      type: 'layers/setLayersAction',
+      payload: [{ ...result.current.layers[0], active: false }, ...result.current.layers.slice(1)],
     });
   });
 
@@ -147,8 +147,8 @@ describe('useLayers', () => {
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [
+      type: 'layers/setLayersAction',
+      payload: [
         { ...result.current.layers[0], active: false },
         { ...result.current.layers[1], active: true },
         result.current.layers[2],
@@ -170,8 +170,8 @@ describe('useLayers', () => {
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [
+      type: 'layers/setLayersAction',
+      payload: [
         result.current.layers[0],
         result.current.layers[1],
         { ...result.current.layers[2], active: true },
@@ -190,8 +190,8 @@ describe('useLayers', () => {
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/update',
-      value: { ...layer, visible: false },
+      type: 'layers/updateLayerAction',
+      payload: { ...layer, visible: false },
     });
   });
 
@@ -205,8 +205,8 @@ describe('useLayers', () => {
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/update',
-      value: { ...layer, label: 'id' },
+      type: 'layers/updateLayerAction',
+      payload: { ...layer, label: 'id' },
     });
   });
 
@@ -218,8 +218,8 @@ describe('useLayers', () => {
       result.current.changeLayerOrder(1);
     });
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/set',
-      value: [result.current.layers[1], result.current.layers[0], result.current.layers[2], result.current.layers[3]],
+      type: 'layers/setLayersAction',
+      payload: [result.current.layers[1], result.current.layers[0], result.current.layers[2], result.current.layers[3]],
     });
   });
 

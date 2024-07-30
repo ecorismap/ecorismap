@@ -1,0 +1,14 @@
+name: Test
+on: [push]
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+          cache: yarn
+      - run: yarn install
+      - run: TZ=Asia/Tokyo yarn test
