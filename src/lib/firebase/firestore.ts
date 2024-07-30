@@ -17,6 +17,7 @@ import obj_sizeof from 'object-sizeof';
 import { decryptEThree as dec, encryptEThree as enc } from '../virgilsecurity/e3kit';
 import firebase, { firestore, functions } from './firebase';
 import { t } from '../../i18n/config';
+import { Timestamp } from '@firebase/firestore-types';
 
 export const getUidByEmail = async (email: string) => {
   try {
@@ -240,7 +241,7 @@ export const downloadProjectSettings = async (projectId: string) => {
 
 const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) => {
   const dataMap = new Map<string, { [index: number]: string[] }>();
-  const metadataMap = new Map<string, { userId: string; encryptedAt: firebase.firestore.Timestamp }>();
+  const metadataMap = new Map<string, { userId: string; encryptedAt: Timestamp }>();
 
   // チャンクをグループ化
   projectDataSet.docs.forEach((v: any) => {
@@ -501,7 +502,7 @@ export const deleteCurrentPosition = async (userId: string, projectId: string) =
   }
 };
 
-export const toDate = (timestamp: firebase.firestore.Timestamp) => {
+export const toDate = (timestamp: Timestamp) => {
   return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 100000);
 };
 
