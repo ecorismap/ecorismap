@@ -20,6 +20,13 @@ import { useRecord } from './useRecord';
 import { updateTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
+import { Linking } from 'react-native';
+
+const openSettings = () => {
+  Linking.openSettings().catch(() => {
+    console.log('cannot open settings');
+  });
+};
 
 const locationEventsEmitter = new EventEmitter();
 
@@ -119,12 +126,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
         if (notificationStatus !== 'granted') {
           await AlertAsync(t('hooks.message.permitAccessGPS'));
+          openSettings();
           return;
         }
       }
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));
+        openSettings();
         return;
       }
 
@@ -262,6 +271,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean) => {
       if (mapViewRef === null) return;
+      const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
+      if (foregroundStatus !== 'granted') return;
       if (headingUp_) {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
         headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
