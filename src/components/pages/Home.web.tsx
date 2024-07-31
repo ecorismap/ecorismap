@@ -682,45 +682,45 @@ export default function HomeScreen() {
                 {/************** Point Line Polygon ****************** */}
                 {pointDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
+                  if (!layer?.visible) return null;
+                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
                   return (
-                    layer!.visible && (
-                      <Point
-                        key={`${d.layerId}-${d.userId}`}
-                        data={d.data}
-                        layer={layer!}
-                        zoom={zoom}
-                        selectedRecord={selectedRecord}
-                        onDragEndPoint={onDragEndPoint}
-                        currentDrawTool={currentDrawTool}
-                        editPositionMode={editPositionMode}
-                        editPositionLayer={editPositionLayer}
-                        editPositionRecord={editPositionRecord}
-                      />
-                    )
+                    <Point
+                      key={`${d.layerId}-${d.userId}`}
+                      data={d.data}
+                      layer={layer!}
+                      zoom={zoom}
+                      selectedRecord={selectedRecord}
+                      onDragEndPoint={onDragEndPoint}
+                      currentDrawTool={currentDrawTool}
+                      editPositionMode={editPositionMode}
+                      editPositionLayer={editPositionLayer}
+                      editPositionRecord={editPositionRecord}
+                    />
                   );
                 })}
                 {lineDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
+                  if (!layer?.visible) return null;
+                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
                   return (
-                    layer!.visible && (
-                      <Line
-                        key={`${d.layerId}-${d.userId}`}
-                        data={d.data}
-                        layer={layer!}
-                        zoom={zoom}
-                        zIndex={101}
-                        selectedRecord={selectedRecord}
-                      />
-                    )
+                    <Line
+                      key={`${d.layerId}-${d.userId}`}
+                      data={d.data}
+                      layer={layer!}
+                      zoom={zoom}
+                      zIndex={101}
+                      selectedRecord={selectedRecord}
+                    />
                   );
                 })}
 
                 {polygonDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
+                  if (!layer?.visible) return null;
+                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
                   return (
-                    layer!.visible && (
-                      <Polygon key={`${d.layerId}-${d.userId}`} data={d.data} layer={layer!} zoom={zoom} zIndex={100} />
-                    )
+                    <Polygon key={`${d.layerId}-${d.userId}`} data={d.data} layer={layer!} zoom={zoom} zIndex={100} />
                   );
                 })}
                 {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
