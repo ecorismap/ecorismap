@@ -19,8 +19,8 @@ export const exportGeoFile = async (
   ext: 'zip' | 'ecorismap'
 ) => {
   const fileName = sanitize(exportFileName);
-  const sourcePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
-  const targetPath = `${RNFS.CachesDirectoryPath}/${fileName}.${ext}`;
+  const sourcePath = `${RNFS.CachesDirectoryPath}/export/${fileName}`;
+  const targetPath = `${RNFS.CachesDirectoryPath}/export/${fileName}.${ext}`;
   // console.log(sourcePath);
   // console.log(targetPath);
   try {
