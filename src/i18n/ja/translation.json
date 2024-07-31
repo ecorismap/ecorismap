@@ -684,7 +684,7 @@
       "cannotInTracking": "トラックの記録中はできません。",
       "cannotInProjectOpen": "プロジェクトを開いている時はできません。",
       "cannotChangeInTracking": "トラックの記録中は変更できません。",
-      "permitAccessGPS": "GPSを使用するには位置情報のアクセス権限を許可してください。",
+      "permitAccessGPS": "GPSを使用するには位置情報と通知のアクセス権限を許可してください。",
       "noPermissionToCommon": "コモンレイヤは管理者しか編集できません",
       "unlockToEditCommon": "コモンレイヤを編集するにはアンロックしてください。",
       "cannotEditOthers": "他人のデータは編集できません。",
