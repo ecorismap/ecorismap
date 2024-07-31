@@ -40,7 +40,7 @@ export const LayersTable = () => {
     ({ item, index }: { item: LayerType; index: number }) => {
       // console.log(item.id, item.name, item.groupId, item.expanded);
       if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
-      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.MAIN : COLOR.MAIN;
+      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN;
       //ラベルの候補は、空白を追加し、Photoを抜く
       const fieldNames = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), ['']),
@@ -49,19 +49,43 @@ export const LayersTable = () => {
 
       return (
         <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
-          <View style={[styles.td, { flex: 4, width: 110, borderRightColor: COLOR.MAIN, backgroundColor }]}>
+          <View
+            style={[
+              styles.td,
+              {
+                flex: 1,
+                width: 30,
+                borderRightColor: COLOR.MAIN,
+                backgroundColor: item.type === 'LAYERGROUP' || item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+              },
+            ]}
+          >
+            {item.type === 'LAYERGROUP' ? (
+              <RectButton2
+                name={item.expanded ? 'chevron-down' : 'chevron-right'}
+                onPress={() => changeExpand(item)}
+                style={{ flex: 1, width: 30, alignItems: 'center', justifyContent: 'center', backgroundColor }}
+              />
+            ) : (
+              <View style={{ width: 30 }} />
+            )}
+          </View>
+          <View style={[styles.td, { flex: 3, width: 80, borderRightColor: COLOR.MAIN, backgroundColor }]}>
             {item.type === 'LAYERGROUP' ? (
               <>
                 <RectButton2
-                  name={item.expanded ? 'chevron-down' : 'chevron-right'}
-                  onPress={() => changeExpand(item)}
-                  style={{ flex: 1, width: 50, alignItems: 'center', justifyContent: 'center', backgroundColor }}
+                  name={item.visible ? 'eye' : 'eye-off-outline'}
+                  onPress={() => changeVisible(item)}
+                  style={{
+                    backgroundColor,
+                    padding: 0,
+                  }}
                 />
-                <View style={{ flex: 1, backgroundColor }} />
+
+                <LineView style={{ marginLeft: 10, transform: [{ scale: 0.6 }] }} color={backgroundColor} />
               </>
             ) : (
               <>
-                {item.groupId && <View style={{ width: 30 }} />}
                 <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
 
                 {item.type === 'POINT' && (
@@ -126,7 +150,7 @@ export const LayersTable = () => {
               <MaterialCommunityIcons
                 color={COLOR.GRAY4}
                 style={[styles.icon, { marginHorizontal: 5 }]}
-                size={25}
+                size={20}
                 name={'folder-open-outline'}
                 iconStyle={{ marginRight: 0 }}
               />
@@ -215,7 +239,8 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <View style={[styles.th, { flex: 4, width: 110 }]}>
+      <View style={[styles.th, { flex: 1, width: 30 }]} />
+      <View style={[styles.th, { flex: 3, width: 80 }]}>
         <Text>{`${t('common.visible')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 2, width: 60 }]}>
