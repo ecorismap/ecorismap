@@ -10,7 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { usePermission } from '../../hooks/usePermission';
-import { ScrollView } from 'react-native-gesture-handler';
+import { FlatList } from 'react-native-gesture-handler';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
@@ -49,13 +49,18 @@ export default function LayerEditScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
-        <LayerName />
-        <LayerStyle />
-        {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
-        {layer.type !== 'LAYERGROUP' && <LayerEditFieldTitle />}
-        {layer.type !== 'LAYERGROUP' && <LayerEditFieldTable />}
-      </ScrollView>
+      <FlatList
+        data={[{ key: 'dummy' }]}
+        renderItem={() => (
+          <>
+            <LayerName />
+            <LayerStyle />
+            {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
+            {layer.type !== 'LAYERGROUP' && <LayerEditFieldTitle />}
+            {layer.type !== 'LAYERGROUP' && <LayerEditFieldTable />}
+          </>
+        )}
+      />
       <LayerEditButton />
     </View>
   );

@@ -40,7 +40,7 @@ export const LayersTable = () => {
     ({ item, index }: { item: LayerType; index: number }) => {
       // console.log(item.id, item.name, item.groupId, item.expanded);
       if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
-      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.MAIN : COLOR.MAIN;
+      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN;
       //ラベルの候補は、空白を追加し、Photoを抜く
       const fieldNames = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), ['']),
@@ -48,86 +48,115 @@ export const LayersTable = () => {
       ];
 
       return (
-        <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
-          <View style={[styles.td, { flex: 4, width: 110, borderRightColor: COLOR.MAIN, backgroundColor }]}>
-            {item.type === 'LAYERGROUP' ? (
-              <>
-                <RectButton2
-                  name={item.expanded ? 'chevron-down' : 'chevron-right'}
-                  onPress={() => changeExpand(item)}
-                  style={{ flex: 1, width: 50, alignItems: 'center', justifyContent: 'center', backgroundColor }}
-                />
-                <View style={{ flex: 1, backgroundColor }} />
-              </>
-            ) : (
-              <>
-                {item.groupId && <View style={{ width: 30 }} />}
-                <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
-
-                {item.type === 'POINT' && (
-                  <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                    <PointView
-                      style={{ margin: 2, transform: [{ scale: 0.6 }] }}
-                      color={item.colorStyle.color}
-                      size={20}
-                      borderColor={COLOR.WHITE}
-                    />
-                  </TouchableOpacity>
-                )}
-                {item.type === 'LINE' && (
-                  <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                    <LineView
-                      style={{
-                        marginLeft: 3,
-                        marginRight: 3,
-                        marginTop: 10,
-                        marginBottom: 10,
-                        transform: [{ scale: 0.6 }],
-                      }}
-                      color={item.colorStyle.color}
-                    />
-                  </TouchableOpacity>
-                )}
-                {item.type === 'POLYGON' && (
-                  <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                    <PolygonView style={{ margin: 3, transform: [{ scale: 0.6 }] }} color={item.colorStyle.color} />
-                  </TouchableOpacity>
-                )}
-                {item.type === 'NONE' && (
-                  <LineView style={{ marginLeft: 10, transform: [{ scale: 0.6 }] }} color={COLOR.MAIN} />
-                )}
-                {/* {!item.groupId && <View style={{ width: 10 }} />} */}
-              </>
+        <View
+          style={{
+            flex: 1,
+            height: 60,
+            flexDirection: 'row',
+          }}
+        >
+          <View
+            style={[
+              styles.td,
+              {
+                flex: 1,
+                width: 50,
+                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
+                backgroundColor: item.type === 'LAYERGROUP' || item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+              },
+            ]}
+          >
+            {item.type === 'LAYERGROUP' && (
+              <RectButton2
+                name={item.expanded ? 'chevron-down' : 'chevron-right'}
+                onPress={() => changeExpand(item)}
+                style={{ flex: 1, width: 40, alignItems: 'center', justifyContent: 'center', backgroundColor }}
+              />
             )}
-            {/* {item.type !== 'LAYERGROUP' && !item.groupId && <View style={{ marginRight: 0 }} />} */}
-          </View>
-          <View style={[styles.td, { flex: 2, width: 60, borderRightColor: COLOR.MAIN, backgroundColor }]}>
             {item.type !== 'LAYERGROUP' && (
               <RectButton2
                 name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                 onPress={() => changeActiveLayer(index)}
+                color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
+                style={{
+                  flex: 1,
+                  width: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+                }}
               />
+            )}
+          </View>
+          <View
+            style={[
+              styles.td,
+              {
+                flex: 2,
+                width: 100,
+                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
+                backgroundColor,
+              },
+            ]}
+          >
+            <RectButton2
+              name={item.visible ? 'eye' : 'eye-off-outline'}
+              onPress={() => changeVisible(item)}
+              color={COLOR.GRAY4}
+              style={{
+                backgroundColor,
+                padding: 0,
+              }}
+            />
+
+            {item.type === 'POINT' && (
+              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
+                <PointView
+                  style={{ margin: 2, transform: [{ scale: 0.6 }] }}
+                  color={item.colorStyle.color}
+                  size={20}
+                  borderColor={COLOR.WHITE}
+                />
+              </TouchableOpacity>
+            )}
+            {item.type === 'LINE' && (
+              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
+                <LineView
+                  style={{
+                    marginLeft: 3,
+                    marginRight: 3,
+                    marginTop: 10,
+                    marginBottom: 10,
+                    transform: [{ scale: 0.6 }],
+                  }}
+                  color={item.colorStyle.color}
+                />
+              </TouchableOpacity>
+            )}
+            {item.type === 'POLYGON' && (
+              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
+                <PolygonView style={{ margin: 3, transform: [{ scale: 0.6 }] }} color={item.colorStyle.color} />
+              </TouchableOpacity>
+            )}
+            {(item.type === 'NONE' || item.type === 'LAYERGROUP') && (
+              <LineView style={{ marginLeft: 10, transform: [{ scale: 0.0 }] }} color={COLOR.MAIN} />
             )}
           </View>
           <TouchableOpacity
             style={[styles.td, { flex: 5, width: 150, borderRightWidth: 1, backgroundColor }]}
-            onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
+            onPress={() => (item.type === 'LAYERGROUP' ? null : gotoData(item))}
           >
-            <Text
-              style={{ flex: 4, padding: 5, textAlign: 'center' }}
-              adjustsFontSizeToFit={true}
-              //numberOfLines={1}
-            >
+            <Text style={{ flex: 4, padding: 5, textAlign: 'center' }} adjustsFontSizeToFit={true} numberOfLines={2}>
               {item.name}
             </Text>
             {item.type === 'LAYERGROUP' ? (
-              <View style={[styles.icon, { marginHorizontal: 5 }]} />
+              <View style={[styles.icon, { marginHorizontal: 2 }]} />
             ) : (
               <MaterialCommunityIcons
-                color={COLOR.GRAY4}
-                style={[styles.icon, { marginHorizontal: 5 }]}
-                size={25}
-                name={'folder-open-outline'}
+                color={COLOR.GRAY3}
+                style={[styles.icon, { marginHorizontal: 2 }]}
+                size={16}
+                name={'chevron-right'}
                 iconStyle={{ marginRight: 0 }}
               />
             )}
@@ -160,10 +189,29 @@ export const LayersTable = () => {
               )}
             </View>
           )}
-          <View style={[styles.td, { flex: 3, width: 60, borderRightColor: COLOR.MAIN, backgroundColor }]}>
+          <View
+            style={[
+              styles.td,
+              {
+                flex: 3,
+                width: 60,
+                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
+                backgroundColor,
+              },
+            ]}
+          >
             <RectButton2 name="table-cog" style={{ backgroundColor }} onPress={() => gotoLayerEdit(item)} />
           </View>
-          <View style={[styles.td, { flex: 1, width: 50, backgroundColor }]}>
+          <View
+            style={[
+              styles.td,
+              {
+                flex: 1,
+                width: 50,
+                backgroundColor,
+              },
+            ]}
+          >
             <RectButton2
               name="chevron-double-up"
               style={{ backgroundColor }}
@@ -215,12 +263,13 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <View style={[styles.th, { flex: 4, width: 110 }]}>
-        <Text>{`${t('common.visible')}`}</Text>
-      </View>
-      <View style={[styles.th, { flex: 2, width: 60 }]}>
+      <View style={[styles.th, { flex: 1, width: 50 }]}>
         <Text>{`${t('common.edit')}`}</Text>
       </View>
+      <View style={[styles.th, { flex: 2, width: 100 }]}>
+        <Text>{`${t('common.visible')}`}</Text>
+      </View>
+
       <View style={[styles.th, { flex: 5, width: 150 }]}>
         <Text>{`${t('common.layerName')}`}</Text>
       </View>

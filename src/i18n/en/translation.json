@@ -608,7 +608,7 @@
       "onlyAdminCanEdit": "Only admins can edit",
       "onlySupportWeb": "Only web version is supported",
       "openProject": "Please open the project.",
-      "permitAccessGPS": "To use GPS, allow location access.",
+      "permitAccessGPS": "To use GPS, please allow access permissions for location information and notifications.",
       "pleaseActivate": "Please check your email and activate.",
       "pleaseReLogin": "The user is unknown. \nPlease log in again.",
       "registEncryptPassword": "Please register the encrypted password.",
