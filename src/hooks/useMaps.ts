@@ -55,6 +55,14 @@ export type UseMapsReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  importPdfMapFile: (
+    uri: string,
+    name: string,
+    id?: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
   clearTileCache: () => Promise<void>;
 };
 
@@ -440,6 +448,7 @@ export const useMaps = (): UseMapsReturnType => {
     fetchMapList,
     saveMapListURL,
     importMapFile,
+    importPdfMapFile,
     clearTileCache,
   } as const;
 };

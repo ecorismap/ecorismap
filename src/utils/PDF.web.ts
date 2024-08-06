@@ -111,6 +111,9 @@ async function convertPNGToGeoTiff(
   png: { file: File; width: number; height: number },
   geo: GeoInfo
 ): Promise<warpedFileType> {
+  //yarn build:webで/appにアップロードする場合は以下のようにパスを指定してもよい。yarn webの場合は/staticにする
+  //const Gdal = await initGdalJs({ path: '/app/static'});
+  //useWorker: falseにすると、yarn webでもyarn build:webでも動作する.ただし、gdal3.jsのコードにパッチを当てる必要がある
   const Gdal = await initGdalJs({ path: 'static', useWorker: false });
   const gcps = await createGCPs(geo, png.width, png.height, Gdal);
   const dataset = (await Gdal.open(png.file)).datasets[0];
