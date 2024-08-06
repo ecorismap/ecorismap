@@ -110,6 +110,9 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
     if (ret) {
+      if (Platform.OS === 'web') {
+        await clearTileCache();
+      }
       const { isOK, message } = await clearEcorisMap();
 
       if (!isOK) {
@@ -118,7 +121,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         navigation.navigate('Home', { previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
-  }, [clearEcorisMap, navigation]);
+  }, [clearEcorisMap, clearTileCache, navigation]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -130,7 +133,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   // }, []);
 
   const pressClearTileCache = useCallback(async () => {
-    if (Platform.OS === 'web') return;
     const ret = await ConfirmAsync(t('Settings.confirm.clearTileCache'));
     if (ret) {
       await clearTileCache();

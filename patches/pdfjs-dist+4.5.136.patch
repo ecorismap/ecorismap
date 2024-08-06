@@ -1,0 +1,41 @@
+diff --git a/node_modules/pdfjs-dist/build/pdf.worker.mjs b/node_modules/pdfjs-dist/build/pdf.worker.mjs
+index 6452f96..a0185f8 100644
+--- a/node_modules/pdfjs-dist/build/pdf.worker.mjs
++++ b/node_modules/pdfjs-dist/build/pdf.worker.mjs
+@@ -53887,6 +53887,19 @@ class Page {
+     }
+     return shadow(this, "rotate", rotate);
+   }
++  get geo() {
++    
++    let geo = this._getInheritableProperty("VP") || 0;
++    const vp_dict = this.xref.fetchIfRef(geo[0]);
++
++    const bbox = vp_dict.get("BBox");
++    const measure_dict = vp_dict.get("Measure");
++    const gcs_dict = measure_dict.get("GCS");
++    const epsg = gcs_dict.get("EPSG");
++    const wkt = gcs_dict.get("WKT");
++    const gpts = measure_dict.get("GPTS");
++    return shadow(this, "geo", {bbox, epsg, wkt, gpts});
++  }
+   _onSubStreamError(reason, objId) {
+     if (this.evaluatorOptions.ignoreErrors) {
+       warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
+@@ -56064,13 +56077,14 @@ class WorkerMessageHandler {
+     }
+     handler.on("GetPage", function (data) {
+       return pdfManager.getPage(data.pageIndex).then(function (page) {
+-        return Promise.all([pdfManager.ensure(page, "rotate"), pdfManager.ensure(page, "ref"), pdfManager.ensure(page, "userUnit"), pdfManager.ensure(page, "view")]).then(function ([rotate, ref, userUnit, view]) {
++        return Promise.all([pdfManager.ensure(page, "rotate"), pdfManager.ensure(page, "ref"), pdfManager.ensure(page, "userUnit"), pdfManager.ensure(page, "view"), pdfManager.ensure(page, "geo")]).then(function ([rotate, ref, userUnit, view, geo]) {
+           return {
+             rotate,
+             ref,
+             refStr: ref?.toString() ?? null,
+             userUnit,
+-            view
++            view,
++            geo
+           };
+         });
+       });

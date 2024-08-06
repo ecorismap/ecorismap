@@ -6,7 +6,7 @@ import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-import maplibregl, { LayerSpecification } from 'maplibre-gl';
+import maplibregl, { LayerSpecification, RequestParameters } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
@@ -42,8 +42,13 @@ import { PMTiles } from '../../utils/pmtiles';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
-// import Dexie from 'dexie';
+//import Dexie from 'dexie';
+
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+import { encode as fastPngEncode } from 'fast-png';
+import { tileToWebMercator } from '../../utils/Tile';
+import { fromBlob } from 'geotiff';
+import { db } from '../../utils/db';
 
 export default function HomeScreen() {
   const {
@@ -136,43 +141,85 @@ export default function HomeScreen() {
   // const saveImageToIndexedDB = async (url: string, blob: Blob) => {
   //   //@ts-ignore
   //   await db.tiles.put({ url, blob });
-  //   //console.log('IndexedDBに保存', url);
+  //   console.log('IndexedDBに保存', url);
   // };
 
   // const getLocalTile = async (url: string) => {
-  //   //@ts-ignore
   //   const tile = await db.tiles.get(url);
   //   if (tile?.blob) {
-  //     //console.log('IndexedDBから取得', url);
+  //     console.log('IndexedDBから取得', url);
   //     return tile.blob.arrayBuffer(); // BlobをArrayBufferに変換
   //   }
   //   return null;
   // };
 
   // const loadFn: maplibregl.AddProtocolAction = (params: RequestParameters, callback: any) => {
-  //   getLocalTile(params.url).then((tileBuffer) => {
-  //     if (tileBuffer) {
-  //       callback(null, tileBuffer, null, null);
-  //     } else {
-  //       fetch(`https://${params.url.split('://')[2]}`)
-  //         .then(async (response) => {
-  //           if (!response.ok) {
-  //             throw new Error(`Tile fetch error: ${response.statusText}`);
-  //           }
-  //           const blob = await response.blob();
-  //           saveImageToIndexedDB(params.url, blob); // Blobとして保存
-  //           const arrayBuffer = await blob.arrayBuffer();
-  //           callback(null, arrayBuffer, null, null);
-  //         })
-  //         .catch((e) => {
-  //           callback(new Error(e.message));
-  //         });
-  //     }
-  //   });
+  //   getLocalTile(params.url)
+  //     .then((tileBuffer) => {
+  //       if (tileBuffer) {
+  //         callback(null, tileBuffer, null, null);
+  //       } else {
+  //         fetch(`https://${params.url.split('://')[2]}`)
+  //           .then(async (response) => {
+  //             if (!response.ok) {
+  //               throw new Error(`Tile fetch error: ${response.statusText}`);
+  //             }
+  //             const blob = await response.blob();
+  //             saveImageToIndexedDB(params.url, blob); // Blobとして保存
+  //             const arrayBuffer = await blob.arrayBuffer();
+  //             callback(null, arrayBuffer, null, null);
+  //           })
+  //           .catch((e) => {
+  //             callback(new Error(e.message));
+  //           });
+  //       }
+  //     })
+  //     .catch((e) => {
+  //       return { cancel: () => {} };
+  //     });
+
   //   return { cancel: () => {} };
   // };
 
   // maplibregl.addProtocol('custom', loadFn);
+
+  const loadPDF = async (params: RequestParameters, _abortController: AbortController) => {
+    try {
+      // //parms.urlはpdf://mapId/z/x/yの形式
+      const [mapId, ...tileNumber] = params.url.split('/').slice(-4);
+      const [z, x, y] = tileNumber.map(Number);
+      //console.log(mapId, z, x, y);
+      //@ts-ignore
+      const geotiff = await db.geotiff.get(mapId);
+      //console.log(geotiff);
+      if (!geotiff) return { data: null };
+      const tiff = await fromBlob(geotiff.blob);
+      if (!tiff) return { data: null };
+      const topLeft = tileToWebMercator(x, y, z);
+      const bottomRight = tileToWebMercator(x + 1, y + 1, z);
+      const bbox = [topLeft.mercatorX, bottomRight.mercatorY, bottomRight.mercatorX, topLeft.mercatorY];
+      //console.log(bbox);
+      const size = 512;
+
+      const data = await tiff.readRasters({
+        bbox,
+        samples: [0, 1, 2, 3],
+        width: size,
+        height: size,
+        interleave: true,
+      });
+
+      const img = new ImageData(size, size);
+      //@ts-ignore
+      img.data.set(new Uint8ClampedArray(data));
+      const png = fastPngEncode(img);
+      return { data: png };
+    } catch (e) {
+      return { data: null };
+    }
+  };
+
+  maplibregl.addProtocol('pdf', loadPDF);
 
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
@@ -480,6 +527,19 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
+          } else if (tileMap.url.endsWith('.pdf')) {
+            return {
+              ...result,
+              [tileMap.id]: {
+                type: 'raster',
+                tiles: ['pdf://' + tileMap.id + '/{z}/{x}/{y}'],
+                minzoom: tileMap.minimumZ,
+                maxzoom: tileMap.maximumZ,
+                scheme: 'xyz',
+                tileSize: 256,
+                attribution: tileMap.attribution,
+              },
+            };
           } else if (tileMap.url) {
             return {
               ...result,
@@ -540,8 +600,6 @@ export default function HomeScreen() {
               tileMap.url.includes('.pbf')) &&
             tileMap.isVector
           ) {
-            return null;
-          } else if (tileMap.url.endsWith('.pdf')) {
             return null;
           } else if (tileMap.url) {
             return {

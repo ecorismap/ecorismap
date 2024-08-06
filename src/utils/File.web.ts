@@ -96,3 +96,21 @@ export async function customShareAsync() {}
 
 export async function moveFile() {}
 export async function unlink() {}
+
+export function saveAs(fileBytes: Uint8Array | Blob, fileName: string): void {
+  const blob = fileBytes instanceof Blob ? fileBytes : new Blob([fileBytes]);
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+}
+
+export function blobToBase64(blob: Blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    //@ts-ignore
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
