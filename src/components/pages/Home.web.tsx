@@ -661,7 +661,7 @@ export default function HomeScreen() {
             elevation: 0,
           }}
         >
-          <Loading visible={isLoading} text="" />
+          <Loading visible={isLoading} text={t('common.processing')} />
           <HomeMapMemoColorPicker
             color={penColor}
             modalVisible={visibleMapMemoColor}
