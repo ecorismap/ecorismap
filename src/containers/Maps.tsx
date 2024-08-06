@@ -6,7 +6,7 @@ import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { Props_Maps } from '../routes';
-import { TileMapType, boundaryType } from '../types';
+import { boundaryType, TileMapType } from '../types';
 import { exportFile } from '../utils/File';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
@@ -14,6 +14,8 @@ import { getExt } from '../utils/General';
 import { Platform } from 'react-native';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { readAsStringAsync } from 'expo-file-system';
+import { db } from '../utils/db';
+import { MapModalTileMap } from '../components/organisms/MapModalTileMap';
 
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -109,10 +111,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    if (Platform.OS === 'web' && ext === 'pdf') {
-      await AlertAsync(t('hooks.message.notSupportPDF'));
-      return;
-    }
     setIsLoading(true);
     setTimeout(async () => {
       const { message } = await importMapFile(uri, name, ext);
@@ -134,13 +132,21 @@ export default function MapContainer({ navigation }: Props_Maps) {
   }, [navigation]);
 
   const jumpToBoundary = useCallback(
-    async (mapId: string) => {
-      //boundary.jsonの読み込み
-      const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
-      const boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
-      if (boundaryJson === undefined) return;
-      const boundary: boundaryType = JSON.parse(boundaryJson);
-
+    async (item: TileMapType) => {
+      let boundary: boundaryType;
+      if (Platform.OS === 'web') {
+        //@ts-ignore
+        const geotiff = await db.geotiff.get(item.id);
+        const boundaryJson = geotiff?.boundary;
+        if (boundaryJson === undefined) return;
+        boundary = JSON.parse(boundaryJson);
+      } else {
+        //boundary.jsonの読み込み
+        const boundaryUri = `${TILE_FOLDER}/${item.id}/boundary.json`;
+        const boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
+        if (boundaryJson === undefined) return;
+        boundary = JSON.parse(boundaryJson);
+      }
       navigation.navigate('Home', {
         previous: 'Maps',
         jumpTo: {
@@ -180,6 +186,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
       }}
     >
       <Maps />
+      {isMapEditorOpen && <MapModalTileMap />}
     </MapsContext.Provider>
   );
 }

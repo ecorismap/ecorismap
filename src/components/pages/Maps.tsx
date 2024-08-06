@@ -3,7 +3,6 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { MapButtons } from '../organisms/MapButttons';
-import { MapModalTileMap } from '../organisms/MapModalTileMap';
 import { MapItems } from '../organisms/MapItems';
 import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
@@ -38,7 +37,6 @@ export default function MapScreen() {
       <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
       <MapItems />
       <MapButtons />
-      <MapModalTileMap />
     </View>
   );
 }
