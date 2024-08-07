@@ -7,7 +7,7 @@ import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
-import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
+import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMapAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
@@ -223,15 +223,13 @@ export const useMaps = (): UseMapsReturnType => {
 
   const saveMap = useCallback(
     (newTileMap: TileMapType) => {
-      const newTileMaps = cloneDeep(maps);
       //新規だったら追加、編集だったら置き換え
-      const index = newTileMaps.findIndex(({ id }) => id === newTileMap.id);
+      const index = maps.findIndex(({ id }) => id === newTileMap.id);
       if (index === -1) {
-        newTileMaps.unshift(newTileMap);
+        dispatch(addTileMapAction(newTileMap));
       } else {
-        newTileMaps[index] = newTileMap;
+        dispatch(updateTileMapAction(newTileMap));
       }
-      dispatch(setTileMapsAction(newTileMaps));
       setMapEditorOpen(false);
     },
     [dispatch, maps]
@@ -288,7 +286,7 @@ export const useMaps = (): UseMapsReturnType => {
         return { isOK: false, message: t('hooks.message.failReceiveFile') };
       }
       setProgress('50');
-      const newTileMaps = cloneDeep(maps);
+
       const totalPages = outputFiles.length;
       for (let page = 1; page <= totalPages; page++) {
         const outputFile = outputFiles[page - 1];
@@ -349,25 +347,25 @@ export const useMaps = (): UseMapsReturnType => {
         if (totalPages > 1) {
           //複数ページの場合は名前を変える
           tileMap.name = `${name}_page${page.toString().padStart(2, '0')}`;
-          newTileMaps.unshift(tileMap);
+          dispatch(addTileMapAction(tileMap));
         } else if (id === undefined) {
           //単ページでローカル読み込みの場合は新規追加
-          newTileMaps.unshift(tileMap);
+          dispatch(addTileMapAction(tileMap));
         } else if (id) {
           //単ページでファイルダウンロードの場合は置き換え
-          const index = newTileMaps.findIndex((item) => item.id === id);
-          const oldTileMap = newTileMaps[index];
+          const index = maps.findIndex((item) => item.id === id);
+          const oldTileMap = maps[index];
           tileMap.name = oldTileMap.name;
           tileMap.url = oldTileMap.url;
           tileMap.attribution = oldTileMap.attribution;
           tileMap.transparency = oldTileMap.transparency;
-          newTileMaps[index] = tileMap;
+          dispatch(updateTileMapAction(tileMap));
         }
 
         setProgress((50 + (page / totalPages) * 50).toFixed());
       }
       setProgress('10'); //次回のための初期値
-      dispatch(setTileMapsAction(newTileMaps));
+
       return { isOK: true, message: t('hooks.message.receiveFile') };
     },
     [dispatch, maps]

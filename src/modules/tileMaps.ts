@@ -18,7 +18,13 @@ const reducers = {
     return action.payload;
   },
   addTileMapAction: (state: TileMapType[], action: PayloadAction<TileMapType>) => {
-    state.push(action.payload);
+    state.unshift(action.payload);
+  },
+  updateTileMapAction: (state: TileMapType[], action: PayloadAction<TileMapType>) => {
+    const index = state.findIndex((n) => n.id === action.payload.id);
+    if (index !== -1) {
+      state[index] = action.payload;
+    }
   },
   deleteTileMapAction: (state: TileMapType[], action: PayloadAction<TileMapType>) => {
     return state.filter((n) => n.id !== action.payload.id);
@@ -31,5 +37,5 @@ const tileMapsSlice = createSlice({
   reducers,
 });
 
-export const { setTileMapsAction, addTileMapAction, deleteTileMapAction } = tileMapsSlice.actions;
+export const { setTileMapsAction, addTileMapAction, updateTileMapAction, deleteTileMapAction } = tileMapsSlice.actions;
 export default tileMapsSlice.reducer;
