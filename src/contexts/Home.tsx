@@ -177,6 +177,7 @@ export interface HomeContextType {
   togglePencilMode: () => void;
   pressPDFSettingsOpen: () => void;
   finishEditPosition: () => void;
+  updatePmtilesURL: () => Promise<void>;
 }
 
 export const HomeContext = createContext({} as HomeContextType);

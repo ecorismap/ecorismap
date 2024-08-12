@@ -7,17 +7,19 @@ import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
 import { RootState } from '../store';
-import { deleteTileMapAction, setTileMapsAction } from '../modules/tileMaps';
+import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMapAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
-import { decodeUri } from '../utils/File.web';
-import { convert } from 'react-native-gdalwarp';
-import ImageEditor from '@react-native-community/image-editor';
-import { tileToWebMercator } from '../utils/Tile';
+import { blobToBase64, decodeUri } from '../utils/File.web';
+import { convert, warpedFileType } from 'react-native-gdalwarp';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';
-import { moveFile, unlink } from '../utils/File';
+import { unlink } from '../utils/File';
+import { convertPDFToGeoTiff } from '../utils/PDF';
+import { db } from '../utils/db';
+import { generateTilesFromPDF } from '../utils/PDF';
+import * as pmtiles from 'pmtiles';
 
 export type UseMapsReturnType = {
   progress: string;
@@ -45,16 +47,41 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   saveMapListURL: (url: string) => void;
+  importStyleFile: (
+    uri: string,
+    name: string,
+    id: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
   importMapFile: (
     uri: string,
     name: string,
-    ext: 'json' | 'pdf',
+    ext: 'json' | 'pdf' | 'pmtiles',
+    id?: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
+  importPdfFile: (
+    uri: string,
+    name: string,
+    id?: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
+  importPmtilesFile: (
+    uri: string,
+    name: string,
     id?: string
   ) => Promise<{
     isOK: boolean;
     message: string;
   }>;
   clearTileCache: () => Promise<void>;
+  updatePmtilesURL: () => Promise<void>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -105,25 +132,31 @@ export const useMaps = (): UseMapsReturnType => {
 
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {
-      if (Platform.OS === 'web') return;
-
-      const { uri } = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap_.id}/`);
-      if (uri) {
-        await FileSystem.deleteAsync(uri);
-        const newTileRegions = tileRegions.filter((tileRegion) => tileRegion.tileMapId !== tileMap_.id);
-        dispatch(editSettingsAction({ tileRegions: newTileRegions }));
+      if (Platform.OS === 'web') {
+        await db.geotiff.delete(tileMap_.id);
+        await db.pmtiles.delete(tileMap_.id);
+      } else {
+        const { uri } = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap_.id}/`);
+        if (uri) {
+          await FileSystem.deleteAsync(uri);
+          const newTileRegions = tileRegions.filter((tileRegion) => tileRegion.tileMapId !== tileMap_.id);
+          dispatch(editSettingsAction({ tileRegions: newTileRegions }));
+        }
       }
     },
     [dispatch, tileRegions]
   );
 
   const clearTileCache = useCallback(async () => {
-    if (Platform.OS === 'web') return;
-
-    const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
-    if (uri) {
-      await FileSystem.deleteAsync(uri);
-      dispatch(editSettingsAction({ tileRegions: [] }));
+    if (Platform.OS === 'web') {
+      await db.geotiff.clear();
+      await db.pmtiles.clear();
+    } else {
+      const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
+      if (uri) {
+        await FileSystem.deleteAsync(uri);
+        dispatch(editSettingsAction({ tileRegions: [] }));
+      }
     }
   }, [dispatch]);
 
@@ -208,15 +241,13 @@ export const useMaps = (): UseMapsReturnType => {
 
   const saveMap = useCallback(
     (newTileMap: TileMapType) => {
-      const newTileMaps = cloneDeep(maps);
       //新規だったら追加、編集だったら置き換え
-      const index = newTileMaps.findIndex(({ id }) => id === newTileMap.id);
+      const index = maps.findIndex(({ id }) => id === newTileMap.id);
       if (index === -1) {
-        newTileMaps.unshift(newTileMap);
+        dispatch(addTileMapAction(newTileMap));
       } else {
-        newTileMaps[index] = newTileMap;
+        dispatch(updateTileMapAction(newTileMap));
       }
-      dispatch(setTileMapsAction(newTileMaps));
       setMapEditorOpen(false);
     },
     [dispatch, maps]
@@ -229,13 +260,45 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
-  const calculateTile = (coordinate: { x: number; y: number }, zoomLevel: number): { tileX: number; tileY: number } => {
-    const earthCircumference = 40075016.686;
-    const offset = 20037508.342789244;
-    const tileX = Math.floor(((coordinate.x + offset) / earthCircumference) * Math.pow(2, zoomLevel));
-    const tileY = Math.floor(((offset - coordinate.y) / earthCircumference) * Math.pow(2, zoomLevel));
-    return { tileX, tileY };
-  };
+  const importStyleFile = useCallback(
+    async (uri: string, name: string, id: string) => {
+      try {
+        // console.log('importStyleFile', uri, name, id);
+        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+        if (Platform.OS === 'web') {
+          db.pmtiles.update(id, { style: jsonStrings });
+          setEditedMap({ ...editedMap, styleURL: 'style://' + name });
+        } else {
+          const styleUri = `${TILE_FOLDER}/${id}/style.json`;
+          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${id}`, { intermediates: true });
+          await FileSystem.copyAsync({ from: uri, to: styleUri });
+          setEditedMap({ ...editedMap, styleURL: styleUri });
+        }
+
+        return { isOK: true, message: '' };
+      } catch (e: any) {
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      }
+    },
+    [editedMap]
+  );
+  const updatePmtilesURL = useCallback(async () => {
+    //URL.createObjectURLはセッションごとにリセットされるため、再度生成する必要がある
+    if (Platform.OS !== 'web') return;
+    for (const tileMap of maps) {
+      try {
+        if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
+          const pmtile = await db.pmtiles.get(tileMap.id);
+          if (pmtile && pmtile.blob) {
+            const url = 'pmtiles://' + URL.createObjectURL(pmtile.blob);
+            dispatch(updateTileMapAction({ ...tileMap, url }));
+          }
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }, [dispatch, maps]);
 
   const importJsonMapFile = useCallback(
     async (uri: string) => {
@@ -250,13 +313,15 @@ export const useMaps = (): UseMapsReturnType => {
         } else {
           return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
         }
+        //console.log(json);
         dispatch(setTileMapsAction(json));
+        await updatePmtilesURL();
         return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       }
     },
-    [dispatch]
+    [dispatch, updatePmtilesURL]
   );
 
   const calculateZoomLevel = (pdfTopCoord: number, pdfBottomCoord: number, imageHeight: number) => {
@@ -265,39 +330,27 @@ export const useMaps = (): UseMapsReturnType => {
     return Math.round(Math.log2(earthCircumference / coordPerPixel / 256)) - 1;
   };
 
-  const calculateOffset = (
-    pdfTopLeftCoord: { x: number; y: number },
-    topLeftCoord: { mercatorX: number; mercatorY: number },
-    coordPerPixel: number
-  ) => {
-    const offsetLeft = pdfTopLeftCoord.x - topLeftCoord.mercatorX;
-    const offsetTop = topLeftCoord.mercatorY - pdfTopLeftCoord.y;
-    return { x: -offsetLeft / coordPerPixel, y: -offsetTop / coordPerPixel };
-  };
-
-  const calculateCropSize = (zoomLevel: number, coordPerPixel: number) => {
-    const earthCircumference = Math.PI * 2 * 6378137;
-    return {
-      width: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
-      height: earthCircumference / Math.pow(2, zoomLevel) / coordPerPixel,
-    };
-  };
-
-  const importPdfMapFile = useCallback(
+  const importPdfFile = useCallback(
     async (uri: string, name: string, id?: string) => {
-      const { outputFiles } = await convert(uri.replace('file://', '')).catch((e) => {
-        console.error(e);
-        return { outputFiles: [] };
-      });
-
-      if (outputFiles === undefined || outputFiles.length === 0) {
+      let outputFiles: warpedFileType[] = [];
+      if (Platform.OS === 'web') {
+        outputFiles = await convertPDFToGeoTiff(uri);
+      } else {
+        const result = await convert(uri.replace('file://', '')).catch(() => {
+          //console.error('Error processing PDF:', e);
+          return { outputFiles: [] };
+        });
+        outputFiles = result.outputFiles;
+      }
+      if (outputFiles.length === 0) {
         return { isOK: false, message: t('hooks.message.failReceiveFile') };
       }
       setProgress('50');
-      const newTileMaps = cloneDeep(maps);
-      for (let i = 0; i < outputFiles.length; i++) {
-        const outputFile = outputFiles[i];
-        const mapId = id === undefined || outputFiles.length > 1 ? ulid() : id;
+
+      const totalPages = outputFiles.length;
+      for (let page = 1; page <= totalPages; page++) {
+        const outputFile = outputFiles[page - 1];
+        const mapId = id === undefined || totalPages > 1 ? ulid() : id;
         const pdfImage = 'file://' + outputFile.uri;
 
         const { y: pdfTopCoord } = outputFile.topLeft;
@@ -308,82 +361,31 @@ export const useMaps = (): UseMapsReturnType => {
         const bottomRightLatLon = webMercatorToLatLon(outputFile.bottomRight);
         const coordPerPixel = (pdfTopCoord - pdfBottomCoord) / imageHeight;
         const baseZoomLevel = calculateZoomLevel(pdfTopCoord, pdfBottomCoord, imageHeight);
-        //console.log('width', imageWidth, 'height', imageHeight);
         const tileSize = 512;
-
         const minimumZ = 3;
-        const tiles = [];
-        for (let tileZ = baseZoomLevel; tileZ >= minimumZ; tileZ--) {
-          const topLeftTile = calculateTile(outputFile.topLeft, tileZ);
-          const bottomRightTile = calculateTile(outputFile.bottomRight, tileZ);
-          const topLeftCoord = tileToWebMercator(topLeftTile.tileX, topLeftTile.tileY, tileZ);
-          const offset = calculateOffset(outputFile.topLeft, topLeftCoord, coordPerPixel);
-          const cropSize = calculateCropSize(tileZ, coordPerPixel);
-          const tileX = topLeftTile.tileX;
-          const tileY = topLeftTile.tileY;
-          const loopX = bottomRightTile.tileX - topLeftTile.tileX + 1;
-          const loopY = bottomRightTile.tileY - topLeftTile.tileY + 1;
-          // console.log('topLeftTile', topLeftTile, 'bottomRightTile', bottomRightTile);
-          // console.log('topLeftCoord', topLeftCoord);
-          // console.log('offset', offset);
-          // console.log('cropSize', cropSize);
-          // console.log('tileX', tileX, 'tileY', tileY, 'tileZ', tileZ);
-
-          for (let y = 0; y < loopY; y++) {
-            for (let x = 0; x < loopX; x++) {
-              const offsetX = offset.x + x * cropSize.width;
-              const offsetY = offset.y + y * cropSize.height;
-              tiles.push({ x: tileX + x, y: tileY + y, z: tileZ, offsetX, offsetY, cropSize });
-            }
-          }
+        const boundary = {
+          center: {
+            latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
+            longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
+          },
+          zoom: baseZoomLevel - 1,
+          bounds: {
+            north: topLeftLatLon.latitude,
+            south: bottomRightLatLon.latitude,
+            west: topLeftLatLon.longitude,
+            east: bottomRightLatLon.longitude,
+          },
+        };
+        const boundaryJson = JSON.stringify(boundary);
+        //console.log('width', imageWidth, 'height', imageHeight);
+        if (Platform.OS === 'web') {
+          await db.geotiff.put({ mapId, blob: outputFile.blob!, boundary: boundaryJson });
+        } else {
+          generateTilesFromPDF(pdfImage, outputFile, mapId, tileSize, minimumZ, baseZoomLevel, coordPerPixel);
+          //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
+          const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
+          await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
         }
-        const BATCH_SIZE = 10;
-        let batch: Promise<void>[] = [];
-
-        for (const tile of tiles) {
-          const folder = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}`;
-          const folderPromise = FileSystem.makeDirectoryAsync(folder, {
-            intermediates: true,
-          });
-          batch.push(folderPromise);
-          if (batch.length >= BATCH_SIZE) {
-            await Promise.all(batch);
-            batch = [];
-          }
-        }
-        await Promise.all(batch);
-
-        let batchCount = 0;
-        batch = [];
-
-        for (const tile of tiles) {
-          const tileUri = `${TILE_FOLDER}/${mapId}/${tile.z}/${tile.x}/${tile.y}`;
-
-          const cropImagePromise = ImageEditor.cropImage(pdfImage, {
-            offset: { x: tile.offsetX, y: tile.offsetY },
-            size: tile.cropSize,
-            displaySize: { width: tileSize, height: tileSize },
-            resizeMode: 'cover',
-          })
-            .then((croppedImageUri) => {
-              moveFile(croppedImageUri, tileUri);
-            })
-            .catch((e) => {
-              console.log(tile, e);
-            });
-
-          batch.push(cropImagePromise);
-          if (batch.length >= BATCH_SIZE) {
-            batchCount = batchCount + BATCH_SIZE;
-            const percentPerPage = 50 / outputFiles.length;
-            setProgress((50 + percentPerPage * i + (batchCount / tiles.length) * percentPerPage).toFixed());
-            await Promise.all(batch);
-            batch = [];
-          }
-        }
-        await Promise.all(batch);
-
-        unlink(pdfImage);
 
         const tileMap: TileMapType = {
           id: mapId,
@@ -399,81 +401,151 @@ export const useMaps = (): UseMapsReturnType => {
           maximumZ: 22,
           flipY: false,
           tileSize: tileSize,
+          boundary,
         };
-        if (outputFiles.length > 1) {
+        if (totalPages > 1) {
           //複数ページの場合は名前を変える
-          tileMap.name = `${name}_page${(i + 1).toString().padStart(2, '0')}`;
-          newTileMaps.unshift(tileMap);
+          tileMap.name = `${name}_page${page.toString().padStart(2, '0')}`;
+          dispatch(addTileMapAction(tileMap));
         } else if (id === undefined) {
           //単ページでローカル読み込みの場合は新規追加
-          newTileMaps.unshift(tileMap);
+          dispatch(addTileMapAction(tileMap));
         } else if (id) {
           //単ページでファイルダウンロードの場合は置き換え
-          const index = newTileMaps.findIndex((item) => item.id === id);
-          const oldTileMap = newTileMaps[index];
+          const index = maps.findIndex((item) => item.id === id);
+          const oldTileMap = maps[index];
           tileMap.name = oldTileMap.name;
           tileMap.url = oldTileMap.url;
           tileMap.attribution = oldTileMap.attribution;
           tileMap.transparency = oldTileMap.transparency;
-          newTileMaps[index] = tileMap;
+          dispatch(updateTileMapAction(tileMap));
         }
-        const boundary = {
-          center: {
-            latitude: (topLeftLatLon.latitude + bottomRightLatLon.latitude) / 2,
-            longitude: (topLeftLatLon.longitude + bottomRightLatLon.longitude) / 2,
-          },
-          zoom: baseZoomLevel - 1,
-          bounds: {
-            north: topLeftLatLon.latitude,
-            south: bottomRightLatLon.latitude,
-            west: topLeftLatLon.longitude,
-            east: bottomRightLatLon.longitude,
-          },
-        };
-        //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
-        const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
-        const boundaryJson = JSON.stringify(boundary);
-        await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
 
-        setProgress((50 + ((i + 1) / outputFiles.length) * 50).toFixed());
+        setProgress((50 + (page / totalPages) * 50).toFixed());
       }
       setProgress('10'); //次回のための初期値
-      dispatch(setTileMapsAction(newTileMaps));
+
       return { isOK: true, message: t('hooks.message.receiveFile') };
     },
     [dispatch, maps]
   );
 
+  const importPmtilesFile = useCallback(
+    async (uri: string, name: string, id?: string) => {
+      const mapId = id === undefined ? ulid() : id;
+      let url;
+      let blob;
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        blob = await response.blob();
+        url = URL.createObjectURL(blob);
+      } else {
+        url = `${TILE_FOLDER}/${mapId}/${name}`;
+        await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${mapId}`, { intermediates: true });
+        await FileSystem.copyAsync({ from: uri, to: url });
+      }
+      const pmtile = new pmtiles.PMTiles(url);
+      const header = await pmtile.getHeader();
+      const boundary = {
+        center: {
+          latitude: header.centerLat,
+          longitude: header.centerLon,
+        },
+        zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
+        bounds: {
+          north: header.maxLat,
+          south: header.minLat,
+          west: header.minLon,
+          east: header.maxLon,
+        },
+      };
+      //console.log('AAA', metadata);
+      //console.log('BBB', header);
+
+      if (Platform.OS === 'web') {
+        await db.pmtiles.put({ mapId, blob: blob, boundary: JSON.stringify(boundary), style: undefined });
+      } else {
+        const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
+        await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
+      }
+
+      const tileMap: TileMapType = {
+        id: mapId,
+        name: name,
+        url: 'pmtiles://' + url,
+        attribution: 'pmtiles',
+        maptype: 'none',
+        visible: true,
+        transparency: 0,
+        overzoomThreshold: header.maxZoom,
+        highResolutionEnabled: false,
+        minimumZ: header.minZoom,
+        maximumZ: header.maxZoom,
+        flipY: false,
+        tileSize: 512,
+        isVector: header.tileType === 1,
+      };
+      dispatch(addTileMapAction(tileMap));
+      return { isOK: true, message: t('hooks.message.receiveFile') };
+    },
+    [dispatch]
+  );
   const importMapFile = useCallback(
-    async (uri: string, name: string, ext: 'json' | 'pdf', id?: string) => {
-      if (ext === 'json') {
-        return importJsonMapFile(uri);
-      } else if (ext === 'pdf') {
-        let pdfUri = uri;
-        const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
-        if (uri.startsWith('file://') === false) {
-          //uriからbasicauth部分を取得
-          const auth = uri.split('@')[0].split('//')[1];
-          const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
+    async (uri: string, name: string, ext: 'json' | 'pdf' | 'pmtiles', id?: string) => {
+      //設定ファイルの場合
+      if (ext === 'json') return importJsonMapFile(uri);
+      //PDFでローカルファイルでWebブラウザの場合
+      if (ext === 'pmtiles') return importPmtilesFile(uri, name, id);
+      if (ext === 'pdf' && uri.startsWith('data:')) {
+        return importPdfFile(uri, name, id);
+      }
+      //PDFでローカルファイルでモバイルの場合
+      if (ext === 'pdf' && uri.startsWith('file://')) {
+        return await importPdfFile(uri, name, id);
+      }
+      //PDFでWebからダウンロードする場合
+      if (ext === 'pdf' && uri.startsWith('http')) {
+        //uriからbasicauth部分を取得
+        const auth = uri.split('@')[0].split('//')[1];
+        const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
+
+        if (Platform.OS === 'ios' || Platform.OS === 'android') {
+          const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
           const download = FileSystem.createDownloadResumable(uri, tempPdf, {
             headers: { Authorization: options },
           });
-          const result = await download.downloadAsync();
-          if (!result || result.status !== 200) {
+          const response = await download.downloadAsync();
+          if (!response || response.status !== 200) {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
 
-          pdfUri = result.uri;
+          const result = await importPdfFile(response.uri, name, id);
+          unlink(tempPdf);
+          return result;
         }
 
-        const result = await importPdfMapFile(pdfUri, name, id);
-        unlink(tempPdf);
-        return result;
-      } else {
-        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+        if (Platform.OS === 'web') {
+          const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
+          const response = await fetch(noAuthUri, {
+            mode: 'cors',
+            headers: {
+              Authorization: options,
+            },
+          });
+
+          if (!response.ok) {
+            return { isOK: false, message: t('hooks.message.failReceiveFile') };
+          }
+          const blob = await response.blob();
+          const base64 = await blobToBase64(blob);
+          const dataUrl = `data:application/pdf;base64,${base64}`;
+          const result = importPdfFile(dataUrl, name, id);
+          return result;
+        }
       }
+      return { isOK: false, message: t('hooks.message.failReceiveFile') };
     },
-    [importJsonMapFile, importPdfMapFile]
+    [importJsonMapFile, importPdfFile, importPmtilesFile]
   );
 
   return {
@@ -494,6 +566,10 @@ export const useMaps = (): UseMapsReturnType => {
     fetchMapList,
     saveMapListURL,
     importMapFile,
+    importPdfFile,
+    importPmtilesFile,
+    importStyleFile,
     clearTileCache,
+    updatePmtilesURL,
   } as const;
 };

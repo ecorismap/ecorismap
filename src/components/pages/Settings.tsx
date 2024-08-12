@@ -80,14 +80,13 @@ export default function Settings() {
           info={t('Settings.maplisturl.info')}
           onPress={pressMapListURLOpen}
         /> */}
-        {Platform.OS !== 'web' && (
-          <TextButton
-            name={SETTINGS_BTN.MAP_CACHE_DELETE}
-            text={t('Settings.mapcachedelete.text')}
-            info={t('Settings.mapcachedelete.info')}
-            onPress={pressClearTileCache}
-          />
-        )}
+
+        <TextButton
+          name={SETTINGS_BTN.MAP_CACHE_DELETE}
+          text={t('Settings.mapcachedelete.text')}
+          info={t('Settings.mapcachedelete.info')}
+          onPress={pressClearTileCache}
+        />
 
         {FUNC_LOGIN && Platform.OS !== 'web' && (
           <TextButton

@@ -11,7 +11,7 @@ import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 import { getExt } from '../utils/General';
-import { PMTiles } from '../utils/pmtiles';
+import * as pmtiles from 'pmtiles';
 import { Buffer } from 'buffer';
 import { cloneDeep } from 'lodash';
 
@@ -99,7 +99,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
         ? 'pmtiles'
         : 'png';
 
-    const pmtile = tileType === 'pmtiles' ? new PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
+    const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
 
     setProgress('0');
     setIsDownloading(true);
