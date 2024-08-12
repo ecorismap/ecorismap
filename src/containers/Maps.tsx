@@ -16,7 +16,8 @@ import { TILE_FOLDER } from '../constants/AppConstants';
 import { readAsStringAsync } from 'expo-file-system';
 import { db } from '../utils/db';
 import { MapModalTileMap } from '../components/organisms/MapModalTileMap';
-
+import * as pmtiles from 'pmtiles';
+import * as FileSystem from 'expo-file-system';
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
     progress,
@@ -32,6 +33,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     changeMapOrder,
     toggleOnline,
     importMapFile,
+    importStyleFile,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const { runTutrial } = useTutrial();
@@ -107,7 +109,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     const name = file.assets[0].name;
     const uri = file.assets[0].uri;
     const ext = getExt(name)?.toLowerCase();
-    if (!(ext === 'json' || ext === 'pdf')) {
+    if (!(ext === 'json' || ext === 'pdf' || ext === 'pmtiles')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
@@ -118,6 +120,23 @@ export default function MapContainer({ navigation }: Props_Maps) {
       if (message !== '') await AlertAsync(message);
     }, 10);
   }, [importMapFile]);
+
+  const pressImportStyle = useCallback(
+    async (tileMap: TileMapType) => {
+      const file = await DocumentPicker.getDocumentAsync({});
+      if (file.assets === null) return;
+      const name = file.assets[0].name;
+      const uri = file.assets[0].uri;
+      const ext = getExt(name)?.toLowerCase();
+      if (!(ext === 'json')) {
+        await AlertAsync(t('hooks.message.wrongExtension'));
+        return;
+      }
+      const { message } = await importStyleFile(uri, name, tileMap.id);
+      if (message !== '') await AlertAsync(message);
+    },
+    [importStyleFile]
+  );
 
   const pressExportMaps = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
@@ -131,22 +150,60 @@ export default function MapContainer({ navigation }: Props_Maps) {
     navigation.navigate('MapList');
   }, [navigation]);
 
+  const getPmtilesBoundary = useCallback(async (url: string) => {
+    const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
+    const header = await pmtile.getHeader();
+    return {
+      center: {
+        latitude: header.centerLat,
+        longitude: header.centerLon,
+      },
+      zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
+      bounds: {
+        north: header.maxLat,
+        south: header.minLat,
+        west: header.minLon,
+        east: header.maxLon,
+      },
+    };
+  }, []);
+
   const jumpToBoundary = useCallback(
     async (item: TileMapType) => {
-      let boundary: boundaryType;
+      let boundary: boundaryType | undefined;
       if (Platform.OS === 'web') {
-        //@ts-ignore
-        const geotiff = await db.geotiff.get(item.id);
-        const boundaryJson = geotiff?.boundary;
-        if (boundaryJson === undefined) return;
-        boundary = JSON.parse(boundaryJson);
+        let boundaryJson;
+        if (item.url.includes('pmtiles')) {
+          boundaryJson = (await db.pmtiles.get(item.id))?.boundary;
+          if (boundaryJson === undefined) {
+            boundary = await getPmtilesBoundary(item.url);
+            await db.pmtiles.update(item.id, { boundary: JSON.stringify(boundary) });
+          } else {
+            boundary = JSON.parse(boundaryJson);
+          }
+        } else if (item.url.endsWith('.pdf')) {
+          boundaryJson = (await db.geotiff.get(item.id))?.boundary;
+          if (boundaryJson === undefined) return;
+          boundary = JSON.parse(boundaryJson);
+        }
       } else {
         //boundary.jsonの読み込み
         const boundaryUri = `${TILE_FOLDER}/${item.id}/boundary.json`;
-        const boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
-        if (boundaryJson === undefined) return;
-        boundary = JSON.parse(boundaryJson);
+        let boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
+        if (boundaryJson === undefined) {
+          if (item.url.includes('pmtiles')) {
+            boundary = await getPmtilesBoundary(item.url);
+            boundaryJson = JSON.stringify(boundary);
+            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${item.id}`, { intermediates: true });
+            await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
+          } else {
+            return;
+          }
+        } else {
+          boundary = JSON.parse(boundaryJson);
+        }
       }
+      if (boundary === undefined) return;
       navigation.navigate('Home', {
         previous: 'Maps',
         jumpTo: {
@@ -159,7 +216,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         mode: 'jumpTo',
       });
     },
-    [navigation]
+    [getPmtilesBoundary, navigation]
   );
 
   return (
@@ -183,6 +240,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         pressImportMaps,
         pressExportMaps,
         jumpToBoundary,
+        pressImportStyle,
       }}
     >
       <Maps />

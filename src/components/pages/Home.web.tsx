@@ -6,7 +6,12 @@ import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
-import maplibregl, { LayerSpecification, RequestParameters } from 'maplibre-gl';
+import maplibregl, {
+  FillLayerSpecification,
+  LayerSpecification,
+  LineLayerSpecification,
+  RequestParameters,
+} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
@@ -37,8 +42,6 @@ import { isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool }
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { schemeSet3 } from 'd3-scale-chromatic';
-import { PMTiles } from '../../utils/pmtiles';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -102,9 +105,11 @@ export default function HomeScreen() {
     onCloseBottomSheet,
     pressPDFSettingsOpen,
     isEditingRecord,
+    updatePmtilesURL,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: RootState) => state.layers);
+
   const { mapRegion, windowWidth, isLandscape, windowHeight } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
@@ -189,7 +194,6 @@ export default function HomeScreen() {
       const [mapId, ...tileNumber] = params.url.split('/').slice(-4);
       const [z, x, y] = tileNumber.map(Number);
       //console.log(mapId, z, x, y);
-      //@ts-ignore
       const geotiff = await db.geotiff.get(mapId);
       //console.log(geotiff);
       if (!geotiff) return { data: null };
@@ -255,70 +259,6 @@ export default function HomeScreen() {
     }
   }, [downloadProgress, isDownloading, exportPDFMode, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
 
-  const vectorStyle = async (file: PMTiles) => {
-    const metadata = await file.getMetadata();
-    const header = await file.getHeader();
-    let layers_: LayerSpecification[] = [];
-    const baseOpacity = 0.7;
-    if (metadata.type !== 'baselayer') {
-      layers_ = [];
-    }
-
-    let vector_layers: LayerSpecification[];
-    if (metadata.json) {
-      const j = JSON.parse(metadata.json);
-      vector_layers = j.vector_layers;
-    } else {
-      vector_layers = metadata.vector_layers;
-    }
-
-    if (vector_layers) {
-      for (const [i, layer] of vector_layers.entries()) {
-        layers_.push({
-          id: layer.id + '_fill',
-          type: 'fill',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'fill-color': schemeSet3[i % 12],
-            'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], baseOpacity, baseOpacity - 0.15],
-            'fill-outline-color': [
-              'case',
-              ['boolean', ['feature-state', 'hover'], false],
-              'hsl(0,100%,90%)',
-              'rgba(0,0,0,0.2)',
-            ],
-          },
-          filter: ['==', ['geometry-type'], 'Polygon'],
-        });
-        layers_.push({
-          id: layer.id + '_stroke',
-          type: 'line',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'line-color': schemeSet3[i % 12],
-            'line-width': ['case', ['boolean', ['feature-state', 'hover'], false], 2, 0.5],
-          },
-          filter: ['==', ['geometry-type'], 'LineString'],
-        });
-        layers_.push({
-          id: layer.id + '_point',
-          type: 'circle',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'circle-color': schemeSet3[i % 12],
-            'circle-radius': ['case', ['boolean', ['feature-state', 'hover'], false], 6, 5],
-          },
-          filter: ['==', ['geometry-type'], 'Point'],
-        });
-      }
-    }
-
-    return { styles: layers_, header: header };
-  };
-
   const customHandle = useCallback(() => {
     return (
       <View
@@ -358,87 +298,145 @@ export default function HomeScreen() {
     );
   }, [isEditingRecord, onCloseBottomSheet]);
 
-  useEffect(() => {
-    if (!mapViewRef.current) return;
-    const map = (mapViewRef.current as MapRef).getMap();
+  const getDefaultStyle = async (tileMap: TileMapType) => {
+    const pmtile = new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', ''));
+    const metadata: any = await pmtile.getMetadata();
+    //const header = await pmtile.getHeader();
+    let layers_: LayerSpecification[] = [];
 
-    for (const tileMap of tileMaps) {
-      //console.log(tileMap);
-      try {
-        if (
-          tileMap.url &&
-          (tileMap.url.startsWith('pmtiles://') || (tileMap.url.includes('.pmtiles') && tileMap.isVector))
-        ) {
-          (async () => {
-            const pmtile = new PMTiles(tileMap.url.replace('pmtiles://', ''));
-            const { styles, header } = await vectorStyle(pmtile);
+    if (metadata.type !== 'baselayer') {
+      layers_ = [];
+    }
 
-            let layerStyles;
-            const url = tileMap.styleURL ?? tileMap.url.replace('pmtiles://', '').replace('.pmtiles', '.json');
-            const response = await fetch(url);
-            let hasStyleJson = false;
-            if (response.ok) {
-              const json = await response.json();
-              if (json) {
-                layerStyles = json.layers;
-                hasStyleJson = true;
-              } else {
-                layerStyles = styles;
-              }
-            } else {
-              layerStyles = styles;
-            }
-            if (!Array.isArray(layerStyles)) return;
-            layerStyles.forEach((layerStyle: any, index: number) => {
-              //console.log(layerStyle);
-              layerStyle.id = `${tileMap.id}_${index}`;
-              layerStyle.source = tileMap.id;
-              if (layerStyle.paint['fill-opacity']) {
-                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
-              }
-              if (!hasStyleJson) {
-                const source = map.getSource(tileMap.id);
-                if (source) {
-                  source.minzoom = header.minZoom;
-                  source.maxzoom = header.maxZoom;
-                }
-              }
-              map.addLayer(layerStyle);
-            });
-          })();
+    let vector_layers: LayerSpecification[];
+    if (metadata.json) {
+      const j = JSON.parse(metadata.json);
+      vector_layers = j.vector_layers;
+    } else {
+      vector_layers = metadata.vector_layers;
+    }
 
-          // 外部からレイヤーとそのスタイルを非同期に読み込む
-        } else if (tileMap.url && tileMap.url.includes('.pbf') && tileMap.isVector) {
-          (async () => {
-            const url = tileMap.styleURL;
-            if (!url) return;
-            const response = await fetch(url);
-            if (!response.ok) return;
-            const json = await response.json();
-            if (!json) return;
-            const layerStyles = json.layers;
-            //arrayかどうかチェック
-            if (!Array.isArray(layerStyles)) return;
-
-            layerStyles.forEach((layerStyle: any, index: number) => {
-              layerStyle.id = `${tileMap.id}_${index}`;
-              layerStyle.source = tileMap.id;
-              if (layerStyle.paint['fill-opacity']) {
-                layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
-              }
-
-              //console.log(layerStyle);
-
-              map.addLayer(layerStyle);
-            });
-          })();
-        }
-      } catch (e) {
-        console.log(e);
+    if (vector_layers) {
+      for (const layer of vector_layers) {
+        layers_.push({
+          id: layer.id + '_fill',
+          type: 'fill',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'fill-color': '#00FF00',
+            'fill-outline-color': '#000000',
+            'fill-opacity': 0.5,
+          },
+          filter: ['==', ['geometry-type'], 'Polygon'],
+        });
+        layers_.push({
+          id: layer.id + '_stroke',
+          type: 'line',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'line-color': '#0000FF',
+            'line-width': 1,
+          },
+          filter: ['==', ['geometry-type'], 'LineString'],
+        });
+        layers_.push({
+          id: layer.id + '_point',
+          type: 'circle',
+          source: 'source',
+          'source-layer': layer.id,
+          paint: {
+            'circle-color': '#FF0000',
+            'circle-radius': 3,
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#FFFFFF',
+          },
+          filter: ['==', ['geometry-type'], 'Point'],
+        });
       }
     }
+    //console.log('layers_', layers_);
+    return layers_ as LineLayerSpecification[] | FillLayerSpecification[];
+  };
+
+  const getStyleFromLocal = useCallback(async (tileMap: TileMapType) => {
+    const style = (await db.pmtiles.get(tileMap.id))?.style;
+    if (style) {
+      const layerStyles = JSON.parse(style).layers as LineLayerSpecification[] | FillLayerSpecification[];
+      if (Array.isArray(layerStyles)) return layerStyles;
+    }
+    return [];
+  }, []);
+
+  const getStyleFromURL = useCallback(async (tileMap: TileMapType) => {
+    const url = tileMap.styleURL;
+    if (!url) return [];
+    const response = await fetch(url);
+    if (response.ok) {
+      const json = await response.json();
+      if (json) {
+        const layerStyles = json.layers;
+        if (Array.isArray(layerStyles)) return layerStyles as LineLayerSpecification[] | FillLayerSpecification[];
+      }
+    }
+    return [];
+  }, []);
+
+  const updatePmtilesStyle = useCallback(
+    async (tileMap: TileMapType) => {
+      if (!mapViewRef.current) return;
+      const map = (mapViewRef.current as MapRef).getMap();
+      let layerStyles: LineLayerSpecification[] | FillLayerSpecification[] = [];
+      if (tileMap.styleURL && tileMap.styleURL.startsWith('style://')) {
+        layerStyles = await getStyleFromLocal(tileMap);
+      } else if (tileMap.styleURL && tileMap.styleURL !== '') {
+        layerStyles = await getStyleFromURL(tileMap);
+      }
+      if (layerStyles.length === 0) {
+        layerStyles = await getDefaultStyle(tileMap);
+      }
+      //console.log('layerStyles', layerStyles);
+      layerStyles.forEach((layerStyle: LineLayerSpecification | FillLayerSpecification, index: number) => {
+        layerStyle.id = `${tileMap.id}_${index}`;
+        layerStyle.source = tileMap.id;
+        //@ts-ignore
+        if (layerStyle.paint['fill-opacity']) {
+          //@ts-ignore
+          layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+        }
+        map.addLayer(layerStyle);
+      });
+    },
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapViewRef.current, tileMaps]);
+    [mapViewRef.current]
+  );
+
+  useEffect(() => {
+    (async () => {
+      //起動時にpmtilesのURLを更新
+      await updatePmtilesURL();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      for (const tileMap of tileMaps) {
+        try {
+          if (
+            tileMap.url &&
+            (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf'))
+          ) {
+            if (tileMap.isVector) await updatePmtilesStyle(tileMap);
+          }
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    })();
+  }, [tileMaps, updatePmtilesStyle, updatePmtilesURL]);
 
   useEffect(() => {
     if (isPointRecordType(selectedRecord?.record)) return;

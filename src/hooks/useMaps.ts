@@ -19,6 +19,7 @@ import { unlink } from '../utils/File';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { generateTilesFromPDF } from '../utils/PDF';
+import * as pmtiles from 'pmtiles';
 
 export type UseMapsReturnType = {
   progress: string;
@@ -46,16 +47,32 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   saveMapListURL: (url: string) => void;
+  importStyleFile: (
+    uri: string,
+    name: string,
+    id: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
   importMapFile: (
     uri: string,
     name: string,
-    ext: 'json' | 'pdf',
+    ext: 'json' | 'pdf' | 'pmtiles',
     id?: string
   ) => Promise<{
     isOK: boolean;
     message: string;
   }>;
-  importPdfMapFile: (
+  importPdfFile: (
+    uri: string,
+    name: string,
+    id?: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
+  importPmtilesFile: (
     uri: string,
     name: string,
     id?: string
@@ -64,6 +81,7 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   clearTileCache: () => Promise<void>;
+  updatePmtilesURL: () => Promise<void>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -115,8 +133,8 @@ export const useMaps = (): UseMapsReturnType => {
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {
       if (Platform.OS === 'web') {
-        //@ts-ignore
         await db.geotiff.delete(tileMap_.id);
+        await db.pmtiles.delete(tileMap_.id);
       } else {
         const { uri } = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap_.id}/`);
         if (uri) {
@@ -131,8 +149,8 @@ export const useMaps = (): UseMapsReturnType => {
 
   const clearTileCache = useCallback(async () => {
     if (Platform.OS === 'web') {
-      //@ts-ignore
       await db.geotiff.clear();
+      await db.pmtiles.clear();
     } else {
       const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
       if (uri) {
@@ -242,6 +260,46 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
+  const importStyleFile = useCallback(
+    async (uri: string, name: string, id: string) => {
+      try {
+        // console.log('importStyleFile', uri, name, id);
+        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+        if (Platform.OS === 'web') {
+          db.pmtiles.update(id, { style: jsonStrings });
+          setEditedMap({ ...editedMap, styleURL: 'style://' + name });
+        } else {
+          const styleUri = `${TILE_FOLDER}/${id}/style.json`;
+          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${id}`, { intermediates: true });
+          await FileSystem.copyAsync({ from: uri, to: styleUri });
+          setEditedMap({ ...editedMap, styleURL: styleUri });
+        }
+
+        return { isOK: true, message: '' };
+      } catch (e: any) {
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      }
+    },
+    [editedMap]
+  );
+  const updatePmtilesURL = useCallback(async () => {
+    //URL.createObjectURLはセッションごとにリセットされるため、再度生成する必要がある
+    if (Platform.OS !== 'web') return;
+    for (const tileMap of maps) {
+      try {
+        if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
+          const pmtile = await db.pmtiles.get(tileMap.id);
+          if (pmtile && pmtile.blob) {
+            const url = 'pmtiles://' + URL.createObjectURL(pmtile.blob);
+            dispatch(updateTileMapAction({ ...tileMap, url }));
+          }
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }, [dispatch, maps]);
+
   const importJsonMapFile = useCallback(
     async (uri: string) => {
       try {
@@ -255,13 +313,15 @@ export const useMaps = (): UseMapsReturnType => {
         } else {
           return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
         }
+        //console.log(json);
         dispatch(setTileMapsAction(json));
+        await updatePmtilesURL();
         return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       }
     },
-    [dispatch]
+    [dispatch, updatePmtilesURL]
   );
 
   const calculateZoomLevel = (pdfTopCoord: number, pdfBottomCoord: number, imageHeight: number) => {
@@ -270,7 +330,7 @@ export const useMaps = (): UseMapsReturnType => {
     return Math.round(Math.log2(earthCircumference / coordPerPixel / 256)) - 1;
   };
 
-  const importPdfMapFile = useCallback(
+  const importPdfFile = useCallback(
     async (uri: string, name: string, id?: string) => {
       let outputFiles: warpedFileType[] = [];
       if (Platform.OS === 'web') {
@@ -319,8 +379,7 @@ export const useMaps = (): UseMapsReturnType => {
         const boundaryJson = JSON.stringify(boundary);
         //console.log('width', imageWidth, 'height', imageHeight);
         if (Platform.OS === 'web') {
-          //@ts-ignore
-          await db.geotiff.put({ mapId, blob: outputFile.blob, boundary: boundaryJson });
+          await db.geotiff.put({ mapId, blob: outputFile.blob!, boundary: boundaryJson });
         } else {
           generateTilesFromPDF(pdfImage, outputFile, mapId, tileSize, minimumZ, baseZoomLevel, coordPerPixel);
           //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
@@ -371,17 +430,78 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch, maps]
   );
 
+  const importPmtilesFile = useCallback(
+    async (uri: string, name: string, id?: string) => {
+      const mapId = id === undefined ? ulid() : id;
+      let url;
+      let blob;
+      if (Platform.OS === 'web') {
+        const response = await fetch(uri);
+        blob = await response.blob();
+        url = URL.createObjectURL(blob);
+      } else {
+        url = `${TILE_FOLDER}/${mapId}/${name}`;
+        await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${mapId}`, { intermediates: true });
+        await FileSystem.copyAsync({ from: uri, to: url });
+      }
+      const pmtile = new pmtiles.PMTiles(url);
+      const header = await pmtile.getHeader();
+      const boundary = {
+        center: {
+          latitude: header.centerLat,
+          longitude: header.centerLon,
+        },
+        zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
+        bounds: {
+          north: header.maxLat,
+          south: header.minLat,
+          west: header.minLon,
+          east: header.maxLon,
+        },
+      };
+      //console.log('AAA', metadata);
+      //console.log('BBB', header);
+
+      if (Platform.OS === 'web') {
+        await db.pmtiles.put({ mapId, blob: blob, boundary: JSON.stringify(boundary), style: undefined });
+      } else {
+        const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
+        await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
+      }
+
+      const tileMap: TileMapType = {
+        id: mapId,
+        name: name,
+        url: 'pmtiles://' + url,
+        attribution: 'pmtiles',
+        maptype: 'none',
+        visible: true,
+        transparency: 0,
+        overzoomThreshold: header.maxZoom,
+        highResolutionEnabled: false,
+        minimumZ: header.minZoom,
+        maximumZ: header.maxZoom,
+        flipY: false,
+        tileSize: 512,
+        isVector: header.tileType === 1,
+      };
+      dispatch(addTileMapAction(tileMap));
+      return { isOK: true, message: t('hooks.message.receiveFile') };
+    },
+    [dispatch]
+  );
   const importMapFile = useCallback(
-    async (uri: string, name: string, ext: 'json' | 'pdf', id?: string) => {
+    async (uri: string, name: string, ext: 'json' | 'pdf' | 'pmtiles', id?: string) => {
       //設定ファイルの場合
       if (ext === 'json') return importJsonMapFile(uri);
       //PDFでローカルファイルでWebブラウザの場合
+      if (ext === 'pmtiles') return importPmtilesFile(uri, name, id);
       if (ext === 'pdf' && uri.startsWith('data:')) {
-        return importPdfMapFile(uri, name, id);
+        return importPdfFile(uri, name, id);
       }
       //PDFでローカルファイルでモバイルの場合
       if (ext === 'pdf' && uri.startsWith('file://')) {
-        return await importPdfMapFile(uri, name, id);
+        return await importPdfFile(uri, name, id);
       }
       //PDFでWebからダウンロードする場合
       if (ext === 'pdf' && uri.startsWith('http')) {
@@ -399,7 +519,7 @@ export const useMaps = (): UseMapsReturnType => {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
 
-          const result = await importPdfMapFile(response.uri, name, id);
+          const result = await importPdfFile(response.uri, name, id);
           unlink(tempPdf);
           return result;
         }
@@ -419,13 +539,13 @@ export const useMaps = (): UseMapsReturnType => {
           const blob = await response.blob();
           const base64 = await blobToBase64(blob);
           const dataUrl = `data:application/pdf;base64,${base64}`;
-          const result = importPdfMapFile(dataUrl, name, id);
+          const result = importPdfFile(dataUrl, name, id);
           return result;
         }
       }
       return { isOK: false, message: t('hooks.message.failReceiveFile') };
     },
-    [importJsonMapFile, importPdfMapFile]
+    [importJsonMapFile, importPdfFile, importPmtilesFile]
   );
 
   return {
@@ -446,7 +566,10 @@ export const useMaps = (): UseMapsReturnType => {
     fetchMapList,
     saveMapListURL,
     importMapFile,
-    importPdfMapFile,
+    importPdfFile,
+    importPmtilesFile,
+    importStyleFile,
     clearTileCache,
+    updatePmtilesURL,
   } as const;
 };

@@ -39,7 +39,7 @@ import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles, customShareAsync, exportFile } from '../utils/File';
-import { importDropedFile } from '../utils/File.web';
+import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
@@ -195,7 +195,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setIsStraightStyle,
     setMapMemoLineSmoothed,
   } = useMapMemo(mapViewRef.current);
-  const { importPdfMapFile } = useMaps();
+  const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
   const { addCurrentPoint, resetPointPosition, updatePointPosition, getCurrentPoint } = usePointTool();
   //現在位置、GPS関連
   const {
@@ -1178,11 +1178,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onDrop = useCallback(
     async (acceptedFiles: any) => {
       if (Platform.OS !== 'web') return;
-      if (isRunningProject) {
-        await AlertAsync(t('hooks.message.cannotInRunningProject'));
-        return;
-      }
-      const files = await importDropedFile(acceptedFiles);
+      const files = await getDropedFile(acceptedFiles);
       if (files.length > 0) {
         let allOK = true;
         for (const file of files) {
@@ -1195,10 +1191,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               ext === 'kmz' ||
               ext === 'zip' ||
               ext === 'csv' ||
-              ext === 'pdf'
+              ext === 'pdf' ||
+              ext === 'pmtiles'
             )
           ) {
             await AlertAsync(t('hooks.message.wrongExtension'));
+            allOK = false;
+            continue;
+          }
+          if (
+            (ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip' || ext === 'csv') &&
+            isRunningProject
+          ) {
+            await AlertAsync(t('hooks.message.cannotInRunningProject'));
             allOK = false;
             continue;
           }
@@ -1207,15 +1212,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             allOK = false;
             continue;
           }
-          if (file.size / 1024 > (ext === 'pdf' ? 20000 : 5000)) {
+          if (file.size / 1024 > (ext === 'pdf' || ext === 'pmtiles' ? 30000 : 5000)) {
             await AlertAsync(t('hooks.message.cannotImportData'));
             allOK = false;
             continue;
           }
           let result;
+
           if (ext === 'pdf') {
             setIsLoading(true);
-            result = await importPdfMapFile(file.uri, file.name);
+            result = await importPdfFile(file.uri, file.name);
+            setIsLoading(false);
+            gotoMaps();
+          } else if (ext === 'pmtiles') {
+            setIsLoading(true);
+            result = await importPmtilesFile(file.uri, file.name);
             setIsLoading(false);
             gotoMaps();
           } else {
@@ -1229,7 +1240,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (allOK) await AlertAsync(t('hooks.message.receiveFile'));
       }
     },
-    [gotoMaps, importGeoFile, importPdfMapFile, isRunningProject]
+    [gotoMaps, importGeoFile, importPdfFile, importPmtilesFile, isRunningProject]
   );
 
   useEffect(() => {
@@ -1414,6 +1425,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         togglePencilMode,
         pressPDFSettingsOpen,
         finishEditPosition,
+        updatePmtilesURL,
       }}
     >
       <Home />

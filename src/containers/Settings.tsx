@@ -3,7 +3,7 @@ import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
-import { Linking, Platform } from 'react-native';
+import { Linking } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
@@ -110,9 +110,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
     if (ret) {
-      if (Platform.OS === 'web') {
-        await clearTileCache();
-      }
       const { isOK, message } = await clearEcorisMap();
 
       if (!isOK) {
@@ -121,7 +118,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         navigation.navigate('Home', { previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
-  }, [clearEcorisMap, clearTileCache, navigation]);
+  }, [clearEcorisMap, navigation]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
