@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 import { SmallButton, RectButton2 } from '../atoms';
@@ -26,7 +26,7 @@ export const MapItems = React.memo(() => {
               />
             </View>
           </View>
-          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item.id)}>
+          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item)}>
             <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
               <Text>{item.name}</Text>
             </View>
@@ -40,7 +40,7 @@ export const MapItems = React.memo(() => {
           </View>
           {/*************** Download Button ************************************* */}
           <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' && item.id !== 'hybrid' && Platform.OS !== 'web' && (
+            {item.id !== 'standard' && item.id !== 'hybrid' && (
               <SmallButton
                 name="download"
                 onPress={() => pressDownloadMap(item)}
