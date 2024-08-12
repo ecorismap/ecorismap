@@ -131,7 +131,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   // }, []);
 
   const pressClearTileCache = useCallback(async () => {
-    if (Platform.OS === 'web') return;
     const ret = await ConfirmAsync(t('Settings.confirm.clearTileCache'));
     if (ret) {
       await clearTileCache();
