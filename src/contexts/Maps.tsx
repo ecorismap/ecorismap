@@ -21,6 +21,7 @@ interface MapsContextType {
   pressImportMaps: () => Promise<void>;
   pressExportMaps: () => Promise<void>;
   jumpToBoundary: (tileMap: TileMapType) => void;
+  pressImportStyle: (tileMap: TileMapType) => Promise<void>;
 }
 
 export const MapsContext = createContext({} as MapsContextType);

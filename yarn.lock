@@ -10414,38 +10414,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-color@npm:1 - 3":
-  version: 3.1.0
-  resolution: "d3-color@npm:3.1.0"
-  checksum: 4931fbfda5d7c4b5cfa283a13c91a954f86e3b69d75ce588d06cde6c3628cebfc3af2069ccf225e982e8987c612aa7948b3932163ce15eb3c11cd7c003f3ee3b
-  languageName: node
-  linkType: hard
-
 "d3-geo@npm:1.7.1":
   version: 1.7.1
   resolution: "d3-geo@npm:1.7.1"
   dependencies:
     d3-array: 1
   checksum: 5b771ba8d95bed4ea4f221a62193302a9334bdd00b361e8fa45b92b24ba937b0be17c44992bd5e04fc88faca8fcdbf88f89275b8a3aeee8c1ae230773601ad29
-  languageName: node
-  linkType: hard
-
-"d3-interpolate@npm:1 - 3":
-  version: 3.0.1
-  resolution: "d3-interpolate@npm:3.0.1"
-  dependencies:
-    d3-color: 1 - 3
-  checksum: a42ba314e295e95e5365eff0f604834e67e4a3b3c7102458781c477bd67e9b24b6bb9d8e41ff5521050a3f2c7c0c4bbbb6e187fd586daa3980943095b267e78b
-  languageName: node
-  linkType: hard
-
-"d3-scale-chromatic@npm:^3.1.0":
-  version: 3.1.0
-  resolution: "d3-scale-chromatic@npm:3.1.0"
-  dependencies:
-    d3-color: 1 - 3
-    d3-interpolate: 1 - 3
-  checksum: ab6324bd8e1f708e731e02ab44e09741efda2b174cea1d8ca21e4a87546295e99856bc44e2fd3890f228849c96bccfbcf922328f95be6a7df117453eb5cf22c9
   languageName: node
   linkType: hard
 
@@ -11065,7 +11039,6 @@ __metadata:
     babel-jest: ^29.6.3
     copy-webpack-plugin: ^12.0.2
     csv-parse: ^5.5.6
-    d3-scale-chromatic: ^3.1.0
     date-fns: 2.28.0
     dayjs: ^1.11.11
     dexie: ^4.0.8

@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
@@ -79,14 +79,14 @@ export default function Settings() {
           info={t('Settings.maplisturl.info')}
           onPress={pressMapListURLOpen}
         /> */}
-        {Platform.OS !== 'web' && (
-          <TextButton
-            name={SETTINGS_BTN.MAP_CACHE_DELETE}
-            text={t('Settings.mapcachedelete.text')}
-            info={t('Settings.mapcachedelete.info')}
-            onPress={pressClearTileCache}
-          />
-        )}
+
+        <TextButton
+          name={SETTINGS_BTN.MAP_CACHE_DELETE}
+          text={t('Settings.mapcachedelete.text')}
+          info={t('Settings.mapcachedelete.info')}
+          onPress={pressClearTileCache}
+        />
+
         <TextButton
           name={SETTINGS_BTN.OSSLICENSE}
           text={t('Settings.OSSLicense.txt')}

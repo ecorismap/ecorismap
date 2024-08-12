@@ -19,11 +19,12 @@ export const MapModalTileMap = React.memo(() => {
     pressDeleteMap,
     pressEditMapOK,
     pressEditMapCancel,
+    pressImportStyle,
   } = useContext(MapsContext);
 
   const [tileName, setTileName] = useState('');
   const [tileURL, setTileURL] = useState('');
-  const [styleURL, setStyleURL] = useState<string | undefined>('');
+  const [styleURL, setStyleURL] = useState('');
   const [isVector, setIsVector] = useState(true);
   const [attribution, setAttribution] = useState('');
   const [transparency, setTransparency] = useState(0);
@@ -39,7 +40,7 @@ export const MapModalTileMap = React.memo(() => {
   useEffect(() => {
     setTileName(data.name);
     setTileURL(data.url);
-    setStyleURL(data.styleURL);
+    setStyleURL(data.styleURL ?? '');
     setIsVector(data.isVector ?? true);
     setAttribution(data.attribution);
     setTransparency(data.transparency);
@@ -215,13 +216,34 @@ export const MapModalTileMap = React.memo(() => {
                 />
               )}
               {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && isVector && (
-                <TextInput
-                  style={styles.modalTextInput}
-                  placeholder="Style URL (json)"
-                  placeholderTextColor={COLOR.GRAY4}
-                  value={styleURL}
-                  onChangeText={(text) => setStyleURL(text)}
-                />
+                <View style={{ flexDirection: 'row' }}>
+                  <TextInput
+                    style={[styles.modalTextInput, { width: windowWidth * modalWidthScale - 65 }]}
+                    placeholder="Style URL (json)"
+                    placeholderTextColor={COLOR.GRAY4}
+                    value={styleURL}
+                    onChangeText={(text) => setStyleURL(text)}
+                  />
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      flex: 1,
+                      flexDirection: 'row',
+                      justifyContent: 'flex-start',
+                      paddingHorizontal: 10,
+                      paddingVertical: 0,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <SmallButton
+                      name={'folder-open'}
+                      onPress={() => pressImportStyle(tileMap())}
+                      backgroundColor={COLOR.GRAY3}
+                      size={22}
+                      borderRadius={5}
+                    />
+                  </View>
+                </View>
               )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
