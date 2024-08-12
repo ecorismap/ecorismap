@@ -19,6 +19,7 @@ const Gdalwarp = NativeModules.Gdalwarp
 
 export type warpedFileType = {
   uri: string;
+  blob?: Blob;
   width: number;
   height: number;
   topLeft: { x: number; y: number };

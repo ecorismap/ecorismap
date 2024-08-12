@@ -3,7 +3,7 @@ import Settings from '../components/pages/Settings';
 import { Props_Settings } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
-import { Linking, Platform } from 'react-native';
+import { Linking } from 'react-native';
 import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
@@ -130,7 +130,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   // }, []);
 
   const pressClearTileCache = useCallback(async () => {
-    if (Platform.OS === 'web') return;
     const ret = await ConfirmAsync(t('Settings.confirm.clearTileCache'));
     if (ret) {
       await clearTileCache();
