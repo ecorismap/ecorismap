@@ -2,7 +2,7 @@
   "name": "ecorismap",
   "version": "0.3.14",
   "main": "index.js",
-  "homepage": "/pukiwiki/map/ecorismap",
+  "homepage": ".",
   "license": "MIT LICENSED",
   "private": true,
   "jest": {
