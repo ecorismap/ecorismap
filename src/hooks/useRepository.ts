@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { DataType, LayerType, PhotoType, ProjectSettingsType, ProjectType, RecordType, RegionType } from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
@@ -143,6 +143,11 @@ export const useRepository = (): UseRepositoryReturnType => {
   const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
   const { photosToBeDeleted } = usePhoto();
+
+  const filteredTileMaps = useMemo(
+    () => tileMaps.filter((tileMap) => !(tileMap.url.includes('blob:') || tileMap.url.includes('file:'))),
+    [tileMaps]
+  );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
     const { isOK, message, data: projectSettings } = await projectStore.downloadProjectSettings(project.id);
@@ -339,9 +344,10 @@ export const useRepository = (): UseRepositoryReturnType => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
+
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers,
-        tileMaps,
+        tileMaps: filteredTileMaps,
         mapType,
         mapRegion,
         plugins,
@@ -353,7 +359,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
       return { isOK: true, message: '' };
     },
-    [dispatch, layers, mapRegion, mapType, plugins, tileMaps, updatedAt, user]
+    [dispatch, filteredTileMaps, layers, mapRegion, mapType, plugins, updatedAt, user]
   );
 
   const uploadDefaultProjectSettings = useCallback(
