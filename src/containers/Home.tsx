@@ -1275,16 +1275,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (files === undefined) return;
       const file = files.find((f) => {
         const ext = getExt(f.name)?.toLowerCase();
-        if (
-          ext === 'gpx' ||
-          ext === 'geojson' ||
-          ext === 'kml' ||
-          ext === 'kmz' ||
-          ext === 'zip' ||
-          ext === 'csv' ||
-          ext === 'json'
-        )
-          return true;
+        if (ext === 'gpx' || ext === 'geojson' || ext === 'csv') return true;
       });
       if (file === undefined) return;
       if (file.size === undefined) {
