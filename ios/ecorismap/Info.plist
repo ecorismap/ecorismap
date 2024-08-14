@@ -34,18 +34,6 @@
 		</dict>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>JSON File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>jp.co.ecoris.ecorismap.document.json</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
 			<string>CSV File</string>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
@@ -54,18 +42,6 @@
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>jp.co.ecoris.ecorismap.document.csv</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>ZIP File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>jp.co.ecoris.ecorismap.document.zip</string>
 			</array>
 		</dict>
 	</array>
@@ -197,25 +173,6 @@
 				<string>public.data</string>
 			</array>
 			<key>UTTypeDescription</key>
-			<string>JSON File</string>
-			<key>UTTypeIconFiles</key>
-			<array/>
-			<key>UTTypeIdentifier</key>
-			<string>jp.co.ecoris.ecorismap.document.json</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>json</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
 			<string>CSV File</string>
 			<key>UTTypeIconFiles</key>
 			<array/>
@@ -226,25 +183,6 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>csv</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>ZIP File</string>
-			<key>UTTypeIconFiles</key>
-			<array/>
-			<key>UTTypeIdentifier</key>
-			<string>jp.co.ecoris.ecorismap.document.zip</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>zip</string>
 				</array>
 			</dict>
 		</dict>
