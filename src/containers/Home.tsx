@@ -37,7 +37,6 @@ import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
-import { usePermission } from '../hooks/usePermission';
 import { getReceivedFiles, deleteReceivedFiles, customShareAsync, exportFile } from '../utils/File';
 import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
@@ -71,7 +70,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const dataSet = useSelector((state: RootState) => state.dataSet);
   const routeName = getFocusedRouteNameFromRoute(route);
   const [isModalInfoToolHidden, setIsModalInfoToolHidden] = useState(false);
-  const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
@@ -1199,14 +1197,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             allOK = false;
             continue;
           }
-          if (
-            (ext === 'gpx' || ext === 'geojson' || ext === 'kml' || ext === 'kmz' || ext === 'zip' || ext === 'csv') &&
-            isRunningProject
-          ) {
-            await AlertAsync(t('hooks.message.cannotInRunningProject'));
-            allOK = false;
-            continue;
-          }
+
           if (file.size === undefined) {
             await AlertAsync(t('hooks.message.cannotGetFileSize'));
             allOK = false;
@@ -1240,7 +1231,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (allOK) await AlertAsync(t('hooks.message.receiveFile'));
       }
     },
-    [gotoMaps, importGeoFile, importPdfFile, importPmtilesFile, isRunningProject]
+    [gotoMaps, importGeoFile, importPdfFile, importPmtilesFile]
   );
 
   useEffect(() => {
