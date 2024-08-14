@@ -35,10 +35,7 @@ export default function LayerContainer({ navigation }: Props_Layers) {
 
   const pressImportLayerAndData = useCallback(async () => {
     await runTutrial('LAYERS_BTN_IMPORT');
-    if (isRunningProject) {
-      AlertAsync(t('hooks.message.cannotInRunningProject'));
-      return;
-    }
+
     const file = await DocumentPicker.getDocumentAsync({});
     if (file.assets === null) return;
     const ext = getExt(file.assets[0].name)?.toLowerCase();
@@ -54,6 +51,10 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       )
     ) {
       await AlertAsync(t('hooks.message.wrongExtension'));
+      return;
+    }
+    if (ext === 'json' && isRunningProject) {
+      await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
     if (file.assets[0].size === undefined) {
