@@ -40,14 +40,17 @@ export const MapItems = React.memo(() => {
           </View>
           {/*************** Download Button ************************************* */}
           <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' && item.id !== 'hybrid' && (
-              <SmallButton
-                name="download"
-                onPress={() => pressDownloadMap(item)}
-                borderRadius={5}
-                backgroundColor={COLOR.GRAY3}
-              />
-            )}
+            {item.id !== 'standard' &&
+              item.id !== 'hybrid' &&
+              !item.url.includes('file://') &&
+              !item.url.includes('blob:') && (
+                <SmallButton
+                  name="download"
+                  onPress={() => pressDownloadMap(item)}
+                  borderRadius={5}
+                  backgroundColor={COLOR.GRAY3}
+                />
+              )}
           </View>
 
           <View style={[styles.td, { flex: 1 }]}>
