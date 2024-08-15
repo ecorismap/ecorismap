@@ -443,9 +443,17 @@ export default function HomeScreen() {
                       maximumZ={22}
                       zIndex={mapIndex}
                       doubleTileSize={false}
-                      maximumNativeZ={tileMap.overzoomThreshold}
+                      maximumNativeZ={
+                        //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする.
+                        //vectorタイルなら18
+                        isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
+                          ? 16
+                          : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
+                          ? 18
+                          : tileMap.overzoomThreshold
+                      }
                       tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                      tileCacheMaxAge={604800}
+                      //tileCacheMaxAge={604800}
                       offlineMode={isOffline}
                       isVector={tileMap.isVector}
                     />
@@ -460,9 +468,13 @@ export default function HomeScreen() {
                       maximumZ={tileMap.maximumZ}
                       zIndex={mapIndex}
                       doubleTileSize={tileMap.highResolutionEnabled}
-                      maximumNativeZ={tileMap.overzoomThreshold}
+                      maximumNativeZ={
+                        //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする
+                        isOffline && !tileMap.url.endsWith('.pdf') && tileMap.overzoomThreshold > 16
+                          ? 16
+                          : tileMap.overzoomThreshold
+                      }
                       tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                      tileCacheMaxAge={604800}
                       offlineMode={isOffline}
                     />
                   )
