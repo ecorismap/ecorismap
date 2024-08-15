@@ -2,10 +2,10 @@ import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.4.0beta';
+export const VERSION = 'Version 0.4.0';
 
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
