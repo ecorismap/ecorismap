@@ -105,7 +105,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     setIsDownloading(true);
 
     const minZoom = 0;
-    const maxZoom = tileType === 'png' ? 16 : 18;
+    const maxZoom = tileType === 'png' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
 
     const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
 
