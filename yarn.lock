@@ -11085,7 +11085,7 @@ __metadata:
     patch-package: ^6.4.7
     pbf: ^4.0.1
     pdfjs-dist: ^4.5.136
-    pmtiles: ^3.0.6
+    pmtiles: 3.0.6
     postinstall-postinstall: ^2.1.0
     prettier: 2.8.8
     prop-types: ^15.8.1
@@ -17461,7 +17461,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pmtiles@npm:^3.0.6":
+"pmtiles@npm:3.0.6":
   version: 3.0.6
   resolution: "pmtiles@npm:3.0.6"
   dependencies:

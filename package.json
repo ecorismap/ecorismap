@@ -1,6 +1,6 @@
 {
   "name": "ecorismap",
-  "version": "0.3.13",
+  "version": "0.4.0",
   "main": "index.js",
   "homepage": ".",
   "license": "MIT LICENSED",
@@ -95,7 +95,7 @@
     "pako": "^2.1.0",
     "pbf": "^4.0.1",
     "pdfjs-dist": "^4.5.136",
-    "pmtiles": "^3.0.6",
+    "pmtiles": "3.0.6",
     "prop-types": "^15.8.1",
     "react": "18.2.0",
     "react-color": "^2.19.3",
