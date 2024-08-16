@@ -1,9 +1,20 @@
 # Change Log
 ## [0.4.0] - 2024-4-10
+- Added support for exporting Geospatial PDF
+- Added support for importing Geospatial PDF
+- Added settings for GPS accuracy and battery usage
+- Added stamp and brush features to map memos
+- Added support for importing local PMTiles
+- Added layer grouping functionality
+- Fixed minor bugs and improved various features
+
 - Geospatial PDFの書き出しに対応
 - Geospatial PDFのインポートに対応
 - GPSの精度とバッテリーの設定を追加
 - マップメモのスタンプ、ブラシ機能を追加
+- ローカルのPMTilesのインポートに対応
+- レイヤーのグループ化機能を追加
+- 細かなバグと機能を修正
 
 ## [0.3.13] - 2023-12-18
 - Support for data sorting
@@ -114,8 +125,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/bdb926fed11284740385b6ee08015a3516773d03...HEAD
-[0.4.0]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...bdb926fed11284740385b6ee08015a3516773d03
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/HEAD...HEAD
+[0.4.0]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...HEAD
 [0.3.13]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...12f64c2289ebf291339f453d4cba33920120ae9a
 [0.3.11]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...80638642cfe69f9fa27464d8e6deb58bbcd698d0
 [0.3.9]: https://github.com/ecorismap/ecorismap/compare/8410b80fb75dcb65e214b431d4ddfadcd9afe9d4...996dcffdb7baf6a08d2e4056920585422f26bd6f
