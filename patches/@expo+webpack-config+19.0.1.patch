@@ -1,0 +1,13 @@
+diff --git a/node_modules/@expo/webpack-config/webpack/webpack.config.js b/node_modules/@expo/webpack-config/webpack/webpack.config.js
+index 3c629ef..231ce18 100644
+--- a/node_modules/@expo/webpack-config/webpack/webpack.config.js
++++ b/node_modules/@expo/webpack-config/webpack/webpack.config.js
+@@ -43,7 +43,7 @@ function getOutput(locations, mode, publicPath, platform, port = 8081) {
+         publicPath,
+         // Build folder (default `web-build`)
+         path: locations.production.folder,
+-        assetModuleFilename: 'static/media/[name].[hash][ext]',
++        assetModuleFilename: 'static/media/[name]_[hash][ext]',
+         // Prevent chunk naming collision across platforms since
+         // they're all coming from the same dev server.
+         uniqueName: platform,
