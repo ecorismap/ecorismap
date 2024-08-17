@@ -179,9 +179,9 @@ describe('GeoJson2Data', () => {
 describe('generateCSV', () => {
   it('return csv from data', () => {
     const expected = [
-      '\ufeff' + 'name,time,cmt,photo,geometry',
-      '"St.1","2020-01-01T09:28:38+09:00","","","POINT(140.71658064854364 38.24715800176878)"',
-      '"St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
+      '\ufeff' + 'displayName,name,time,cmt,photo,geometry',
+      'mizutani,"St.1","2020-01-01T09:28:38+09:00","","","POINT(140.71658064854364 38.24715800176878)"',
+      ',"St.3","5時","","test.jpg","POINT(140.71548306286388 38.24101016421964)"',
     ];
     expect(generateCSV(point_record, layers[0].field, 'POINT', false).split(String.fromCharCode(10))).toStrictEqual(
       expected
@@ -205,12 +205,19 @@ describe('generateGeoJson', () => {
       features: [
         {
           geometry: { coordinates: [140.71658064854364, 38.24715800176878], type: 'Point' },
-          properties: { _id: '1234', _visible: true, cmt: '', name: 'St.1', time: '2020-01-01T09:28:38+09:00' },
+          properties: {
+            _id: '1234',
+            _visible: true,
+            cmt: '',
+            displayName: 'mizutani',
+            name: 'St.1',
+            time: '2020-01-01T09:28:38+09:00',
+          },
           type: 'Feature',
         },
         {
           geometry: { coordinates: [140.71548306286388, 38.24101016421964], type: 'Point' },
-          properties: { _id: '1234', _visible: true, cmt: '', name: 'St.3', time: '5時' },
+          properties: { _id: '1234', _visible: true, cmt: '', displayName: null, name: 'St.3', time: '5時' },
           type: 'Feature',
         },
       ],
