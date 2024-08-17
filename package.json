@@ -33,6 +33,7 @@
     "build:web": "expo export:web",
     "test": "jest --detectOpenHandles --runInBand --forceExit",
     "testemu": "firebase emulators:exec 'yarn jest'",
+    "lint": "eslint --ext .tsx --ext .ts src/",
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
     "postinstall": "patch-package;"
   },
