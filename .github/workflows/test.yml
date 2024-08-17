@@ -1,8 +1,8 @@
-name: Test
+name: Test and Lint
 on: [push]
 jobs:
-  unit-tests:
-    name: Unit Tests
+  test-and-lint:
+    name: Run Tests and Linting
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -10,5 +10,9 @@ jobs:
         with:
           node-version: '18'
           cache: yarn
-      - run: yarn install
-      - run: TZ=Asia/Tokyo yarn test
+      - name: Install dependencies
+        run: yarn install
+      - name: Run Tests
+        run: TZ=Asia/Tokyo yarn test
+      - name: Run ESLint
+        run: yarn lint
