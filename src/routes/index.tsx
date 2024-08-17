@@ -1,9 +1,6 @@
 import React from 'react';
-import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useSelector } from 'react-redux';
-
 import {
   AccountFormStateType,
   ColorStyle,
@@ -21,8 +18,10 @@ import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
-import { FUNC_LOGIN } from '../constants/AppConstants';
-import { RootState } from '../store';
+// import { Platform } from 'react-native';
+// import { useSelector } from 'react-redux';
+// import { FUNC_LOGIN } from '../constants/AppConstants';
+// import { RootState } from '../store';
 
 export type RootStackParamList = {
   Account: { accountFormState?: AccountFormStateType; message?: string; previous?: keyof RootStackParamList };
@@ -105,7 +104,7 @@ export type Props_LayerEditFieldItem = NativeStackScreenProps<RootStackParamList
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Routes() {
-  const user = useSelector((state: RootState) => state.user);
+  // const user = useSelector((state: RootState) => state.user);
 
   return (
     <NavigationContainer
