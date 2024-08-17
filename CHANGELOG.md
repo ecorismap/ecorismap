@@ -1,5 +1,5 @@
 # Change Log
-## [0.4.0] - 2024-4-10
+## [0.4.0] - 2024-8-17
 - Added support for exporting Geospatial PDF
 - Added support for importing Geospatial PDF
 - Added settings for GPS accuracy and battery usage
