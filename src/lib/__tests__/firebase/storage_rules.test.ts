@@ -1,6 +1,6 @@
 import * as ftest from '@firebase/rules-unit-testing';
 import { assertFails, assertSucceeds } from '@firebase/rules-unit-testing';
-import firebaseApp from 'firebase/compat';
+import firebaseApp from 'firebase/compat/app';
 import * as fs from 'fs';
 import 'jest';
 type Storage = firebaseApp.storage.Storage;
