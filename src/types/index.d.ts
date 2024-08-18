@@ -317,6 +317,7 @@ export interface SettingsType {
   mapListURL: string;
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;
+  agreedTermsVersion: string;
 }
 
 export interface RegionType {
