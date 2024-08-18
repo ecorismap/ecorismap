@@ -71,7 +71,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const routeName = getFocusedRouteNameFromRoute(route);
   const [isModalInfoToolHidden, setIsModalInfoToolHidden] = useState(false);
   const { importGeoFile } = useGeoFile();
-  const { isTermsOfUseOpen, runTutrial, termsOfUseOK, termsOfUseCancel } = useTutrial();
+  const { runTutrial } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
 
   //タイルのダウンロード関連
@@ -1338,7 +1338,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentPolygonTool,
         selectedRecord,
         isLoading,
-        isTermsOfUseOpen,
         currentInfoTool,
         currentMapMemoTool,
         visibleMapMemoColor,
@@ -1384,8 +1383,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoSettings,
         gotoLayers,
         gotoHome,
-        termsOfUseOK,
-        termsOfUseCancel,
         selectMapMemoTool,
         selectInfoTool,
         setPen,
@@ -1411,7 +1408,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }}
     >
       <Home />
-      {Platform.OS !== 'web' && <HomeModalTermsOfUse />}
+      <HomeModalTermsOfUse />
       <HomeModalPenPicker
         modalVisible={visibleMapMemoPen}
         currentMapMemoTool={currentMapMemoTool}

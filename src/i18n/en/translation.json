@@ -242,7 +242,8 @@
     "InfoTool": "Feature selection",
     "line": "line",
     "useLastValue": "use last value",
-    "useOutline": "Show frame only"
+    "useOutline": "Show frame only",
+    "termsUpdated": "Terms of use have been updated."
   },
   "firebase": {
     "message": {

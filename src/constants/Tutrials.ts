@@ -1,7 +1,6 @@
 import { t } from '../i18n/config';
 
 export const TUTRIALS = {
-  TERMS_OF_USE: true,
   POINTTOOL_PLOT_POINT: true,
   POINTTOOL_ADD_LOCATION_POINT: true,
   LINETOOL_PLOT_LINE: true,
@@ -19,7 +18,6 @@ export const TUTRIALS = {
 };
 
 export const TUTRIALS_MESSAGE = {
-  TERMS_OF_USE: t('tutrials.termsOfUse'),
   POINTTOOL_PLOT_POINT: t('tutrials.pointtool.add'),
   POINTTOOL_ADD_LOCATION_POINT: t('tutrials.pointtool.add_location'),
   LINETOOL_PLOT_LINE: t('tutrials.linetool.plot'),

@@ -2,8 +2,8 @@ import * as FileSystem from 'expo-file-system';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.4.0';
-
+export const VERSION = 'Version 0.4.1';
+export const CURRENT_TERMS_VERSION = '2024-08-16';
 export const PLUGIN = {
   HISYOUTOOL: false,
 };
