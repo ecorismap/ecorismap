@@ -84,6 +84,7 @@ export interface HomeContextType {
     | undefined;
   isShowingProjectButtons: boolean;
   isLoading: boolean;
+  isSettingProject: boolean;
   currentMapMemoTool: MapMemoToolType;
   visibleMapMemoColor: boolean;
   currentPen: PenType;
