@@ -84,8 +84,6 @@ export interface HomeContextType {
     | undefined;
   isShowingProjectButtons: boolean;
   isLoading: boolean;
-  isTermsOfUseOpen: boolean;
-  isSettingProject: boolean;
   currentMapMemoTool: MapMemoToolType;
   visibleMapMemoColor: boolean;
   currentPen: PenType;
@@ -153,8 +151,6 @@ export interface HomeContextType {
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
-  termsOfUseOK: () => void;
-  termsOfUseCancel: () => void;
   selectMapMemoTool: (value: MapMemoToolType | undefined) => void;
   selectInfoTool: (value: InfoToolType) => void;
   currentInfoTool: InfoToolType;

@@ -36,6 +36,7 @@ describe('modules/settings', () => {
     mapListURL: DEFAULT_MAP_LIST_URL,
     mapList: [],
     gpsAccuracy: 'HIGH',
+    agreedTermsVersion: '',
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';

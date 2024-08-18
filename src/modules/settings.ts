@@ -37,6 +37,7 @@ export const settingsInitialState: SettingsType = {
   mapListURL: DEFAULT_MAP_LIST_URL,
   mapList: [],
   gpsAccuracy: 'HIGH',
+  agreedTermsVersion: '',
 };
 
 type SettingsEditType = Partial<SettingsType>;

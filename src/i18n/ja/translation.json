@@ -190,7 +190,8 @@
     "InfoTool": "地物選択",
     "line": "ライン",
     "useLastValue": "最後の値を使用する",
-    "useOutline": "枠線のみ表示"
+    "useOutline": "枠線のみ表示",
+    "termsUpdated": "利用規約を更新しました。"
   },
   "Home": {
     "confirm": {
