@@ -10,6 +10,7 @@ export const FUNC_CHECK_LICENSE = false;
 export const FUNC_ENCRYPTION = true;
 export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
 
+export const CURRENT_TERMS_VERSION = '2024-08-16';
 export const PLUGIN = {
   HISYOUTOOL: true,
 };

@@ -1,17 +1,25 @@
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking } from 'react-native';
-import { COLOR } from '../../constants/AppConstants';
-import { TUTRIALS_MESSAGE } from '../../constants/Tutrials';
-import { useWindow } from '../../hooks/useWindow';
+import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { HomeContext } from '../../contexts/Home';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { editSettingsAction } from '../../modules/settings';
+import { AlertAsync } from '../molecules/AlertAsync';
 
 export const HomeModalTermsOfUse = React.memo(() => {
   //console.log('render ModalTileMap');
-  const { isTermsOfUseOpen, termsOfUseOK, termsOfUseCancel } = useContext(HomeContext);
+  const dispatch = useDispatch();
+  const agreedTermsVersion = useSelector((state: RootState) => state.settings.agreedTermsVersion);
+  const isTermsOfUseOpen = useMemo(() => agreedTermsVersion !== CURRENT_TERMS_VERSION, [agreedTermsVersion]);
 
-  const { windowWidth } = useWindow();
-  const modalWidthScale = 0.7;
+  const termsOfUseOK = useCallback(() => {
+    dispatch(editSettingsAction({ agreedTermsVersion: CURRENT_TERMS_VERSION }));
+  }, [dispatch]);
+
+  const termsOfUseCancel = useCallback(() => {
+    AlertAsync(t('Home.alert.termsOfuse'));
+  }, []);
 
   const pressTermsOfUse = useCallback(() => {
     const url = t('site.termsOfUse');
@@ -26,13 +34,13 @@ export const HomeModalTermsOfUse = React.memo(() => {
       fontSize: 16,
       height: 40,
       paddingHorizontal: 12,
-      width: windowWidth * modalWidthScale,
+      width: 280,
     },
     modalButtonContainer: {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
       marginTop: 10,
-      width: windowWidth * modalWidthScale,
+      width: 280,
     },
     modalCenteredView: {
       alignItems: 'center',
@@ -41,7 +49,7 @@ export const HomeModalTermsOfUse = React.memo(() => {
     },
     modalContents: {
       alignItems: 'center',
-      width: windowWidth * modalWidthScale,
+      width: 280,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -80,17 +88,30 @@ export const HomeModalTermsOfUse = React.memo(() => {
       height: 40,
       marginBottom: 10,
       paddingHorizontal: 5,
-      width: windowWidth * modalWidthScale,
+      width: 280,
     },
     modalTitle: {
       fontSize: 20,
       marginBottom: 10,
       textAlign: 'center',
     },
+    notice: {
+      color: COLOR.GRAY4,
+      fontSize: 16,
+      marginBottom: 10,
+      textAlign: 'center',
+    },
     text: {
       color: COLOR.BLUE,
-      fontSize: 16,
+      fontSize: 20,
+      textAlign: 'center',
       textDecorationLine: 'underline',
+    },
+    updateNotice: {
+      color: COLOR.RED,
+      fontSize: 16,
+      marginBottom: 10,
+      textAlign: 'center',
     },
   });
 
@@ -99,10 +120,11 @@ export const HomeModalTermsOfUse = React.memo(() => {
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
           <View style={styles.modalContents}>
-            <Text style={styles.modalTitle}>{`${t('common.confirm')}`} </Text>
-
             <View style={{ flexDirection: 'column', marginBottom: 10 }}>
-              <Text>{TUTRIALS_MESSAGE.TERMS_OF_USE}</Text>
+              {agreedTermsVersion !== '' && agreedTermsVersion !== CURRENT_TERMS_VERSION && (
+                <Text style={styles.updateNotice}>{t('common.termsUpdated')}</Text>
+              )}
+              <Text style={styles.notice}>{t('tutrials.termsOfUse')}</Text>
               <View style={{ alignItems: 'center', margin: 10 }}>
                 <TouchableOpacity onPress={pressTermsOfUse}>
                   <Text style={styles.text}>{`${t('common.termsOfUse')}`}</Text>
