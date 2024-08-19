@@ -38,6 +38,7 @@ export const settingsInitialState: SettingsType = {
   mapList: [],
   gpsAccuracy: 'HIGH',
   agreedTermsVersion: '',
+  isModalInfoToolHidden: false,
 };
 
 type SettingsEditType = Partial<SettingsType>;
