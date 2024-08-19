@@ -177,7 +177,7 @@ export const MapModalTileMap = React.memo(() => {
                 maximumValue={1}
                 onSlidingComplete={(value) => setTransparency(value)}
               />
-              {!tileURL?.includes('.pdf') && (
+              {!tileURL?.includes('pdf') && (
                 <Slider
                   label={t('common.fixZoom')}
                   width={windowWidth * modalWidthScale}
@@ -188,7 +188,7 @@ export const MapModalTileMap = React.memo(() => {
                   onSlidingComplete={(value) => setOverzoomThreshold(value)}
                 />
               )}
-              {!tileURL?.includes('pmtiles') && !tileURL?.includes('.pbf') && !tileURL?.includes('.pdf') && (
+              {!tileURL?.includes('pmtiles') && !tileURL?.includes('.pbf') && !tileURL?.includes('pdf') && (
                 <View style={{ flexDirection: 'row' }}>
                   <CheckBox
                     style={{ backgroundColor: COLOR.WHITE }}
