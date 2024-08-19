@@ -460,7 +460,11 @@ export default function HomeScreen() {
                   ) : (
                     <UrlTile
                       key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                      urlTemplate={tileMap.url.endsWith('.pdf') ? 'file://dummy/{z}/{x}/{y}.png' : tileMap.url}
+                      urlTemplate={
+                        tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
+                          ? 'file://dummy/{z}/{x}/{y}.png'
+                          : tileMap.url
+                      }
                       flipY={tileMap.flipY}
                       opacity={1 - tileMap.transparency}
                       tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
@@ -470,7 +474,9 @@ export default function HomeScreen() {
                       doubleTileSize={tileMap.highResolutionEnabled}
                       maximumNativeZ={
                         //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする
-                        isOffline && !tileMap.url.endsWith('.pdf') && tileMap.overzoomThreshold > 16
+                        isOffline &&
+                        !(tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) &&
+                        tileMap.overzoomThreshold > 16
                           ? 16
                           : tileMap.overzoomThreshold
                       }

@@ -37,7 +37,7 @@ export function isInfoTool(tool: string): tool is Exclude<InfoToolType, 'NONE'> 
 
 export function getExt(filename: string) {
   const ext = filename.split('.').pop();
-  if (ext === filename) return '';
+  if (ext === filename || ext === undefined) return '';
   return ext;
 }
 
