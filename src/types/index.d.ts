@@ -232,6 +232,7 @@ export interface TileMapType extends TileMapItemType {
   maptype: MapType;
   visible: boolean;
   boundary?: boundaryType;
+  key?: string;
 }
 
 export interface TileRegionType {

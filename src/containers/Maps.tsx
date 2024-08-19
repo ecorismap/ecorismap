@@ -63,11 +63,11 @@ export default function MapContainer({ navigation }: Props_Maps) {
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
       const protocol = item.url.split(':')[0];
-      if (protocol === 'http' || protocol === 'https' || protocol === 'pmtiles') {
+      if (protocol === 'http' || protocol === 'https' || protocol === 'pmtiles' || protocol === 'pdf') {
         const ext = getExt(item.url)?.toLowerCase();
-        if (ext === 'pdf') {
+        if (ext === 'pdf' || item.url.startsWith('pdf://')) {
           setIsLoading(true);
-          const { message } = await importMapFile(item.url, item.name, ext, item.id);
+          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.key);
           setIsLoading(false);
           if (message !== '') await AlertAsync(message);
         } else {
@@ -181,7 +181,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
           } else {
             boundary = JSON.parse(boundaryJson);
           }
-        } else if (item.url.endsWith('.pdf')) {
+        } else if (item.url.endsWith('.pdf') || item.url.startsWith('pdf://')) {
           boundaryJson = (await db.geotiff.get(item.id))?.boundary;
           if (boundaryJson === undefined) return;
           boundary = JSON.parse(boundaryJson);

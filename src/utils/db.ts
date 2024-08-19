@@ -5,6 +5,7 @@ interface GeoTiffItem {
   mapId: string;
   blob: Blob;
   boundary: string; // JSONとして保存される境界データ
+  pdf: string; // PDFファイルのDataURI
 }
 
 interface PMTilesItem {

@@ -58,8 +58,9 @@ export type UseMapsReturnType = {
   importMapFile: (
     uri: string,
     name: string,
-    ext: 'json' | 'pdf' | 'pmtiles',
-    id?: string
+    ext: string,
+    id?: string,
+    key?: string
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -379,7 +380,7 @@ export const useMaps = (): UseMapsReturnType => {
         const boundaryJson = JSON.stringify(boundary);
         //console.log('width', imageWidth, 'height', imageHeight);
         if (Platform.OS === 'web') {
-          await db.geotiff.put({ mapId, blob: outputFile.blob!, boundary: boundaryJson });
+          await db.geotiff.put({ mapId, blob: outputFile.blob!, boundary: boundaryJson, pdf: uri });
         } else {
           generateTilesFromPDF(pdfImage, outputFile, mapId, tileSize, minimumZ, baseZoomLevel, coordPerPixel);
           //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
@@ -418,6 +419,7 @@ export const useMaps = (): UseMapsReturnType => {
           tileMap.url = oldTileMap.url;
           tileMap.attribution = oldTileMap.attribution;
           tileMap.transparency = oldTileMap.transparency;
+          tileMap.key = oldTileMap.key;
           dispatch(updateTileMapAction(tileMap));
         }
 
@@ -491,7 +493,7 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
   const importMapFile = useCallback(
-    async (uri: string, name: string, ext: 'json' | 'pdf' | 'pmtiles', id?: string) => {
+    async (uri: string, name: string, ext: string, id?: string, _key?: string) => {
       //設定ファイルの場合
       if (ext === 'json') return importJsonMapFile(uri);
       //PDFでローカルファイルでWebブラウザの場合
@@ -504,27 +506,24 @@ export const useMaps = (): UseMapsReturnType => {
         return await importPdfFile(uri, name, id);
       }
       //PDFでWebからダウンロードする場合
-      if (ext === 'pdf' && uri.startsWith('http')) {
+      if ((ext === 'pdf' && uri.startsWith('http')) || uri.startsWith('pdf://')) {
         //uriからbasicauth部分を取得
+        let dataUri = '';
         const auth = uri.split('@')[0].split('//')[1];
         const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
-
         if (Platform.OS === 'ios' || Platform.OS === 'android') {
           const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
-          const download = FileSystem.createDownloadResumable(uri, tempPdf, {
+          const downloadUrl = uri;
+          const download = FileSystem.createDownloadResumable(downloadUrl, tempPdf, {
             headers: { Authorization: options },
           });
           const response = await download.downloadAsync();
           if (!response || response.status !== 200) {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
-
-          const result = await importPdfFile(response.uri, name, id);
           unlink(tempPdf);
-          return result;
-        }
-
-        if (Platform.OS === 'web') {
+          dataUri = response.uri;
+        } else if (Platform.OS === 'web') {
           const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
           const response = await fetch(noAuthUri, {
             mode: 'cors',
@@ -538,11 +537,11 @@ export const useMaps = (): UseMapsReturnType => {
           }
           const blob = await response.blob();
           const base64 = await blobToBase64(blob);
-          const dataUrl = `data:application/pdf;base64,${base64}`;
-          const result = importPdfFile(dataUrl, name, id);
-          return result;
+          dataUri = `data:application/pdf;base64,${base64}`;
         }
+        return importPdfFile(dataUri, name, id);
       }
+
       return { isOK: false, message: t('hooks.message.failReceiveFile') };
     },
     [importJsonMapFile, importPdfFile, importPmtilesFile]

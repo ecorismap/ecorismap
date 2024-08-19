@@ -525,7 +525,7 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (tileMap.url.endsWith('.pdf')) {
+          } else if (tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) {
             return {
               ...result,
               [tileMap.id]: {
