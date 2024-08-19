@@ -53,7 +53,7 @@ export const downloadPDF = async (url: string, key: string) => {
         return { isOK: true, data: dataUri };
       }
     } else {
-      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp');
+      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp.pdf');
       if (status !== 200) {
         await FileSystem.deleteAsync(uri);
         return { isOK: false };
