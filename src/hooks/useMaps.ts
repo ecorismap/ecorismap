@@ -338,8 +338,8 @@ export const useMaps = (): UseMapsReturnType => {
       if (Platform.OS === 'web') {
         outputFiles = await convertPDFToGeoTiff(uri);
       } else {
-        const result = await convert(uri.replace('file://', '')).catch(() => {
-          //console.error('Error processing PDF:', e);
+        const result = await convert(uri.replace('file://', '')).catch((e) => {
+          console.error('Error processing PDF:', e);
           return { outputFiles: [] };
         });
         outputFiles = result.outputFiles;
@@ -512,6 +512,7 @@ export const useMaps = (): UseMapsReturnType => {
         let dataUri = '';
         const auth = uri.split('@')[0].split('//')[1];
         const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
+        const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
         //firebaseからダウンロードする場合
         if (uri.startsWith('pdf://')) {
           const downloadUrl = uri.replace('pdf://', '');
@@ -522,7 +523,6 @@ export const useMaps = (): UseMapsReturnType => {
           }
           dataUri = result.data;
         } else if (Platform.OS === 'ios' || Platform.OS === 'android') {
-          const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
           const downloadUrl = uri;
           const download = FileSystem.createDownloadResumable(downloadUrl, tempPdf, {
             headers: { Authorization: options },
@@ -531,7 +531,6 @@ export const useMaps = (): UseMapsReturnType => {
           if (!response || response.status !== 200) {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
-          unlink(tempPdf);
           dataUri = response.uri;
         } else if (Platform.OS === 'web') {
           const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
@@ -549,7 +548,9 @@ export const useMaps = (): UseMapsReturnType => {
           const base64 = await blobToBase64(blob);
           dataUri = `data:application/pdf;base64,${base64}`;
         }
-        return importPdfFile(dataUri, name, id);
+        const result = await importPdfFile(dataUri, name, id);
+        unlink(tempPdf);
+        return result;
       }
 
       return { isOK: false, message: t('hooks.message.failReceiveFile') };
