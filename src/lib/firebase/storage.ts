@@ -13,6 +13,64 @@ import {
   decryptFileEThree as decFile,
 } from '../virgilsecurity/e3kit';
 import { storage } from './firebase';
+import { db } from '../../utils/db';
+import { blobToBase64 } from '../../utils/File.web';
+
+export const uploadPDF = async (projectId: string, tileMapId: string) => {
+  try {
+    const uri = (await db.geotiff.get(tileMapId))?.pdf;
+    if (uri === undefined) {
+      return { isOK: false, message: t('firebase.message.failUploadPDF'), url: null, key: null };
+    }
+    const { encdata, key } = await encFile(uri);
+    if (encdata === undefined || key === undefined) {
+      return { isOK: false, message: t('firebase.message.failEncryptPDF'), url: null, key: null };
+    }
+    const reference = storage.ref().child(`projects/${projectId}/${tileMapId}`);
+    await reference.put(encdata as Blob);
+    const url = await storage.ref(`projects/${projectId}/${tileMapId}`).getDownloadURL();
+    return { isOK: true, message: '', url: 'pdf://' + url, key };
+  } catch (error) {
+    console.log('uploadPDF Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadPDF'), url: null, key: null };
+  }
+};
+
+export const downloadPDF = async (url: string, key: string) => {
+  try {
+    if (Platform.OS === 'web') {
+      const response = await fetch(url);
+      if (response.status !== 200) {
+        return { isOK: false };
+      } else {
+        const blob = await response.blob();
+        const { decdata } = await decFile(blob, key);
+        if (decdata === undefined) {
+          return { isOK: false };
+        }
+        const base64 = await blobToBase64(decdata);
+        const dataUri = `data:application/pdf;base64,${base64}`;
+        return { isOK: true, data: dataUri };
+      }
+    } else {
+      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp');
+      if (status !== 200) {
+        await FileSystem.deleteAsync(uri);
+        return { isOK: false };
+      } else {
+        const { decUri } = await decFileRN(uri, key);
+        if (decUri === undefined) {
+          await FileSystem.deleteAsync(uri);
+          return { isOK: false };
+        }
+        return { isOK: true, data: 'file://' + decUri };
+      }
+    }
+  } catch (error) {
+    //console.log('dowanloadPhoto Error:', error);
+    return { isOK: false };
+  }
+};
 
 export const uploadPhoto = async (projectId: string, layerId: string, userId: string, photoId: string, uri: string) => {
   try {
