@@ -13,7 +13,7 @@ interface Props {
 
   selectInfoTool: (infoTool: InfoToolType) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsModalInfoToolHidden: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsModalInfoToolHidden: (value: boolean) => void;
 }
 
 export const HomeModalInfoPicker = React.memo((props: Props) => {
