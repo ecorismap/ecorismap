@@ -318,6 +318,7 @@ export interface SettingsType {
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;
   agreedTermsVersion: string;
+  isModalInfoToolHidden: boolean;
 }
 
 export interface RegionType {
