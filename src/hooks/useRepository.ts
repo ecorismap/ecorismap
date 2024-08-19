@@ -447,7 +447,7 @@ export const useRepository = (): UseRepositoryReturnType => {
 
   const deleteProject = useCallback(
     async (project_: ProjectType) => {
-      const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteProjectPhotos(project_.id);
+      const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteProjectStorageData(project_.id);
       if (!photoOK) {
         return { isOK: false, message: photoMessage };
       }
