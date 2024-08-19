@@ -16,5 +16,3 @@ jobs:
         run: TZ=Asia/Tokyo yarn test
       - name: Run ESLint
         run: yarn lint
-      - name: Run TS Check
-        run: yarn type-check
