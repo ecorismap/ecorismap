@@ -256,7 +256,9 @@
       "failUpdateUser": "Failed to update user information",
       "unkownUser": "The user is unknown.",
       "failEncryptPDF": "PDF encryption failed",
-      "failUploadPDF": "Failed to upload PDF"
+      "failUploadPDF": "Failed to upload PDF",
+      "failDeletePDF": "Failed to delete PDF",
+      "failDeleteProjectPDF": "Failed to delete project PDF"
     }
   },
   "Settings": {

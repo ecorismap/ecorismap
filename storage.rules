@@ -1,18 +1,22 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    match /projects/{projectId}/{layerId}/{userId}/{allPaths=**} {
-      allow get: if isSignedIn();
+    match /projects/{projectId}/{layerId}/{userId}/PHOTO/{allPaths=**} {
+      allow read: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
       allow delete: if isSignedIn()
     }
-    match /projects/{projectId}/{tileMapId}/{allPaths=**} {
-      allow get: if isSignedIn();
+    match /projects/{projectId}/PDF/{allPaths=**} {
+      allow read: if isSignedIn();
       allow create: if isSignedIn()
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
+      allow delete: if isSignedIn()
+    }
+    match /projects/{projectId}/{allPaths=**} {
+      allow list: if isSignedIn();
       allow delete: if isSignedIn()
     }
   }
@@ -26,6 +30,6 @@ service firebase.storage {
   }
 
   function isValidFileSize(data) {
-    return data.size < 5 * 1024 * 1024
+    return data.size < 20 * 1024 * 1024
   }
 }

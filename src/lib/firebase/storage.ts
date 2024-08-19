@@ -26,9 +26,9 @@ export const uploadPDF = async (projectId: string, tileMapId: string) => {
     if (encdata === undefined || key === undefined) {
       return { isOK: false, message: t('firebase.message.failEncryptPDF'), url: null, key: null };
     }
-    const reference = storage.ref().child(`projects/${projectId}/${tileMapId}`);
+    const reference = storage.ref().child(`projects/${projectId}/PDF/${tileMapId}`);
     await reference.put(encdata as Blob);
-    const url = await storage.ref(`projects/${projectId}/${tileMapId}`).getDownloadURL();
+    const url = await storage.ref(`projects/${projectId}/PDF/${tileMapId}`).getDownloadURL();
     return { isOK: true, message: '', url: 'pdf://' + url, key };
   } catch (error) {
     console.log('uploadPDF Error:', error);
@@ -72,6 +72,22 @@ export const downloadPDF = async (url: string, key: string) => {
   }
 };
 
+export const deleteProjectPDF = async (projectId: string) => {
+  try {
+    const reference = storage.ref(`projects/${projectId}/PDF`);
+    reference.listAll().then(async (listResults) => {
+      const promises = listResults.items.map((item) => {
+        return item.delete();
+      });
+      await Promise.all(promises);
+    });
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.log('deleteProjecPDF Error:', error);
+    return { isOK: false, message: t('firebase.message.failDeleteProjectPDF') };
+  }
+};
+
 export const uploadPhoto = async (projectId: string, layerId: string, userId: string, photoId: string, uri: string) => {
   try {
     if (Platform.OS === 'web') {
@@ -79,19 +95,19 @@ export const uploadPhoto = async (projectId: string, layerId: string, userId: st
       if (encdata === undefined || key === undefined) {
         return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
       }
-      const reference = storage.ref().child(`projects/${projectId}/${layerId}/${userId}/${photoId}`);
+      const reference = storage.ref().child(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
       await reference.put(encdata as Blob);
-      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/${photoId}`).getDownloadURL();
+      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`).getDownloadURL();
       return { isOK: true, message: '', url, key };
     } else {
       const { encUri, key } = await encFileRN(uri);
       if (encUri === undefined || key === undefined) {
         return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
       }
-      const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/${photoId}`);
+      const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
       //@ts-ignore
       await reference.putFile(encUri);
-      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/${photoId}`).getDownloadURL();
+      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`).getDownloadURL();
       return { isOK: true, message: '', url, key };
     }
   } catch (error) {
@@ -174,7 +190,7 @@ export const downloadPhoto = async (url: string, key: string, filename: string, 
   }
 };
 
-export const deleteProjectPhotos = async (projectId: string) => {
+export const deleteProjectStorageData = async (projectId: string) => {
   try {
     const reference = storage.ref(`projects/${projectId}`);
     reference.listAll().then((listResults) => {
@@ -185,14 +201,14 @@ export const deleteProjectPhotos = async (projectId: string) => {
     });
     return { isOK: true, message: '' };
   } catch (error) {
-    console.log('deleteProjecPhotos Error:', error);
+    console.log('deleteProjecStorageData Error:', error);
     return { isOK: false, message: t('firebase.message.failDeleteProjectPhoto') };
   }
 };
 
 export const deleteStoragePhoto = async (projectId: string, layerId: string, userId: string, photoId: string) => {
   try {
-    const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/${photoId}`);
+    const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
     await reference.delete();
     return { isOK: true, message: '' };
   } catch (error) {
@@ -201,9 +217,9 @@ export const deleteStoragePhoto = async (projectId: string, layerId: string, use
   }
 };
 
-export const deleteAllProjectPhotos = async (projectIds: string[]) => {
+export const deleteAllProjectStorageData = async (projectIds: string[]) => {
   for (const projectId of projectIds) {
-    const { isOK, message } = await deleteProjectPhotos(projectId);
+    const { isOK, message } = await deleteProjectStorageData(projectId);
     if (!isOK) {
       return { isOK: false, message };
     }

@@ -352,7 +352,7 @@ export const useAccount = (): UseAccountReturnType => {
     if (!projectOK || deletedIds === undefined) {
       return { isOK: false, message: projectMessage };
     }
-    const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteAllProjectPhotos(deletedIds);
+    const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteAllProjectStorageData(deletedIds);
     if (!photoOK) {
       return { isOK: false, message: photoMessage };
     }
