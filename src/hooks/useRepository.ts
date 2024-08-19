@@ -373,7 +373,8 @@ export const useRepository = (): UseRepositoryReturnType => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
-
+      const excludeItems = tileMaps.map((tileMap) => tileMap.id);
+      await projectStorage.deleteProjectPDF(project_.id, excludeItems);
       const uploadedTileMaps = await uploadTileMaps(project_.id);
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers,
@@ -389,7 +390,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
       return { isOK: true, message: '' };
     },
-    [dispatch, layers, mapRegion, mapType, plugins, updatedAt, uploadTileMaps, user]
+    [dispatch, layers, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadTileMaps, user]
   );
 
   const uploadDefaultProjectSettings = useCallback(

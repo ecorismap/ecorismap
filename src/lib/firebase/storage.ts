@@ -72,11 +72,15 @@ export const downloadPDF = async (url: string, key: string) => {
   }
 };
 
-export const deleteProjectPDF = async (projectId: string) => {
+export const deleteProjectPDF = async (projectId: string, excludeItems: string[]) => {
   try {
     const reference = storage.ref(`projects/${projectId}/PDF`);
     reference.listAll().then(async (listResults) => {
       const promises = listResults.items.map((item) => {
+        console.log(item.name);
+        if (excludeItems.includes(item.name)) {
+          return;
+        }
         return item.delete();
       });
       await Promise.all(promises);
