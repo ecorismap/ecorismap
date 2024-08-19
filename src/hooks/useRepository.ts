@@ -1,5 +1,14 @@
-import { useCallback, useMemo } from 'react';
-import { DataType, LayerType, PhotoType, ProjectSettingsType, ProjectType, RecordType, RegionType } from '../types';
+import { useCallback } from 'react';
+import {
+  DataType,
+  LayerType,
+  PhotoType,
+  ProjectSettingsType,
+  ProjectType,
+  RecordType,
+  RegionType,
+  TileMapType,
+} from '../types';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
@@ -18,6 +27,7 @@ import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
+import { AlertAsync } from '../components/molecules/AlertAsync';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -143,11 +153,6 @@ export const useRepository = (): UseRepositoryReturnType => {
   const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
   const { photosToBeDeleted } = usePhoto();
-
-  const filteredTileMaps = useMemo(
-    () => tileMaps.filter((tileMap) => !(tileMap.url.includes('blob:') || tileMap.url.includes('file:'))),
-    [tileMaps]
-  );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
     const { isOK, message, data: projectSettings } = await projectStore.downloadProjectSettings(project.id);
@@ -339,15 +344,38 @@ export const useRepository = (): UseRepositoryReturnType => {
     [dataSet, dispatch, isSettingProject, layers, photosToBeDeleted, updateStoragePhotos, updatedAt, user]
   );
 
+  const uploadTileMaps = useCallback(
+    async (projectId: string) => {
+      const uploadedTileMaps: TileMapType[] = [];
+      for (const tileMap of tileMaps) {
+        if (tileMap.url.startsWith('file://') && tileMap.url.endsWith('.pdf')) {
+          const { isOK, message, url, key } = await projectStorage.uploadPDF(projectId, tileMap.id);
+          if (!isOK || url === null) {
+            await AlertAsync(message);
+            uploadedTileMaps.push(tileMap);
+          } else {
+            uploadedTileMaps.push({ ...tileMap, url, key });
+          }
+        } else {
+          uploadedTileMaps.push(tileMap);
+        }
+      }
+
+      return uploadedTileMaps;
+    },
+    [tileMaps]
+  );
+
   const uploadProjectSettings = useCallback(
     async (project_: ProjectType) => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
 
+      const uploadedTileMaps = await uploadTileMaps(project_.id);
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers,
-        tileMaps: filteredTileMaps,
+        tileMaps: uploadedTileMaps,
         mapType,
         mapRegion,
         plugins,
@@ -359,7 +387,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
       return { isOK: true, message: '' };
     },
-    [dispatch, filteredTileMaps, layers, mapRegion, mapType, plugins, updatedAt, user]
+    [dispatch, layers, mapRegion, mapType, plugins, updatedAt, uploadTileMaps, user]
   );
 
   const uploadDefaultProjectSettings = useCallback(

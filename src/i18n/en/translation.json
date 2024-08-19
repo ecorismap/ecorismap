@@ -254,7 +254,9 @@
       "failDeletePhoto": "Failed to delete photo",
       "failDeleteProjectPhoto": "Failed to delete project photos",
       "failUpdateUser": "Failed to update user information",
-      "unkownUser": "The user is unknown."
+      "unkownUser": "The user is unknown.",
+      "failEncryptPDF": "PDF encryption failed",
+      "failUploadPDF": "Failed to upload PDF"
     }
   },
   "Settings": {

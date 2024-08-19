@@ -614,7 +614,9 @@
       "failGetPhoto": "写真の取得に失敗しました",
       "failDecryptPhoto": "写真の復号に失敗しました",
       "failDeletePhoto": "写真の削除に失敗しました",
-      "failDeleteProjectPhoto": "プロジェクトの写真の削除に失敗しました"
+      "failDeleteProjectPhoto": "プロジェクトの写真の削除に失敗しました",
+      "failEncryptPDF": "PDFの暗号化に失敗しました",
+      "failUploadPDF": "PDFのアップロードに失敗しました"
     }
   },
   "Account": {

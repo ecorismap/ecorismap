@@ -8,6 +8,13 @@ service firebase.storage {
         && isValidFileSize(request.resource);
       allow delete: if isSignedIn()
     }
+    match /projects/{projectId}/{tileMapId}/{allPaths=**} {
+      allow get: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidContentType(request.resource)
+        && isValidFileSize(request.resource);
+      allow delete: if isSignedIn()
+    }
   }
 
   function isSignedIn() {
@@ -15,7 +22,7 @@ service firebase.storage {
   }
  
   function isValidContentType(data) {
-    return data.contentType in ['image/png',"image/jpeg"];
+    return data.contentType in ['image/png',"image/jpeg","application/pdf"];
   }
 
   function isValidFileSize(data) {
