@@ -26,7 +26,9 @@ export default function Projects() {
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
+    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props} labelVisible={false} onPress={gotoBack} />
+    ),
     [gotoBack]
   );
 

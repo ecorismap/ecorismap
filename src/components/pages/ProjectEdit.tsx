@@ -43,7 +43,9 @@ export default function ProjectEditScreen() {
   const [emails, setEmails] = useState('');
 
   const headerLeftButton = useCallback(
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props} onPress={gotoBack} />,
+    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props} labelVisible={false} labelVisible={false} onPress={gotoBack} />
+    ),
     [gotoBack]
   );
 
