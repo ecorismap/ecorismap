@@ -1,11 +1,12 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking } from 'react-native';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { editSettingsAction } from '../../modules/settings';
 import { AlertAsync } from '../molecules/AlertAsync';
+import { db } from '../../utils/db';
 
 export const HomeModalTermsOfUse = React.memo(() => {
   //console.log('render ModalTileMap');
@@ -25,6 +26,16 @@ export const HomeModalTermsOfUse = React.memo(() => {
     const url = t('site.termsOfUse');
     Linking.openURL(url);
   }, []);
+
+  useEffect(() => {
+    //ブラウザを開きなおしたときに、データを消去する
+    if (isTermsOfUseOpen) {
+      if (Platform.OS === 'web') {
+        db.geotiff.clear();
+        db.pmtiles.clear();
+      }
+    }
+  }, [isTermsOfUseOpen]);
 
   const styles = StyleSheet.create({
     input: {
