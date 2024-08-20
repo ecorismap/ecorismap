@@ -254,7 +254,7 @@ export default function HomeScreen() {
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
+            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 30 }}>×</Text>
           </TouchableOpacity>
         )}
       </View>
