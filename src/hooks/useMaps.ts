@@ -420,7 +420,8 @@ export const useMaps = (): UseMapsReturnType => {
           tileMap.url = oldTileMap.url;
           tileMap.attribution = oldTileMap.attribution;
           tileMap.transparency = oldTileMap.transparency;
-          tileMap.key = oldTileMap.key;
+          tileMap.encryptKey = oldTileMap.encryptKey;
+          tileMap.redraw = !oldTileMap.redraw;
           dispatch(updateTileMapAction(tileMap));
         }
 
