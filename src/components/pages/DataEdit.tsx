@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { DataEditModalPhotoView } from '../organisms/DataEditModalPhotoView';
 import { DataEditButtons } from '../organisms/DataEditButtons';
@@ -51,11 +51,11 @@ export default function DataEditScreen() {
 
   const navigation = useNavigation();
   const layers = useSelector((state: RootState) => state.layers);
-  const headerLeftButtonzForDevice = useCallback(
+  const headerForDevice = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', flex: 3, justifyContent: 'center' }}>
-        <View style={{ flex: 1 }}>
-          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} style={{ width: 30 }} />
+      <View style={{ flexDirection: 'row', justifyContent: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} style={{ width: 30, marginLeft: 20 }} />
         </View>
         <View style={{ flex: 1 }}>
           {maxRecordNumber > 0 && (
@@ -66,16 +66,16 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View
-          style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', alignItems: 'center', marginRight: 28 }}
-        >
-          <Button
-            name={DATAEDIT_BTN.SAVE}
-            onPress={pressSaveData}
-            backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
-            disabled={!isEditingRecord}
-            tooltipText={t('DataEdit.tooltip.save')}
-          />
+        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+          <View style={{ marginRight: 13 }}>
+            <Button
+              name={DATAEDIT_BTN.SAVE}
+              onPress={pressSaveData}
+              backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
+              disabled={!isEditingRecord}
+              tooltipText={t('DataEdit.tooltip.save')}
+            />
+          </View>
         </View>
       </View>
     ),
@@ -121,20 +121,10 @@ export default function DataEditScreen() {
   );
 
   useEffect(() => {
-    //デバイスだとheaderTitleにbackButtonが表示されてしまうバグ？のためheaderLeftだけで処理する
-    //Selectorをセンタリングするのが目的
-    if (Platform.OS === 'web') {
-      navigation.setOptions({
-        headerTitle: () => headerTitleButton(),
-        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-        headerRight: () => headerRightButton(),
-      });
-    } else {
-      navigation.setOptions({
-        headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButtonzForDevice(props),
-      });
-    }
-  }, [headerLeftButton, headerLeftButtonzForDevice, headerRightButton, headerTitleButton, navigation]);
+    navigation.setOptions({
+      header: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerForDevice(props),
+    });
+  }, [headerLeftButton, headerForDevice, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <View style={styles.container}>
