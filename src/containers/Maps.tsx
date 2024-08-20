@@ -67,7 +67,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
           setIsLoading(true);
-          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.key);
+          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.encryptKey);
           setIsLoading(false);
           if (message !== '') await AlertAsync(message);
         } else {
