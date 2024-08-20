@@ -55,7 +55,7 @@ export default function DataEditScreen() {
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', flex: 3, justifyContent: 'center' }}>
         <View style={{ flex: 1 }}>
-          <HeaderBackButton {...props_} onPress={gotoBack} style={{ width: 30 }} />
+          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} style={{ width: 30 }} />
         </View>
         <View style={{ flex: 1 }}>
           {maxRecordNumber > 0 && (
@@ -66,7 +66,9 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', marginRight: 28 }}>
+        <View
+          style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', alignItems: 'center', marginRight: 28 }}
+        >
           <Button
             name={DATAEDIT_BTN.SAVE}
             onPress={pressSaveData}
