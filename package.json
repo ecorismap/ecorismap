@@ -68,7 +68,7 @@
     "dexie": "^4.0.8",
     "expo": "~51.0.21",
     "expo-document-picker": "~12.0.2",
-    "expo-file-system": "16.0.8",
+    "expo-file-system": "^17.0.1",
     "expo-image-manipulator": "~12.0.5",
     "expo-image-picker": "~15.0.7",
     "expo-linear-gradient": "~13.0.2",
