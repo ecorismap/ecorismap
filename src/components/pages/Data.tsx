@@ -18,7 +18,9 @@ export default function DataScreen() {
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
+    ),
     [gotoBack]
   );
 

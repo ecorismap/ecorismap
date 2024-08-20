@@ -160,11 +160,15 @@ export default function HomeScreen() {
   });
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoMaps} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
+    ),
     [gotoMaps]
   );
   const headerGotoHomeButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoHome} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} />
+    ),
     [gotoHome]
   );
   const headerRightButton = useCallback(() => {
@@ -254,7 +258,7 @@ export default function HomeScreen() {
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 30 }}>×</Text>
+            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
           </TouchableOpacity>
         )}
       </View>
