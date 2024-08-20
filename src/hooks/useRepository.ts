@@ -354,7 +354,7 @@ export const useRepository = (): UseRepositoryReturnType => {
             await AlertAsync(message);
             uploadedTileMaps.push(tileMap);
           } else {
-            uploadedTileMaps.push({ ...tileMap, url, key });
+            uploadedTileMaps.push({ ...tileMap, url, encryptKey: key });
           }
         } else if (tileMap.url.includes('blob:')) {
           //ローカルのPMTilesはアップロードしない
