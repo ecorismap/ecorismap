@@ -14056,7 +14056,7 @@ __metadata:
     eslint-plugin-react-hooks: ^4.2.0
     expo: ~51.0.21
     expo-document-picker: ~12.0.2
-    expo-file-system: ~17.0.1
+    expo-file-system: 16.0.8
     expo-image-manipulator: ~12.0.5
     expo-image-picker: ~15.0.7
     expo-linear-gradient: ~13.0.2
@@ -15086,6 +15086,15 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: fe358e535e7b3a5466817b55178981fc8d6632c91bef07c9292538e83a6724879cd2a03f059f4d376445545e98296aaea7daffe6129ccd84a4f7dd98a8d18c6e
+  languageName: node
+  linkType: hard
+
+"expo-file-system@npm:16.0.8":
+  version: 16.0.8
+  resolution: "expo-file-system@npm:16.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: d69baf26f4463a144841f5994e280417f3225573e73d3be51be52cbac01863cc69750d7aa978b6ec965de3766b9ddfe9963b35cf24d6add16b5136268a01acbe
   languageName: node
   linkType: hard
 
