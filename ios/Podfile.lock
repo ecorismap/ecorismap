@@ -975,7 +975,7 @@ PODS:
     - ExpoModulesCore
   - ExpoDocumentPicker (12.0.2):
     - ExpoModulesCore
-  - ExpoFileSystem (17.0.1):
+  - ExpoFileSystem (16.0.8):
     - ExpoModulesCore
   - ExpoFont (12.0.9):
     - ExpoModulesCore
@@ -3046,7 +3046,7 @@ SPEC CHECKSUMS:
   Expo: 6ff8c293719c5e5d23204e3f5fc9f472b5d0fd32
   ExpoAsset: 323700f291684f110fb55f0d4022a3362ea9f875
   ExpoDocumentPicker: a82eaccc62ecb62662d5a6ca7a8ef40b71daa521
-  ExpoFileSystem: 80bfe850b1f9922c16905822ecbf97acd711dc51
+  ExpoFileSystem: eecaf6796aed0f4dd20042dc2ca2cac6c4bc1185
   ExpoFont: e7f2275c10ca8573c991e007329ad6bf98086485
   ExpoImageManipulator: aea99205c66043a00a0af90e345395637b9902fa
   ExpoImagePicker: 12a420923383ae38dccb069847218f27a3b87816
