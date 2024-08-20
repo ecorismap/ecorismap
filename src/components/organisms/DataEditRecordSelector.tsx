@@ -30,7 +30,7 @@ export const DataEditRecordSelector = (props: Props) => {
         backgroundColor={COLOR.MAIN}
         color={COLOR.BLACK}
         onPress={onPressPrevious}
-        size={30}
+        size={25}
       />
       <Text>{`${recordNumber}/${maxRecordNumber}`}</Text>
       <Button
@@ -38,7 +38,7 @@ export const DataEditRecordSelector = (props: Props) => {
         backgroundColor={COLOR.MAIN}
         color={COLOR.BLACK}
         onPress={onPressNext}
-        size={30}
+        size={25}
       />
     </View>
   );
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     flexDirection: 'row',
-    height: 35,
+    height: 45,
     justifyContent: 'center',
     marginLeft: 0,
   },
