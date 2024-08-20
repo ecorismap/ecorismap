@@ -34,7 +34,9 @@ export default function LayerEditFieldItemScreen() {
   const navigation = useNavigation();
   const editable = true;
   const headerLeftButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => <HeaderBackButton {...props_} onPress={gotoBack} />,
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
+    ),
     [gotoBack]
   );
 
