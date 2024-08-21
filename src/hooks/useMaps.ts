@@ -507,7 +507,7 @@ export const useMaps = (): UseMapsReturnType => {
         return await importPdfFile(uri, name, id);
       }
       //PDFでWebからダウンロードする場合
-      if ((ext === 'pdf' && uri.startsWith('http')) || uri.startsWith('pdf://')) {
+      if (ext === 'pdf' && uri.startsWith('http')) {
         //uriからbasicauth部分を取得
         let dataUri = '';
         const auth = uri.split('@')[0].split('//')[1];
@@ -545,7 +545,7 @@ export const useMaps = (): UseMapsReturnType => {
         return result;
       }
 
-      return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      return { isOK: false, message: '' };
     },
     [importJsonMapFile, importPdfFile, importPmtilesFile]
   );
