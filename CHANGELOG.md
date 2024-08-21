@@ -1,4 +1,11 @@
 # Change Log
+## [0.4.1] - 2024-8-22
+- Update terms of use.
+- Fix import data bug (iOS).
+
+- 利用規約を更新
+- データのインポートのバグを修正（iOS）
+
 ## [0.4.0] - 2024-8-17
 - Added support for exporting Geospatial PDF
 - Added support for importing Geospatial PDF
@@ -125,7 +132,8 @@
 
 ## [Unreleased]
 
-[Unreleased]: https://github.com/ecorismap/ecorismap/compare/d3538ad56fd23f6b3293c54706576d57856356eb...HEAD
+[Unreleased]: https://github.com/ecorismap/ecorismap/compare/0d9d02a29c54c21277cffa2ef8173144c993ad6a...HEAD
+[0.4.1]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...0d9d02a29c54c21277cffa2ef8173144c993ad6a
 [0.4.0]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...d3538ad56fd23f6b3293c54706576d57856356eb
 [0.3.13]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...12f64c2289ebf291339f453d4cba33920120ae9a
 [0.3.11]: https://github.com/ecorismap/ecorismap/compare/996dcffdb7baf6a08d2e4056920585422f26bd6f...80638642cfe69f9fa27464d8e6deb58bbcd698d0
