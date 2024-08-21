@@ -554,7 +554,7 @@ export const useMaps = (): UseMapsReturnType => {
         return result;
       }
 
-      return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      return { isOK: false, message: '' };
     },
     [importJsonMapFile, importPdfFile, importPmtilesFile]
   );
