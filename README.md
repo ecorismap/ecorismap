@@ -40,7 +40,11 @@ This app is developed with React Native + Expo (Bare Workflow). First, please in
    - cp template/local.properties android/
    - cp template/Maps.plist ios/ecorismap/Supporting/
    - cp template/APIKeys.ts src/constants/
-7. Build and Run on emulator
+7. Download react-native-gdalwarp module and replace it.
+   - Download https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+   - unzip react-native-gdalwarp.zip
+   - cp -r react-native-gdalwarp modules/
+8. Build and Run on emulator
    - yarn android
    - yarn ios
    - yarn web
