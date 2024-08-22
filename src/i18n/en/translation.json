@@ -243,7 +243,8 @@
     "line": "line",
     "useLastValue": "use last value",
     "useOutline": "Show frame only",
-    "termsUpdated": "Terms of use have been updated."
+    "termsUpdated": "Terms of use have been updated.",
+    "addMembers": "Add member (enter email addresses separated by commas and press Enter to add to the list)"
   },
   "firebase": {
     "message": {
