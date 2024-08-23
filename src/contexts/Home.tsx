@@ -112,6 +112,7 @@ export interface HomeContextType {
   editPositionLayer: LayerType | undefined;
   editPositionRecord: RecordType | undefined;
   isEditingRecord: boolean;
+  isTerrainActive: boolean;
 
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
@@ -175,6 +176,7 @@ export interface HomeContextType {
   pressPDFSettingsOpen: () => void;
   finishEditPosition: () => void;
   updatePmtilesURL: () => Promise<void>;
+  toggleTerrain: (activate?: boolean) => void;
 }
 
 export const HomeContext = createContext({} as HomeContextType);
