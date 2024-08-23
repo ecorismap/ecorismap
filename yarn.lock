@@ -5248,9 +5248,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@maplibre/maplibre-gl-style-spec@npm:^20.3.0":
-  version: 20.3.0
-  resolution: "@maplibre/maplibre-gl-style-spec@npm:20.3.0"
+"@maplibre/maplibre-gl-style-spec@npm:^20.3.1":
+  version: 20.3.1
+  resolution: "@maplibre/maplibre-gl-style-spec@npm:20.3.1"
   dependencies:
     "@mapbox/jsonlint-lines-primitives": ~2.0.2
     "@mapbox/unitbezier": ^0.0.1
@@ -5259,12 +5259,12 @@ __metadata:
     quickselect: ^2.0.0
     rw: ^1.3.3
     sort-object: ^3.0.3
-    tinyqueue: ^2.0.3
+    tinyqueue: ^3.0.0
   bin:
     gl-style-format: dist/gl-style-format.mjs
     gl-style-migrate: dist/gl-style-migrate.mjs
     gl-style-validate: dist/gl-style-validate.mjs
-  checksum: 2674af49727fc225aaae18ad1f5f121aaa7cae83ba397f44664765b94d7d87260145e9bae1eb8740103520025d563649a9ca588b028cc25b80ec8ea636b5a262
+  checksum: c68e2a74f3f20b64ad536bad11c3d3ea620a240bc13951b14d22a384d8ac388cfa7cb8e4c5c632489fc813bbe3f3ad83bf4a424b64d085efdd5037d3a89ac0b7
   languageName: node
   linkType: hard
 
@@ -8662,13 +8662,6 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: a568e7cb1c703bcb015eff8bf5996e276e748d2b39ddc47edf5ddccd1378f5792179c43302a1c803e47a54b0220f9ecaae445ec444d28bf81b88856f899e85b9
-  languageName: node
-  linkType: hard
-
-"@types/junit-report-builder@npm:^3.0.2":
-  version: 3.0.2
-  resolution: "@types/junit-report-builder@npm:3.0.2"
-  checksum: 7fead0b771f95cd8e607223ace2f43cc881b3e7944db405f903590b56379d14132032b7d89c9afa7dff266b95f516a476a39ad40f9200bfb61fc8ed7f6b1bff6
   languageName: node
   linkType: hard
 
@@ -14026,6 +14019,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"earcut@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "earcut@npm:3.0.0"
+  checksum: 1b96b4f9ca0c35b8e2428ce0fbd79d520f552b53c3b030c10ad27dac0852067d30b373e62c7ee373a8faa38073eb46ef49bcc650427165e557d5e61bb802339e
+  languageName: node
+  linkType: hard
+
 "eastasianwidth@npm:^0.2.0":
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
@@ -14167,7 +14167,7 @@ __metadata:
     jschardet: ^3.1.3
     jszip: ^3.10.1
     lodash: ^4.17.21
-    maplibre-gl: ^4.5.0
+    maplibre-gl: ^4.6.0
     metro-react-native-babel-preset: 0.76.8
     mockdate: ^3.0.5
     object-sizeof: ^2.6.4
@@ -16891,14 +16891,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"global-prefix@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "global-prefix@npm:3.0.0"
+"global-prefix@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "global-prefix@npm:4.0.0"
   dependencies:
-    ini: ^1.3.5
-    kind-of: ^6.0.2
-    which: ^1.3.1
-  checksum: 8a82fc1d6f22c45484a4e34656cc91bf021a03e03213b0035098d605bfc612d7141f1e14a21097e8a0413b4884afd5b260df0b6a25605ce9d722e11f1df2881d
+    ini: ^4.1.3
+    kind-of: ^6.0.3
+    which: ^4.0.0
+  checksum: 055c7cd1e03519f14aad2decd16d9c2546f7ec90db620da1583a75551a1aa7a29977b94bd192d4ca2eb6689098d64d3f2477b23886009403856cd4870f791d81
   languageName: node
   linkType: hard
 
@@ -17872,10 +17872,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ini@npm:^1.3.4, ini@npm:^1.3.5, ini@npm:~1.3.0":
+"ini@npm:^1.3.4, ini@npm:~1.3.0":
   version: 1.3.8
   resolution: "ini@npm:1.3.8"
   checksum: dfd98b0ca3a4fc1e323e38a6c8eb8936e31a97a918d3b377649ea15bdb15d481207a0dda1021efbd86b464cae29a0d33c1d7dcaf6c5672bee17fa849bc50a1b3
+  languageName: node
+  linkType: hard
+
+"ini@npm:^4.1.3":
+  version: 4.1.3
+  resolution: "ini@npm:4.1.3"
+  checksum: 004b2be42388877c58add606149f1a0c7985c90a0ba5dbf45a4738fdc70b0798d922caecaa54617029626505898ac451ff0537a08b949836b49d3267f66542c9
   languageName: node
   linkType: hard
 
@@ -19896,7 +19903,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kind-of@npm:^6.0.0, kind-of@npm:^6.0.1, kind-of@npm:^6.0.2":
+"kind-of@npm:^6.0.0, kind-of@npm:^6.0.1, kind-of@npm:^6.0.2, kind-of@npm:^6.0.3":
   version: 6.0.3
   resolution: "kind-of@npm:6.0.3"
   checksum: 3ab01e7b1d440b22fe4c31f23d8d38b4d9b91d9f291df683476576493d5dfd2e03848a8b05813dd0c3f0e835bc63f433007ddeceb71f05cb25c45ae1b19c6d3b
@@ -20641,9 +20648,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"maplibre-gl@npm:^4.5.0":
-  version: 4.5.0
-  resolution: "maplibre-gl@npm:4.5.0"
+"maplibre-gl@npm:^4.6.0":
+  version: 4.6.0
+  resolution: "maplibre-gl@npm:4.6.0"
   dependencies:
     "@mapbox/geojson-rewind": ^0.5.2
     "@mapbox/jsonlint-lines-primitives": ^2.0.2
@@ -20652,27 +20659,26 @@ __metadata:
     "@mapbox/unitbezier": ^0.0.1
     "@mapbox/vector-tile": ^1.3.1
     "@mapbox/whoots-js": ^3.1.0
-    "@maplibre/maplibre-gl-style-spec": ^20.3.0
+    "@maplibre/maplibre-gl-style-spec": ^20.3.1
     "@types/geojson": ^7946.0.14
     "@types/geojson-vt": 3.2.5
-    "@types/junit-report-builder": ^3.0.2
     "@types/mapbox__point-geometry": ^0.1.4
     "@types/mapbox__vector-tile": ^1.3.4
     "@types/pbf": ^3.0.5
     "@types/supercluster": ^7.1.3
-    earcut: ^2.2.4
+    earcut: ^3.0.0
     geojson-vt: ^4.0.2
     gl-matrix: ^3.4.3
-    global-prefix: ^3.0.0
+    global-prefix: ^4.0.0
     kdbush: ^4.0.2
     murmurhash-js: ^1.0.0
-    pbf: ^3.2.1
+    pbf: ^3.3.0
     potpack: ^2.0.0
-    quickselect: ^2.0.0
+    quickselect: ^3.0.0
     supercluster: ^8.0.1
-    tinyqueue: ^2.0.3
+    tinyqueue: ^3.0.0
     vt-pbf: ^3.1.3
-  checksum: fd0bcf01e3d6495f3bcf0f6692806da2a4ce09f7c9233001141477bdde73b20b750f45f6ca7c2ba6c6b0fc54a3857e619a9c1fdea89a1b7d65233ae1983dbb0b
+  checksum: 0c4669e4e5113fa57476f87069dcfcda40925800b6bc889f17da65c6145e5c11035b197be3f15f39253f51f133490db05f00e893ada8f54d2415943f8df980c1
   languageName: node
   linkType: hard
 
@@ -22805,6 +22811,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pbf@npm:^3.3.0":
+  version: 3.3.0
+  resolution: "pbf@npm:3.3.0"
+  dependencies:
+    ieee754: ^1.1.12
+    resolve-protobuf-schema: ^2.1.0
+  bin:
+    pbf: bin/pbf
+  checksum: bb5ad5e40c0c3a72d23453b03064a040c76363ba76fe086bb7789501c3f8c1565ecba72f62ab608d02b2645d21ff74ff6494413a39aba2aa0c4157886a2a658c
+  languageName: node
+  linkType: hard
+
 "pbf@npm:^4.0.1":
   version: 4.0.1
   resolution: "pbf@npm:4.0.1"
@@ -23941,6 +23959,13 @@ __metadata:
   version: 2.0.0
   resolution: "quickselect@npm:2.0.0"
   checksum: ed2e78431050d223fb75da20ee98011aef1a03f7cb04e1a32ee893402e640be3cfb76d72e9dbe01edf3bb457ff6a62e5c2d85748424d1aa531f6ba50daef098c
+  languageName: node
+  linkType: hard
+
+"quickselect@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "quickselect@npm:3.0.0"
+  checksum: 8f72bedb8bb14bce5c3767c55f567bc296fa3ca9d98ba385e3867e434463bc633feee1eddf3dfec17914b7e88feeb08c7b313cf47114a8ff11bf964f77f51cfc
   languageName: node
   linkType: hard
 
@@ -27362,6 +27387,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tinyqueue@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "tinyqueue@npm:3.0.0"
+  checksum: 49a5454935991685512e2e1848e423fce1953b95e0fe0456b9a50d07ff0bfbf4c2b1a1682191dc2d520b37c554ef518ad225133cea9434eb9cfebf811fc61e71
+  languageName: node
+  linkType: hard
+
 "tmp@npm:^0.0.33":
   version: 0.0.33
   resolution: "tmp@npm:0.0.33"
@@ -28873,7 +28905,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"which@npm:^1.2.9, which@npm:^1.3.1":
+"which@npm:^1.2.9":
   version: 1.3.1
   resolution: "which@npm:1.3.1"
   dependencies:
