@@ -133,6 +133,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     currentInfoTool,
     isPencilTouch,
     isPinch,
+    isTerrainActive,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -146,7 +147,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     showDrawLine,
     hideDrawLine,
     resetDrawTools,
-    toggleWebTerrainActive,
+    toggleTerrain,
     setVisibleInfoPicker,
     setCurrentInfoTool,
     setIsPinch,
@@ -395,17 +396,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (value: InfoToolType) => {
       if (value === 'NONE') {
         setCurrentInfoTool('NONE');
-        toggleWebTerrainActive(true);
+        toggleTerrain(true);
       } else {
         setCurrentInfoTool(value);
-        toggleWebTerrainActive(false);
+        toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       }
       resetDrawTools();
       setDrawTool('NONE');
       setMapMemoTool('NONE');
     },
-    [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleWebTerrainActive]
+    [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleTerrain]
   );
 
   const setIsModalInfoToolHidden = useCallback(
@@ -420,21 +421,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (value: FeatureButtonType) => {
       setDrawTool('NONE');
       setMapMemoTool('NONE');
-      toggleWebTerrainActive(value === 'NONE');
+      toggleTerrain(value === 'NONE');
       setFeatureButton(value);
       resetDrawTools();
       clearMapMemoHistory();
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     },
-    [
-      setDrawTool,
-      setMapMemoTool,
-      toggleWebTerrainActive,
-      setFeatureButton,
-      resetDrawTools,
-      clearMapMemoHistory,
-      toggleHeadingUp,
-    ]
+    [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
   );
 
   const finishEditPosition = useCallback(() => {
@@ -1324,7 +1317,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       //ecorismapを読み込んだときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
       setTimeout(() => bottomSheetRef.current?.close(), 300);
-      toggleWebTerrainActive(false);
+      toggleTerrain(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'Projects') {
       setTimeout(() => bottomSheetRef.current?.close(), 300);
@@ -1363,12 +1356,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (route.params?.tileMap) {
         //ダウンロード画面を開いた場合
         setTimeout(() => bottomSheetRef.current?.close(), 500);
-        toggleWebTerrainActive(false);
+        toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
       } else if (route.params?.jumpTo) {
         //PDFの範囲にジャンプする場合
         setTimeout(() => bottomSheetRef.current?.close(), 300);
-        toggleWebTerrainActive(false);
+        toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
         changeMapRegion(route.params.jumpTo, true);
       } else {
@@ -1576,6 +1569,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         editPositionLayer: route.params?.layer,
         editPositionRecord: route.params?.record,
         isEditingRecord,
+        isTerrainActive,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -1637,6 +1631,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         pressPDFSettingsOpen,
         finishEditPosition,
         updatePmtilesURL,
+        toggleTerrain,
       }}
     >
       <Home />

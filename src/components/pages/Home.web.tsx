@@ -56,6 +56,7 @@ import { encode as fastPngEncode } from 'fast-png';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
+import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 
 export default function HomeScreen() {
   const {
@@ -116,6 +117,8 @@ export default function HomeScreen() {
     pressPDFSettingsOpen,
     isEditingRecord,
     updatePmtilesURL,
+    isTerrainActive,
+    toggleTerrain,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: RootState) => state.layers);
@@ -497,13 +500,11 @@ export default function HomeScreen() {
     const map = evt.target;
     map.touchPitch.enable();
     if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-    map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
     map.setSky(skyStyle);
 
     //二回目以降の設定
     map.on('style.load', function () {
       if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
       map.setSky(skyStyle);
     });
   };
@@ -653,10 +654,6 @@ export default function HomeScreen() {
       glyphs: 'https://map.ecoris.info/glyphs/{fontstack}/{range}.pbf',
       sources: { ...sources, rasterdem: rasterdem },
       layers: [...layers_],
-      terrain: {
-        source: 'rasterdem',
-        exaggeration: 1.5,
-      },
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -724,20 +721,23 @@ export default function HomeScreen() {
                 }
                 touchZoomRotate={featureButton === 'NONE'}
                 dragRotate={featureButton === 'NONE'}
-                terrain={{
-                  source: 'rasterdem',
-                  exaggeration: 1.5,
-                }}
                 sky={skyStyle}
               >
                 <HomeZoomLevel zoom={zoom} top={20} left={10} />
+
                 <NavigationControl
                   style={{ position: 'absolute', top: 50, left: 0 }}
                   position="top-left"
                   visualizePitch={true}
                 />
+                <HomeTerrainControl
+                  top={150}
+                  left={10}
+                  isTerrainActive={isTerrainActive}
+                  toggleTerrain={toggleTerrain}
+                />
                 <GeolocateControl
-                  style={{ position: 'absolute', top: 160, left: 0 }}
+                  style={{ position: 'absolute', top: 180, left: 0 }}
                   trackUserLocation={true}
                   position="top-left"
                 />
