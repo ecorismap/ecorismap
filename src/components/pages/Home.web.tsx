@@ -500,12 +500,11 @@ export default function HomeScreen() {
     const map = evt.target;
     map.touchPitch.enable();
     if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-    map.setSky(skyStyle);
 
     //二回目以降の設定
     map.on('style.load', function () {
       if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-      map.setSky(skyStyle);
+      map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
     });
   };
 
