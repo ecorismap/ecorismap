@@ -74,6 +74,7 @@ export type UseDrawToolReturnType = {
   currentInfoTool: InfoToolType;
   isPencilTouch: MutableRefObject<boolean | undefined>;
   isPinch: boolean;
+  isTerrainActive: boolean;
   setCurrentInfoTool: React.Dispatch<React.SetStateAction<InfoToolType>>;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setDrawTool: React.Dispatch<React.SetStateAction<DrawToolType>>;
@@ -123,7 +124,7 @@ export type UseDrawToolReturnType = {
 
   hideDrawLine: () => void;
   showDrawLine: () => void;
-  toggleWebTerrainActive: (isActive: boolean) => void;
+  toggleTerrain: (activate?: boolean) => void;
   convertPointFeatureToDrawLine: (layerId: string, features: PointRecordType[]) => void;
   setIsPinch: Dispatch<SetStateAction<boolean>>;
   getPXY: (event: GestureResponderEvent) => Position;
@@ -149,6 +150,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [currentPolygonTool, setPolygonTool] = useState<PolygonToolType>('PLOT_POLYGON');
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
+  const [isTerrainActive, setIsTerrainActive] = useState(false);
   const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
   const [currentInfoTool, setCurrentInfoTool] = useState<InfoToolType>('NONE');
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
@@ -1039,19 +1041,25 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     setRedraw(ulid());
   }, [currentDrawTool, mapRegion, mapSize, mapViewRef, resetDrawTools]);
 
-  const toggleWebTerrainActive = useCallback(
-    (isActive: boolean) => {
+  const toggleTerrain = useCallback(
+    (activate?: boolean) => {
       if (Platform.OS !== 'web' || mapViewRef === null) return;
       const mapView = (mapViewRef as MapRef).getMap();
-      if (isActive) {
+      let activateTerrain = activate;
+      if (activate === undefined) {
+        activateTerrain = !isTerrainActive;
+      }
+      if (activateTerrain) {
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+        setIsTerrainActive(true);
       } else {
         //Terrainが有効の時やビューが回転していると、boundsが正確に取れなくてSVGのラインを正しく変換できないので無効にする。
         mapView.setTerrain(null);
         dispatch(editSettingsAction({ mapRegion: { ...mapRegion, pitch: 0, bearing: 0 } }));
+        setIsTerrainActive(false);
       }
     },
-    [dispatch, mapRegion, mapViewRef]
+    [dispatch, isTerrainActive, mapRegion, mapViewRef]
   );
 
   const getPXY = (event: GestureResponderEvent): Position => {
@@ -1245,6 +1253,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     currentInfoTool,
     isPencilTouch,
     isPinch,
+    isTerrainActive,
     deleteDraw,
     undoDraw,
     savePoint,
@@ -1259,7 +1268,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     resetDrawTools,
     hideDrawLine,
     showDrawLine,
-    toggleWebTerrainActive,
+    toggleTerrain,
     setVisibleInfoPicker,
     setCurrentInfoTool,
     convertPointFeatureToDrawLine,
