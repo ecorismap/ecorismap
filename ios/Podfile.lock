@@ -969,7 +969,7 @@ PODS:
     - ExpoModulesCore
   - EXNotifications (0.28.10):
     - ExpoModulesCore
-  - Expo (51.0.21):
+  - Expo (51.0.30):
     - ExpoModulesCore
   - ExpoAsset (10.0.10):
     - ExpoModulesCore
@@ -994,7 +994,7 @@ PODS:
   - ExpoMediaLibrary (16.0.4):
     - ExpoModulesCore
     - React-Core
-  - ExpoModulesCore (1.12.19):
+  - ExpoModulesCore (1.12.22):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3043,7 +3043,7 @@ SPEC CHECKSUMS:
   EXImageLoader: ab589d67d6c5f2c33572afea9917304418566334
   EXLocation: 43e9b582ca63a23c6f0a18d8cbe2145b3a388b55
   EXNotifications: e4738fea8e8e3a9f2ba4e98c73977b7914cb5a52
-  Expo: 6ff8c293719c5e5d23204e3f5fc9f472b5d0fd32
+  Expo: 61b2953ad6afa979729f639c5992c182e8eb9040
   ExpoAsset: 323700f291684f110fb55f0d4022a3362ea9f875
   ExpoDocumentPicker: a82eaccc62ecb62662d5a6ca7a8ef40b71daa521
   ExpoFileSystem: 80bfe850b1f9922c16905822ecbf97acd711dc51
@@ -3054,7 +3054,7 @@ SPEC CHECKSUMS:
   ExpoLinearGradient: 8cec4a09426d8934c433e83cb36262d72c667fce
   ExpoLocalization: f04eeec2e35bed01ab61c72ee1768ec04d093d01
   ExpoMediaLibrary: 250bf2659264163e428da5f867493b4cccd35ef9
-  ExpoModulesCore: 0095fc6f64a1c1e2b939da5752f081adcb8fd8d3
+  ExpoModulesCore: 470e4a326c045a3b78c172e3e62d922e3df52a41
   ExpoPrint: 9e221bf0988c77c8a270a7df7135c65c2a396e0a
   ExpoSharing: 8db05dd85081219f75989a3db2c92fe5e9741033
   EXSplashScreen: d8b3c547b9b18a41d80c6f6b274c4c26664febd4

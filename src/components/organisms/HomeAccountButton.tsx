@@ -42,7 +42,9 @@ export const HomeAccountButton = () => {
       color: COLOR.WHITE,
       fontSize: 20,
       fontWeight: 'bold',
-      marginBottom: Platform.OS === 'android' ? 5 : 0,
+      justifyContent: 'center',
+      textAlign: 'center',
+      textAlignVertical: 'center',
     },
   });
   return (
