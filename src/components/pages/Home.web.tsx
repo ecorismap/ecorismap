@@ -502,7 +502,7 @@ export default function HomeScreen() {
       .slice(0)
       .reverse()
       .reduce((result: any, tileMap: TileMapType) => {
-        if (tileMap.visible) {
+        if (tileMap.visible && !tileMap.isGroup) {
           if (tileMap.url && (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles'))) {
             return {
               ...result,
@@ -594,7 +594,7 @@ export default function HomeScreen() {
       .slice(0)
       .reverse()
       .map((tileMap: TileMapType) => {
-        if (tileMap.visible) {
+        if (tileMap.visible && !tileMap.isGroup) {
           if (
             tileMap.url &&
             (tileMap.url.startsWith('pmtiles://') ||
@@ -742,7 +742,7 @@ export default function HomeScreen() {
                 {pointDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
-                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
+
                   return (
                     <Point
                       key={`${d.layerId}-${d.userId}`}
@@ -761,7 +761,7 @@ export default function HomeScreen() {
                 {lineDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
-                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
+
                   return (
                     <Line
                       key={`${d.layerId}-${d.userId}`}
@@ -777,7 +777,7 @@ export default function HomeScreen() {
                 {polygonDataSet.map((d) => {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
-                  if (layers.find((v) => v.id === layer.groupId && !v.visible)) return null;
+
                   return (
                     <Polygon key={`${d.layerId}-${d.userId}`} data={d.data} layer={layer!} zoom={zoom} zIndex={100} />
                   );

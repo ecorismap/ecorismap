@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 import { SmallButton, RectButton2 } from '../atoms';
@@ -7,7 +7,7 @@ import { MapsContext } from '../../contexts/Maps';
 import { FlatList } from 'react-native-gesture-handler';
 
 export const MapItems = React.memo(() => {
-  const { maps, changeMapOrder, changeVisible, pressDownloadMap, pressOpenEditMap, jumpToBoundary } =
+  const { maps, changeMapOrder, changeVisible, pressDownloadMap, pressOpenEditMap, jumpToBoundary, changeExpand } =
     useContext(MapsContext);
 
   return (
@@ -16,50 +16,93 @@ export const MapItems = React.memo(() => {
       data={maps}
       initialNumToRender={maps.length}
       keyExtractor={(item) => item.id}
-      renderItem={({ item, index }) => (
-        <View style={styles.tr}>
-          <View style={[styles.td, { flex: 3 }]}>
-            <View style={[styles.td2, { flex: 2 }]}>
-              <RectButton2
-                name={item.visible ? 'eye' : 'eye-off-outline'}
-                onPress={() => changeVisible(!item.visible, index!)}
-              />
+      renderItem={({ item, index }) => {
+        if (!item.isGroup && item.groupId && !item.expanded) return null;
+        return (
+          <View style={[styles.tr, { backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }]}>
+            <View style={[styles.td, { padding: 0, flex: 3 }]}>
+              <View
+                style={{
+                  alignItems: 'center',
+                  height: 60,
+                  justifyContent: 'center',
+                  flex: 1,
+                }}
+              >
+                {item.isGroup ? (
+                  <RectButton2
+                    name={item.expanded ? 'chevron-down' : 'chevron-right'}
+                    onPress={() => changeExpand(!item.expanded, index)}
+                    style={{
+                      flex: 1,
+                      width: 55,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLOR.GRAY1,
+                    }}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      flex: 1,
+                      width: 55,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+                      alignSelf: Platform.OS === 'web' ? 'stretch' : 'auto',
+                    }}
+                  />
+                )}
+              </View>
+              <View style={[styles.td2, { flex: 2 }]}>
+                <RectButton2
+                  name={item.visible ? 'eye' : 'eye-off-outline'}
+                  onPress={() => changeVisible(!item.visible, index)}
+                  style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
+                />
+              </View>
             </View>
-          </View>
-          <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item)}>
-            <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
-              <Text>{item.name}</Text>
-            </View>
-          </TouchableOpacity>
+            <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item)}>
+              <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
+                <Text>{item.name}</Text>
+              </View>
+            </TouchableOpacity>
 
-          {/*************** Edit Button ************************************* */}
-          <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' && item.id !== 'hybrid' && (
-              <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.BLUE} />
-            )}
-          </View>
-          {/*************** Download Button ************************************* */}
-          <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' &&
-              item.id !== 'hybrid' &&
-              !item.url.includes('file://') &&
-              !item.url.includes('blob:') && (
-                <SmallButton
-                  name="download"
-                  onPress={() => pressDownloadMap(item)}
-                  borderRadius={5}
-                  backgroundColor={COLOR.GRAY3}
+            {/*************** Edit Button ************************************* */}
+            <View style={[styles.td, { flex: 1 }]}>
+              {item.id !== 'standard' && item.id !== 'hybrid' && (
+                <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.BLUE} />
+              )}
+            </View>
+            {/*************** Download Button ************************************* */}
+            <View style={[styles.td, { flex: 1 }]}>
+              {item.id !== 'standard' &&
+                item.id !== 'hybrid' &&
+                !item.isGroup &&
+                !item.url.includes('file://') &&
+                !item.url.includes('blob:') && (
+                  <SmallButton
+                    name="download"
+                    onPress={() => pressDownloadMap(item)}
+                    borderRadius={5}
+                    backgroundColor={COLOR.GRAY3}
+                  />
+                )}
+            </View>
+
+            <View style={[styles.td, { flex: 1 }]}>
+              {item.id !== 'standard' && item.id !== 'hybrid' && (
+                <RectButton2
+                  name="chevron-double-up"
+                  onPress={() => changeMapOrder(index)}
+                  color={COLOR.GRAY2}
+                  style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
                 />
               )}
+            </View>
           </View>
-
-          <View style={[styles.td, { flex: 1 }]}>
-            {item.id !== 'standard' && item.id !== 'hybrid' && (
-              <RectButton2 name="chevron-double-up" onPress={() => changeMapOrder(index)} color={COLOR.GRAY2} />
-            )}
-          </View>
-        </View>
-      )}
+        );
+      }}
     />
   );
 });
@@ -80,6 +123,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 2,
     flexDirection: 'row',
+    height: 60,
     justifyContent: 'space-evenly',
   },
   tr: {
