@@ -83,6 +83,8 @@ export type UseMapsReturnType = {
   }>;
   clearTileCache: () => Promise<void>;
   updatePmtilesURL: () => Promise<void>;
+
+  changeExpand: (expanded: boolean, index: number) => void;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -163,8 +165,13 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeVisible = useCallback(
     (visible: boolean, index: number) => {
-      const newTileMaps = cloneDeep(maps);
-      newTileMaps[index].visible = visible;
+      const groupTileMapId = maps[index].id;
+      const newTileMaps = maps.map((tileMap) => {
+        if (tileMap.groupId === groupTileMapId || tileMap.id === groupTileMapId) {
+          return { ...tileMap, visible };
+        }
+        return tileMap;
+      });
 
       //標準を可視。衛星を不可視に
       if (newTileMaps[index].id === 'standard' && newTileMaps[index].visible) {
@@ -186,10 +193,68 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch, maps]
   );
 
+  const changeExpand = useCallback(
+    (expanded: boolean, index: number) => {
+      const groupTileMapId = maps[index].id;
+      const newTileMaps = maps.map((tileMap) => {
+        if (tileMap.groupId === groupTileMapId || tileMap.id === groupTileMapId) {
+          return { ...tileMap, expanded };
+        }
+        return tileMap;
+      });
+      dispatch(setTileMapsAction(newTileMaps));
+    },
+    [dispatch, maps]
+  );
+
   const changeMapOrder = useCallback(
     (index: number) => {
       if (index === 0) return;
       const newTileMaps = cloneDeep(maps);
+
+      const currentTileMap = newTileMaps[index];
+      const previousTileMap = newTileMaps[index - 1];
+      if (currentTileMap.isGroup) {
+        // 親レイヤーを移動するとき、その中の子レイヤーも一緒に移動する
+        const childTileMaps = newTileMaps.filter((tileMap) => tileMap.groupId === currentTileMap.id);
+        const childTileMapCount = childTileMaps.length;
+        if (previousTileMap.groupId === undefined) {
+          // 上のレイヤーがグループに入っていない場合
+          newTileMaps.splice(index, 1 + childTileMapCount);
+          newTileMaps.splice(index - 1, 0, currentTileMap, ...childTileMaps);
+        } else {
+          // 上のレイヤーがグループに入っている場合
+          const groupParentIndex = newTileMaps.findIndex((tileMap) => tileMap.id === previousTileMap.groupId);
+          if (groupParentIndex !== -1) {
+            newTileMaps.splice(index, 1 + childTileMapCount);
+            newTileMaps.splice(groupParentIndex, 0, currentTileMap, ...childTileMaps);
+          }
+        }
+        dispatch(setTileMapsAction(newTileMaps));
+        return;
+      } else {
+        if (previousTileMap.isGroup && currentTileMap.groupId !== previousTileMap.id) {
+          currentTileMap.groupId = previousTileMap.id;
+          currentTileMap.expanded = previousTileMap.expanded;
+          dispatch(setTileMapsAction(newTileMaps));
+          return;
+        } else if (previousTileMap.groupId && currentTileMap.groupId !== previousTileMap.groupId) {
+          currentTileMap.groupId = previousTileMap.groupId;
+          currentTileMap.expanded = previousTileMap.expanded;
+          dispatch(setTileMapsAction(newTileMaps));
+          return;
+        } else if (previousTileMap.isGroup && currentTileMap.groupId) {
+          const groupParentIndex = newTileMaps.findIndex((tileMap) => tileMap.id === currentTileMap.groupId);
+          if (groupParentIndex !== -1) {
+            currentTileMap.groupId = undefined;
+            newTileMaps.splice(index, 1);
+            newTileMaps.splice(groupParentIndex, 0, currentTileMap);
+            dispatch(setTileMapsAction(newTileMaps));
+            return;
+          }
+        }
+      }
+
       [newTileMaps[index], newTileMaps[index - 1]] = [newTileMaps[index - 1], newTileMaps[index]];
       dispatch(setTileMapsAction(newTileMaps));
     },
@@ -202,12 +267,26 @@ export const useMaps = (): UseMapsReturnType => {
 
   const deleteMap = useCallback(
     async (deletedTileMap: TileMapType) => {
-      clearTiles(deletedTileMap);
-      dispatch(deleteTileMapAction(deletedTileMap));
-      setMapEditorOpen(false);
-      return { isOK: true, message: '' };
+      if (deletedTileMap.isGroup) {
+        const childTileMaps = maps
+          .map((tileMap) => {
+            if (tileMap.groupId === deletedTileMap.id) {
+              return { ...tileMap, groupId: undefined };
+            }
+            return tileMap;
+          })
+          .filter((tileMap) => tileMap.id !== deletedTileMap.id);
+        dispatch(setTileMapsAction(childTileMaps));
+        setMapEditorOpen(false);
+        return { isOK: true, message: '' };
+      } else {
+        clearTiles(deletedTileMap);
+        dispatch(deleteTileMapAction(deletedTileMap));
+        setMapEditorOpen(false);
+        return { isOK: true, message: '' };
+      }
     },
-    [clearTiles, dispatch]
+    [clearTiles, dispatch, maps]
   );
 
   const openEditMap = useCallback((editTileMap: TileMapType | null) => {
@@ -573,5 +652,6 @@ export const useMaps = (): UseMapsReturnType => {
     importStyleFile,
     clearTileCache,
     updatePmtilesURL,
+    changeExpand,
   } as const;
 };

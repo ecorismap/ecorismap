@@ -13,7 +13,7 @@ export type UseLayersReturnType = {
   changeExpand: (layer: LayerType) => void;
   changeLabel: (layer: LayerType, labelValue: string) => void;
   changeCustomLabel: (layer: LayerType, labelValue: string) => void;
-  changeVisible: (layer: LayerType) => void;
+  changeVisible: (visible: boolean, index: number) => void;
   changeActiveLayer: (index: number) => void;
   changeLayerOrder: (index: number) => void;
 };
@@ -51,10 +51,17 @@ export const useLayers = (): UseLayersReturnType => {
     [dispatch, layers]
   );
   const changeVisible = useCallback(
-    (layer: LayerType) => {
-      dispatch(updateLayerAction({ ...layer, visible: !layer.visible }));
+    (visible: boolean, index: number) => {
+      const layerId = layers[index].id;
+      const targetLayers = layers.map((l) => {
+        if (l.id === layerId || l.groupId === layerId) {
+          return { ...l, visible };
+        }
+        return l;
+      });
+      dispatch(setLayersAction(targetLayers));
     },
-    [dispatch]
+    [dispatch, layers]
   );
 
   const changeActiveLayer = useCallback(

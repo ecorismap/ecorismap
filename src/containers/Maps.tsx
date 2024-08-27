@@ -34,6 +34,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     toggleOnline,
     importMapFile,
     importStyleFile,
+    changeExpand,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const { runTutrial } = useTutrial();
@@ -241,6 +242,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         pressExportMaps,
         jumpToBoundary,
         pressImportStyle,
+        changeExpand,
       }}
     >
       <Maps />
