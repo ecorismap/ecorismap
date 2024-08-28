@@ -110,6 +110,7 @@ export const EXPORTTYPE = {
   GeoJSON: 'geojson',
   GPX: 'gpx',
   JSON: 'json',
+  KML: 'kml',
 } as const;
 
 export const LatLonDMSTemplate = {
