@@ -10,7 +10,8 @@ import dayjs from 'dayjs';
 import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
-
+//@ts-ignore
+import tokml from 'tokml';
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
@@ -239,7 +240,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
 
-    //GeoJSON
+    //GeoJSON&KML
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
       const geojson = generateGeoJson(
         exportedRecords,
@@ -251,7 +252,12 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       const geojsonData = JSON.stringify(geojson);
       const geojsonName = `${targetLayer.name}_${time}.geojson`;
       exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
+      const kml = tokml(geojson, { name: 'name', description: 'cmt' });
+      const kmlData = kml;
+      const kmlName = `${targetLayer.name}_${time}.kml`;
+      exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: '' });
     }
+
     //CSV
     if (
       targetLayer.type === 'POINT' ||
