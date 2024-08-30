@@ -34,6 +34,7 @@ import {
 import { rgbaString2qgis } from './Color';
 import { cloneDeep } from 'lodash';
 import { isLocationType, isLocationTypeArray } from './General';
+import { generateLabel, getColor } from './Layer';
 
 export const getGeometryType = (geometryString: string): FeatureType => {
   if (geometryString.includes('POINT')) {
@@ -559,6 +560,138 @@ export const generateCSV = (
   return csv;
 };
 
+const generateDescription = (record: RecordType, field: FieldType[]) => {
+  return field
+    .map(({ name }) => {
+      const fieldValue = record.field[name];
+      if (isPhotoField(fieldValue)) {
+        return `${name}: ${fieldValue.map((p) => p.name).join(',')}`;
+      } else {
+        return `${name}: ${fieldValue}`;
+      }
+    })
+    .join('\n');
+};
+
+const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\)/);
+  if (!match) return transparency ? '00ffffff' : 'ffffffff';
+
+  const r = parseInt(match[1], 10).toString(16).padStart(2, '0');
+  const g = parseInt(match[2], 10).toString(16).padStart(2, '0');
+  const b = parseInt(match[3], 10).toString(16).padStart(2, '0');
+  const a = transparency
+    ? '00'
+    : match[4]
+    ? Math.round(parseFloat(match[4]) * 255)
+        .toString(16)
+        .padStart(2, '0')
+    : 'ff';
+
+  return `${a}${b}${g}${r}`;
+};
+
+const getLineWidth = (layer: LayerType, feature: RecordType): number => {
+  if (layer.colorStyle.colorType === 'INDIVIDUAL' && feature.field._strokeWidth !== undefined) {
+    return feature.field._strokeWidth as number;
+  } else if (layer.colorStyle.lineWidth !== undefined) {
+    return layer.colorStyle.lineWidth;
+  } else {
+    return 1.5; // デフォルト値
+  }
+};
+
+export const generateKML = (data: RecordType[], layer: LayerType) => {
+  const kml = xmlBuilder
+    .create('kml', {
+      encoding: 'UTF-8',
+    })
+    .att('xmlns', 'http://www.opengis.net/kml/2.2');
+
+  const document = kml.ele('Document');
+
+  const addStyleToPlacemark = (placemark: any, feature: RecordType) => {
+    const rgbaColor = getColor(layer, feature);
+    const transparency = Boolean(layer.colorStyle.transparency);
+    const kmlColor = rgbaToKmlColor(rgbaColor, transparency);
+    const lineWidth = getLineWidth(layer, feature);
+    const style = placemark.ele('Style');
+
+    switch (layer.type) {
+      case 'POINT':
+        const iconStyle = style.ele('IconStyle');
+        iconStyle.ele('color', kmlColor);
+        const icon = iconStyle.ele('Icon');
+        icon.ele('href', 'http://maps.google.com/mapfiles/kml/paddle/wht-blank.png');
+        break;
+      case 'LINE':
+        const lineStyle = style.ele('LineStyle');
+        lineStyle.ele('color', kmlColor);
+        lineStyle.ele('width', lineWidth);
+        break;
+      case 'POLYGON':
+        const polyStyle = style.ele('PolyStyle');
+        polyStyle.ele('color', kmlColor);
+        polyStyle.ele('fill', '1');
+        polyStyle.ele('outline', '1');
+        // Add LineStyle for polygon outline
+        const polygonLineStyle = style.ele('LineStyle');
+        polygonLineStyle.ele('color', rgbaToKmlColor(rgbaColor, false)); // Outline is always visible
+        polygonLineStyle.ele('width', lineWidth);
+        break;
+    }
+  };
+
+  switch (layer.type) {
+    case 'POINT':
+      data.forEach((point) => {
+        if (isLocationType(point.coords)) {
+          const placemark = document.ele('Placemark');
+          addStyleToPlacemark(placemark, point);
+          const pointElement = placemark.ele('Point');
+          pointElement.ele('coordinates', `${point.coords.longitude},${point.coords.latitude}`);
+          placemark.ele('name', generateLabel(layer, point));
+          placemark.ele('description', generateDescription(point, layer.field));
+        }
+      });
+      break;
+    case 'LINE':
+      data.forEach((line) => {
+        if (isLocationTypeArray(line.coords)) {
+          const placemark = document.ele('Placemark');
+          addStyleToPlacemark(placemark, line);
+          const lineString = placemark.ele('LineString');
+          const coordinates = line.coords.map((coord) => `${coord.longitude},${coord.latitude}`).join(' ');
+          lineString.ele('coordinates', coordinates);
+          placemark.ele('name', generateLabel(layer, line));
+          placemark.ele('description', generateDescription(line, layer.field));
+        }
+      });
+      break;
+    case 'POLYGON':
+      data.forEach((polygon) => {
+        if (isLocationTypeArray(polygon.coords)) {
+          const placemark = document.ele('Placemark');
+          addStyleToPlacemark(placemark, polygon);
+          const polygonElement = placemark.ele('Polygon');
+          const outerBoundary = polygonElement.ele('outerBoundaryIs');
+          const linearRing = outerBoundary.ele('LinearRing');
+          const coordinates = polygon.coords.map((coord) => `${coord.longitude},${coord.latitude}`).join(' ');
+          linearRing.ele('coordinates', coordinates);
+          placemark.ele('name', generateLabel(layer, polygon));
+          placemark.ele('description', generateDescription(polygon, layer.field));
+        }
+      });
+      break;
+  }
+
+  return kml.end({
+    allowEmpty: true,
+    indent: '  ',
+    newline: '\n',
+    pretty: true,
+  });
+};
 export const generateGPX = (data: RecordType[], type: FeatureType) => {
   const gpx = xmlBuilder
     .create('gpx', {

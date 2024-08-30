@@ -22,6 +22,7 @@ interface MapsContextType {
   pressExportMaps: () => Promise<void>;
   jumpToBoundary: (tileMap: TileMapType) => void;
   pressImportStyle: (tileMap: TileMapType) => Promise<void>;
+  changeExpand: (expanded: boolean, index: number) => void;
 }
 
 export const MapsContext = createContext({} as MapsContextType);

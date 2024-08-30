@@ -4,8 +4,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { RecordType, LayerType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { Marker, MarkerDragEvent } from 'react-map-gl/maplibre';
-import { getColor } from '../../utils/Layer';
-import { generateLabel } from '../../hooks/useLayers';
+import { generateLabel, getColor } from '../../utils/Layer';
 
 interface Props {
   data: RecordType[];

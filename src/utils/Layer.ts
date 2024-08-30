@@ -4,6 +4,7 @@ import { t } from '../i18n/config';
 import { RecordType, LayerType } from '../types';
 import { ulid } from 'ulid';
 import { hex2rgba } from './Color';
+import dayjs from '../i18n/dayjs';
 
 export const getColor = (layer: LayerType, feature: RecordType) => {
   //colorは以前はhexで保存していたが、rgbaで保存するように変更したため、hexの場合はrgbaに変換する。
@@ -196,3 +197,25 @@ export const isLayerType = (object: any): object is LayerType => {
     Array.isArray(object.field)
   ); // You may want to perform a deeper check here
 };
+
+export function generateLabel(layer: LayerType, feature: RecordType) {
+  return layer.label === t('common.custom')
+    ? layer.customLabel
+        ?.split('|')
+        .map((f) => {
+          const fieldName = f.trim(); // Remove leading and trailing whitespaces
+          if (fieldName.startsWith('"') || fieldName.startsWith("'")) {
+            return fieldName.substring(1, fieldName.length - 1); // Remove quotes
+          } else {
+            return feature.field[fieldName];
+          }
+        })
+        .join('') || '' // Remove space between joined items
+    : layer.label === ''
+    ? ''
+    : feature.field[layer.label]
+    ? layer.field.find((f) => f.name === layer.label)?.format === 'DATETIME'
+      ? dayjs(feature.field[layer.label].toString()).format('L HH:mm')
+      : feature.field[layer.label].toString()
+    : '';
+}

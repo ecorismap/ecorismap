@@ -191,7 +191,8 @@
     "line": "ライン",
     "useLastValue": "最後の値を使用する",
     "useOutline": "枠線のみ表示",
-    "termsUpdated": "利用規約を更新しました。"
+    "termsUpdated": "利用規約を更新しました。",
+    "addGroup": "グループ作成"
   },
   "Home": {
     "confirm": {

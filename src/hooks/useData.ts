@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ExportType, LayerType, PhotoType, RecordType } from '../types';
-import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
+import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
@@ -251,6 +251,13 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       const geojsonData = JSON.stringify(geojson);
       const geojsonName = `${targetLayer.name}_${time}.geojson`;
       exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
+    }
+    //KML
+    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
+      const kml = generateKML(exportedRecords, targetLayer);
+      const kmlData = kml;
+      const kmlName = `${targetLayer.name}_${time}.kml`;
+      exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: '' });
     }
     //CSV
     if (

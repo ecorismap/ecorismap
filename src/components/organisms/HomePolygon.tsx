@@ -4,8 +4,7 @@ import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
-import { getColor } from '../../utils/Layer';
-import { generateLabel } from '../../hooks/useLayers';
+import { generateLabel, getColor } from '../../utils/Layer';
 
 interface Props {
   data: PolygonRecordType[];
