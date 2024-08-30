@@ -606,7 +606,7 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
   const addStyleToPlacemark = (placemark: any, feature: RecordType) => {
     const rgbaColor = getColor(layer, feature);
     const transparency = Boolean(layer.colorStyle.transparency);
-    const kmlColor = rgbaToKmlColor(rgbaColor, transparency);
+    const kmlColor = rgbaToKmlColor(rgbaColor, false);
     const lineWidth = getLineWidth(layer, feature);
     const style = placemark.ele('Style');
 
@@ -624,12 +624,12 @@ export const generateKML = (data: RecordType[], layer: LayerType) => {
         break;
       case 'POLYGON':
         const polyStyle = style.ele('PolyStyle');
-        polyStyle.ele('color', kmlColor);
+        polyStyle.ele('color', rgbaToKmlColor(rgbaColor, transparency));
         polyStyle.ele('fill', '1');
         polyStyle.ele('outline', '1');
         // Add LineStyle for polygon outline
         const polygonLineStyle = style.ele('LineStyle');
-        polygonLineStyle.ele('color', rgbaToKmlColor(rgbaColor, false)); // Outline is always visible
+        polygonLineStyle.ele('color', kmlColor); // Outline is always visible
         polygonLineStyle.ele('width', lineWidth);
         break;
     }
