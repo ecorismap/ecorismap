@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ExportType, LayerType, PhotoType, RecordType } from '../types';
-import { generateCSV, generateGeoJson, generateGPX } from '../utils/Geometry';
+import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
@@ -10,8 +10,7 @@ import dayjs from 'dayjs';
 import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
-//@ts-ignore
-import tokml from 'tokml';
+
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
   isChecked: boolean;
@@ -240,7 +239,7 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
 
-    //GeoJSON&KML
+    //GeoJSON
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
       const geojson = generateGeoJson(
         exportedRecords,
@@ -252,12 +251,14 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
       const geojsonData = JSON.stringify(geojson);
       const geojsonName = `${targetLayer.name}_${time}.geojson`;
       exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
-      const kml = tokml(geojson, { name: 'name', description: 'cmt' });
+    }
+    //KML
+    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
+      const kml = generateKML(exportedRecords, targetLayer);
       const kmlData = kml;
       const kmlName = `${targetLayer.name}_${time}.kml`;
       exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: '' });
     }
-
     //CSV
     if (
       targetLayer.type === 'POINT' ||

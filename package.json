@@ -129,7 +129,6 @@
     "sanitize-filename": "^1.6.3",
     "styled-components": "^6.1.11",
     "sweetalert2": "^11.12.2",
-    "tokml": "^0.4.0",
     "ulid": "^2.3.0",
     "xmlbuilder": "^15.1.1",
     "xmldom": "^0.6.0"

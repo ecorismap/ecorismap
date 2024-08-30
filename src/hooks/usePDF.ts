@@ -17,8 +17,7 @@ import * as Print from 'expo-print';
 import { getTileRegion, tileToWebMercator } from '../utils/Tile';
 import { useWindow } from './useWindow';
 import * as turf from '@turf/turf';
-import { generateLabel } from './useLayers';
-import { getColor } from '../utils/Layer';
+import { generateLabel, getColor } from '../utils/Layer';
 import { isPhotoField } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import {
