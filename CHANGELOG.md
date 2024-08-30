@@ -1,4 +1,13 @@
 # Change Log
+## [Unreleased] - 2024-8-30
+- Fixed an issue where display slowed down when tiles were not available (Android)
+- Added map groups
+- Added KML to data export options
+
+- タイルがない場合に表示が遅くなる問題を修正（Android）
+- 地図グループを追加
+- データのエクスポートにKMLを追加
+
 ## [0.4.1] - 2024-8-22
 - Update terms of use.
 - Fix import data bug (iOS).
@@ -130,7 +139,6 @@
 ## [0.1.9] - 2022-11-13
 - App Release.
 
-## [Unreleased]
 
 [Unreleased]: https://github.com/ecorismap/ecorismap/compare/0d9d02a29c54c21277cffa2ef8173144c993ad6a...HEAD
 [0.4.1]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...0d9d02a29c54c21277cffa2ef8173144c993ad6a
