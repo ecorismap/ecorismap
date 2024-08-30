@@ -223,6 +223,9 @@ export interface TileMapItemType {
   maximumZ: number;
   flipY: boolean;
   tileSize?: number;
+  isGroup?: boolean;
+  groupId?: string;
+  expanded?: boolean;
 }
 
 export interface TileMapType extends TileMapItemType {

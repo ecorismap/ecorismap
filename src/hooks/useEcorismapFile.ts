@@ -30,8 +30,8 @@ import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
-import { generateCSV, generateGPX, generateGeoJson } from '../utils/Geometry';
 import { useRepository } from './useRepository';
+import { generateCSV, generateGPX, generateGeoJson, generateKML } from '../utils/Geometry';
 import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
 
@@ -172,6 +172,11 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             const gpxName = `${layer.name}_${time}.gpx`;
             exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: sanitize(layer.name) });
           }
+          //KML
+          const kml = generateKML(sortedRecords, layer);
+          const kmlData = kml;
+          const kmlName = `${layer.name}_${time}.kml`;
+          exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: sanitize(layer.name) });
         }
         //Photo
         //fromProject

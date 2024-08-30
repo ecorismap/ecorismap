@@ -101,7 +101,7 @@ export const LayersTable = () => {
           >
             <RectButton2
               name={item.visible ? 'eye' : 'eye-off-outline'}
-              onPress={() => changeVisible(item)}
+              onPress={() => changeVisible(!item.visible, index)}
               color={COLOR.GRAY4}
               style={{
                 backgroundColor,

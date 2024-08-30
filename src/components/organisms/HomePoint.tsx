@@ -4,8 +4,7 @@ import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
-import { getColor } from '../../utils/Layer';
-import { generateLabel } from '../../hooks/useLayers';
+import { generateLabel, getColor } from '../../utils/Layer';
 
 interface Props {
   data: PointRecordType[];

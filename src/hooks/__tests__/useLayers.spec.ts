@@ -186,12 +186,17 @@ describe('useLayers', () => {
     expect(layer.visible).toBe(true);
 
     act(() => {
-      result.current.changeVisible(layer);
+      result.current.changeVisible(false, 0);
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/updateLayerAction',
-      payload: { ...layer, visible: false },
+      type: 'layers/setLayersAction',
+      payload: [
+        { ...layer, visible: false },
+        result.current.layers[1],
+        result.current.layers[2],
+        result.current.layers[3],
+      ],
     });
   });
 

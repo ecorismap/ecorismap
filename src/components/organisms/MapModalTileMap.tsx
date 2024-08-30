@@ -26,6 +26,7 @@ export const MapModalTileMap = React.memo(() => {
   const [tileURL, setTileURL] = useState('');
   const [styleURL, setStyleURL] = useState('');
   const [isVector, setIsVector] = useState(true);
+  const [isGroup, setIsGroup] = useState(false);
   const [attribution, setAttribution] = useState('');
   const [transparency, setTransparency] = useState(0);
   const [minimumZ, setMinimumZ] = useState(0);
@@ -42,6 +43,7 @@ export const MapModalTileMap = React.memo(() => {
     setTileURL(data.url);
     setStyleURL(data.styleURL ?? '');
     setIsVector(data.isVector ?? true);
+    setIsGroup(data.isGroup ?? false);
     setAttribution(data.attribution);
     setTransparency(data.transparency);
     setMinimumZ(data.minimumZ);
@@ -116,6 +118,7 @@ export const MapModalTileMap = React.memo(() => {
   });
 
   const checkInputs = () => {
+    if (isGroup) return tileName !== '';
     const { isOK } = formattedInputs(tileURL, 'url');
     return isOK;
   };
@@ -134,6 +137,7 @@ export const MapModalTileMap = React.memo(() => {
       minimumZ: minimumZ,
       maximumZ: maximumZ,
       flipY: flipY,
+      isGroup: isGroup,
     };
   };
   return (
@@ -146,6 +150,13 @@ export const MapModalTileMap = React.memo(() => {
               <SmallButton name={NAV_BTN.CLOSE} onPress={pressEditMapCancel} backgroundColor={COLOR.GRAY1} />
             </View>
             <ScrollView>
+              <CheckBox
+                style={{ backgroundColor: COLOR.WHITE }}
+                label={t('common.addGroup')}
+                width={windowWidth * modalWidthScale * 0.5}
+                checked={isGroup}
+                onCheck={(checked) => setIsGroup(checked)}
+              />
               <TextInput
                 style={styles.modalTextInput}
                 placeholder={t('common.name')}
@@ -154,96 +165,100 @@ export const MapModalTileMap = React.memo(() => {
                 onChangeText={(text) => setTileName(text)}
               />
 
-              <TextInput
-                style={styles.modalTextInput}
-                placeholder=" https://example/{z}/{x}/{y}.png"
-                placeholderTextColor={COLOR.GRAY4}
-                value={tileURL}
-                onChangeText={(text) => setTileURL(text)}
-              />
-              <TextInput
-                style={styles.modalTextInput}
-                placeholder={t('common.sourceName')}
-                placeholderTextColor={COLOR.GRAY4}
-                value={attribution}
-                onChangeText={(text) => setAttribution(text)}
-              />
-              <Slider
-                label={t('common.transparency')}
-                width={windowWidth * modalWidthScale}
-                initialValue={transparency}
-                step={0.1}
-                minimumValue={0}
-                maximumValue={1}
-                onSlidingComplete={(value) => setTransparency(value)}
-              />
-              {!tileURL?.includes('pdf') && (
-                <Slider
-                  label={t('common.fixZoom')}
-                  width={windowWidth * modalWidthScale}
-                  initialValue={overzoomThreshold!}
-                  step={1}
-                  minimumValue={0}
-                  maximumValue={22}
-                  onSlidingComplete={(value) => setOverzoomThreshold(value)}
-                />
-              )}
-              {!tileURL?.includes('pmtiles') && !tileURL?.includes('.pbf') && !tileURL?.includes('pdf') && (
-                <View style={{ flexDirection: 'row' }}>
-                  <CheckBox
-                    style={{ backgroundColor: COLOR.WHITE }}
-                    label={t('common.highResolution')}
-                    width={windowWidth * modalWidthScale * 0.5}
-                    checked={highResolutionEnabled!}
-                    onCheck={(checked) => setHighResolutionEnabled(checked)}
-                  />
-                  <CheckBox
-                    style={{ backgroundColor: COLOR.WHITE }}
-                    label={t('common.Yaxis')}
-                    width={windowWidth * modalWidthScale * 0.5}
-                    checked={flipY!}
-                    onCheck={(checked) => setFlipY(checked)}
-                  />
-                </View>
-              )}
-              {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && (
-                <CheckBox
-                  style={{ backgroundColor: COLOR.WHITE }}
-                  label={t('common.vectortile')}
-                  width={windowWidth * modalWidthScale * 0.5}
-                  checked={isVector}
-                  onCheck={(checked) => setIsVector(checked)}
-                />
-              )}
-              {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && isVector && (
-                <View style={{ flexDirection: 'row' }}>
+              {!isGroup && (
+                <>
                   <TextInput
-                    style={[styles.modalTextInput, { width: windowWidth * modalWidthScale - 65 }]}
-                    placeholder="Style URL (json)"
+                    style={styles.modalTextInput}
+                    placeholder=" https://example/{z}/{x}/{y}.png"
                     placeholderTextColor={COLOR.GRAY4}
-                    value={styleURL}
-                    onChangeText={(text) => setStyleURL(text)}
+                    value={tileURL}
+                    onChangeText={(text) => setTileURL(text)}
                   />
-                  <View
-                    style={{
-                      alignItems: 'center',
-                      flex: 1,
-                      flexDirection: 'row',
-                      justifyContent: 'flex-start',
-                      paddingHorizontal: 10,
-                      paddingVertical: 0,
-                      marginBottom: 10,
-                    }}
-                  >
-                    <SmallButton
-                      name={'folder-open'}
-                      onPress={() => pressImportStyle(tileMap())}
-                      backgroundColor={COLOR.GRAY3}
-                      size={22}
-                      borderRadius={5}
+                  <TextInput
+                    style={styles.modalTextInput}
+                    placeholder={t('common.sourceName')}
+                    placeholderTextColor={COLOR.GRAY4}
+                    value={attribution}
+                    onChangeText={(text) => setAttribution(text)}
+                  />
+                  <Slider
+                    label={t('common.transparency')}
+                    width={windowWidth * modalWidthScale}
+                    initialValue={transparency}
+                    step={0.1}
+                    minimumValue={0}
+                    maximumValue={1}
+                    onSlidingComplete={(value) => setTransparency(value)}
+                  />
+                  {!tileURL?.includes('pdf') && (
+                    <Slider
+                      label={t('common.fixZoom')}
+                      width={windowWidth * modalWidthScale}
+                      initialValue={overzoomThreshold!}
+                      step={1}
+                      minimumValue={0}
+                      maximumValue={22}
+                      onSlidingComplete={(value) => setOverzoomThreshold(value)}
                     />
-                  </View>
-                </View>
+                  )}
+                  {!tileURL?.includes('pmtiles') && !tileURL?.includes('.pbf') && !tileURL?.includes('pdf') && (
+                    <View style={{ flexDirection: 'row' }}>
+                      <CheckBox
+                        style={{ backgroundColor: COLOR.WHITE }}
+                        label={t('common.highResolution')}
+                        width={windowWidth * modalWidthScale * 0.5}
+                        checked={highResolutionEnabled!}
+                        onCheck={(checked) => setHighResolutionEnabled(checked)}
+                      />
+                      <CheckBox
+                        style={{ backgroundColor: COLOR.WHITE }}
+                        label={t('common.Yaxis')}
+                        width={windowWidth * modalWidthScale * 0.5}
+                        checked={flipY!}
+                        onCheck={(checked) => setFlipY(checked)}
+                      />
+                    </View>
+                  )}
+                  {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && (
+                    <CheckBox
+                      style={{ backgroundColor: COLOR.WHITE }}
+                      label={t('common.vectortile')}
+                      width={windowWidth * modalWidthScale * 0.5}
+                      checked={isVector}
+                      onCheck={(checked) => setIsVector(checked)}
+                    />
+                  )}
+                  {tileURL && (tileURL.includes('pmtiles') || tileURL.includes('.pbf')) && isVector && (
+                    <View style={{ flexDirection: 'row' }}>
+                      <TextInput
+                        style={[styles.modalTextInput, { width: windowWidth * modalWidthScale - 65 }]}
+                        placeholder="Style URL (json)"
+                        placeholderTextColor={COLOR.GRAY4}
+                        value={styleURL}
+                        onChangeText={(text) => setStyleURL(text)}
+                      />
+                      <View
+                        style={{
+                          alignItems: 'center',
+                          flex: 1,
+                          flexDirection: 'row',
+                          justifyContent: 'flex-start',
+                          paddingHorizontal: 10,
+                          paddingVertical: 0,
+                          marginBottom: 10,
+                        }}
+                      >
+                        <SmallButton
+                          name={'folder-open'}
+                          onPress={() => pressImportStyle(tileMap())}
+                          backgroundColor={COLOR.GRAY3}
+                          size={22}
+                          borderRadius={5}
+                        />
+                      </View>
+                    </View>
+                  )}
+                </>
               )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
