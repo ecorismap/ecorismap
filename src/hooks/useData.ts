@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
+import { updateLayerAction } from '../modules/layers';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -43,8 +44,6 @@ export type UseDataReturnType = {
     message: string;
   };
   updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
-  setSortedOrder: (order: SortOrderType) => void;
-  setSortedName: (name: string) => void;
 };
 
 export const useData = (targetLayer: LayerType): UseDataReturnType => {
@@ -112,8 +111,11 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
         setCheckList(newCheckList);
         setAllUserRecordSet(sortedData);
       }
+      setSortedOrder(order);
+      setSortedName(colName);
+      //dispatch(updateLayerAction({ ...targetLayer, sortedOrder: sortedOrder, sortedName: sortedName }));
     },
-    [checkList, dataSet, targetLayer.id]
+    [checkList, dataSet, targetLayer]
   );
 
   const changeVisibleAll = useCallback(
@@ -295,6 +297,12 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     return { exportData, fileName };
   }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
 
+  // useEffect(() => {
+  //   console.log(targetLayer.sortedName, targetLayer.sortedOrder);
+  //   setSortedOrder(targetLayer.sortedOrder ?? 'UNSORTED');
+  //   setSortedName(targetLayer.sortedName ?? '');
+  // }, [targetLayer.sortedName, targetLayer.sortedOrder]);
+
   useEffect(() => {
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;
     if (dataSet === undefined) return;
@@ -331,7 +339,5 @@ export const useData = (targetLayer: LayerType): UseDataReturnType => {
     generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
-    setSortedOrder,
-    setSortedName,
   } as const;
 };

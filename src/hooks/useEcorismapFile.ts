@@ -33,6 +33,7 @@ import JSZip from 'jszip';
 import { generateCSV, generateGPX, generateGeoJson, generateKML } from '../utils/Geometry';
 import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
+import { deleteDatabase } from '../utils/SQLite';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -350,6 +351,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   );
 
   const clearEcorisMap = useCallback(async () => {
+    await deleteDatabase();
     //レイヤ、データ、地図情報、設定をリセット。設定のtutrialは現在の状況を引き継ぐ
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
@@ -360,6 +362,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // if (uri) {
     //   await FileSystem.deleteAsync(uri);
     // }
+
     return { isOK: true, message: '' };
   }, [dispatch, settings?.tutrials]);
 

@@ -11,6 +11,7 @@ interface DataContextType {
   isMapMemoLayer: boolean;
   sortedName: string;
   sortedOrder: SortOrderType;
+  addDataByDictinary: (fieldId: string, value: string) => void;
   pressAddData: () => void;
   pressDeleteData: () => void;
   pressExportData: () => void;
@@ -22,7 +23,5 @@ interface DataContextType {
   gotoDataEdit: (index: number) => void;
   gotoBack: () => void;
   updateOwnRecordSetOrder: (allUserRecordSet_: RecordType[]) => void;
-  setSortedName: (name: string) => void;
-  setSortedOrder: (order: SortOrderType) => void;
 }
 export const DataContext = createContext({} as DataContextType);

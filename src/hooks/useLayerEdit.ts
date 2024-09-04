@@ -43,6 +43,7 @@ export type UseLayerEditReturnType = {
   changePermission: (val: PermissionType) => void;
   changeFieldOrder: (index: number) => void;
   changeFieldName: (index: number, val: string) => void;
+  changeOption: (index: number, val: boolean) => void;
   submitFieldName: (index: number) => void;
   changeFieldFormat: (index: number, itemValue: FormatType) => void;
   deleteField: (id: number) => void;
@@ -269,6 +270,31 @@ export const useLayerEdit = (
     [targetLayer]
   );
 
+  const changeOption = useCallback(
+    (index: number, val: boolean) => {
+      //辞書型のフィールドの場合は追加ボタンの表示を切り替える
+      //trueにする場合は、他のフィールドの辞書型をfalseにする
+      //trueにする場合は、layer.dictionaryFieldIdを設定する
+      //falseにする場合は、layer.dictionaryFieldIdが自分のidの場合はundefinedにする
+      const m = cloneDeep(targetLayer);
+      if (val) {
+        m.dictionaryFieldId = m.field[index].id;
+        m.field.forEach((f) => {
+          if (f.id !== m.field[index].id) {
+            f.useDictionaryAdd = false;
+          }
+        });
+        m.field[index].useDictionaryAdd = true;
+      } else {
+        m.dictionaryFieldId = m.field[index].id === m.dictionaryFieldId ? undefined : m.dictionaryFieldId;
+        m.field[index].useDictionaryAdd = false;
+      }
+      setTargetLayer(m);
+      setIsEdited(true);
+    },
+    [targetLayer]
+  );
+
   const deleteField = useCallback(
     (id: number) => {
       const m = cloneDeep(targetLayer);
@@ -300,6 +326,7 @@ export const useLayerEdit = (
     changePermission,
     changeFieldOrder,
     changeFieldName,
+    changeOption,
     submitFieldName,
     changeFieldFormat,
     deleteField,

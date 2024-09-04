@@ -27,6 +27,7 @@ import { RootState } from '../../store';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
+import { DataEditDictionary } from '../organisms/DataEditDictionary';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -131,7 +132,7 @@ export default function DataEditScreen() {
       <ScrollView>
         <DataEditLayerName value={layer.name} />
 
-        {layer.field.map(({ name, format, list }, index) => {
+        {layer.field.map(({ id, name, format, list }, index) => {
           switch (format) {
             case 'PHOTO':
               return (
@@ -158,6 +159,17 @@ export default function DataEditScreen() {
                   multiline={true}
                   value={data.field[name] as string | number | undefined}
                   onChangeText={(value) => changeField(name, value)}
+                  onEndEditing={() => submitField(name, format)}
+                />
+              );
+            case 'STRING_DICTIONARY':
+              return (
+                <DataEditDictionary
+                  key={index}
+                  name={name}
+                  value={data.field[name] as string | number | undefined}
+                  table={`_${layer.id}_${id}`}
+                  onChangeText={changeField}
                   onEndEditing={() => submitField(name, format)}
                 />
               );
