@@ -1,0 +1,224 @@
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build.gradle b/node_modules/react-native-japanese-text-analyzer/android/build.gradle
+index 7ec958b..1a94fc9 100644
+--- a/node_modules/react-native-japanese-text-analyzer/android/build.gradle
++++ b/node_modules/react-native-japanese-text-analyzer/android/build.gradle
+@@ -19,10 +19,10 @@ def safeExtGet(prop, fallback) {
+ }
+ 
+ android {
+-    compileSdkVersion safeExtGet('JapaneseTextAnalyzer_compileSdkVersion', 29)
++    compileSdkVersion safeExtGet('JapaneseTextAnalyzer_compileSdkVersion', 34)
+     defaultConfig {
+-        minSdkVersion safeExtGet('JapaneseTextAnalyzer_minSdkVersion', 16)
+-        targetSdkVersion safeExtGet('JapaneseTextAnalyzer_targetSdkVersion', 29)
++        minSdkVersion safeExtGet('JapaneseTextAnalyzer_minSdkVersion', 23)
++        targetSdkVersion safeExtGet('JapaneseTextAnalyzer_targetSdkVersion', 34)
+         versionCode 1
+         versionName "1.0"
+ 
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..a653d8d
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java b/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java
+new file mode 100644
+index 0000000..e1d4c6b
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java
+@@ -0,0 +1,10 @@
++/**
++ * Automatically generated file. DO NOT MODIFY
++ */
++package com.reactnativejapanesetextanalyzer;
++
++public final class BuildConfig {
++  public static final boolean DEBUG = Boolean.parseBoolean("true");
++  public static final String LIBRARY_PACKAGE_NAME = "com.reactnativejapanesetextanalyzer";
++  public static final String BUILD_TYPE = "debug";
++}
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+new file mode 100644
+index 0000000..e86b3cb
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.reactnativejapanesetextanalyzer" >
++
++    <uses-sdk android:minSdkVersion="23" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+new file mode 100644
+index 0000000..cb054a8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+@@ -0,0 +1,18 @@
++{
++  "version": 3,
++  "artifactType": {
++    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
++    "kind": "Directory"
++  },
++  "applicationId": "com.reactnativejapanesetextanalyzer",
++  "variantName": "debug",
++  "elements": [
++    {
++      "type": "SINGLE",
++      "filters": [],
++      "attributes": [],
++      "outputFile": "AndroidManifest.xml"
++    }
++  ],
++  "elementType": "File"
++}
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+new file mode 100644
+index 0000000..1211b1e
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+@@ -0,0 +1,6 @@
++aarFormatVersion=1.0
++aarMetadataVersion=1.0
++minCompileSdk=1
++minCompileSdkExtension=0
++minAndroidGradlePluginVersion=1.0.0
++coreLibraryDesugaringEnabled=false
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
+new file mode 100644
+index 0000000..9e26dfe
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
+@@ -0,0 +1 @@
++{}
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
+new file mode 100644
+index 0000000..e2d1bc9
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar
+new file mode 100644
+index 0000000..b5af39e
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_symbol_list/debug/R.txt
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+new file mode 100644
+index 0000000..f3e6360
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+@@ -0,0 +1 @@
++#Sun Sep 01 17:26:14 JST 2024
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+new file mode 100644
+index 0000000..e69d2d8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/build/generated/res/resValues/debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class
+new file mode 100644
+index 0000000..d3430de
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class
+new file mode 100644
+index 0000000..5b99b30
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class
+new file mode 100644
+index 0000000..d8dddee
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+new file mode 100644
+index 0000000..78ac5b8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+@@ -0,0 +1,2 @@
++R_DEF: Internal format may change without notice
++local
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+new file mode 100644
+index 0000000..354b30a
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+@@ -0,0 +1,7 @@
++1<?xml version="1.0" encoding="utf-8"?>
++2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++3    package="com.reactnativejapanesetextanalyzer" >
++4
++5    <uses-sdk android:minSdkVersion="23" />
++6
++7</manifest>
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+new file mode 100644
+index 0000000..e86b3cb
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.reactnativejapanesetextanalyzer" >
++
++    <uses-sdk android:minSdkVersion="23" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
+new file mode 100644
+index 0000000..977b455
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+new file mode 100644
+index 0000000..8eeb75f
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+@@ -0,0 +1 @@
++com.reactnativejapanesetextanalyzer
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt
+new file mode 100644
+index 0000000..07c1268
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,17 @@
++-- Merging decision tree log ---
++manifest
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:1-4:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:1-4:12
++	package
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:2:11-56
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	xmlns:android
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:11-69
++uses-sdk
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	android:targetSdkVersion
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	android:minSdkVersion
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
+new file mode 100644
+index 0000000..da7f745
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ

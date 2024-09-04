@@ -26,7 +26,8 @@
       "reference": "Reference",
       "table": "Table",
       "listtable": "ListTable",
-      "string_multi": "String (multiple lines)"
+      "string_multi": "String-multipleLines",
+      "string_dictionary": "string-dictionary"
     },
     "permission": {
       "private": "Private",
@@ -163,7 +164,7 @@
     "selectColor": "choose a color",
     "source": "source",
     "dataFormat": "data format",
-    "setValue": "value",
+    "setValue": "Setting the value",
     "type": "type",
     "visible": "visible",
     "edit": "edit",
@@ -244,7 +245,10 @@
     "useLastValue": "use last value",
     "useOutline": "Show frame only",
     "termsUpdated": "Terms of use have been updated.",
-    "addGroup": "Group creation"
+    "addGroup": "Group creation",
+    "useInput": "input",
+    "option": "option",
+    "useAdd": "Used to add data"
   },
   "firebase": {
     "message": {
@@ -638,7 +642,8 @@
       "encryptKeyFailed": "Check encryption password",
       "notSupportPDF": "The web version does not support PDF import.",
       "saveTracking": "There are unsaved track logs. \nDo you want to save?",
-      "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude."
+      "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude.",
+      "cannotOpenDB": "Unable to open database."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
@@ -707,6 +712,11 @@
   "LayerEditFieldItem": {
     "navigation": {
       "title": "Setting the value"
+    },
+    "importDictionary": "Loading dictionary data (CSV)",
+    "dictionaryData": "dictionary",
+    "tooltip": {
+      "importDictionaryData": "Import dictionary data (CSV)"
     }
   },
   "Layers": {

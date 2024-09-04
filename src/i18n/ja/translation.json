@@ -26,7 +26,8 @@
       "reference": "参照",
       "table": "テーブル",
       "listtable": "リストテーブル",
-      "string_multi": "文字列（複数行）"
+      "string_multi": "文字列-複数行",
+      "string_dictionary": "文字列-辞書"
     },
     "permission": {
       "private": "プライベート",
@@ -184,7 +185,11 @@
     "useLastValue": "最後の値を使用する",
     "useOutline": "枠線のみ表示",
     "termsUpdated": "利用規約を更新しました。",
-    "addGroup": "グループ作成"
+    "addGroup": "グループ作成",
+    "useAddData": "データの追加に使用する",
+    "useInput": "入力",
+    "option": "オプション",
+    "useAdd": "データ追加に使用"
   },
   "Home": {
     "confirm": {
@@ -455,6 +460,11 @@
   "LayerEditFieldItem": {
     "navigation": {
       "title": "値の設定"
+    },
+    "importDictionary": "辞書データ（CSV）の読み込み",
+    "dictionaryData": "辞書",
+    "tooltip": {
+      "importDictionaryData": "辞書データ（CSV）をインポート"
     }
   },
   "tutrials": {
@@ -750,7 +760,8 @@
       "cannotSaveInTracking": "トラックの記録中は変更できません。",
       "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。",
       "saveTracking": "保存されていないトラックログがあります。保存しますか？",
-      "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。"
+      "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
+      "cannotOpenDB": "データベースを開けません。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

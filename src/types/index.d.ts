@@ -162,6 +162,7 @@ export interface FieldType {
   list?: { value: string; isOther: boolean; customFieldValue: string }[];
   defaultValue?: string | number;
   useLastValue?: boolean;
+  useDictionaryAdd?: boolean;
 }
 
 export interface LayerType {
@@ -177,6 +178,9 @@ export interface LayerType {
   field: FieldType[];
   groupId?: string;
   expanded?: boolean;
+  dictionaryFieldId?: string;
+  sortedOrder?: SortedOrderType;
+  sortedName?: string;
 }
 
 export type LatLonDMSKey = 'latitude' | 'longitude';
