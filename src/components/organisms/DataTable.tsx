@@ -76,7 +76,7 @@ export const DataTable = React.memo(() => {
               color={COLOR.GRAY4}
               style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
               borderRadius={0}
-              name={checkList[index].checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
               onPress={() => changeChecked(index, !checkList[index].checked)}
               size={25}
             />
