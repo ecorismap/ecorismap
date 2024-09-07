@@ -35,7 +35,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
-  } = useData(route.params.targetLayer);
+  } = useData(route.params.targetLayer.id);
 
   const { deleteRecordPhotos } = usePhoto();
   //const { isMember } = usePermission();

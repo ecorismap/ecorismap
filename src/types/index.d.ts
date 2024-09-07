@@ -182,7 +182,7 @@ export interface LayerType {
   sortedOrder?: SortedOrderType;
   sortedName?: string;
 }
-
+export type CheckListItem = { id: number; checked: boolean };
 export type LatLonDMSKey = 'latitude' | 'longitude';
 export type DMSKey = 'decimal' | 'deg' | 'min' | 'sec';
 
