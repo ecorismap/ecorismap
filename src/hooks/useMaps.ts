@@ -165,12 +165,14 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeVisible = useCallback(
     (visible: boolean, index: number) => {
+      const newTileMaps = cloneDeep(maps);
+      newTileMaps[index].visible = visible;
+
       const groupTileMapId = maps[index].id;
-      const newTileMaps = maps.map((tileMap) => {
-        if (tileMap.groupId === groupTileMapId || tileMap.id === groupTileMapId) {
-          return { ...tileMap, visible };
+      newTileMaps.forEach((tileMap) => {
+        if (tileMap.groupId === groupTileMapId) {
+          tileMap.visible = visible;
         }
-        return tileMap;
       });
 
       //標準を可視。衛星を不可視に
