@@ -1316,8 +1316,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } else if (route.params?.previous === 'Settings') {
       //ecorismapを読み込んだときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
-      setTimeout(() => bottomSheetRef.current?.close(), 300);
-      toggleTerrain(false);
+      setTimeout(() => bottomSheetRef.current?.close(), 500);
+      //toggleTerrain(false);
       if (Platform.OS !== 'web') toggleHeadingUp(false);
     } else if (route.params?.previous === 'Projects') {
       setTimeout(() => bottomSheetRef.current?.close(), 300);

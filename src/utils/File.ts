@@ -13,7 +13,7 @@ export const exportGeoFile = async (
     data: string;
     name: string;
     folder: string;
-    type: ExportType | 'PHOTO';
+    type: ExportType;
   }[],
   exportFileName: string,
   ext: 'zip' | 'ecorismap'
@@ -29,7 +29,7 @@ export const exportGeoFile = async (
     for (const d of exportData) {
       const folder = sanitize(d.folder) === '' ? '.' : sanitize(d.folder);
       await RNFS.mkdir(`${sourcePath}/${folder}`);
-      if (d.type === 'PHOTO') {
+      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
         await RNFS.copyFile(d.data, `${sourcePath}/${folder}/${sanitize(d.name)}`);
       } else {
         await RNFS.writeFile(`${sourcePath}/${folder}/${sanitize(d.name)}`, d.data, 'utf8');

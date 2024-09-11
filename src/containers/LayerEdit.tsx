@@ -3,7 +3,7 @@ import LayerEdit from '../components/pages/LayerEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useLayerEdit } from '../hooks/useLayerEdit';
 import { Props_LayerEdit } from '../routes';
-import { LayerType } from '../types';
+import { FieldType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
@@ -28,6 +28,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     changePermission,
     changeFieldOrder,
     changeFieldName,
+    changeOption,
     submitFieldName,
     changeFieldFormat,
     deleteField,
@@ -85,7 +86,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   }, [isEdited, navigation, targetLayer]);
 
   const gotoLayerEditFieldItem = useCallback(
-    (fieldIndex: number, fieldItem: LayerType['field'][0]) => {
+    (fieldIndex: number, fieldItem: FieldType) => {
       navigation.navigate('LayerEditFieldItem', {
         targetLayer: { ...targetLayer },
         fieldIndex: fieldIndex,
@@ -117,6 +118,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
         onChangeFieldOrder: changeFieldOrder,
         onChangeFieldName: changeFieldName,
         changePermission,
+        onChangeOption: changeOption,
         submitFieldName,
         onChangeFieldFormat: changeFieldFormat,
         pressSaveLayer,

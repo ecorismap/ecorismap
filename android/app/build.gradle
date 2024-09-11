@@ -44,7 +44,9 @@ android {
         versionName '0.4.2'
 
     }
-
+    packagingOptions {
+        resources.excludes.add("META-INF/*")
+    }
 
     signingConfigs {
         debug {

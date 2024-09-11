@@ -1,6 +1,5 @@
 import { createContext } from 'react';
 import { LatLonDMSType, LayerType, PhotoType, RecordType, SelectedPhotoType } from '../types';
-
 interface DataEditContextType {
   layer: LayerType;
   data: RecordType;

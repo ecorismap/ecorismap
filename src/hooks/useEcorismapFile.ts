@@ -34,6 +34,7 @@ import { useRepository } from './useRepository';
 import { generateCSV, generateGPX, generateGeoJson, generateKML } from '../utils/Geometry';
 import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
+import { deleteDatabase, exportDatabase, importDictionary } from '../utils/SQLite';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -57,7 +58,7 @@ export type UseEcorisMapFileReturnType = {
     {
       data: string;
       name: string;
-      type: ExportType | 'JSON' | 'PHOTO';
+      type: ExportType;
       folder: string;
     }[]
   >;
@@ -135,7 +136,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       },
       option?: { includePhoto: boolean; fromProject: boolean; includeGISData: boolean }
     ) => {
-      const exportData: { data: string; name: string; type: ExportType | 'JSON' | 'PHOTO'; folder: string }[] = [];
+      const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
       const savedData = JSON.stringify(data);
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       const savedDataName = `local_${time}.json`;
@@ -148,8 +149,9 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           data: layerSetting,
           name: `${layer.name}_${time}.json`,
           type: 'JSON',
-          folder: sanitize(layer.name),
+          folder: `${sanitize(layer.name)}_${layer.id}`,
         });
+
         if (layer.type === 'LAYERGROUP') continue;
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
@@ -159,24 +161,48 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
           const geojson = generateGeoJson(sortedRecords, layer.field, layer.type, layer.id, isMapMemoLayer);
           const geojsonData = JSON.stringify(geojson);
           const geojsonName = `${layer.name}_${time}.geojson`;
-          exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: sanitize(layer.name) });
+          exportData.push({
+            data: geojsonData,
+            name: geojsonName,
+            type: 'GeoJSON',
+            folder: `${sanitize(layer.name)}_${layer.id}`,
+          });
           //CSV
           const csv = generateCSV(sortedRecords, layer.field, layer.type, isMapMemoLayer);
           const csvData = csv;
           const csvName = `${layer.name}_${time}.csv`;
-          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: sanitize(layer.name) });
+          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: `${sanitize(layer.name)}_${layer.id}` });
           //GPX
           if (layer.type === 'POINT' || layer.type === 'LINE') {
             const gpx = generateGPX(sortedRecords, layer.type);
             const gpxData = gpx;
             const gpxName = `${layer.name}_${time}.gpx`;
-            exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: sanitize(layer.name) });
+            exportData.push({
+              data: gpxData,
+              name: gpxName,
+              type: 'GPX',
+              folder: `${sanitize(layer.name)}_${layer.id}`,
+            });
           }
           //KML
           const kml = generateKML(sortedRecords, layer);
           const kmlData = kml;
           const kmlName = `${layer.name}_${time}.kml`;
-          exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: sanitize(layer.name) });
+          exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: `${sanitize(layer.name)}_${layer.id}` });
+        }
+        //Dictionary
+        const hasDictionaryFieald = layer.field.some((field) => field.format === 'STRING_DICTIONARY');
+        if (hasDictionaryFieald) {
+          const dictionaryData = await exportDatabase(layer.id);
+          if (dictionaryData !== undefined) {
+            const dictionaryName = `${layer.name}_${time}.sqlite`;
+            exportData.push({
+              data: dictionaryData,
+              name: dictionaryName,
+              type: 'SQLITE',
+              folder: `${sanitize(layer.name)}_${layer.id}`,
+            });
+          }
         }
         //Photo
         //fromProject
@@ -195,7 +221,12 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             photoFields.forEach((photoField) => {
               (record.field[photoField.name] as PhotoType[]).forEach(({ uri, id }) => {
                 if (uri) {
-                  exportData.push({ data: uri, name: id, type: 'PHOTO', folder: sanitize(layer.name) });
+                  exportData.push({
+                    data: uri,
+                    name: id,
+                    type: 'PHOTO',
+                    folder: `${sanitize(layer.name)}_${layer.id}`,
+                  });
                 }
               });
             });
@@ -280,6 +311,25 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     []
   );
 
+  const loadDictionary = useCallback(async (layers: LayerType[], loaded: JSZip) => {
+    const files = loaded.files;
+
+    for (const layer of layers) {
+      const sqliteFile = Object.keys(files).find((f) => {
+        return getExt(f) === 'sqlite' && f.includes(layer.name) && f.includes(layer.id);
+      });
+
+      if (sqliteFile !== undefined) {
+        const sqlite =
+          Platform.OS !== 'web'
+            ? await loaded.files[sqliteFile].async('uint8array')
+            : await loaded.files[sqliteFile].async('arraybuffer');
+
+        await importDictionary(sqlite);
+      }
+    }
+  }, []);
+
   const updateDataSetUser = useCallback(
     (dataSet: DataType[]) => {
       //userとidを書き換える
@@ -323,7 +373,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         if (jsonFile === undefined) return;
         const decompressed = await loaded.files[jsonFile].async('text');
         const data = JSON.parse(decompressed) as EcorisMapFileType;
-
+        await loadDictionary(data.layers, loaded);
         const updatedPhotoDataSet = await updatePhotoField(data, loaded.files);
         const updatedUserDataSet = updateDataSetUser(updatedPhotoDataSet);
         const mergedDataSet = mergeSameLayer(updatedUserDataSet);
@@ -336,7 +386,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         setIsLoading(false);
       }
     },
-    [mergeSameLayer, updateDataSetUser, updatePhotoField]
+    [loadDictionary, mergeSameLayer, updateDataSetUser, updatePhotoField]
   );
 
   const openEcorisMapFile = useCallback(
@@ -360,6 +410,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   );
 
   const clearEcorisMap = useCallback(async () => {
+    await deleteDatabase();
     //レイヤ、データ、地図情報、設定をリセット。設定のtutrialは現在の状況を引き継ぐ
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
@@ -370,6 +421,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // if (uri) {
     //   await FileSystem.deleteAsync(uri);
     // }
+
     return { isOK: true, message: '' };
   }, [dispatch, settings?.tutrials]);
 

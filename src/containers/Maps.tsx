@@ -16,7 +16,6 @@ import { TILE_FOLDER } from '../constants/AppConstants';
 import { readAsStringAsync } from 'expo-file-system';
 import { db } from '../utils/db';
 import { MapModalTileMap } from '../components/organisms/MapModalTileMap';
-import * as pmtiles from 'pmtiles';
 import * as FileSystem from 'expo-file-system';
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
@@ -35,6 +34,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     importMapFile,
     importStyleFile,
     changeExpand,
+    getPmtilesBoundary,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const { runTutrial } = useTutrial();
@@ -95,9 +95,40 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressEditMapOK = useCallback(
     async (newTileMap: TileMapType) => {
+      //pmTilesの場合、boundaryを取得して保存する
+      if (newTileMap.url.includes('pmtiles')) {
+        const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
+
+        if (Platform.OS === 'web') {
+          await db.pmtiles.put({
+            mapId: newTileMap.id,
+            blob: undefined,
+            boundary: JSON.stringify(boundary),
+            style: undefined,
+          });
+        } else {
+          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${newTileMap.id}`, {
+            intermediates: true,
+          });
+          const boundaryUri = `${TILE_FOLDER}/${newTileMap.id}/boundary.json`;
+          await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
+        }
+
+        newTileMap.overzoomThreshold = header.maxZoom;
+        newTileMap.minimumZ = header.minZoom;
+        newTileMap.maximumZ = header.maxZoom;
+      }
+      //urlが変更された場合、boundaryとcacheを削除する
+      if (editedMap?.url !== newTileMap.url) {
+        if (Platform.OS === 'web') {
+          await db.pmtiles.delete(newTileMap.id);
+        } else {
+          await FileSystem.deleteAsync(`${TILE_FOLDER}/${newTileMap.id}`, { idempotent: true });
+        }
+      }
       saveMap(newTileMap);
     },
-    [saveMap]
+    [editedMap?.url, getPmtilesBoundary, saveMap]
   );
 
   const pressEditMapCancel = useCallback(() => {
@@ -151,24 +182,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
     navigation.navigate('MapList');
   }, [navigation]);
 
-  const getPmtilesBoundary = useCallback(async (url: string) => {
-    const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
-    const header = await pmtile.getHeader();
-    return {
-      center: {
-        latitude: header.centerLat,
-        longitude: header.centerLon,
-      },
-      zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
-      bounds: {
-        north: header.maxLat,
-        south: header.minLat,
-        west: header.minLon,
-        east: header.maxLon,
-      },
-    };
-  }, []);
-
   const jumpToBoundary = useCallback(
     async (item: TileMapType) => {
       let boundary: boundaryType | undefined;
@@ -177,7 +190,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
         if (item.url.includes('pmtiles')) {
           boundaryJson = (await db.pmtiles.get(item.id))?.boundary;
           if (boundaryJson === undefined) {
-            boundary = await getPmtilesBoundary(item.url);
+            const result = await getPmtilesBoundary(item.url);
+            boundary = result.boundary;
             await db.pmtiles.update(item.id, { boundary: JSON.stringify(boundary) });
           } else {
             boundary = JSON.parse(boundaryJson);
@@ -193,7 +207,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
         let boundaryJson = await readAsStringAsync(boundaryUri).catch(() => undefined);
         if (boundaryJson === undefined) {
           if (item.url.includes('pmtiles')) {
-            boundary = await getPmtilesBoundary(item.url);
+            const result = await getPmtilesBoundary(item.url);
+            boundary = result.boundary;
             boundaryJson = JSON.stringify(boundary);
             await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${item.id}`, { intermediates: true });
             await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
