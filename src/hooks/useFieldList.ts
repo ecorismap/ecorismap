@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { LayerType } from '../types';
+import { FieldType, LayerType } from '../types';
 import { RootState } from '../store';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
+import { Platform } from 'react-native';
+import { decodeUri } from '../utils/File.web';
+import * as FileSystem from 'expo-file-system';
+import { getDatabase } from '../utils/SQLite';
+import { ulid } from 'ulid';
 
 export type UseFieldListReturnType = {
+  isLoading: boolean;
   isEdited: boolean;
   itemValues: { value: string; isOther: boolean; customFieldValue: string }[];
   pickerValues: string[];
@@ -18,6 +24,7 @@ export type UseFieldListReturnType = {
   customFieldReference: string;
   customFieldPrimary: string;
   useLastValue: boolean;
+  dictionaryData: string[];
   changeUseLastValue: (value: boolean) => void;
   changeCustomFieldReference: (value: string) => void;
   changeCustomFieldPrimary: (value: string) => void;
@@ -25,10 +32,18 @@ export type UseFieldListReturnType = {
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
   pressListOrder: (index: number) => void;
+  importDictionaryFromCSV: (
+    uri: string,
+    tableName: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
 };
 
 export const useFieldList = (
   targetLayer: LayerType,
+  fieldItem: FieldType,
   fieldIndex: number,
   isEdited_: boolean
 ): UseFieldListReturnType => {
@@ -41,6 +56,8 @@ export const useFieldList = (
   const [customFieldReference, setCustomFieldReference] = useState('');
   const [customFieldPrimary, setCustomFieldPrimary] = useState('');
   const [useLastValue, setUseLastValue] = useState(false);
+  const [redraw, setRedraw] = useState(ulid());
+  const [isLoading, setIsLoading] = useState(false);
 
   const format = useMemo(() => targetLayer.field[fieldIndex].format, [fieldIndex, targetLayer.field]);
 
@@ -65,6 +82,25 @@ export const useFieldList = (
     [targetLayer.field]
   );
   const primaryFieldValues = useMemo(() => [...primaryFieldNames.slice(0, -1), '__CUSTOM'], [primaryFieldNames]);
+
+  const [dictionaryData, setDictionaryData] = useState<string[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setIsLoading(true);
+        const tableName = `_${targetLayer.id}_${fieldItem.id}`;
+        const db = await getDatabase();
+        const allRows = db.getAllSync(`SELECT value FROM ${tableName}`);
+        //@ts-ignore
+        setDictionaryData(allRows.map((row) => row.value));
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [fieldItem.id, targetLayer.id, redraw]);
 
   useEffect(() => {
     setIsEdited(isEdited_);
@@ -191,7 +227,41 @@ export const useFieldList = (
     [itemValues]
   );
 
+  const importDictionaryFromCSV = useCallback(async (uri: string, tableName: string) => {
+    try {
+      const db = await getDatabase();
+      if (!db) throw new Error(t('hooks.message.cannotOpenDB'));
+      setIsLoading(true);
+      // CSVファイルを読み込む
+      const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const values = csvStrings.split('\n');
+      // テーブルを削除する（存在する場合）
+      await db.execAsync(`DROP TABLE IF EXISTS ${tableName}`);
+      console.log(`Table ${tableName} dropped (if it existed).`);
+
+      // 新しいテーブルを作成する
+      const createTableSQL = `CREATE TABLE ${tableName} (value TEXT)`;
+      await db.execAsync(createTableSQL);
+      console.log(`Table ${tableName} created.`);
+      // データを挿入する
+      await db.withTransactionAsync(async () => {
+        const insertSQL = `INSERT INTO ${tableName} (value) VALUES (?)`;
+        for (const value of values) {
+          await db.runAsync(insertSQL, [value.trim()]);
+        }
+      });
+      setRedraw(ulid());
+      return { isOK: true, message: t('hooks.message.receiveFile') };
+    } catch (e: any) {
+      console.log(e);
+      return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   return {
+    isLoading,
     isEdited,
     itemValues,
     pickerValues,
@@ -204,6 +274,7 @@ export const useFieldList = (
     customFieldReference,
     customFieldPrimary,
     useLastValue,
+    dictionaryData,
     changeUseLastValue,
     changeCustomFieldReference,
     changeCustomFieldPrimary,
@@ -211,5 +282,6 @@ export const useFieldList = (
     addValue,
     deleteValue,
     pressListOrder,
+    importDictionaryFromCSV,
   };
 };

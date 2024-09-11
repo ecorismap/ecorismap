@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
@@ -9,11 +9,12 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { DataContext } from '../../contexts/Data';
 //import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
 import { ScrollView } from 'react-native-gesture-handler';
+import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, isChecked, gotoBack } = useContext(DataContext);
+  const { layer, isChecked, gotoBack, addDataByDictinary } = useContext(DataContext);
 
   const navigation = useNavigation();
 
@@ -49,16 +50,20 @@ export default function DataScreen() {
 
   return (
     <View style={styles.container}>
+      {layer.dictionaryFieldId !== undefined && (
+        <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
+          <DictionaryTextInput
+            initialValue=""
+            table={`_${layer.id}_${layer.dictionaryFieldId}`}
+            handleSelect={(text: string) => addDataByDictinary(layer.dictionaryFieldId!, text)}
+            clearOnSelect
+          />
+        </View>
+      )}
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        {Platform.OS === 'web' ? (
-          <ScrollView style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-            <DataTable />
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-            <DataTable />
-          </View>
-        )}
+        <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
+          <DataTable />
+        </View>
       </ScrollView>
       <DataButton />
     </View>

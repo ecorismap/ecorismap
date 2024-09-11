@@ -3,14 +3,14 @@ import { View, StyleSheet } from 'react-native';
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
-import { LayerEditFieldTable, LayerEditFieldTitle } from '../organisms/LayerEditFieldTable';
+import { LayerEditFieldTable } from '../organisms/LayerEditFieldTable';
 import { LayerEditButton } from '../organisms/LayerEditButton';
 import { LayerEditRadio } from '../organisms/LayerEditRadio';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { usePermission } from '../../hooks/usePermission';
-import { FlatList } from 'react-native-gesture-handler';
+import { FlatList, ScrollView } from 'react-native-gesture-handler';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
@@ -58,8 +58,11 @@ export default function LayerEditScreen() {
             <LayerName />
             <LayerStyle />
             {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
-            {layer.type !== 'LAYERGROUP' && <LayerEditFieldTitle />}
-            {layer.type !== 'LAYERGROUP' && <LayerEditFieldTable />}
+            {layer.type !== 'LAYERGROUP' && (
+              <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+                <LayerEditFieldTable />
+              </ScrollView>
+            )}
           </>
         )}
       />

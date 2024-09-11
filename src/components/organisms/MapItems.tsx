@@ -20,11 +20,11 @@ export const MapItems = React.memo(() => {
         if (!item.isGroup && item.groupId && !item.expanded) return null;
         return (
           <View style={[styles.tr, { backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }]}>
-            <View style={[styles.td, { padding: 0, flex: 3 }]}>
+            <View style={[styles.td, { paddingHorizontal: 0, flex: 3 }]}>
               <View
                 style={{
                   alignItems: 'center',
-                  height: 60,
+                  height: 59,
                   justifyContent: 'center',
                   flex: 1,
                 }}
@@ -35,7 +35,7 @@ export const MapItems = React.memo(() => {
                     onPress={() => changeExpand(!item.expanded, index)}
                     style={{
                       flex: 1,
-                      width: 55,
+                      width: 38,
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: COLOR.GRAY1,
@@ -45,7 +45,7 @@ export const MapItems = React.memo(() => {
                   <View
                     style={{
                       flex: 1,
-                      width: 55,
+                      width: 38,
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: item.groupId ? COLOR.GRAY1 : COLOR.MAIN,

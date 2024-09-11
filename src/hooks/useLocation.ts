@@ -397,7 +397,11 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     })();
 
     return () => {
-      Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+      Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION).then((hasStarted) => {
+        if (hasStarted) {
+          Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+        }
+      });
 
       if (gpsSubscriber.current !== undefined) {
         gpsSubscriber.current.remove();

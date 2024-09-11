@@ -10,6 +10,7 @@ interface LayerEditContextType {
   onChangeFeatureType: (itemValue: FeatureType) => void;
   onChangeFieldOrder: (index: number) => void;
   onChangeFieldName: (index: number, val: string) => void;
+  onChangeOption: (index: number, val: boolean) => void;
   submitFieldName: (index: number) => void;
   onChangeFieldFormat: (index: number, itemValue: FormatType) => void;
   changePermission: (val: 'PRIVATE' | 'PUBLIC' | 'COMMON') => void;

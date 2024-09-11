@@ -36,10 +36,9 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
-    setSortedName,
-    setSortedOrder,
-  } = useData(route.params.targetLayer);
+  } = useData(route.params.targetLayer.id);
   const { isOwnerAdmin } = usePermission();
+
 
   const { deleteRecordPhotos } = usePhoto();
 
@@ -49,7 +48,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     //   Alert.alert('', t('Data.alert.exportData'));
     //   return;
     // }
-    const { exportData, fileName } = generateExportGeoData();
+    const { exportData, fileName } = await generateExportGeoData();
     const isOK = await exportGeoFile(exportData, fileName, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [generateExportGeoData]);
@@ -83,6 +82,18 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     });
   }, [addDefaultRecord, layer, navigation, route.params.targetLayer.active]);
 
+  const addDataByDictinary = useCallback(
+    (fieldId: string, value: string) => {
+      if (!route.params.targetLayer.active) {
+        Alert.alert('', t('hooks.message.noEditMode'));
+        return;
+      }
+      const fieldName = route.params.targetLayer.field.find((f) => f.id === fieldId)?.name;
+      if (!fieldName) return;
+      addDefaultRecord({ [fieldName]: value });
+    },
+    [addDefaultRecord, route.params.targetLayer.active, route.params.targetLayer.field]
+  );
   const gotoDataEdit = useCallback(
     (index: number) => {
       navigation.navigate('DataEdit', {
@@ -115,14 +126,13 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         changeCheckedAll,
         changeVisible,
         changeVisibleAll,
+        addDataByDictinary,
         pressAddData,
         pressDeleteData,
         pressExportData,
         gotoDataEdit,
         gotoBack,
         updateOwnRecordSetOrder,
-        setSortedName,
-        setSortedOrder,
       }}
     >
       <Data />
