@@ -26,8 +26,6 @@ export const DataTable = React.memo(() => {
     changeOrder,
     changeCheckedAll,
     changeVisibleAll,
-    setSortedOrder,
-    setSortedName,
   } = useContext(DataContext);
 
   const [checkedAll, setCheckedAll] = useState(false);
@@ -54,11 +52,9 @@ export const DataTable = React.memo(() => {
             ? 'ASCENDING'
             : 'UNSORTED'
           : 'DESCENDING';
-      setSortedName(colName);
-      setSortedOrder(sortOrder);
       changeOrder(colName, sortOrder);
     },
-    [changeOrder, setSortedName, setSortedOrder, sortedName, sortedOrder]
+    [changeOrder, sortedName, sortedOrder]
   );
   //@ts-ignore
   const renderItem = useCallback(
@@ -80,7 +76,7 @@ export const DataTable = React.memo(() => {
               color={COLOR.GRAY4}
               style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
               borderRadius={0}
-              name={checkList[index].checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
               onPress={() => changeChecked(index, !checkList[index].checked)}
               size={25}
             />
@@ -167,10 +163,10 @@ export const DataTable = React.memo(() => {
       data={data}
       stickyHeaderIndices={[0]}
       initialNumToRender={15}
+      removeClippedSubviews={true}
       extraData={data}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
-      removeClippedSubviews={true}
       // eslint-disable-next-line @typescript-eslint/no-shadow
       onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
       activationDistance={5}

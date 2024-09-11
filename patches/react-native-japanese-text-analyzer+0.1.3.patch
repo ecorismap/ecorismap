@@ -1,0 +1,1103 @@
+diff --git a/node_modules/react-native-japanese-text-analyzer/.DS_Store b/node_modules/react-native-japanese-text-analyzer/.DS_Store
+new file mode 100644
+index 0000000..6569931
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/.DS_Store differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build.gradle b/node_modules/react-native-japanese-text-analyzer/android/build.gradle
+index 7ec958b..1a94fc9 100644
+--- a/node_modules/react-native-japanese-text-analyzer/android/build.gradle
++++ b/node_modules/react-native-japanese-text-analyzer/android/build.gradle
+@@ -19,10 +19,10 @@ def safeExtGet(prop, fallback) {
+ }
+ 
+ android {
+-    compileSdkVersion safeExtGet('JapaneseTextAnalyzer_compileSdkVersion', 29)
++    compileSdkVersion safeExtGet('JapaneseTextAnalyzer_compileSdkVersion', 34)
+     defaultConfig {
+-        minSdkVersion safeExtGet('JapaneseTextAnalyzer_minSdkVersion', 16)
+-        targetSdkVersion safeExtGet('JapaneseTextAnalyzer_targetSdkVersion', 29)
++        minSdkVersion safeExtGet('JapaneseTextAnalyzer_minSdkVersion', 23)
++        targetSdkVersion safeExtGet('JapaneseTextAnalyzer_targetSdkVersion', 34)
+         versionCode 1
+         versionName "1.0"
+ 
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin
+new file mode 100644
+index 0000000..0d259dd
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/results.bin
+@@ -0,0 +1 @@
++o/classes
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex
+new file mode 100644
+index 0000000..a653d8d
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/.transforms/461ab2778f1aa250d8f2b21df7e723c1/transformed/classes/classes_dex/classes.dex differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java b/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java
+new file mode 100644
+index 0000000..e1d4c6b
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/generated/source/buildConfig/debug/com/reactnativejapanesetextanalyzer/BuildConfig.java
+@@ -0,0 +1,10 @@
++/**
++ * Automatically generated file. DO NOT MODIFY
++ */
++package com.reactnativejapanesetextanalyzer;
++
++public final class BuildConfig {
++  public static final boolean DEBUG = Boolean.parseBoolean("true");
++  public static final String LIBRARY_PACKAGE_NAME = "com.reactnativejapanesetextanalyzer";
++  public static final String BUILD_TYPE = "debug";
++}
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+new file mode 100644
+index 0000000..e86b3cb
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.reactnativejapanesetextanalyzer" >
++
++    <uses-sdk android:minSdkVersion="23" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+new file mode 100644
+index 0000000..cb054a8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aapt_friendly_merged_manifests/debug/aapt/output-metadata.json
+@@ -0,0 +1,18 @@
++{
++  "version": 3,
++  "artifactType": {
++    "type": "AAPT_FRIENDLY_MERGED_MANIFESTS",
++    "kind": "Directory"
++  },
++  "applicationId": "com.reactnativejapanesetextanalyzer",
++  "variantName": "debug",
++  "elements": [
++    {
++      "type": "SINGLE",
++      "filters": [],
++      "attributes": [],
++      "outputFile": "AndroidManifest.xml"
++    }
++  ],
++  "elementType": "File"
++}
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+new file mode 100644
+index 0000000..1211b1e
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
+@@ -0,0 +1,6 @@
++aarFormatVersion=1.0
++aarMetadataVersion=1.0
++minCompileSdk=1
++minCompileSdkExtension=0
++minAndroidGradlePluginVersion=1.0.0
++coreLibraryDesugaringEnabled=false
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
+new file mode 100644
+index 0000000..9e26dfe
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/annotation_processor_list/debug/annotationProcessors.json
+@@ -0,0 +1 @@
++{}
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
+new file mode 100644
+index 0000000..e2d1bc9
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar
+new file mode 100644
+index 0000000..b5af39e
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_r_class_jar/debug/R.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/compile_symbol_list/debug/R.txt
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+new file mode 100644
+index 0000000..f3e6360
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
+@@ -0,0 +1 @@
++#Sun Sep 01 17:26:14 JST 2024
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+new file mode 100644
+index 0000000..e69d2d8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
+@@ -0,0 +1,2 @@
++<?xml version="1.0" encoding="utf-8"?>
++<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/build/generated/res/resValues/debug"/></dataSet><mergedItems/></merger>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class
+new file mode 100644
+index 0000000..d3430de
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/BuildConfig.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class
+new file mode 100644
+index 0000000..5b99b30
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerModule.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class
+new file mode 100644
+index 0000000..d8dddee
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/javac/debug/classes/com/reactnativejapanesetextanalyzer/JapaneseTextAnalyzerPackage.class differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+new file mode 100644
+index 0000000..78ac5b8
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/local_only_symbol_list/debug/R-def.txt
+@@ -0,0 +1,2 @@
++R_DEF: Internal format may change without notice
++local
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+new file mode 100644
+index 0000000..354b30a
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/manifest_merge_blame_file/debug/manifest-merger-blame-debug-report.txt
+@@ -0,0 +1,7 @@
++1<?xml version="1.0" encoding="utf-8"?>
++2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++3    package="com.reactnativejapanesetextanalyzer" >
++4
++5    <uses-sdk android:minSdkVersion="23" />
++6
++7</manifest>
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+new file mode 100644
+index 0000000..e86b3cb
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<manifest xmlns:android="http://schemas.android.com/apk/res/android"
++    package="com.reactnativejapanesetextanalyzer" >
++
++    <uses-sdk android:minSdkVersion="23" />
++
++</manifest>
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json
+new file mode 100644
+index 0000000..0637a08
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/navigation_json/debug/navigation.json
+@@ -0,0 +1 @@
++[]
+\ No newline at end of file
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
+new file mode 100644
+index 0000000..977b455
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+new file mode 100644
+index 0000000..8eeb75f
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
+@@ -0,0 +1 @@
++com.reactnativejapanesetextanalyzer
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt
+new file mode 100644
+index 0000000..07c1268
+--- /dev/null
++++ b/node_modules/react-native-japanese-text-analyzer/android/build/outputs/logs/manifest-merger-debug-report.txt
+@@ -0,0 +1,17 @@
++-- Merging decision tree log ---
++manifest
++ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:1-4:12
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:1-4:12
++	package
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:2:11-56
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	xmlns:android
++		ADDED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml:1:11-69
++uses-sdk
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml reason: use-sdk injection requested
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	android:targetSdkVersion
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
++	android:minSdkVersion
++		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-japanese-text-analyzer/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
+new file mode 100644
+index 0000000..da7f745
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/ios/.DS_Store b/node_modules/react-native-japanese-text-analyzer/ios/.DS_Store
+new file mode 100644
+index 0000000..4273ad1
+Binary files /dev/null and b/node_modules/react-native-japanese-text-analyzer/ios/.DS_Store differ
+diff --git a/node_modules/react-native-japanese-text-analyzer/ios/mecab/char_property.h b/node_modules/react-native-japanese-text-analyzer/ios/mecab/char_property.h
+index 35f4b05..9c904ba 100644
+--- a/node_modules/react-native-japanese-text-analyzer/ios/mecab/char_property.h
++++ b/node_modules/react-native-japanese-text-analyzer/ios/mecab/char_property.h
+@@ -37,7 +37,7 @@ class CharProperty {
+   inline const char *seekToOtherType(const char *begin, const char *end,
+                                      CharInfo c, CharInfo *fail,
+                                      size_t *mblen, size_t *clen) const {
+-    register const char *p =  begin;
++    const char *p =  begin;
+     *clen = 0;
+     while (p != end && c.isKindOf(*fail = getCharInfo(p, end, mblen))) {
+       p += *mblen;
+diff --git a/node_modules/react-native-japanese-text-analyzer/ios/mecab/darts.h b/node_modules/react-native-japanese-text-analyzer/ios/mecab/darts.h
+index 91b2eae..d6736cf 100644
+--- a/node_modules/react-native-japanese-text-analyzer/ios/mecab/darts.h
++++ b/node_modules/react-native-japanese-text-analyzer/ios/mecab/darts.h
+@@ -404,10 +404,10 @@ class DoubleArrayImpl {
+     T result;
+     set_result(result, -1, 0);
+ 
+-    register array_type_  b = array_[node_pos].base;
+-    register array_u_type_ p;
++    array_type_  b = array_[node_pos].base;
++    array_u_type_ p;
+ 
+-    for (register size_t i = 0; i < len; ++i) {
++    for (size_t i = 0; i < len; ++i) {
+       p = b +(node_u_type_)(key[i]) + 1;
+       if (static_cast<array_u_type_>(b) == array_[p].check)
+         b = array_[p].base;
+@@ -431,12 +431,12 @@ class DoubleArrayImpl {
+                             size_t node_pos = 0) const {
+     if (!len) len = length_func_()(key);
+ 
+-    register array_type_  b   = array_[node_pos].base;
+-    register size_t     num = 0;
+-    register array_type_  n;
+-    register array_u_type_ p;
++    array_type_  b   = array_[node_pos].base;
++    size_t     num = 0;
++    array_type_  n;
++    array_u_type_ p;
+ 
+-    for (register size_t i = 0; i < len; ++i) {
++    for (size_t i = 0; i < len; ++i) {
+       p = b;  // + 0;
+       n = array_[p].base;
+       if ((array_u_type_) b == array_[p].check && n < 0) {
+@@ -469,8 +469,8 @@ class DoubleArrayImpl {
+                       size_t len = 0) const {
+     if (!len) len = length_func_()(key);
+ 
+-    register array_type_  b = array_[node_pos].base;
+-    register array_u_type_ p;
++    array_type_  b = array_[node_pos].base;
++    array_u_type_ p;
+ 
+     for (; key_pos < len; ++key_pos) {
+       p = b +(node_u_type_)(key[key_pos]) + 1;
+diff --git a/node_modules/react-native-japanese-text-analyzer/ios/mecab/dictionary.cpp b/node_modules/react-native-japanese-text-analyzer/ios/mecab/dictionary.cpp
+index 0ff0b05..82ccab6 100644
+--- a/node_modules/react-native-japanese-text-analyzer/ios/mecab/dictionary.cpp
++++ b/node_modules/react-native-japanese-text-analyzer/ios/mecab/dictionary.cpp
+@@ -65,7 +65,7 @@ int progress_bar_darts(size_t current, size_t total) {
+ }
+ 
+ template <typename T1, typename T2>
+-struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {
++struct pair_1st_cmp: public std::__binary_function<bool, T1, T2> {
+   bool operator()(const std::pair<T1, T2> &x1,
+                   const std::pair<T1, T2> &x2)  {
+     return x1.first < x2.first;
+diff --git a/node_modules/react-native-japanese-text-analyzer/ios/mecab/viterbi.cpp b/node_modules/react-native-japanese-text-analyzer/ios/mecab/viterbi.cpp
+index a4b46dc..1f2af74 100644
+--- a/node_modules/react-native-japanese-text-analyzer/ios/mecab/viterbi.cpp
++++ b/node_modules/react-native-japanese-text-analyzer/ios/mecab/viterbi.cpp
+@@ -17,397 +17,471 @@
+ #include "string_buffer.h"
+ #include "tokenizer.h"
+ 
+-namespace MeCab {
+-
+-namespace {
+-void calc_alpha(Node *n, double beta) {
+-  n->alpha = 0.0;
+-  for (Path *path = n->lpath; path; path = path->lnext) {
+-    n->alpha = logsumexp(n->alpha,
+-                         -beta * path->cost + path->lnode->alpha,
+-                         path == n->lpath);
+-  }
+-}
+-
+-void calc_beta(Node *n, double beta) {
+-  n->beta = 0.0;
+-  for (Path *path = n->rpath; path; path = path->rnext) {
+-    n->beta = logsumexp(n->beta,
+-                        -beta * path->cost + path->rnode->beta,
+-                        path == n->rpath);
+-  }
+-}
+-}  // namespace
+-
+-Viterbi::Viterbi()
+-    :  tokenizer_(0), connector_(0),
+-       cost_factor_(0) {}
++namespace MeCab
++{
++
++  namespace
++  {
++    void calc_alpha(Node *n, double beta)
++    {
++      n->alpha = 0.0;
++      for (Path *path = n->lpath; path; path = path->lnext)
++      {
++        n->alpha = logsumexp(n->alpha,
++                             -beta * path->cost + path->lnode->alpha,
++                             path == n->lpath);
++      }
++    }
+ 
+-Viterbi::~Viterbi() {}
++    void calc_beta(Node *n, double beta)
++    {
++      n->beta = 0.0;
++      for (Path *path = n->rpath; path; path = path->rnext)
++      {
++        n->beta = logsumexp(n->beta,
++                            -beta * path->cost + path->rnode->beta,
++                            path == n->rpath);
++      }
++    }
++  } // namespace
+ 
+-bool Viterbi::open(const Param &param) {
+-  tokenizer_.reset(new Tokenizer<Node, Path>);
+-  CHECK_FALSE(tokenizer_->open(param)) << tokenizer_->what();
+-  CHECK_FALSE(tokenizer_->dictionary_info()) << "Dictionary is empty";
++  Viterbi::Viterbi()
++      : tokenizer_(0), connector_(0),
++        cost_factor_(0) {}
+ 
+-  connector_.reset(new Connector);
+-  CHECK_FALSE(connector_->open(param)) << connector_->what();
++  Viterbi::~Viterbi() {}
+ 
+-  CHECK_FALSE(tokenizer_->dictionary_info()->lsize ==
+-              connector_->left_size() &&
+-              tokenizer_->dictionary_info()->rsize ==
+-              connector_->right_size())
+-      << "Transition table and dictionary are not compatible";
++  bool Viterbi::open(const Param &param)
++  {
++    tokenizer_.reset(new Tokenizer<Node, Path>);
++    CHECK_FALSE(tokenizer_->open(param)) << tokenizer_->what();
++    CHECK_FALSE(tokenizer_->dictionary_info()) << "Dictionary is empty";
+ 
+-  cost_factor_ = param.get<int>("cost-factor");
+-  if (cost_factor_ == 0) {
+-    cost_factor_ = 800;
+-  }
++    connector_.reset(new Connector);
++    CHECK_FALSE(connector_->open(param)) << connector_->what();
+ 
+-  return true;
+-}
++    CHECK_FALSE(tokenizer_->dictionary_info()->lsize ==
++                    connector_->left_size() &&
++                tokenizer_->dictionary_info()->rsize ==
++                    connector_->right_size())
++        << "Transition table and dictionary are not compatible";
+ 
+-bool Viterbi::analyze(Lattice *lattice) const {
+-  if (!lattice || !lattice->sentence()) {
+-    return false;
+-  }
++    cost_factor_ = param.get<int>("cost-factor");
++    if (cost_factor_ == 0)
++    {
++      cost_factor_ = 800;
++    }
+ 
+-  if (!initPartial(lattice)) {
+-    return false;
++    return true;
+   }
+ 
+-  bool result = false;
+-  if (lattice->has_request_type(MECAB_NBEST) ||
+-      lattice->has_request_type(MECAB_MARGINAL_PROB)) {
+-    // IsAllPath=true
+-    if (lattice->has_constraint()) {
+-      result = viterbi<true, true>(lattice);
+-    } else {
+-      result = viterbi<true, false>(lattice);
+-    }
+-  } else {
+-    // IsAllPath=false
+-    if (lattice->has_constraint()) {
+-      result = viterbi<false, true>(lattice);
+-    } else {
+-      result = viterbi<false, false>(lattice);
++  bool Viterbi::analyze(Lattice *lattice) const
++  {
++    if (!lattice || !lattice->sentence())
++    {
++      return false;
+     }
+-  }
+-
+-  if (!result) {
+-    return false;
+-  }
+ 
+-  if (!forwardbackward(lattice)) {
+-    return false;
+-  }
++    if (!initPartial(lattice))
++    {
++      return false;
++    }
+ 
+-  if (!buildBestLattice(lattice)) {
+-    return false;
+-  }
++    bool result = false;
++    if (lattice->has_request_type(MECAB_NBEST) ||
++        lattice->has_request_type(MECAB_MARGINAL_PROB))
++    {
++      // IsAllPath=true
++      if (lattice->has_constraint())
++      {
++        result = viterbi<true, true>(lattice);
++      }
++      else
++      {
++        result = viterbi<true, false>(lattice);
++      }
++    }
++    else
++    {
++      // IsAllPath=false
++      if (lattice->has_constraint())
++      {
++        result = viterbi<false, true>(lattice);
++      }
++      else
++      {
++        result = viterbi<false, false>(lattice);
++      }
++    }
+ 
+-  if (!buildAllLattice(lattice)) {
+-    return false;
+-  }
++    if (!result)
++    {
++      return false;
++    }
+ 
+-  if (!initNBest(lattice)) {
+-    return false;
+-  }
++    if (!forwardbackward(lattice))
++    {
++      return false;
++    }
+ 
+-  return true;
+-}
++    if (!buildBestLattice(lattice))
++    {
++      return false;
++    }
+ 
+-const Tokenizer<Node, Path> *Viterbi::tokenizer() const {
+-  return tokenizer_.get();
+-}
++    if (!buildAllLattice(lattice))
++    {
++      return false;
++    }
+ 
+-const Connector *Viterbi::connector() const {
+-  return connector_.get();
+-}
++    if (!initNBest(lattice))
++    {
++      return false;
++    }
+ 
+-// static
+-bool Viterbi::forwardbackward(Lattice *lattice) {
+-  if (!lattice->has_request_type(MECAB_MARGINAL_PROB)) {
+     return true;
+   }
+ 
+-  Node **end_node_list   = lattice->end_nodes();
+-  Node **begin_node_list = lattice->begin_nodes();
+-
+-  const size_t len = lattice->size();
+-  const double theta = lattice->theta();
++  const Tokenizer<Node, Path> *Viterbi::tokenizer() const
++  {
++    return tokenizer_.get();
++  }
+ 
+-  end_node_list[0]->alpha = 0.0;
+-  for (int pos = 0; pos <= static_cast<long>(len); ++pos) {
+-    for (Node *node = begin_node_list[pos]; node; node = node->bnext) {
+-      calc_alpha(node, theta);
+-    }
++  const Connector *Viterbi::connector() const
++  {
++    return connector_.get();
+   }
+ 
+-  begin_node_list[len]->beta = 0.0;
+-  for (int pos = static_cast<long>(len); pos >= 0; --pos) {
+-    for (Node *node = end_node_list[pos]; node; node = node->enext) {
+-      calc_beta(node, theta);
++  // static
++  bool Viterbi::forwardbackward(Lattice *lattice)
++  {
++    if (!lattice->has_request_type(MECAB_MARGINAL_PROB))
++    {
++      return true;
+     }
+-  }
+ 
+-  const double Z = begin_node_list[len]->alpha;
+-  lattice->set_Z(Z);  // alpha of EOS
++    Node **end_node_list = lattice->end_nodes();
++    Node **begin_node_list = lattice->begin_nodes();
+ 
+-  for (int pos = 0; pos <= static_cast<long>(len); ++pos) {
+-    for (Node *node = begin_node_list[pos]; node; node = node->bnext) {
+-      node->prob = std::exp(node->alpha + node->beta - Z);
+-      for (Path *path = node->lpath; path; path = path->lnext) {
+-        path->prob = std::exp(path->lnode->alpha
+-                              - theta * path->cost
+-                              + path->rnode->beta - Z);
++    const size_t len = lattice->size();
++    const double theta = lattice->theta();
++
++    end_node_list[0]->alpha = 0.0;
++    for (int pos = 0; pos <= static_cast<long>(len); ++pos)
++    {
++      for (Node *node = begin_node_list[pos]; node; node = node->bnext)
++      {
++        calc_alpha(node, theta);
+       }
+     }
+-  }
+ 
+-  return true;
+-}
++    begin_node_list[len]->beta = 0.0;
++    for (int pos = static_cast<long>(len); pos >= 0; --pos)
++    {
++      for (Node *node = end_node_list[pos]; node; node = node->enext)
++      {
++        calc_beta(node, theta);
++      }
++    }
+ 
+-// static
+-bool Viterbi::buildResultForNBest(Lattice *lattice) {
+-  return buildAllLattice(lattice);
+-}
++    const double Z = begin_node_list[len]->alpha;
++    lattice->set_Z(Z); // alpha of EOS
++
++    for (int pos = 0; pos <= static_cast<long>(len); ++pos)
++    {
++      for (Node *node = begin_node_list[pos]; node; node = node->bnext)
++      {
++        node->prob = std::exp(node->alpha + node->beta - Z);
++        for (Path *path = node->lpath; path; path = path->lnext)
++        {
++          path->prob = std::exp(path->lnode->alpha - theta * path->cost + path->rnode->beta - Z);
++        }
++      }
++    }
+ 
+-// static
+-bool Viterbi::buildAllLattice(Lattice *lattice) {
+-  if (!lattice->has_request_type(MECAB_ALL_MORPHS)) {
+     return true;
+   }
+ 
+-  Node *prev = lattice->bos_node();
+-  const size_t len = lattice->size();
+-  Node **begin_node_list = lattice->begin_nodes();
+-
+-  for (long pos = 0; pos <= static_cast<long>(len); ++pos) {
+-    for (Node *node = begin_node_list[pos]; node; node = node->bnext) {
+-      prev->next = node;
+-      node->prev = prev;
+-      prev = node;
+-    }
++  // static
++  bool Viterbi::buildResultForNBest(Lattice *lattice)
++  {
++    return buildAllLattice(lattice);
+   }
+ 
+-  return true;
+-}
+-
+-// static
+-bool Viterbi::buildAlternative(Lattice *lattice) {
+-  Node **begin_node_list = lattice->begin_nodes();
+-
+-  const Node *bos_node = lattice->bos_node();
+-  for (const Node *node = bos_node; node; node = node->next) {
+-    if (node->stat == MECAB_BOS_NODE || node->stat == MECAB_EOS_NODE) {
+-      continue;
++  // static
++  bool Viterbi::buildAllLattice(Lattice *lattice)
++  {
++    if (!lattice->has_request_type(MECAB_ALL_MORPHS))
++    {
++      return true;
+     }
+-    const size_t pos = node->surface - lattice->sentence() -
+-        node->rlength + node->length;
+-    std::cout.write(node->surface, node->length);
+-    std::cout << "\t" << node->feature << std::endl;
+-    for (const Node *anode = begin_node_list[pos];
+-         anode; anode = anode->bnext) {
+-      if (anode->rlength == node->rlength &&
+-          anode->length == node->length) {
+-        std::cout << "@ ";
+-        std::cout.write(anode->surface, anode->length);
+-        std::cout << "\t" << anode->feature << std::endl;
++
++    Node *prev = lattice->bos_node();
++    const size_t len = lattice->size();
++    Node **begin_node_list = lattice->begin_nodes();
++
++    for (long pos = 0; pos <= static_cast<long>(len); ++pos)
++    {
++      for (Node *node = begin_node_list[pos]; node; node = node->bnext)
++      {
++        prev->next = node;
++        node->prev = prev;
++        prev = node;
+       }
+     }
+-  }
+ 
+-  std::cout << "EOS" << std::endl;
+-
+-  return true;
+-}
+-
+-// static
+-bool Viterbi::buildBestLattice(Lattice *lattice) {
+-  Node *node = lattice->eos_node();
+-  for (Node *prev_node; node->prev;) {
+-    node->isbest = 1;
+-    prev_node = node->prev;
+-    prev_node->next = node;
+-    node = prev_node;
++    return true;
+   }
+ 
+-  return true;
+-}
++  // static
++  bool Viterbi::buildAlternative(Lattice *lattice)
++  {
++    Node **begin_node_list = lattice->begin_nodes();
++
++    const Node *bos_node = lattice->bos_node();
++    for (const Node *node = bos_node; node; node = node->next)
++    {
++      if (node->stat == MECAB_BOS_NODE || node->stat == MECAB_EOS_NODE)
++      {
++        continue;
++      }
++      const size_t pos = node->surface - lattice->sentence() -
++                         node->rlength + node->length;
++      std::cout.write(node->surface, node->length);
++      std::cout << "\t" << node->feature << std::endl;
++      for (const Node *anode = begin_node_list[pos];
++           anode; anode = anode->bnext)
++      {
++        if (anode->rlength == node->rlength &&
++            anode->length == node->length)
++        {
++          std::cout << "@ ";
++          std::cout.write(anode->surface, anode->length);
++          std::cout << "\t" << anode->feature << std::endl;
++        }
++      }
++    }
++
++    std::cout << "EOS" << std::endl;
+ 
+-// static
+-bool Viterbi::initNBest(Lattice *lattice) {
+-  if (!lattice->has_request_type(MECAB_NBEST)) {
+     return true;
+   }
+-  lattice->allocator()->nbest_generator()->set(lattice);
+-  return true;
+-}
+-
+-// static
+-bool Viterbi::initPartial(Lattice *lattice) {
+-  if (!lattice->has_request_type(MECAB_PARTIAL)) {
+-    if (lattice->has_constraint()) {
+-      lattice->set_boundary_constraint(0, MECAB_TOKEN_BOUNDARY);
+-      lattice->set_boundary_constraint(lattice->size(),
+-                                       MECAB_TOKEN_BOUNDARY);
++
++  // static
++  bool Viterbi::buildBestLattice(Lattice *lattice)
++  {
++    Node *node = lattice->eos_node();
++    for (Node *prev_node; node->prev;)
++    {
++      node->isbest = 1;
++      prev_node = node->prev;
++      prev_node->next = node;
++      node = prev_node;
+     }
++
+     return true;
+   }
+ 
+-  Allocator<Node, Path> *allocator = lattice->allocator();
+-  char *str = allocator->partial_buffer(lattice->size() + 1);
+-  strncpy(str, lattice->sentence(), lattice->size() + 1);
+-
+-  std::vector<char *> lines;
+-  const size_t lsize = tokenize(str, "\n",
+-                                std::back_inserter(lines),
+-                                lattice->size() + 1);
+-  char* column[2];
+-  scoped_array<char> buf(new char[lattice->size() + 1]);
+-  StringBuffer os(buf.get(), lattice->size() + 1);
+-
+-  std::vector<std::pair<char *, char *> > tokens;
+-  tokens.reserve(lsize);
+-
+-  size_t pos = 0;
+-  for (size_t i = 0; i < lsize; ++i) {
+-    const size_t size = tokenize(lines[i], "\t", column, 2);
+-    if (size == 1 && std::strcmp(column[0], "EOS") == 0) {
+-      break;
+-    }
+-    const size_t len = std::strlen(column[0]);
+-    if (size == 2) {
+-      tokens.push_back(std::make_pair(column[0], column[1]));
+-    } else {
+-      tokens.push_back(std::make_pair(column[0], reinterpret_cast<char *>(0)));
++  // static
++  bool Viterbi::initNBest(Lattice *lattice)
++  {
++    if (!lattice->has_request_type(MECAB_NBEST))
++    {
++      return true;
+     }
+-    os << column[0];
+-    pos += len;
++    lattice->allocator()->nbest_generator()->set(lattice);
++    return true;
+   }
+ 
+-  os << '\0';
+-
+-  lattice->set_sentence(os.str());
+-
+-  pos = 0;
+-  for (size_t i = 0; i < tokens.size(); ++i) {
+-    const char *surface = tokens[i].first;
+-    const char *feature = tokens[i].second;
+-    const size_t len = std::strlen(surface);
+-    lattice->set_boundary_constraint(pos, MECAB_TOKEN_BOUNDARY);
+-    lattice->set_boundary_constraint(pos + len, MECAB_TOKEN_BOUNDARY);
+-    if (feature) {
+-      lattice->set_feature_constraint(pos, pos + len, feature);
+-      for (size_t n = 1; n < len; ++n) {
+-        lattice->set_boundary_constraint(pos + n,
+-                                         MECAB_INSIDE_TOKEN);
++  // static
++  bool Viterbi::initPartial(Lattice *lattice)
++  {
++    if (!lattice->has_request_type(MECAB_PARTIAL))
++    {
++      if (lattice->has_constraint())
++      {
++        lattice->set_boundary_constraint(0, MECAB_TOKEN_BOUNDARY);
++        lattice->set_boundary_constraint(lattice->size(),
++                                         MECAB_TOKEN_BOUNDARY);
+       }
++      return true;
+     }
+-    pos += len;
+-  }
+ 
+-  return true;
+-}
+-
+-namespace {
+-template <bool IsAllPath> bool connect(size_t pos, Node *rnode,
+-                                       Node **begin_node_list,
+-                                       Node **end_node_list,
+-                                       const Connector *connector,
+-                                       Allocator<Node, Path> *allocator) {
+-  for (;rnode; rnode = rnode->bnext) {
+-    register long best_cost = 2147483647;
+-    Node* best_node = 0;
+-    for (Node *lnode = end_node_list[pos]; lnode; lnode = lnode->enext) {
+-      register int lcost = connector->cost(lnode, rnode);  // local cost
+-      register long cost = lnode->cost + lcost;
+-
+-      if (cost < best_cost) {
+-        best_node  = lnode;
+-        best_cost  = cost;
++    Allocator<Node, Path> *allocator = lattice->allocator();
++    char *str = allocator->partial_buffer(lattice->size() + 1);
++    strncpy(str, lattice->sentence(), lattice->size() + 1);
++
++    std::vector<char *> lines;
++    const size_t lsize = tokenize(str, "\n",
++                                  std::back_inserter(lines),
++                                  lattice->size() + 1);
++    char *column[2];
++    scoped_array<char> buf(new char[lattice->size() + 1]);
++    StringBuffer os(buf.get(), lattice->size() + 1);
++
++    std::vector<std::pair<char *, char *>> tokens;
++    tokens.reserve(lsize);
++
++    size_t pos = 0;
++    for (size_t i = 0; i < lsize; ++i)
++    {
++      const size_t size = tokenize(lines[i], "\t", column, 2);
++      if (size == 1 && std::strcmp(column[0], "EOS") == 0)
++      {
++        break;
+       }
+-
+-      if (IsAllPath) {
+-        Path *path   = allocator->newPath();
+-        path->cost   = lcost;
+-        path->rnode  = rnode;
+-        path->lnode  = lnode;
+-        path->lnext  = rnode->lpath;
+-        rnode->lpath = path;
+-        path->rnext  = lnode->rpath;
+-        lnode->rpath = path;
++      const size_t len = std::strlen(column[0]);
++      if (size == 2)
++      {
++        tokens.push_back(std::make_pair(column[0], column[1]));
+       }
++      else
++      {
++        tokens.push_back(std::make_pair(column[0], reinterpret_cast<char *>(0)));
++      }
++      os << column[0];
++      pos += len;
+     }
+ 
+-    // overflow check 2003/03/09
+-    if (!best_node) {
+-      return false;
++    os << '\0';
++
++    lattice->set_sentence(os.str());
++
++    pos = 0;
++    for (size_t i = 0; i < tokens.size(); ++i)
++    {
++      const char *surface = tokens[i].first;
++      const char *feature = tokens[i].second;
++      const size_t len = std::strlen(surface);
++      lattice->set_boundary_constraint(pos, MECAB_TOKEN_BOUNDARY);
++      lattice->set_boundary_constraint(pos + len, MECAB_TOKEN_BOUNDARY);
++      if (feature)
++      {
++        lattice->set_feature_constraint(pos, pos + len, feature);
++        for (size_t n = 1; n < len; ++n)
++        {
++          lattice->set_boundary_constraint(pos + n,
++                                           MECAB_INSIDE_TOKEN);
++        }
++      }
++      pos += len;
+     }
+ 
+-    rnode->prev = best_node;
+-    rnode->next = 0;
+-    rnode->cost = best_cost;
+-    const size_t x = rnode->rlength + pos;
+-    rnode->enext = end_node_list[x];
+-    end_node_list[x] = rnode;
++    return true;
+   }
+ 
+-  return true;
+-}
+-}  // namespace
+-
+-template <bool IsAllPath, bool IsPartial>
+-bool Viterbi::viterbi(Lattice *lattice) const {
+-  Node **end_node_list   = lattice->end_nodes();
+-  Node **begin_node_list = lattice->begin_nodes();
+-  Allocator<Node, Path> *allocator = lattice->allocator();
+-  const size_t len = lattice->size();
+-  const char *begin = lattice->sentence();
+-  const char *end = begin + len;
+-
+-  Node *bos_node = tokenizer_->getBOSNode(lattice->allocator());
+-  bos_node->surface = lattice->sentence();
+-  end_node_list[0] = bos_node;
+-
+-  for (size_t pos = 0; pos < len; ++pos) {
+-    if (end_node_list[pos]) {
+-      Node *right_node = tokenizer_->lookup<IsPartial>(begin + pos, end,
+-                                                       allocator, lattice);
+-      begin_node_list[pos] = right_node;
+-      if (!connect<IsAllPath>(pos, right_node,
+-                              begin_node_list,
+-                              end_node_list,
+-                              connector_.get(),
+-                              allocator)) {
+-        lattice->set_what("too long sentence.");
+-        return false;
++  namespace
++  {
++    template <bool IsAllPath>
++    bool connect(size_t pos, Node *rnode,
++                 Node **begin_node_list,
++                 Node **end_node_list,
++                 const Connector *connector,
++                 Allocator<Node, Path> *allocator)
++    {
++      for (; rnode; rnode = rnode->bnext)
++      {
++        long best_cost = 2147483647;
++        Node *best_node = 0;
++        for (Node *lnode = end_node_list[pos]; lnode; lnode = lnode->enext)
++        {
++          int lcost = connector->cost(lnode, rnode); // local cost
++          long cost = lnode->cost + lcost;
++
++          if (cost < best_cost)
++          {
++            best_node = lnode;
++            best_cost = cost;
++          }
++
++          if (IsAllPath)
++          {
++            Path *path = allocator->newPath();
++            path->cost = lcost;
++            path->rnode = rnode;
++            path->lnode = lnode;
++            path->lnext = rnode->lpath;
++            rnode->lpath = path;
++            path->rnext = lnode->rpath;
++            lnode->rpath = path;
++          }
++        }
++
++        // overflow check 2003/03/09
++        if (!best_node)
++        {
++          return false;
++        }
++
++        rnode->prev = best_node;
++        rnode->next = 0;
++        rnode->cost = best_cost;
++        const size_t x = rnode->rlength + pos;
++        rnode->enext = end_node_list[x];
++        end_node_list[x] = rnode;
++      }
++
++      return true;
++    }
++  } // namespace
++
++  template <bool IsAllPath, bool IsPartial>
++  bool Viterbi::viterbi(Lattice *lattice) const
++  {
++    Node **end_node_list = lattice->end_nodes();
++    Node **begin_node_list = lattice->begin_nodes();
++    Allocator<Node, Path> *allocator = lattice->allocator();
++    const size_t len = lattice->size();
++    const char *begin = lattice->sentence();
++    const char *end = begin + len;
++
++    Node *bos_node = tokenizer_->getBOSNode(lattice->allocator());
++    bos_node->surface = lattice->sentence();
++    end_node_list[0] = bos_node;
++
++    for (size_t pos = 0; pos < len; ++pos)
++    {
++      if (end_node_list[pos])
++      {
++        Node *right_node = tokenizer_->lookup<IsPartial>(begin + pos, end,
++                                                         allocator, lattice);
++        begin_node_list[pos] = right_node;
++        if (!connect<IsAllPath>(pos, right_node,
++                                begin_node_list,
++                                end_node_list,
++                                connector_.get(),
++                                allocator))
++        {
++          lattice->set_what("too long sentence.");
++          return false;
++        }
+       }
+     }
+-  }
+ 
+-  Node *eos_node = tokenizer_->getEOSNode(lattice->allocator());
+-  eos_node->surface = lattice->sentence() + lattice->size();
+-  begin_node_list[lattice->size()] = eos_node;
+-
+-  for (long pos = len; static_cast<long>(pos) >= 0; --pos) {
+-    if (end_node_list[pos]) {
+-      if (!connect<IsAllPath>(pos, eos_node,
+-                              begin_node_list,
+-                              end_node_list,
+-                              connector_.get(),
+-                              allocator)) {
+-        lattice->set_what("too long sentence.");
+-        return false;
++    Node *eos_node = tokenizer_->getEOSNode(lattice->allocator());
++    eos_node->surface = lattice->sentence() + lattice->size();
++    begin_node_list[lattice->size()] = eos_node;
++
++    for (long pos = len; static_cast<long>(pos) >= 0; --pos)
++    {
++      if (end_node_list[pos])
++      {
++        if (!connect<IsAllPath>(pos, eos_node,
++                                begin_node_list,
++                                end_node_list,
++                                connector_.get(),
++                                allocator))
++        {
++          lattice->set_what("too long sentence.");
++          return false;
++        }
++        break;
+       }
+-      break;
+     }
+-  }
+ 
+-  end_node_list[0] = bos_node;
+-  begin_node_list[lattice->size()] = eos_node;
++    end_node_list[0] = bos_node;
++    begin_node_list[lattice->size()] = eos_node;
+ 
+-  return true;
+-}
+-}  // Mecab
++    return true;
++  }
++} // Mecab

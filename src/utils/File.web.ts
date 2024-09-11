@@ -24,7 +24,7 @@ export const exportGeoFile = async (
     data: string;
     name: string;
     folder: string;
-    type: ExportType | 'PHOTO';
+    type: ExportType;
   }[],
   exportFileName: string,
   ext: string
@@ -36,7 +36,7 @@ export const exportGeoFile = async (
     if (folder == null) return;
     for (const d of exportData) {
       const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
-      if (d.type === 'PHOTO') {
+      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
         //console.log(d.data);
         const res = await fetch(d.data);
         const blob = await res.blob();

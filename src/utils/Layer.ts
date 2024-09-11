@@ -162,14 +162,24 @@ export const getTargetLayers = (layers: LayerType[], uploadType: 'All' | 'Public
   return targetLayers;
 };
 
-export function updateLayerActiveAndIds(layer: LayerType) {
+export function changeLayerId(layer: LayerType) {
   const newLayer = cloneDeep(layer);
   newLayer.active = false;
   newLayer.id = ulid();
+
+  const fieldIdMap: { [key: string]: string } = {};
   newLayer.field.forEach((f) => {
-    f.id = ulid();
+    const newId = ulid();
+    fieldIdMap[f.id] = newId;
+    f.id = newId;
+    f.useDictionaryAdd = false; //辞書追加を無効にする.すでに他のレイヤで有効になっている場合があるため
   });
-  return newLayer;
+  //新旧のレイヤーIDの対応と、新旧のフィールドIDの対応を保存する
+  return {
+    layer: newLayer,
+    layerIdMap: { [layer.id]: newLayer.id },
+    fieldIdMap: fieldIdMap,
+  };
 }
 
 export const isLayerType = (object: any): object is LayerType => {

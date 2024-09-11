@@ -1,6 +1,6 @@
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType } from '../../types';
-import { getColor, updateLayerActiveAndIds } from '../Layer';
+import { getColor, changeLayerId } from '../Layer';
 
 describe('getColor', () => {
   const layer: LayerType = {
@@ -102,7 +102,7 @@ describe('test ecorismap', function () {
         { id: '1-2', name: 'cmt', format: 'STRING' },
       ],
     };
-    const newLayer = updateLayerActiveAndIds(layer);
+    const { layer: newLayer } = changeLayerId(layer);
     expect(newLayer.id).not.toEqual(layer.id);
     expect(newLayer.field[0].id).not.toEqual(layer.field[0].id);
     done();
