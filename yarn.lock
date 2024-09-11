@@ -5506,6 +5506,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sqlite.org/sqlite-wasm@npm:^3.46.1-build3":
+  version: 3.46.1-build3
+  resolution: "@sqlite.org/sqlite-wasm@npm:3.46.1-build3"
+  bin:
+    sqlite-wasm: bin/index.js
+  checksum: 43c854c7c42629b5c74e88a523a7d15b7cdcff2848dedc6224259094d5412d91f3d889afad9c4497d5f1bafcec5655f21b7d7cc8c77770b497fa0afe5fefe120
+  languageName: node
+  linkType: hard
+
 "@testing-library/dom@npm:^10.3.1":
   version: 10.3.1
   resolution: "@testing-library/dom@npm:10.3.1"
@@ -11187,6 +11196,7 @@ __metadata:
     "@react-navigation/native-stack": ^6.10.0
     "@react-navigation/stack": ^6.4.0
     "@reduxjs/toolkit": ^2.2.6
+    "@sqlite.org/sqlite-wasm": ^3.46.1-build3
     "@testing-library/dom": ^10.3.1
     "@testing-library/jest-native": ^5.4.3
     "@testing-library/react-hooks": ^8.0.1

@@ -31,7 +31,7 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
     addValue,
     deleteValue,
     pressListOrder,
-    importDictionary,
+    importDictionaryFromCSV,
   } = useFieldList(route.params.targetLayer, route.params.fieldItem, route.params.fieldIndex, route.params.isEdited);
 
   const gotoBack = useCallback(() => {
@@ -53,9 +53,9 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
       return;
     }
     const tableName = `_${route.params.targetLayer.id}_${route.params.fieldItem.id}`;
-    const { message } = await importDictionary(file.assets[0].uri, tableName);
+    const { message } = await importDictionaryFromCSV(file.assets[0].uri, tableName);
     if (message !== '') await AlertAsync(message);
-  }, [importDictionary, route.params.fieldItem, route.params.targetLayer.id]);
+  }, [importDictionaryFromCSV, route.params.fieldItem.id, route.params.targetLayer.id]);
 
   return (
     <LayerEditFieldItemContext.Provider

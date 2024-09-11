@@ -248,7 +248,8 @@
     "addGroup": "Group creation",
     "useInput": "input",
     "option": "option",
-    "useAdd": "Used to add data"
+    "useAdd": "Used to add data",
+    "notSupported": "Microphone cannot be used in web version"
   },
   "firebase": {
     "message": {
