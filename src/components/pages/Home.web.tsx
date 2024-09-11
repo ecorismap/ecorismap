@@ -403,10 +403,10 @@ export default function HomeScreen() {
       if (layerStyles.length === 0) {
         layerStyles = await getDefaultStyle(tileMap);
       }
-      //console.log('layerStyles', layerStyles);
+
       layerStyles.forEach((layerStyle: LineLayerSpecification | FillLayerSpecification, index: number) => {
         layerStyle.id = `${tileMap.id}_${index}`;
-        layerStyle.source = tileMap.id;
+        layerStyle.source = `${tileMap.id}`;
         //@ts-ignore
         if (layerStyle.paint['fill-opacity']) {
           //@ts-ignore
@@ -510,7 +510,7 @@ export default function HomeScreen() {
                 type: tileMap.isVector ? 'vector' : 'raster',
                 url: tileMap.url.startsWith('pmtiles://') ? tileMap.url : 'pmtiles://' + tileMap.url,
                 minzoom: tileMap.minimumZ,
-                maxzoom: tileMap.maximumZ,
+                maxzoom: tileMap.overzoomThreshold,
                 scheme: 'xyz',
                 tileSize: tileMap.isVector ? 512 : 256,
                 attribution: tileMap.attribution,
@@ -589,7 +589,7 @@ export default function HomeScreen() {
           return { ...result };
         }
       }, {});
-    //console.log('#&&&', sources);
+
     const layers_: AnyLayer[] = tileMaps
       .slice(0)
       .reverse()

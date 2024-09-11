@@ -190,7 +190,7 @@ export const MapModalTileMap = React.memo(() => {
                     maximumValue={1}
                     onSlidingComplete={(value) => setTransparency(value)}
                   />
-                  {!tileURL?.includes('pdf') && (
+                  {!tileURL?.includes('pdf') && !(tileURL?.includes('pmtiles') && isVector) && (
                     <Slider
                       label={t('common.fixZoom')}
                       width={windowWidth * modalWidthScale}
