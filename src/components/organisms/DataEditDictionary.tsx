@@ -2,7 +2,6 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
-import { getDatabase } from '../../utils/SQLite';
 
 interface Props {
   name: string;
@@ -17,7 +16,6 @@ interface Props {
 export const DataEditDictionary = (props: Props) => {
   const { name, value, table, editable, onChangeText } = props;
 
-  const db = getDatabase();
   const styles = StyleSheet.create({
     td: {
       alignItems: 'center',
@@ -53,7 +51,6 @@ export const DataEditDictionary = (props: Props) => {
           {name && <Text style={styles.title}>{name}</Text>}
           <DictionaryTextInput
             initialValue={value ? value.toString() : ''}
-            db={db}
             table={table}
             handleSelect={(text) => onChangeText(name, text)}
             onBlure={(text) => onChangeText(name, text)}

@@ -189,7 +189,8 @@
     "useAddData": "データの追加に使用する",
     "useInput": "入力",
     "option": "オプション",
-    "useAdd": "データ追加に使用"
+    "useAdd": "データ追加に使用",
+    "notSupported": "web版ではマイクは使用できません"
   },
   "Home": {
     "confirm": {

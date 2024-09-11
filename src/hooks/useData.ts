@@ -11,6 +11,7 @@ import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
+import { exportDatabase } from '../utils/SQLite';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -27,15 +28,15 @@ export type UseDataReturnType = {
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
-  generateExportGeoData: () => {
+  generateExportGeoData: () => Promise<{
     exportData: {
       data: string;
       name: string;
-      type: ExportType | 'PHOTO';
+      type: ExportType;
       folder: string;
     }[];
     fileName: string;
-  };
+  }>;
   checkRecordEditable: (
     targetLayer: LayerType,
     feature?: RecordType
@@ -111,14 +112,12 @@ export const useData = (layerId: string): UseDataReturnType => {
       } else {
         const result = sortData(originalData, colName, order);
         const newCheckList = result.idx.map((d) => checkList_.find((c) => d === c.id) ?? { id: d, checked: false });
-        console.log('####', newCheckList);
         setCheckList(newCheckList);
         setAllUserRecordSet(result.data);
       }
       setSortedOrder(order);
       setSortedName(colName);
       dispatch(updateLayerAction({ ...targetLayer, sortedOrder: order, sortedName: colName }));
-      console.log('changeOrder', colName, order);
     },
     [checkList, dispatch, originalData, targetLayer]
   );
@@ -228,8 +227,8 @@ export const useData = (layerId: string): UseDataReturnType => {
     );
   }, [allUserRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer.id]);
 
-  const generateExportGeoData = useCallback(() => {
-    const exportData: { data: string; name: string; type: ExportType | 'PHOTO'; folder: string }[] = [];
+  const generateExportGeoData = useCallback(async () => {
+    const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
 
     let exportedRecords: RecordType[] = [];
@@ -246,6 +245,16 @@ export const useData = (layerId: string): UseDataReturnType => {
     //LayerSetting
     const layerSetting = JSON.stringify(targetLayer);
     exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
+
+    //Dictionary
+    const hasDictionaryFieald = targetLayer.field.some((field) => field.format === 'STRING_DICTIONARY');
+    if (hasDictionaryFieald) {
+      const dictionaryData = await exportDatabase(layerId);
+      if (dictionaryData !== undefined) {
+        const dictionaryName = `${targetLayer.name}_${time}.sqlite`;
+        exportData.push({ data: dictionaryData, name: dictionaryName, type: 'SQLITE', folder: '' });
+      }
+    }
 
     //GeoJSON
     if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
@@ -301,7 +310,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     });
     const fileName = `${targetLayer.name}_${time}`;
     return { exportData, fileName };
-  }, [allUserRecordSet, checkedRecords, isMapMemoLayer, targetLayer]);
+  }, [allUserRecordSet, checkedRecords, isMapMemoLayer, layerId, targetLayer]);
 
   useEffect(() => {
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;

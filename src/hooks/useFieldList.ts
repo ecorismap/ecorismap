@@ -32,7 +32,7 @@ export type UseFieldListReturnType = {
   addValue: (isOther?: boolean | undefined) => void;
   deleteValue: (id: number) => void;
   pressListOrder: (index: number) => void;
-  importDictionary: (
+  importDictionaryFromCSV: (
     uri: string,
     tableName: string
   ) => Promise<{
@@ -83,20 +83,22 @@ export const useFieldList = (
   const primaryFieldValues = useMemo(() => [...primaryFieldNames.slice(0, -1), '__CUSTOM'], [primaryFieldNames]);
 
   const [dictionaryData, setDictionaryData] = useState<string[]>([]);
-  useEffect(() => {
-    try {
-      setIsLoading(true);
-      const tableName = `_${targetLayer.id}_${fieldItem.id}`;
-      const db = getDatabase();
 
-      const allRows = db.getAllSync(`SELECT value FROM ${tableName}`);
-      //@ts-ignore
-      setDictionaryData(allRows.map((row) => row.value));
-    } catch (e) {
-      console.log(e);
-    } finally {
-      setIsLoading(false);
-    }
+  useEffect(() => {
+    (async () => {
+      try {
+        setIsLoading(true);
+        const tableName = `_${targetLayer.id}_${fieldItem.id}`;
+        const db = await getDatabase();
+        const allRows = db.getAllSync(`SELECT value FROM ${tableName}`);
+        //@ts-ignore
+        setDictionaryData(allRows.map((row) => row.value));
+      } catch (e) {
+        console.log(e);
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, [fieldItem.id, targetLayer.id, redraw]);
 
   useEffect(() => {
@@ -224,9 +226,9 @@ export const useFieldList = (
     [itemValues]
   );
 
-  const importDictionary = useCallback(async (uri: string, tableName: string) => {
+  const importDictionaryFromCSV = useCallback(async (uri: string, tableName: string) => {
     try {
-      const db = getDatabase();
+      const db = await getDatabase();
       if (!db) throw new Error(t('hooks.message.cannotOpenDB'));
       setIsLoading(true);
       // CSVファイルを読み込む
@@ -279,6 +281,6 @@ export const useFieldList = (
     addValue,
     deleteValue,
     pressListOrder,
-    importDictionary,
+    importDictionaryFromCSV,
   };
 };

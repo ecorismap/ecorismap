@@ -46,7 +46,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     //   Alert.alert('', t('Data.alert.exportData'));
     //   return;
     // }
-    const { exportData, fileName } = generateExportGeoData();
+    const { exportData, fileName } = await generateExportGeoData();
     const isOK = await exportGeoFile(exportData, fileName, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [generateExportGeoData]);

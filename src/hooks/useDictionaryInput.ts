@@ -3,10 +3,13 @@ import * as wanakana from 'wanakana';
 import Voice from '@react-native-voice/voice';
 import { tokenize } from 'react-native-japanese-text-analyzer';
 import levenshtein from 'fast-levenshtein';
-import * as SQLite from 'expo-sqlite';
 import _ from 'lodash';
 
-import { LogBox } from 'react-native';
+import { LogBox, Platform } from 'react-native';
+import { Alert } from '../components/atoms/Alert';
+import { t } from 'i18next';
+import { getDatabase } from '../utils/SQLite';
+import { SQLiteDatabase } from 'expo-sqlite';
 LogBox.ignoreLogs(['new NativeEventEmitter()']);
 
 export type UseDictionaryInputReturnType = {
@@ -21,15 +24,12 @@ export type UseDictionaryInputReturnType = {
   setFilterString: React.Dispatch<React.SetStateAction<string>>;
 };
 
-export const useDictionaryInput = (
-  db: SQLite.SQLiteDatabase | undefined,
-  table: string,
-  initialValue: string
-): UseDictionaryInputReturnType => {
+export const useDictionaryInput = (table: string, initialValue: string): UseDictionaryInputReturnType => {
   const [queryString, setQueryString] = useState(initialValue);
   const [isListening, setIsListening] = useState(false);
   const [filteredData, setFilteredData] = useState<string[]>([]);
   const [filterString, setFilterString] = useState('');
+  const [db, setDb] = useState<SQLiteDatabase | undefined>(undefined);
 
   const scoreItem = (query: string, item: string) => {
     const distance = levenshtein.get(query, item);
@@ -88,10 +88,18 @@ export const useDictionaryInput = (
   };
 
   useEffect(() => {
+    (async () => {
+      const db_ = await getDatabase();
+      setDb(db_);
+    })();
+  }, []);
+
+  useEffect(() => {
     setQueryString(initialValue);
   }, [initialValue]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
     Voice.onSpeechResults = _.debounce(async (e: any) => {
       const voiceInput = e.value[0];
       const result = await tokenize(voiceInput);
@@ -116,6 +124,10 @@ export const useDictionaryInput = (
   }, [queryData]); // この useEffect は最初のマウント時のみ実行します。
 
   const startListening = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('', t('common.notSupported'));
+      return;
+    }
     setIsListening(true);
     setQueryString('');
     try {

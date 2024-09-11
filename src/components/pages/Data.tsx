@@ -9,13 +9,12 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { DataContext } from '../../contexts/Data';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
-import { getDatabase } from '../../utils/SQLite';
 
 export default function DataScreen() {
   //console.log('render Data');
 
   const { layer, isChecked, gotoBack, addDataByDictinary } = useContext(DataContext);
-  const db = getDatabase();
+
   const navigation = useNavigation();
 
   const headerLeftButton = useCallback(
@@ -40,7 +39,6 @@ export default function DataScreen() {
       {layer.dictionaryFieldId !== undefined && (
         <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
           <DictionaryTextInput
-            db={db}
             initialValue=""
             table={`_${layer.id}_${layer.dictionaryFieldId}`}
             handleSelect={(text: string) => addDataByDictinary(layer.dictionaryFieldId!, text)}

@@ -112,6 +112,8 @@ export const EXPORTTYPE = {
   GPX: 'gpx',
   JSON: 'json',
   KML: 'kml',
+  SQLITE: 'sqlite',
+  PHOTO: 'photo',
 } as const;
 
 export const LatLonDMSTemplate = {

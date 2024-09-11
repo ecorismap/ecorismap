@@ -16,9 +16,10 @@ import { kml } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
 
 import { unzipFromUri } from '../utils/Zip';
-import { isLayerType, updateLayerActiveAndIds } from '../utils/Layer';
+import { changeLayerId, isLayerType } from '../utils/Layer';
 import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { decodeUri } from '../utils/File.web';
+import { importDictionary } from '../utils/SQLite';
 
 export type UseGeoFileReturnType = {
   isLoading: boolean;
@@ -171,7 +172,16 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       //有効なjsonかチェック
       const json = JSON.parse(jsonDecompressed);
       if (!isLayerType(json)) throw new Error('invalid json file');
-      const importedLayer = updateLayerActiveAndIds(json);
+      const { layer: importedLayer, layerIdMap, fieldIdMap } = changeLayerId(json);
+      const sqliteFile = files.find((f) => getExt(f) === 'sqlite' && !f.startsWith('__MACOS/'));
+      if (sqliteFile !== undefined) {
+        const sqlite =
+          Platform.OS !== 'web'
+            ? await loaded.files[sqliteFile].async('uint8array')
+            : await loaded.files[sqliteFile].async('arraybuffer');
+
+        await importDictionary(sqlite, layerIdMap, fieldIdMap);
+      }
       const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
       const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
 
@@ -187,9 +197,9 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         const geojsonStrings = await loaded.files[geojsonFile].async('text');
         const geojson = JSON.parse(geojsonStrings);
         //ToDo 有効なgeojsonファイルかチェック
-        importGeoJson(geojson, importedLayer.type, name, importedLayer);
+        const result = importGeoJson(geojson, importedLayer.type, name, importedLayer);
         //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-        importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+        if (!result) importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
       } else if (csvFile !== undefined) {
         const csv = await loaded.files[csvFile].async('text');
         //ToDo 有効なcsvファイルかチェック
@@ -206,7 +216,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const json = JSON.parse(jsonStrings);
       if (!isLayerType(json)) throw new Error('invalid json file');
-      const importedLayer = updateLayerActiveAndIds(json);
+      const { layer: importedLayer } = changeLayerId(json);
       dispatch(addLayerAction(importedLayer));
     },
     [dispatch]

@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
-import { TileMapItemType, TileMapType } from '../types';
+import { boundaryType, TileMapItemType, TileMapType } from '../types';
 import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
@@ -85,6 +85,10 @@ export type UseMapsReturnType = {
   updatePmtilesURL: () => Promise<void>;
 
   changeExpand: (expanded: boolean, index: number) => void;
+  getPmtilesBoundary: (url: string) => Promise<{
+    header: pmtiles.Header;
+    boundary: boundaryType;
+  }>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -514,6 +518,30 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch, maps]
   );
 
+  const getPmtilesBoundary = useCallback(
+    async (url: string): Promise<{ header: pmtiles.Header; boundary: boundaryType }> => {
+      const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
+      const header = await pmtile.getHeader();
+      return {
+        header: header,
+        boundary: {
+          center: {
+            latitude: header.centerLat,
+            longitude: header.centerLon,
+          },
+          zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
+          bounds: {
+            north: header.maxLat,
+            south: header.minLat,
+            west: header.minLon,
+            east: header.maxLon,
+          },
+        },
+      };
+    },
+    []
+  );
+
   const importPmtilesFile = useCallback(
     async (uri: string, name: string, id?: string) => {
       const mapId = id === undefined ? ulid() : id;
@@ -528,21 +556,7 @@ export const useMaps = (): UseMapsReturnType => {
         await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${mapId}`, { intermediates: true });
         await FileSystem.copyAsync({ from: uri, to: url });
       }
-      const pmtile = new pmtiles.PMTiles(url);
-      const header = await pmtile.getHeader();
-      const boundary = {
-        center: {
-          latitude: header.centerLat,
-          longitude: header.centerLon,
-        },
-        zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
-        bounds: {
-          north: header.maxLat,
-          south: header.minLat,
-          west: header.minLon,
-          east: header.maxLon,
-        },
-      };
+      const { header, boundary } = await getPmtilesBoundary(url);
       //console.log('AAA', metadata);
       //console.log('BBB', header);
 
@@ -572,7 +586,7 @@ export const useMaps = (): UseMapsReturnType => {
       dispatch(addTileMapAction(tileMap));
       return { isOK: true, message: t('hooks.message.receiveFile') };
     },
-    [dispatch]
+    [dispatch, getPmtilesBoundary]
   );
   const importMapFile = useCallback(
     async (uri: string, name: string, ext: string, id?: string, _key?: string) => {
@@ -655,5 +669,6 @@ export const useMaps = (): UseMapsReturnType => {
     clearTileCache,
     updatePmtilesURL,
     changeExpand,
+    getPmtilesBoundary,
   } as const;
 };

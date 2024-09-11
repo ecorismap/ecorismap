@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDictionaryInput } from '../../hooks/useDictionaryInput';
-import * as SQLite from 'expo-sqlite';
 import { COLOR } from '../../constants/AppConstants';
 import { ScrollView } from 'react-native-gesture-handler';
 
 interface DictionaryTextInputProp {
   editable?: boolean;
-  db: SQLite.SQLiteDatabase | undefined;
   table: string;
   initialValue: string;
   filter?: string;
@@ -17,7 +15,7 @@ interface DictionaryTextInputProp {
   onBlure?: (text: string) => void;
 }
 export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) => {
-  const { editable, db, table, initialValue, filter, handleSelect, onBlure, clearOnSelect } = prop;
+  const { editable, table, initialValue, filter, handleSelect, onBlure, clearOnSelect } = prop;
   const [isFocused, setFocus] = useState(false);
   const {
     queryString,
@@ -29,7 +27,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
     startListening,
     setFilteredData,
     setFilterString,
-  } = useDictionaryInput(db, table, initialValue);
+  } = useDictionaryInput(table, initialValue);
 
   const handleSelectItem = (item: string) => {
     clearOnSelect ? setQueryString('') : setQueryString(item);

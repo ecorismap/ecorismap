@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { LogBox } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import Routes from './routes';
@@ -11,7 +11,7 @@ const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'workle
 LogBox.ignoreLogs(IGNORED_LOGS);
 
 // Workaround for Expo 45
-if (__DEV__) {
+if (__DEV__ && Platform.OS !== 'web') {
   const withoutIgnored =
     (logger: any) =>
     (...args: any[]) => {
