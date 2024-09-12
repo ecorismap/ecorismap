@@ -177,6 +177,7 @@ export interface LayerType {
   groupId?: string;
   expanded?: boolean;
   dictionaryFieldId?: string;
+  dictionaryKey?: string;
   sortedOrder?: SortedOrderType;
   sortedName?: string;
 }

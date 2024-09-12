@@ -28,6 +28,7 @@ import { Platform } from 'react-native';
 import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
+import { exportDatabase, importDictionary } from '../utils/SQLite';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -368,6 +369,35 @@ export const useRepository = (): UseRepositoryReturnType => {
     [tileMaps]
   );
 
+  const uploadDictionary = useCallback(
+    async (projectId: string) => {
+      //Dictionary
+      const uploadedLayers: LayerType[] = [];
+      for (const layer of layers) {
+        const hasDictionaryFieald = layer.field.some((field) => field.format === 'STRING_DICTIONARY');
+        if (!hasDictionaryFieald) {
+          uploadedLayers.push(layer);
+          continue;
+        }
+        const dictionaryData = await exportDatabase(layer.id);
+        if (dictionaryData === undefined) {
+          await AlertAsync(t('hooks.message.failUploadDictionary'));
+          uploadedLayers.push(layer);
+          continue;
+        }
+        const { isOK, message, key } = await projectStorage.uploadDictionary(projectId, layer.id, dictionaryData);
+        if (!isOK) {
+          await AlertAsync(message);
+          uploadedLayers.push(layer);
+          continue;
+        }
+        uploadedLayers.push({ ...layer, dictionaryKey: key });
+      }
+      return uploadedLayers;
+    },
+    [layers]
+  );
+
   const uploadProjectSettings = useCallback(
     async (project_: ProjectType) => {
       if (!isLoggedIn(user)) {
@@ -375,10 +405,11 @@ export const useRepository = (): UseRepositoryReturnType => {
       }
       const excludeItems = tileMaps.map((tileMap) => tileMap.id);
       await projectStorage.deleteProjectPDF(project_.id, excludeItems);
-      const uploadedTileMaps = await uploadTileMaps(project_.id);
+      const updatedTileMaps = await uploadTileMaps(project_.id);
+      const updatedLayers = await uploadDictionary(project_.id);
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
-        layers,
-        tileMaps: uploadedTileMaps,
+        layers: updatedLayers,
+        tileMaps: updatedTileMaps,
         mapType,
         mapRegion,
         plugins,
@@ -390,7 +421,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       dispatch(editSettingsAction({ updatedAt: timestamp?.toISOString() }));
       return { isOK: true, message: '' };
     },
-    [dispatch, layers, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadTileMaps, user]
+    [dispatch, mapRegion, mapType, plugins, tileMaps, updatedAt, uploadDictionary, uploadTileMaps, user]
   );
 
   const uploadDefaultProjectSettings = useCallback(
@@ -462,6 +493,18 @@ export const useRepository = (): UseRepositoryReturnType => {
     [dispatch]
   );
 
+  const downloadDictionaries = useCallback(async (projectId: string, layers_: LayerType[]) => {
+    for (const layer of layers_) {
+      if (layer.dictionaryKey === undefined) continue;
+      const { isOK, message, data } = await projectStorage.downloadDictionary(projectId, layer.id, layer.dictionaryKey);
+      if (!isOK) {
+        await AlertAsync(message);
+        continue;
+      }
+      await importDictionary(data);
+    }
+  }, []);
+
   const downloadProjectSettings = useCallback(
     async (project: ProjectType) => {
       //データを最初に削除
@@ -472,13 +515,14 @@ export const useRepository = (): UseRepositoryReturnType => {
       }
       //console.log(Object.keys(settings));
       const { layers: layers_, tileMaps: tileMaps_, ...settings } = projectSettings;
+      await downloadDictionaries(project.id, layers_);
       const projectRegion = cloneDeep(settings.mapRegion);
       dispatch(setLayersAction(layers_));
       dispatch(setTileMapsAction(tileMaps_));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
     },
-    [dispatch]
+    [dispatch, downloadDictionaries]
   );
 
   const downloadPhoto = useCallback(
