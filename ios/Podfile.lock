@@ -1021,6 +1021,12 @@ PODS:
     - ExpoModulesCore
   - ExpoSharing (12.0.1):
     - ExpoModulesCore
+  - ExpoSQLite (14.0.6):
+    - ExpoModulesCore
+    - "sqlite3 (~> 3.45.3+1)"
+    - "sqlite3/bytecodevtab (~> 3.45.3+1)"
+    - "sqlite3/fts (~> 3.45.3+1)"
+    - "sqlite3/fts5 (~> 3.45.3+1)"
   - EXSplashScreen (0.27.5):
     - DoubleConversion
     - ExpoModulesCore
@@ -2264,6 +2270,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-japanese-text-analyzer (0.1.3):
+    - React-Core
   - react-native-maps (1.14.0):
     - React-Core
   - react-native-netinfo (11.3.2):
@@ -2291,6 +2299,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-voice (3.2.4):
+    - React-Core
   - React-nativeconfig (0.74.3)
   - React-NativeModulesApple (0.74.3):
     - glog
@@ -2659,6 +2669,15 @@ PODS:
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
   - SocketRocket (0.7.0)
+  - "sqlite3 (3.45.3+1)":
+    - "sqlite3/common (= 3.45.3+1)"
+  - "sqlite3/bytecodevtab (3.45.3+1)":
+    - sqlite3/common
+  - "sqlite3/common (3.45.3+1)"
+  - "sqlite3/fts (3.45.3+1)":
+    - sqlite3/common
+  - "sqlite3/fts5 (3.45.3+1)":
+    - sqlite3/common
   - SSZipArchive (2.2.3)
   - UMAppLoader (4.6.0)
   - VirgilCrypto (5.3.0):
@@ -2698,6 +2717,7 @@ DEPENDENCIES:
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoPrint (from `../node_modules/expo-print/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
+  - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - EXTaskManager (from `../node_modules/expo-task-manager/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2735,10 +2755,12 @@ DEPENDENCIES:
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-google-maps (from `../node_modules/react-native-maps`)
   - "react-native-image-editor (from `../node_modules/@react-native-community/image-editor`)"
+  - react-native-japanese-text-analyzer (from `../node_modules/react-native-japanese-text-analyzer`)
   - react-native-maps (from `../node_modules/react-native-maps`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
+  - "react-native-voice (from `../node_modules/@react-native-voice/voice`)"
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -2817,6 +2839,7 @@ SPEC REPOS:
     - SDWebImage
     - SDWebImageWebPCoder
     - SocketRocket
+    - sqlite3
     - SSZipArchive
     - VirgilCrypto
     - VirgilCryptoFoundation
@@ -2866,6 +2889,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-print/ios"
   ExpoSharing:
     :path: "../node_modules/expo-sharing/ios"
+  ExpoSQLite:
+    :path: "../node_modules/expo-sqlite/ios"
   EXSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   EXTaskManager:
@@ -2937,6 +2962,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-maps"
   react-native-image-editor:
     :path: "../node_modules/@react-native-community/image-editor"
+  react-native-japanese-text-analyzer:
+    :path: "../node_modules/react-native-japanese-text-analyzer"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-netinfo:
@@ -2945,6 +2972,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-slider:
     :path: "../node_modules/@react-native-community/slider"
+  react-native-voice:
+    :path: "../node_modules/@react-native-voice/voice"
   React-nativeconfig:
     :path: "../node_modules/react-native/ReactCommon"
   React-NativeModulesApple:
@@ -3057,6 +3086,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 470e4a326c045a3b78c172e3e62d922e3df52a41
   ExpoPrint: 9e221bf0988c77c8a270a7df7135c65c2a396e0a
   ExpoSharing: 8db05dd85081219f75989a3db2c92fe5e9741033
+  ExpoSQLite: 80476d564ec75b26ffe801f3953d876377b3c9fe
   EXSplashScreen: d8b3c547b9b18a41d80c6f6b274c4c26664febd4
   EXTaskManager: 9c3520305c3aa1b4a12a7c6d1e3f85f2779c06e9
   FBLazyVector: 7e977dd099937dc5458851233141583abba49ff2
@@ -3117,10 +3147,12 @@ SPEC CHECKSUMS:
   react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-google-maps: bf1287ed4d4ef2abe89e98ccecd1e0b1c594a21a
   react-native-image-editor: 95371ea2f3652a2f5c68df008e18715dfea40d23
+  react-native-japanese-text-analyzer: b14c2ac94f2915a23c951eb465f139c61b451dda
   react-native-maps: cbf2f03bfeebfd7ec45966b066db13a075fd2af3
   react-native-netinfo: 076df4f9b07f6670acf4ce9a75aac8d34c2e2ccc
   react-native-safe-area-context: dcab599c527c2d7de2d76507a523d20a0b83823d
   react-native-slider: d303826dbd07814ebba94464ea1e41d59b610116
+  react-native-voice: f5e8eec2278451d0017eb6a30a6ccc726aca34e0
   React-nativeconfig: 84806b820491db30175afbf027e99e8415dc63f0
   React-NativeModulesApple: 7b79212f8cf496ab554e0b7b09acbd4aa4690260
   React-perflogger: 7bb9ba49435ff66b666e7966ee10082508a203e8
@@ -3166,6 +3198,7 @@ SPEC CHECKSUMS:
   SDWebImage: 066c47b573f408f18caa467d71deace7c0f8280d
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
+  sqlite3: 02d1f07eaaa01f80a1c16b4b31dfcbb3345ee01a
   SSZipArchive: 62d4947b08730e4cda640473b0066d209ff033c9
   UMAppLoader: f17a5ee8e85b536ace0fc254b447a37ed198d57e
   VirgilCrypto: c2831582c5230eeb2adba2365336c768cd6d8c59

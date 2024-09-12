@@ -81,7 +81,12 @@ export async function importDictionary(
   fieldIdMap: { [key: string]: string } | null = null
 ) {
   const sourceDb = await getDatabase();
-  const importDb = await SQLite.deserializeDatabaseAsync(sqlite);
+  let importDb: SQLite.SQLiteDatabase;
+  if (sqlite === '') {
+    importDb = await SQLite.openDatabaseAsync('temp.sqlite', { useNewConnection: true });
+  } else {
+    importDb = await SQLite.deserializeDatabaseAsync(sqlite);
+  }
   const tables = (await importDb.getAllAsync('SELECT name FROM sqlite_schema WHERE type="table"')) as {
     name: string;
   }[];
@@ -102,4 +107,5 @@ export async function importDictionary(
       }
     });
   }
+  await deleteDatabase('temp.sqlite');
 }

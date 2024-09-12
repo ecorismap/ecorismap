@@ -630,7 +630,10 @@
       "failEncryptPDF": "PDFの暗号化に失敗しました",
       "failUploadPDF": "PDFのアップロードに失敗しました",
       "failDeletePDF": "PDFの削除に失敗しました",
-      "failDeleteProjectPDF": "プロジェクトのPDFの削除に失敗しました"
+      "failDeleteProjectPDF": "プロジェクトのPDFの削除に失敗しました",
+      "failEncryptDictionary": "辞書の暗号化に失敗しました",
+      "failUploadDictionary": "辞書のアップロードに失敗しました",
+      "failGetDictionary": "辞書のダウンロードに失敗しました"
     }
   },
   "Account": {
@@ -801,7 +804,8 @@
       "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。",
       "saveTracking": "保存されていないトラックログがあります。保存しますか？",
       "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
-      "cannotOpenDB": "データベースを開けません。"
+      "cannotOpenDB": "データベースを開けません。",
+      "failUploadDictionary": "辞書のアップロードに失敗しました"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

@@ -16,6 +16,62 @@ import { storage } from './firebase';
 import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/File.web';
 
+export const uploadDictionary = async (projectId: string, layerId: string, dictionaryData: string) => {
+  try {
+    const { encdata, key } = await encFile(dictionaryData);
+    if (encdata === undefined || key === undefined) {
+      return { isOK: false, message: t('firebase.message.failEncryptDictionary'), key: undefined };
+    }
+    const reference = storage.ref().child(`projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
+    await reference.put(encdata as Blob);
+    return { isOK: true, message: '', key };
+  } catch (error) {
+    console.log('uploadDictionary Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadDictionary'), key: undefined };
+  }
+};
+
+export const downloadDictionary = async (projectId: string, layerId: string, key: string) => {
+  try {
+    const url = await storage.ref(`projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`).getDownloadURL();
+    if (url === undefined) {
+      return { isOK: false, message: t('firebase.message.failGetDictionary') };
+    }
+    if (Platform.OS === 'web') {
+      const response = await fetch(url);
+      if (response.status !== 200) {
+        return { isOK: false, message: t('firebase.message.failGetDictionary') };
+      } else {
+        const blob = await response.blob();
+        const { decdata } = await decFile(blob, key);
+        if (decdata === undefined) {
+          return { isOK: false, message: t('firebase.message.failGetDictionary') };
+        }
+        //blobをarrayBufferに変換
+        const arrayBuffer = await new Response(decdata).arrayBuffer();
+        return { isOK: true, message: '', data: arrayBuffer };
+      }
+    } else {
+      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp.sqlite');
+      if (status !== 200) {
+        await FileSystem.deleteAsync(uri);
+        return { isOK: false, message: t('firebase.message.failGetDictionary') };
+      } else {
+        const { decUri } = await decFileRN(uri, key);
+        if (decUri === undefined) {
+          await FileSystem.deleteAsync(uri);
+          return { isOK: false, message: t('firebase.message.failGetDictionary') };
+        }
+        const dbPath = `${FileSystem.documentDirectory}SQLite/temp.sqlite`;
+        await FileSystem.copyAsync({ from: 'file://' + decUri, to: dbPath });
+        return { isOK: true, message: '', data: '' };
+      }
+    }
+  } catch (error) {
+    console.log('downloadDictionary Error:', error);
+    return { isOK: false, message: t('firebase.message.failGetDictionary') };
+  }
+};
 export const uploadPDF = async (projectId: string, tileMapId: string) => {
   try {
     const uri = (await db.geotiff.get(tileMapId))?.pdf;
@@ -99,19 +155,19 @@ export const uploadPhoto = async (projectId: string, layerId: string, userId: st
       if (encdata === undefined || key === undefined) {
         return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
       }
-      const reference = storage.ref().child(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
+      const reference = storage.ref().child(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
       await reference.put(encdata as Blob);
-      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`).getDownloadURL();
+      const url = await storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`).getDownloadURL();
       return { isOK: true, message: '', url, key };
     } else {
       const { encUri, key } = await encFileRN(uri);
       if (encUri === undefined || key === undefined) {
         return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
       }
-      const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
+      const reference = storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
       //@ts-ignore
       await reference.putFile(encUri);
-      const url = await storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`).getDownloadURL();
+      const url = await storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`).getDownloadURL();
       return { isOK: true, message: '', url, key };
     }
   } catch (error) {

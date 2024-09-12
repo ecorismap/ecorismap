@@ -265,7 +265,9 @@
       "failEncryptPDF": "PDF encryption failed",
       "failUploadPDF": "Failed to upload PDF",
       "failDeletePDF": "Failed to delete PDF",
-      "failDeleteProjectPDF": "Failed to delete project PDF"
+      "failDeleteProjectPDF": "Failed to delete project PDF",
+      "failEncryptDictionary": "Dictionary encryption failed",
+      "failUploadDictionary": "Failed to upload dictionary"
     }
   },
   "Settings": {
@@ -649,7 +651,8 @@
       "notSupportPDF": "The web version does not support PDF import.",
       "saveTracking": "There are unsaved track logs. \nDo you want to save?",
       "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude.",
-      "cannotOpenDB": "Unable to open database."
+      "cannotOpenDB": "Unable to open database.",
+      "failUploadDictionary": "Failed to upload dictionary"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
