@@ -188,6 +188,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const findSnappedLine = useCallback(
     (pXY: Position) => {
       for (const line of memoLines) {
+        if (line.visible === false) continue;
         if (line.coords === undefined) continue;
         if (line.field._stamp !== '') continue;
         if (isBrushTool(line.field._strokeStyle as string)) continue;

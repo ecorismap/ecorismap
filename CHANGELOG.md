@@ -1,12 +1,19 @@
 # Change Log
-## [Unreleased] - 2024-8-30
+## [Unreleased] - 2024-9-13
+- Add dictionary input functionality
+- Fix the eraser bug in map memos
+- Fix the bug where cache remains even after changing the map URL
 - Fixed an issue where display slowed down when tiles were not available (Android)
 - Added map groups
 - Added KML to data export options
 
+- 辞書入力の機能を追加
+- マップメモの消しゴムの不具合を修正
+- 地図のURLを変更してもキャッシュが残る不具合を修正
 - タイルがない場合に表示が遅くなる問題を修正（Android）
 - 地図グループを追加
 - データのエクスポートにKMLを追加
+
 
 ## [0.4.1] - 2024-8-22
 - Update terms of use.
