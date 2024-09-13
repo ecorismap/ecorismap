@@ -1190,6 +1190,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const checkSplitLine = useCallback((pXY: Position) => {
     const index = editingObjectIndex.current;
+    if (index === -1) return false;
     const lineXY = drawLine.current[index].xy;
     const { isNear } = checkDistanceFromLine(pXY, lineXY);
     if (!isNear) return false;

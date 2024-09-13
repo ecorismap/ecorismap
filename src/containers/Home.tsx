@@ -1050,6 +1050,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           if (ret) {
             handleGrantSplitLine(pXY);
             if (route.params?.mode === 'editPosition') finishEditPosition();
+            setDrawTool('NONE');
           }
         }
       } else if (isPlotTool(currentDrawTool)) {
