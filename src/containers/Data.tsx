@@ -39,7 +39,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   } = useData(route.params.targetLayer.id);
   const { isOwnerAdmin } = usePermission();
 
-
   const { deleteRecordPhotos } = usePhoto();
 
   const pressExportData = useCallback(async () => {
