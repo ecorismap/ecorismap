@@ -417,31 +417,16 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       clearMapMemoEditingLine();
     } else if (currentMapMemoTool === 'PEN_ERASER') {
       const eraserLineLatLonArray = xyArrayToLatLonArray(mapMemoEditingLine.current, mapRegion, mapSize, mapViewRef);
+      if (eraserLineLatLonArray.length === 1)
+        eraserLineLatLonArray.push([eraserLineLatLonArray[0][0] + 0.0000001, eraserLineLatLonArray[0][1] + 0.0000001]);
       const deletedLines: { idx: number; line: LineRecordType }[] = [];
       const otherLines: { idx: number; line: LineRecordType }[] = [];
       memoLines.forEach((line, idx) => {
         if (line.coords === undefined) return;
         const lineArray = latLonObjectsToLatLonArray(line.coords);
         if (lineArray.length === 1) lineArray.push([lineArray[0][0] + 0.0000001, lineArray[0][1] + 0.0000001]);
-        const stampLineGeometry = turf.lineString(lineArray);
-        let polygonGeometry;
-        if (eraserLineLatLonArray.length < 4) {
-          //3点以下の場合は、4点のラインにしてバッファを作成して判定する
-          eraserLineLatLonArray.push([
-            eraserLineLatLonArray[0][0] + 0.0000001,
-            eraserLineLatLonArray[0][1] + 0.0000001,
-          ]);
-          polygonGeometry = buffer(turf.lineString(eraserLineLatLonArray), mapRegion.latitudeDelta);
-        } else {
-          //4点以上の場合は、最初の点を最後に追加してポリゴンを作成する
-          eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
-          polygonGeometry = turf.polygon([eraserLineLatLonArray]);
-        }
-        if (polygonGeometry === undefined) return;
-        if (
-          booleanContains(polygonGeometry, stampLineGeometry) ||
-          booleanIntersects(polygonGeometry, stampLineGeometry)
-        ) {
+        const lineGeometry = turf.lineString(lineArray);
+        if (booleanIntersects(turf.lineString(eraserLineLatLonArray), lineGeometry)) {
           deletedLines.push({ idx, line });
         } else {
           otherLines.push({ idx, line });
