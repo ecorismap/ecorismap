@@ -12,7 +12,7 @@ import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -62,10 +62,8 @@ import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPi
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
-import { editSettingsAction } from '../modules/settings';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
-  const dispatch = useDispatch();
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -78,7 +76,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isOffline = useSelector((state: RootState) => state.settings.isOffline, shallowEqual);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
   const memberLocations = useSelector((state: RootState) => state.settings.memberLocation, shallowEqual);
-  const isModalInfoToolHidden = useSelector((state: RootState) => state.settings.isModalInfoToolHidden, shallowEqual);
+
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector((state: RootState) => state.dataSet);
   const routeName = getFocusedRouteNameFromRoute(route);
@@ -134,6 +132,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isPencilTouch,
     isPinch,
     isTerrainActive,
+    isModalInfoToolHidden,
     setDrawTool,
     setPointTool,
     setLineTool,
@@ -165,6 +164,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     savePoint,
     selectObjectByFeature,
     checkSplitLine,
+    setIsModalInfoToolHidden,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -409,12 +409,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleTerrain]
   );
 
-  const setIsModalInfoToolHidden = useCallback(
-    (value: boolean) => {
-      dispatch(editSettingsAction({ isModalInfoToolHidden: value }));
-    },
-    [dispatch]
-  );
   /************** select button ************/
 
   const selectFeatureButton = useCallback(
