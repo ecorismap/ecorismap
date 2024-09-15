@@ -19,7 +19,7 @@ import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
 
 import { along, bearing, length } from '@turf/turf';
-import { Feature, GeoJsonProperties, Geometry, LineString, MultiPolygon, Point, Polygon, Position } from 'geojson';
+import { Feature, GeoJsonProperties, Geometry, MultiPolygon, Point, Polygon, Position } from 'geojson';
 
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
   const latitude = decimal2dms(location.latitude);
@@ -510,20 +510,6 @@ const checkPointIntersection = (
   polygon: Feature<Polygon | MultiPolygon, GeoJsonProperties>
 ): boolean => turf.booleanPointInPolygon(point, polygon);
 
-const checkLineIntersection = (line: Feature<LineString>, polygon: Feature<Polygon | MultiPolygon>): boolean => {
-  // ラインを小さなセグメントに分割
-  const segments = turf.lineSegment(line);
-
-  // 各セグメントについて交差をチェック
-  for (const segment of segments.features) {
-    if (turf.booleanIntersects(segment, polygon)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
 export const selectLineFeatureByLatLon = (
   lineFeatures: LineRecordType[],
   pointCoords: Position,
@@ -538,7 +524,8 @@ export const selectLineFeatureByLatLon = (
       if (turf.getType(geometry) === 'Point') {
         return checkPointIntersection(geometry as Feature<Point, GeoJsonProperties>, bufferPolygon);
       }
-      return checkLineIntersection(geometry as Feature<LineString, GeoJsonProperties>, bufferPolygon);
+      const intersects = turf.booleanIntersects(geometry, bufferPolygon);
+      if (intersects) return feature;
     });
 
     return intersectingFeatures.length > 0 ? intersectingFeatures[0] : undefined;
