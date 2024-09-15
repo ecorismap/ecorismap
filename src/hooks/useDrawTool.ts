@@ -1,6 +1,6 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { GestureResponderEvent, Platform } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import MapView from 'react-native-maps';
 import { ulid } from 'ulid';
 import { t } from '../i18n/config';
@@ -56,6 +56,7 @@ import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
 import { isPointTool } from '../utils/General';
 import { Position } from 'geojson';
+import { RootState } from '../store';
 
 export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
@@ -75,7 +76,8 @@ export type UseDrawToolReturnType = {
   isPencilTouch: MutableRefObject<boolean | undefined>;
   isPinch: boolean;
   isTerrainActive: boolean;
-  setCurrentInfoTool: React.Dispatch<React.SetStateAction<InfoToolType>>;
+  isModalInfoToolHidden: boolean;
+  setCurrentInfoTool: (tool: InfoToolType) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setDrawTool: React.Dispatch<React.SetStateAction<DrawToolType>>;
   setPointTool: React.Dispatch<React.SetStateAction<PointToolType>>;
@@ -140,10 +142,13 @@ export type UseDrawToolReturnType = {
   selectObjectByFeature: (layer: LayerType, feature: RecordType) => void;
   handleGrantSplitLine: (pXY: Position) => void;
   checkSplitLine: (pXY: Position) => boolean;
+  setIsModalInfoToolHidden: (value: boolean) => void;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
   const dispatch = useDispatch();
+  const isModalInfoToolHidden = useSelector((state: RootState) => state.settings.isModalInfoToolHidden, shallowEqual);
+  const currentInfoTool = useSelector((state: RootState) => state.settings.currentInfoTool, shallowEqual);
   const [currentDrawTool, setDrawTool] = useState<DrawToolType>('NONE');
   const [currentPointTool, setPointTool] = useState<PointToolType>('PLOT_POINT');
   const [currentLineTool, setLineTool] = useState<LineToolType>('PLOT_LINE');
@@ -152,7 +157,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [, setRedraw] = useState('');
   const [isTerrainActive, setIsTerrainActive] = useState(false);
   const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
-  const [currentInfoTool, setCurrentInfoTool] = useState<InfoToolType>('NONE');
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
   const drawLine = useRef<DrawLineType[]>([]);
@@ -881,15 +885,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
       //選択処理
       const pXY: Position = [event.nativeEvent.locationX, event.nativeEvent.locationY];
-      // For DeBug
-      // selectLine.current = turf
-      //   .buffer(turf.point(xyToLatLon(pXY, mapRegion, mapSize)), radius)
-      //   .geometry.coordinates[0].map((d) => latLonToXY(d, mapRegion, mapSize));
 
       let feature;
       let layer;
       let recordSet;
       let recordIndex;
+
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POINT_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
@@ -910,6 +911,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
           }
         }
       }
+
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'LINE_INFO')) {
         const radius = calcDegreeRadius(1000, mapRegion, mapSize);
 
@@ -1227,6 +1229,20 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [mapRegion, mapSize, mapViewRef, saveLine]
   );
 
+  const setIsModalInfoToolHidden = useCallback(
+    (value: boolean) => {
+      dispatch(editSettingsAction({ isModalInfoToolHidden: value }));
+    },
+    [dispatch]
+  );
+
+  const setCurrentInfoTool = useCallback(
+    (tool: InfoToolType) => {
+      dispatch(editSettingsAction({ currentInfoTool: tool }));
+    },
+    [dispatch]
+  );
+
   useEffect(() => {
     //ライン編集中にサイズ変更。移動中は更新しない。
     if (drawLine.current.length > 0 && refreshDrawLine.current) {
@@ -1255,6 +1271,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isPencilTouch,
     isPinch,
     isTerrainActive,
+    isModalInfoToolHidden,
     deleteDraw,
     undoDraw,
     savePoint,
@@ -1287,5 +1304,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     handleGrantSplitLine,
     selectObjectByFeature,
     checkSplitLine,
+    setIsModalInfoToolHidden,
   } as const;
 };

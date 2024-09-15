@@ -328,6 +328,7 @@ export interface SettingsType {
   gpsAccuracy: GpsAccuracyType;
   agreedTermsVersion: string;
   isModalInfoToolHidden: boolean;
+  currentInfoTool: InfoToolType;
 }
 
 export interface RegionType {
