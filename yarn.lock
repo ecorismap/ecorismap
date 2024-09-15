@@ -7003,7 +7003,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turf/boolean-valid@npm:6.5.0":
+"@turf/boolean-valid@npm:^6.5.0":
   version: 6.5.0
   resolution: "@turf/boolean-valid@npm:6.5.0"
   dependencies:
@@ -8084,7 +8084,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@turf/turf@npm:6.5.0":
+"@turf/turf@npm:^6.5.0":
   version: 6.5.0
   resolution: "@turf/turf@npm:6.5.0"
   dependencies:
@@ -14042,9 +14042,9 @@ __metadata:
     "@testing-library/user-event": ^14.5.2
     "@tmcw/togeojson": ^5.8.1
     "@tsconfig/react-native": ^3.0.0
-    "@turf/boolean-valid": 6.5.0
+    "@turf/boolean-valid": ^6.5.0
     "@turf/line-distance": ^4.7.3
-    "@turf/turf": 6.5.0
+    "@turf/turf": ^6.5.0
     "@types/d3-scale-chromatic": ^3.0.0
     "@types/fast-levenshtein": ^0.0.4
     "@types/fbemitter": ^2.0.32
