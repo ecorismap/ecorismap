@@ -133,9 +133,9 @@ class WebSQLiteDatabase implements SQLiteDatabase {
         tempDb.exec(createTableSql);
 
         // データをコピー
-        const data = this.getAllSync(`SELECT * FROM ${tableName}`);
+        const data = this.getAllSync(`SELECT * FROM "${tableName}"`);
         if (data.length > 0) {
-          const insertSql = `INSERT INTO ${tableName} VALUES (?)`;
+          const insertSql = `INSERT INTO "${tableName}" VALUES (?)`;
           data.forEach(({ value }) => {
             tempDb.exec({
               sql: insertSql,
@@ -188,17 +188,17 @@ class WebSQLiteDatabase implements SQLiteDatabase {
         const oldTableName = table.name;
         const newTableName =
           layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
-        const createTableSQL = `CREATE TABLE IF NOT EXISTS ${newTableName} (value TEXT)`;
+        const createTableSQL = `CREATE TABLE IF NOT EXISTS "${newTableName}" (value TEXT)`;
         await this.execAsync(createTableSQL);
         const data = importDb.exec({
-          sql: `SELECT * FROM ${oldTableName}`,
+          sql: `SELECT * FROM "${oldTableName}"`,
           rowMode: 'object',
           returnValue: 'resultRows',
         }) as {
           value: string;
         }[];
         if (data.length > 0) {
-          const insertSql = `INSERT INTO ${newTableName} (value) VALUES (?)`;
+          const insertSql = `INSERT INTO "${newTableName}" (value) VALUES (?)`;
           for (const { value } of data) {
             await this.runAsync(insertSql, [value]);
           }
