@@ -53,9 +53,9 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
 
         const queryConditions = queryParts.map(() => `value LIKE ?`).join(' OR ');
 
-        const exactMatchSQL = `SELECT value FROM ${table} WHERE value LIKE ? AND ${filterString} LIMIT 10;`;
+        const exactMatchSQL = `SELECT value FROM "${table}" WHERE value LIKE ? AND ${filterString} LIMIT 10;`;
 
-        const partialMatchSQL = `SELECT value FROM ${table} WHERE (${queryConditions}) AND ${filterString};`;
+        const partialMatchSQL = `SELECT value FROM "${table}" WHERE (${queryConditions}) AND ${filterString};`;
         // console.log(partialMatchSQL);
 
         const paramsExact = [query + '%'];

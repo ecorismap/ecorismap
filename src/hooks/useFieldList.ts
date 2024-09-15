@@ -91,7 +91,7 @@ export const useFieldList = (
         setIsLoading(true);
         const tableName = `_${targetLayer.id}_${fieldItem.id}`;
         const db = await getDatabase();
-        const allRows = db.getAllSync(`SELECT value FROM ${tableName}`);
+        const allRows = db.getAllSync(`SELECT value FROM "${tableName}"`);
         //@ts-ignore
         setDictionaryData(allRows.map((row) => row.value));
       } catch (e) {
@@ -236,16 +236,16 @@ export const useFieldList = (
       const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const values = csvStrings.split('\n');
       // テーブルを削除する（存在する場合）
-      await db.execAsync(`DROP TABLE IF EXISTS ${tableName}`);
+      await db.execAsync(`DROP TABLE IF EXISTS "${tableName}"`);
       console.log(`Table ${tableName} dropped (if it existed).`);
 
       // 新しいテーブルを作成する
-      const createTableSQL = `CREATE TABLE ${tableName} (value TEXT)`;
+      const createTableSQL = `CREATE TABLE "${tableName}" (value TEXT)`;
       await db.execAsync(createTableSQL);
       console.log(`Table ${tableName} created.`);
       // データを挿入する
       await db.withTransactionAsync(async () => {
-        const insertSQL = `INSERT INTO ${tableName} (value) VALUES (?)`;
+        const insertSQL = `INSERT INTO "${tableName}" (value) VALUES (?)`;
         for (const value of values) {
           await db.runAsync(insertSQL, [value.trim()]);
         }
