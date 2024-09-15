@@ -444,7 +444,7 @@
       "text": "Delete all projects"
     },
     "confirm": {
-      "resetEncryptKey": "Do you really want to reset the encryption key?",
+      "resetEncryptKey": "Are you sure you want to reset the encryption key? \nYou will no longer be able to access existing projects, so please ask the owner to re-register after the reset.",
       "deleteUserAccount": "Do you really want to delete your account?",
       "deleteAllProjects": "Do you want to delete all projects?"
     },
