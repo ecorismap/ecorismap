@@ -188,8 +188,16 @@ class WebSQLiteDatabase implements SQLiteDatabase {
         const oldTableName = table.name;
         const newTableName =
           layerIdMap !== null && fieldIdMap !== null ? `_${layerIdMap[layerId]}_${fieldIdMap[fieldId]}` : table.name;
-        const createTableSQL = `CREATE TABLE IF NOT EXISTS "${newTableName}" (value TEXT)`;
+
+        // テーブルを削除する（存在する場合）
+        await this.execAsync(`DROP TABLE IF EXISTS "${newTableName}"`);
+        console.log(`Table ${newTableName} dropped (if it existed).`);
+
+        // 新しいテーブルを作成する
+        const createTableSQL = `CREATE TABLE "${newTableName}" (value TEXT)`;
         await this.execAsync(createTableSQL);
+        console.log(`Table ${newTableName} created.`);
+
         const data = importDb.exec({
           sql: `SELECT * FROM "${oldTableName}"`,
           rowMode: 'object',
