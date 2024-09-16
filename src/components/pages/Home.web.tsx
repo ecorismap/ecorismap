@@ -60,7 +60,6 @@ import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 
 export default function HomeScreen() {
   const {
-    isInfoToolActive,
     pointDataSet,
     lineDataSet,
     polygonDataSet,
@@ -94,6 +93,7 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     penColor,
+    isInfoToolActive,
     editPositionMode,
     editPositionRecord,
     editPositionLayer,

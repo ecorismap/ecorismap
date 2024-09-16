@@ -27,7 +27,6 @@ import { validateStorageLicense } from '../utils/Project';
 import {
   getExt,
   isFreehandTool,
-  isInfoTool,
   isLineTool,
   isMapMemoDrawTool,
   isPlotTool,
@@ -357,10 +356,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressMapView = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
-      if (isMapMemoDrawTool(currentMapMemoTool) || isInfoTool(currentInfoTool) || currentDrawTool !== 'NONE') return;
+      if (isMapMemoDrawTool(currentMapMemoTool) || isInfoToolActive || currentDrawTool !== 'NONE') return;
       await getInfoOfVectorTile(event);
     },
-    [currentDrawTool, currentInfoTool, currentMapMemoTool, getInfoOfVectorTile]
+    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile, isInfoToolActive]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -579,17 +578,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [stopDownloadTiles]);
 
   const pressCompass = useCallback(async () => {
-    if (isInfoTool(currentDrawTool)) return;
+    if (isInfoToolActive) return;
     if (featureButton !== 'NONE') return;
     if ((await confirmLocationPermission()) !== 'granted') return;
     if (headingUp === false && gpsState === 'off' && trackingState === 'off') await toggleGPS('show');
     toggleHeadingUp(!headingUp);
   }, [
     confirmLocationPermission,
-    currentDrawTool,
     featureButton,
     gpsState,
     headingUp,
+    isInfoToolActive,
     toggleGPS,
     toggleHeadingUp,
     trackingState,
