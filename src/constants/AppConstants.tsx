@@ -165,7 +165,6 @@ export const INFOTOOL = {
   POINT_INFO: 'scatter-plot',
   LINE_INFO: 'chart-timeline-variant',
   POLYGON_INFO: 'pentagon-outline',
-  NONE: 'none',
 } as const;
 
 export const DRAWTOOL = {
