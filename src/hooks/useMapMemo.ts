@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
 import {
+  booleanIntersects,
   checkDistanceFromLine,
   getSnappedLine,
   getSnappedPositionWithLine,
@@ -18,7 +19,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
-import { booleanContains, booleanIntersects, buffer } from '@turf/turf';
+import { booleanContains, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
 import { addDataAction, addRecordsAction, deleteRecordsAction, setRecordSetAction } from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
