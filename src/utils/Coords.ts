@@ -475,7 +475,7 @@ export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], poi
         if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
         if (bufferPolygon === undefined) return undefined;
-        const intersects = booleanIntersects(featurePoint, bufferPolygon);
+        const intersects = turf.booleanIntersects(featurePoint, bufferPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PointRecordType => d !== undefined);

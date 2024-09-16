@@ -1143,8 +1143,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (!finished) updateNodePosition();
     }
 
-    if (drawLine.current.length > 0) isEditingDraw.current = true;
-
     setRedraw(ulid());
     return finished;
   }, [tryDeleteLineNode, tryFinishEditObject, updateNodePosition]);
