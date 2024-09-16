@@ -1,5 +1,5 @@
-import { BRUSH, ERASER, INFOTOOL, LINETOOL, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
-import { InfoToolType, LineToolType, LocationType, PointToolType, PolygonToolType, RecordType } from '../types';
+import { BRUSH, ERASER, LINETOOL, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
+import { LineToolType, LocationType, PointToolType, PolygonToolType, RecordType } from '../types';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
   const chunks = [];
@@ -29,10 +29,6 @@ export function isLineTool(tool: string): tool is LineToolType {
 
 export function isPolygonTool(tool: string): tool is PolygonToolType {
   return Object.keys(POLYGONTOOL).includes(tool);
-}
-
-export function isInfoTool(tool: string): tool is Exclude<InfoToolType, 'NONE'> {
-  return tool !== 'NONE' && Object.keys(INFOTOOL).includes(tool);
 }
 
 export function getExt(filename: string) {
