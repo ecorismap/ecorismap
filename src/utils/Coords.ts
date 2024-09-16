@@ -14,11 +14,8 @@ import {
 import * as turf from '@turf/turf';
 import { MapRef } from 'react-map-gl/maplibre';
 import MapView, { LatLng } from 'react-native-maps';
-import booleanValid from '@turf/boolean-valid';
 import fitCurve from 'fit-curve';
 import { Platform } from 'react-native';
-
-import { along, bearing, length } from '@turf/turf';
 import { Feature, GeoJsonProperties, Geometry, MultiPolygon, Point, Polygon, Position } from 'geojson';
 
 export const toLatLonDMS = (location: LocationType): LatLonDMSType => {
@@ -748,7 +745,7 @@ const uniqueCoordinate = (coordinates: Position[]) => {
 };
 
 export const isValidPolygon = (xyLine: Position[]) => {
-  return booleanValid(turf.multiPolygon([[xyLine]]));
+  return turf.booleanValid(turf.multiPolygon([[xyLine]]));
 };
 
 export function checkRingsClose(geom: Position[]) {
@@ -855,15 +852,15 @@ export const removeSharpTurns = (line: Position[]) => {
 
 export function interpolateLineString(line: Position[], interval: number) {
   const lineGeoJSON = turf.lineString(line);
-  const lineLength = length(lineGeoJSON, { units: 'kilometers' });
-  const midpoint = along(lineGeoJSON, lineLength / 2, { units: 'kilometers' });
+  const lineLength = turf.length(lineGeoJSON, { units: 'kilometers' });
+  const midpoint = turf.along(lineGeoJSON, lineLength / 2, { units: 'kilometers' });
 
   const points = [{ coordinates: midpoint.geometry.coordinates, angle: 0 }];
 
   let offset = interval;
   while (offset < lineLength / 2) {
-    const pointBefore = along(lineGeoJSON, lineLength / 2 - offset, { units: 'kilometers' });
-    const pointAfter = along(lineGeoJSON, lineLength / 2 + offset, { units: 'kilometers' });
+    const pointBefore = turf.along(lineGeoJSON, lineLength / 2 - offset, { units: 'kilometers' });
+    const pointAfter = turf.along(lineGeoJSON, lineLength / 2 + offset, { units: 'kilometers' });
 
     points.unshift({ coordinates: pointBefore.geometry.coordinates, angle: 0 });
     points.push({ coordinates: pointAfter.geometry.coordinates, angle: 0 });
@@ -876,9 +873,9 @@ export function interpolateLineString(line: Position[], interval: number) {
     // 始点と終点以外の場合
     if (i > 0 && i < points.length - 1) {
       const bearingBeforeRad =
-        (bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates)) * Math.PI) / 180;
+        (turf.bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates)) * Math.PI) / 180;
       const bearingAfterRad =
-        (bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates)) * Math.PI) / 180;
+        (turf.bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates)) * Math.PI) / 180;
 
       const x1 = Math.cos(bearingBeforeRad);
       const y1 = Math.sin(bearingBeforeRad);
@@ -894,15 +891,15 @@ export function interpolateLineString(line: Position[], interval: number) {
       points[i].angle = angleDeg;
     } else if (i === 0 && points.length > 1) {
       // 始点の場合
-      const bearingAfter = bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates));
+      const bearingAfter = turf.bearing(turf.point(points[i].coordinates), turf.point(points[i + 1].coordinates));
       points[i].angle = (bearingAfter + 360) % 360;
     } else if (i === points.length - 1 && points.length > 1) {
       // 終点の場合
-      const bearingBefore = bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates));
+      const bearingBefore = turf.bearing(turf.point(points[i - 1].coordinates), turf.point(points[i].coordinates));
       points[i].angle = (bearingBefore + 360) % 360;
     } else {
       //1点の場合
-      points[i].angle = bearing(turf.point(line[0]), turf.point(line[line.length - 1]));
+      points[i].angle = turf.bearing(turf.point(line[0]), turf.point(line[line.length - 1]));
     }
   }
   return points;
