@@ -42,7 +42,7 @@ import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
-import { isInfoTool, isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
+import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
@@ -60,6 +60,7 @@ import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 
 export default function HomeScreen() {
   const {
+    isInfoToolActive,
     pointDataSet,
     lineDataSet,
     polygonDataSet,
@@ -93,7 +94,6 @@ export default function HomeScreen() {
     currentMapMemoTool,
     visibleMapMemoColor,
     penColor,
-    currentInfoTool,
     editPositionMode,
     editPositionRecord,
     editPositionLayer,
@@ -693,7 +693,7 @@ export default function HomeScreen() {
               isPointTool(currentDrawTool) ||
               currentDrawTool === 'SELECT' ||
               currentDrawTool === 'DELETE_POINT' ||
-              isInfoTool(currentInfoTool)
+              isInfoToolActive
                 ? panResponder.panHandlers
                 : {})}
             >

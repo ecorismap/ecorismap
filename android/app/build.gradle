@@ -40,7 +40,7 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 138
+        versionCode 139
         versionName '0.4.2'
 
     }
