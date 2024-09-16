@@ -73,6 +73,6 @@ describe('getLineLength', () => {
     },
   ];
   it('return length(km) from locations', () => {
-    expect(getLineLength(locatons)).toBe(14.374876901052536);
+    expect(getLineLength(locatons)).toBe(14.370385569672434);
   });
 });

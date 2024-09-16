@@ -1,5 +1,4 @@
 import { LocationType, TrackLogType } from '../types';
-import lineDistance from '@turf/line-distance';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
 export const updateTrackLog = (locations: LocationObject[], trackLog: TrackLogType): TrackLogType => {
@@ -53,7 +52,7 @@ export const getLineLength = (locations: LocationType[]) => {
   if (locations.length >= 2) {
     const line = locations.map((item) => [item.longitude, item.latitude]);
     const lineString = turf.lineString(line);
-    const length = lineDistance(lineString, 'kilometers');
+    const length = turf.length(lineString, { units: 'kilometers' });
     return length;
   } else {
     return 0;
