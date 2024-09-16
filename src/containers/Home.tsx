@@ -165,7 +165,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     visibleMapMemoBrush,
     visibleMapMemoEraser,
     currentMapMemoTool,
-    currentPen,
+    currentPenWidth,
     penColor,
     penWidth,
     mapMemoEditingLine,
@@ -178,8 +178,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     arrowStyle,
     isStraightStyle,
     isMapMemoLineSmoothed,
+    isModalMapMemoToolHidden,
     setMapMemoTool,
-    setPen,
+    setPenWidth,
     setVisibleMapMemoColor,
     setVisibleMapMemoPen,
     setVisibleMapMemoStamp,
@@ -198,6 +199,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setSnapWithLine,
     setIsStraightStyle,
     setMapMemoLineSmoothed,
+    setIsModalMapMemoToolHidden,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
   const { addCurrentPoint, resetPointPosition, updatePointPosition, getCurrentPoint } = usePointTool();
@@ -1341,7 +1343,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentInfoTool,
         currentMapMemoTool,
         visibleMapMemoColor,
-        currentPen,
+        currentPenWidth,
         penColor,
         penWidth,
         mapMemoEditingLine: mapMemoEditingLine.current,
@@ -1358,6 +1360,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         isEditingRecord,
         isTerrainActive,
         isInfoToolActive,
+        isModalMapMemoToolHidden,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -1387,7 +1390,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         gotoHome,
         selectMapMemoTool,
         selectInfoTool,
-        setPen,
+        setPenWidth,
         setVisibleMapMemoColor,
         setVisibleMapMemoPen,
         setVisibleMapMemoStamp,
@@ -1419,11 +1422,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         arrowStyle={arrowStyle}
         isStraightStyle={isStraightStyle}
         isMapMemoLineSmoothed={isMapMemoLineSmoothed}
+        isModalMapMemoToolHidden={isModalMapMemoToolHidden}
+        currentPenWidth={currentPenWidth}
         selectMapMemoTool={selectMapMemoTool}
+        selectMapMemoPenWidth={setPenWidth}
         selectMapMemoArrowStyle={setArrowStyle}
         selectMapMemoStraightStyle={setIsStraightStyle}
         selectMapMemoLineSmoothed={setMapMemoLineSmoothed}
         setVisibleMapMemoPen={setVisibleMapMemoPen}
+        setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
       />
       <HomeModalBrushPicker
         modalVisible={visibleMapMemoBrush}

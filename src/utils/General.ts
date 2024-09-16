@@ -1,4 +1,4 @@
-import { BRUSH, ERASER, INFOTOOL, LINETOOL, PEN, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
+import { BRUSH, ERASER, INFOTOOL, LINETOOL, POINTTOOL, POLYGONTOOL, STAMP } from '../constants/AppConstants';
 import { InfoToolType, LineToolType, LocationType, PointToolType, PolygonToolType, RecordType } from '../types';
 
 export function splitStringsIntoChunksOfLen(str: string, len: number) {
@@ -42,7 +42,7 @@ export function getExt(filename: string) {
 }
 
 export function isPenTool(tool: string) {
-  return Object.keys(PEN).includes(tool);
+  return tool === 'PEN';
 }
 export function isBrushTool(tool: string) {
   return Object.keys(BRUSH).includes(tool);

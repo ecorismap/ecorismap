@@ -183,9 +183,7 @@ export const DRAWTOOL = {
   NONE: 'none',
 } as const;
 
-export const PEN = {
-  PEN: 'lead-pencil',
-  PEN_OFF: 'pencil-off',
+export const PEN_WIDTH = {
   PEN_THICK: 'circle',
   PEN_MEDIUM: 'circle-medium',
   PEN_THIN: 'circle-small',
@@ -243,7 +241,7 @@ export const ERASER = {
   STAMP_ERASER: 'stamper',
 } as const;
 export const MAPMEMOTOOL = {
-  ...PEN,
+  PEN: 'lead-pencil',
   ...STAMP,
   ...BRUSH,
   ...ERASER,

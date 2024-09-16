@@ -200,7 +200,10 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => setVisibleMapMemoBrush(false)}
+                onPress={() => {
+                  selectMapMemoTool(undefined);
+                  setVisibleMapMemoBrush(false);
+                }}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>
