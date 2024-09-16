@@ -312,8 +312,8 @@ export const isNearWithPlot = (xyPoint: Position, xyPlot: Position) => {
     const turfPlot = turf.point([xyPlot[0] / ADJUST_VALUE, xyPlot[1] / ADJUST_VALUE]);
 
     const bufferPolygon = turf.buffer(turfPoint, RESPONSE_AREA / ADJUST_VALUE);
-    //@ts-ignore
-    return turf.booleanIntersects(turfPlot, bufferPolygon) as boolean;
+    if (bufferPolygon === undefined) return false;
+    return turf.booleanIntersects(bufferPolygon, turfPlot);
   } catch (e) {
     console.log(e);
     return false;
@@ -413,7 +413,6 @@ export const selectPointFeaturesByArea = (pointFeatures: PointRecordType[], area
         if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
-        //@ts-ignore
         const intersects = turf.booleanIntersects(featurePoint, areaPolygon);
         if (intersects) return feature;
       })
@@ -439,8 +438,7 @@ export const selectLineFeaturesByArea = (lineFeatures: LineRecordType[], areaLin
           return undefined;
         }
 
-        //@ts-ignore
-        const intersects = turf.booleanIntersects(featureLine, areaPolygon);
+        const intersects = booleanIntersects(featureLine, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is LineRecordType => d !== undefined);
@@ -458,8 +456,7 @@ export const selectPolygonFeaturesByArea = (polygonFeatures: PolygonRecordType[]
         if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
-        //@ts-ignore
-        const intersects = turf.booleanIntersects(featurePolygon, areaPolygon);
+        const intersects = booleanIntersects(featurePolygon, areaPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);
@@ -477,8 +474,8 @@ export const selectPointFeatureByLatLon = (pointFeatures: PointRecordType[], poi
         if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePoint = turf.point([feature.coords.longitude, feature.coords.latitude]);
-        //@ts-ignore
-        const intersects = turf.booleanIntersects(featurePoint, bufferPolygon);
+        if (bufferPolygon === undefined) return undefined;
+        const intersects = booleanIntersects(featurePoint, bufferPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PointRecordType => d !== undefined);
@@ -521,7 +518,7 @@ export const selectLineFeatureByLatLon = (
       if (turf.getType(geometry) === 'Point') {
         return checkPointIntersection(geometry as Feature<Point, GeoJsonProperties>, bufferPolygon);
       }
-      const intersects = turf.booleanIntersects(geometry, bufferPolygon);
+      const intersects = booleanIntersects(geometry, bufferPolygon);
       if (intersects) return feature;
     });
 
@@ -544,8 +541,8 @@ export const selectPolygonFeatureByLatLon = (
         if (!feature.coords) return undefined;
         if (!feature.visible) return undefined;
         const featurePolygon = turf.multiPolygon([[feature.coords.map((c) => [c.longitude, c.latitude])]]);
-        //@ts-ignore
-        const intersects = turf.booleanIntersects(featurePolygon, bufferPolygon);
+        if (bufferPolygon === undefined) return undefined;
+        const intersects = booleanIntersects(featurePolygon, bufferPolygon);
         if (intersects) return feature;
       })
       .filter((d): d is PolygonRecordType => d !== undefined);
@@ -950,3 +947,7 @@ export const cleanupLine = (line: LocationType[]): LocationType[] => {
   }));
   return newTrack;
 };
+
+//turfのbooleanIntersectsのignoreSelfIntersectionsにバグがあるため、一旦自前で実装
+export const booleanIntersects = (feature1: Feature<any> | Geometry, feature2: Feature<any> | Geometry) =>
+  turf.lineIntersect(feature1, feature2, { ignoreSelfIntersections: true }).features.length > 0;
