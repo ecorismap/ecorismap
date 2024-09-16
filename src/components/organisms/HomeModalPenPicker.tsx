@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { COLOR, PEN, PEN_STYLE } from '../../constants/AppConstants';
+import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
-import { ArrowStyleType, MapMemoToolType } from '../../types';
+import { ArrowStyleType, MapMemoToolType, PenWidthType } from '../../types';
 import Button from '../atoms/Button';
-import { isPenTool } from '../../utils/General';
 import { CheckBox } from '../molecules/CheckBox';
 
 interface Props {
@@ -13,7 +12,11 @@ interface Props {
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
   isMapMemoLineSmoothed: boolean;
+  isModalMapMemoToolHidden: boolean;
+  currentPenWidth: PenWidthType;
+  setIsModalMapMemoToolHidden: (value: boolean) => void;
   selectMapMemoTool: (mapMemoTool: MapMemoToolType | undefined) => void;
+  selectMapMemoPenWidth: (penWidth: PenWidthType) => void;
   selectMapMemoArrowStyle: (arrowStyle: ArrowStyleType) => void;
   selectMapMemoStraightStyle: (straightStyle: boolean) => void;
   selectMapMemoLineSmoothed: (smoothed: boolean) => void;
@@ -27,27 +30,29 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     arrowStyle,
     isStraightStyle,
     isMapMemoLineSmoothed,
+    isModalMapMemoToolHidden,
+    currentPenWidth,
+    setIsModalMapMemoToolHidden,
     selectMapMemoTool,
     selectMapMemoArrowStyle,
     selectMapMemoStraightStyle,
     selectMapMemoLineSmoothed,
     setVisibleMapMemoPen,
+    selectMapMemoPenWidth,
   } = props;
 
-  const [pen, setPen] = useState<MapMemoToolType | undefined>(undefined);
-
+  const [penWidth, setPenWidth] = useState<PenWidthType>('PEN_THIN');
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [straightStyle, setStraightStyle] = useState(false);
 
   const [smoothed, setSmoothed] = useState(false);
 
   useEffect(() => {
-    const defaultPen = isPenTool(currentMapMemoTool) ? currentMapMemoTool : 'PEN_THIN';
-    setPen(defaultPen);
+    setPenWidth(currentPenWidth);
     setArrowStyle(arrowStyle);
     setStraightStyle(isStraightStyle);
     setSmoothed(isMapMemoLineSmoothed);
-  }, [arrowStyle, currentMapMemoTool, isMapMemoLineSmoothed, isStraightStyle]);
+  }, [arrowStyle, currentMapMemoTool, currentPenWidth, isMapMemoLineSmoothed, isStraightStyle]);
 
   const styles = StyleSheet.create({
     checkbox: {
@@ -135,45 +140,36 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: 200, height: 350 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 400 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10 }}>
               <Text style={styles.modalSubTitle}>{`${t('common.strokeWidth')}`} </Text>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ margin: 5 }}>
                   <Button
-                    id={'PEN_OFF'}
-                    name={PEN.PEN_OFF}
-                    backgroundColor={pen === undefined ? COLOR.ALFARED : COLOR.ALFABLUE}
-                    borderRadius={10}
-                    onPress={() => setPen(undefined)}
-                  />
-                </View>
-                <View style={{ margin: 5 }}>
-                  <Button
                     id={'PEN_THIN'}
-                    name={PEN.PEN_THIN}
-                    backgroundColor={pen === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={PEN_WIDTH.PEN_THIN}
+                    backgroundColor={penWidth === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPen('PEN_THIN')}
+                    onPress={() => setPenWidth('PEN_THIN')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
                   <Button
                     id={'PEN_MEDIUM'}
-                    name={PEN.PEN_MEDIUM}
-                    backgroundColor={pen === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={PEN_WIDTH.PEN_MEDIUM}
+                    backgroundColor={penWidth === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPen('PEN_MEDIUM')}
+                    onPress={() => setPenWidth('PEN_MEDIUM')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
                   <Button
                     id={'PEN_THICK'}
-                    name={PEN.PEN_THICK}
-                    backgroundColor={pen === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={PEN_WIDTH.PEN_THICK}
+                    backgroundColor={penWidth === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPen('PEN_THICK')}
+                    onPress={() => setPenWidth('PEN_THICK')}
                   />
                 </View>
               </View>
@@ -255,7 +251,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
                 onPress={() => {
-                  selectMapMemoTool(pen);
+                  selectMapMemoPenWidth(penWidth);
                   selectMapMemoArrowStyle(arrowStyle_);
                   selectMapMemoStraightStyle(straightStyle);
                   selectMapMemoLineSmoothed(smoothed);
@@ -273,6 +269,16 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>
+            </View>
+            <View style={{ width: 200, height: 50 }}>
+              <CheckBox
+                style={{ backgroundColor: COLOR.WHITE }}
+                label={t('Home.modal.infoTool.checkbox')}
+                width={200}
+                checked={isModalMapMemoToolHidden}
+                onCheck={() => setIsModalMapMemoToolHidden(!isModalMapMemoToolHidden)}
+                numberOfLines={2}
+              />
             </View>
           </View>
         </View>

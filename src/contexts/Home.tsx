@@ -19,7 +19,7 @@ import {
   PolygonToolType,
   DrawLineType,
   UserType,
-  PenType,
+  PenWidthType,
   MapMemoToolType,
   LayerType,
   ScaleType,
@@ -87,7 +87,7 @@ export interface HomeContextType {
   isSettingProject: boolean;
   currentMapMemoTool: MapMemoToolType;
   visibleMapMemoColor: boolean;
-  currentPen: PenType;
+  currentPenWidth: PenWidthType;
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: Position[];
@@ -113,7 +113,7 @@ export interface HomeContextType {
   editPositionRecord: RecordType | undefined;
   isEditingRecord: boolean;
   isTerrainActive: boolean;
-
+  isModalMapMemoToolHidden: boolean;
   onRegionChangeMapView: (region: Region | ViewState) => void;
   onPressMapView: (e: MapPressEvent | MapLayerMouseEvent) => void;
   onDragMapView: () => void;
@@ -154,9 +154,11 @@ export interface HomeContextType {
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   selectMapMemoTool: (value: MapMemoToolType | undefined) => void;
-  selectInfoTool: (value: InfoToolType) => void;
+  selectInfoTool: (value: InfoToolType | undefined) => void;
   currentInfoTool: InfoToolType;
-  setPen: React.Dispatch<React.SetStateAction<PenType>>;
+  setInfoToolActive: React.Dispatch<React.SetStateAction<boolean>>;
+  isInfoToolActive: boolean;
+  setPenWidth: React.Dispatch<React.SetStateAction<PenWidthType>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoStamp: React.Dispatch<React.SetStateAction<boolean>>;
