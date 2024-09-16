@@ -8,17 +8,11 @@ import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 
 export const HomeInfoToolButton = () => {
-  const {
-    isEditingDraw,
-    isSelectedDraw,
-    currentInfoTool,
-    isModalInfoToolHidden,
-    selectInfoTool,
-    setVisibleInfoPicker,
-  } = useContext(HomeContext);
+  const { currentDrawTool, isModalInfoToolHidden, isInfoToolActive, setVisibleInfoPicker, setInfoToolActive } =
+    useContext(HomeContext);
   const { isLandscape } = useWindow();
   const insets = useSafeAreaInsets();
-  const disabled = isEditingDraw || isSelectedDraw;
+  const disabled = currentDrawTool !== 'NONE';
   const styles = StyleSheet.create({
     buttonContainer: {
       // elevation: 101,
@@ -39,16 +33,10 @@ export const HomeInfoToolButton = () => {
       <View style={styles.selectionalButton}>
         <Button
           name={INFOTOOL.ALL_INFO}
-          backgroundColor={disabled ? COLOR.ALFAGRAY : currentInfoTool === 'NONE' ? COLOR.ALFABLUE : COLOR.ALFARED}
+          backgroundColor={disabled ? COLOR.ALFAGRAY : isInfoToolActive ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
           disabled={disabled}
-          onPress={() =>
-            isModalInfoToolHidden
-              ? currentInfoTool === 'NONE'
-                ? selectInfoTool('ALL_INFO')
-                : selectInfoTool('NONE')
-              : setVisibleInfoPicker(true)
-          }
+          onPress={() => (isModalInfoToolHidden ? setInfoToolActive(!isInfoToolActive) : setVisibleInfoPicker(true))}
           onLongPress={() => setVisibleInfoPicker(true)}
           tooltipText={t('common.InfoTool')}
           tooltipPosition={{ left: 1 }}

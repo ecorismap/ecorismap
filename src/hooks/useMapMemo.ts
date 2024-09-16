@@ -1,5 +1,5 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowStyleType, LineRecordType, MapMemoToolType, PenType } from '../types';
+import { ArrowStyleType, LineRecordType, MapMemoToolType, PenWidthType } from '../types';
 import { useWindow } from './useWindow';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -28,6 +28,7 @@ import { updateLayerAction } from '../modules/layers';
 import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 import { Position } from 'geojson';
+import { editSettingsAction } from '../modules/settings';
 
 export type UseMapMemoReturnType = {
   visibleMapMemoColor: boolean;
@@ -36,7 +37,7 @@ export type UseMapMemoReturnType = {
   visibleMapMemoBrush: boolean;
   visibleMapMemoEraser: boolean;
   currentMapMemoTool: MapMemoToolType;
-  currentPen: PenType;
+  currentPenWidth: PenWidthType;
   penColor: string;
   penWidth: number;
   mapMemoEditingLine: MutableRefObject<Position[]>;
@@ -49,8 +50,9 @@ export type UseMapMemoReturnType = {
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
   isMapMemoLineSmoothed: boolean;
+  isModalMapMemoToolHidden: boolean;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
-  setPen: Dispatch<SetStateAction<PenType>>;
+  setPenWidth: Dispatch<SetStateAction<PenWidthType>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
   setVisibleMapMemoPen: Dispatch<SetStateAction<boolean>>;
   setVisibleMapMemoStamp: Dispatch<SetStateAction<boolean>>;
@@ -70,6 +72,7 @@ export type UseMapMemoReturnType = {
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
   setMapMemoLineSmoothed: Dispatch<SetStateAction<boolean>>;
+  setIsModalMapMemoToolHidden: (value: boolean) => void;
 };
 export type HistoryType = {
   operation: string;
@@ -89,6 +92,7 @@ export type MapMemoStateType = {
 
 export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoReturnType => {
   const dispatch = useDispatch();
+  const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
   const { mapSize, mapRegion } = useWindow();
   const user = useSelector((state: RootState) => state.user);
   const layers = useSelector((state: RootState) => state.layers);
@@ -101,7 +105,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [visibleMapMemoBrush, setVisibleMapMemoBrush] = useState(false);
   const [visibleMapMemoEraser, setVisibleMapMemoEraser] = useState(false);
   const [currentMapMemoTool, setMapMemoTool] = useState<MapMemoToolType>('NONE');
-  const [currentPen, setPen] = useState<PenType>('PEN_MEDIUM');
+  const [currentPenWidth, setPenWidth] = useState<PenWidthType>('PEN_MEDIUM');
   const [, setRedraw] = useState('');
   const [isPencilModeActive, setPencilModeActive] = useState(false);
   const mapMemoEditingLine = useRef<Position[]>([]);
@@ -134,17 +138,24 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
   const editableMapMemo = useMemo(() => activeMemoLayer !== undefined, [activeMemoLayer]);
   const penWidth = useMemo(() => {
-    return currentMapMemoTool === 'PEN_THIN'
+    return currentPenWidth === 'PEN_THIN'
       ? 2
-      : currentMapMemoTool === 'PEN_MEDIUM'
+      : currentPenWidth === 'PEN_MEDIUM'
       ? 5
-      : currentMapMemoTool === 'PEN_THICK'
+      : currentPenWidth === 'PEN_THICK'
       ? 10
       : 1;
-  }, [currentMapMemoTool]);
+  }, [currentPenWidth]);
 
   const isUndoable = useMemo(() => history.length > 0, [history]);
   const isRedoable = useMemo(() => future.length > 0, [future]);
+
+  const setIsModalMapMemoToolHidden = useCallback(
+    (value: boolean) => {
+      dispatch(editSettingsAction({ isModalMapMemoToolHidden: value }));
+    },
+    [dispatch]
+  );
 
   const saveMapMemo = useCallback(
     (newMapMemoLines: MapMemoStateType[]) => {
@@ -566,7 +577,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     visibleMapMemoBrush,
     visibleMapMemoEraser,
     currentMapMemoTool,
-    currentPen,
+    currentPenWidth,
     penColor,
     penWidth,
     mapMemoEditingLine,
@@ -579,8 +590,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     arrowStyle,
     isStraightStyle,
     isMapMemoLineSmoothed,
+    isModalMapMemoToolHidden,
     setMapMemoTool,
-    setPen,
+    setPenWidth,
     setVisibleMapMemoColor,
     setVisibleMapMemoPen,
     setVisibleMapMemoStamp,
@@ -600,5 +612,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setSnapWithLine,
     setIsStraightStyle,
     setMapMemoLineSmoothed,
+    setIsModalMapMemoToolHidden,
   } as const;
 };

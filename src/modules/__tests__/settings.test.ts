@@ -38,7 +38,8 @@ describe('modules/settings', () => {
     gpsAccuracy: 'HIGH',
     agreedTermsVersion: '',
     isModalInfoToolHidden: false,
-    currentInfoTool: 'NONE',
+    isModalMapMemoToolHidden: false,
+    currentInfoTool: 'ALL_INFO',
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';

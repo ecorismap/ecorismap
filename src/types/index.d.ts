@@ -18,12 +18,13 @@ import {
   POLYGONTOOL,
   DRAWTOOL,
   INFOTOOL,
-  PEN,
+  PEN_WIDTH,
   STAMP,
   MAPMEMOTOOL,
   ORIENTATIONTYPE,
   GPS_ACCURACY,
   BRUSH,
+  PEN_WIDTH,
 } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
 
@@ -328,6 +329,7 @@ export interface SettingsType {
   gpsAccuracy: GpsAccuracyType;
   agreedTermsVersion: string;
   isModalInfoToolHidden: boolean;
+  isModalMapMemoToolHidden: boolean;
   currentInfoTool: InfoToolType;
 }
 
@@ -396,7 +398,7 @@ export type InfoToolType = keyof typeof INFOTOOL;
 export type SelectionToolType = keyof typeof SELECTIONTOOL;
 export type InfoToolType = keyof typeof INFOTOOL;
 export type MapMemoToolType = keyof typeof MAPMEMOTOOL;
-export type PenType = keyof typeof PEN;
+export type PenWidthType = keyof typeof PEN_WIDTH;
 export type StampType = keyof typeof STAMP;
 export type BrushType = keyof typeof BRUSH;
 export type UndoActionType = 'NEW' | 'EDIT' | 'FINISH' | 'SELECT' | 'DELETE';
