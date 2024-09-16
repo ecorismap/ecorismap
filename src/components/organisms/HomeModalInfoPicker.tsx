@@ -11,7 +11,7 @@ interface Props {
   modalVisible: boolean;
   isModalInfoToolHidden: boolean;
 
-  selectInfoTool: (infoTool: InfoToolType) => void;
+  selectInfoTool: (infoTool: InfoToolType | undefined) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setIsModalInfoToolHidden: (value: boolean) => void;
 }
@@ -25,11 +25,10 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
     setVisibleInfoPicker,
     setIsModalInfoToolHidden,
   } = props;
-  const [infoTool, setInfoTool] = useState<InfoToolType>('NONE');
+  const [infoTool, setInfoTool] = useState<InfoToolType>('ALL_INFO');
 
   useEffect(() => {
-    const defaultInfoTool = currentInfoTool === 'NONE' ? 'ALL_INFO' : currentInfoTool;
-    setInfoTool(defaultInfoTool);
+    setInfoTool(currentInfoTool);
   }, [currentInfoTool]);
 
   const styles = StyleSheet.create({
@@ -205,7 +204,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
-                  selectInfoTool('NONE');
+                  selectInfoTool(undefined);
                   setVisibleInfoPicker(false);
                 }}
               >

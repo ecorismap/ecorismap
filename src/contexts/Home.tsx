@@ -136,8 +136,10 @@ export interface HomeContextType {
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
   selectMapMemoTool: (value: MapMemoToolType | undefined) => void;
-  selectInfoTool: (value: InfoToolType) => void;
+  selectInfoTool: (value: InfoToolType | undefined) => void;
   currentInfoTool: InfoToolType;
+  setInfoToolActive: React.Dispatch<React.SetStateAction<boolean>>;
+  isInfoToolActive: boolean;
   setPen: React.Dispatch<React.SetStateAction<PenType>>;
   setVisibleMapMemoColor: React.Dispatch<React.SetStateAction<boolean>>;
   setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;

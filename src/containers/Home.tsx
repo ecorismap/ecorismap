@@ -117,6 +117,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     featureButton,
     isDrawLineVisible,
     visibleInfoPicker,
+    isInfoToolActive,
     currentInfoTool,
     isPencilTouch,
     isPinch,
@@ -154,6 +155,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     selectObjectByFeature,
     checkSplitLine,
     setIsModalInfoToolHidden,
+    setInfoToolActive,
   } = useDrawTool(mapViewRef.current);
 
   const {
@@ -341,7 +343,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const selectMapMemoTool = useCallback(
     (value: MapMemoToolType | undefined) => {
-      setCurrentInfoTool('NONE');
+      setInfoToolActive(false);
       if (value === undefined) {
         setMapMemoTool('NONE');
       } else {
@@ -357,15 +359,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setMapMemoTool(value);
       }
     },
-    [changeColorTypeToIndividual, editableMapMemo, setCurrentInfoTool, setDrawTool, setMapMemoTool]
+    [changeColorTypeToIndividual, editableMapMemo, setDrawTool, setInfoToolActive, setMapMemoTool]
   );
 
   const selectInfoTool = useCallback(
-    (value: InfoToolType) => {
-      if (value === 'NONE') {
-        setCurrentInfoTool('NONE');
+    (value: InfoToolType | undefined) => {
+      if (value === undefined) {
+        setInfoToolActive(false);
         toggleTerrain(true);
       } else {
+        setInfoToolActive(true);
         setCurrentInfoTool(value);
         toggleTerrain(false);
         if (Platform.OS !== 'web') toggleHeadingUp(false);
@@ -374,7 +377,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setDrawTool('NONE');
       setMapMemoTool('NONE');
     },
-    [resetDrawTools, setCurrentInfoTool, setDrawTool, setMapMemoTool, toggleHeadingUp, toggleTerrain]
+    [resetDrawTools, setCurrentInfoTool, setDrawTool, setInfoToolActive, setMapMemoTool, toggleHeadingUp, toggleTerrain]
   );
 
   /************** select button ************/
@@ -400,7 +403,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
-      setCurrentInfoTool('NONE');
+      setInfoToolActive(false);
       if (isPointTool(value) || isLineTool(value) || isPolygonTool(value)) {
         if (currentDrawTool === value) {
           if (isEditingDraw) {
@@ -495,8 +498,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isSelectedDraw,
       resetDrawTools,
       route.params?.mode,
-      setCurrentInfoTool,
       setDrawTool,
+      setInfoToolActive,
     ]
   );
 
@@ -842,7 +845,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (isPencilModeActive && isPencilTouch.current === false) {
         hideDrawLine();
         setIsPinch(true);
-      } else if (currentInfoTool !== 'NONE') {
+      } else if (isInfoToolActive) {
         await getInfoOfFeature(event);
       } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
         await handleAddLocationPoint();
@@ -900,7 +903,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [
       checkSplitLine,
       currentDrawTool,
-      currentInfoTool,
       currentMapMemoTool,
       featureButton,
       finishEditPosition,
@@ -912,6 +914,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       handleGrantPlot,
       handleGrantSplitLine,
       hideDrawLine,
+      isInfoToolActive,
       isPencilModeActive,
       isPencilTouch,
       navigation,
@@ -1140,7 +1143,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         const featureType = route.params.layer.type as FeatureButtonType;
         selectFeatureButton(featureType);
-        setCurrentInfoTool('NONE');
+        setInfoToolActive(false);
         changeMapRegion(route.params.jumpTo, true);
 
         if (featureType === 'POINT') {
@@ -1354,6 +1357,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         editPositionRecord: route.params?.record,
         isEditingRecord,
         isTerrainActive,
+        isInfoToolActive,
         onRegionChangeMapView,
         onPressMapView,
         onDragEndPoint,
@@ -1404,6 +1408,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         finishEditPosition,
         updatePmtilesURL,
         toggleTerrain,
+        setInfoToolActive,
       }}
     >
       <Home />

@@ -77,6 +77,7 @@ export type UseDrawToolReturnType = {
   isPinch: boolean;
   isTerrainActive: boolean;
   isModalInfoToolHidden: boolean;
+  isInfoToolActive: boolean;
   setCurrentInfoTool: (tool: InfoToolType) => void;
   setVisibleInfoPicker: React.Dispatch<React.SetStateAction<boolean>>;
   setDrawTool: React.Dispatch<React.SetStateAction<DrawToolType>>;
@@ -143,6 +144,7 @@ export type UseDrawToolReturnType = {
   handleGrantSplitLine: (pXY: Position) => void;
   checkSplitLine: (pXY: Position) => boolean;
   setIsModalInfoToolHidden: (value: boolean) => void;
+  setInfoToolActive: Dispatch<SetStateAction<boolean>>;
 };
 
 export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolReturnType => {
@@ -169,6 +171,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const isSelectedDraw = useRef(false);
   const isPencilTouch = useRef<boolean | undefined>(undefined);
   const [isPinch, setIsPinch] = useState(false);
+  const [isInfoToolActive, setInfoToolActive] = useState(false);
 
   const offset = useRef([0, 0]);
 
@@ -1272,6 +1275,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isPinch,
     isTerrainActive,
     isModalInfoToolHidden,
+    isInfoToolActive,
     deleteDraw,
     undoDraw,
     savePoint,
@@ -1305,5 +1309,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     selectObjectByFeature,
     checkSplitLine,
     setIsModalInfoToolHidden,
+    setInfoToolActive,
   } as const;
 };
