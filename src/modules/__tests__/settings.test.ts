@@ -38,6 +38,7 @@ describe('modules/settings', () => {
     gpsAccuracy: 'HIGH',
     agreedTermsVersion: '',
     isModalInfoToolHidden: false,
+    isModalMapMemoToolHidden: false,
     currentInfoTool: 'ALL_INFO',
   };
   test('should set the rile to state', () => {

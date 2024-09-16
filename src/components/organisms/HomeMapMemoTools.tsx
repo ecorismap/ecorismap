@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { COLOR, MAPMEMOTOOL, PEN, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
+import { COLOR, MAPMEMOTOOL, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
 import { HomeContext } from '../../contexts/Home';
@@ -13,6 +13,7 @@ export const HomeMapMemoTools = () => {
     isPencilModeActive,
     isUndoable,
     isRedoable,
+    isModalMapMemoToolHidden,
     selectMapMemoTool,
     setVisibleMapMemoColor,
     setVisibleMapMemoPen,
@@ -51,12 +52,17 @@ export const HomeMapMemoTools = () => {
     <View style={styles.buttonContainer}>
       <View style={styles.selectionalButton}>
         <Button
-          // @ts-ignore
-          name={PEN[currentMapMemoTool] || PEN.PEN}
-          backgroundColor={Object.keys(PEN).includes(currentMapMemoTool) ? COLOR.ALFARED : COLOR.ALFABLUE}
+          name={MAPMEMOTOOL.PEN}
+          backgroundColor={currentMapMemoTool === 'PEN' ? COLOR.ALFARED : COLOR.ALFABLUE}
           borderRadius={10}
-          onPress={() => setVisibleMapMemoPen(true)}
-          onLongPress={() => selectMapMemoTool(undefined)}
+          onPress={() =>
+            isModalMapMemoToolHidden
+              ? currentMapMemoTool === 'PEN'
+                ? selectMapMemoTool(undefined)
+                : selectMapMemoTool('PEN')
+              : setVisibleMapMemoPen(true)
+          }
+          onLongPress={() => setVisibleMapMemoPen(true)}
         />
       </View>
       <View style={styles.button}>

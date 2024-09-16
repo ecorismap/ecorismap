@@ -251,7 +251,10 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => setVisibleMapMemoStamp(false)}
+                onPress={() => {
+                  selectMapMemoTool(undefined);
+                  setVisibleMapMemoStamp(false);
+                }}
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>

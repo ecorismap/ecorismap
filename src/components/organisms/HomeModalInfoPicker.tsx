@@ -181,16 +181,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 <Text>{`${t('common.selectPolygonInfo')}`}</Text>
               </TouchableOpacity>
             </View>
-            <View style={{ width: 200, height: 50 }}>
-              <CheckBox
-                style={{ backgroundColor: COLOR.WHITE }}
-                label={t('Home.modal.infoTool.checkbox')}
-                width={200}
-                checked={isModalInfoToolHidden}
-                onCheck={() => setIsModalInfoToolHidden(!isModalInfoToolHidden)}
-                numberOfLines={2}
-              />
-            </View>
+
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
@@ -210,6 +201,16 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>
+            </View>
+            <View style={{ width: 200, height: 50 }}>
+              <CheckBox
+                style={{ backgroundColor: COLOR.WHITE }}
+                label={t('Home.modal.infoTool.checkbox')}
+                width={200}
+                checked={isModalInfoToolHidden}
+                onCheck={() => setIsModalInfoToolHidden(!isModalInfoToolHidden)}
+                numberOfLines={2}
+              />
             </View>
           </View>
         </View>
