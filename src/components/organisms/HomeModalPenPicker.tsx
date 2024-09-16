@@ -251,6 +251,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               <TouchableOpacity
                 style={styles.modalOKCancelButton}
                 onPress={() => {
+                  selectMapMemoTool('PEN');
                   selectMapMemoPenWidth(penWidth);
                   selectMapMemoArrowStyle(arrowStyle_);
                   selectMapMemoStraightStyle(straightStyle);
