@@ -22,14 +22,33 @@ export async function generateTileMap(
 
     for (let x = leftTileX; x <= rightTileX; x++) {
       for (const map of maps) {
+        if (
+          map.url.includes('file://') ||
+          map.url.includes('pmtiles://') ||
+          map.url.includes('.pmtiles') ||
+          map.url.includes('pdf://') ||
+          map.url.includes('.pdf') ||
+          map.url.includes('.pbf') ||
+          map.url.includes('blob:')
+        )
+          continue;
         const mapUrl = map.url
           .replace('{z}', tileZoom.toString())
           .replace('{x}', x.toString())
           .replace('{y}', y.toString());
 
-        tileContents += `<img src="${mapUrl}" style="position: absolute; width: 256px; height: 256px; left: ${
-          256 * (x - leftTileX)
-        }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(1)}" />`;
+        try {
+          const response = await fetch(mapUrl, { method: 'HEAD' });
+          if (response.ok) {
+            tileContents += `<img src="${mapUrl}" style="position: absolute; width: 256px; height: 256px; left: ${
+              256 * (x - leftTileX)
+            }px; top: ${256 * (y - topTileY)}px; margin: 0; padding: 0; opacity:${(1 - map.transparency).toFixed(
+              1
+            )}" />`;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch tile: ${mapUrl}`, error);
+        }
       }
     }
     tileContents += '</div>';
