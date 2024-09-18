@@ -7,15 +7,16 @@ import { ScrollView } from 'react-native-gesture-handler';
 
 export const HomePopup = React.memo(() => {
   const { vectorTileInfo, closeVectorTileInfo } = useContext(HomeContext);
-
+  const WIDTH = 250;
+  const HEIGHT = 120;
   return vectorTileInfo ? (
     <View
       style={{
         position: 'absolute',
         zIndex: 1000,
         elevation: 1000,
-        top: vectorTileInfo.position[1] - 110,
-        left: vectorTileInfo.position[0] - 100,
+        top: vectorTileInfo.position[1] - HEIGHT - 10,
+        left: vectorTileInfo.position[0] - WIDTH / 2,
       }}
     >
       {/* クローズボタン */}
@@ -33,8 +34,8 @@ export const HomePopup = React.memo(() => {
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 8 }}
         style={{
-          width: 250,
-          height: 120,
+          width: WIDTH,
+          height: HEIGHT,
           backgroundColor: COLOR.WHITE,
           borderRadius: 5,
         }}
