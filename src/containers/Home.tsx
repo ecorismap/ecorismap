@@ -46,7 +46,7 @@ import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { latLonToXY, xyArrayToLatLonObjects, xyToLatLon } from '../utils/Coords';
+import { latLonToXY, xyArrayToLatLonObjects } from '../utils/Coords';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useNetInfo } from '@react-native-community/netinfo';
@@ -343,16 +343,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (response.ok) {
         const json = await response.json();
 
-        properties = [
-          ...properties,
-          {
-            記号: json.symbol,
-            大区分: json.group_ja,
-            形成時代: json.formationAge_ja,
-            岩相: json.lithology_ja,
-            出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
-          },
-        ];
+        if (json.symbol !== null) {
+          properties = [
+            ...properties,
+            {
+              記号: json.symbol,
+              大区分: json.group_ja,
+              形成時代: json.formationAge_ja,
+              岩相: json.lithology_ja,
+              出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
+            },
+          ];
+        }
       }
 
       if (properties === undefined) {
@@ -379,16 +381,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const response = await fetch(url);
       if (response.ok) {
         const json = await response.json();
-        properties = [
-          ...properties,
-          {
-            記号: json.symbol,
-            大区分: json.group_ja,
-            形成時代: json.formationAge_ja,
-            岩相: json.lithology_ja,
-            出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
-          },
-        ];
+        if (json.symbol !== null) {
+          properties = [
+            ...properties,
+            {
+              記号: json.symbol,
+              大区分: json.group_ja,
+              形成時代: json.formationAge_ja,
+              岩相: json.lithology_ja,
+              出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
+            },
+          ];
+        }
       }
 
       if (properties === undefined) {
@@ -403,7 +407,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const onPressMapView = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
-      if (isMapMemoDrawTool(currentMapMemoTool) || isInfoToolActive || currentDrawTool !== 'NONE') return;
+      if (isInfoToolActive || featureButton !== 'NONE') return;
       let latlon: Position;
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
@@ -414,7 +418,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await getInfoOfVectorTile(latlon);
       }
     },
-    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile, getInfoOfVectorTileForWeb, isInfoToolActive]
+    [featureButton, getInfoOfVectorTile, getInfoOfVectorTileForWeb, isInfoToolActive]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -967,7 +971,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     } catch (e) {
       setIsLoading(false);
-      console.log('###', e);
     } finally {
       setIsLoading(false);
     }
