@@ -39,7 +39,9 @@ export const HomePopup = React.memo(() => {
           borderRadius: 5,
         }}
       >
-        <Text>{vectorTileInfo.properties}</Text>
+        <ScrollView horizontal={true}>
+          <Text>{vectorTileInfo.properties}</Text>
+        </ScrollView>
       </ScrollView>
       <View
         // eslint-disable-next-line react-native/no-color-literals
