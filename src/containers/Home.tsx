@@ -46,7 +46,7 @@ import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { latLonToXY, xyArrayToLatLonObjects } from '../utils/Coords';
+import { latLonToXY, xyArrayToLatLonObjects, xyToLatLon } from '../utils/Coords';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useNetInfo } from '@react-native-community/netinfo';
@@ -320,30 +320,77 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
   );
 
-  const getInfoOfVectorTile = useCallback(
-    async (event: MapPressEvent | MapLayerMouseEvent) => {
-      let latlon: number[];
+  const getInfoOfVectorTileForWeb = useCallback(
+    async (event: MapLayerMouseEvent) => {
       let properties: { [key: string]: any }[];
-      let position: Position;
-
-      if (Platform.OS === 'web') {
-        const e = event as MapLayerMouseEvent;
-        const map = (mapViewRef.current as MapRef).getMap();
-        const features = map.queryRenderedFeatures([e.point.x, e.point.y]);
-        const vectorTileFeatures = features.filter((feature) => {
-          const layer = map.getLayer(feature.layer.id);
-          //@ts-ignore
-          return layer && layer.source && map.getSource(layer.source).type === 'vector';
-        });
-        position = [e.point.x, e.point.y];
+      const map_ = (mapViewRef.current as MapRef).getMap();
+      //@ts-ignore
+      const features = map_.queryRenderedFeatures([event.point.x, event.point.y]);
+      const vectorTileFeatures = features.filter((feature) => {
+        const layer = map_.getLayer(feature.layer.id);
         //@ts-ignore
-        properties = vectorTileFeatures ? vectorTileFeatures.map((f) => f.properties) : [];
-      } else {
-        const e = event as MapPressEvent;
-        latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
-        properties = await getVectorTileInfo(latlon, zoom);
-        position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
+        return layer && layer.source && map_.getSource(layer.source).type === 'vector';
+      });
+      const position = [event.point.x, event.point.y];
+
+      //vectorTileの情報を取得
+      //@ts-ignore
+      properties = vectorTileFeatures ? vectorTileFeatures.map((f) => f.properties).filter((v) => v !== undefined) : [];
+
+      //地質図の情報を取得
+      const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${event.lngLat.lat},${event.lngLat.lng}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const json = await response.json();
+
+        properties = [
+          ...properties,
+          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce((obj, key) => {
+            if (key in json) {
+              //@ts-ignore
+              obj[key] = json[key];
+            }
+            return obj;
+          }, {}),
+        ];
       }
+
+      if (properties === undefined) {
+        closeVectorTileInfo();
+      } else {
+        //console.log(properties, position);
+        openVectorTileInfo(properties, position);
+      }
+    },
+    [closeVectorTileInfo, openVectorTileInfo]
+  );
+
+  const getInfoOfVectorTile = useCallback(
+    async (latlon: Position) => {
+      let properties: { [key: string]: any }[];
+
+      //@ts-ignore
+      const position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
+      //vectorTileの情報を取得
+      properties = await getVectorTileInfo(latlon, zoom);
+
+      //地質図の情報を取得
+      const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${latlon[1]},${latlon[0]}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const json = await response.json();
+        properties = [
+          ...properties,
+          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce((obj, key) => {
+            if (key in json) {
+              //@ts-ignore
+              obj[key] = json[key];
+            }
+            return obj;
+          }, {}),
+        ];
+      }
+
       if (properties === undefined) {
         closeVectorTileInfo();
       } else {
@@ -357,9 +404,17 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const onPressMapView = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
       if (isMapMemoDrawTool(currentMapMemoTool) || isInfoToolActive || currentDrawTool !== 'NONE') return;
-      await getInfoOfVectorTile(event);
+      let latlon: Position;
+      if (Platform.OS === 'web') {
+        const e = event as MapLayerMouseEvent;
+        await getInfoOfVectorTileForWeb(e);
+      } else {
+        const e = event as MapPressEvent;
+        latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
+        await getInfoOfVectorTile(latlon);
+      }
     },
-    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile, isInfoToolActive]
+    [currentDrawTool, currentMapMemoTool, getInfoOfVectorTile, getInfoOfVectorTileForWeb, isInfoToolActive]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -1088,6 +1143,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         } else {
           handleGrantMapMemo(event);
         }
+      } else {
+        if (Platform.OS !== 'web') {
+          const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef.current);
+          await getInfoOfVectorTile(latlon);
+        }
       }
     },
     [
@@ -1097,6 +1157,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       featureButton,
       finishEditPosition,
       getInfoOfFeature,
+      getInfoOfVectorTile,
       getPXY,
       handleAddLocationPoint,
       handleGrantFreehand,
@@ -1107,6 +1168,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isInfoToolActive,
       isPencilModeActive,
       isPencilTouch,
+      mapRegion,
+      mapSize,
       navigation,
       route.params?.mode,
       saveLine,
