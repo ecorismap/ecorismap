@@ -314,13 +314,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
         properties = [
           ...properties,
-          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce((obj, key) => {
-            if (key in json) {
-              //@ts-ignore
-              obj[key] = json[key];
-            }
-            return obj;
-          }, {}),
+          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce(
+            (obj, key) => {
+              if (key in json) {
+                //@ts-ignore
+                obj[key] = json[key];
+              }
+              return obj;
+            },
+            { source: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」' }
+          ),
         ];
       }
 
@@ -350,13 +353,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         const json = await response.json();
         properties = [
           ...properties,
-          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce((obj, key) => {
-            if (key in json) {
-              //@ts-ignore
-              obj[key] = json[key];
-            }
-            return obj;
-          }, {}),
+          ['symbol', 'formationAge_ja', 'group_ja', 'lithology_ja'].reduce(
+            (obj, key) => {
+              if (key in json) {
+                //@ts-ignore
+                obj[key] = json[key];
+              }
+              return obj;
+            },
+            { source: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」' }
+          ),
         ];
       }
 
