@@ -33,7 +33,7 @@ export const HomePopup = React.memo(() => {
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 8 }}
         style={{
-          width: 200,
+          width: 300,
           height: 100,
           backgroundColor: COLOR.WHITE,
           borderRadius: 5,
