@@ -954,11 +954,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         } else {
           handleGrantMapMemo(event);
         }
-      } else {
-        if (Platform.OS !== 'web') {
-          const latlon = xyToLatLon(pXY, mapRegion, mapSize, mapViewRef.current);
-          await getInfoOfVectorTile(latlon);
-        }
       }
     },
     [
@@ -968,7 +963,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       featureButton,
       finishEditPosition,
       getInfoOfFeature,
-      getInfoOfVectorTile,
       getPXY,
       handleAddLocationPoint,
       handleGrantFreehand,
@@ -979,8 +973,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isInfoToolActive,
       isPencilModeActive,
       isPencilTouch,
-      mapRegion,
-      mapSize,
       navigation,
       route.params?.mode,
       saveLine,
