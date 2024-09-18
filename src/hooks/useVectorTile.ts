@@ -69,7 +69,7 @@ export const useVectorTile = (): UseVectorTileReturnType => {
       .map((property) =>
         Object.keys(property)
           //@ts-ignore
-          .map((key) => `${key}:${property[key]}`)
+          .map((key) => `${key} : ${property[key]}`)
           .join('\n')
       )
       .join('\n-----------------------\n');
