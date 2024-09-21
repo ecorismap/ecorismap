@@ -8,11 +8,9 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { LayerEditContext } from '../contexts/LayerEdit';
 import { checkLayerInputs } from '../utils/Layer';
-import { exportFile } from '../utils/File';
+import { exportGeoFile } from '../utils/File';
+import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
-import sanitize from 'sanitize-filename';
-import { Platform } from 'react-native';
-
 export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
   const {
     targetLayer,
@@ -39,6 +37,7 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     route.params.colorStyle,
     route.params.useLastValue
   );
+  const { generateExportGeoData } = useGeoFile();
 
   const pressSaveLayer = useCallback(() => {
     const checkLayerInputsResult = checkLayerInputs(targetLayer);
@@ -60,12 +59,11 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const mapSettings = JSON.stringify(targetLayer);
-    const fileName = `${sanitize(targetLayer.name)}_${time}.json`;
-    const isOK = await exportFile(mapSettings, fileName);
-    //webではFileSaverのawaitが未対応のため
-    if (!isOK && Platform.OS !== 'web') await AlertAsync(t('hooks.message.failExport'));
-  }, [targetLayer]);
+    const fileNameBase = `${route.params.targetLayer.name}_${time}`;
+    const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, { settingsOnly: true });
+    const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
+    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+  }, [generateExportGeoData, route.params.targetLayer.name, targetLayer]);
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {

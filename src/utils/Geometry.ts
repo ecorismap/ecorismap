@@ -466,12 +466,8 @@ export const GeoJson2Data = (
   }
 };
 
-export const generateCSV = (
-  dataSet: RecordType[],
-  field: LayerType['field'],
-  type: FeatureType,
-  isMapMemoLayer: boolean
-) => {
+export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], type: FeatureType) => {
+  const isMapMemoLayer = dataSet.some((d) => d.field._strokeColor !== undefined);
   const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
   let header = field.map((f) => f.name).join(',');
   if (isMapMemoLayer) {
@@ -767,9 +763,10 @@ export const generateGeoJson = (
   data: RecordType[] | RecordType[],
   field: LayerType['field'],
   type: GeoJsonFeatureType,
-  layerName: string,
-  isMapMemoLayer: boolean
+  layerName: string
 ) => {
+  const isMapMemoLayer = data.some((d) => d.field._strokeColor !== undefined);
+
   const geojson = {
     type: 'FeatureCollection',
     name: layerName,

@@ -134,9 +134,8 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
 
   const dataStyle = getDataStyleLine(layer, userId, displayName);
 
-  const isMapMemoLayer = data.some((r) => r.field._strokeColor !== undefined);
-  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, isMapMemoLayer);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, isMapMemoLayer);
+  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name);
 
   return (
     <View>

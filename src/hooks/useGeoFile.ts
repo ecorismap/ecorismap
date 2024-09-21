@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { FeatureType, GeoJsonFeatureType, LayerType } from '../types';
+import { ExportType, FeatureType, GeoJsonFeatureType, LayerType, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
 import { addLayerAction } from '../modules/layers';
@@ -19,7 +19,8 @@ import { unzipFromUri } from '../utils/Zip';
 import { changeLayerId, isLayerType } from '../utils/Layer';
 import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { decodeUri } from '../utils/File.web';
-import { importDictionary } from '../utils/SQLite';
+import { importDictionary, exportDatabase } from '../utils/SQLite';
+import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
 
 export type UseGeoFileReturnType = {
   isLoading: boolean;
@@ -30,6 +31,23 @@ export type UseGeoFileReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  generateExportGeoData: (
+    targetLayer: LayerType,
+    exportedRecords: RecordType[],
+    fileNameBase: string,
+    option?: {
+      settingsOnly?: boolean;
+      folder?: string;
+      exportPhoto?: boolean;
+    }
+  ) => Promise<
+    {
+      data: string;
+      name: string;
+      type: ExportType;
+      folder: string;
+    }[]
+  >;
 };
 
 const geoJsonFeatureTypes: GeoJsonFeatureType[] = [
@@ -205,7 +223,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         //ToDo 有効なcsvファイルかチェック
         importCsv(csv, name, importedLayer);
       } else {
-        throw new Error('invalid zip file');
+        //レイヤー設定のみの場合
+        dispatch(addLayerAction(importedLayer));
       }
     },
     [dispatch, importCsv, importGeoJson]
@@ -284,8 +303,90 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [loadFile]
   );
 
+  const generateExportGeoData = useCallback(
+    async (
+      targetLayer: LayerType,
+      exportedRecords: RecordType[],
+      fileNameBase: string,
+      option?: { settingsOnly?: boolean; folder?: string; exportPhoto?: boolean }
+    ) => {
+      const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
+      const exportFolder = option?.folder ?? '';
+      //LayerSetting
+      const layerSetting = JSON.stringify(targetLayer);
+      exportData.push({
+        data: layerSetting,
+        name: `${fileNameBase}.json`,
+        type: 'JSON',
+        folder: exportFolder,
+      });
+
+      //Dictionary
+      const hasDictionaryFieald = targetLayer.field.some((field) => field.format === 'STRING_DICTIONARY');
+      if (hasDictionaryFieald) {
+        const dictionaryData = await exportDatabase(targetLayer.id);
+        if (dictionaryData !== undefined) {
+          const dictionaryName = `${fileNameBase}.sqlite`;
+          exportData.push({ data: dictionaryData, name: dictionaryName, type: 'SQLITE', folder: exportFolder });
+        }
+      }
+
+      if (option?.settingsOnly) return exportData;
+
+      //GeoJSON
+      if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
+        const geojson = generateGeoJson(exportedRecords, targetLayer.field, targetLayer.type, targetLayer.name);
+        const geojsonData = JSON.stringify(geojson);
+        const geojsonName = `${fileNameBase}.geojson`;
+        exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: exportFolder });
+      }
+      //KML
+      if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
+        const kmlData = generateKML(exportedRecords, targetLayer);
+        const kmlName = `${fileNameBase}.kml`;
+        exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: exportFolder });
+      }
+      //CSV
+      if (
+        targetLayer.type === 'POINT' ||
+        targetLayer.type === 'LINE' ||
+        targetLayer.type === 'POLYGON' ||
+        targetLayer.type === 'NONE'
+      ) {
+        const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type);
+        const csvData = csv;
+        const csvName = `${fileNameBase}.csv`;
+        exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: exportFolder });
+      }
+      //GPX
+      if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
+        const gpx = generateGPX(exportedRecords, targetLayer.type);
+        const gpxData = gpx;
+        const gpxName = `${fileNameBase}.gpx`;
+        exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: exportFolder });
+      }
+      //Photo
+      if (option?.exportPhoto) {
+        const photoFields = targetLayer.field.filter((f) => f.format === 'PHOTO');
+        exportedRecords.forEach(({ field }) => {
+          photoFields.forEach(({ name }) => {
+            const photos = field[name] as PhotoType[];
+            for (const photo of photos) {
+              if (photo.uri) {
+                exportData.push({ data: photo.uri, name: photo.name, type: 'PHOTO', folder: exportFolder });
+              }
+            }
+          });
+        });
+      }
+      return exportData;
+    },
+    []
+  );
+
   return {
     isLoading,
     importGeoFile,
+    generateExportGeoData,
   } as const;
 };

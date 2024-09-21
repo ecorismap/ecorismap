@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { LayerType } from '../types';
+import { LayerType, RecordType } from '../types';
 import Data from '../components/pages/Data';
 import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -11,6 +11,8 @@ import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
 import { usePhoto } from '../hooks/usePhoto';
+import { useGeoFile } from '../hooks/useGeoFile';
+import dayjs from 'dayjs';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
@@ -32,11 +34,10 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
   } = useData(route.params.targetLayer.id);
-
+  const { generateExportGeoData } = useGeoFile();
   const { deleteRecordPhotos } = usePhoto();
   //const { isMember } = usePermission();
 
@@ -46,10 +47,26 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     //   Alert.alert('', t('Data.alert.exportData'));
     //   return;
     // }
-    const { exportData, fileName } = await generateExportGeoData();
-    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+
+    let exportedRecords: RecordType[] = [];
+    if (isMapMemoLayer) {
+      checkedRecords.forEach((record) => {
+        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
+        const subGroupRecords = data.filter((r) => r.field._group === record.id);
+        exportedRecords = [...exportedRecords, record, ...subGroupRecords];
+      });
+    } else {
+      exportedRecords = checkedRecords;
+    }
+
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const fileNameBase = `${route.params.targetLayer.name}_${time}`;
+    const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
+      exportPhoto: true,
+    });
+    const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
-  }, [generateExportGeoData]);
+  }, [checkedRecords, data, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
