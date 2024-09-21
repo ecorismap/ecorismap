@@ -166,6 +166,11 @@ export function changeLayerId(layer: LayerType) {
   const newLayer = cloneDeep(layer);
   newLayer.active = false;
   newLayer.id = ulid();
+  newLayer.groupId = undefined;
+  newLayer.expanded = undefined;
+  newLayer.sortedName = undefined;
+  newLayer.sortedOrder = undefined;
+  newLayer.dictionaryFieldId = undefined;
 
   const fieldIdMap: { [key: string]: string } = {};
   newLayer.field.forEach((f) => {

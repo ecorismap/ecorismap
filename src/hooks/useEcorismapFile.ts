@@ -30,10 +30,10 @@ import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
-import { generateCSV, generateGPX, generateGeoJson, generateKML } from '../utils/Geometry';
 import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
-import { deleteDatabase, exportDatabase, importDictionary } from '../utils/SQLite';
+import { deleteDatabase, importDictionary } from '../utils/SQLite';
+import { useGeoFile } from './useGeoFile';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -51,7 +51,6 @@ export type UseEcorisMapFileReturnType = {
     option?: {
       includePhoto: boolean;
       fromProject: boolean;
-      includeGISData: boolean;
     }
   ) => Promise<
     {
@@ -81,6 +80,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
+  const { generateExportGeoData } = useGeoFile();
 
   const createExportSettings = useCallback(() => {
     return {
@@ -132,7 +132,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         settings: SettingsType;
         maps: TileMapType[];
       },
-      option?: { includePhoto: boolean; fromProject: boolean; includeGISData: boolean }
+      option?: { includePhoto: boolean; fromProject: boolean }
     ) => {
       const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
       const savedData = JSON.stringify(data);
@@ -141,118 +141,53 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       exportData.push({ data: savedData, name: savedDataName, type: 'JSON', folder: '' });
 
       for (const layer of data.layers) {
-        //LayerSetting
-        const layerSetting = JSON.stringify(layer);
-        exportData.push({
-          data: layerSetting,
-          name: `${layer.name}_${time}.json`,
-          type: 'JSON',
-          folder: `${sanitize(layer.name)}_${layer.id}`,
-        });
-
         if (layer.type === 'LAYERGROUP') continue;
+        const fileNameBase = `${layer.name}_${time}`;
+        const exportFolder = `${sanitize(layer.name)}_${layer.id}`;
+        //mapMemoの場合はグループ化されたデータをソートしてエクスポート
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
         const sortedRecords = isMapMemoLayer ? sortGroupData(records) : records;
-        if (option?.includeGISData) {
-          //GeoJSON
-          const geojson = generateGeoJson(sortedRecords, layer.field, layer.type, layer.id, isMapMemoLayer);
-          const geojsonData = JSON.stringify(geojson);
-          const geojsonName = `${layer.name}_${time}.geojson`;
-          exportData.push({
-            data: geojsonData,
-            name: geojsonName,
-            type: 'GeoJSON',
-            folder: `${sanitize(layer.name)}_${layer.id}`,
-          });
-          //CSV
-          const csv = generateCSV(sortedRecords, layer.field, layer.type, isMapMemoLayer);
-          const csvData = csv;
-          const csvName = `${layer.name}_${time}.csv`;
-          exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: `${sanitize(layer.name)}_${layer.id}` });
-          //GPX
-          if (layer.type === 'POINT' || layer.type === 'LINE') {
-            const gpx = generateGPX(sortedRecords, layer.type);
-            const gpxData = gpx;
-            const gpxName = `${layer.name}_${time}.gpx`;
-            exportData.push({
-              data: gpxData,
-              name: gpxName,
-              type: 'GPX',
-              folder: `${sanitize(layer.name)}_${layer.id}`,
-            });
-          }
-          //KML
-          const kml = generateKML(sortedRecords, layer);
-          const kmlData = kml;
-          const kmlName = `${layer.name}_${time}.kml`;
-          exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: `${sanitize(layer.name)}_${layer.id}` });
-        }
-        //Dictionary
-        const hasDictionaryFieald = layer.field.some((field) => field.format === 'STRING_DICTIONARY');
-        if (hasDictionaryFieald) {
-          const dictionaryData = await exportDatabase(layer.id);
-          if (dictionaryData !== undefined) {
-            const dictionaryName = `${layer.name}_${time}.sqlite`;
-            exportData.push({
-              data: dictionaryData,
-              name: dictionaryName,
-              type: 'SQLITE',
-              folder: `${sanitize(layer.name)}_${layer.id}`,
-            });
-          }
-        }
-        //Photo
-
-        //fromLocal
-        if (option?.includePhoto && option?.fromProject) {
-          const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
-          records.forEach((record) => {
-            photoFields.forEach((photoField) => {
-              (record.field[photoField.name] as PhotoType[]).forEach(({ uri, id }) => {
-                if (uri) {
-                  exportData.push({
-                    data: uri,
-                    name: id,
-                    type: 'PHOTO',
-                    folder: `${sanitize(layer.name)}_${layer.id}`,
-                  });
-                }
-              });
-            });
-          });
-        }
+        const geoData = await generateExportGeoData(layer, sortedRecords, fileNameBase, {
+          exportPhoto: option?.includePhoto || option?.fromProject,
+          folder: exportFolder,
+        });
+        exportData.push(...geoData);
       }
       return exportData;
     },
-    []
+    [generateExportGeoData]
   );
 
   async function importPhotos(
     files: {
       [key: string]: JSZip.JSZipObject;
     },
-    layerId: string,
-    photoName: string,
-    photoId: string,
-    folder: string
+    from: string,
+    to: string
   ) {
-    let newUri;
-    if (Platform.OS === 'web') {
-      const content = await files[`${layerId}/${photoId}`].async('arraybuffer');
-      const buffer = new Uint8Array(content);
-      const photoData = new Blob([buffer.buffer]);
-      newUri = URL.createObjectURL(photoData);
-      //console.log(newUri);
-    } else {
-      const photoData = await files[`${layerId}/${photoId}`].async('base64');
-      newUri = folder + '/' + photoName;
-      //console.log(newUri);
-      await FileSystem.writeAsStringAsync(newUri, photoData, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+    try {
+      let newUri;
+
+      if (Platform.OS === 'web') {
+        const content = await files[from].async('arraybuffer');
+        const buffer = new Uint8Array(content);
+        const photoData = new Blob([buffer.buffer]);
+        newUri = URL.createObjectURL(photoData);
+        //console.log(newUri);
+      } else {
+        const photoData = await files[from].async('base64');
+        newUri = to;
+        //console.log(newUri);
+        await FileSystem.writeAsStringAsync(newUri, photoData, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+      }
+      return newUri;
+    } catch (e) {
+      console.log('#####', e);
+      return undefined;
     }
-    return newUri;
   }
 
   const updatePhotoField = useCallback(
@@ -266,9 +201,9 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       //URIを書き換える
       let newDataSet: DataType[] = [];
       for (const layer of data.layers) {
-        const folder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
+        const toFolder = `${PHOTO_FOLDER}/LOCAL/${layer.id}/OWNER`;
         if (Platform.OS !== 'web') {
-          await FileSystem.makeDirectoryAsync(folder, {
+          await FileSystem.makeDirectoryAsync(toFolder, {
             intermediates: true,
           });
         }
@@ -281,7 +216,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             for (const photoField of photoFields) {
               const photos = (record.field[photoField.name] as PhotoType[]).map(async (photo) => {
                 if (photo.uri) {
-                  const newUri = await importPhotos(files, layer.id, photo.name, photo.id, folder);
+                  const fromFolder = `${sanitize(layer.name)}_${layer.id}`;
+                  const from = `${fromFolder}/${photo.name}`;
+                  const to = `${toFolder}/${photo.name}`;
+                  const newUri = await importPhotos(files, from, to);
                   return { ...photo, uri: newUri };
                 } else {
                   return photo;

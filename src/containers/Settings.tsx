@@ -64,7 +64,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       }
 
       const data = { dataSet, layers, settings: createExportSettings(), maps };
-      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false, includeGISData: true });
+      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
       const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
       if (!isOK) {
         await AlertAsync(t('hooks.message.failSaveFile'));
