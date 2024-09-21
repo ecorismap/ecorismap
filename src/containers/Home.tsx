@@ -489,7 +489,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const finishEditPosition = useCallback(() => {
     bottomSheetRef.current?.snapToIndex(2);
-    selectFeatureButton('NONE');
+    setTimeout(() => {
+      //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
+      selectFeatureButton('NONE');
+    }, 500);
+
     navigation.setParams({ mode: undefined });
   }, [navigation, selectFeatureButton]);
 
