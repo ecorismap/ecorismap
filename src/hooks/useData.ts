@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { CheckListItem, ExportType, LayerType, PhotoType, RecordType } from '../types';
-import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
+import { CheckListItem, LayerType, PhotoType, RecordType } from '../types';
+
 import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
-import dayjs from 'dayjs';
+
 import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
-import { exportDatabase } from '../utils/SQLite';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -28,15 +27,6 @@ export type UseDataReturnType = {
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
-  generateExportGeoData: () => Promise<{
-    exportData: {
-      data: string;
-      name: string;
-      type: ExportType;
-      folder: string;
-    }[];
-    fileName: string;
-  }>;
   checkRecordEditable: (
     targetLayer: LayerType,
     feature?: RecordType
@@ -227,91 +217,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     );
   }, [allUserRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer.id]);
 
-  const generateExportGeoData = useCallback(async () => {
-    const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
-    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-
-    let exportedRecords: RecordType[] = [];
-    if (isMapMemoLayer) {
-      checkedRecords.forEach((record) => {
-        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-        const subGroupRecords = allUserRecordSet.filter((r) => r.field._group === record.id);
-        exportedRecords = [...exportedRecords, record, ...subGroupRecords];
-      });
-    } else {
-      exportedRecords = checkedRecords;
-    }
-
-    //LayerSetting
-    const layerSetting = JSON.stringify(targetLayer);
-    exportData.push({ data: layerSetting, name: `${targetLayer.name}_${time}.json`, type: 'JSON', folder: '' });
-
-    //Dictionary
-    const hasDictionaryFieald = targetLayer.field.some((field) => field.format === 'STRING_DICTIONARY');
-    if (hasDictionaryFieald) {
-      const dictionaryData = await exportDatabase(layerId);
-      if (dictionaryData !== undefined) {
-        const dictionaryName = `${targetLayer.name}_${time}.sqlite`;
-        exportData.push({ data: dictionaryData, name: dictionaryName, type: 'SQLITE', folder: '' });
-      }
-    }
-
-    //GeoJSON
-    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-      const geojson = generateGeoJson(
-        exportedRecords,
-        targetLayer.field,
-        targetLayer.type,
-        targetLayer.name,
-        isMapMemoLayer
-      );
-      const geojsonData = JSON.stringify(geojson);
-      const geojsonName = `${targetLayer.name}_${time}.geojson`;
-      exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: '' });
-    }
-    //KML
-    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-      const kml = generateKML(exportedRecords, targetLayer);
-      const kmlData = kml;
-      const kmlName = `${targetLayer.name}_${time}.kml`;
-      exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: '' });
-    }
-    //CSV
-    if (
-      targetLayer.type === 'POINT' ||
-      targetLayer.type === 'LINE' ||
-      targetLayer.type === 'POLYGON' ||
-      targetLayer.type === 'NONE'
-    ) {
-      const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type, isMapMemoLayer);
-      const csvData = csv;
-      const csvName = `${targetLayer.name}_${time}.csv`;
-      exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: '' });
-    }
-    //GPX
-    if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
-      const gpx = generateGPX(exportedRecords, targetLayer.type);
-      const gpxData = gpx;
-      const gpxName = `${targetLayer.name}_${time}.gpx`;
-      exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: '' });
-    }
-    //Photo
-
-    const photoFields = targetLayer.field.filter((f) => f.format === 'PHOTO');
-    exportedRecords.forEach(({ field }) => {
-      photoFields.forEach(({ name }) => {
-        const photos = field[name] as PhotoType[];
-        for (const photo of photos) {
-          if (photo.uri) {
-            exportData.push({ data: photo.uri, name: photo.name, type: 'PHOTO', folder: '' });
-          }
-        }
-      });
-    });
-    const fileName = `${targetLayer.name}_${time}`;
-    return { exportData, fileName };
-  }, [allUserRecordSet, checkedRecords, isMapMemoLayer, layerId, targetLayer]);
-
   useEffect(() => {
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;
     if (dataSet === undefined) return;
@@ -334,7 +239,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    generateExportGeoData,
     checkRecordEditable,
     updateOwnRecordSetOrder,
   } as const;

@@ -197,7 +197,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         settings: newSettings,
       };
       const includePhoto = true;
-      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: true, includeGISData: true });
+      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: true });
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       const exportDataName = `${targetProject.name}_${time}`;
 
