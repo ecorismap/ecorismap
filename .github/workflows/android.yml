@@ -1,9 +1,9 @@
-name: Android CI
+name: Android CI and Deploy
 on: [push]
 jobs:
-  build:
-    name: Build Release
-    runs-on: macos-latest
+  build-and-deploy:
+    name: Build and Deploy Release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,9 +41,16 @@ jobs:
           echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
       - name: Build Release
-        run: cd android && ./gradlew assembleRelease
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
+        run: cd android && ./gradlew bundleRelease
+      - name: Setup Google Play Config
+        run: |
+          echo '${{ secrets.PLAY_STORE_CONFIG_JSON }}' > play-store-config.json
+      - name: Deploy to Google Play
+        uses: r0adkll/upload-google-play@v1
         with:
-          name: app-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          serviceAccountJson: play-store-config.json
+          packageName: jp.co.ecoris.ecorismap
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          whatsNewDirectory: whatsnew
