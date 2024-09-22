@@ -36,6 +36,10 @@ jobs:
           </plist>
           EOF
 
+      - name: Create GoogleService-Info.plist
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/ecorismap/GoogleService-Info.plist
+
       - name: Install CocoaPods
         run: |
           cd ios
