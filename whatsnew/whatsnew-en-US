@@ -1,0 +1,2 @@
+2024-9-22
+- Fixed an issue where dictionaries could not be exported in layer settings export
