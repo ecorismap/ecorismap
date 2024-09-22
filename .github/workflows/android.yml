@@ -2,7 +2,7 @@ name: Android CI
 on: [push]
 jobs:
   build:
-    name: Build
+    name: Build Release
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -34,5 +34,16 @@ jobs:
           unzip react-native-gdalwarp.zip
           mkdir -p modules
           cp -r react-native-gdalwarp modules/
-      - name: Build
-        run: cd android && ./gradlew assembleDebug
+      - name: Setup Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+          echo "KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}" >> android/gradle.properties
+          echo "KEY_ALIAS=${{ secrets.KEY_ALIAS }}" >> android/gradle.properties
+          echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> android/gradle.properties
+      - name: Build Release
+        run: cd android && ./gradlew assembleRelease
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: android/app/build/outputs/apk/release/app-release.apk
