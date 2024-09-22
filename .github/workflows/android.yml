@@ -21,4 +21,4 @@ jobs:
       - name: Install deps
         run: yarn install
       - name: Build
-        run: expo build:android
+        run: npx expo run android
