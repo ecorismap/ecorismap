@@ -20,5 +20,7 @@ jobs:
           cache: gradle
       - name: Install deps
         run: yarn install
+      - name: Create local.properties
+        run: echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > android/local.properties
       - name: Build
         run: cd android && ./gradlew assembleDebug
