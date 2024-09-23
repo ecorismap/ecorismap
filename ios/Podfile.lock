@@ -1283,7 +1283,7 @@ PODS:
   - nanopb/decode (2.30909.1)
   - nanopb/encode (2.30909.1)
   - PromisesObjC (2.4.0)
-  - Protobuf (3.27.2)
+  - Protobuf (3.28.2)
   - RCT-Folly (2024.01.01.00):
     - boost
     - DoubleConversion
@@ -2664,7 +2664,7 @@ PODS:
   - RNZipArchive/Core (6.0.8):
     - React-Core
     - SSZipArchive (= 2.2.3)
-  - SDWebImage/Core (5.19.4)
+  - SDWebImage/Core (5.19.7)
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
     - SDWebImage/Core (~> 5.17)
@@ -3117,7 +3117,7 @@ SPEC CHECKSUMS:
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   nanopb: d4d75c12cd1316f4a64e3c6963f879ecd4b5e0d5
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  Protobuf: fb2c13674723f76ff6eede14f78847a776455fa2
+  Protobuf: 28c89b24435762f60244e691544ed80f50d82701
   RCT-Folly: 02617c592a293bd6d418e0a88ff4ee1f88329b47
   RCTDeprecation: 4c7eeb42be0b2e95195563c49be08d0b839d22b4
   RCTRequired: d530a0f489699c8500e944fde963102c42dcd0c2
@@ -3195,7 +3195,7 @@ SPEC CHECKSUMS:
   RNVectorIcons: 7ac7aaa83f8f3d4c7c0f7daea5a431e91a29b0cd
   RNVirgilCrypto: af0fac87f7456098740de0d9df752dbc240dd01c
   RNZipArchive: 3f89b114cfeb89dac027fc5c7afd7e58d3dc4ebf
-  SDWebImage: 066c47b573f408f18caa467d71deace7c0f8280d
+  SDWebImage: 8a6b7b160b4d710e2a22b6900e25301075c34cb3
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
   sqlite3: 02d1f07eaaa01f80a1c16b4b31dfcbb3345ee01a
@@ -3207,6 +3207,6 @@ SPEC CHECKSUMS:
   VSCCrypto: e2c8df89e0dc348c2713554f6a2c8864e1cf412d
   Yoga: bd92064a0d558be92786820514d74fc4dddd1233
 
-PODFILE CHECKSUM: 0087fe49fcb781ddc3ed269cb17cadf7ed2ffe8f
+PODFILE CHECKSUM: d128240d4aa61e868ce5225944e20d179bc72628
 
 COCOAPODS: 1.15.2

@@ -91,6 +91,7 @@ target 'ecorismap' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
       end
     end
     # This is necessary for Xcode 14, because it signs resource bundles by default
