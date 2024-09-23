@@ -54,30 +54,29 @@ jobs:
                              -archivePath ecorismap.xcarchive \
                              CODE_SIGNING_ALLOWED=NO
 
-    #   - name: Create ExportOptions.plist
-    #     run: |
-    #       echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
+      - name: Create ExportOptions.plist
+        run: |
+          echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
 
-    #   - name: Create Private Key
-    #     run: |
-    #       mkdir private_keys
-    #       echo -n '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > ./private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8
+      - name: Create Private Key
+        run: |
+          mkdir private_keys
+          echo -n '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > ./private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8
 
-    #   - name: Export IPA
-    #     run: |
-    #       xcodebuild -exportArchive \
-    #                  -archivePath ecorismap.xcarchive \
-    #                  -exportOptionsPlist ExportOptions.plist \
-    #                  -exportPath app.ipa \
-    #                  -allowProvisioningUpdates \
-    #                  -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
-    #                  -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-    #                  -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+                     -archivePath ecorismap.xcarchive \
+                     -exportOptionsPlist ExportOptions.plist \
+                     -exportPath app.ipa \
+                     -allowProvisioningUpdates \
+                     -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
+                     -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
+                     -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
 
-    #   - name: Upload IPA to App Store Connect
-    #     run: |
-    #       xcrun altool --upload-app -f app.ipa/ecorismap.ipa \
-    #                    -t ios \
-    #                    --apiKey ${{ secrets.APPLE_API_KEY_ID }} \
-    #                    --apiIssuer ${{ secrets.APPLE_API_ISSUER_ID }} \
-    #                    --asc-public-id ${{ secrets.ASC_PUBLIC_ID }}
+      - name: Upload IPA to App Store Connect
+        run: |
+          xcrun altool --validate-app --upload-app -f app.ipa/ecorismap.ipa \
+                       -u ${{ secrets.APPLE_ID }} \
+                       -p ${{ secrets.APP_SPECIFIC_PASSWORD }} \
+                       --type ios
