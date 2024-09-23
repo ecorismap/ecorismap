@@ -13,14 +13,6 @@ jobs:
         with:
           node-version: 18
           cache: 'yarn'
-      - name: Download and integrate react-native-gdalwarp
-        run: |
-          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
-          unzip react-native-gdalwarp.zip
-          mkdir -p modules
-          cp -r react-native-gdalwarp modules/
-      - name: Install dependencies
-        run: yarn install
 
       - name: Create Maps.plist
         run: |
@@ -40,6 +32,25 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/ecorismap/GoogleService-Info.plist
 
+      - name: Create ExportOptions.plist
+        run: |
+          echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
+
+      - name: Create Private Key
+        run: |
+          mkdir private_keys
+          echo -n '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > ./private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8
+
+      - name: Download and integrate react-native-gdalwarp
+        run: |
+          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+          unzip react-native-gdalwarp.zip
+          mkdir -p modules
+          cp -r react-native-gdalwarp modules/
+
+      - name: Install dependencies
+        run: yarn install
+
       - name: Install CocoaPods
         run: |
           cd ios
@@ -52,16 +63,10 @@ jobs:
                              -sdk iphoneos \
                              -configuration Release \
                              -archivePath ecorismap.xcarchive \
-                             CODE_SIGNING_ALLOWED=NO
-
-      - name: Create ExportOptions.plist
-        run: |
-          echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
-
-      - name: Create Private Key
-        run: |
-          mkdir private_keys
-          echo -n '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > ./private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8
+                             -allowProvisioningUpdates \
+                             -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
+                             -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
+                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
 
       - name: Export IPA
         run: |
