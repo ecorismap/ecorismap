@@ -76,7 +76,7 @@ jobs:
 
       - name: Upload IPA to App Store Connect
         run: |
-          xcrun altool --validate-app --upload-app -f app.ipa/ecorismap.ipa \
+          xcrun altool --upload-app -f app.ipa/ecorismap.ipa \
                        -u ${{ secrets.APPLE_ID }} \
                        -p ${{ secrets.APP_SPECIFIC_PASSWORD }} \
                        --type ios
