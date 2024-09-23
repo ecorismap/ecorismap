@@ -11,7 +11,6 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		5114B45F29A4D1C900DFE9C4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5114B45E29A4D1C900DFE9C4 /* GoogleService-Info.plist */; };
 		5148FE922C88131B003BA6C4 /* lbfgs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5148FE5A2C88131B003BA6C4 /* lbfgs.cpp */; };
 		5148FE932C88131B003BA6C4 /* mecab-dict-gen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5148FE5B2C88131B003BA6C4 /* mecab-dict-gen.cpp */; };
 		5148FE942C88131B003BA6C4 /* learner.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5148FE5D2C88131B003BA6C4 /* learner.cpp */; };
@@ -51,6 +50,7 @@
 		5148FEC02C88132E003BA6C4 /* right-id.def in Resources */ = {isa = PBXBuildFile; fileRef = 5148FEB72C88132E003BA6C4 /* right-id.def */; };
 		5148FEC12C88132E003BA6C4 /* char.bin in Resources */ = {isa = PBXBuildFile; fileRef = 5148FEB82C88132E003BA6C4 /* char.bin */; };
 		51995D62298DDEF5003CA87F /* Maps.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51995D61298DDEF5003CA87F /* Maps.plist */; };
+		51A700792CA0FCCA00383A9C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51A700782CA0FCCA00383A9C /* GoogleService-Info.plist */; };
 		9B27C07BB5EA2BD412C75CBD /* Pods_ecorismap.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4360AB89F377AF8A7A1CFB3 /* Pods_ecorismap.framework */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
@@ -65,7 +65,6 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ecorismap/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ecorismap/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ecorismap/main.m; sourceTree = "<group>"; };
-		5114B45E29A4D1C900DFE9C4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../GoogleService-Info.plist"; sourceTree = "<group>"; };
 		513EA2F329DFB77C008975C2 /* ecorismap.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = ecorismap.entitlements; path = ecorismap/ecorismap.entitlements; sourceTree = "<group>"; };
 		5148FE582C88131B003BA6C4 /* scoped_ptr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scoped_ptr.h; sourceTree = "<group>"; };
 		5148FE592C88131B003BA6C4 /* ucstable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ucstable.h; sourceTree = "<group>"; };
@@ -135,6 +134,7 @@
 		5148FEB72C88132E003BA6C4 /* right-id.def */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "right-id.def"; sourceTree = "<group>"; };
 		5148FEB82C88132E003BA6C4 /* char.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = char.bin; sourceTree = "<group>"; };
 		51995D61298DDEF5003CA87F /* Maps.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Maps.plist; sourceTree = "<group>"; };
+		51A700782CA0FCCA00383A9C /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "ecorismap/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		82093E89AF6E931136014CA4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = ecorismap/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		95E472114D1C6B923772E5A7 /* Pods-ecorismap.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ecorismap.release.xcconfig"; path = "Target Support Files/Pods-ecorismap/Pods-ecorismap.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = ecorismap/SplashScreen.storyboard; sourceTree = "<group>"; };
@@ -160,8 +160,8 @@
 		13B07FAE1A68108700A75B9A /* ecorismap */ = {
 			isa = PBXGroup;
 			children = (
+				51A700782CA0FCCA00383A9C /* GoogleService-Info.plist */,
 				513EA2F329DFB77C008975C2 /* ecorismap.entitlements */,
-				5114B45E29A4D1C900DFE9C4 /* GoogleService-Info.plist */,
 				5148FEAF2C88132E003BA6C4 /* ipadic */,
 				5148FE572C88131A003BA6C4 /* mecab */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
@@ -407,8 +407,8 @@
 				5148FEBF2C88132E003BA6C4 /* dicrc in Resources */,
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				5148FEB92C88132E003BA6C4 /* rewrite.def in Resources */,
+				51A700792CA0FCCA00383A9C /* GoogleService-Info.plist in Resources */,
 				51995D62298DDEF5003CA87F /* Maps.plist in Resources */,
-				5114B45F29A4D1C900DFE9C4 /* GoogleService-Info.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				5148FEBA2C88132E003BA6C4 /* left-id.def in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
