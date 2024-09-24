@@ -1,58 +1,58 @@
-# name: Android CI and Deploy
-# on: [push]
-# jobs:
-#   build-and-deploy:
-#     name: Build and Deploy Release
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout
-#         uses: actions/checkout@v4
-#       - name: Set up Node.js 18
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: 18
-#           cache: 'yarn'
-#       - name: Set up JDK 17
-#         uses: actions/setup-java@v4
-#         with:
-#           distribution: 'temurin'
-#           java-version: '17'
-#           cache: gradle
-#       - name: Install deps
-#         run: yarn install
-#       - name: Create local.properties
-#         run: |
-#           echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > android/local.properties
-#       - name: Decode google-services.json
-#         env:
-#           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
-#         run: |
-#           echo $GOOGLE_SERVICES_JSON > android/app/google-services.json
-#       - name: Download and integrate react-native-gdalwarp
-#         run: |
-#           curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
-#           unzip react-native-gdalwarp.zip
-#           mkdir -p modules
-#           cp -r react-native-gdalwarp modules/
-#       - name: Setup Android keystore
-#         run: |
-#           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-#       - name: Build Release
-#         env:
-#           STORE_FILE: release.keystore
-#           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-#           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-#           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-#         run: cd android && ./gradlew bundleRelease
-#       - name: Setup Google Play Config
-#         run: |
-#           echo '${{ secrets.PLAY_STORE_CONFIG_JSON }}' > play-store-config.json
-#       - name: Deploy to Google Play
-#         uses: r0adkll/upload-google-play@v1
-#         with:
-#           serviceAccountJson: play-store-config.json
-#           packageName: jp.co.ecoris.ecorismap
-#           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
-#           track: internal
-#           status: completed
-#           whatsNewDirectory: whatsnew
+name: Android CI and Deploy
+on: [push]
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+      - name: Install deps
+        run: yarn install
+      - name: Create local.properties
+        run: |
+          echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > android/local.properties
+      - name: Decode google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo $GOOGLE_SERVICES_JSON > android/app/google-services.json
+      - name: Download and integrate react-native-gdalwarp
+        run: |
+          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+          unzip react-native-gdalwarp.zip
+          mkdir -p modules
+          cp -r react-native-gdalwarp modules/
+      - name: Setup Android keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+      - name: Build Release
+        env:
+          STORE_FILE: release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: cd android && ./gradlew bundleRelease
+      - name: Setup Google Play Config
+        run: |
+          echo '${{ secrets.PLAY_STORE_CONFIG_JSON }}' > play-store-config.json
+      - name: Deploy to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: play-store-config.json
+          packageName: jp.co.ecoris.ecorismap
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          whatsNewDirectory: whatsnew
