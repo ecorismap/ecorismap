@@ -1,4 +1,4 @@
-import React, { useCallback, useContext } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -8,7 +8,7 @@ import { LayersContext } from '../../contexts/Layers';
 import { FlatList } from 'react-native-gesture-handler';
 import { LayerType } from '../../types';
 
-export const LayersTable = () => {
+export const LayersTable = React.memo(() => {
   const {
     layers,
     changeExpand,
@@ -24,9 +24,7 @@ export const LayersTable = () => {
 
   const hasCustomLabel = layers.some((layer) => layer.label === t('common.custom'));
 
-  const [customLabel, setCustomLabel] = React.useState(
-    layers.reduce((obj, layer) => ({ ...obj, [layer.id]: layer.customLabel }), {}) as { [key: string]: string }
-  );
+  const [customLabel, setCustomLabel] = useState({} as { [key: string]: string });
 
   const handleCustomLabel = useCallback(
     (id: string, value: string) => {
@@ -35,6 +33,14 @@ export const LayersTable = () => {
     },
     [customLabel]
   );
+
+  useEffect(() => {
+    setCustomLabel(
+      layers.reduce((obj, layer) => {
+        return { ...obj, [layer.id]: layer.customLabel };
+      }, {})
+    );
+  }, [layers]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: LayerType; index: number }) => {
@@ -257,7 +263,7 @@ export const LayersTable = () => {
       )}
     </View>
   );
-};
+});
 
 const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
