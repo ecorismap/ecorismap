@@ -63,10 +63,7 @@ jobs:
                              -sdk iphoneos \
                              -configuration Release \
                              -archivePath ecorismap.xcarchive \
-                             -allowProvisioningUpdates \
-                             -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
-                             -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+                             CODE_SIGNING_ALLOWED=NO
 
       - name: Export IPA
         run: |
