@@ -1,5 +1,5 @@
 name: Android CI and Deploy
-on: [push]
+on: [push, workflow_dispatch]
 jobs:
   build-and-deploy:
     name: Build and Deploy Release
