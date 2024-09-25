@@ -1,5 +1,5 @@
 name: iOS Build and Upload
-on: [push]
+on: [push, workflow_dispatch]
 jobs:
   build-and-upload:
     name: Build and Upload to App Store
