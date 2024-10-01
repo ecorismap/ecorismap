@@ -7,5 +7,6 @@
   ],
   "i18n-ally.keystyle": "nested",
   "typescript.referencesCodeLens.enabled": true,
-  "typescript.implementationsCodeLens.enabled": true
+  "typescript.implementationsCodeLens.enabled": true,
+  "i18n-ally.sourceLanguage": "ja"
 }
