@@ -48,7 +48,11 @@ export const LayersTable = React.memo(() => {
       if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
       const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN;
       //ラベルの候補は、空白を追加し、Photoを抜く
-      const fieldNames = [
+      const labelNames = [
+        ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), [t('common.none')]),
+        t('common.custom'),
+      ];
+      const labelValues = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), ['']),
         t('common.custom'),
       ];
@@ -173,9 +177,9 @@ export const LayersTable = React.memo(() => {
               <Picker
                 selectedValue={item.label}
                 onValueChange={(itemValue) => changeLabel(item, itemValue as string)}
-                itemLabelArray={fieldNames}
-                itemValueArray={fieldNames}
-                maxIndex={fieldNames.length - 1}
+                itemLabelArray={labelNames}
+                itemValueArray={labelValues}
+                maxIndex={labelValues.length - 1}
               />
             )}
           </View>
@@ -250,7 +254,7 @@ export const LayersTable = React.memo(() => {
       {layers.length !== 0 ? (
         <FlatList
           stickyHeaderIndices={[0]}
-          initialNumToRender={15}
+          initialNumToRender={30}
           data={layers}
           keyExtractor={keyExtractor}
           ListHeaderComponent={<LayersTitle hasCustomLabel={hasCustomLabel} />}
