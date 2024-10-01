@@ -250,7 +250,8 @@
     "useInput": "input",
     "option": "option",
     "useAdd": "Used to add data",
-    "notSupported": "Microphone cannot be used in web version"
+    "notSupported": "Microphone cannot be used in web version",
+    "none": "none"
   },
   "firebase": {
     "message": {
