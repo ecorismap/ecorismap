@@ -204,6 +204,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
+    clearMapMemoEditingLine,
     changeColorTypeToIndividual,
     setPencilModeActive,
     setSnapWithLine,
@@ -322,7 +323,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const getInfoOfVectorTileForWeb = useCallback(
     async (event: MapLayerMouseEvent) => {
-      let properties: { [key: string]: any }[];
       const map_ = (mapViewRef.current as MapRef).getMap();
       //@ts-ignore
       const features = map_.queryRenderedFeatures([event.point.x, event.point.y]);
@@ -334,28 +334,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const position = [event.point.x, event.point.y];
 
       //vectorTileの情報を取得
-      //@ts-ignore
-      properties = vectorTileFeatures ? vectorTileFeatures.map((f) => f.properties).filter((v) => v !== undefined) : [];
 
-      //地質図の情報を取得
-      const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${event.lngLat.lat},${event.lngLat.lng}`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const json = await response.json();
+      const properties = vectorTileFeatures
+        ? vectorTileFeatures.map((f) => f.properties).filter((v) => v !== undefined)
+        : [];
 
-        if (json.symbol !== null) {
-          properties = [
-            ...properties,
-            {
-              記号: json.symbol,
-              大区分: json.group_ja,
-              形成時代: json.formationAge_ja,
-              岩相: json.lithology_ja,
-              出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
-            },
-          ];
-        }
-      }
+      // TODO 設定で地質図の情報を取得するかどうかを設定できるようにすべき
+      // //地質図の情報を取得
+      // const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${event.lngLat.lat},${event.lngLat.lng}`;
+      // const response = await fetch(url);
+      // if (response.ok) {
+      //   const json = await response.json();
+
+      //   if (json.symbol !== null) {
+      //     properties = [
+      //       ...properties,
+      //       {
+      //         記号: json.symbol,
+      //         大区分: json.group_ja,
+      //         形成時代: json.formationAge_ja,
+      //         岩相: json.lithology_ja,
+      //         出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
+      //       },
+      //     ];
+      //   }
+      // }
 
       if (properties === undefined) {
         closeVectorTileInfo();
@@ -1187,6 +1190,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
       if (gesture.numberActiveTouches === 2) {
+        hideDrawLine();
+        clearMapMemoEditingLine();
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -1197,12 +1202,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     },
     [
+      clearMapMemoEditingLine,
       currentDrawTool,
       currentMapMemoTool,
       getPXY,
       handleMoveFreehand,
       handleMoveMapMemo,
       handleMovePlot,
+      hideDrawLine,
       isPinch,
       setIsPinch,
     ]
