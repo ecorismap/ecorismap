@@ -60,7 +60,10 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
     const fileNameBase = `${route.params.targetLayer.name}_${time}`;
-    const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, { settingsOnly: true });
+    const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, {
+      settingsOnly: true,
+      exportDictionary: true,
+    });
     const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
   }, [generateExportGeoData, route.params.targetLayer.name, targetLayer]);
