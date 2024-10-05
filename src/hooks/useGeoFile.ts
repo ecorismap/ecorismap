@@ -39,6 +39,7 @@ export type UseGeoFileReturnType = {
       settingsOnly?: boolean;
       folder?: string;
       exportPhoto?: boolean;
+      exportDictionary?: boolean;
     }
   ) => Promise<
     {
@@ -308,7 +309,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       targetLayer: LayerType,
       exportedRecords: RecordType[],
       fileNameBase: string,
-      option?: { settingsOnly?: boolean; folder?: string; exportPhoto?: boolean }
+      option?: { settingsOnly?: boolean; exportDictionary?: boolean; folder?: string; exportPhoto?: boolean }
     ) => {
       const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
       const exportFolder = option?.folder ?? '';
@@ -321,16 +322,17 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         folder: exportFolder,
       });
 
-      //Dictionary
-      const hasDictionaryFieald = targetLayer.field.some((field) => field.format === 'STRING_DICTIONARY');
-      if (hasDictionaryFieald) {
-        const dictionaryData = await exportDatabase(targetLayer.id);
-        if (dictionaryData !== undefined) {
-          const dictionaryName = `${fileNameBase}.sqlite`;
-          exportData.push({ data: dictionaryData, name: dictionaryName, type: 'SQLITE', folder: exportFolder });
+      if (option?.exportDictionary) {
+        //Dictionary
+        const hasDictionaryFieald = targetLayer.field.some((field) => field.format === 'STRING_DICTIONARY');
+        if (hasDictionaryFieald) {
+          const dictionaryData = await exportDatabase(targetLayer.id);
+          if (dictionaryData !== undefined) {
+            const dictionaryName = `${fileNameBase}.sqlite`;
+            exportData.push({ data: dictionaryData, name: dictionaryName, type: 'SQLITE', folder: exportFolder });
+          }
         }
       }
-
       if (option?.settingsOnly) return exportData;
 
       //GeoJSON

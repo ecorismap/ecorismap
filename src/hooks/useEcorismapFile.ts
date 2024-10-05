@@ -151,6 +151,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         const geoData = await generateExportGeoData(layer, sortedRecords, fileNameBase, {
           exportPhoto: option?.includePhoto || option?.fromProject,
           folder: exportFolder,
+          exportDictionary: true,
         });
         exportData.push(...geoData);
       }
