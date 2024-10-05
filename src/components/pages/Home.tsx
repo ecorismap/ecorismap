@@ -121,6 +121,22 @@ export default function HomeScreen() {
 
   const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 
+  const scrollEnabled = useMemo(
+    () =>
+      isPinch ||
+      (isMapMemoDrawTool(currentMapMemoTool) &&
+        isPencilModeActive &&
+        !isPencilTouch &&
+        mapMemoEditingLine.length === 0) ||
+      (currentMapMemoTool === 'NONE' &&
+        (currentDrawTool === 'NONE' ||
+          currentDrawTool === 'MOVE' ||
+          currentDrawTool.includes('INFO') ||
+          currentDrawTool === 'MOVE_POINT' ||
+          (isPencilModeActive && !isPencilTouch))),
+    [currentDrawTool, currentMapMemoTool, isPencilModeActive, isPencilTouch, isPinch, mapMemoEditingLine.length]
+  );
+
   const styles = StyleSheet.create({
     container: {
       alignItems: 'center',
@@ -324,20 +340,8 @@ export default function HomeScreen() {
             showsCompass={false}
             rotateEnabled={false} //表示スピードに関係ある？
             pitchEnabled={false}
-            zoomEnabled={mapMemoEditingLine.length === 0} //isPinchだとズームができない
-            scrollEnabled={
-              isPinch ||
-              (isMapMemoDrawTool(currentMapMemoTool) &&
-                isPencilModeActive &&
-                !isPencilTouch &&
-                mapMemoEditingLine.length === 0) ||
-              (currentMapMemoTool === 'NONE' &&
-                (currentDrawTool === 'NONE' ||
-                  currentDrawTool === 'MOVE' ||
-                  currentDrawTool.includes('INFO') ||
-                  currentDrawTool === 'MOVE_POINT' ||
-                  (isPencilModeActive && !isPencilTouch)))
-            }
+            zoomEnabled={scrollEnabled}
+            scrollEnabled={scrollEnabled}
             moveOnMarkerPress={false}
             //@ts-ignore
             mapType={mapType}

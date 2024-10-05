@@ -193,6 +193,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
+    clearMapMemoEditingLine,
     changeColorTypeToIndividual,
     setPencilModeActive,
     setSnapWithLine,
@@ -1000,6 +1001,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
       if (gesture.numberActiveTouches === 2) {
+        hideDrawLine();
+        clearMapMemoEditingLine();
         setIsPinch(true);
       } else if (isMapMemoDrawTool(currentMapMemoTool)) {
         handleMoveMapMemo(event);
@@ -1010,12 +1013,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     },
     [
+      clearMapMemoEditingLine,
       currentDrawTool,
       currentMapMemoTool,
       getPXY,
       handleMoveFreehand,
       handleMoveMapMemo,
       handleMovePlot,
+      hideDrawLine,
       isPinch,
       setIsPinch,
     ]
