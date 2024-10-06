@@ -46,7 +46,7 @@ export const LayersTable = React.memo(() => {
     ({ item, index }: { item: LayerType; index: number }) => {
       // console.log(item.id, item.name, item.groupId, item.expanded);
       if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
-      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN;
+      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.KHAKI : COLOR.MAIN;
       //ラベルの候補は、空白を追加し、Photoを抜く
       const labelNames = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), [t('common.none')]),
@@ -70,9 +70,10 @@ export const LayersTable = React.memo(() => {
               styles.td,
               {
                 flex: 1,
-                width: 50,
-                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
-                backgroundColor: item.type === 'LAYERGROUP' || item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+                width: 60,
+                backgroundColor: item.type === 'LAYERGROUP' ? COLOR.KHAKI : COLOR.MAIN,
+                borderRightWidth: item.groupId ? 1 : 0,
+                borderRightColor: COLOR.GRAY1,
               },
             ]}
           >
@@ -80,7 +81,7 @@ export const LayersTable = React.memo(() => {
               <RectButton2
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
                 onPress={() => changeExpand(item)}
-                style={{ flex: 1, width: 40, alignItems: 'center', justifyContent: 'center', backgroundColor }}
+                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor }}
               />
             )}
             {item.type !== 'LAYERGROUP' && (
@@ -90,10 +91,9 @@ export const LayersTable = React.memo(() => {
                 color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
                 style={{
                   flex: 1,
-                  width: 40,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+                  backgroundColor: COLOR.MAIN,
                 }}
               />
             )}
@@ -153,7 +153,10 @@ export const LayersTable = React.memo(() => {
             )}
           </View>
           <TouchableOpacity
-            style={[styles.td, { flex: 5, width: 150, borderRightWidth: 1, backgroundColor }]}
+            style={[
+              styles.td,
+              { flex: 5, width: 150, borderRightWidth: 1, borderRightColor: COLOR.GRAY1, backgroundColor },
+            ]}
             onPress={() => (item.type === 'LAYERGROUP' ? null : gotoData(item))}
           >
             <Text style={{ flex: 4, padding: 5, textAlign: 'center' }} adjustsFontSizeToFit={true} numberOfLines={2}>
@@ -273,7 +276,7 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <View style={[styles.th, { flex: 1, width: 50 }]}>
+      <View style={[styles.th, { flex: 1, width: 60 }]}>
         <Text>{`${t('common.edit')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 2, width: 100 }]}>
@@ -324,10 +327,8 @@ const styles = StyleSheet.create({
   td: {
     alignItems: 'center',
     backgroundColor: COLOR.MAIN,
-    borderBottomColor: COLOR.GRAY1,
+    borderBottomColor: COLOR.GRAY2,
     borderBottomWidth: 1,
-    borderRightColor: COLOR.GRAY1,
-    borderRightWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 5,
