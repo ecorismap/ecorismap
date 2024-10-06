@@ -162,10 +162,9 @@ export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): n
 };
 
 export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): number => {
-  const groupDataSet = dataSet.filter((data) => data.id === groupId);
-  if (groupDataSet === undefined) return 1;
-  const serials = groupDataSet.map((data) => data.field[groupFieldName]).filter((v) => v) as number[];
-  return serials.length === 0 ? 1 : Math.max(...serials) + 1;
+  const groupParent = dataSet.find((data) => data.id === groupId);
+  if (groupParent === undefined) return getDataSerial(dataSet, groupFieldName);
+  return groupParent.field[groupFieldName] as number;
 };
 
 export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
