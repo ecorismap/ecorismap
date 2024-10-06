@@ -321,107 +321,82 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
   );
 
-  const getInfoOfVectorTileForWeb = useCallback(
-    async (event: MapLayerMouseEvent) => {
-      const map_ = (mapViewRef.current as MapRef).getMap();
+  // const getGeologyInfo = useCallback(async (latlon: Position) => {
+  //   const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${latlon[1]},${latlon[0]}`;
+  //   const response = await fetch(url);
+  //   if (response.ok) {
+  //     const json = await response.json();
+  //     if (json.symbol !== null) {
+  //       return {
+  //         記号: json.symbol,
+  //         大区分: json.group_ja,
+  //         形成時代: json.formationAge_ja,
+  //         岩相: json.lithology_ja,
+  //         出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
+  //       };
+  //     }
+  //   }
+  // }, []);
+
+  const getVectorTileInfoForWeb = useCallback((xy: Position) => {
+    const map_ = (mapViewRef.current as MapRef).getMap();
+    //@ts-ignore
+    const features = map_.queryRenderedFeatures(xy);
+    const vectorTileFeatures = features.filter((feature) => {
+      const layer = map_.getLayer(feature.layer.id);
       //@ts-ignore
-      const features = map_.queryRenderedFeatures([event.point.x, event.point.y]);
-      const vectorTileFeatures = features.filter((feature) => {
-        const layer = map_.getLayer(feature.layer.id);
-        //@ts-ignore
-        return layer && layer.source && map_.getSource(layer.source).type === 'vector';
-      });
-      const position = [event.point.x, event.point.y];
+      return layer && layer.source && map_.getSource(layer.source).type === 'vector';
+    });
+    const properties = vectorTileFeatures
+      ? vectorTileFeatures.map((f) => f.properties).filter((v) => v !== undefined)
+      : [];
+    return properties;
+  }, []);
+
+  const getInfoOfMap = useCallback(
+    async (latlon: Position, xy: Position) => {
+      let properties: { [key: string]: any }[];
 
       //vectorTileの情報を取得
-
-      const properties = vectorTileFeatures
-        ? vectorTileFeatures.map((f) => f.properties).filter((v) => v !== undefined)
-        : [];
-
-      // TODO 設定で地質図の情報を取得するかどうかを設定できるようにすべき
+      if (Platform.OS === 'web') {
+        properties = getVectorTileInfoForWeb(xy);
+      } else {
+        properties = await getVectorTileInfo(latlon, zoom);
+      }
+      // Todo 設定で地質図の表示を選択できるようにする
       // //地質図の情報を取得
-      // const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${event.lngLat.lat},${event.lngLat.lng}`;
-      // const response = await fetch(url);
-      // if (response.ok) {
-      //   const json = await response.json();
-
-      //   if (json.symbol !== null) {
-      //     properties = [
-      //       ...properties,
-      //       {
-      //         記号: json.symbol,
-      //         大区分: json.group_ja,
-      //         形成時代: json.formationAge_ja,
-      //         岩相: json.lithology_ja,
-      //         出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
-      //       },
-      //     ];
-      //   }
+      // const geologyInfo = await getGeologyInfo(latlon);
+      // if (geologyInfo) {
+      //   properties = [...properties, geologyInfo];
       // }
 
       if (properties === undefined) {
         closeVectorTileInfo();
       } else {
         //console.log(properties, position);
-        openVectorTileInfo(properties, position);
+        openVectorTileInfo(properties, xy);
       }
     },
-    [closeVectorTileInfo, openVectorTileInfo]
-  );
-
-  const getInfoOfVectorTile = useCallback(
-    async (latlon: Position) => {
-      let properties: { [key: string]: any }[];
-
-      //@ts-ignore
-      const position = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
-      //vectorTileの情報を取得
-      properties = await getVectorTileInfo(latlon, zoom);
-
-      //地質図の情報を取得
-      const url = `https://gbank.gsj.jp/seamless/v2/api/1.0/legend.json?point=${latlon[1]},${latlon[0]}`;
-      const response = await fetch(url);
-      if (response.ok) {
-        const json = await response.json();
-        if (json.symbol !== null) {
-          properties = [
-            ...properties,
-            {
-              記号: json.symbol,
-              大区分: json.group_ja,
-              形成時代: json.formationAge_ja,
-              岩相: json.lithology_ja,
-              出典: '「20万分の1日本シームレス地質図V2（©産総研地質調査総合センター）」',
-            },
-          ];
-        }
-      }
-
-      if (properties === undefined) {
-        closeVectorTileInfo();
-      } else {
-        //console.log(properties, position);
-        openVectorTileInfo(properties, position);
-      }
-    },
-    [closeVectorTileInfo, getVectorTileInfo, mapRegion, mapSize, openVectorTileInfo, zoom]
+    [closeVectorTileInfo, getVectorTileInfo, getVectorTileInfoForWeb, openVectorTileInfo, zoom]
   );
 
   const onPressMapView = useCallback(
     async (event: MapPressEvent | MapLayerMouseEvent) => {
       if (isInfoToolActive || featureButton !== 'NONE') return;
       let latlon: Position;
+      let xy: Position;
       if (Platform.OS === 'web') {
         const e = event as MapLayerMouseEvent;
-        await getInfoOfVectorTileForWeb(e);
+        xy = [e.point.x, e.point.y];
+        latlon = [e.lngLat.lng, e.lngLat.lat];
       } else {
         const e = event as MapPressEvent;
         latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
-        await getInfoOfVectorTile(latlon);
+        xy = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
       }
+      await getInfoOfMap(latlon, xy);
     },
-    [featureButton, getInfoOfVectorTile, getInfoOfVectorTileForWeb, isInfoToolActive]
+    [featureButton, getInfoOfMap, isInfoToolActive, mapRegion, mapSize]
   );
 
   const onDragMapView = useCallback(async () => {
