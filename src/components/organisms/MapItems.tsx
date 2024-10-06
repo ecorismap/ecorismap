@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 import { SmallButton, RectButton2 } from '../atoms';
@@ -23,13 +23,16 @@ export const MapItems = React.memo(() => {
             style={[
               styles.tr,
               {
-                borderTopWidth: item.isGroup && item.expanded ? 1 : 0,
-                backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN,
-                borderBottomWidth: item.groupId && !maps[index + 1].groupId && !maps[index + 1].isGroup ? 1 : 0,
+                backgroundColor: item.isGroup ? COLOR.KHAKI : COLOR.MAIN,
               },
             ]}
           >
-            <View style={[styles.td, { paddingHorizontal: 0, flex: 3 }]}>
+            <View
+              style={[
+                styles.td,
+                { paddingHorizontal: 0, flex: 2, borderRightWidth: item.groupId ? 1 : 0, borderColor: COLOR.GRAY1 },
+              ]}
+            >
               <View
                 style={{
                   alignItems: 'center',
@@ -44,40 +47,29 @@ export const MapItems = React.memo(() => {
                     onPress={() => changeExpand(!item.expanded, index)}
                     style={{
                       flex: 1,
-                      width: 38,
+                      //width: 80,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: COLOR.GRAY1,
-                      //borderRightWidth: 1,
+                      backgroundColor: COLOR.KHAKI,
                     }}
                   />
                 ) : (
-                  <View
-                    style={{
-                      flex: 1,
-                      width: 38,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      //backgroundColor: item.groupId ? COLOR.GRAY1: COLOR.MAIN,
-                      borderRightWidth: item.groupId ? 1 : 0,
-                      borderStyle: 'dashed',
-                      alignSelf: Platform.OS === 'web' ? 'stretch' : 'auto',
-                    }}
-                  />
-                )}
-              </View>
-              <View style={[styles.td2, { flex: 2 }]}>
-                {!item.isGroup && (
                   <RectButton2
                     name={item.visible ? 'eye' : 'eye-off-outline'}
                     onPress={() => changeVisible(!item.visible, index)}
-                    style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
+                    style={{
+                      flex: 1,
+                      //width: 30,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLOR.MAIN,
+                    }}
                   />
                 )}
               </View>
             </View>
-            <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item)}>
-              <View style={[styles.td2, { flex: 4, justifyContent: 'flex-start' }]}>
+            <TouchableOpacity style={[styles.td, { flex: 4 }]} onPress={() => jumpToBoundary(item)}>
+              <View style={[styles.td2, { flex: 1, justifyContent: 'flex-start' }]}>
                 <Text>{item.name}</Text>
               </View>
             </TouchableOpacity>
@@ -85,11 +77,7 @@ export const MapItems = React.memo(() => {
             {/*************** Edit Button ************************************* */}
             <View style={[styles.td, { flex: 1 }]}>
               {item.id !== 'standard' && item.id !== 'hybrid' && (
-                <SmallButton
-                  name="pencil"
-                  onPress={() => pressOpenEditMap(item)}
-                  backgroundColor={item.isGroup ? COLOR.GRAY2 : COLOR.GRAY2}
-                />
+                <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.LIGHTBLUE2} />
               )}
             </View>
             {/*************** Download Button ************************************* */}
@@ -114,7 +102,7 @@ export const MapItems = React.memo(() => {
                   name="chevron-double-up"
                   onPress={() => changeMapOrder(index)}
                   color={COLOR.GRAY2}
-                  style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
+                  style={{ backgroundColor: item.isGroup ? COLOR.KHAKI : COLOR.MAIN }}
                 />
               )}
             </View>
