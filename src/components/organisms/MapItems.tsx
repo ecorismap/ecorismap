@@ -19,12 +19,21 @@ export const MapItems = React.memo(() => {
       renderItem={({ item, index }) => {
         if (!item.isGroup && item.groupId && !item.expanded) return null;
         return (
-          <View style={[styles.tr, { backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }]}>
+          <View
+            style={[
+              styles.tr,
+              {
+                borderTopWidth: item.isGroup && item.expanded ? 1 : 0,
+                backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN,
+                borderBottomWidth: item.groupId && !maps[index + 1].groupId && !maps[index + 1].isGroup ? 1 : 0,
+              },
+            ]}
+          >
             <View style={[styles.td, { paddingHorizontal: 0, flex: 3 }]}>
               <View
                 style={{
                   alignItems: 'center',
-                  height: 59,
+                  height: 56,
                   justifyContent: 'center',
                   flex: 1,
                 }}
@@ -39,6 +48,7 @@ export const MapItems = React.memo(() => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       backgroundColor: COLOR.GRAY1,
+                      //borderRightWidth: 1,
                     }}
                   />
                 ) : (
@@ -48,18 +58,22 @@ export const MapItems = React.memo(() => {
                       width: 38,
                       alignItems: 'center',
                       justifyContent: 'center',
-                      backgroundColor: item.groupId ? COLOR.GRAY1 : COLOR.MAIN,
+                      //backgroundColor: item.groupId ? COLOR.GRAY1: COLOR.MAIN,
+                      borderRightWidth: item.groupId ? 1 : 0,
+                      borderStyle: 'dashed',
                       alignSelf: Platform.OS === 'web' ? 'stretch' : 'auto',
                     }}
                   />
                 )}
               </View>
               <View style={[styles.td2, { flex: 2 }]}>
-                <RectButton2
-                  name={item.visible ? 'eye' : 'eye-off-outline'}
-                  onPress={() => changeVisible(!item.visible, index)}
-                  style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
-                />
+                {!item.isGroup && (
+                  <RectButton2
+                    name={item.visible ? 'eye' : 'eye-off-outline'}
+                    onPress={() => changeVisible(!item.visible, index)}
+                    style={{ backgroundColor: item.isGroup ? COLOR.GRAY1 : COLOR.MAIN }}
+                  />
+                )}
               </View>
             </View>
             <TouchableOpacity style={[styles.td, { flex: 3 }]} onPress={() => jumpToBoundary(item)}>
@@ -71,7 +85,11 @@ export const MapItems = React.memo(() => {
             {/*************** Edit Button ************************************* */}
             <View style={[styles.td, { flex: 1 }]}>
               {item.id !== 'standard' && item.id !== 'hybrid' && (
-                <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.BLUE} />
+                <SmallButton
+                  name="pencil"
+                  onPress={() => pressOpenEditMap(item)}
+                  backgroundColor={item.isGroup ? COLOR.GRAY2 : COLOR.GRAY2}
+                />
               )}
             </View>
             {/*************** Download Button ************************************* */}

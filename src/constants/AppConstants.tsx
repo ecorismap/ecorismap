@@ -21,6 +21,8 @@ export const COLOR = {
   ALFABLUE: '#007AFF99',
   ALFABLUE2: '#007AFF77',
   YELLOW: '#FFF100',
+  KHAKI: '#f0e68c',
+  DARKKHAKI: '#bdb76b',
   ALFAYELLOW: '#FFF10099',
   RED: '#ff0000',
   ALFARED: '#ff000099',
