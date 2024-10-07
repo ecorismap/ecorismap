@@ -58,9 +58,9 @@ export default function LayerEditFieldItemScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
-      headerRight: () => headerRightButton(),
+      headerRight: () => (itemFormat === 'STRING_DICTIONARY' ? headerRightButton() : null),
     });
-  }, [headerLeftButton, headerRightButton, navigation]);
+  }, [headerLeftButton, headerRightButton, itemFormat, navigation]);
 
   if (itemFormat === 'STRING_DICTIONARY') {
     return (
@@ -79,8 +79,8 @@ export default function LayerEditFieldItemScreen() {
           ListHeaderComponent={ListTitle}
           keyExtractor={(item) => item}
           stickyHeaderIndices={[0]}
-          // initialNumToRender={1000}
-          // removeClippedSubviews={false}
+          initialNumToRender={1000}
+          removeClippedSubviews={false}
         />
       </View>
     );
