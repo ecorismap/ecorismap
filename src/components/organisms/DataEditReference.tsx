@@ -53,7 +53,7 @@ export const DataEditReference = (props: Props) => {
   const refData = useMemo(() => {
     return allUserRecordSet
       .filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index]))
-      .filter((d) => d.field._group === '')
+      .filter((d) => d.field._group === undefined || d.field._group === '')
       .reverse();
   }, [allUserRecordSet, primaryKey, refField]);
 
