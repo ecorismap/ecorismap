@@ -206,13 +206,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
       if (importedLayer.type === 'LAYERGROUP') {
         dispatch(addLayerAction(importedLayer));
-      } else if (importedLayer.type === 'NONE') {
-        if (csvFile === undefined) throw new Error('invalid zip file');
-        const csvStrings = await loaded.files[csvFile].async('text');
-        const csv = JSON.parse(csvStrings);
-        //ToDo 有効なcsvファイルかチェック
-        importCsv(csv, name, importedLayer);
-      } else if (geojsonFile !== undefined) {
+      } else if (geojsonFile !== undefined && importedLayer.type !== 'NONE') {
         const geojsonStrings = await loaded.files[geojsonFile].async('text');
         const geojson = JSON.parse(geojsonStrings);
         //ToDo 有効なgeojsonファイルかチェック
