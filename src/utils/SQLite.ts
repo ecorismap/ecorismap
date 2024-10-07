@@ -42,6 +42,9 @@ export async function exportDatabase(layerId: string) {
   try {
     const sourceDb = await getDatabase();
     const tempDbName = `temp_${layerId}.sqlite`;
+    const dbPath = `${FileSystem.documentDirectory}SQLite/${tempDbName}`;
+    //すでに存在する場合は削除
+    await deleteDatabase(tempDbName);
     const tempDb = SQLite.openDatabaseSync(tempDbName, { useNewConnection: true });
     const tables = (await sourceDb.getAllAsync('SELECT name FROM sqlite_schema WHERE type="table"')) as {
       name: string;
@@ -63,7 +66,7 @@ export async function exportDatabase(layerId: string) {
     }
     // 新しいデータベースをエクスポート
     await tempDb.closeAsync();
-    const dbPath = `${FileSystem.documentDirectory}SQLite/${tempDbName}`;
+
     const sqliteFile = await FileSystem.getInfoAsync(dbPath);
     if (!sqliteFile.exists) {
       throw new Error('Database file does not exist');
