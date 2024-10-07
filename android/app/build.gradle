@@ -40,7 +40,7 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 150
+        versionCode 151
         versionName '0.4.2'
 
     }
@@ -56,10 +56,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file(System.getenv("STORE_FILE"))
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            storeFile file(System.getenv("STORE_FILE") ?: "debug.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "android"
+            keyAlias System.getenv("KEY_ALIAS") ?: "androiddebugkey"
+            keyPassword System.getenv("KEY_PASSWORD") ?: "android"
         }
     }
     buildTypes {
