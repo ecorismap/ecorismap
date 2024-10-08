@@ -62,15 +62,17 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         await AlertAsync(t('hooks.message.inputCorrectFilename'));
         return;
       }
-
+      setIsFileSaveOpen(false);
+      setIsLoading(true);
       const data = { dataSet, layers, settings: createExportSettings(), maps };
       const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
       const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
+      setIsLoading(false);
       if (!isOK) {
         await AlertAsync(t('hooks.message.failSaveFile'));
+      } else {
+        await AlertAsync(t('hooks.message.successSaveFile'));
       }
-
-      setIsFileSaveOpen(false);
     },
     [createExportSettings, dataSet, generateEcorisMapData, layers, maps]
   );

@@ -7,6 +7,7 @@ import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
+import RNFetchBlob from 'rn-fetch-blob';
 
 export const exportGeoFile = async (
   exportData: {
@@ -40,7 +41,11 @@ export const exportGeoFile = async (
 
     const path = await zip(sourcePath, targetPath);
     if (path !== undefined) {
-      await Sharing.shareAsync(`file://${encodeURI(path)}`);
+      if (Platform.OS === 'android') {
+        await RNFetchBlob.fs.cp(`file://${encodeURI(path)}`, `${RNFetchBlob.fs.dirs.DownloadDir}/${fileName}.${ext}`);
+      } else {
+        await Sharing.shareAsync(`file://${encodeURI(path)}`);
+      }
       await RNFS.unlink(sourcePath);
       await RNFS.unlink(targetPath);
     }
