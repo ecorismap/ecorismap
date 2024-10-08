@@ -17,7 +17,9 @@ export async function generateTileMap(
   const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
 
   let tileContents = '';
-  const maps = tileMaps.filter((m) => m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
+  const maps = tileMaps
+    .filter((m) => !m.isVector && !m.isGroup && m.visible && m.id !== 'standard' && m.id !== 'hybrid')
+    .reverse();
 
   for (let y = topTileY; y <= bottomTileY; y++) {
     tileContents += '<div style="position: absolute; left: 0; top: 0;">';
