@@ -763,7 +763,8 @@
       "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。",
       "saveTracking": "保存されていないトラックログがあります。保存しますか？",
       "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
-      "cannotOpenDB": "データベースを開けません。"
+      "cannotOpenDB": "データベースを開けません。",
+      "successSaveFile": "ファイルを保存しました。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

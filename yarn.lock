@@ -9279,7 +9279,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base-64@npm:^0.1.0":
+"base-64@npm:0.1.0, base-64@npm:^0.1.0":
   version: 0.1.0
   resolution: "base-64@npm:0.1.0"
   checksum: 5a42938f82372ab5392cbacc85a5a78115cbbd9dbef9f7540fa47d78763a3a8bd7d598475f0d92341f66285afd377509851a9bb5c67bbecb89686e9255d5b3eb
@@ -11341,6 +11341,7 @@ __metadata:
     react-test-renderer: ^18.3.1
     reanimated-color-picker: ^3.0.4
     redux-persist: ^6.0.0
+    rn-fetch-blob: ^0.12.0
     sanitize-filename: ^1.6.3
     styled-components: ^6.1.11
     sweetalert2: ^11.12.2
@@ -13210,6 +13211,20 @@ __metadata:
   version: 0.4.1
   resolution: "glob-to-regexp@npm:0.4.1"
   checksum: e795f4e8f06d2a15e86f76e4d92751cf8bbfcf0157cea5c2f0f35678a8195a750b34096b1256e436f0cebc1883b5ff0888c47348443e69546a5a87f9e1eb1167
+  languageName: node
+  linkType: hard
+
+"glob@npm:7.0.6":
+  version: 7.0.6
+  resolution: "glob@npm:7.0.6"
+  dependencies:
+    fs.realpath: ^1.0.0
+    inflight: ^1.0.4
+    inherits: 2
+    minimatch: ^3.0.2
+    once: ^1.3.0
+    path-is-absolute: ^1.0.0
+  checksum: 6ad065f51982f9a76f7052984121c95bca376ea02060b21200ad62b400422b05f0dc331f72da89a73c21a2451cbe9bec16bb17dcf37a516dc51bbbb6efe462a1
   languageName: node
   linkType: hard
 
@@ -19671,6 +19686,16 @@ __metadata:
   bin:
     rimraf: ./bin.js
   checksum: 3ea587b981a19016297edb96d1ffe48af7e6af69660e3b371dbfc73722a73a0b0e9be5c88089fbeeb866c389c1098e07f64929c7414290504b855f54f901ab10
+  languageName: node
+  linkType: hard
+
+"rn-fetch-blob@npm:^0.12.0":
+  version: 0.12.0
+  resolution: "rn-fetch-blob@npm:0.12.0"
+  dependencies:
+    base-64: 0.1.0
+    glob: 7.0.6
+  checksum: 56e5832be583e97d58f955c0c4f6dcb0eb62c97dde331182c6effb726253731cb555d4a5f6c81079ed2fcb957f81633cbe95b37d326d063405f912506de20ff4
   languageName: node
   linkType: hard
 
