@@ -36,7 +36,7 @@ import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { HomeContext } from '../contexts/Home';
 import { useGeoFile } from '../hooks/useGeoFile';
-import { getReceivedFiles, deleteReceivedFiles, customShareAsync, exportFile } from '../utils/File';
+import { getReceivedFiles, deleteReceivedFiles, exportFileFromData, exportFileFromUri } from '../utils/File';
 import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
@@ -719,7 +719,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const fileName = `ecorismap_map_${dayjs().format('YYYYMMDD_HHmmss')}.pdf`;
       if (outputVRT) {
         vrt = generateVRT(fileName);
-        await exportFile(vrt, fileName.replace('.pdf', '.vrt'));
+        await exportFileFromData(vrt, fileName.replace('.pdf', '.vrt'));
       }
       // 作成した PDF を共有
       if (Platform.OS === 'web') {
@@ -744,25 +744,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setIsLoading(true);
           mapUri = await generatePDF({ dataSet, layers });
           dataUri = await generateDataPDF({ dataSet, layers });
+          await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
+          await exportFileFromUri(dataUri as string, fileName.replace('_map_', '_data_'), {
+            mimeType: 'application/pdf',
+          });
           setIsLoading(false);
-          setTimeout(async () => {
-            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
-            await customShareAsync(
-              dataUri as string,
-              { mimeType: 'application/pdf' },
-              fileName.replace('_map_', '_data_')
-            );
-          }, 2000);
+          await AlertAsync(t('Home.alert.exportPDF'));
         } else {
           setIsLoading(true);
           mapUri = await generatePDF({ dataSet, layers });
+          await exportFileFromUri(mapUri as string, fileName, { mimeType: 'application/pdf' });
           setIsLoading(false);
-          setTimeout(async () => {
-            await customShareAsync(mapUri as string, { mimeType: 'application/pdf' }, fileName);
-          }, 2000);
+          await AlertAsync(t('Home.alert.exportPDF'));
         }
       }
     } catch (e) {
+      console.error(e);
       setIsLoading(false);
     } finally {
       setIsLoading(false);

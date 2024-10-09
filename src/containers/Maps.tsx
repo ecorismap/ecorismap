@@ -7,7 +7,6 @@ import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
 import { Props_Maps } from '../routes';
 import { boundaryType, TileMapType } from '../types';
-import { exportFile } from '../utils/File';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
@@ -17,6 +16,7 @@ import { readAsStringAsync } from 'expo-file-system';
 import { db } from '../utils/db';
 import { MapModalTileMap } from '../components/organisms/MapModalTileMap';
 import * as FileSystem from 'expo-file-system';
+import { exportFileFromData } from '../utils/File';
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
     progress,
@@ -174,8 +174,12 @@ export default function MapContainer({ navigation }: Props_Maps) {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
     const mapSettings = JSON.stringify(maps);
     const fileName = `maps_${time}.json`;
-    const isOK = await exportFile(mapSettings, fileName);
-    if (!isOK && Platform.OS !== 'web') await AlertAsync(t('hooks.message.failExport'));
+    const isOK = await exportFileFromData(mapSettings, fileName);
+    if (!isOK && Platform.OS !== 'web') {
+      await AlertAsync(t('hooks.message.failExport'));
+    } else {
+      await AlertAsync(t('hooks.message.successExportMaps'));
+    }
   }, [maps]);
 
   const gotoMapList = useCallback(() => {
