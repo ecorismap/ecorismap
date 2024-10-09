@@ -68,7 +68,17 @@ export const MapItems = React.memo(() => {
                 )}
               </View>
             </View>
-            <TouchableOpacity style={[styles.td, { flex: 4 }]} onPress={() => jumpToBoundary(item)}>
+            <TouchableOpacity
+              style={[styles.td, { flex: 4 }]}
+              onPress={() => {
+                //groupの場合はexpandする
+                if (item.isGroup) {
+                  changeExpand(!item.expanded, index);
+                } else {
+                  jumpToBoundary(item);
+                }
+              }}
+            >
               <View style={[styles.td2, { flex: 1, justifyContent: 'flex-start' }]}>
                 <Text>{item.name}</Text>
               </View>
