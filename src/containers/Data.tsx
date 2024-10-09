@@ -67,7 +67,11 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       exportPhoto: true,
     });
     const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
-    if (!isOK) await AlertAsync(t('hooks.message.failExport'));
+    if (isOK) {
+      await AlertAsync(t('hooks.message.successExportData'));
+    } else {
+      await AlertAsync(t('hooks.message.failExport'));
+    }
   }, [checkedRecords, data, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
