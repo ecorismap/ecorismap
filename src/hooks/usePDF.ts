@@ -973,29 +973,30 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
 
   const generatePDF = useCallback(
     async (data: { dataSet: DataType[]; layers: LayerType[] }) => {
-      const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
-      const tileScale = getTileScale(tileZoom);
-      const { shiftX, shiftY } = getTileShift(tileZoom);
-
-      // タイル地図を作成するための HTML
-      let mapContents = `<div style="position: absolute; left: ${pageMargin.pixel}; top:${pageMargin.pixel};width: ${pageSize.widthPixel}px;height: ${pageSize.heightPixel}px;overflow: hidden;">`;
-      mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
-      mapContents += await generateTileMap(tileMaps, pdfRegion, pdfTileMapZoomLevel);
-      mapContents += generateVectorMap(data);
-      mapContents += '</div>';
-      mapContents += '</div>';
-
-      let html = `<html><head><style> @page { margin:0px;padding:0px;size: ${paperSize.widthMillimeter}mm ${paperSize.heightMillimeter}mm;} </style></head>`;
-      html += `<body style="margin:0;width:${paperSize.widthPixel}px;height:${paperSize.heightPixel - 2}px;">`; //-2pxはiOSで次ページに行ってしまうのを防ぐため
-      html += generateNorthArrow();
-      html += generateScaleBar();
-      html += generateCaptions();
-      html += generateComment();
-      html += mapContents;
-      html += '</body></html>';
-
-      //console.log(html);
       try {
+        const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
+        const tileScale = getTileScale(tileZoom);
+        const { shiftX, shiftY } = getTileShift(tileZoom);
+
+        // タイル地図を作成するための HTML
+        let mapContents = `<div style="position: absolute; left: ${pageMargin.pixel}; top:${pageMargin.pixel};width: ${pageSize.widthPixel}px;height: ${pageSize.heightPixel}px;overflow: hidden;">`;
+        mapContents += `<div style="transform-origin: ${shiftX}px ${shiftY}px;transform: translate(-${shiftX}px, -${shiftY}px) scale(${tileScale}, ${tileScale});">`;
+        mapContents += await generateTileMap(tileMaps, pdfRegion, pdfTileMapZoomLevel);
+        mapContents += generateVectorMap(data);
+        mapContents += '</div>';
+        mapContents += '</div>';
+
+        let html = `<html><head><style> @page { margin:0px;padding:0px;size: ${paperSize.widthMillimeter}mm ${paperSize.heightMillimeter}mm;} </style></head>`;
+        html += `<body style="margin:0;width:${paperSize.widthPixel}px;height:${paperSize.heightPixel - 2}px;">`; //-2pxはiOSで次ページに行ってしまうのを防ぐため
+        html += generateNorthArrow();
+        html += generateScaleBar();
+        html += generateCaptions();
+        html += generateComment();
+        html += mapContents;
+        html += '</body></html>';
+
+        //console.log(html);
+
         //Androidの場合はwidthとheightに+1しないとvrtのXSize,YSizeとずれてQGISでエラーになる。
         const outputWidth = Platform.OS === 'android' ? paperSize.widthPoint + 1 : paperSize.widthPoint;
         const outputHeight = Platform.OS === 'android' ? paperSize.heightPoint + 1 : paperSize.heightPoint;

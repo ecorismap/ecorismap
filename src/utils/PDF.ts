@@ -8,6 +8,23 @@ import { warpedFileType } from 'react-native-gdalwarp';
 import ImageEditor from '@react-native-community/image-editor';
 import { moveFile, unlink } from '../utils/File';
 
+// 一時ファイルにコピーし、画像を操作する関数
+// manipulateAsyncを通さないと特殊なpngタイルが正常に出力されないため使用する
+//　iOSにおいて、拡張子がないpngを処理できないバグがmanipulateAsyncにあるため、一時ファイルを使って操作する
+async function handleImageManipulation(sourceUri: string, tempFileUri: string) {
+  // 既存の一時ファイルを削除して上書き
+  if (await RNFS.exists(tempFileUri)) {
+    await RNFS.unlink(tempFileUri);
+  }
+  await RNFS.copyFile(sourceUri, tempFileUri);
+  // manipulateAsync に渡して、操作後に一時ファイルを削除
+  const result = await manipulateAsync(tempFileUri, [], { base64: true, format: SaveFormat.PNG }).catch(
+    () => undefined
+  );
+  await RNFS.unlink(tempFileUri); // 一時ファイルを削除
+  return result;
+}
+
 export async function generateTileMap(
   tileMaps: TileMapType[],
   pdfRegion: { minLon: number; minLat: number; maxLon: number; maxLat: number },
@@ -17,7 +34,7 @@ export async function generateTileMap(
   const { leftTileX, rightTileX, bottomTileY, topTileY } = getTileRegion(pdfRegion, tileZoom);
 
   let tileContents = '';
-  const maps = tileMaps.filter((m) => m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
+  const maps = tileMaps.filter((m) => !m.isGroup && m.visible && m.id !== 'standard' && m.id !== 'hybrid').reverse();
 
   for (let y = topTileY; y <= bottomTileY; y++) {
     tileContents += '<div style="position: absolute; left: 0; top: 0;">';
@@ -25,16 +42,19 @@ export async function generateTileMap(
     for (let x = leftTileX; x <= rightTileX; x++) {
       for (const map of maps) {
         let mapSrc;
-
         const mapUri = `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`;
+        const tempFileUri = `${FileSystem.cacheDirectory}${map.id}_${x}_${y}.png`; // 一時ファイル
+
+        // 画像が既にローカルにある場合
         if (await RNFS.exists(mapUri)) {
-          mapSrc = await manipulateAsync(mapUri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
-            //console.error(e);
-            return undefined;
-          });
-        } else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
+          mapSrc = await handleImageManipulation(mapUri, tempFileUri);
+        }
+        // PDFの場合はスキップ
+        else if (map.url.startsWith('file://') && map.url.endsWith('.pdf')) {
           mapSrc = undefined;
-        } else {
+        }
+        // インターネットから画像をダウンロードする場合
+        else {
           const mapUrl = map.url
             .replace('{z}', tileZoom.toString())
             .replace('{x}', x.toString())
@@ -45,13 +65,11 @@ export async function generateTileMap(
           });
           const resp = await FileSystem.downloadAsync(mapUrl, `${TILE_FOLDER}/${map.id}/${tileZoom}/${x}/${y}`);
           if (resp.status === 200) {
-            mapSrc = await manipulateAsync(resp.uri, [], { base64: true, format: SaveFormat.PNG }).catch(() => {
-              //console.error(e);
-              return undefined;
-            });
+            mapSrc = await handleImageManipulation(resp.uri, tempFileUri);
           }
         }
 
+        // 画像が正常に取得できた場合のみHTMLに追加
         if (mapSrc) {
           tileContents += `<img src="data:image/png;base64,${
             mapSrc.base64

@@ -14,9 +14,9 @@ if (Platform.OS === 'web') {
   FileSaver = require('file-saver');
 }
 
-export const exportFile = async (data: string, fileName: string) => {
+export const exportFileFromData = async (data: string, fileName: string) => {
   const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
-  FileSaver.saveAs(blob, fileName);
+  FileSaver.saveAs(blob, sanitize(fileName));
 };
 
 export const exportGeoFile = async (

@@ -653,7 +653,10 @@
       "saveTracking": "There are unsaved track logs. \nDo you want to save?",
       "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude.",
       "cannotOpenDB": "Unable to open database.",
-      "failUploadDictionary": "Failed to upload dictionary"
+      "failUploadDictionary": "Failed to upload dictionary",
+      "successSaveFile": "File saved.",
+      "successExportData": "Your data has been saved.",
+      "successExportMaps": "Map settings have been saved."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."
@@ -681,7 +684,8 @@
       "clearMapMemo": "I deleted the map notes.",
       "individualColor": "Changed the color type to [Individual]. \nIf you want to undo it, change it from the layer style.",
       "storage": "Loading data is full. \nDelete unnecessary data.",
-      "cannotEdit": "There are no editable layers."
+      "cannotEdit": "There are no editable layers.",
+      "exportPDF": "I saved the PDF."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
