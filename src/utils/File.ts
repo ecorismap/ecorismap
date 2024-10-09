@@ -7,7 +7,6 @@ import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
-import RNFetchBlob from 'rn-fetch-blob';
 
 export const exportGeoFile = async (
   exportData: {
@@ -41,11 +40,7 @@ export const exportGeoFile = async (
 
     const path = await zip(sourcePath, targetPath);
     if (path !== undefined) {
-      if (Platform.OS === 'android') {
-        await RNFetchBlob.fs.cp(`file://${encodeURI(path)}`, `${RNFetchBlob.fs.dirs.DownloadDir}/${fileName}.${ext}`);
-      } else {
-        await Sharing.shareAsync(`file://${encodeURI(path)}`);
-      }
+      await exportFileFromUri(path, `${fileName}.${ext}`);
       await RNFS.unlink(sourcePath);
       await RNFS.unlink(targetPath);
     }
@@ -57,18 +52,26 @@ export const exportGeoFile = async (
   //Memo: expoのSharingはキャンセルしたかどうか値を返さない.objectは常に{}
 };
 
-export const exportFile = async (data: string, fileName: string) => {
-  try {
+export async function exportFileFromUri(uri: string, fileName: string, options?: Sharing.SharingOptions) {
+  if (Platform.OS === 'android') {
+    await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
+  } else {
+    await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
+  }
+
+  return true;
+}
+
+export const exportFileFromData = async (data: string, fileName: string) => {
+  if (Platform.OS === 'android') {
+    await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');
+  } else {
     const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
     await RNFS.writeFile(sourcePath, data, 'utf8');
     await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
     await RNFS.unlink(sourcePath);
-    return true;
-  } catch (e) {
-    console.log(e);
-    return false;
   }
-  //Memo: expoのSharingはキャンセルしたかどうか値を返さない.objectは常に{}
+  return true;
 };
 
 export const clearCacheData = async () => {
@@ -151,17 +154,6 @@ export async function deleteReceivedFiles(
   for (const file of files) {
     await FileSystem.deleteAsync(file.uri);
   }
-}
-
-export async function customShareAsync(uri: string, options: Sharing.SharingOptions, fileName: string) {
-  const destPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
-  if (await RNFS.exists(destPath)) {
-    await RNFS.unlink(destPath);
-  }
-  await RNFS.copyFile(uri as string, destPath);
-  await Sharing.shareAsync(`file://${encodeURI(destPath)}`, options);
-  await RNFS.unlink(destPath);
-  await RNFS.unlink(uri as string);
 }
 
 export async function moveFile(uri: any, destPath: string) {

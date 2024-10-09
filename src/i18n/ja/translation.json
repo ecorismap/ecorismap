@@ -225,7 +225,8 @@
       "clearMapMemo": "地図のメモを消去しました。",
       "individualColor": "カラータイプを[個別]に変更しました。元に戻したい場合は、レイヤのスタイルから変更してください。",
       "storage": "読み込みデータが一杯です。不要なデータを削除してください。",
-      "cannotEdit": "編集できるレイヤがありません。"
+      "cannotEdit": "編集できるレイヤがありません。",
+      "exportPDF": "PDFを保存しました。"
     },
     "navigation": {
       "download": "地図のダウンロード",
@@ -764,7 +765,9 @@
       "saveTracking": "保存されていないトラックログがあります。保存しますか？",
       "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
       "cannotOpenDB": "データベースを開けません。",
-      "successSaveFile": "ファイルを保存しました。"
+      "successSaveFile": "ファイルを保存しました。",
+      "successExportData": "データを保存しました。",
+      "successExportMaps": "地図の設定を保存しました。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"
