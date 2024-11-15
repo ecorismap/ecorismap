@@ -1,8 +1,15 @@
 diff --git a/node_modules/pmtiles/index.ts b/node_modules/pmtiles/index.ts
-index 3d5a43e..e5223c1 100644
+index 3d5a43e..7740676 100644
 --- a/node_modules/pmtiles/index.ts
 +++ b/node_modules/pmtiles/index.ts
-@@ -414,15 +414,15 @@ export class FetchSource implements Source {
+@@ -1,5 +1,6 @@
+ import { decompressSync } from "fflate";
+ import v2 from "./v2";
++import {Buffer} from "buffer";
+ export * from "./adapters";
+ 
+ /** @hidden */
+@@ -414,15 +415,15 @@ export class FetchSource implements Source {
        throw Error(`Bad response code: ${resp.status}`);
      }
  
@@ -27,3 +34,14 @@ index 3d5a43e..e5223c1 100644
  
      const a = await resp.arrayBuffer();
      return {
+@@ -1036,8 +1037,8 @@ export class PMTiles {
+       resp.data,
+       header.internalCompression
+     );
+-    const dec = new TextDecoder("utf-8");
+-    return JSON.parse(dec.decode(decompressed));
++    const jsonString = Buffer.from(decompressed).toString('utf-8');
++    return JSON.parse(jsonString);
+   }
+ 
+   /**

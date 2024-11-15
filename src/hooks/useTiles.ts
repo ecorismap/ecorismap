@@ -104,6 +104,43 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     setProgress('0');
     setIsDownloading(true);
 
+    //ベクタータイルの場合はmetadataとスタイルをダウンロード
+    if (tileType === 'pbf' || (tileType === 'pmtiles' && tileMap.isVector)) {
+      const folder = `${TILE_FOLDER}/${tileMap.id}`;
+      await FileSystem.makeDirectoryAsync(folder, {
+        intermediates: true,
+      });
+
+      const metadata = await pmtile?.getMetadata();
+      if (metadata !== undefined) {
+        const localLocation = `${folder}/metadata.json`;
+        await FileSystem.writeAsStringAsync(localLocation, JSON.stringify(metadata), {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        console.log('downloaded metadata.json', localLocation);
+      }
+
+      const fetchUrl = tileMap.styleURL ?? '';
+      const localLocation = `${folder}/style.json`;
+
+      await fetch(fetchUrl)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.text();
+        })
+        .then(async (data) => {
+          await FileSystem.writeAsStringAsync(localLocation, data, {
+            encoding: FileSystem.EncodingType.UTF8,
+          });
+          console.log('downloaded style.json', localLocation);
+        })
+        .catch(() => {
+          //console.error(error);
+        });
+    }
+
     const minZoom = 0;
     const maxZoom = tileType === 'png' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
 
