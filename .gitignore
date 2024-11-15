@@ -103,3 +103,5 @@ modules/react-native-gdalwarp/ios/Frameworks/
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+react-native-maps/
