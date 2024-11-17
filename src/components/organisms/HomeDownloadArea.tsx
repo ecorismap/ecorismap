@@ -55,7 +55,7 @@ const ProgressArea = (props: Props_ProgressArea) => {
 
   return (
     <>
-      {zoom >= 11 && zoom <= 14 && !downloading && (
+      {zoom >= 11 && !downloading && (
         <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={downloadArea.centroid} onPress={onPress} zIndex={10000}>
           <Button size={30} name="download" backgroundColor={COLOR.RED} />
         </Marker>
