@@ -1,5 +1,5 @@
 diff --git a/node_modules/pmtiles/index.ts b/node_modules/pmtiles/index.ts
-index 3d5a43e..7740676 100644
+index 3d5a43e..562c268 100644
 --- a/node_modules/pmtiles/index.ts
 +++ b/node_modules/pmtiles/index.ts
 @@ -1,5 +1,6 @@
@@ -9,6 +9,15 @@ index 3d5a43e..7740676 100644
  export * from "./adapters";
  
  /** @hidden */
+@@ -378,7 +379,7 @@ export class FetchSource implements Source {
+ 
+     let resp = await fetch(this.url, {
+       signal: signal,
+-      cache: cache,
++      cache: 'no-store',
+       headers: requestHeaders,
+       //biome-ignore lint: "cache" is incompatible between cloudflare workers and browser
+     } as any);
 @@ -414,15 +415,15 @@ export class FetchSource implements Source {
        throw Error(`Bad response code: ${resp.status}`);
      }
