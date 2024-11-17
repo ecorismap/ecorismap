@@ -404,7 +404,10 @@ export const useAccount = (): UseAccountReturnType => {
         if (!isOK) {
           console.log('useAccountError:', initUserMessage);
           //長時間ログイン状態で時間切れ？が発生する。
-          await AlertAsync(t('hooks.message.failInitializeUser'));
+          //圏外の場合、ログアウトすると再度ログインできないので以下のメッセージは表示しないようにする。
+
+          //await AlertAsync(t('hooks.message.failInitializeUser'));
+
           //ToDo データをリセットするか？
           // await logout();
           // dispatch(setUserAction(createUserInitialState()));
