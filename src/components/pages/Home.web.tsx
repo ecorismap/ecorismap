@@ -316,65 +316,71 @@ export default function HomeScreen() {
   }, [isEditingRecord, onCloseBottomSheet]);
 
   const getDefaultStyle = async (tileMap: TileMapType) => {
-    const pmtile = new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', ''));
-    const metadata: any = await pmtile.getMetadata();
-    //const header = await pmtile.getHeader();
-    let layers_: LayerSpecification[] = [];
+    try {
+      const pmtile = new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', ''));
+      const metadata: any = await pmtile.getMetadata();
 
-    if (metadata.type !== 'baselayer') {
-      layers_ = [];
-    }
+      //const header = await pmtile.getHeader();
+      let layers_: LayerSpecification[] = [];
 
-    let vector_layers: LayerSpecification[];
-    if (metadata.json) {
-      const j = JSON.parse(metadata.json);
-      vector_layers = j.vector_layers;
-    } else {
-      vector_layers = metadata.vector_layers;
-    }
-
-    if (vector_layers) {
-      for (const layer of vector_layers) {
-        layers_.push({
-          id: layer.id + '_fill',
-          type: 'fill',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'fill-color': '#00FF00',
-            'fill-outline-color': '#000000',
-            'fill-opacity': 0.5,
-          },
-          filter: ['==', ['geometry-type'], 'Polygon'],
-        });
-        layers_.push({
-          id: layer.id + '_stroke',
-          type: 'line',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'line-color': '#0000FF',
-            'line-width': 1,
-          },
-          filter: ['==', ['geometry-type'], 'LineString'],
-        });
-        layers_.push({
-          id: layer.id + '_point',
-          type: 'circle',
-          source: 'source',
-          'source-layer': layer.id,
-          paint: {
-            'circle-color': '#FF0000',
-            'circle-radius': 3,
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#FFFFFF',
-          },
-          filter: ['==', ['geometry-type'], 'Point'],
-        });
+      if (metadata.type !== 'baselayer') {
+        layers_ = [];
       }
+
+      let vector_layers: LayerSpecification[];
+      if (metadata.json) {
+        const j = JSON.parse(metadata.json);
+        vector_layers = j.vector_layers;
+      } else {
+        vector_layers = metadata.vector_layers;
+      }
+
+      if (vector_layers) {
+        for (const layer of vector_layers) {
+          layers_.push({
+            id: layer.id + '_fill',
+            type: 'fill',
+            source: 'source',
+            'source-layer': layer.id,
+            paint: {
+              'fill-color': '#00FF00',
+              'fill-outline-color': '#000000',
+              'fill-opacity': 0.5,
+            },
+            filter: ['==', ['geometry-type'], 'Polygon'],
+          });
+          layers_.push({
+            id: layer.id + '_stroke',
+            type: 'line',
+            source: 'source',
+            'source-layer': layer.id,
+            paint: {
+              'line-color': '#0000FF',
+              'line-width': 1,
+            },
+            filter: ['==', ['geometry-type'], 'LineString'],
+          });
+          layers_.push({
+            id: layer.id + '_point',
+            type: 'circle',
+            source: 'source',
+            'source-layer': layer.id,
+            paint: {
+              'circle-color': '#FF0000',
+              'circle-radius': 3,
+              'circle-stroke-width': 1,
+              'circle-stroke-color': '#FFFFFF',
+            },
+            filter: ['==', ['geometry-type'], 'Point'],
+          });
+        }
+      }
+      //console.log('layers_', layers_);
+      return layers_ as LineLayerSpecification[] | FillLayerSpecification[];
+    } catch (e) {
+      console.log(e);
+      return [];
     }
-    //console.log('layers_', layers_);
-    return layers_ as LineLayerSpecification[] | FillLayerSpecification[];
   };
 
   const getStyleFromLocal = useCallback(async (tileMap: TileMapType) => {
@@ -411,7 +417,11 @@ export default function HomeScreen() {
         layerStyles = await getStyleFromURL(tileMap);
       }
       if (layerStyles.length === 0) {
-        layerStyles = await getDefaultStyle(tileMap);
+        if (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) {
+          layerStyles = await getDefaultStyle(tileMap);
+        } else {
+          return;
+        }
       }
 
       layerStyles.forEach((layerStyle: LineLayerSpecification | FillLayerSpecification, index: number) => {
