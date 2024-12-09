@@ -116,10 +116,8 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { mapRegion, windowHeight, windowWidth, isLandscape } = useWindow();
+  const { mapRegion, windowHeight, isLandscape } = useWindow();
   const trackLog = useSelector((state: RootState) => state.trackLog);
-
-  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 
   const scrollEnabled = useMemo(
     () =>
@@ -313,8 +311,11 @@ export default function HomeScreen() {
             justifyContent: 'center',
             zIndex: 0,
             elevation: 0,
-            height: windowHeight - navigationHeaderHeight,
-            width: windowWidth,
+            position: 'absolute',
+            right: 0,
+            left: 0,
+            top: 0,
+            bottom: 0,
           }}
         >
           <Loading visible={isLoading} text="" />
