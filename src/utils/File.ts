@@ -55,9 +55,8 @@ export const exportGeoFile = async (
 export async function exportFileFromUri(uri: string, fileName: string, options?: Sharing.SharingOptions) {
   if (Platform.OS === 'android') {
     await RNFS.copyFile(uri, `${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`);
-  } else {
-    await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
   }
+  await Sharing.shareAsync(`file://${encodeURI(uri)}`, options);
 
   return true;
 }
@@ -65,12 +64,12 @@ export async function exportFileFromUri(uri: string, fileName: string, options?:
 export const exportFileFromData = async (data: string, fileName: string) => {
   if (Platform.OS === 'android') {
     await RNFS.writeFile(`${RNFS.DownloadDirectoryPath}/${sanitize(fileName)}`, data, 'utf8');
-  } else {
-    const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
-    await RNFS.writeFile(sourcePath, data, 'utf8');
-    await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
-    await RNFS.unlink(sourcePath);
   }
+  const sourcePath = `${RNFS.CachesDirectoryPath}/${sanitize(fileName)}`;
+  await RNFS.writeFile(sourcePath, data, 'utf8');
+  await Sharing.shareAsync(`file://${encodeURI(sourcePath)}`, { mimeType: 'text/plain' });
+  await RNFS.unlink(sourcePath);
+
   return true;
 };
 
