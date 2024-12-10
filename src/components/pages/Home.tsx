@@ -41,7 +41,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { initialWindowMetrics } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -124,7 +124,7 @@ export default function HomeScreen() {
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const insets = useMemo(() => initialWindowMetrics?.insets || { top: 0, left: 0, right: 0, bottom: 0 }, []);
   const { mapRegion, windowHeight, isLandscape } = useWindow();
   const trackLog = useSelector((state: RootState) => state.trackLog);
 
