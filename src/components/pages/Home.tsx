@@ -37,7 +37,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
-import { initialWindowMetrics } from 'react-native-safe-area-context';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -115,7 +115,7 @@ export default function HomeScreen() {
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
-  const insets = useMemo(() => initialWindowMetrics?.insets || { top: 0, left: 0, right: 0, bottom: 0 }, []);
+  const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape } = useWindow();
   const trackLog = useSelector((state: RootState) => state.trackLog);
 
@@ -212,16 +212,24 @@ export default function HomeScreen() {
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => {
+    const top = Platform.Version === 35 && initialWindowMetrics ? initialWindowMetrics.insets.top : insets.top;
+    const bottom = Platform.Version === 35 && initialWindowMetrics ? initialWindowMetrics.insets.bottom : insets.bottom;
     return {
       height: interpolate(
         animatedIndex.value,
         [0, 1, 2],
         [
-          (windowHeight - 20 - insets.top) / 10 - insets.bottom,
-          (windowHeight - 20 - insets.top) / 2 - insets.bottom,
-          windowHeight - 20 - insets.top - insets.bottom,
+          (windowHeight - 20 - top) / 10 - bottom,
+          (windowHeight - 20 - top) / 2 - bottom,
+          windowHeight - 20 - top - bottom,
         ]
       ),
+    };
+  });
+
+  const customHandlePadding = useAnimatedStyle(() => {
+    return {
+      paddingTop: interpolate(animatedIndex.value, [0, 1, 2], [0, 0, insets.top]),
     };
   });
 
@@ -531,7 +539,7 @@ export default function HomeScreen() {
         handleComponent={customHandle}
         //Sliderをスムーズにするには以下の設定がいるがボトムシートが反応する範囲が狭くなるので使わない
         //enableContentPanningGesture={false}
-        style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
+        style={[{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
       >
         <Animated.View style={animatedStyle}>
           <SplitScreen />
