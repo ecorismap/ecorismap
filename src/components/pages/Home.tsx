@@ -234,12 +234,6 @@ export default function HomeScreen() {
     };
   });
 
-  const customHandlePadding = useAnimatedStyle(() => {
-    return {
-      paddingTop: interpolate(animatedIndex.value, [0, 1, 2], [0, 0, insets.top]),
-    };
-  });
-
   const customHandle = useCallback(() => {
     return (
       <View
@@ -557,7 +551,7 @@ export default function HomeScreen() {
         handleComponent={customHandle}
         //Sliderをスムーズにするには以下の設定がいるがボトムシートが反応する範囲が狭くなるので使わない
         //enableContentPanningGesture={false}
-        style={[{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
+        style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
       >
         <Animated.View style={animatedStyle}>
           <SplitScreen />
