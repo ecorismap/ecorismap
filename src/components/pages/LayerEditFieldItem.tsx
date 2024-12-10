@@ -164,7 +164,7 @@ export default function LayerEditFieldItemScreen() {
   } else {
     return (
       <View style={styles.container}>
-        {(itemFormat === 'STRING' || itemFormat === 'INTEGER') && (
+        {(itemFormat === 'STRING' || itemFormat === 'INTEGER' || itemFormat === 'LIST') && (
           <View style={styles.checkbox}>
             <CheckBox
               label={t('common.useLastValue')}
@@ -176,7 +176,7 @@ export default function LayerEditFieldItemScreen() {
             />
           </View>
         )}
-        {!useLastValue && (
+        {(!useLastValue || itemFormat === 'LIST') && (
           <>
             <View style={styles.tr3}>
               <View style={[styles.td3, { flex: 4 }]}>

@@ -202,8 +202,16 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: field.defaultValue ?? 0 };
     case 'NUMBERRANGE':
       return { [field.name]: `${t('common.ndash')}` };
-    case 'LIST':
-      return { [field.name]: field.list![0].isOther ? '' : field.list![0].value };
+    case 'LIST': {
+      let value;
+      const defaultValue = field.list![0].isOther ? '' : field.list![0].value;
+      if (options?.groupId) {
+        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : defaultValue;
+      } else {
+        value = field.useLastValue ? getDataLastValue(dataSet, field.name) : defaultValue;
+      }
+      return { [field.name]: value ?? '' };
+    }
     case 'RADIO':
       return { [field.name]: field.list![0].value };
     case 'CHECK':
