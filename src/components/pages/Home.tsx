@@ -41,7 +41,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
-import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -125,8 +125,10 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { mapRegion, windowHeight, isLandscape } = useWindow();
+  const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
   const trackLog = useSelector((state: RootState) => state.trackLog);
+
+  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 
   const scrollEnabled = useMemo(
     () =>
@@ -221,16 +223,14 @@ export default function HomeScreen() {
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
   const animatedStyle = useAnimatedStyle(() => {
-    const top = Platform.Version === 35 && initialWindowMetrics ? initialWindowMetrics.insets.top : insets.top;
-    const bottom = Platform.Version === 35 && initialWindowMetrics ? initialWindowMetrics.insets.bottom : insets.bottom;
     return {
       height: interpolate(
         animatedIndex.value,
         [0, 1, 2],
         [
-          (windowHeight - 20 - top) / 10 - bottom,
-          (windowHeight - 20 - top) / 2 - bottom,
-          windowHeight - 20 - top - bottom,
+          (windowHeight - 20 - insets.top - insets.bottom) / 10,
+          (windowHeight - 20 - insets.top - insets.bottom) / 2,
+          windowHeight - 20 - insets.top - insets.bottom,
         ]
       ),
     };
@@ -323,11 +323,8 @@ export default function HomeScreen() {
             justifyContent: 'center',
             zIndex: 0,
             elevation: 0,
-            position: 'absolute',
-            right: 0,
-            left: 0,
-            top: 0,
-            bottom: 0,
+            height: windowHeight - navigationHeaderHeight,
+            width: windowWidth,
           }}
         >
           {/************** Member Location ****************** */}
