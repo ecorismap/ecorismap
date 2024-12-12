@@ -74,7 +74,7 @@ export const DataEditCheck = (props: Props) => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           <Text style={styles.title}>{name}</Text>
-          <ScrollView horizontal={true} style={styles.checkbox}>
+          <ScrollView horizontal={true} style={styles.checkbox} persistentScrollbar={true}>
             {checkItemValues.map((item, index) => (
               <CheckBox
                 key={index}

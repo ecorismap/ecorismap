@@ -136,7 +136,7 @@ export const useFieldList = (
     }
     setItemValues(listItems === undefined ? [] : listItems);
 
-    if (format === 'STRING' || format === 'INTEGER') {
+    if (format === 'STRING' || format === 'INTEGER' || format === 'LIST') {
       setUseLastValue(targetLayer.field[fieldIndex].useLastValue ?? false);
     }
   }, [fieldIndex, format, targetLayer]);
