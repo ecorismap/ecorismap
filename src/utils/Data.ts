@@ -157,17 +157,6 @@ export const getGroupLastValue = (dataSet: RecordType[], groupFieldName: string,
   return value as string | number | undefined;
 };
 
-export const getDataSerial = (dataSet: RecordType[], serialFieldName: string): number => {
-  const serials = dataSet.map((data) => data.field[serialFieldName]).filter((v) => v) as number[];
-  return serials.length === 0 ? 1 : Math.max(...serials) + 1;
-};
-
-export const getGroupSerial = (dataSet: RecordType[], groupFieldName: string, groupId: string): number => {
-  const groupParent = dataSet.find((data) => data.id === groupId);
-  if (groupParent === undefined) return getDataSerial(dataSet, groupFieldName);
-  return groupParent.field[groupFieldName] as number;
-};
-
 export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], options?: { groupId?: string }) => {
   switch (field.format) {
     case 'STRING': {
@@ -181,14 +170,15 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
     }
     case 'STRING_MULTI':
       return { [field.name]: field.defaultValue ?? '' };
-    case 'SERIAL':
+    case 'SERIAL': {
       if (options?.groupId) {
-        const serial = getGroupSerial(dataSet, field.name, options.groupId);
+        const serial = ((getGroupLastValue(dataSet, field.name, options.groupId) ?? 0) as number) + 1;
         return { [field.name]: serial };
       } else {
-        const serial = getDataSerial(dataSet, field.name);
+        const serial = ((getDataLastValue(dataSet, field.name) ?? 0) as number) + 1;
         return { [field.name]: serial };
       }
+    }
     case 'INTEGER': {
       let value;
       if (options?.groupId) {
