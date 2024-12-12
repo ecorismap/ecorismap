@@ -172,10 +172,12 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: field.defaultValue ?? '' };
     case 'SERIAL': {
       if (options?.groupId) {
-        const serial = ((getGroupLastValue(dataSet, field.name, options.groupId) ?? 0) as number) + 1;
+        const lastValue = getGroupLastValue(dataSet, field.name, options.groupId);
+        const serial = (typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10)) + 1;
         return { [field.name]: serial };
       } else {
-        const serial = ((getDataLastValue(dataSet, field.name) ?? 0) as number) + 1;
+        const lastValue = getDataLastValue(dataSet, field.name);
+        const serial = (typeof lastValue === 'number' ? lastValue : parseInt(lastValue ?? '0', 10)) + 1;
         return { [field.name]: serial };
       }
     }
