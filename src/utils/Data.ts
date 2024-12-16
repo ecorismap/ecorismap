@@ -214,8 +214,17 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: field.defaultValue ?? dayjs().format('L') };
     case 'TIMESTRING':
       return { [field.name]: field.defaultValue ?? dayjs().format('HH:mm') };
-    case 'TIMERANGE':
-      return { [field.name]: `${dayjs().format('HH:mm')}${t('common.ndash')}${dayjs().format('HH:mm')}` };
+    case 'TIMERANGE': {
+      let value;
+      const defaultValue =
+        field.defaultValue ?? `${dayjs().format('HH:mm')}${t('common.ndash')}${dayjs().format('HH:mm')}`;
+      if (options?.groupId) {
+        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : defaultValue;
+      } else {
+        value = field.useLastValue ? getDataLastValue(dataSet, field.name) : defaultValue;
+      }
+      return { [field.name]: value ?? '' };
+    }
     case 'PHOTO':
       return { [field.name]: [] as PhotoType[] };
     case 'TABLE':
