@@ -9,6 +9,7 @@ import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { FlatList, ScrollView } from 'react-native-gesture-handler';
 import { CheckBox } from '../molecules/CheckBox';
 import { Loading } from '../molecules/Loading';
+import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
 
 export default function LayerEditFieldItemScreen() {
   const {
@@ -164,7 +165,10 @@ export default function LayerEditFieldItemScreen() {
   } else {
     return (
       <View style={styles.container}>
-        {(itemFormat === 'STRING' || itemFormat === 'INTEGER' || itemFormat === 'LIST') && (
+        {(itemFormat === 'STRING' ||
+          itemFormat === 'INTEGER' ||
+          itemFormat === 'LIST' ||
+          itemFormat === 'TIMERANGE') && (
           <View style={styles.checkbox}>
             <CheckBox
               label={t('common.useLastValue')}
@@ -186,32 +190,42 @@ export default function LayerEditFieldItemScreen() {
               <View style={styles.td3} />
             </View>
             <ScrollView>
-              {itemValues?.map((item, index: number) => (
-                <View key={index} style={styles.tr}>
-                  <View style={[styles.td, { flex: 4 }]}>
-                    <TextInput
-                      style={styles.input}
-                      value={item.value.toString()}
-                      editable={editable && !item.isOther}
-                      onChangeText={(value: string) => changeValue(index, value)}
-                    />
+              {itemValues?.map((item, index: number) =>
+                itemFormat === 'TIMERANGE' ? (
+                  <DataEditTimeRange
+                    key={index}
+                    name={'time'}
+                    mode={'time'}
+                    value={itemValues[0] ? itemValues[0].value.toString() : ''}
+                    onValueChange={(value) => changeValue(0, value)}
+                  />
+                ) : (
+                  <View key={index} style={styles.tr}>
+                    <View style={[styles.td, { flex: 4 }]}>
+                      <TextInput
+                        style={styles.input}
+                        value={item.value.toString()}
+                        editable={editable && !item.isOther}
+                        onChangeText={(value: string) => changeValue(index, value)}
+                      />
+                    </View>
+                    <View style={styles.td}>
+                      <Button
+                        style={{
+                          backgroundColor: COLOR.DARKRED,
+                          padding: 0,
+                        }}
+                        name="minus"
+                        disabled={!editable}
+                        onPress={() => pressDeleteValue(index)}
+                      />
+                    </View>
+                    <View style={styles.td}>
+                      <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
+                    </View>
                   </View>
-                  <View style={styles.td}>
-                    <Button
-                      style={{
-                        backgroundColor: COLOR.DARKRED,
-                        padding: 0,
-                      }}
-                      name="minus"
-                      disabled={!editable}
-                      onPress={() => pressDeleteValue(index)}
-                    />
-                  </View>
-                  <View style={styles.td}>
-                    <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
-                  </View>
-                </View>
-              ))}
+                )
+              )}
               <ListButtons />
             </ScrollView>
           </>
@@ -227,7 +241,8 @@ const ListButtons = () => {
     ((itemFormat === 'STRING' ||
       itemFormat === 'STRING_MULTI' ||
       itemFormat === 'INTEGER' ||
-      itemFormat === 'DECIMAL') &&
+      itemFormat === 'DECIMAL' ||
+      itemFormat === 'TIMERANGE') &&
       itemValues.length < 1) ||
     itemFormat === 'LIST' ||
     itemFormat === 'CHECK' ||
