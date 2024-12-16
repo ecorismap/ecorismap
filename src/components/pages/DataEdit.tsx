@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 
 import { DataEditModalPhotoView } from '../organisms/DataEditModalPhotoView';
 import { DataEditButtons } from '../organisms/DataEditButtons';
@@ -128,7 +128,7 @@ export default function DataEditScreen() {
   }, [headerLeftButton, headerForDevice, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView>
         <DataEditLayerName value={layer.name} />
 
@@ -357,7 +357,7 @@ export default function DataEditScreen() {
       </ScrollView>
 
       <DataEditButtons />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
