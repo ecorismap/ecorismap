@@ -98,6 +98,7 @@ export const LayerEditFieldTable = () => {
                   item.format === 'STRING_MULTI' ||
                   item.format === 'STRING_DICTIONARY' ||
                   item.format === 'INTEGER' ||
+                  item.format === 'TIMERANGE' ||
                   item.format === 'REFERENCE' ||
                   item.format === 'TABLE' ||
                   item.format === 'LISTTABLE') && (
