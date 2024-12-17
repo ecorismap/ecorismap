@@ -184,6 +184,15 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
                         onPress={() => (currentMapMemoTool === 'KYUKOKA' ? setBrush(undefined) : setBrush('KYUKOKA'))}
                       />
                     </View>
+                    <View style={{ margin: 5 }}>
+                      <Button
+                        id={'TANJI'}
+                        name={BRUSH.TANJI}
+                        backgroundColor={brush === 'TANJI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        borderRadius={10}
+                        onPress={() => (currentMapMemoTool === 'TANJI' ? setBrush(undefined) : setBrush('TANJI'))}
+                      />
+                    </View>
                   </View>
                 </>
               )}

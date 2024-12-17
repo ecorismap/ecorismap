@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
+import CustomIcon, { isCustomIcon } from './CustomIcon';
 
 interface Props {
   id?: string;
@@ -88,8 +89,15 @@ const Button = React.memo((props: Props) => {
         clearTimeout(tooltipTimeout.current!);
       }
     };
-  }, [tooltipTimeout]);
+  }, []);
 
+  const renderIcon = () => {
+    if (isCustomIcon(name)) {
+      return <CustomIcon name={name} size={size} color={color} />;
+    } else {
+      return <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />;
+    }
+  };
   return (
     <View style={{ alignItems: 'center' }}>
       {showTooltip && tooltipText && (
@@ -105,7 +113,7 @@ const Button = React.memo((props: Props) => {
         onHoverOut={handlePressOut}
         style={[styles.button, style]}
       >
-        <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />
+        {renderIcon()}
       </Pressable>
     </View>
   );
