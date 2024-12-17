@@ -7,6 +7,7 @@ import dayjs from '../../i18n/dayjs';
 import { Button } from '../atoms';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { ScrollView } from 'react-native-gesture-handler';
+import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 
 interface Props {
   name: string;
@@ -24,11 +25,17 @@ interface Props {
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] }
   ) => void;
+  pressAddReferenceDataByDictinary: (
+    referenceLayer: LayerType,
+    addRecord: () => RecordType,
+    fields: { [key: string]: string | number | PhotoType[] },
+    value: string
+  ) => void;
 }
 
 export const DataEditReference = (props: Props) => {
   const { data } = useContext(DataEditContext);
-  const { name, list, refLayer, onPress, pressAddReferenceData } = props;
+  const { name, list, refLayer, onPress, pressAddReferenceData, pressAddReferenceDataByDictinary } = props;
 
   const refField = useMemo(
     () =>
@@ -79,6 +86,7 @@ export const DataEditReference = (props: Props) => {
         >
           <Text style={styles.title}>{name}</Text>
         </View>
+
         <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
           {(refLayer.type === 'NONE' || refLayer.type === 'POINT') && (
             <Button
@@ -92,6 +100,20 @@ export const DataEditReference = (props: Props) => {
             />
           )}
         </View>
+      </View>
+      <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
+        {refLayer.dictionaryFieldId !== undefined && (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
+            <DictionaryTextInput
+              initialValue=""
+              table={`_${refLayer.id}_${refLayer.dictionaryFieldId}`}
+              handleSelect={(text: string) =>
+                pressAddReferenceDataByDictinary(refLayer, addDefaultRecord, fields, text)
+              }
+              clearOnSelect
+            />
+          </View>
+        )}
       </View>
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
         <View style={{ flex: 1, flexDirection: 'column' }}>
