@@ -604,7 +604,8 @@
       "close": "変更を破棄しますか？",
       "copyData": "データをコピーしますか？",
       "deletePosition": "座標を削除しますか？データは削除されません。",
-      "splitLine": "ラインを分割しますか？"
+      "splitLine": "ラインを分割しますか？",
+      "addData": "データを追加しますか？"
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",

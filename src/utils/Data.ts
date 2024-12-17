@@ -210,8 +210,15 @@ export const getDefaultFieldValue = (field: FieldType, dataSet: RecordType[], op
       return { [field.name]: '' };
     case 'DATETIME':
       return { [field.name]: dayjs().format() };
-    case 'DATESTRING':
-      return { [field.name]: field.defaultValue ?? dayjs().format('L') };
+    case 'DATESTRING': {
+      let value;
+      if (options?.groupId) {
+        value = field.useLastValue ? getGroupLastValue(dataSet, field.name, options.groupId) : dayjs().format('L');
+      } else {
+        value = field.useLastValue ? getDataLastValue(dataSet, field.name) : dayjs().format('L');
+      }
+      return { [field.name]: value ?? '' };
+    }
     case 'TIMESTRING':
       return { [field.name]: field.defaultValue ?? dayjs().format('HH:mm') };
     case 'TIMERANGE': {

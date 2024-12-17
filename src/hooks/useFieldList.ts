@@ -113,6 +113,7 @@ export const useFieldList = (
       format === 'STRING_MULTI' ||
       format === 'INTEGER' ||
       format === 'DECIMAL' ||
+      format === 'DATESTRING' ||
       format === 'TIMERANGE'
     ) {
       listItems =
@@ -142,7 +143,13 @@ export const useFieldList = (
     }
     setItemValues(listItems === undefined ? [] : listItems);
 
-    if (format === 'STRING' || format === 'INTEGER' || format === 'LIST' || format === 'TIMERANGE') {
+    if (
+      format === 'STRING' ||
+      format === 'INTEGER' ||
+      format === 'LIST' ||
+      format === 'TIMERANGE' ||
+      format === 'DATESTRING'
+    ) {
       setUseLastValue(targetLayer.field[fieldIndex].useLastValue ?? false);
     }
   }, [fieldIndex, format, targetLayer]);

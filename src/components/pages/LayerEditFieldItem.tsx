@@ -168,6 +168,7 @@ export default function LayerEditFieldItemScreen() {
         {(itemFormat === 'STRING' ||
           itemFormat === 'INTEGER' ||
           itemFormat === 'LIST' ||
+          itemFormat === 'DATESTRING' ||
           itemFormat === 'TIMERANGE') && (
           <View style={styles.checkbox}>
             <CheckBox
