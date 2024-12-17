@@ -110,7 +110,8 @@
       "close": "Do you want to discard your changes?",
       "copyData": "Do you want to copy the data?",
       "deletePosition": "Do you want to delete the coordinates? \nNo data will be deleted.",
-      "splitLine": "Do you want to split the line?"
+      "splitLine": "Do you want to split the line?",
+      "addData": "Do you want to add data?"
     },
     "alert": {
       "referenceData": "Please save your changes once.",
