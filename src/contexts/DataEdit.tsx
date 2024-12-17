@@ -29,6 +29,12 @@ interface DataEditContextType {
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] }
   ) => void;
+  pressAddReferenceDataByDictinary: (
+    referenceLayer: LayerType,
+    addRecord: () => RecordType,
+    fields: { [key: string]: string | number | PhotoType[] },
+    value: string
+  ) => void;
   pressEditPosition: () => void;
   gotoHomeAndJump: () => void;
   gotoGoogleMaps: () => void;

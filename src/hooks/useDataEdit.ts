@@ -9,7 +9,7 @@ import { cloneDeep } from 'lodash';
 import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
-import { getDefaultField, updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
+import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
@@ -47,7 +47,6 @@ export type UseDataEditReturnType = {
   selectPhoto: (fieldName: string, photo: PhotoType, index: number) => void;
   deleteRecord: () => void;
   copyRecord: (originalRecord: RecordType) => RecordType;
-  addRecord: (originalRecord: RecordType) => RecordType;
   changeLatLonType: () => void;
   changeField: (name: string, value: string | number) => void;
   submitField: (name: string, format: string) => void;
@@ -345,25 +344,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     [targetLayer, dataUser.uid, dataUser.displayName, dispatch]
   );
 
-  const addRecord = useCallback(
-    (originalRecord: RecordType) => {
-      const id = ulid();
-      const ownRecordSet = targetRecordSet.filter((d) => d.userId === dataUser.uid);
-      const field = getDefaultField(targetLayer, ownRecordSet, id);
-
-      const newData: RecordType = {
-        ...originalRecord,
-        id: id,
-        userId: dataUser.uid,
-        displayName: dataUser.displayName,
-        field: field,
-      };
-      dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
-      return newData;
-    },
-    [targetRecordSet, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
-  );
-
   return {
     targetRecord,
     targetLayer,
@@ -387,6 +367,5 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     cancelUpdate,
     copyRecord,
     saveData,
-    addRecord,
   } as const;
 };
