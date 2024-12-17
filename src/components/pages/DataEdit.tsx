@@ -46,6 +46,7 @@ export default function DataEditScreen() {
     submitField,
     onChangeRecord,
     pressAddReferenceData,
+    pressAddReferenceDataByDictinary,
     gotoBack,
     gotoReferenceData,
   } = useContext(DataEditContext);
@@ -303,6 +304,7 @@ export default function DataEditScreen() {
                     refLayer={refLayer}
                     onPress={gotoReferenceData}
                     pressAddReferenceData={pressAddReferenceData}
+                    pressAddReferenceDataByDictinary={pressAddReferenceDataByDictinary}
                   />
                 )
               );
