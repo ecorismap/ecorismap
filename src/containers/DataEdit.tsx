@@ -46,7 +46,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-    addRecord,
+    //addRecord,
   } = useDataEdit(route.params.targetData, route.params.targetLayer);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
@@ -158,39 +158,39 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     targetRecord,
   ]);
 
-  const pressAddData = useCallback(async () => {
-    const ret = await ConfirmAsync(t('DataEdit.confirm.addData'));
-    if (!ret) return;
-    const newData = addRecord(targetRecord);
+  // const pressAddData = useCallback(async () => {
+  //   const ret = await ConfirmAsync(t('DataEdit.confirm.addData'));
+  //   if (!ret) return;
+  //   const newData = addRecord(targetRecord);
 
-    if (route.params.previous === 'Data') {
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: newData,
-        targetLayer: { ...targetLayer },
-      });
-    } else if (
-      route.params.previous === 'DataEdit' &&
-      route.params.mainLayer !== undefined &&
-      route.params.mainData !== undefined
-    ) {
-      navigation.navigate('DataEdit', {
-        previous: 'DataEdit',
-        targetData: newData,
-        targetLayer: { ...targetLayer },
-        mainData: route.params.mainData,
-        mainLayer: route.params.mainLayer,
-      });
-    }
-  }, [
-    addRecord,
-    navigation,
-    route.params.mainData,
-    route.params.mainLayer,
-    route.params.previous,
-    targetLayer,
-    targetRecord,
-  ]);
+  //   if (route.params.previous === 'Data') {
+  //     navigation.navigate('DataEdit', {
+  //       previous: 'Data',
+  //       targetData: newData,
+  //       targetLayer: { ...targetLayer },
+  //     });
+  //   } else if (
+  //     route.params.previous === 'DataEdit' &&
+  //     route.params.mainLayer !== undefined &&
+  //     route.params.mainData !== undefined
+  //   ) {
+  //     navigation.navigate('DataEdit', {
+  //       previous: 'DataEdit',
+  //       targetData: newData,
+  //       targetLayer: { ...targetLayer },
+  //       mainData: route.params.mainData,
+  //       mainLayer: route.params.mainLayer,
+  //     });
+  //   }
+  // }, [
+  //   addRecord,
+  //   navigation,
+  //   route.params.mainData,
+  //   route.params.mainLayer,
+  //   route.params.previous,
+  //   targetLayer,
+  //   targetRecord,
+  // ]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
