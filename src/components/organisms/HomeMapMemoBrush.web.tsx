@@ -82,6 +82,12 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
                 <Path d="M5 17 L10 12 L15 17" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
+            {feature.field._strokeStyle === 'TANJI' && (
+              <Svg height="20" width="20" viewBox="0 0 20 20">
+                <Path d="M10 10 L2 6 V14 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
+                <Path d="M10 10 L18 6 V14 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
+              </Svg>
+            )}
           </View>
         </Marker>
       ))}
