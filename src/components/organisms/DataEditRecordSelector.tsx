@@ -19,9 +19,8 @@ export const DataEditRecordSelector = (props: Props) => {
   }, [onChangeRecord, recordNumber]);
 
   const onPressNext = useCallback(() => {
-    const value = recordNumber < maxRecordNumber ? recordNumber + 1 : maxRecordNumber;
-    onChangeRecord(value);
-  }, [maxRecordNumber, onChangeRecord, recordNumber]);
+    onChangeRecord(recordNumber + 1);
+  }, [onChangeRecord, recordNumber]);
 
   return (
     <View style={styles.buttonContainer}>

@@ -91,7 +91,12 @@ export const useLayerEdit = (
     if (isStyleEdited && itemValues !== undefined && fieldIndex !== undefined) {
       const newTargetLayer = cloneDeep(targetLayer);
       const targetFormat = newTargetLayer.field[fieldIndex].format;
-      if (targetFormat === 'STRING' || targetFormat === 'STRING_MULTI' || targetFormat === 'TIMERANGE') {
+      if (
+        targetFormat === 'STRING' ||
+        targetFormat === 'STRING_MULTI' ||
+        targetFormat === 'TIMERANGE' ||
+        targetFormat === 'DATESTRING'
+      ) {
         newTargetLayer.field[fieldIndex].defaultValue = itemValues[0] ? itemValues[0].value : undefined;
       } else if (targetFormat === 'INTEGER') {
         newTargetLayer.field[fieldIndex].defaultValue = itemValues[0] ? parseInt(itemValues[0].value, 10) : undefined;
