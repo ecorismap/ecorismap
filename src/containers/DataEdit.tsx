@@ -46,7 +46,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-    //addRecord,
   } = useDataEdit(route.params.targetData, route.params.targetLayer);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
@@ -157,40 +156,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     targetLayer,
     targetRecord,
   ]);
-
-  // const pressAddData = useCallback(async () => {
-  //   const ret = await ConfirmAsync(t('DataEdit.confirm.addData'));
-  //   if (!ret) return;
-  //   const newData = addRecord(targetRecord);
-
-  //   if (route.params.previous === 'Data') {
-  //     navigation.navigate('DataEdit', {
-  //       previous: 'Data',
-  //       targetData: newData,
-  //       targetLayer: { ...targetLayer },
-  //     });
-  //   } else if (
-  //     route.params.previous === 'DataEdit' &&
-  //     route.params.mainLayer !== undefined &&
-  //     route.params.mainData !== undefined
-  //   ) {
-  //     navigation.navigate('DataEdit', {
-  //       previous: 'DataEdit',
-  //       targetData: newData,
-  //       targetLayer: { ...targetLayer },
-  //       mainData: route.params.mainData,
-  //       mainLayer: route.params.mainLayer,
-  //     });
-  //   }
-  // }, [
-  //   addRecord,
-  //   navigation,
-  //   route.params.mainData,
-  //   route.params.mainLayer,
-  //   route.params.previous,
-  //   targetLayer,
-  //   targetRecord,
-  // ]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
@@ -502,6 +467,24 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     windowWidth,
   ]);
 
+  const pressAddReferenceDataByDictinary = useCallback(
+    (
+      referenceLayer: LayerType,
+      addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType,
+      fields: { [key: string]: string | number | PhotoType[] },
+      text: string
+    ) => {
+      if (isEditingRecord) {
+        Alert.alert('', '一旦変更を保存してください。');
+        return;
+      }
+      const fieldName = referenceLayer.field.find((f) => f.id === referenceLayer.dictionaryFieldId)?.name;
+      if (!fieldName) return;
+      addRecord({ ...fields, [fieldName]: text });
+    },
+    [isEditingRecord]
+  );
+
   return (
     <DataEditContext.Provider
       value={{
@@ -529,6 +512,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         pressDeleteData,
         pressCopyData,
         pressAddReferenceData,
+        pressAddReferenceDataByDictinary,
         pressEditPosition,
         gotoHomeAndJump,
         gotoGoogleMaps,
