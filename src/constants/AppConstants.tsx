@@ -229,6 +229,7 @@ export const BRUSH_HISYOU = {
   KOUGEKI: 'flag-triangle',
   DISPLAY: 'stairs',
   KYUKOKA: 'chevron-triple-down',
+  TANJI: 'tanji-custom',
 } as const;
 
 export const BRUSH = {

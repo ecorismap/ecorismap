@@ -598,8 +598,22 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
               1.5 / tileScale
             }" fill="none" transform="rotate(${angle},
               ${point.pixelX}, ${point.pixelY})" />`;
-
             break;
+          case 'TANJI':
+            svg += `<path d="M${point.pixelX},${point.pixelY} 
+                            L${point.pixelX - 20 / tileScale},${point.pixelY - 10 / tileScale} 
+                            V${point.pixelY + 10 / tileScale} 
+                            L${point.pixelX},${point.pixelY} Z" 
+                            fill="${color}" 
+                            transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />
+                       <path d="M${point.pixelX},${point.pixelY} 
+                            L${point.pixelX + 20 / tileScale},${point.pixelY - 10 / tileScale} 
+                            V${point.pixelY + 10 / tileScale} 
+                            L${point.pixelX},${point.pixelY} Z" 
+                            fill="${color}" 
+                            transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />`;
+            break;
+
           default:
             svg += '';
             break;
