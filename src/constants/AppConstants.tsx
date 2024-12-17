@@ -226,9 +226,9 @@ export const ARROW = {
 export const BRUSH_HISYOU = {
   SENKAI: 'circle-outline',
   SENJYOU: 'circle-double',
-  KOUGEKI: 'flag-triangle',
-  DISPLAY: 'stairs',
-  KYUKOKA: 'chevron-triple-down',
+  KOUGEKI: 'kougeki-custom',
+  DISPLAY: 'display-custom',
+  KYUKOKA: 'kyukoka-custom',
   TANJI: 'tanji-custom',
 } as const;
 
