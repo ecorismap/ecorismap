@@ -47,9 +47,7 @@ export default function DataScreen() {
         </View>
       )}
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={{ flex: 1, flexDirection: 'column', marginBottom: 10 }}>
-          <DataTable />
-        </View>
+        <DataTable />
       </ScrollView>
       <DataButton />
     </View>
