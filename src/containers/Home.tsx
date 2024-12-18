@@ -708,6 +708,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (Platform.OS === 'web') {
       await e3kit.cleanupEncryptKey();
       await logout();
+      navigation.navigate('Layers');
       clearProject();
       navigation.navigate('Account', {
         accountFormState: 'loginUserAccount',
@@ -715,6 +716,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } else {
       await e3kit.cleanupEncryptKey();
       await logout();
+      navigation.navigate('Layers');
       clearProject();
       navigation.navigate('Home');
     }
@@ -812,10 +814,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressCloseProject = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
     if (ret) {
+      //Layersに戻らないとwebでエラー（白く）なる
+      navigation.navigate('Layers');
       clearProject();
       setIsShowingProjectButtons(false);
     }
-  }, [clearProject]);
+  }, [clearProject, navigation]);
 
   const pressSaveProjectSetting = useCallback(async () => {
     try {
@@ -833,6 +837,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await saveProjectSetting(storageLicenseResult.isOK);
       setIsLoading(false);
       await AlertAsync(t('Home.alert.saveProject'));
+      navigation.navigate('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     } catch (e: any) {
@@ -844,6 +849,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const pressDiscardProjectSetting = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.discardProject'));
     if (ret) {
+      navigation.navigate('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     }
