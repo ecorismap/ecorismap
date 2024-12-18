@@ -46,7 +46,7 @@ export const LayersTable = React.memo(() => {
     ({ item, index }: { item: LayerType; index: number }) => {
       // console.log(item.id, item.name, item.groupId, item.expanded);
       if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
-      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.KHAKI : COLOR.MAIN;
+      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.KHAKI : item.groupId ? COLOR.LIGHTKHAKI : COLOR.MAIN;
       //ラベルの候補は、空白を追加し、Photoを抜く
       const labelNames = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), [t('common.none')]),
@@ -71,7 +71,7 @@ export const LayersTable = React.memo(() => {
               {
                 flex: 1,
                 width: 60,
-                backgroundColor: item.type === 'LAYERGROUP' ? COLOR.KHAKI : COLOR.MAIN,
+                backgroundColor: backgroundColor,
                 borderRightWidth: item.groupId ? 1 : 0,
                 borderRightColor: COLOR.GRAY1,
               },
@@ -93,7 +93,7 @@ export const LayersTable = React.memo(() => {
                   flex: 1,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: COLOR.MAIN,
+                  backgroundColor: backgroundColor,
                 }}
               />
             )}
@@ -167,7 +167,7 @@ export const LayersTable = React.memo(() => {
             ) : (
               <MaterialCommunityIcons
                 color={COLOR.GRAY3}
-                style={[styles.icon, { marginHorizontal: 2 }]}
+                style={[styles.icon, { marginHorizontal: 2, backgroundColor }]}
                 size={16}
                 name={'chevron-right'}
                 iconStyle={{ marginRight: 0 }}
@@ -183,6 +183,7 @@ export const LayersTable = React.memo(() => {
                 itemLabelArray={labelNames}
                 itemValueArray={labelValues}
                 maxIndex={labelValues.length - 1}
+                style={{ backgroundColor }}
               />
             )}
           </View>
