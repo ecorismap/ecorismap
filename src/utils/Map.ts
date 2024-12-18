@@ -22,29 +22,41 @@ export const isViewState = (region: any): region is ViewState => {
 };
 
 export const csvToJsonArray = (csv: string, delimiter = ',') => {
-  const rows = csv.split(/\r?\n/);
-  const headers: string[] = rows[0].split(delimiter);
-  //console.log(headers);
-  const data: string[] = rows.slice(1);
-  const jsonArray = data.map((row) => {
-    const values = row.split(delimiter);
+  const rows = csv
+    .split(/\r?\n/) // 改行コード対応
+    .map((row) => row.trim()) // 前後の空白を削除
+    .filter((row) => row.length > 0); // 空行を除外
+
+  if (rows.length < 2) {
+    // データが存在しない場合の処理
+    return [];
+  }
+
+  const headers: string[] = rows[0].split(delimiter).map((header) => header.trim());
+  const dataRows: string[] = rows.slice(1);
+
+  const jsonArray = dataRows.map((row) => {
+    const values = row.split(delimiter).map((value) => value.trim());
     const el = headers.reduce((object, header, index) => {
       let val;
-      if (values[index].toLowerCase() === 'true') {
+      const currentValue = values[index] ?? ''; // 列が欠けている場合、空文字列にする
+
+      if (currentValue.toLowerCase() === 'true') {
         val = true;
-      } else if (values[index].toLowerCase() === 'false') {
+      } else if (currentValue.toLowerCase() === 'false') {
         val = false;
-      } else if (!isNaN(Number(values[index]))) {
-        val = Number(values[index]);
+      } else if (!isNaN(Number(currentValue)) && currentValue !== '') {
+        val = Number(currentValue);
       } else {
-        val = values[index];
+        val = currentValue;
       }
-      //@ts-ignore
-      object[header] = val;
+
+      object[header] = val; // ヘッダーと値をマッピング
       return object;
-    }, {});
+    }, {} as Record<string, any>);
     return el;
   });
+
   return jsonArray;
 };
 

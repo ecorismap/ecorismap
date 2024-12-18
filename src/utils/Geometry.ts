@@ -48,15 +48,18 @@ export const getGeometryType = (geometryString: string): FeatureType => {
   }
 };
 export const detectCsvType = (csv: string): { type: FeatureType; column: number } => {
-  const csvFields = csv.split('\n')[0].split(',');
+  const csvLines = csv.split('\n').map((line) => line.trim());
+  const csvFields = csvLines[0].split(',').map((field) => field.trim());
   const geometryColumn = csvFields.findIndex((field) => field === 'geometry');
   if (geometryColumn === -1) {
-    return { type: 'NONE', column: -1 };
-  } else {
-    const firstRowGeometry = csv.split('\n')[1].split(',')[geometryColumn];
-    const geometryType = getGeometryType(firstRowGeometry);
-    return { type: geometryType, column: geometryColumn };
+    return { type: 'NONE', column: -1 }; // geometryカラムがない場合
   }
+  const firstRowGeometry = csvLines[1]?.split(',')[geometryColumn]?.trim();
+  if (!firstRowGeometry) {
+    return { type: 'NONE', column: -1 }; // データが不完全な場合
+  }
+  const geometryType = getGeometryType(firstRowGeometry);
+  return { type: geometryType, column: geometryColumn };
 };
 
 function parseCSVLine(line: string) {
@@ -103,8 +106,16 @@ export const Csv2Data = (
     //console.log(type);
     const { type, column } = detectCsvType(csv);
     const layer = importedLayer === undefined ? createLayerFromCsv(csv, fileName, type) : cloneDeep(importedLayer);
-    const header = csv.split('\n')[0].split(',');
-    const body = csv.split('\n').slice(1);
+    const header = csv
+      .split('\n')[0]
+      .split(',')
+      .map((field) => field.trim());
+    const body = csv
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0) // 空行を除外
+      .slice(1);
+
     const offset = header[0].includes('displayName') ? 1 : 0;
 
     const importedData: RecordType[] = body.map((line) => {
