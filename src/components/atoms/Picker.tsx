@@ -47,8 +47,17 @@ const Picker = React.memo((props: Props) => {
 });
 
 const CustomPicker = React.memo((props: Props) => {
-  const { label, selectedValue, onValueChange, itemLabelArray, itemValueArray, maxIndex, enabled, dropdownIcon } =
-    props;
+  const {
+    style,
+    label,
+    selectedValue,
+    onValueChange,
+    itemLabelArray,
+    itemValueArray,
+    maxIndex,
+    enabled,
+    dropdownIcon,
+  } = props;
 
   const items = itemValueArray.slice(0, maxIndex + 1).map((item, index) => ({
     label: itemLabelArray[index],
@@ -95,7 +104,7 @@ const CustomPicker = React.memo((props: Props) => {
             <View style={{ alignItems: 'flex-end', flex: 1, minWidth: 10 }}>
               <MaterialCommunityIcons
                 color={COLOR.GRAY4}
-                style={[styles.icon, { marginHorizontal: 3 }]}
+                style={[styles.icon, { marginHorizontal: 3, backgroundColor: style.backgroundColor ?? COLOR.MAIN }]}
                 size={20}
                 name={'chevron-down'}
                 iconStyle={{ marginRight: 0 }}
