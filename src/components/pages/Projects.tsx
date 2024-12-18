@@ -92,17 +92,17 @@ export default function Projects() {
                       {item.abstract}
                     </Text>
                   </View>
-                  <View style={[styles.td, { flex: 2, width: 120 }]}>
+                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
                       {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
                     </Text>
                   </View>
-                  <View style={[styles.td, { flex: 2, width: 120 }]}>
+                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
                       {item.license ?? 'Free'}
                     </Text>
                   </View>
-                  <View style={[styles.td, { flex: 2, width: 100 }]}>
+                  <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
                     {item.ownerUid === user.uid && <RectButton2 name={'star'} onPress={() => null} />}
                   </View>
                 </TouchableOpacity>
@@ -128,14 +128,14 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   td: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
     //flex: 1,
     //flexDirection: 'row',
     height: 45,
     justifyContent: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
     paddingVertical: 0,
     //borderRightWidth: 1,
   },
