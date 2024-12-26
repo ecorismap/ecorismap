@@ -86,8 +86,8 @@ export type UseMapsReturnType = {
 
   changeExpand: (expanded: boolean, index: number) => void;
   getPmtilesBoundary: (url: string) => Promise<{
-    header: pmtiles.Header;
-    boundary: boundaryType;
+    header: pmtiles.Header | undefined;
+    boundary: boundaryType | undefined;
   }>;
 };
 
@@ -519,25 +519,29 @@ export const useMaps = (): UseMapsReturnType => {
   );
 
   const getPmtilesBoundary = useCallback(
-    async (url: string): Promise<{ header: pmtiles.Header; boundary: boundaryType }> => {
-      const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
-      const header = await pmtile.getHeader();
-      return {
-        header: header,
-        boundary: {
-          center: {
-            latitude: header.centerLat,
-            longitude: header.centerLon,
+    async (url: string): Promise<{ header: pmtiles.Header | undefined; boundary: boundaryType | undefined }> => {
+      try {
+        const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
+        const header = await pmtile.getHeader();
+        return {
+          header: header,
+          boundary: {
+            center: {
+              latitude: header.centerLat,
+              longitude: header.centerLon,
+            },
+            zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
+            bounds: {
+              north: header.maxLat,
+              south: header.minLat,
+              west: header.minLon,
+              east: header.maxLon,
+            },
           },
-          zoom: Math.floor((header.maxZoom + header.minZoom) / 2),
-          bounds: {
-            north: header.maxLat,
-            south: header.minLat,
-            west: header.minLon,
-            east: header.maxLon,
-          },
-        },
-      };
+        };
+      } catch (e: any) {
+        return { header: undefined, boundary: undefined };
+      }
     },
     []
   );
@@ -557,6 +561,9 @@ export const useMaps = (): UseMapsReturnType => {
         await FileSystem.copyAsync({ from: uri, to: url });
       }
       const { header, boundary } = await getPmtilesBoundary(url);
+      if (header === undefined || boundary === undefined) {
+        return { isOK: false, message: t('hooks.message.failReceiveFile') };
+      }
       //console.log('AAA', metadata);
       //console.log('BBB', header);
 
