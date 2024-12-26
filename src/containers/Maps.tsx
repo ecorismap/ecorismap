@@ -98,7 +98,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
       //pmTilesの場合、boundaryを取得して保存する
       if (newTileMap.url.includes('pmtiles')) {
         const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
-
         if (Platform.OS === 'web') {
           await db.pmtiles.put({
             mapId: newTileMap.id,
@@ -114,9 +113,9 @@ export default function MapContainer({ navigation }: Props_Maps) {
           await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
         }
 
-        newTileMap.overzoomThreshold = header.maxZoom;
-        newTileMap.minimumZ = header.minZoom;
-        newTileMap.maximumZ = header.maxZoom;
+        newTileMap.overzoomThreshold = header ? header.maxZoom : 16;
+        newTileMap.minimumZ = header ? header.minZoom : 4;
+        newTileMap.maximumZ = header ? header.maxZoom : 16;
       }
       //urlが変更された場合、boundaryとcacheを削除する
       if (editedMap?.url !== newTileMap.url) {
