@@ -99,11 +99,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
       if (newTileMap.url.includes('pmtiles')) {
         const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
         if (Platform.OS === 'web') {
-          await db.pmtiles.put({
-            mapId: newTileMap.id,
-            blob: undefined,
+          await db.pmtiles.update(newTileMap.id, {
             boundary: JSON.stringify(boundary),
-            style: undefined,
           });
         } else {
           await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${newTileMap.id}`, {
@@ -163,7 +160,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         await AlertAsync(t('hooks.message.wrongExtension'));
         return;
       }
-      const { message } = await importStyleFile(uri, name, tileMap.id);
+      const { message } = await importStyleFile(uri, name, tileMap);
       if (message !== '') await AlertAsync(message);
     },
     [importStyleFile]

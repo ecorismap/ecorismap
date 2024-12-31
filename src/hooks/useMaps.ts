@@ -50,7 +50,7 @@ export type UseMapsReturnType = {
   importStyleFile: (
     uri: string,
     name: string,
-    id: string
+    tileMap: TileMapType
   ) => Promise<{
     isOK: boolean;
     message: string;
@@ -346,28 +346,28 @@ export const useMaps = (): UseMapsReturnType => {
     [dispatch]
   );
 
-  const importStyleFile = useCallback(
-    async (uri: string, name: string, id: string) => {
-      try {
-        // console.log('importStyleFile', uri, name, id);
-        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-        if (Platform.OS === 'web') {
-          db.pmtiles.update(id, { style: jsonStrings });
-          setEditedMap({ ...editedMap, styleURL: 'style://' + name });
-        } else {
-          const styleUri = `${TILE_FOLDER}/${id}/style.json`;
-          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${id}`, { intermediates: true });
-          await FileSystem.copyAsync({ from: uri, to: styleUri });
-          setEditedMap({ ...editedMap, styleURL: styleUri });
-        }
-
-        return { isOK: true, message: '' };
-      } catch (e: any) {
-        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+  const importStyleFile = useCallback(async (uri: string, name: string, tileMap: TileMapType) => {
+    try {
+      // console.log('importStyleFile', uri, name, id);
+      const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      if (Platform.OS === 'web') {
+        console.log('importStyleFile', jsonStrings);
+        db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: jsonStrings });
+        setEditedMap({ ...tileMap, styleURL: 'style://' + name });
+      } else {
+        const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
+        await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
+        await FileSystem.copyAsync({ from: uri, to: styleUri });
+        setEditedMap({ ...tileMap, styleURL: styleUri });
       }
-    },
-    [editedMap]
-  );
+
+      return { isOK: true, message: '' };
+    } catch (e: any) {
+      console.log(e);
+      return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+    }
+  }, []);
+
   const updatePmtilesURL = useCallback(async () => {
     //URL.createObjectURLはセッションごとにリセットされるため、再度生成する必要がある
     if (Platform.OS !== 'web') return;
