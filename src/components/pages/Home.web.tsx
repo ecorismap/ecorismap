@@ -9,6 +9,7 @@ import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
 import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import maplibregl, {
+  BackgroundLayerSpecification,
   FillLayerSpecification,
   LayerSpecification,
   LineLayerSpecification,
@@ -406,16 +407,18 @@ export default function HomeScreen() {
     return [];
   }, []);
 
-  const updatePmtilesStyle = useCallback(
+  const updateVectorStyle = useCallback(
     async (tileMap: TileMapType) => {
       if (!mapViewRef.current) return;
       const map = (mapViewRef.current as MapRef).getMap();
-      let layerStyles: LineLayerSpecification[] | FillLayerSpecification[] = [];
+      let layerStyles: LineLayerSpecification[] | FillLayerSpecification[] | BackgroundLayerSpecification[] = [];
       if (tileMap.styleURL && tileMap.styleURL.startsWith('style://')) {
         layerStyles = await getStyleFromLocal(tileMap);
       } else if (tileMap.styleURL && tileMap.styleURL !== '') {
         layerStyles = await getStyleFromURL(tileMap);
       }
+      //Pmtilesのスタイルがない場合はデフォルトスタイルを取得.
+      //pbfの場合はメタデータの取得方法が異なるため、デフォルトスタイルを取得しない
       if (layerStyles.length === 0) {
         if (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) {
           layerStyles = await getDefaultStyle(tileMap);
@@ -424,16 +427,30 @@ export default function HomeScreen() {
         }
       }
 
-      layerStyles.forEach((layerStyle: LineLayerSpecification | FillLayerSpecification, index: number) => {
-        layerStyle.id = `${tileMap.id}_${index}`;
-        layerStyle.source = `${tileMap.id}`;
-        //@ts-ignore
-        if (layerStyle.paint['fill-opacity']) {
-          //@ts-ignore
-          layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+      layerStyles.forEach(
+        (layerStyle: LineLayerSpecification | FillLayerSpecification | BackgroundLayerSpecification, index: number) => {
+          layerStyle.id = `${tileMap.id}_${index}`;
+          if (layerStyle.type !== 'background' && layerStyle.source) {
+            layerStyle.source = `${tileMap.id}`;
+          }
+
+          if (layerStyle.type === 'fill' && layerStyle.paint) {
+            if (layerStyle.paint['fill-opacity'] && typeof layerStyle.paint['fill-opacity'] === 'number') {
+              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+            } else {
+              layerStyle.paint['fill-opacity'] = 1 - tileMap.transparency;
+            }
+          } else if (layerStyle.type === 'background' && layerStyle.paint) {
+            if (layerStyle.paint['background-opacity'] && typeof layerStyle.paint['background-opacity'] === 'number') {
+              layerStyle.paint['background-opacity'] =
+                layerStyle.paint['background-opacity'] * (1 - tileMap.transparency);
+            } else {
+              layerStyle.paint['background-opacity'] = 1 - tileMap.transparency;
+            }
+          }
+          map.addLayer(layerStyle);
         }
-        map.addLayer(layerStyle);
-      });
+      );
     },
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -456,14 +473,14 @@ export default function HomeScreen() {
             tileMap.url &&
             (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf'))
           ) {
-            if (tileMap.isVector) await updatePmtilesStyle(tileMap);
+            if (tileMap.isVector) await updateVectorStyle(tileMap);
           }
         } catch (e) {
           console.log(e);
         }
       }
     })();
-  }, [tileMaps, updatePmtilesStyle, updatePmtilesURL]);
+  }, [tileMaps, updateVectorStyle, updatePmtilesURL]);
 
   useEffect(() => {
     if (isPointRecordType(selectedRecord?.record)) return;
@@ -661,6 +678,8 @@ export default function HomeScreen() {
     return {
       version: 8,
       glyphs: 'https://map.ecoris.info/glyphs/{fontstack}/{range}.pbf',
+      //glyphs: 'https://gsi-cyberjapan.github.io/optimal_bvmap/glyphs/{fontstack}/{range}.pbf',
+      //sprite: 'https://gsi-cyberjapan.github.io/optimal_bvmap/sprite/std',
       sources: { ...sources, rasterdem: rasterdem },
       layers: [...layers_],
       sky: skyStyle,
