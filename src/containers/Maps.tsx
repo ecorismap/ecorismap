@@ -110,7 +110,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
           await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
         }
 
-        newTileMap.overzoomThreshold = header ? header.maxZoom : 16;
+        //newTileMap.overzoomThreshold = header ? header.maxZoom : 16;
         newTileMap.minimumZ = header ? header.minZoom : 4;
         newTileMap.maximumZ = header ? header.maxZoom : 16;
       }
