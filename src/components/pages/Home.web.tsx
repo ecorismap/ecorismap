@@ -520,7 +520,7 @@ export default function HomeScreen() {
     //二回目以降の設定
     map.on('style.load', function () {
       if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
     });
   };
 
