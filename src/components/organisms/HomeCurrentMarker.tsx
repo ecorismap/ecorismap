@@ -1,19 +1,8 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
-import { Marker, Callout } from 'react-native-maps';
+import { Marker } from 'react-native-maps';
 import { LocationType } from '../../types';
-import { t } from '../../i18n/config';
-
-// Helper function to convert decimal degrees to DMS (degrees, minutes, seconds)
-const decimalToDMS = (coord: number) => {
-  const absolute = Math.abs(coord);
-  const degrees = Math.floor(absolute);
-  const minutesNotTruncated = (absolute - degrees) * 60;
-  const minutes = Math.floor(minutesNotTruncated);
-  const seconds = ((minutesNotTruncated - minutes) * 60).toFixed(2);
-  return `${degrees}° ${minutes}' ${seconds}"`;
-};
 
 interface Props {
   currentLocation: LocationType;
@@ -34,7 +23,7 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
 };
 
 export const CurrentMarker = React.memo((props: Props) => {
-  const { currentLocation, azimuth, headingUp, distance } = props;
+  const { currentLocation, azimuth, headingUp } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
   const markerAngle = useMemo(() => {
@@ -75,24 +64,6 @@ export const CurrentMarker = React.memo((props: Props) => {
           </G>
         </Svg>
       </View>
-      <Callout>
-        <View style={styles.calloutStyle}>
-          <Text>Latitude: {decimalToDMS(currentLocation.latitude)}</Text>
-          <Text>Longitude: {decimalToDMS(currentLocation.longitude)}</Text>
-          <Text>Accuracy: {Math.floor(accuracy)} m</Text>
-          <Text>{`${t('common.distance')}: ${distance === 0 ? ' - ' : distance.toFixed(2)}km`}</Text>
-        </View>
-      </Callout>
     </Marker>
   );
 }, areEqual);
-
-const styles = StyleSheet.create({
-  calloutStyle: {
-    borderRadius: 5,
-    borderWidth: 2,
-    height: 95,
-    padding: 5,
-    width: 200,
-  },
-});
