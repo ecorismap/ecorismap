@@ -98,8 +98,13 @@ export const changeFieldValue = (
     return parseInt(originalData as string, 10);
   } else if (originalFormat === 'STRING' && changedFormat === 'DATETIME') {
     return originalData;
+  } else if (originalFormat === 'STRING' && changedFormat === 'LIST') {
+    return originalData;
+  } else if (originalFormat === 'LIST' && changedFormat === 'LIST') {
+    return originalData;
+  } else if (originalFormat === 'LIST' && changedFormat === 'STRING') {
+    return originalData;
   }
-
   return getInitialFieldValue(changedFormat, list);
 };
 
