@@ -240,46 +240,51 @@ export const downloadProjectSettings = async (projectId: string) => {
 };
 
 const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) => {
+  // layerId と userId の組み合わせをキーとしてグループ化するための Map
   const dataMap = new Map<string, { [index: number]: string[] }>();
-  const metadataMap = new Map<string, { userId: string; encryptedAt: Timestamp }>();
+  const metadataMap = new Map<string, { layerId: string; userId: string; encryptedAt: Timestamp }>();
 
-  // チャンクをグループ化
+  // 各ドキュメントを処理
   projectDataSet.docs.forEach((v: any) => {
     const { encdata, layerId, chunkIndex, userId, encryptedAt } = v.data() as DataFS;
+    // コンポジットキーを生成: layerId_userId の形式
+    const compositeKey = `${layerId}_${userId}`;
 
-    if (!dataMap.has(layerId)) {
-      dataMap.set(layerId, {});
+    // compositeKey でグループがなければ作成
+    if (!dataMap.has(compositeKey)) {
+      dataMap.set(compositeKey, {});
     }
-    // chunkIndexがない場合、0とする
+    // chunkIndexがない場合は 0 とする
     const index = chunkIndex !== undefined ? chunkIndex : 0;
-    dataMap.get(layerId)![index] = encdata;
+    dataMap.get(compositeKey)![index] = encdata;
 
-    if (!metadataMap.has(layerId)) {
-      metadataMap.set(layerId, { userId, encryptedAt });
+    // メタデータは最初に見つかった情報を保存する
+    if (!metadataMap.has(compositeKey)) {
+      metadataMap.set(compositeKey, { layerId, userId, encryptedAt });
     }
   });
 
+  // 各グループごとにチャンクを結合し、復号を試みる
   const dataSet = await Promise.all(
-    Array.from(dataMap.entries()).map(async ([layerId, chunkMap]) => {
-      const { userId, encryptedAt } = metadataMap.get(layerId)!;
+    Array.from(dataMap.entries()).map(async ([compositeKey, chunkMap]) => {
+      const { layerId, userId, encryptedAt } = metadataMap.get(compositeKey)!;
 
-      // チャンクを正しい順序で結合
+      // チャンクのキーを数値順にソートし、正しい順序で結合
       const encdata = Object.keys(chunkMap)
         .sort((a, b) => Number(a) - Number(b))
         .map((index) => chunkMap[Number(index)])
         .flat();
-
       const data = await dec(toDate(encryptedAt), encdata, userId, projectId);
       if (data !== undefined) {
         return { userId, layerId, ...data } as DataType;
       } else {
-        //削除されたメンバーのデータは、復号できない。
-        //プロジェクトを読み込むときに削除するか（最適化）、アカウントを削除するときにfunctionsで削除するか
+        // 復号できない場合は null を返す
         return null;
       }
     })
   );
 
+  // 復号に成功したデータのみを返す
   return dataSet.filter((v: any): v is DataType => v !== null);
 };
 
