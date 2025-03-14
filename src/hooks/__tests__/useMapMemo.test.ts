@@ -5,7 +5,17 @@ import { useMapMemo } from '../useMapMemo';
 const mockDispatch = jest.fn();
 
 // 安定した参照を返す定数としてのモック状態
-const mockLayers = [{ id: 'memo1', name: 'メモレイヤー', type: 'LINE', active: true, visible: true }];
+// 安定した参照を返す定数としてのモック状態を修正
+const mockLayers = [
+  {
+    id: 'memo1',
+    name: 'メモレイヤー',
+    type: 'LINE',
+    active: true,
+    visible: true,
+    colorStyle: { colorType: 'SINGLE' }, // colorStyleプロパティを追加
+  },
+];
 const mockUser = { uid: 'user1' };
 const mockSettings = {
   currentPenWidth: 'PEN_MEDIUM',
@@ -41,7 +51,7 @@ jest.mock('react-native-maps', () => ({
 jest.mock('../../utils/General', () => {
   return {
     generateRecord: jest.fn(() => ({ id: 'test-id', field: {}, position: [] })),
-    isStampTool: jest.fn((tool: string) => tool === 'STAMP1' || tool === 'STAMP2'),
+    isStampTool: jest.fn((tool: string) => tool === 'SENKAI' || tool === 'STAMP2'),
     isDrawTool: jest.fn(() => true),
     isPenTool: jest.fn((tool: string) => tool === 'PEN'),
     isEraserTool: jest.fn(() => false),
@@ -57,6 +67,7 @@ jest.mock('../../utils/Coords', () => ({
   checkDistanceFromLine: jest.fn(() => ({ isNear: false })),
   getSnappedPositionWithLine: jest.fn(() => ({ position: [0, 0] })),
   getSnappedLine: jest.fn(() => []),
+  findSnappedLine: jest.fn(() => undefined), // 初期値はundefined
 }));
 
 // useRecordフックのモック
@@ -91,8 +102,10 @@ describe('useMapMemo', () => {
     jest.clearAllMocks();
     // Generalモジュールのモック関数をリセット
     const General = require('../../utils/General');
-    General.isStampTool.mockImplementation((tool: string) => tool === 'STAMP1' || tool === 'STAMP2');
+    General.isStampTool.mockImplementation((tool: string) => tool === 'SENKAI' || tool === 'STAMP2');
     General.isPenTool.mockImplementation((tool: string) => tool === 'PEN');
+    General.isBrushTool.mockImplementation((tool: string) => tool === 'BRUSH');
+    General.isEraserTool.mockImplementation((tool: string) => tool === 'ERASER');
   });
 
   it('初期状態を正しく返すこと', () => {
@@ -103,6 +116,29 @@ describe('useMapMemo', () => {
     expect(result.current.editableMapMemo).toBe(true);
     expect(result.current.isUndoable).toBe(false);
     expect(result.current.isRedoable).toBe(false);
+  });
+
+  it('clearMapMemoEditingLineが正しく動作すること', () => {
+    const mockMapViewRef = {} as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+
+    act(() => {
+      result.current.clearMapMemoEditingLine();
+    });
+
+    // mapMemoEditingLineが空になっていることを確認
+    expect(result.current.mapMemoEditingLine.current).toEqual([]);
+  });
+
+  it('changeColorTypeToIndividualが正しく動作すること', () => {
+    const mockMapViewRef = {} as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+
+    act(() => {
+      result.current.changeColorTypeToIndividual();
+    });
+
+    expect(mockDispatch).toHaveBeenCalled();
   });
 
   it('setIsModalMapMemoToolHiddenが正しく動作すること', () => {
@@ -314,11 +350,74 @@ describe('useMapMemo', () => {
     expect(result.current.mapMemoEditingLine.current.length).toBe(1);
   });
 
+  it('handleGrantMapMemoが、isStampToolがtrueの場合に、mapMemoEditingLineに座標を正しく記録すること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+
+    const mockEvent = {
+      nativeEvent: {
+        locationX: 100,
+        locationY: 200,
+        pageX: 100,
+        pageY: 200,
+        touches: [{}],
+      },
+    } as any;
+
+    // STAMPモードに設定
+    act(() => {
+      result.current.setMapMemoTool('SENKAI');
+    });
+
+    act(() => {
+      result.current.handleGrantMapMemo(mockEvent);
+    });
+
+    // findSnappedLineのモックを一時的に変更
+    require('../../utils/Coords').findSnappedLine.mockReturnValueOnce({ coordsXY: [[0, 0]], id: 'test-line' });
+
+    expect(result.current.mapMemoEditingLine.current.length).toBe(1);
+  });
+
+  it('handleMoveMapMemoが、isStampToolがtrueの場合に、mapMemoEditingLineに座標を正しく記録すること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+
+    const mockEvent = {
+      nativeEvent: {
+        locationX: 100,
+        locationY: 200,
+        pageX: 100,
+        pageY: 200,
+        touches: [{}],
+      },
+    } as any;
+
+    // STAMPモードに設定
+    act(() => {
+      result.current.setMapMemoTool('SENKAI');
+    });
+
+    // findSnappedLineのモックを一時的に変更
+    require('../../utils/Coords').findSnappedLine.mockReturnValueOnce({ coordsXY: [[0, 0]], id: 'test-line' });
+
+    // handleGrantMapMemoを呼び出す
+    act(() => {
+      result.current.handleGrantMapMemo(mockEvent);
+    });
+
+    act(() => {
+      result.current.handleMoveMapMemo(mockEvent);
+    });
+
+    expect(result.current.mapMemoEditingLine.current.length).toBe(1);
+  });
+
   it('handleMoveMapMemoが描画モード時に座標を追加すること', () => {
     const mockMapViewRef = { current: {} } as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef));
 
-    // PENモードに明示的に設定
+    // PENモードに設定
     act(() => {
       result.current.setMapMemoTool('PEN');
     });
@@ -367,6 +466,49 @@ describe('useMapMemo', () => {
     act(() => {
       result.current.setMapMemoTool('PEN');
     });
+
+    // 描画開始
+    const grantEvent = {
+      nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+    } as any;
+
+    act(() => {
+      result.current.handleGrantMapMemo(grantEvent);
+    });
+
+    // 移動
+    const moveEvent = {
+      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+    } as any;
+
+    act(() => {
+      result.current.handleMoveMapMemo(moveEvent);
+    });
+
+    // タッチ終了
+    const releaseEvent = {} as any;
+
+    act(() => {
+      result.current.handleReleaseMapMemo(releaseEvent);
+      jest.runAllTimers(); // これでタイマーが即時実行されます
+    });
+
+    // dispatchが呼ばれたことを確認（データ保存のアクションがディスパッチされるはず）
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  it('handleReleaseMapMemoが、isStampToolがtrueの場合に、dispatchが呼ばれること', () => {
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    jest.useFakeTimers();
+
+    // STAMPモードに設定
+    act(() => {
+      result.current.setMapMemoTool('SENKAI');
+    });
+
+    // findSnappedLineのモックを一時的に変更
+    require('../../utils/Coords').findSnappedLine.mockReturnValueOnce({ coordsXY: [[0, 0]], id: 'test-line' });
 
     // 描画開始
     const grantEvent = {
