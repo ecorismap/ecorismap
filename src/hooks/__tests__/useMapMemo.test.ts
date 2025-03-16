@@ -27,7 +27,35 @@ const mockSettings = {
   mapMemoBrushType: 'BRUSH1',
   mapMemoEraserWidth: 10,
 };
-const mockDataSet: any[] = [];
+// テスト用のラインレコードを作成
+const mockLineRecord = {
+  id: 'test-line-id',
+  userId: 'user1',
+  displayName: 'Test User',
+  visible: true,
+  redraw: false,
+  coords: [
+    { latitude: 35.0, longitude: 135.0 },
+    { latitude: 35.001, longitude: 135.001 },
+    { latitude: 35.002, longitude: 135.002 },
+  ],
+  field: {
+    _strokeWidth: 5,
+    _strokeColor: 'rgba(255,0,0,0.7)',
+    _strokeStyle: '',
+    _stamp: '',
+    _group: '',
+    _zoom: 15,
+  },
+};
+
+const mockDataSet = [
+  {
+    layerId: 'memo1',
+    userId: 'user1',
+    data: [mockLineRecord],
+  },
+];
 
 // react-reduxモジュール全体をモック（安定した参照を返す）
 jest.mock('react-redux', () => ({
@@ -62,17 +90,37 @@ jest.mock('../../utils/General', () => {
     isBrushTool: jest.fn((tool: string) => tool === 'BRUSH'),
     smoothLine: jest.fn((line) => line),
     getRandomHashString: jest.fn(() => 'random-hash'),
+    smoothingByBezier: jest.fn((line) => line),
   };
 });
 
 jest.mock('../../utils/Coords', () => ({
-  latLonObjectsToLatLonArray: jest.fn(() => []),
-  latLonObjectsToXYArray: jest.fn(() => []),
-  xyArrayToLatLonArray: jest.fn(() => []),
-  latlonArrayToLatLonObjects: jest.fn(() => []),
-  checkDistanceFromLine: jest.fn(() => ({ isNear: false })),
-  getSnappedPositionWithLine: jest.fn(() => ({ position: [0, 0] })),
-  getSnappedLine: jest.fn(() => []),
+  latLonObjectsToLatLonArray: jest.fn(() => [
+    [35.0, 135.0],
+    [35.001, 135.001],
+    [35.002, 135.002],
+  ]),
+  latLonObjectsToXYArray: jest.fn(() => [
+    [100, 100],
+    [150, 150],
+    [200, 200],
+  ]),
+  xyArrayToLatLonArray: jest.fn(() => [
+    [35.0, 135.0],
+    [35.001, 135.001],
+    [35.002, 135.002],
+  ]),
+  latlonArrayToLatLonObjects: jest.fn(() => [
+    { latitude: 35.0, longitude: 135.0 },
+    { latitude: 35.001, longitude: 135.001 },
+    { latitude: 35.002, longitude: 135.002 },
+  ]),
+  checkDistanceFromLine: jest.fn(() => ({ isNear: true })),
+  getSnappedPositionWithLine: jest.fn(() => ({ position: [150, 150] })),
+  getSnappedLine: jest.fn(() => [
+    [100, 100],
+    [150, 150],
+  ]),
   findSnappedLine: jest.fn(() => undefined),
   geographicCoordinatesToScreenCoords: jest.fn(() => ({ x: 100, y: 100 })),
   screenCoordsToGeographicCoordinates: jest.fn(() => ({ latitude: 35, longitude: 135 })),
@@ -901,5 +949,17 @@ describe('useMapMemo', () => {
 
     // 正常に座標が記録されていることを確認
     expect(result.current.mapMemoEditingLine.current.length).toBeGreaterThan(1);
+  });
+
+  it('編集機能が存在し正しい形で出力されること', () => {
+    // isEditingLineとeditingLineIdがfalse/undefinedで初期化されていることを確認
+    const mockMapViewRef = { current: {} } as any;
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+
+    expect(result.current.isEditingLine).toBe(false);
+    expect(result.current.editingLineId).toBeUndefined();
+
+    // handleLongPressMapMemo関数が存在することを確認
+    expect(typeof result.current.handleLongPressMapMemo).toBe('function');
   });
 });
