@@ -46,6 +46,8 @@ export interface HomeContextType {
   restored: boolean;
   mapViewRef: React.MutableRefObject<MapView | MapRef | null>;
   gpsState: string;
+  isEditingLine: boolean;
+  editingLineId: string | undefined;
   trackingState: TrackingStateType;
   currentLocation: LocationType | null;
   azimuth: number;
@@ -96,10 +98,13 @@ export interface HomeContextType {
   isUndoable: boolean;
   isRedoable: boolean;
   mapMemoLines: {
+    id?: string;
     xy: Position[];
     latlon: Position[];
     strokeColor: string;
     strokeWidth: number;
+    strokeStyle?: string;
+    stamp?: string;
   }[];
   isModalInfoToolHidden: boolean;
   editPositionMode: boolean;
