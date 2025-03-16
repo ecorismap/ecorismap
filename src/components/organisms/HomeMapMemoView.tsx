@@ -15,6 +15,8 @@ export const MapMemoView = React.memo(() => {
     currentMapMemoTool,
     //zoom: currentZoom,
     mapMemoLines,
+    isEditingLine,
+    editingLineId,
   } = useContext(HomeContext);
   //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
@@ -31,6 +33,11 @@ export const MapMemoView = React.memo(() => {
     () => (currentMapMemoTool.includes('ERASER') ? 10 : isBrushTool(currentMapMemoTool) ? 5 : penWidth),
     [currentMapMemoTool, penWidth]
   );
+
+  // Highlight color for editing mode
+  const editingPathStyle = useMemo(() => {
+    return isEditingLine ? { stroke: '#4285F4', strokeWidth: 2, strokeDasharray: '5,5' } : {};
+  }, [isEditingLine]);
 
   return (
     <View
@@ -80,6 +87,7 @@ export const MapMemoView = React.memo(() => {
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
+            {...(editingLineId === (line.id || '') ? editingPathStyle : {})}
           />
         ))}
       </Svg>

@@ -21,7 +21,13 @@ import { GestureResponderEvent } from 'react-native';
 //@ts-ignore
 import { booleanContains, buffer } from '@turf/turf';
 import * as turf from '@turf/helpers';
-import { addDataAction, addRecordsAction, deleteRecordsAction, setRecordSetAction } from '../modules/dataSet';
+import {
+  addDataAction,
+  addRecordsAction,
+  deleteRecordsAction,
+  setRecordSetAction,
+  updateRecordsAction,
+} from '../modules/dataSet';
 import { hsv2rgbaString } from '../utils/Color';
 import { useRecord } from './useRecord';
 import { updateLayerAction } from '../modules/layers';
@@ -52,6 +58,8 @@ export type UseMapMemoReturnType = {
   isStraightStyle: boolean;
   isMapMemoLineSmoothed: boolean;
   isModalMapMemoToolHidden: boolean;
+  isEditingLine: boolean;
+  editingLineId: string | undefined;
   setMapMemoTool: Dispatch<SetStateAction<MapMemoToolType>>;
   setPenWidth: Dispatch<SetStateAction<PenWidthType>>;
   setVisibleMapMemoColor: Dispatch<SetStateAction<boolean>>;
@@ -65,6 +73,7 @@ export type UseMapMemoReturnType = {
   handleGrantMapMemo: (event: GestureResponderEvent) => void;
   handleMoveMapMemo: (event: GestureResponderEvent) => void;
   handleReleaseMapMemo: (event: GestureResponderEvent) => void;
+  handleLongPressMapMemo: (event: GestureResponderEvent) => void;
   pressUndoMapMemo: () => void;
   pressRedoMapMemo: () => void;
   changeColorTypeToIndividual: () => boolean;
@@ -82,6 +91,7 @@ export type HistoryType = {
 };
 
 export type MapMemoStateType = {
+  id?: string;
   xy: Position[];
   latlon: Position[];
   strokeColor: string;
@@ -90,7 +100,16 @@ export type MapMemoStateType = {
   stamp?: string;
   zoom?: number;
   groupId?: string;
+  record?: any;
 };
+
+// 内部使用のために拡張されたLineRecordType
+interface ExtendedLineRecord extends LineRecordType {
+  record?: any;
+  strokeColor?: string;
+  strokeWidth?: number;
+  strokeStyle?: string;
+}
 
 // Constants
 const MAX_HISTORY = 10;
@@ -111,6 +130,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [future, setFuture] = useState<HistoryType[]>([]);
   const [penColor, setPenColor] = useState('rgba(0,0,0,0.7)');
   const [mapMemoLines, setMapMemoLines] = useState<MapMemoStateType[]>([]);
+  const [isEditingLine, setIsEditingLine] = useState(false);
+  const [editingLineId, setEditingLineId] = useState<string | undefined>(undefined);
+  const [_editingLineIndex, setEditingLineIndex] = useState<number | undefined>(undefined);
+  const [editingPointIndex, setEditingPointIndex] = useState<number | undefined>(undefined);
 
   // Visibility state
   const [visibleMapMemoColor, setVisibleMapMemoColor] = useState(false);
@@ -137,6 +160,17 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const snappedStartPoint = useRef<Position>([]);
   const offset = useRef([0, 0]);
   const timer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const longPressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const originalLine = useRef<
+    | {
+        record: LineRecordType;
+        xy: Position[];
+        strokeColor: string;
+        strokeWidth: number;
+        strokeStyle: string;
+      }
+    | undefined
+  >(undefined);
 
   const { generateRecord } = useRecord();
 
@@ -152,7 +186,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   const memoLines = useMemo(
-    () => (activeMemoRecordSet ? (activeMemoRecordSet.data as LineRecordType[]) : ([] as LineRecordType[])),
+    () => (activeMemoRecordSet ? (activeMemoRecordSet.data as ExtendedLineRecord[]) : ([] as ExtendedLineRecord[])),
     [activeMemoRecordSet]
   );
 
@@ -190,7 +224,14 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const clearMapMemoEditingLine = useCallback(() => {
     mapMemoEditingLine.current = [];
     snappedLine.current = undefined;
-  }, []);
+    if (isEditingLine) {
+      setIsEditingLine(false);
+      setEditingLineId(undefined);
+      setEditingLineIndex(undefined);
+      setEditingPointIndex(undefined);
+      originalLine.current = undefined;
+    }
+  }, [isEditingLine]);
 
   /**
    * Finds a line that the given point is near to
@@ -216,6 +257,28 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     },
     [mapRegion, mapSize, mapViewRef, memoLines]
   );
+
+  /**
+   * Finds closest point on a line and returns information about it
+   */
+  const findClosestPointOnLine = useCallback((pXY: Position, lineXY: Position[]) => {
+    let minDistance = Infinity;
+    let minIndex = -1;
+
+    for (let i = 0; i < lineXY.length; i++) {
+      const pointXY = lineXY[i];
+      const dx = pXY[0] - pointXY[0];
+      const dy = pXY[1] - pointXY[1];
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        minIndex = i;
+      }
+    }
+
+    return { index: minIndex, distance: minDistance };
+  }, []);
 
   /**
    * Saves the memo lines to the database
@@ -330,6 +393,70 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   /**
+   * Handle long press to start line editing
+   */
+  const handleLongPressMapMemo = useCallback(
+    (event: GestureResponderEvent) => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = undefined;
+      }
+
+      if (isEditingLine || !isPenTool(currentMapMemoTool)) {
+        return;
+      }
+
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+      const result = findSnappedLine(pXY);
+      console.log('handleLongPressMapMemo: findSnappedLine result', result);
+
+      if (result) {
+        // Find the line in memoLines
+        const lineIndex = memoLines.findIndex((line) => line.id === result.id);
+        console.log('handleLongPressMapMemo: lineIndex', lineIndex);
+        if (lineIndex < 0) return;
+
+        // Find closest point on line to determine where to start editing
+        const closestInfo = findClosestPointOnLine(pXY, result.coordsXY);
+        console.log('handleLongPressMapMemo: closestInfo', closestInfo);
+
+        // Only allow editing if we're close to a point and it's not at the beginning
+        if (closestInfo.distance < 30 && closestInfo.index > 0) {
+          console.log('handleLongPressMapMemo: distance < 30 and index > 0');
+          // We found a line to edit
+          setIsEditingLine(true);
+          setEditingLineId(result.id);
+          setEditingLineIndex(lineIndex);
+          setEditingPointIndex(closestInfo.index);
+
+          // Store original line information
+          const lineRecord = memoLines[lineIndex].record;
+          if (lineRecord) {
+            originalLine.current = {
+              record: { ...lineRecord },
+              xy: [...result.coordsXY],
+              strokeColor: memoLines[lineIndex].strokeColor || '',
+              strokeWidth: memoLines[lineIndex].strokeWidth || 1,
+              strokeStyle: memoLines[lineIndex].strokeStyle || '',
+            };
+
+            // Start editing from the found point
+            mapMemoEditingLine.current = result.coordsXY.slice(0, closestInfo.index + 1);
+
+            // We set our tool to PEN for editing
+            if (!isPenTool(currentMapMemoTool)) {
+              setMapMemoTool('PEN');
+            }
+          }
+        }
+      }
+
+      setRedraw(ulid());
+    },
+    [currentMapMemoTool, findClosestPointOnLine, findSnappedLine, isEditingLine, memoLines, setMapMemoTool]
+  );
+
+  /**
    * Handles the start of a touch gesture
    */
   const handleGrantMapMemo = useCallback(
@@ -346,17 +473,30 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
+      // Set up long press detection if we're using PEN tool
+      if (isPenTool(currentMapMemoTool) && !isEditingLine) {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+        }
+        longPressTimer.current = setTimeout(() => {
+          handleLongPressMapMemo(event);
+        }, 800); // 800ms for long press
+      }
+
       if (isStampTool(currentMapMemoTool)) {
         handleStampToolGrant(pXY);
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolGrant(pXY);
       } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
-        mapMemoEditingLine.current = [pXY];
+        // If we're not already editing, start a new line
+        if (!isEditingLine) {
+          mapMemoEditingLine.current = [pXY];
+        }
       }
 
       setRedraw(ulid());
     },
-    [currentMapMemoTool, handleBrushToolGrant, handleStampToolGrant]
+    [currentMapMemoTool, handleBrushToolGrant, handleLongPressMapMemo, handleStampToolGrant, isEditingLine]
   );
 
   /**
@@ -366,6 +506,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     (event: GestureResponderEvent) => {
       if (!event.nativeEvent.touches.length) return;
 
+      // Cancel long press detection when moving
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = undefined;
+      }
+
       const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
@@ -374,6 +520,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolMove(pXY, isSnappedWithLine);
       } else {
+        // Handle drawing normally
         handleDrawingToolMove(pXY);
       }
 
@@ -386,15 +533,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles pen tool release
    */
   const handlePenToolRelease = useCallback(() => {
-    let drawingLine = [...mapMemoEditingLine.current];
-
-    // Apply smoothing if enabled and not using straight line
-    if (isMapMemoLineSmoothed && !isStraightStyle) {
-      if (drawingLine.length > 8) {
-        drawingLine = drawingLine.slice(2, -2); // Remove jittery ends
-      }
-      drawingLine = smoothingByBezier(drawingLine);
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = undefined;
     }
+
+    let drawingLine = [...mapMemoEditingLine.current];
 
     // Handle edge cases with line points
     if (drawingLine.length === 0) {
@@ -404,6 +548,68 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     } else if (drawingLine.length === 1) {
       // Convert a single point to a very small line
       drawingLine.push([drawingLine[0][0] + 0.0000001, drawingLine[0][1] + 0.0000001]);
+    }
+
+    // Handle editing existing line
+    if (isEditingLine && editingLineId && editingPointIndex !== undefined && originalLine.current) {
+      // Apply smoothing if enabled and not using straight line
+      let newLineCoords = drawingLine;
+      if (isMapMemoLineSmoothed && !isStraightStyle && newLineCoords.length > 8) {
+        // Apply smoothing only to the new portion (from editingPointIndex onward)
+        const newPortion = newLineCoords.slice(editingPointIndex);
+        if (newPortion.length > 8) {
+          const smoothedPortion = smoothingByBezier(newPortion.slice(2, -2));
+          newLineCoords = [...newLineCoords.slice(0, editingPointIndex), ...smoothedPortion];
+        }
+      }
+
+      // Convert to latlon coordinates
+      const latlonCoords = xyArrayToLatLonArray(newLineCoords, mapRegion, mapSize, mapViewRef);
+
+      // Find the original record that needs updating
+      const lineIndex = memoLines.findIndex((line) => line.id === editingLineId);
+      if (lineIndex >= 0) {
+        const originalRecord = memoLines[lineIndex].record;
+        if (originalRecord) {
+          // Create updated record with new coordinates
+          const updatedRecord = {
+            ...originalRecord,
+            coords: latlonArrayToLatLonObjects(latlonCoords),
+          };
+
+          // Update the record in the database
+          dispatch(
+            updateRecordsAction({
+              layerId: activeMemoLayer!.id,
+              userId: user.uid,
+              data: [updatedRecord],
+            })
+          );
+
+          // Add to history
+          setHistory((prev) => [
+            ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
+            {
+              operation: 'remove',
+              data: [{ idx: lineIndex, line: originalLine.current!.record }],
+            },
+          ]);
+
+          setFuture([]);
+        }
+      }
+
+      clearMapMemoEditingLine();
+      return;
+    }
+
+    // Normal new line drawing
+    // Apply smoothing if enabled and not using straight line
+    if (isMapMemoLineSmoothed && !isStraightStyle) {
+      if (drawingLine.length > 8) {
+        drawingLine = drawingLine.slice(2, -2); // Remove jittery ends
+      }
+      drawingLine = smoothingByBezier(drawingLine);
     }
 
     const newMapMemoLines = [
@@ -437,6 +643,13 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     penColor,
     penWidth,
     saveMapMemo,
+    isEditingLine,
+    editingLineId,
+    editingPointIndex,
+    memoLines,
+    activeMemoLayer,
+    user.uid,
+    dispatch,
   ]);
 
   /**
@@ -636,6 +849,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles the end of a touch gesture
    */
   const handleReleaseMapMemo = useCallback(() => {
+    // Cancel any pending long press
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = undefined;
+    }
+
     const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
 
     if (isPenTool(currentMapMemoTool)) {
@@ -757,14 +976,24 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     clearMapMemoEditingLine();
   }, [activeMemoLayer, clearMapMemoEditingLine]);
 
-  // Clean up timer on unmount
+  // Clean up timers on unmount
   useEffect(() => {
     return () => {
       if (timer.current) {
         clearTimeout(timer.current);
       }
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
     };
   }, []);
+
+  // Update map memo state when active layer changes
+  useEffect(() => {
+    if (isEditingLine) {
+      clearMapMemoEditingLine();
+    }
+  }, [activeMemoLayer, clearMapMemoEditingLine, isEditingLine]);
 
   return {
     visibleMapMemoColor,
@@ -787,6 +1016,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     isStraightStyle,
     isMapMemoLineSmoothed,
     isModalMapMemoToolHidden,
+    isEditingLine,
+    editingLineId,
     setMapMemoTool,
     setPenWidth,
     setVisibleMapMemoColor,
@@ -799,6 +1030,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     handleGrantMapMemo,
     handleMoveMapMemo,
     handleReleaseMapMemo,
+    handleLongPressMapMemo,
     pressUndoMapMemo,
     pressRedoMapMemo,
     clearMapMemoHistory,
