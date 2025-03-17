@@ -464,6 +464,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     // PENモードに設定
@@ -490,6 +491,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     // findSnappedLineのモックを一時的に変更して結果を返すようにする
@@ -526,6 +528,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     // ERASERモードに設定
@@ -552,6 +555,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     // STAMPモードに設定
@@ -581,6 +585,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     // STAMPモードに設定
@@ -605,6 +610,7 @@ describe('useMapMemo', () => {
         pageY: 250,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -632,6 +638,7 @@ describe('useMapMemo', () => {
         pageY: 50,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -649,6 +656,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -678,6 +686,7 @@ describe('useMapMemo', () => {
         pageY: 50,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -693,6 +702,7 @@ describe('useMapMemo', () => {
         pageY: 150,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -708,6 +718,7 @@ describe('useMapMemo', () => {
         pageY: 200,
         touches: [{}],
       },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -731,6 +742,7 @@ describe('useMapMemo', () => {
     // 描画開始
     const grantEvent = {
       nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -740,6 +752,7 @@ describe('useMapMemo', () => {
     // 移動
     const moveEvent = {
       nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -747,7 +760,7 @@ describe('useMapMemo', () => {
     });
 
     // タッチ終了
-    const releaseEvent = {} as any;
+    const releaseEvent = { persist: jest.fn() } as any;
 
     act(() => {
       result.current.handleReleaseMapMemo(releaseEvent);
@@ -774,6 +787,7 @@ describe('useMapMemo', () => {
     // 描画開始
     const grantEvent = {
       nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -783,6 +797,7 @@ describe('useMapMemo', () => {
     // 移動
     const moveEvent = {
       nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -790,7 +805,7 @@ describe('useMapMemo', () => {
     });
 
     // タッチ終了
-    const releaseEvent = {} as any;
+    const releaseEvent = { persist: jest.fn() } as any;
 
     act(() => {
       result.current.handleReleaseMapMemo(releaseEvent);
@@ -815,6 +830,7 @@ describe('useMapMemo', () => {
     // 描画開始
     const grantEvent = {
       nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -824,6 +840,7 @@ describe('useMapMemo', () => {
     // 移動
     const moveEvent = {
       nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -831,7 +848,7 @@ describe('useMapMemo', () => {
     });
 
     // タッチ終了で履歴を作成
-    const releaseEvent = {} as any;
+    const releaseEvent = { persist: jest.fn() } as any;
     act(() => {
       result.current.handleReleaseMapMemo(releaseEvent);
       jest.runAllTimers(); // タイマーを進める
@@ -866,6 +883,7 @@ describe('useMapMemo', () => {
     // 描画開始
     const grantEvent = {
       nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -875,6 +893,7 @@ describe('useMapMemo', () => {
     // 移動
     const moveEvent = {
       nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -882,7 +901,7 @@ describe('useMapMemo', () => {
     });
 
     // タッチ終了で履歴を作成
-    const releaseEvent = {} as any;
+    const releaseEvent = { persist: jest.fn() } as any;
     act(() => {
       result.current.handleReleaseMapMemo(releaseEvent);
       jest.runAllTimers(); // タイマーを進める
@@ -923,6 +942,7 @@ describe('useMapMemo', () => {
     // 描画開始
     const grantEvent = {
       nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -932,6 +952,7 @@ describe('useMapMemo', () => {
     // ポインタがマップ外に移動した状態をシミュレート
     const outOfMapEvent = {
       nativeEvent: { locationX: -50, locationY: -50, pageX: -50, pageY: -50, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {
@@ -941,6 +962,7 @@ describe('useMapMemo', () => {
     // 再びマップ内に戻ってきた状態をシミュレート
     const backToMapEvent = {
       nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+      persist: jest.fn(), // persist メソッドを追加
     } as any;
 
     act(() => {

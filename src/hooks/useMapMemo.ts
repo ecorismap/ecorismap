@@ -392,21 +392,15 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
       const result = findSnappedLine(pXY);
-      console.log('handleLongPressMapMemo: findSnappedLine result', result);
 
       if (result) {
         // Find the line in memoLines
         const lineIndex = memoLines.findIndex((line) => line.id === result.id);
-        console.log('handleLongPressMapMemo: lineIndex', lineIndex);
         if (lineIndex < 0) return;
-
         // Find closest point on line to determine where to start editing
         const closestInfo = findClosestPointOnLine(pXY, result.coordsXY);
-        console.log('handleLongPressMapMemo: closestInfo', closestInfo);
-
         // Only allow editing if we're close to a point and it's not at the beginning
         if (closestInfo.distance < 30 && closestInfo.index > 0) {
-          console.log('handleLongPressMapMemo: distance < 30 and index > 0');
           // We found a line to edit
           setIsEditingLine(true);
           setEditingLineId(result.id);
@@ -457,6 +451,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
         }
+        event.persist();
         longPressTimer.current = setTimeout(() => {
           handleLongPressMapMemo(event);
         }, 800); // 800ms for long press
@@ -896,7 +891,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       });
     } else if (lastOperation.operation === 'update') {
       newDrawLine[lastOperation.data[0].idx] = lastOperation.data[0].line;
-      console.log(lastOperation);
     }
 
     dispatch(
