@@ -86,8 +86,8 @@ export type UseMapMemoReturnType = {
 };
 
 export type HistoryType = {
-  operation: 'add' | 'remove';
-  data: { idx: number; line: LineRecordType }[];
+  operation: 'add' | 'remove' | 'update';
+  data: { idx: number; line: LineRecordType; updatedLine?: LineRecordType }[];
 };
 
 export type MapMemoStateType = {
@@ -102,14 +102,6 @@ export type MapMemoStateType = {
   groupId?: string;
   record?: any;
 };
-
-// 内部使用のために拡張されたLineRecordType
-interface ExtendedLineRecord extends LineRecordType {
-  record?: any;
-  strokeColor?: string;
-  strokeWidth?: number;
-  strokeStyle?: string;
-}
 
 // Constants
 const MAX_HISTORY = 10;
@@ -161,16 +153,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const offset = useRef([0, 0]);
   const timer = useRef<NodeJS.Timeout | undefined>(undefined);
   const longPressTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-  const originalLine = useRef<
-    | {
-        record: LineRecordType;
-        xy: Position[];
-        strokeColor: string;
-        strokeWidth: number;
-        strokeStyle: string;
-      }
-    | undefined
-  >(undefined);
+  const longPressStartPosition = useRef<Position | null>(null);
+  const longPressMoveThreshold = 20;
 
   const { generateRecord } = useRecord();
 
@@ -186,7 +170,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   const memoLines = useMemo(
-    () => (activeMemoRecordSet ? (activeMemoRecordSet.data as ExtendedLineRecord[]) : ([] as ExtendedLineRecord[])),
+    () => (activeMemoRecordSet ? (activeMemoRecordSet.data as LineRecordType[]) : ([] as LineRecordType[])),
     [activeMemoRecordSet]
   );
 
@@ -229,7 +213,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       setEditingLineId(undefined);
       setEditingLineIndex(undefined);
       setEditingPointIndex(undefined);
-      originalLine.current = undefined;
     }
   }, [isEditingLine]);
 
@@ -367,6 +350,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     },
     [snapWithLine]
   );
+
   /**
    * Handles brush tool move event
    */
@@ -430,16 +414,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           setEditingPointIndex(closestInfo.index);
 
           // Store original line information
-          const lineRecord = memoLines[lineIndex].record;
+          const lineRecord = memoLines[lineIndex];
           if (lineRecord) {
-            originalLine.current = {
-              record: { ...lineRecord },
-              xy: [...result.coordsXY],
-              strokeColor: memoLines[lineIndex].strokeColor || '',
-              strokeWidth: memoLines[lineIndex].strokeWidth || 1,
-              strokeStyle: memoLines[lineIndex].strokeStyle || '',
-            };
-
             // Start editing from the found point
             mapMemoEditingLine.current = result.coordsXY.slice(0, closestInfo.index + 1);
 
@@ -473,7 +449,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
       const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
-      // Set up long press detection if we're using PEN tool
+      // Save long press start position
+      longPressStartPosition.current = pXY;
+
+      // Set up long press detection if using PEN tool
       if (isPenTool(currentMapMemoTool) && !isEditingLine) {
         if (longPressTimer.current) {
           clearTimeout(longPressTimer.current);
@@ -488,7 +467,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolGrant(pXY);
       } else if (isPenTool(currentMapMemoTool) || isEraserTool(currentMapMemoTool)) {
-        // If we're not already editing, start a new line
+        // If not already editing, start a new line
         if (!isEditingLine) {
           mapMemoEditingLine.current = [pXY];
         }
@@ -506,21 +485,29 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     (event: GestureResponderEvent) => {
       if (!event.nativeEvent.touches.length) return;
 
-      // Cancel long press detection when moving
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = undefined;
+      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
+
+      // Improve long press detection: cancel timer if movement exceeds threshold
+      if (longPressTimer.current && longPressStartPosition.current) {
+        const dx = pXY[0] - longPressStartPosition.current[0];
+        const dy = pXY[1] - longPressStartPosition.current[1];
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > longPressMoveThreshold) {
+          clearTimeout(longPressTimer.current);
+          longPressTimer.current = undefined;
+          longPressStartPosition.current = null;
+        }
       }
 
       const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
-      const pXY: Position = [event.nativeEvent.pageX + offset.current[0], event.nativeEvent.pageY + offset.current[1]];
 
       if (isStampTool(currentMapMemoTool)) {
         handleStampToolMove(pXY, isSnappedWithLine);
       } else if (isBrushTool(currentMapMemoTool)) {
         handleBrushToolMove(pXY, isSnappedWithLine);
       } else {
-        // Handle drawing normally
+        // Normal drawing
         handleDrawingToolMove(pXY);
       }
 
@@ -549,35 +536,27 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       // Convert a single point to a very small line
       drawingLine.push([drawingLine[0][0] + 0.0000001, drawingLine[0][1] + 0.0000001]);
     }
-
-    // Handle editing existing line
-    if (isEditingLine && editingLineId && editingPointIndex !== undefined && originalLine.current) {
-      // Apply smoothing if enabled and not using straight line
+    // Handle editing an existing line
+    if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
       let newLineCoords = drawingLine;
       if (isMapMemoLineSmoothed && !isStraightStyle && newLineCoords.length > 8) {
-        // Apply smoothing only to the new portion (from editingPointIndex onward)
         const newPortion = newLineCoords.slice(editingPointIndex);
         if (newPortion.length > 8) {
           const smoothedPortion = smoothingByBezier(newPortion.slice(2, -2));
           newLineCoords = [...newLineCoords.slice(0, editingPointIndex), ...smoothedPortion];
         }
       }
-
-      // Convert to latlon coordinates
       const latlonCoords = xyArrayToLatLonArray(newLineCoords, mapRegion, mapSize, mapViewRef);
 
-      // Find the original record that needs updating
       const lineIndex = memoLines.findIndex((line) => line.id === editingLineId);
       if (lineIndex >= 0) {
-        const originalRecord = memoLines[lineIndex].record;
+        const originalRecord = memoLines[lineIndex];
         if (originalRecord) {
-          // Create updated record with new coordinates
           const updatedRecord = {
             ...originalRecord,
             coords: latlonArrayToLatLonObjects(latlonCoords),
           };
 
-          // Update the record in the database
           dispatch(
             updateRecordsAction({
               layerId: activeMemoLayer!.id,
@@ -586,28 +565,31 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
             })
           );
 
-          // Add to history
           setHistory((prev) => [
             ...(prev.length === MAX_HISTORY ? prev.slice(1) : prev),
             {
-              operation: 'remove',
-              data: [{ idx: lineIndex, line: originalLine.current!.record }],
+              operation: 'update',
+              data: [
+                {
+                  idx: lineIndex,
+                  line: originalRecord,
+                  updatedLine: updatedRecord,
+                },
+              ],
             },
           ]);
 
           setFuture([]);
         }
       }
-
       clearMapMemoEditingLine();
       return;
     }
 
     // Normal new line drawing
-    // Apply smoothing if enabled and not using straight line
     if (isMapMemoLineSmoothed && !isStraightStyle) {
       if (drawingLine.length > 8) {
-        drawingLine = drawingLine.slice(2, -2); // Remove jittery ends
+        drawingLine = drawingLine.slice(2, -2);
       }
       drawingLine = smoothingByBezier(drawingLine);
     }
@@ -761,7 +743,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     });
 
     if (deletedLines.length > 0) {
-      // Also delete lines in the same group
       const updatedDeletedLines = [...deletedLines];
 
       otherLines.forEach(({ idx, line }) => {
@@ -769,7 +750,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         if (sameGroup) updatedDeletedLines.push({ idx, line });
       });
 
-      // Sort by index in ascending order
       updatedDeletedLines.sort((a, b) => a.idx - b.idx);
       updateHistoryAndDeleteRecords(updatedDeletedLines);
     }
@@ -821,11 +801,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
       let polygonGeometry;
       if (eraserLineLatLonArray.length < 4) {
-        // For fewer than 4 points, create a buffered line
         eraserLineLatLonArray.push([eraserLineLatLonArray[0][0] + 0.0000001, eraserLineLatLonArray[0][1] + 0.0000001]);
         polygonGeometry = buffer(turf.lineString(eraserLineLatLonArray), mapRegion.latitudeDelta);
       } else {
-        // For 4+ points, create a closed polygon
         eraserLineLatLonArray.push(eraserLineLatLonArray[0]);
         polygonGeometry = turf.polygon([eraserLineLatLonArray]);
       }
@@ -849,10 +827,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Handles the end of a touch gesture
    */
   const handleReleaseMapMemo = useCallback(() => {
-    // Cancel any pending long press
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = undefined;
+      longPressStartPosition.current = null;
     }
 
     const isSnappedWithLine = snappedLine.current !== undefined && snappedLine.current.coordsXY.length > 1;
@@ -879,6 +857,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     handleStampEraserRelease,
     handleStampToolRelease,
   ]);
+
   /**
    * Sets pen color based on HSV values
    */
@@ -900,55 +879,72 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
    * Undoes the last map memo operation
    */
   const pressUndoMapMemo = useCallback(() => {
-    if (history.length === 0) return;
+    if (history.length === 0 || !activeMemoRecordSet) return;
 
     const lastOperation = history[history.length - 1];
+    setHistory(history.slice(0, -1));
     setFuture([...future, lastOperation]);
-    setHistory(history.slice(0, history.length - 1));
+
+    // 現在のラインは activeMemoRecordSet.data から再構築する
+    let newDrawLine = [...(activeMemoRecordSet.data as LineRecordType[])];
 
     if (lastOperation.operation === 'add') {
-      // Remove the last added lines
-      const newDrawLine = memoLines.filter((line) => lastOperation.data.every((dline) => dline.line.id !== line.id));
-
-      dispatch(
-        setRecordSetAction({
-          ...activeMemoRecordSet!,
-          data: newDrawLine,
-        })
-      );
+      newDrawLine = newDrawLine.filter((line) => !lastOperation.data.some((item) => item.line.id === line.id));
     } else if (lastOperation.operation === 'remove') {
-      // Add back the last removed lines
-      const newDrawLine = [...memoLines];
-      [...lastOperation.data].reverse().forEach(({ idx, line }) => newDrawLine.splice(idx, 0, line));
-
-      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
+      lastOperation.data.forEach(({ idx, line }) => {
+        newDrawLine.splice(idx, 0, line);
+      });
+    } else if (lastOperation.operation === 'update') {
+      newDrawLine[lastOperation.data[0].idx] = lastOperation.data[0].line;
+      console.log(lastOperation);
     }
-  }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
+
+    dispatch(
+      setRecordSetAction({
+        ...activeMemoRecordSet,
+        data: newDrawLine,
+      })
+    );
+  }, [history, activeMemoRecordSet, future, dispatch]);
 
   /**
    * Redoes the last undone map memo operation
    */
   const pressRedoMapMemo = useCallback(() => {
-    if (future.length === 0) return;
+    if (future.length === 0 || !activeMemoRecordSet) return;
 
     const nextOperation = future[future.length - 1];
-    setFuture(future.slice(0, future.length - 1));
+    setFuture(future.slice(0, -1));
     setHistory([...history, nextOperation]);
 
-    if (nextOperation.operation === 'add') {
-      // Re-add the lines from future
-      const addedLines = nextOperation.data.map((operation) => operation.line);
-      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: [...memoLines, ...addedLines] }));
-    } else if (nextOperation.operation === 'remove') {
-      // Re-remove the lines from future
-      const newDrawLine = [...(activeMemoRecordSet!.data as LineRecordType[])];
-      [...nextOperation.data].reverse().forEach(({ idx }) => {
-        newDrawLine.splice(idx, 1);
-      });
+    let newDrawLine = [...memoLines];
 
-      dispatch(setRecordSetAction({ ...activeMemoRecordSet!, data: newDrawLine }));
+    if (nextOperation.operation === 'add') {
+      newDrawLine = [...newDrawLine, ...nextOperation.data.map(({ line }) => line)];
+    } else if (nextOperation.operation === 'remove') {
+      newDrawLine = newDrawLine.filter((line) => !nextOperation.data.some((item) => item.line.id === line.id));
+    } else if (nextOperation.operation === 'update') {
+      nextOperation.data.forEach(({ updatedLine }) => {
+        if (updatedLine) {
+          const index = newDrawLine.findIndex((l) => l.id === updatedLine.id);
+          if (index !== -1) {
+            newDrawLine[index] = {
+              ...newDrawLine[index],
+              coords: updatedLine.coords,
+              field: { ...updatedLine.field },
+            };
+          }
+        }
+      });
     }
-  }, [activeMemoRecordSet, dispatch, future, history, memoLines]);
+
+    dispatch(
+      setRecordSetAction({
+        ...activeMemoRecordSet,
+        data: newDrawLine,
+      })
+    );
+  }, [future, activeMemoRecordSet, history, memoLines, dispatch]);
 
   /**
    * Changes the active layer's color type to individual
@@ -971,11 +967,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     return true;
   }, [activeMemoLayer, dispatch]);
 
-  // Clear editing line when active layer changes
-  useEffect(() => {
-    clearMapMemoEditingLine();
-  }, [activeMemoLayer, clearMapMemoEditingLine]);
-
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
@@ -987,13 +978,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       }
     };
   }, []);
-
-  // Update map memo state when active layer changes
-  useEffect(() => {
-    if (isEditingLine) {
-      clearMapMemoEditingLine();
-    }
-  }, [activeMemoLayer, clearMapMemoEditingLine, isEditingLine]);
 
   return {
     visibleMapMemoColor,
