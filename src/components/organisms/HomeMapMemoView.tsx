@@ -15,6 +15,7 @@ export const MapMemoView = React.memo(() => {
     currentMapMemoTool,
     //zoom: currentZoom,
     mapMemoLines,
+    isEditingLine,
   } = useContext(HomeContext);
   //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
@@ -24,8 +25,13 @@ export const MapMemoView = React.memo(() => {
   );
 
   const strokeColor = useMemo(
-    () => (currentMapMemoTool.includes('ERASER') ? 'white' : isBrushTool(currentMapMemoTool) ? 'yellow' : penColor),
-    [currentMapMemoTool, penColor]
+    () =>
+      currentMapMemoTool.includes('ERASER')
+        ? 'white'
+        : isBrushTool(currentMapMemoTool) || isEditingLine
+        ? 'yellow'
+        : penColor,
+    [currentMapMemoTool, isEditingLine, penColor]
   );
   const strokeWidth = useMemo(
     () => (currentMapMemoTool.includes('ERASER') ? 10 : isBrushTool(currentMapMemoTool) ? 5 : penWidth),
