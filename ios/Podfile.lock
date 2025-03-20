@@ -1477,13 +1477,13 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNZipArchive (6.0.8):
+  - RNZipArchive (6.1.2):
     - React-Core
-    - RNZipArchive/Core (= 6.0.8)
-    - SSZipArchive (= 2.2.3)
-  - RNZipArchive/Core (6.0.8):
+    - RNZipArchive/Core (= 6.1.2)
+    - SSZipArchive (~> 2.2)
+  - RNZipArchive/Core (6.1.2):
     - React-Core
-    - SSZipArchive (= 2.2.3)
+    - SSZipArchive (~> 2.2)
   - SDWebImage/Core (5.19.4)
   - SDWebImageWebPCoder (0.14.6):
     - libwebp (~> 1.0)
@@ -1911,7 +1911,7 @@ SPEC CHECKSUMS:
   RNScreens: b32a9ff15bea7fcdbe5dff6477bc503f792b1208
   RNSVG: 43b64ed39c14ce830d840903774154ca0c1f27ec
   RNVectorIcons: 2a2f79274248390b80684ea3c4400bd374a15c90
-  RNZipArchive: 3f89b114cfeb89dac027fc5c7afd7e58d3dc4ebf
+  RNZipArchive: 6d736ee4e286dbbd9d81206b7a4da355596ca04a
   SDWebImage: 066c47b573f408f18caa467d71deace7c0f8280d
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
   SocketRocket: abac6f5de4d4d62d24e11868d7a2f427e0ef940d
@@ -1920,6 +1920,6 @@ SPEC CHECKSUMS:
   UMAppLoader: f17a5ee8e85b536ace0fc254b447a37ed198d57e
   Yoga: 04f1db30bb810187397fa4c37dd1868a27af229c
 
-PODFILE CHECKSUM: fbb5b8b11c533c3a33b173ae33c14996f7e4a6ce
+PODFILE CHECKSUM: e80a96d0b3dba968ef09c095c06ca62053501306
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2
