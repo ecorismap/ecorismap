@@ -48,6 +48,8 @@ export const HomeCompassButton = React.memo((props: Props) => {
         borderWidth={1}
         //size={18}
         onPress={onPressCompass}
+        labelText="N"
+        labelTextColor={COLOR.BLACK}
       />
     </View>
   );

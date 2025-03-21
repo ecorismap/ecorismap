@@ -4,6 +4,7 @@ import { COLOR, ORIENTATIONTYPE } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { t } from '../../i18n/config';
 
 interface Props {
   pdfTileMapZoomLevel: string;
@@ -21,7 +22,13 @@ export const HomePDFButtons = React.memo((props: Props) => {
   return (
     <View style={styles.buttonContainer}>
       <View style={{ margin: 5 }}>
-        <Button size={30} name="download" backgroundColor={COLOR.RED} onPress={onPress} />
+        <Button
+          size={30}
+          name="download"
+          backgroundColor={COLOR.RED}
+          onPress={onPress}
+          labelText={t('Home.label.pdfdownload')}
+        />
       </View>
       <TouchableOpacity
         onPress={pressPDFSettingsOpen}

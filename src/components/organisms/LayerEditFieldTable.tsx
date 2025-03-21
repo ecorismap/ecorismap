@@ -14,6 +14,17 @@ export const LayerEditFieldTitle = () => {
   const editable = true;
   return (
     <View style={styles.tr3}>
+      <View style={[styles.td3, { flex: 2, width: 50 }]}>
+        <Button
+          style={{
+            backgroundColor: COLOR.GRAY3,
+            padding: 0,
+          }}
+          name="plus"
+          disabled={!editable}
+          onPress={pressAddField}
+        />
+      </View>
       <View style={[styles.td3, { flex: 6, width: 150 }]}>
         <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.fieldName')}`}</Text>
       </View>
@@ -28,17 +39,6 @@ export const LayerEditFieldTitle = () => {
       </View>
       <View style={[styles.td3, { flex: 3, width: 75 }]}>
         {/* <Text style={[styles.title, { textAlign: 'center' }]}>{`${t('common.delete')}`}</Text> */}
-      </View>
-      <View style={[styles.td3, { flex: 2, width: 50 }]}>
-        <Button
-          style={{
-            backgroundColor: COLOR.GRAY3,
-            padding: 0,
-          }}
-          name="plus"
-          disabled={!editable}
-          onPress={pressAddField}
-        />
       </View>
     </View>
   );
@@ -69,6 +69,18 @@ export const LayerEditFieldTable = () => {
         renderItem={({ item, index }) => {
           return (
             <View key={index} style={styles.tr}>
+              <View style={[styles.td, { flex: 2, width: 50 }]}>
+                <Button
+                  style={{
+                    backgroundColor: COLOR.DARKRED,
+                    padding: 0,
+                  }}
+                  name="minus"
+                  size={16}
+                  disabled={!editable}
+                  onPress={() => pressDeleteField(index)}
+                />
+              </View>
               <View style={[styles.td, { flex: 6, borderRightWidth: 1, width: 150 }]}>
                 <TextInput
                   style={styles.input}
@@ -134,18 +146,6 @@ export const LayerEditFieldTable = () => {
                   disabled={!editable}
                   onPress={() => onChangeFieldOrder(index)}
                   color={COLOR.GRAY2}
-                />
-              </View>
-              <View style={[styles.td, { flex: 2, width: 50 }]}>
-                <Button
-                  style={{
-                    backgroundColor: COLOR.DARKRED,
-                    padding: 0,
-                  }}
-                  name="minus"
-                  size={16}
-                  disabled={!editable}
-                  onPress={() => pressDeleteField(index)}
                 />
               </View>
             </View>

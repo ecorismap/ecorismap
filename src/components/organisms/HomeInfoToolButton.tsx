@@ -40,6 +40,7 @@ export const HomeInfoToolButton = () => {
           onLongPress={() => setVisibleInfoPicker(true)}
           tooltipText={t('common.InfoTool')}
           tooltipPosition={{ left: 1 }}
+          labelText={t('Home.label.infoTool')}
         />
       </View>
     </View>

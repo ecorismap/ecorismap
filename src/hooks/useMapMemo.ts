@@ -454,7 +454,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         event.persist();
         longPressTimer.current = setTimeout(() => {
           handleLongPressMapMemo(event);
-        }, 800); // 800ms for long press
+        }, 500); // 800ms for long press
       }
 
       if (isStampTool(currentMapMemoTool)) {
