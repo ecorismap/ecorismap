@@ -244,6 +244,37 @@
       "infoTool": {
         "checkbox": "次回は表示しない。ボタンを長押しで再表示します。"
       }
+    },
+    "label": {
+      "maps": "地図",
+      "track": "軌跡",
+      "layers": "レイヤ",
+      "point": "ﾎﾟｲﾝﾄ",
+      "line": "ﾗｲﾝ",
+      "polygon": "ﾎﾟﾘｺﾞﾝ",
+      "memo": "ﾒﾓ",
+      "drawtool": "ドロー",
+      "settings": "設定",
+      "addLocationPoint": "現在地",
+      "plotPoint": "追加",
+      "movePoint": "移動",
+      "deletePoint": "削除",
+      "select": "編集選択",
+      "move": "地図移動",
+      "pencilLock": "ロック",
+      "deletePosition": "座標削除",
+      "undo": "元に戻す",
+      "delete": "削除",
+      "finishEditPosition": "戻る",
+      "gps": "GPS",
+      "infoTool": "選択",
+      "plotLine": "追加",
+      "freehandLine": "フリー",
+      "splitLine": "分割",
+      "plotPolygon": "追加",
+      "freehandPolygon": "フリー",
+      "pdfsettings": "用紙",
+      "pdfdownload": "PDF"
     }
   },
   "AccountSettings": {
@@ -429,6 +460,15 @@
       "import": "インポート",
       "add": "地図追加",
       "download": "エクスポート"
+    },
+    "label": {
+      "import": "ｲﾝﾎﾟｰﾄ",
+      "add": "追加",
+      "download": "取得",
+      "edit": "編集",
+      "export": "ｴｸｽﾎﾟｰﾄ",
+      "offline": "ｵﾌﾗｲﾝ",
+      "online": "ｵﾝﾗｲﾝ"
     }
   },
   "MapList": {
@@ -453,6 +493,10 @@
       "delete": "レイヤ削除",
       "export": "設定のエクスポート",
       "save": "保存"
+    },
+    "label": {
+      "export": "ｴｸｽﾎﾟｰﾄ",
+      "delete": "削除"
     }
   },
   "LayerEditFeatureStyle": {
@@ -555,6 +599,10 @@
       "add": "データ追加",
       "export": "エクスポート",
       "delete": "データ削除"
+    },
+    "label": {
+      "export": "ｴｸｽﾎﾟｰﾄ",
+      "delete": "削除"
     }
   },
   "DataEdit": {
@@ -585,6 +633,13 @@
       "save": "保存",
       "delete": "削除",
       "edit": "位置を編集"
+    },
+    "label": {
+      "jump": "表示",
+      "google": "Maps",
+      "edit": "編集",
+      "copy": "複製",
+      "delete": "削除"
     }
   },
   "firebase": {
@@ -801,6 +856,10 @@
     "tooltip": {
       "add": "レイヤ追加",
       "import": "インポート"
+    },
+    "label": {
+      "import": "ｲﾝﾎﾟｰﾄ",
+      "add": "追加"
     }
   }
 }

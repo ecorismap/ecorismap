@@ -5,6 +5,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { MapsContext } from '../../contexts/Maps';
 import { FlatList } from 'react-native-gesture-handler';
+import { t } from 'i18next';
 
 export const MapItems = React.memo(() => {
   const { maps, changeMapOrder, changeVisible, pressDownloadMap, pressOpenEditMap, jumpToBoundary, changeExpand } =
@@ -96,7 +97,7 @@ export const MapItems = React.memo(() => {
                   onPress={() => pressOpenEditMap(item)}
                   backgroundColor={COLOR.LIGHTBLUE2}
                   size={18}
-                  labelText="編集"
+                  labelText={t('Maps.label.edit')}
                 />
               )}
             </View>
@@ -113,7 +114,7 @@ export const MapItems = React.memo(() => {
                     borderRadius={5}
                     backgroundColor={COLOR.GRAY3}
                     size={18}
-                    labelText="取得"
+                    labelText={t('Maps.label.download')}
                   />
                 )}
             </View>

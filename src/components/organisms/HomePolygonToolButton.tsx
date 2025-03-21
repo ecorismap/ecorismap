@@ -4,6 +4,7 @@ import { DrawToolType, PolygonToolType } from '../../types';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
+import { t } from 'i18next';
 
 interface Props {
   disabled?: boolean;
@@ -35,7 +36,7 @@ export const HomePolygonToolButton = (props: Props) => {
           setPolygonTool('PLOT_POLYGON');
           selectDrawTool('PLOT_POLYGON');
         }}
-        labelText="追加"
+        labelText={t('Home.label.plotPolygon')}
       />
       <Button
         id={'FREEHAND_POLYGON'}
@@ -49,7 +50,7 @@ export const HomePolygonToolButton = (props: Props) => {
           setPolygonTool('FREEHAND_POLYGON');
           selectDrawTool('FREEHAND_POLYGON');
         }}
-        labelText="フリー"
+        labelText={t('Home.label.freehandPolygon')}
       />
     </SelectionalLongPressButton>
   );
