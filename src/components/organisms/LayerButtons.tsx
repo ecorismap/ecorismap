@@ -11,10 +11,20 @@ export const LayerButtons = () => {
   return (
     <View style={styles.buttonContainer}>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.IMPORT} onPress={pressImportLayerAndData} tooltipText={t('Layer.tooltip.import')} />
+        <Button
+          name={LAYERS_BTN.IMPORT}
+          onPress={pressImportLayerAndData}
+          tooltipText={t('Layer.tooltip.import')}
+          labelText="ｲﾝﾎﾟｰﾄ"
+        />
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <Button name={LAYERS_BTN.ADD} onPress={gotoLayerEditForAdd} tooltipText={t('Layer.tooltip.add')} />
+        <Button
+          name={LAYERS_BTN.ADD}
+          onPress={gotoLayerEditForAdd}
+          tooltipText={t('Layer.tooltip.add')}
+          labelText="追加"
+        />
       </View>
     </View>
   );

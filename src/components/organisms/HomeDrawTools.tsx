@@ -82,6 +82,7 @@ export const HomeDrawTools = () => {
               onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
               tooltipText={t('Home.tooltip.addLocationPoint')}
               tooltipPosition={{ left: 1 }}
+              labelText="現在地"
             />
           </View>
         )}
@@ -96,6 +97,7 @@ export const HomeDrawTools = () => {
               onPress={() => selectDrawTool('PLOT_POINT')}
               tooltipText={t('Home.tooltip.plotPoint')}
               tooltipPosition={{ left: 1 }}
+              labelText="追加"
             />
           </View>
         )}
@@ -109,6 +111,7 @@ export const HomeDrawTools = () => {
               onPress={() => selectDrawTool('MOVE_POINT')}
               tooltipText={t('Home.tooltip.movePoint')}
               tooltipPosition={{ left: 1 }}
+              labelText="移動"
             />
           </View>
         )}
@@ -124,6 +127,7 @@ export const HomeDrawTools = () => {
               onPress={() => selectDrawTool('DELETE_POINT')}
               tooltipText={t('Home.tooltip.deletePoint')}
               tooltipPosition={{ left: 1 }}
+              labelText="削除"
             />
           </View>
         )}
@@ -159,6 +163,7 @@ export const HomeDrawTools = () => {
             borderRadius={10}
             disabled={isEditingDraw}
             onPress={() => selectDrawTool('SELECT')}
+            labelText="編集選択"
           />
         </View>
       )}
@@ -170,6 +175,7 @@ export const HomeDrawTools = () => {
             borderRadius={10}
             disabled={false}
             onPress={() => selectDrawTool('MOVE')}
+            labelText="地図移動"
           />
         </View>
       )}
@@ -180,6 +186,7 @@ export const HomeDrawTools = () => {
             backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
             borderRadius={10}
             onPress={togglePencilMode}
+            labelText="ロック"
           />
         </View>
       )}
@@ -192,6 +199,7 @@ export const HomeDrawTools = () => {
             onPress={pressDeletePosition}
             tooltipText={t('Home.tooltip.deletePosition')}
             tooltipPosition={{ left: 1 }}
+            labelText="座標削除"
           />
         </View>
       )}
@@ -203,6 +211,7 @@ export const HomeDrawTools = () => {
             borderRadius={10}
             disabled={false}
             onPress={pressUndoDraw}
+            labelText="元に戻す"
           />
         </View>
       )}
@@ -214,6 +223,7 @@ export const HomeDrawTools = () => {
             borderRadius={10}
             disabled={false}
             onPress={pressDeleteDraw}
+            labelText="削除"
           />
         </View>
       )}
@@ -227,6 +237,7 @@ export const HomeDrawTools = () => {
             onPress={finishEditPosition}
             tooltipText={t('Home.tooltip.finishEditPosition')}
             tooltipPosition={{ left: 1 }}
+            labelText="戻る"
           />
         </View>
       )}

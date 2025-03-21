@@ -2,7 +2,7 @@ import React, { useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
-import { SmallButton, RectButton2 } from '../atoms';
+import { Button } from '../atoms';
 import { MapsContext } from '../../contexts/Maps';
 import { FlatList } from 'react-native-gesture-handler';
 
@@ -42,9 +42,11 @@ export const MapItems = React.memo(() => {
                 }}
               >
                 {item.isGroup ? (
-                  <RectButton2
+                  <Button
                     name={item.expanded ? 'chevron-down' : 'chevron-right'}
                     onPress={() => changeExpand(!item.expanded, index)}
+                    color={COLOR.GRAY4}
+                    size={25}
                     style={{
                       flex: 1,
                       //width: 80,
@@ -54,9 +56,11 @@ export const MapItems = React.memo(() => {
                     }}
                   />
                 ) : (
-                  <RectButton2
+                  <Button
                     name={item.visible ? 'eye' : 'eye-off-outline'}
                     onPress={() => changeVisible(!item.visible, index)}
+                    color={COLOR.GRAY4}
+                    size={25}
                     style={{
                       flex: 1,
                       //width: 30,
@@ -87,7 +91,13 @@ export const MapItems = React.memo(() => {
             {/*************** Edit Button ************************************* */}
             <View style={[styles.td, { flex: 1 }]}>
               {item.id !== 'standard' && item.id !== 'hybrid' && (
-                <SmallButton name="pencil" onPress={() => pressOpenEditMap(item)} backgroundColor={COLOR.LIGHTBLUE2} />
+                <Button
+                  name="pencil"
+                  onPress={() => pressOpenEditMap(item)}
+                  backgroundColor={COLOR.LIGHTBLUE2}
+                  size={18}
+                  labelText="編集"
+                />
               )}
             </View>
             {/*************** Download Button ************************************* */}
@@ -97,18 +107,20 @@ export const MapItems = React.memo(() => {
                 !item.isGroup &&
                 !item.url.includes('file://') &&
                 !item.url.includes('blob:') && (
-                  <SmallButton
+                  <Button
                     name="download"
                     onPress={() => pressDownloadMap(item)}
                     borderRadius={5}
                     backgroundColor={COLOR.GRAY3}
+                    size={18}
+                    labelText="取得"
                   />
                 )}
             </View>
 
             <View style={[styles.td, { flex: 1 }]}>
               {item.id !== 'standard' && item.id !== 'hybrid' && (
-                <RectButton2
+                <Button
                   name="chevron-double-up"
                   onPress={() => changeMapOrder(index)}
                   color={COLOR.GRAY2}

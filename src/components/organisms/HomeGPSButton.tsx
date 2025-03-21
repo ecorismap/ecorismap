@@ -30,6 +30,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         name={HOME_BTN.GPS}
         backgroundColor={gpsState === 'follow' ? 'red' : gpsState === 'show' ? COLOR.PALERED : COLOR.ALFABLUE}
         onPress={() => onPressGPS()}
+        labelText="GPS"
       />
     </View>
   );

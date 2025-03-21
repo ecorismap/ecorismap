@@ -11,10 +11,11 @@ interface Props {
   borderRadius?: number;
   size?: number;
   color?: string;
+  labelText?: string;
 }
 
 const HeaderRightButton = React.memo((props: Props) => {
-  const { name, onPress, backgroundColor, disabled, borderRadius, size, color } = props;
+  const { name, onPress, backgroundColor, disabled, borderRadius, size, color, labelText } = props;
 
   return (
     <View style={styles.headerRight}>
@@ -26,6 +27,7 @@ const HeaderRightButton = React.memo((props: Props) => {
         borderRadius={borderRadius ?? 50}
         size={size ?? 21}
         color={color}
+        labelText={labelText}
       />
     </View>
   );

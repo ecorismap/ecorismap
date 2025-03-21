@@ -29,6 +29,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('PLOT_LINE');
           selectDrawTool('PLOT_LINE');
         }}
+        labelText="追加"
       />
       <Button
         id={'FREEHAND_LINE'}
@@ -42,6 +43,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('FREEHAND_LINE');
           selectDrawTool('FREEHAND_LINE');
         }}
+        labelText="フリー"
       />
       <Button
         id={'SPLIT_LINE'}
@@ -53,6 +55,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('SPLIT_LINE');
           selectDrawTool('SPLIT_LINE');
         }}
+        labelText="分割"
       />
     </SelectionalLongPressButton>
   );
