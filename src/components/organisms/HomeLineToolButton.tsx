@@ -4,6 +4,7 @@ import { DrawToolType, LineToolType } from '../../types';
 
 import { Button } from '../atoms';
 import SelectionalLongPressButton from '../atoms/SelectionalLongPressButton';
+import { t } from 'i18next';
 
 interface Props {
   disabled?: boolean;
@@ -29,7 +30,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('PLOT_LINE');
           selectDrawTool('PLOT_LINE');
         }}
-        labelText="追加"
+        labelText={t('Home.label.plotLine')}
       />
       <Button
         id={'FREEHAND_LINE'}
@@ -43,7 +44,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('FREEHAND_LINE');
           selectDrawTool('FREEHAND_LINE');
         }}
-        labelText="フリー"
+        labelText={t('Home.label.freehandLine')}
       />
       <Button
         id={'SPLIT_LINE'}
@@ -55,7 +56,7 @@ export const HomeLineToolButton = (props: Props) => {
           setLineTool('SPLIT_LINE');
           selectDrawTool('SPLIT_LINE');
         }}
-        labelText="分割"
+        labelText={t('Home.label.splitLine')}
       />
     </SelectionalLongPressButton>
   );

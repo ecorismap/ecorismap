@@ -120,10 +120,17 @@
     "tooltip": {
       "jump": "jump to data",
       "google": "View on Google Maps",
-      "copy": "copy data",
+      "copy": "data copy",
       "save": "keep",
       "delete": "delete",
       "edit": "Edit position"
+    },
+    "label": {
+      "jump": "jump",
+      "google": "Maps",
+      "edit": "edit",
+      "copy": "copy",
+      "delete": "delete"
     }
   },
   "common": {
@@ -251,7 +258,8 @@
     "option": "option",
     "useAdd": "Used to add data",
     "notSupported": "Microphone cannot be used in web version",
-    "none": "(none)"
+    "none": "(none)",
+    "selectionType": "Selection Type"
   },
   "firebase": {
     "message": {
@@ -476,6 +484,15 @@
       "import": "import",
       "add": "Add map",
       "download": "export"
+    },
+    "label": {
+      "import": "import",
+      "add": "add",
+      "download": "DL",
+      "edit": "edit",
+      "export": "export",
+      "offline": "offline",
+      "online": "online"
     }
   },
   "Projects": {
@@ -516,6 +533,10 @@
       "delete": "Delete layer",
       "export": "Export settings",
       "save": "keep"
+    },
+    "label": {
+      "export": "export",
+      "delete": "delete"
     }
   },
   "Data": {
@@ -531,7 +552,13 @@
     },
     "tooltip": {
       "export": "export",
-      "delete": "Data deletion"
+      "delete": "Data deletion",
+      "add": "add"
+    },
+    "label": {
+      "add": "add",
+      "export": "export",
+      "delete": "delete"
     }
   },
   "hooks": {
@@ -707,8 +734,39 @@
     },
     "modal": {
       "infoTool": {
-        "checkbox": "It will not be displayed next time. \nPress and hold the button to redisplay."
+        "checkbox": "No longer shown. Hold to redisplay."
       }
+    },
+    "label": {
+      "maps": "maps",
+      "track": "track",
+      "layers": "layers",
+      "point": "point",
+      "line": "line",
+      "polygon": "poly",
+      "memo": "memo",
+      "drawtool": "draw",
+      "settings": "set",
+      "addLocationPoint": "here",
+      "plotPoint": "add",
+      "movePoint": "move",
+      "deletePoint": "delete",
+      "select": "select",
+      "move": "move",
+      "pencilLock": "lock",
+      "deletePosition": "delete",
+      "undo": "undo",
+      "delete": "delete",
+      "finishEditPosition": "back",
+      "gps": "GPS",
+      "infoTool": "select",
+      "plotLine": "add",
+      "freehandLine": "free",
+      "splitLine": "split",
+      "plotPolygon": "add",
+      "freehandPolygon": "free",
+      "pdfsettings": "paper",
+      "pdfdownload": "PDF"
     }
   },
   "LayerEditFeatureStyle": {
@@ -796,6 +854,10 @@
     "tooltip": {
       "add": "Add layer",
       "import": "import"
+    },
+    "label": {
+      "import": "import",
+      "add": "add"
     }
   }
 }

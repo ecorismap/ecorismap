@@ -17,7 +17,7 @@ export const LayerEditButton = () => {
         backgroundColor={!isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
         disabled={isEdited}
         tooltipText={t('LayerEdit.tooltip.export')}
-        labelText="ｴｸｽﾎﾟｰﾄ"
+        labelText={t('LayerEdit.label.export')}
       />
       <Button
         name={LAYEREDIT_BTN.DELETE}
@@ -25,7 +25,7 @@ export const LayerEditButton = () => {
         disabled={isEdited || !editable}
         onPress={pressDeleteLayer}
         tooltipText={t('LayerEdit.tooltip.delete')}
-        labelText="削除"
+        labelText={t('LayerEdit.label.delete')}
       />
     </View>
   );

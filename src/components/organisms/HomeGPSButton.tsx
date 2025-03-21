@@ -4,6 +4,7 @@ import { Button } from '../atoms';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { t } from 'i18next';
 interface Props {
   gpsState: any;
   onPressGPS: () => void;
@@ -30,7 +31,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         name={HOME_BTN.GPS}
         backgroundColor={gpsState === 'follow' ? 'red' : gpsState === 'show' ? COLOR.PALERED : COLOR.ALFABLUE}
         onPress={() => onPressGPS()}
-        labelText="GPS"
+        labelText={t('Home.label.gps')}
       />
     </View>
   );

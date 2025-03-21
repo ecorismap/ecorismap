@@ -15,7 +15,7 @@ export const LayerButtons = () => {
           name={LAYERS_BTN.IMPORT}
           onPress={pressImportLayerAndData}
           tooltipText={t('Layer.tooltip.import')}
-          labelText="ｲﾝﾎﾟｰﾄ"
+          labelText={t('Layer.label.import')}
         />
       </View>
       <View style={{ marginHorizontal: 9 }}>
@@ -23,7 +23,7 @@ export const LayerButtons = () => {
           name={LAYERS_BTN.ADD}
           onPress={gotoLayerEditForAdd}
           tooltipText={t('Layer.tooltip.add')}
-          labelText="追加"
+          labelText={t('Layer.label.add')}
         />
       </View>
     </View>
