@@ -21,7 +21,7 @@ export const HomePDFButtons = React.memo((props: Props) => {
   return (
     <View style={styles.buttonContainer}>
       <View style={{ margin: 5 }}>
-        <Button size={30} name="download" backgroundColor={COLOR.RED} onPress={onPress} />
+        <Button size={30} name="download" backgroundColor={COLOR.RED} onPress={onPress} labelText="PDF" />
       </View>
       <TouchableOpacity
         onPress={pressPDFSettingsOpen}

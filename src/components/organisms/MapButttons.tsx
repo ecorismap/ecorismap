@@ -12,13 +12,24 @@ export const MapButtons = React.memo(() => {
     <View style={styles.buttonContainer}>
       {/* <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} /> */}
 
-      <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} tooltipText={t('Maps.tooltip.import')} />
-      <Button name={MAPS_BTN.MAP_ADD} onPress={() => pressOpenEditMap(null)} tooltipText={t('Maps.tooltip.add')} />
+      <Button
+        name={MAPS_BTN.IMPORT}
+        onPress={pressImportMaps}
+        tooltipText={t('Maps.tooltip.import')}
+        labelText="ｲﾝﾎﾟｰﾄ"
+      />
+      <Button
+        name={MAPS_BTN.MAP_ADD}
+        onPress={() => pressOpenEditMap(null)}
+        tooltipText={t('Maps.tooltip.add')}
+        labelText="追加"
+      />
       <Button
         name={MAPS_BTN.EXPORT}
         onPress={pressExportMaps}
         tooltipText={t('Maps.tooltip.download')}
         tooltipPosition={{ right: 1 }}
+        labelText="ｴｸｽﾎﾟｰﾄ"
       />
     </View>
   );

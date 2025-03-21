@@ -35,6 +35,7 @@ export const HomePolygonToolButton = (props: Props) => {
           setPolygonTool('PLOT_POLYGON');
           selectDrawTool('PLOT_POLYGON');
         }}
+        labelText="追加"
       />
       <Button
         id={'FREEHAND_POLYGON'}
@@ -48,6 +49,7 @@ export const HomePolygonToolButton = (props: Props) => {
           setPolygonTool('FREEHAND_POLYGON');
           selectDrawTool('FREEHAND_POLYGON');
         }}
+        labelText="フリー"
       />
     </SelectionalLongPressButton>
   );

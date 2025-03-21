@@ -19,6 +19,7 @@ export const DataEditButtons = () => {
           backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.jump')}
+          labelText="表示"
         />
         <Button
           name={DATAEDIT_BTN.GOOGLE}
@@ -26,6 +27,7 @@ export const DataEditButtons = () => {
           backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.google')}
+          labelText="Maps"
         />
         {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
           <Button
@@ -34,6 +36,7 @@ export const DataEditButtons = () => {
             backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={isEditingRecord}
             tooltipText={t('DataEdit.tooltip.edit')}
+            labelText="編集"
           />
         )}
         <Button
@@ -42,12 +45,14 @@ export const DataEditButtons = () => {
           backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.copy')}
+          labelText="複製"
         />
         <Button
           name={DATAEDIT_BTN.DELETE}
           onPress={pressDeleteData}
           backgroundColor={COLOR.BLUE}
           tooltipText={t('DataEdit.tooltip.delete')}
+          labelText="削除"
         />
       </View>
     </>

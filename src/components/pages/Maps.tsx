@@ -21,6 +21,7 @@ export default function MapScreen() {
           name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
           backgroundColor={isOffline ? 'red' : COLOR.BLUE}
           onPress={pressToggleOnline}
+          labelText={isOffline ? 'ｵﾌﾗｲﾝ' : 'ｵﾝﾗｲﾝ'}
         />
       ),
     [isOffline, pressToggleOnline]
