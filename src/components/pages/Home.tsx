@@ -200,7 +200,7 @@ export default function HomeScreen() {
     } else if (exportPDFMode) {
       return (
         <View style={[styles.headerRight, { marginRight: -10 }]}>
-          <Button name="cog" onPress={pressPDFSettingsOpen} />
+          <Button name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.pdfsettings')} />
         </View>
       );
     } else {

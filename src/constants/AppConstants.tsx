@@ -262,7 +262,7 @@ export const HOME_FEATURE_BTN = {
   LINE: 'chart-timeline-variant',
   POLYGON: 'pentagon-outline',
   MEMO: 'image-edit',
-  NONE: 'flower-tulip',
+  NONE: 'pencil',
 } as const;
 
 export const HOME_ACCOUNT_BTN = {
@@ -279,7 +279,7 @@ export const HOME_BTN = {
   ZOOM_PLUS: 'plus',
   ZOOM_MINUS: 'minus',
   MAPS: 'layers',
-  LAYERS: 'table-edit',
+  LAYERS: 'table',
   SETTINGS: 'cog',
 } as const;
 
@@ -297,7 +297,7 @@ export const MAPLIST_BTN = {
 } as const;
 
 export const DATAEDIT_BTN = {
-  JUMP: 'airplane',
+  JUMP: 'magnify-scan',
   GOOGLE: 'google',
   DELETE: 'delete',
   COPY: 'content-copy',

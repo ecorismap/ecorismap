@@ -23,6 +23,7 @@ export const HomeButtons = React.memo(() => {
           onPress={gotoMaps}
           backgroundColor={COLOR.BLUE}
           tooltipText={t('Maps.navigation.title')}
+          labelText={t('Home.label.maps')}
         />
       </View>
       {Platform.OS !== 'web' && (
@@ -31,6 +32,7 @@ export const HomeButtons = React.memo(() => {
             name={HOME_BTN.TRACK}
             backgroundColor={trackingState === 'on' ? 'red' : COLOR.BLUE}
             onPress={pressTracking}
+            labelText={t('Home.label.track')}
           />
         </View>
       )}
@@ -41,6 +43,7 @@ export const HomeButtons = React.memo(() => {
           onPress={gotoLayers}
           borderRadius={50}
           tooltipText={t('Layers.navigation.title')}
+          labelText={t('Home.label.layers')}
         />
       </View>
       <View style={{ marginHorizontal: 9 }}>
@@ -51,6 +54,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('POINT')}
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.point')}
+            labelText={t('Home.label.point')}
           />
           <Button
             id="LINE"
@@ -58,6 +62,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('LINE')}
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.line')}
+            labelText={t('Home.label.line')}
           />
           <Button
             id="POLYGON"
@@ -65,6 +70,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('POLYGON')}
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.polygon')}
+            labelText={t('Home.label.polygon')}
           />
           <Button
             id="MEMO"
@@ -72,6 +78,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('MEMO')}
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.memo')}
+            labelText={t('Home.label.memo')}
           />
           <Button
             id="NONE"
@@ -79,6 +86,7 @@ export const HomeButtons = React.memo(() => {
             onPressCustom={() => selectFeatureButton('NONE')}
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.drawtool')}
+            labelText={t('Home.label.drawtool')}
           />
         </SelectionalButton>
       </View>
@@ -88,6 +96,7 @@ export const HomeButtons = React.memo(() => {
           backgroundColor={COLOR.BLUE}
           onPress={gotoSettings}
           tooltipText={t('Settings.navigation.title')}
+          labelText={t('Home.label.settings')}
         />
       </View>
     </View>

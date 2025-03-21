@@ -232,7 +232,7 @@ const DataTitle = React.memo((props: Props) => {
           borderRadius={0}
           name={checkedAll ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
           onPress={onCheckAll}
-          size={25}
+          size={22}
         />
       </View>
       {projectId !== undefined && (

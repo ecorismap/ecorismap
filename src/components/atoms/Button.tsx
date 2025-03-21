@@ -20,6 +20,8 @@ interface Props {
   style?: any;
   tooltipText?: string;
   tooltipPosition?: any;
+  labelText?: string;
+  labelTextColor?: string;
 }
 
 const Button = React.memo((props: Props) => {
@@ -37,6 +39,8 @@ const Button = React.memo((props: Props) => {
     style,
     tooltipText,
     tooltipPosition,
+    labelText,
+    labelTextColor,
   } = props;
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -64,9 +68,17 @@ const Button = React.memo((props: Props) => {
       borderColor: borderColor || COLOR.BLACK,
       borderRadius: borderRadius || 50,
       borderWidth: borderWidth || 0,
-      height: (35 * size) / 20,
+      height: (40 * size) / 20,
       justifyContent: 'center',
-      width: (35 * size) / 20,
+      width: (40 * size) / 20,
+    },
+    label: {
+      alignSelf: 'center',
+      bottom: 4,
+      color: labelTextColor || COLOR.WHITE,
+      fontSize: 10,
+      fontWeight: 'bold',
+      position: 'absolute',
     },
     tooltip: {
       backgroundColor: COLOR.BLACK,
@@ -91,11 +103,13 @@ const Button = React.memo((props: Props) => {
   }, []);
 
   const renderIcon = () => {
-    if (isCustomIcon(name)) {
-      return <CustomIcon name={name} size={size} color={color} />;
-    } else {
-      return <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />;
-    }
+    const iconComponent = isCustomIcon(name) ? (
+      <CustomIcon name={name} size={size} color={color} />
+    ) : (
+      <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />
+    );
+
+    return <View style={{ bottom: labelText ? 6 : 0 }}>{iconComponent}</View>;
   };
   return (
     <View style={{ alignItems: 'center', zIndex: 10000 }}>
@@ -113,6 +127,7 @@ const Button = React.memo((props: Props) => {
         style={[styles.button, style]}
       >
         {renderIcon()}
+        {<Text style={styles.label}>{labelText}</Text>}
       </Pressable>
     </View>
   );
