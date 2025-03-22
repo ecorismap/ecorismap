@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 82 : 50,
+    top: Platform.OS === 'ios' ? 82 : 60,
     zIndex: 100,
   },
 });

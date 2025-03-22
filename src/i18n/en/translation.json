@@ -792,21 +792,22 @@
       "freehandPolygon": "free",
       "pdfsettings": "paper",
       "pdfdownload": "PDF",
-      "projects": "projects",
+      "projects": "project",
       "setting": "set",
       "logout": "logout",
       "saveProject": "save",
       "discardProject": "cancel",
-      "jumpProject": "Home",
-      "downloadData": "Pull",
-      "uploadData": "Push",
+      "jumpProject": "home",
+      "downloadData": "pull",
+      "uploadData": "push",
       "closeProject": "close",
       "pen": "pen",
       "stamp": "stamp",
       "eraser": "eraser",
       "brush": "brush",
       "color": "color",
-      "redo": "redo"
+      "redo": "redo",
+      "syncPosition": "share"
     }
   },
   "LayerEditFeatureStyle": {
