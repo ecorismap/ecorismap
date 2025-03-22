@@ -329,8 +329,8 @@ export const PROJECTS_BTN = {
 
 export const PROJECTEDIT_BTN = {
   OPEN: 'folder-open',
-  SETTING: 'folder-cog',
-  EXPORT: 'cloud-download',
+  SETTING: 'file-cog',
+  EXPORT: 'download',
   DELETE: 'delete',
   SAVE: 'content-save',
 } as const;

@@ -251,7 +251,7 @@
       "movePoint": "ポイントを長押しで移動",
       "deletePoint": "ポイントを削除",
       "projects": "プロジェクト一覧",
-      "setting": "アカウント設定",
+      "setting": "アカウントの設定",
       "logout": "ログアウト",
       "saveProject": "プロジェクトの設定を保存",
       "discardProect": " プロジェクトの変更を破棄",
@@ -297,7 +297,17 @@
       "plotPolygon": "追加",
       "freehandPolygon": "フリー",
       "pdfsettings": "用紙",
-      "pdfdownload": "PDF"
+      "pdfdownload": "PDF",
+      "projects": "ﾌﾟﾛｼﾞｪｸﾄ",
+      "logout": "ﾛｸﾞｱｳﾄ",
+      "setting": "設定",
+      "saveProject": "保存",
+      "discardProject": "破棄",
+      "jumpProject": "ホーム",
+      "downloadData": "取得",
+      "uploadData": "送信",
+      "syncPosition": "共有",
+      "closeProject": "閉じる"
     }
   },
   "AccountSettings": {
@@ -450,6 +460,10 @@
     "tooltip": {
       "reloadProjects": "リロード",
       "createProject": "プロジェクト作成"
+    },
+    "label": {
+      "createProject": "作成",
+      "reloadProjects": "更新"
     }
   },
   "ProjectEdit": {
@@ -474,6 +488,13 @@
       "setting": "プロジェクトを編集",
       "export": "プロジェクトのデータをエクスポート",
       "delete": "プロジェクトを削除"
+    },
+    "label": {
+      "open": "開く",
+      "setting": "設定",
+      "export": "DL",
+      "delete": "削除",
+      "save": "保存"
     }
   },
   "Maps": {

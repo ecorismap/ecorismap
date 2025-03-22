@@ -508,6 +508,10 @@
     },
     "navigation": {
       "title": "Project list"
+    },
+    "label": {
+      "reloadProjects": "reload",
+      "createProject": "create"
     }
   },
   "ProjectEdit": {
@@ -526,6 +530,13 @@
     },
     "navigation": {
       "title": "project"
+    },
+    "label": {
+      "open": "open",
+      "setting": "set",
+      "export": "DL",
+      "delete": "delete",
+      "save": "save"
     }
   },
   "LayerEdit": {
@@ -738,7 +749,10 @@
       "movePoint": "Move the point by long pressing",
       "deletePoint": "remove points",
       "finishEditPosition": "Finish editing",
-      "deletePosition": "delete coordinates"
+      "deletePosition": "delete coordinates",
+      "closeProject": "close project",
+      "setting": "Account Settings",
+      "logout": "Log out"
     },
     "modal": {
       "infoTool": {
@@ -774,7 +788,16 @@
       "plotPolygon": "add",
       "freehandPolygon": "free",
       "pdfsettings": "paper",
-      "pdfdownload": "PDF"
+      "pdfdownload": "PDF",
+      "projects": "projects",
+      "setting": "set",
+      "logout": "logout",
+      "saveProject": "save",
+      "discardProject": "cancel",
+      "jumpProject": "Home",
+      "downloadData": "Pull",
+      "uploadData": "Push",
+      "closeProject": "close"
     }
   },
   "LayerEditFeatureStyle": {

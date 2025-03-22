@@ -14,7 +14,7 @@ export const HomeProjectButtons = React.memo(() => {
     pressDownloadData,
     pressUploadData,
     pressSyncPosition,
-    pressCloseProject,
+    //pressCloseProject,
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
   } = useContext(HomeContext);
@@ -29,6 +29,7 @@ export const HomeProjectButtons = React.memo(() => {
               onPress={pressSaveProjectSetting}
               backgroundColor={COLOR.BLUE}
               tooltipText={t('Home.tooltip.saveProject')}
+              labelText={t('Home.label.saveProject')}
             />
           </View>
           <View style={{ marginHorizontal: 9 }}>
@@ -37,6 +38,7 @@ export const HomeProjectButtons = React.memo(() => {
               onPress={pressDiscardProjectSetting}
               backgroundColor={COLOR.DARKRED}
               tooltipText={t('Home.tooltip.discardProect')}
+              labelText={t('Home.label.discardProject')}
             />
           </View>
         </>
@@ -49,6 +51,7 @@ export const HomeProjectButtons = React.memo(() => {
               borderRadius={50}
               backgroundColor={COLOR.BLUE}
               tooltipText={t('Home.tooltip.jumpProject')}
+              labelText={t('Home.label.jumpProject')}
             />
           </View>
           <View style={{ marginHorizontal: 9 }}>
@@ -58,6 +61,7 @@ export const HomeProjectButtons = React.memo(() => {
               borderRadius={50}
               backgroundColor={COLOR.BLUE}
               tooltipText={t('Home.tooltip.downloadData')}
+              labelText={t('Home.label.downloadData')}
             />
           </View>
           <View style={{ marginHorizontal: 9 }}>
@@ -66,6 +70,7 @@ export const HomeProjectButtons = React.memo(() => {
               backgroundColor={COLOR.BLUE}
               onPress={pressUploadData}
               tooltipText={t('Home.tooltip.uploadData')}
+              labelText={t('Home.label.uploadData')}
             />
           </View>
           <View style={{ marginHorizontal: 9 }}>
@@ -74,17 +79,19 @@ export const HomeProjectButtons = React.memo(() => {
               backgroundColor={isSynced ? COLOR.RED : COLOR.BLUE}
               onPress={pressSyncPosition}
               tooltipText={t('Home.tooltip.syncPosition')}
+              labelText={t('Home.label.syncPosition')}
             />
           </View>
-          <View style={{ marginHorizontal: 9 }}>
+          {/* <View style={{ marginHorizontal: 9 }}>
             <Button
               name="logout"
               backgroundColor={COLOR.BLUE}
               disabled={false}
               onPress={pressCloseProject}
               tooltipText={t('Home.tooltip.closeProject')}
+              labelText={t('Home.label.closeProject')}
             />
-          </View>
+          </View> */}
         </>
       )}
     </View>
@@ -96,7 +103,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 80 : 50,
+    top: Platform.OS === 'ios' ? 82 : 50,
     zIndex: 100,
   },
 });

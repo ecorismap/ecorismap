@@ -13,13 +13,19 @@ export const ProjectsButtons = (props: Props) => {
 
   return (
     <View style={styles.buttonContainer}>
-      <Button name={PROJECTS_BTN.RELOAD} onPress={reloadProjects} tooltipText={t('Projects.tooltip.reloadProjects')} />
+      <Button
+        name={PROJECTS_BTN.RELOAD}
+        onPress={reloadProjects}
+        tooltipText={t('Projects.tooltip.reloadProjects')}
+        labelText={t('Projects.label.reloadProjects')}
+      />
       {(Platform.OS === 'web' || FUNC_CREATE_PROJECT_BY_MOBILE) && (
         <Button
           name={PROJECTS_BTN.ADD}
           onPress={createProject}
           tooltipText={t('Projects.tooltip.createProject')}
           tooltipPosition={{ right: 1 }}
+          labelText={t('Projects.label.createProject')}
         />
       )}
     </View>
