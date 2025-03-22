@@ -60,7 +60,7 @@ export const HomeAccountButton = () => {
         />
       ) : (
         <>
-          <SelectionalButton selectedButton={'ACCOUNT'} directionRow="column">
+          <SelectionalButton selectedButton={'ACCOUNT'} direction="topToDown">
             {user.photoURL !== null && valid ? (
               //@ts-ignore
               <TouchableOpacity id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
