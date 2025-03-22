@@ -252,7 +252,13 @@ const ListButtons = () => {
     itemFormat === 'RADIO';
   return editable ? (
     <View style={styles.button}>
-      <Button backgroundColor={COLOR.GRAY2} name="plus" disabled={!editable} onPress={() => pressAddValue(false)} />
+      <Button
+        backgroundColor={COLOR.GRAY2}
+        name="plus"
+        disabled={!editable}
+        onPress={() => pressAddValue(false)}
+        labelText={t('LayerEditFieldItem.label.addValue')}
+      />
       {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
         <TouchableOpacity style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
           <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{`${t('common.addOther')}`}</Text>

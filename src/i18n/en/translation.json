@@ -130,7 +130,8 @@
       "google": "Maps",
       "edit": "edit",
       "copy": "copy",
-      "delete": "delete"
+      "delete": "delete",
+      "save": "save"
     }
   },
   "common": {
@@ -554,7 +555,9 @@
     },
     "label": {
       "export": "export",
-      "delete": "delete"
+      "delete": "delete",
+      "save": "save",
+      "addField": "add"
     }
   },
   "Data": {
@@ -575,7 +578,7 @@
     },
     "label": {
       "add": "add",
-      "export": "export",
+      "export": "DL",
       "delete": "delete"
     }
   },
@@ -797,7 +800,13 @@
       "jumpProject": "Home",
       "downloadData": "Pull",
       "uploadData": "Push",
-      "closeProject": "close"
+      "closeProject": "close",
+      "pen": "pen",
+      "stamp": "stamp",
+      "eraser": "eraser",
+      "brush": "brush",
+      "color": "color",
+      "redo": "redo"
     }
   },
   "LayerEditFeatureStyle": {
@@ -813,6 +822,9 @@
     "dictionaryData": "dictionary",
     "tooltip": {
       "importDictionaryData": "Import dictionary data (CSV)"
+    },
+    "label": {
+      "addValue": "add"
     }
   },
   "Layers": {
@@ -883,12 +895,12 @@
   },
   "Layer": {
     "tooltip": {
-      "add": "Add layer",
+      "add": "Create layer",
       "import": "import"
     },
     "label": {
       "import": "import",
-      "add": "add"
+      "add": "create"
     }
   }
 }
