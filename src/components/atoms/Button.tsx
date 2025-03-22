@@ -22,6 +22,8 @@ interface Props {
   tooltipPosition?: any;
   labelText?: string;
   labelTextColor?: string;
+
+  labelFontSize?: number;
 }
 
 const Button = React.memo((props: Props) => {
@@ -41,6 +43,7 @@ const Button = React.memo((props: Props) => {
     tooltipPosition,
     labelText,
     labelTextColor,
+    labelFontSize,
   } = props;
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -76,7 +79,7 @@ const Button = React.memo((props: Props) => {
       alignSelf: 'center',
       bottom: 4,
       color: labelTextColor || COLOR.WHITE,
-      fontSize: 10,
+      fontSize: labelFontSize || 10,
       fontWeight: 'bold',
       position: 'absolute',
     },

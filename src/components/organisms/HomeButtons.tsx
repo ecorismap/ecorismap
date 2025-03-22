@@ -55,6 +55,7 @@ export const HomeButtons = React.memo(() => {
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.point')}
             labelText={t('Home.label.point')}
+            labelFontSize={7}
           />
           <Button
             id="LINE"
@@ -71,6 +72,7 @@ export const HomeButtons = React.memo(() => {
             backgroundColor={COLOR.BLUE}
             tooltipText={t('common.polygon')}
             labelText={t('Home.label.polygon')}
+            labelFontSize={7}
           />
           <Button
             id="MEMO"

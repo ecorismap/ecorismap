@@ -30,6 +30,7 @@ export const MapButtons = React.memo(() => {
         tooltipText={t('Maps.tooltip.download')}
         tooltipPosition={{ right: 1 }}
         labelText={t('Maps.label.export')}
+        labelFontSize={9}
       />
     </View>
   );

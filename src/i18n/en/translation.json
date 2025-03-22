@@ -130,7 +130,8 @@
       "google": "Maps",
       "edit": "edit",
       "copy": "copy",
-      "delete": "delete"
+      "delete": "delete",
+      "save": "save"
     }
   },
   "common": {
@@ -536,7 +537,9 @@
     },
     "label": {
       "export": "export",
-      "delete": "delete"
+      "delete": "delete",
+      "save": "save",
+      "addField": "add"
     }
   },
   "Data": {
@@ -557,7 +560,7 @@
     },
     "label": {
       "add": "add",
-      "export": "export",
+      "export": "DL",
       "delete": "delete"
     }
   },
@@ -766,7 +769,13 @@
       "plotPolygon": "add",
       "freehandPolygon": "free",
       "pdfsettings": "paper",
-      "pdfdownload": "PDF"
+      "pdfdownload": "PDF",
+      "pen": "pen",
+      "stamp": "stamp",
+      "eraser": "eraser",
+      "brush": "brush",
+      "color": "color",
+      "redo": "redo"
     }
   },
   "LayerEditFeatureStyle": {
@@ -782,6 +791,9 @@
     "dictionaryData": "dictionary",
     "tooltip": {
       "importDictionaryData": "Import dictionary data (CSV)"
+    },
+    "label": {
+      "addValue": "add"
     }
   },
   "Layers": {
@@ -852,12 +864,12 @@
   },
   "Layer": {
     "tooltip": {
-      "add": "Add layer",
+      "add": "Create layer",
       "import": "import"
     },
     "label": {
       "import": "import",
-      "add": "add"
+      "add": "create"
     }
   }
 }

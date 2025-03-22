@@ -18,6 +18,7 @@ export const LayerEditButton = () => {
         disabled={isEdited}
         tooltipText={t('LayerEdit.tooltip.export')}
         labelText={t('LayerEdit.label.export')}
+        labelFontSize={9}
       />
       <Button
         name={LAYEREDIT_BTN.DELETE}

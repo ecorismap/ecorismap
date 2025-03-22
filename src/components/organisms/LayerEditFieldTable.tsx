@@ -23,6 +23,7 @@ export const LayerEditFieldTitle = () => {
           name="plus"
           disabled={!editable}
           onPress={pressAddField}
+          labelText={t('LayerEdit.label.addField')}
         />
       </View>
       <View style={[styles.td3, { flex: 6, width: 150 }]}>
