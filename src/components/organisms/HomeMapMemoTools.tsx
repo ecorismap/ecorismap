@@ -6,6 +6,7 @@ import { Button } from '../atoms';
 import { HomeContext } from '../../contexts/Home';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
+import { t } from 'i18next';
 
 export const HomeMapMemoTools = () => {
   const {
@@ -63,6 +64,7 @@ export const HomeMapMemoTools = () => {
               : setVisibleMapMemoPen(true)
           }
           onLongPress={() => setVisibleMapMemoPen(true)}
+          labelText={t('Home.label.pen')}
         />
       </View>
       <View style={styles.button}>
@@ -73,6 +75,8 @@ export const HomeMapMemoTools = () => {
           borderRadius={10}
           onPress={() => setVisibleMapMemoStamp(true)}
           onLongPress={() => selectMapMemoTool(undefined)}
+          labelText={t('Home.label.stamp')}
+          labelFontSize={9}
         />
       </View>
       <View style={styles.button}>
@@ -83,6 +87,7 @@ export const HomeMapMemoTools = () => {
           borderRadius={10}
           onPress={() => setVisibleMapMemoBrush(true)}
           onLongPress={() => selectMapMemoTool(undefined)}
+          labelText={t('Home.label.brush')}
         />
       </View>
 
@@ -94,6 +99,7 @@ export const HomeMapMemoTools = () => {
           borderRadius={10}
           onPress={() => setVisibleMapMemoEraser(true)}
           onLongPress={() => selectMapMemoTool(undefined)}
+          labelText={t('Home.label.eraser')}
         />
       </View>
       <View style={styles.button}>
@@ -102,6 +108,7 @@ export const HomeMapMemoTools = () => {
           backgroundColor={COLOR.ALFABLUE}
           borderRadius={10}
           onPress={() => setVisibleMapMemoColor(true)}
+          labelText={t('Home.label.color')}
         />
       </View>
 
@@ -112,6 +119,7 @@ export const HomeMapMemoTools = () => {
             backgroundColor={isPencilModeActive ? COLOR.ALFARED : COLOR.ALFABLUE}
             borderRadius={10}
             onPress={togglePencilMode}
+            labelText={t('Home.label.pencilLock')}
           />
         </View>
       )}
@@ -122,6 +130,8 @@ export const HomeMapMemoTools = () => {
           borderRadius={10}
           disabled={!isUndoable}
           onPress={pressUndoMapMemo}
+          labelText={t('Home.label.undo')}
+          labelFontSize={9}
         />
       </View>
       <View style={styles.button}>
@@ -131,6 +141,8 @@ export const HomeMapMemoTools = () => {
           borderRadius={10}
           disabled={!isRedoable}
           onPress={pressRedoMapMemo}
+          labelText={t('Home.label.redo')}
+          labelFontSize={9}
         />
       </View>
     </View>

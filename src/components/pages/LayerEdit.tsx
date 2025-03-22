@@ -37,6 +37,7 @@ export default function LayerEditScreen() {
           backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!isEdited}
           tooltipText={t('LayerEdit.tooltip.save')}
+          labelText={t('LayerEdit.label.save')}
         />
       </View>
     );

@@ -308,7 +308,7 @@ export const DATAEDIT_BTN = {
 export const DATA_BTN = {
   ADD: 'plus',
   DELETE: 'delete',
-  EXPORT: 'briefcase-download',
+  DOWNLOAD: 'download',
 } as const;
 
 export const LAYERS_BTN = {
