@@ -3,30 +3,25 @@ import { View, StyleSheet } from 'react-native';
 
 interface Props {
   selectedButton: string;
-  directionRow: 'column' | 'row';
+  direction: 'topToDown' | 'bottomToUp' | 'leftToRight';
   children: any;
-  isPositionRight?: boolean;
 }
 
 const SelectionalButton = React.memo((props: Props) => {
   const [isButtonOpen, setButtonOpen] = useState(false);
-  const { selectedButton, directionRow, isPositionRight } = props;
+  const { selectedButton, direction } = props;
 
   const styles = StyleSheet.create({
     button: {
       alignItems: 'flex-end',
-      marginRight: directionRow === 'row' ? 5 : 0,
-      marginTop: directionRow === 'column' ? 5 : 0,
-    },
-    buttonLandscape: {
-      alignItems: 'flex-end',
-      marginLeft: directionRow === 'row' ? 5 : 0,
-      marginTop: directionRow === 'column' ? 5 : 0,
+      marginBottom: direction === 'topToDown' ? 5 : 0,
+      marginRight: direction === 'leftToRight' ? 5 : 0,
+      marginTop: direction === 'topToDown' ? 0 : 5,
     },
   });
 
   return (
-    <View style={{ flexDirection: directionRow }}>
+    <View style={{ flexDirection: direction === 'leftToRight' ? 'row' : 'column' }}>
       {isButtonOpen
         ? React.Children.map(props.children, (item, index) => {
             if (item === null) return null;
@@ -38,7 +33,7 @@ const SelectionalButton = React.memo((props: Props) => {
             });
 
             return (
-              <View key={index} style={isPositionRight ? styles.buttonLandscape : styles.button}>
+              <View key={index} style={styles.button}>
                 {newitem}
               </View>
             );

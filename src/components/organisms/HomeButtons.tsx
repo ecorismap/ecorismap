@@ -47,7 +47,7 @@ export const HomeButtons = React.memo(() => {
         />
       </View>
       <View style={{ marginHorizontal: 9 }}>
-        <SelectionalButton selectedButton={featureButton} directionRow="column">
+        <SelectionalButton selectedButton={featureButton} direction="bottomToUp">
           <Button
             id="POINT"
             name={HOME_FEATURE_BTN.POINT}
