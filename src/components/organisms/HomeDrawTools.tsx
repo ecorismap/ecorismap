@@ -164,6 +164,7 @@ export const HomeDrawTools = () => {
             disabled={isEditingDraw}
             onPress={() => selectDrawTool('SELECT')}
             labelText={t('Home.label.select')}
+            labelFontSize={9}
           />
         </View>
       )}
@@ -176,6 +177,7 @@ export const HomeDrawTools = () => {
             disabled={false}
             onPress={() => selectDrawTool('MOVE')}
             labelText={t('Home.label.move')}
+            labelFontSize={9}
           />
         </View>
       )}
@@ -212,6 +214,7 @@ export const HomeDrawTools = () => {
             disabled={false}
             onPress={pressUndoDraw}
             labelText={t('Home.label.undo')}
+            labelFontSize={9}
           />
         </View>
       )}

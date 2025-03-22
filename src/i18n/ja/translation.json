@@ -249,10 +249,10 @@
       "maps": "地図",
       "track": "軌跡",
       "layers": "レイヤ",
-      "point": "ﾎﾟｲﾝﾄ",
-      "line": "ﾗｲﾝ",
-      "polygon": "ﾎﾟﾘｺﾞﾝ",
-      "memo": "ﾒﾓ",
+      "point": "ポイント",
+      "line": "ライン",
+      "polygon": "ポリゴン",
+      "memo": "メモ",
       "drawtool": "ドロー",
       "settings": "設定",
       "addLocationPoint": "現在地",
@@ -274,7 +274,13 @@
       "plotPolygon": "追加",
       "freehandPolygon": "フリー",
       "pdfsettings": "用紙",
-      "pdfdownload": "PDF"
+      "pdfdownload": "PDF",
+      "pen": "ペン",
+      "stamp": "スタンプ",
+      "eraser": "消しｺﾞﾑ",
+      "brush": "ブラシ",
+      "color": "色選択",
+      "redo": "やり直す"
     }
   },
   "AccountSettings": {
@@ -496,7 +502,9 @@
     },
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
-      "delete": "削除"
+      "delete": "削除",
+      "save": "保存",
+      "addField": "追加"
     }
   },
   "LayerEditFeatureStyle": {
@@ -512,6 +520,9 @@
     "dictionaryData": "辞書",
     "tooltip": {
       "importDictionaryData": "辞書データ（CSV）をインポート"
+    },
+    "label": {
+      "addValue": "追加"
     }
   },
   "tutrials": {
@@ -601,8 +612,9 @@
       "delete": "データ削除"
     },
     "label": {
-      "export": "ｴｸｽﾎﾟｰﾄ",
-      "delete": "削除"
+      "export": "取得",
+      "delete": "削除",
+      "add": "追加"
     }
   },
   "DataEdit": {
@@ -637,9 +649,10 @@
     "label": {
       "jump": "表示",
       "google": "Maps",
-      "edit": "編集",
+      "edit": "位置",
       "copy": "複製",
-      "delete": "削除"
+      "delete": "削除",
+      "save": "保存"
     }
   },
   "firebase": {
@@ -854,12 +867,12 @@
   },
   "Layer": {
     "tooltip": {
-      "add": "レイヤ追加",
+      "add": "レイヤを作成します",
       "import": "インポート"
     },
     "label": {
       "import": "ｲﾝﾎﾟｰﾄ",
-      "add": "追加"
+      "add": "作成"
     }
   }
 }
