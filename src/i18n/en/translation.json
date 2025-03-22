@@ -705,7 +705,7 @@
       "termsOfuse": "If you do not agree, please stop using it.",
       "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen.",
       "clearMapMemo": "I deleted the map notes.",
-      "individualColor": "Changed the color type to [Individual]. \nIf you want to undo it, change it from the layer style.",
+      "individualColor": "Changed the layer style color type to [Individual].",
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
       "exportPDF": "I saved the PDF."
