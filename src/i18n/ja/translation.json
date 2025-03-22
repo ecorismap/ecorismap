@@ -498,7 +498,7 @@
     "label": {
       "open": "開く",
       "setting": "設定",
-      "export": "DL",
+      "export": "取得",
       "delete": "削除",
       "save": "保存"
     }
