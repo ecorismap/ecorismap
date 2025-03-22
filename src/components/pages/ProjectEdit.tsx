@@ -58,6 +58,7 @@ export default function ProjectEditScreen() {
             onPress={pressSaveProject}
             backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
             disabled={!isEdited}
+            labelText={t('ProjectEdit.label.save')}
           />
         )}
       </View>

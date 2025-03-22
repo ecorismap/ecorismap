@@ -71,8 +71,8 @@ export const HomeAccountButton = () => {
               <TouchableOpacity id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
                 <View
                   style={{
-                    width: 35,
-                    height: 35,
+                    width: 40,
+                    height: 40,
                     borderRadius: 35,
                     backgroundColor: COLOR.ORANGE,
                     //flex: 1,
@@ -92,6 +92,8 @@ export const HomeAccountButton = () => {
                 onPressCustom={gotoProjects}
                 tooltipText={t('Home.tooltip.projects')}
                 tooltipPosition={{ right: 1 }}
+                labelText={t('Home.label.projects')}
+                labelFontSize={8}
               />
             )}
             <Button
@@ -101,6 +103,7 @@ export const HomeAccountButton = () => {
               onPressCustom={gotoAccount}
               tooltipText={t('Home.tooltip.setting')}
               tooltipPosition={{ right: 1 }}
+              labelText={t('Home.label.setting')}
             />
             <Button
               id="LOGOUT"
@@ -109,6 +112,8 @@ export const HomeAccountButton = () => {
               onPressCustom={pressLogout}
               tooltipText={t('Home.tooltip.logout')}
               tooltipPosition={{ right: 1 }}
+              labelText={t('Home.label.logout')}
+              labelFontSize={9}
             />
           </SelectionalButton>
         </>
