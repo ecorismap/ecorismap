@@ -7,7 +7,7 @@ import { t } from '../../i18n/config';
 interface Props {
   disabled: boolean;
   isNew: boolean;
-  isProjectOpen: boolean;
+
   isOwnerAdmin: boolean;
   onPressOpenProject: () => void;
   onPressDeleteProject: () => void;
@@ -18,7 +18,6 @@ export const ProjectEditButtons = React.memo((props: Props) => {
   const {
     disabled,
     isNew,
-    isProjectOpen,
     isOwnerAdmin,
     onPressOpenProject,
     onPressDeleteProject,
@@ -44,8 +43,8 @@ export const ProjectEditButtons = React.memo((props: Props) => {
         <Button
           name={PROJECTEDIT_BTN.SETTING}
           onPress={onPressSettingProject}
-          disabled={isProjectOpen || disabled}
-          backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={disabled}
+          backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
           tooltipText={t('ProjectEdit.tooltip.setting')}
           labelText={t('ProjectEdit.label.setting')}
         />
@@ -54,8 +53,8 @@ export const ProjectEditButtons = React.memo((props: Props) => {
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.EXPORT}
-            backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
-            disabled={isProjectOpen || disabled}
+            backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+            disabled={disabled}
             onPress={onPressExportProject}
             tooltipText={t('ProjectEdit.tooltip.export')}
             labelText={t('ProjectEdit.label.export')}
@@ -66,8 +65,8 @@ export const ProjectEditButtons = React.memo((props: Props) => {
         <View style={{ marginHorizontal: 9 }}>
           <Button
             name={PROJECTEDIT_BTN.DELETE}
-            backgroundColor={isProjectOpen || disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
-            disabled={isProjectOpen || disabled}
+            backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
+            disabled={disabled}
             onPress={onPressDeleteProject}
             tooltipText={t('ProjectEdit.tooltip.delete')}
             labelText={t('ProjectEdit.label.delete')}

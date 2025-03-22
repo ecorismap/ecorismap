@@ -483,7 +483,8 @@
       "deleteProject": "プロジェクトを削除しました。",
       "addMemberWeb": "メンバーを追加するには、アップグレードしてください。",
       "addMember": "メンバー数の上限を超えているため追加できません。Web版で詳細を確認してください。",
-      "settingProject": "プロジェクトの設定を変更できます。"
+      "settingProject": "プロジェクトの設定を変更できます。",
+      "deleteProjectOpen": "プロジェクトを閉じてから実行してください。"
     },
     "confirm": {
       "deleteProject": "プロジェクトを削除しますか？",

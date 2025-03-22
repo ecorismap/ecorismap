@@ -213,6 +213,10 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const pressDeleteProject = useCallback(async () => {
     try {
+      if (isProjectOpen) {
+        await AlertAsync(t('ProjectEdit.alert.deleteProjectOpen'));
+        return;
+      }
       const ret = await ConfirmAsync(t('ProjectEdit.confirm.deleteProject'));
       if (!ret) return;
       setIsLoading(true);
@@ -228,7 +232,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [deleteE3kitGroup, deleteProject, navigation, targetProject]);
+  }, [deleteE3kitGroup, deleteProject, isProjectOpen, navigation, targetProject]);
 
   const saveUpdatedProject = useCallback(
     async (project: ProjectType) => {
