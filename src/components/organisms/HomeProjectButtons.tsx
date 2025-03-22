@@ -14,7 +14,7 @@ export const HomeProjectButtons = React.memo(() => {
     pressDownloadData,
     pressUploadData,
     pressSyncPosition,
-    //pressCloseProject,
+    pressCloseProject,
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
   } = useContext(HomeContext);
@@ -82,16 +82,16 @@ export const HomeProjectButtons = React.memo(() => {
               labelText={t('Home.label.syncPosition')}
             />
           </View>
-          {/* <View style={{ marginHorizontal: 9 }}>
+          <View style={{ marginHorizontal: 9 }}>
             <Button
-              name="logout"
+              name="close-thick"
               backgroundColor={COLOR.BLUE}
               disabled={false}
               onPress={pressCloseProject}
               tooltipText={t('Home.tooltip.closeProject')}
               labelText={t('Home.label.closeProject')}
             />
-          </View> */}
+          </View>
         </>
       )}
     </View>

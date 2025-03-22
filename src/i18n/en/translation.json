@@ -523,7 +523,8 @@
       "deleteProject": "The project has been deleted.",
       "addMemberWeb": "Please upgrade to add members.",
       "addMember": "Cannot be added because the maximum number of members has been exceeded. \nCheck the web version for details.",
-      "settingProject": "You can change the project settings."
+      "settingProject": "You can change the project settings.",
+      "deleteProjectOpen": "Please close the project before running it."
     },
     "confirm": {
       "deleteProject": "Do you want to delete the project?",

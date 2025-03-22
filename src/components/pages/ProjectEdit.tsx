@@ -128,7 +128,6 @@ export default function ProjectEditScreen() {
       <ProjectEditButtons
         disabled={isEdited}
         isNew={isNew}
-        isProjectOpen={isProjectOpen}
         isOwnerAdmin={isOwnerAdmin}
         onPressOpenProject={() => pressOpenProject(false)}
         onPressDeleteProject={pressDeleteProject}
