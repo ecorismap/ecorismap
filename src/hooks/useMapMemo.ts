@@ -537,7 +537,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       if (isMapMemoLineSmoothed && !isStraightStyle && newLineCoords.length > 8) {
         const newPortion = newLineCoords.slice(editingPointIndex);
         if (newPortion.length > 8) {
-          const smoothedPortion = smoothingByBezier(newPortion.slice(2, -2));
+          const smoothedPortion = smoothingByBezier(newPortion.slice(4, -2));
           newLineCoords = [...newLineCoords.slice(0, editingPointIndex), ...smoothedPortion];
         }
       }

@@ -208,6 +208,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     borderRadius={10}
                     onPress={() => {
                       setArrowStyle('NONE');
+                      setSmoothed(false);
                     }}
                   />
                 </View>
@@ -219,6 +220,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     borderRadius={10}
                     onPress={() => {
                       setArrowStyle('ARROW_END');
+                      setSmoothed(true);
                     }}
                   />
                 </View>
@@ -230,13 +232,14 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     borderRadius={10}
                     onPress={() => {
                       setArrowStyle('ARROW_BOTH');
+                      setSmoothed(true);
                     }}
                   />
                 </View>
               </View>
             </View>
 
-            <View style={styles.checkbox}>
+            {/* <View style={styles.checkbox}>
               <CheckBox
                 label={t('common.smoothLine')}
                 style={{ backgroundColor: COLOR.WHITE }}
@@ -245,7 +248,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                 checked={smoothed}
                 onCheck={setSmoothed}
               />
-            </View>
+            </View> */}
 
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
