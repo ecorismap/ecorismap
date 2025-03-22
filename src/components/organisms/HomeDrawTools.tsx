@@ -51,7 +51,7 @@ export const HomeDrawTools = () => {
     button: {
       alignSelf: 'flex-start',
       marginTop: 2,
-      width: 36,
+      width: 40,
     },
     buttonContainer: {
       // elevation: 101,
