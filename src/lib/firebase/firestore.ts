@@ -396,17 +396,26 @@ export const downloadAllData = async (projectId: string) => {
   }
 };
 
-export const downloadPublicAndAllPrivateData = async (projectId: string) => {
+export const downloadPublicAndAllPrivateData = async (projectId: string, excludeUserId?: string) => {
   try {
-    const projectDataSet = await firestore
+    // ベースクエリを作成
+    const baseQuery = firestore
       .collection(`projects/${projectId}/data`)
-      .where('permission', 'in', ['PUBLIC', 'PRIVATE'])
-      .get();
-    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+      .where('permission', 'in', ['PUBLIC', 'PRIVATE']);
 
+    // クエリを実行
+    const projectDataSet = await baseQuery.get();
+
+    // クライアント側でexcludeUserIdを除外する
+    let docs = projectDataSet.docs;
+    if (excludeUserId) {
+      docs = docs.filter((doc) => doc.data().userId !== excludeUserId);
+    }
+
+    const dataSet = await projectDataSetToDataSet(projectId, { docs });
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
   }
 };
@@ -425,17 +434,22 @@ export const downloadPublicAndCommonData = async (projectId: string) => {
   }
 };
 
-export const downloadPublicData = async (projectId: string) => {
+export const downloadPublicData = async (projectId: string, excludeUserId?: string) => {
   try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'PUBLIC')
-      .get();
-    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+    // permissionが'PUBLIC'のデータを取得
+    const query = firestore.collection(`projects/${projectId}/data`).where('permission', '==', 'PUBLIC');
+    const projectDataSet = await query.get();
 
+    // クライアント側でexcludeUserIdを除外する
+    let docs = projectDataSet.docs;
+    if (excludeUserId) {
+      docs = docs.filter((doc) => doc.data().userId !== excludeUserId);
+    }
+
+    const dataSet = await projectDataSetToDataSet(projectId, { docs });
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
   }
 };

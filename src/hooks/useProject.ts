@@ -42,9 +42,8 @@ export const useProject = (): UseProjectReturnType => {
 
   const {
     downloadPublicData,
-    downloadPrivateData,
     downloadPublicAndAllPrivateData,
-    uploadData: uploadDataToRepository,
+    uploadDataToRepository,
     uploadProjectSettings,
     deleteCommonAndTemplateData,
   } = useRepository();
@@ -53,17 +52,18 @@ export const useProject = (): UseProjectReturnType => {
     async (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
       if (downloadType === 'ADMIN') {
-        const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload);
+        //自分以外のメンバーのデータを取得する
+        const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload, true);
         if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
       } else {
-        const publicDataResult = await downloadPublicData(project, shouldPhotoDownload);
+        //自分以外のメンバーのデータを取得する
+        const publicDataResult = await downloadPublicData(project, shouldPhotoDownload, true);
         if (!publicDataResult.isOK) throw new Error(publicDataResult.message);
-        const privateDataResult = await downloadPrivateData(project, shouldPhotoDownload);
-        if (!privateDataResult.isOK) throw new Error(privateDataResult.message);
+        // privateDataは取得する必要がない。
       }
       dispatch(editSettingsAction({ photosToBeDeleted: [] }));
     },
-    [dispatch, downloadPrivateData, downloadPublicAndAllPrivateData, downloadPublicData, project]
+    [dispatch, downloadPublicAndAllPrivateData, downloadPublicData, project]
   );
 
   const uploadData = useCallback(

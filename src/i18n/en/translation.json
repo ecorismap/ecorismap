@@ -711,7 +711,7 @@
   "Home": {
     "alert": {
       "compass": "Turn on GPS to use the compass",
-      "download": "Data downloaded.",
+      "download": "Data has been obtained.",
       "gps": "Please turn on GPS",
       "gpsWeb": "Not available in the web version",
       "gpsWithTrack": "Stop recording the track to turn off GPS.",
@@ -741,7 +741,9 @@
       "saveProject": "Do you want to save the project settings?",
       "track": "Do you want to stop recording the track?",
       "clearMapMemo": "Erase all map notes?",
-      "track_start": "Do you want to start recording the track?"
+      "track_start": "Do you want to start recording the track?",
+      "download": "Do you want to retrieve updated data?",
+      "upload": "Do you want to send data?"
     },
     "navigation": {
       "download": "Map download",
