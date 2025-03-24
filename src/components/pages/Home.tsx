@@ -36,7 +36,7 @@ import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
@@ -213,6 +213,19 @@ export default function HomeScreen() {
 
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      height: interpolate(
+        animatedIndex.value,
+        [0, 1, 2],
+        [
+          (windowHeight - 20 - insets.top - insets.bottom) / 10,
+          (windowHeight - 20 - insets.top - insets.bottom) / 2,
+          windowHeight - 20 - insets.top - insets.bottom,
+        ]
+      ),
+    };
+  });
 
   const customHandlePadding = useAnimatedStyle(() => {
     return {
@@ -521,16 +534,18 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
-        //Sliderをスムーズにするには以下の設定がいるがボトムシートが反応する範囲が狭くなるので使わない
-        //enableContentPanningGesture={false}
-        style={[{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
+        style={[
+          {
+            marginLeft: isLandscape ? '50%' : '0%',
+            width: isLandscape ? '50%' : '100%',
+          },
+          customHandlePadding,
+        ]}
       >
-        <BottomSheetView
-          style={{
-            flex: 1,
-          }}
-        >
-          <SplitScreen />
+        <BottomSheetView style={{ flex: 1 }}>
+          <Animated.View style={animatedStyle}>
+            <SplitScreen />
+          </Animated.View>
         </BottomSheetView>
       </BottomSheet>
     </GestureHandlerRootView>
