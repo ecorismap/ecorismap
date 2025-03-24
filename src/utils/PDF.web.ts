@@ -181,3 +181,5 @@ export const convertPDFToGeoTiff = async (uri: string) => {
     return [];
   }
 };
+
+export const generateTilesFromPDF = {};
