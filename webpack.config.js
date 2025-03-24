@@ -4,8 +4,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = async function (env, argv) {
   const config = await createExpoWebpackConfigAsync(
     {
-      ...env,
-      babel: { dangerouslyAddModulePathsToTranspile: ['@gorhom'] },
+      ...env
     },
     argv
   );

@@ -126,3 +126,5 @@ export function blobToBase64(blob: Blob) {
     reader.readAsDataURL(blob);
   });
 }
+
+export async function exportFileFromUri() {}

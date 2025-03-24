@@ -39,7 +39,7 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
@@ -554,13 +554,19 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
-        //Sliderをスムーズにするには以下の設定がいるがボトムシートが反応する範囲が狭くなるので使わない
-        //enableContentPanningGesture={false}
-        style={[{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }, customHandlePadding]}
+        style={[
+          {
+            marginLeft: isLandscape ? '50%' : '0%',
+            width: isLandscape ? '50%' : '100%',
+          },
+          customHandlePadding,
+        ]}
       >
-        <Animated.View style={animatedStyle}>
-          <SplitScreen />
-        </Animated.View>
+        <BottomSheetView style={{ flex: 1 }}>
+          <Animated.View style={animatedStyle}>
+            <SplitScreen />
+          </Animated.View>
+        </BottomSheetView>
       </BottomSheet>
     </GestureHandlerRootView>
   );

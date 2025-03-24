@@ -45,8 +45,8 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
 import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet from '@gorhom/bottom-sheet';
-import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useSharedValue } from 'react-native-reanimated';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -124,21 +124,13 @@ export default function HomeScreen() {
   //console.log('render Home');
   const layers = useSelector((state: RootState) => state.layers);
 
-  const { mapRegion, windowWidth, isLandscape, windowHeight } = useWindow();
+  const { mapRegion, windowWidth, isLandscape } = useWindow();
   const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      height: interpolate(
-        animatedIndex.value,
-        [0, 1, 2],
-        [(windowHeight - 20) / 10, (windowHeight - 20) / 2, windowHeight - 20]
-      ),
-    };
-  });
+
   const skyStyle = {
     'sky-color': '#79bffc',
     'sky-horizon-blend': 0.6,
@@ -875,9 +867,13 @@ export default function HomeScreen() {
         handleComponent={customHandle}
         style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
       >
-        <Animated.View style={animatedStyle}>
+        <BottomSheetView
+          style={{
+            flex: 1,
+          }}
+        >
           <SplitScreen />
-        </Animated.View>
+        </BottomSheetView>
       </BottomSheet>
     </GestureHandlerRootView>
   );
