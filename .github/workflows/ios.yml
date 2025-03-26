@@ -74,18 +74,14 @@ jobs:
             -scheme ecorismap \
             -sdk iphoneos \
             -configuration Release \
-            -archivePath ecorismap.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=V5G4AV2NNZ \
-            PROVISIONING_PROFILE_SPECIFIER="ecorismap" \
-            CODE_SIGN_IDENTITY="Apple Distribution"
+            -archivePath ecorismap.xcarchive
 
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
                      -archivePath ecorismap.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
-                     -exportPath app.ipa \
+                     -exportPath app.ipa
 
       - name: Upload IPA to App Store Connect
         run: |
