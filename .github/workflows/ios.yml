@@ -62,8 +62,24 @@ jobs:
           cd ios
           pod install
 
-      - name: Fastlane match (App Store)
-        run: fastlane match appstore
+      - name: Prepare API Key file
+        run: |
+          mkdir -p private_keys
+          echo '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > private_keys/AuthKey.p8
+
+      - name: Run fastlane match with API Key
+        run: fastlane match appstore --api_key_path private_keys/AuthKey.p8
         env:
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+
+      - name: Build and upload with Fastlane
+        run: bundle exec fastlane ios release
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
