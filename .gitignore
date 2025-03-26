@@ -105,3 +105,6 @@ modules/react-native-gdalwarp/ios/Frameworks/
 !.yarn/versions
 
 react-native-maps/
+
+# workflow
+ExportOptions.plist
