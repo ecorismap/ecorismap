@@ -9,6 +9,8 @@
 - Lint code: `yarn lint`
 - Type check: `yarn type-check`
 
+
+
 ## Code Style Guidelines
 - Use TypeScript with strict mode enabled
 - Follow Prettier config: 120 chars line length, 2 spaces indent, single quotes
