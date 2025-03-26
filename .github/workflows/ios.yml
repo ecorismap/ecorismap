@@ -75,9 +75,6 @@ jobs:
             -sdk iphoneos \
             -configuration Release \
             -archivePath ecorismap.xcarchive \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=V5G4AV2NNZ \
-            PROVISIONING_PROFILE_SPECIFIER="ecorismap"
 
       - name: Export IPA
         run: |
