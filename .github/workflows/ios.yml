@@ -1,9 +1,11 @@
 name: iOS Build and Upload
 on: [push, workflow_dispatch]
+
 jobs:
   build-and-upload:
     name: Build and Upload to App Store
     runs-on: macos-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -13,6 +15,14 @@ jobs:
         with:
           node-version: 18
           cache: 'yarn'
+
+      - name: Set up Ruby & Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      - name: Install Fastlane
+        run: gem install fastlane
 
       - name: Create Maps.plist
         run: |
@@ -31,10 +41,6 @@ jobs:
       - name: Create GoogleService-Info.plist
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/ecorismap/GoogleService-Info.plist
-
-      - name: Create ExportOptions.plist
-        run: |
-          echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
 
       - name: Create Private Key
         run: |
@@ -56,35 +62,19 @@ jobs:
           cd ios
           pod install
 
-      - name: Import Code Signing Certificates
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-          p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
+      - name: Fastlane match (App Store)
+        run: fastlane match appstore
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
 
-      - name: Archive Project
-        run: |
-          xcodebuild archive -workspace ios/ecorismap.xcworkspace \
-                             -scheme ecorismap \
-                             -sdk iphoneos \
-                             -configuration Release \
-                             -archivePath ecorismap.xcarchive \
-                             CODE_SIGNING_ALLOWED=NO
-
-      - name: Export IPA
-        run: |
-          xcodebuild -exportArchive \
-                     -archivePath ecorismap.xcarchive \
-                     -exportOptionsPlist ExportOptions.plist \
-                     -exportPath app.ipa \
-                     -allowProvisioningUpdates \
-                     -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
-                     -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                     -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
-
-      - name: Upload IPA to App Store Connect
-        run: |
-          xcrun altool --upload-app -f app.ipa/ecorismap.ipa \
-                       -u ${{ secrets.APPLE_ID }} \
-                       -p ${{ secrets.APP_SPECIFIC_PASSWORD }} \
-                       --type ios
+      - name: Build and upload with Fastlane
+        run: bundle exec fastlane ios release
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
