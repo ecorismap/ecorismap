@@ -73,6 +73,7 @@ jobs:
                              -scheme ecorismap \
                              -sdk iphoneos \
                              -configuration Release \
+                             -allowProvisioningUpdates \
                              -archivePath ecorismap.xcarchive \
                              -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
                              -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
@@ -84,6 +85,7 @@ jobs:
                      -archivePath ecorismap.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
                      -exportPath app.ipa \
+                     -allowProvisioningUpdates \
                      -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
                      -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
                      -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
