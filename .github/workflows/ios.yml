@@ -77,7 +77,8 @@ jobs:
                              -archivePath ecorismap.xcarchive \
                              -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
                              -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }} \
+                             CODE_SIGN_IDENTITY="Apple Distribution"
 
       - name: Export IPA
         run: |
