@@ -56,29 +56,17 @@ jobs:
           cd ios
           pod install
 
-      # - name: Import Code Signing Certificates
-      #   uses: apple-actions/import-codesign-certs@v3
-      #   with:
-      #     p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-      #     p12-password: ${{ secrets.CERTIFICATES_P12_PASSWORD }}
-
-      # - name: Install Provisioning Profile
-      #   run: |
-      #     mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-      #     echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/${{ secrets.PROVISIONING_PROFILE_NAME }}
-
       - name: Archive Project
         run: |
           xcodebuild archive -workspace ios/ecorismap.xcworkspace \
                              -scheme ecorismap \
                              -sdk iphoneos \
                              -configuration Release \
-                             -allowProvisioningUpdates \
                              -archivePath ecorismap.xcarchive \
+                             -allowProvisioningUpdates \
                              -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
                              -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }} \
-                             CODE_SIGN_IDENTITY="Apple Distribution"
+                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
 
       - name: Export IPA
         run: |
