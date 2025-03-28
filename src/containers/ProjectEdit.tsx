@@ -110,7 +110,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       try {
         if (isProjectOpen) {
           const ret = await ConfirmAsync(t('Home.confirm.reOpenProject'));
-          if (!ret) return;
+          if (!ret) return false;
         }
 
         const projectLicenseResult = validateProjectLicense(targetProject.license, ownerProjectsCount());
@@ -146,9 +146,11 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           previous: 'ProjectEdit',
           mode: 'jumpTo',
         });
+        return true;
       } catch (e: any) {
         setIsLoading(false);
         await AlertAsync(e.message);
+        return false;
       }
     },
     [
@@ -168,9 +170,11 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   );
 
   const pressSettingProject = useCallback(async () => {
-    await pressOpenProject(true);
-    startProjectSetting();
-    await AlertAsync(t('ProjectEdit.alert.settingProject'));
+    const ret = await pressOpenProject(true);
+    if (ret) {
+      startProjectSetting();
+      await AlertAsync(t('ProjectEdit.alert.settingProject'));
+    }
   }, [pressOpenProject, startProjectSetting]);
 
   const pressExportProject = useCallback(async () => {

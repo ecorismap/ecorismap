@@ -92,13 +92,12 @@ export default function ProjectEditScreen() {
           onEndEditing={() => null}
         />
 
-        {!isProjectOpen && (isOwner || isNew) && (
+        {(isOwner || isNew) && (
           <EditString
-            name={''}
+            name={t('common.addMembers')}
             value={emails}
-            placeholder={t('common.addMembers')}
-            style={{ backgroundColor: COLOR.WHITE, borderRadius: 5 }}
-            editable={!isProjectOpen}
+            style={{ backgroundColor: COLOR.WHITE, borderRadius: 5, flex: 1 }}
+            editable={true}
             onChangeText={setEmails}
             onEndEditing={() => {
               pressAddMembers(emails);

@@ -179,7 +179,7 @@
     "default": "デフォルト",
     "common": "共通",
     "smoothLine": "ラインを滑らかにする",
-    "addMembers": "メンバーを追加（メールアドレスをカンマ区切りで入力し、Enterキーを押してリストに追加します。）",
+    "addMembers": "メンバーを追加（メールアドレスをカンマ区切りで入力し、Enterキーを押す）",
     "yes": "はい",
     "no": "いいえ",
     "selectionType": "選択タイプ",
@@ -502,7 +502,8 @@
       "export": "取得",
       "delete": "削除",
       "save": "保存"
-    }
+    },
+    "addMembersHint": "Enterで追加"
   },
   "Maps": {
     "navigation": {
