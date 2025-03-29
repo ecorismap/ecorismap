@@ -187,6 +187,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         redraw: false,
         coords: undefined,
         field: { ...field, ...fields },
+        updatedAt: Date.now(),
       };
       dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
       setCheckList([]);

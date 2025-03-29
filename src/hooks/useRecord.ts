@@ -231,6 +231,7 @@ export const useRecord = (): UseRecordReturnType => {
         coords: coords,
         centroid: centroid,
         field: field,
+        updatedAt: Date.now(),
       };
       return record;
     },

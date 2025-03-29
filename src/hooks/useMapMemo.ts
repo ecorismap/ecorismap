@@ -550,6 +550,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
           const updatedRecord = {
             ...originalRecord,
             coords: latlonArrayToLatLonObjects(latlonCoords),
+            field: {
+              ...originalRecord.field,
+              _strokeColor: penColor,
+              _strokeWidth: penWidth,
+              _strokeStyle: arrowStyle || '',
+            },
           };
 
           dispatch(
