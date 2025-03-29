@@ -231,6 +231,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
 
     const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
+    //unixTimeを更新
+    updatedRecord.updatedAt = Date.now();
 
     dispatch(
       updateRecordsAction({
@@ -324,6 +326,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         id: id,
         userId: dataUser.uid,
         displayName: dataUser.displayName,
+        updatedAt: Date.now(),
       };
       dispatch(addRecordsAction({ layerId: targetLayer.id, userId: dataUser.uid, data: [newData] }));
       return newData;

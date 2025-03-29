@@ -107,6 +107,7 @@ export interface RecordType {
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
+  updatedAt?: number;
 }
 
 export interface PointRecordType {
@@ -117,8 +118,8 @@ export interface PointRecordType {
   redraw: boolean;
   coords: LocationType | undefined;
   field: { [key: string]: string | number | PhotoType[] };
+  updatedAt?: number;
 }
-
 export interface LineRecordType {
   id: string;
   userId: string | undefined;
@@ -128,6 +129,7 @@ export interface LineRecordType {
   coords: Array<LocationType> | undefined;
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
+  updatedAt?: number;
 }
 
 export interface PolygonRecordType {
@@ -140,6 +142,7 @@ export interface PolygonRecordType {
   holes?: { [key: string]: Array<LocationType> };
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
+  updatedAt?: number;
 }
 
 export interface ColorStyle {
