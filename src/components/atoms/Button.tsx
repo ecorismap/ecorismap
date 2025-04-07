@@ -22,8 +22,8 @@ interface Props {
   tooltipPosition?: any;
   labelText?: string;
   labelTextColor?: string;
-
   labelFontSize?: number;
+  labelOnTop?: boolean; // 追加: trueの場合、ラベルをボタンの上に表示
 }
 
 const Button = React.memo((props: Props) => {
@@ -44,6 +44,7 @@ const Button = React.memo((props: Props) => {
     labelText,
     labelTextColor,
     labelFontSize,
+    labelOnTop,
   } = props;
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -52,13 +53,13 @@ const Button = React.memo((props: Props) => {
   const handlePressIn = () => {
     const timeout = setTimeout(() => {
       setShowTooltip(true);
-    }, 500); // 500ms の遅延を設定
+    }, 500); // 500ms の遅延
     tooltipTimeout.current = timeout;
   };
 
   const handlePressOut = () => {
-    if (tooltipTimeout) {
-      clearTimeout(tooltipTimeout.current!);
+    if (tooltipTimeout.current) {
+      clearTimeout(tooltipTimeout.current);
       tooltipTimeout.current = null;
     }
     setShowTooltip(false);
@@ -75,6 +76,7 @@ const Button = React.memo((props: Props) => {
       justifyContent: 'center',
       width: (40 * size) / 20,
     },
+    // ボタン内部に表示するラベル用のスタイル
     label: {
       alignSelf: 'center',
       bottom: 4,
@@ -82,6 +84,13 @@ const Button = React.memo((props: Props) => {
       fontSize: labelFontSize || 10,
       fontWeight: 'bold',
       position: 'absolute',
+    },
+    // ボタン上に表示するラベル用のスタイル（絶対配置を解除）
+    labelOnTopStyle: {
+      color: labelTextColor || COLOR.WHITE,
+      fontSize: labelFontSize || 10,
+      fontWeight: 'bold',
+      marginBottom: 2,
     },
     tooltip: {
       backgroundColor: COLOR.BLACK,
@@ -100,8 +109,8 @@ const Button = React.memo((props: Props) => {
 
   useEffect(() => {
     return () => {
-      if (tooltipTimeout) {
-        clearTimeout(tooltipTimeout.current!);
+      if (tooltipTimeout.current) {
+        clearTimeout(tooltipTimeout.current);
       }
     };
   }, []);
@@ -112,9 +121,9 @@ const Button = React.memo((props: Props) => {
     ) : (
       <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />
     );
-
     return <View style={{ bottom: labelText ? 6 : 0 }}>{iconComponent}</View>;
   };
+
   return (
     <View style={{ alignItems: 'center' }}>
       {showTooltip && tooltipText && (
@@ -122,6 +131,7 @@ const Button = React.memo((props: Props) => {
           <Text style={styles.tooltipText}>{tooltipText}</Text>
         </View>
       )}
+
       <Pressable
         disabled={disabled}
         onPress={onPress}
@@ -130,8 +140,9 @@ const Button = React.memo((props: Props) => {
         onHoverOut={handlePressOut}
         style={[styles.button, style]}
       >
+        {labelText && labelOnTop && <Text style={styles.labelOnTopStyle}>{labelText}</Text>}
         {renderIcon()}
-        {<Text style={styles.label}>{labelText}</Text>}
+        {labelText && !labelOnTop && <Text style={styles.label}>{labelText}</Text>}
       </Pressable>
     </View>
   );

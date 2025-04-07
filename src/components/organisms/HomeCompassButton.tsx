@@ -50,6 +50,7 @@ export const HomeCompassButton = React.memo((props: Props) => {
         onPress={onPressCompass}
         labelText="N"
         labelTextColor={COLOR.BLACK}
+        labelOnTop={true}
       />
     </View>
   );
