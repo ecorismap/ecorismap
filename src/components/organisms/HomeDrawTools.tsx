@@ -202,6 +202,7 @@ export const HomeDrawTools = () => {
             tooltipText={t('Home.tooltip.deletePosition')}
             tooltipPosition={{ left: 1 }}
             labelText={t('Home.label.deletePosition')}
+            labelFontSize={9}
           />
         </View>
       )}
