@@ -298,6 +298,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (targetLayer_.type === 'POINT') {
       if (!isLocationType(targetRecord_.coords)) return jumpRegion;
       const coord = targetRecord_.coords;
+      if (coord.latitude === 0 && coord.longitude === 0) return jumpRegion;
       jumpRegion = {
         latitude: coord.latitude,
         longitude: coord.longitude,
