@@ -494,9 +494,10 @@ export const useRepository = (): UseRepositoryReturnType => {
   const downloadDictionaries = useCallback(async (projectId: string, layers_: LayerType[]) => {
     for (const layer of layers_) {
       if (layer.dictionaryKey === undefined) continue;
-      const { isOK, message, data } = await projectStorage.downloadDictionary(projectId, layer.id, layer.dictionaryKey);
+      const { isOK, data } = await projectStorage.downloadDictionary(projectId, layer.id, layer.dictionaryKey);
       if (!isOK) {
-        await AlertAsync(message);
+        //メッセージは出ないようにする
+        //await AlertAsync(message);
         continue;
       }
       await importDictionary(data);
