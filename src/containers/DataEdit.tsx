@@ -316,7 +316,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     });
   }, [isLandscape, mapRegion, navigation, targetLayer, targetRecord, windowWidth]);
 
-  const gotoGoogleMaps = useCallback(() => {
+  const gotoGoogleMaps = useCallback(async () => {
     let lat = 35;
     let lng = 135;
 
@@ -345,17 +345,36 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         break;
       }
     }
-    const label = targetRecord.field.name !== undefined ? targetRecord.field.name : '';
-    const scheme = Platform.select({
-      ios: 'maps:0,0?q=',
-      android: 'geo:0,0?q=',
-    });
-    const url = Platform.select({
-      ios: `${scheme}${label}@${lat},${lng}`,
-      android: `${scheme}${lat},${lng}(${label})`,
-      web: `https://www.google.com/maps/@${lat},${lng},15z`,
-    });
-    Linking.openURL(url as string);
+
+    const label = (targetRecord.field.name !== undefined ? targetRecord.field.name : '') as string;
+    const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    let url: string;
+
+    if (Platform.OS === 'ios') {
+      // Google Maps専用スキーム (iOS)
+      const googleMapsScheme = 'comgooglemaps://';
+      const googleMapsUrl = `${googleMapsScheme}?q=${encodeURIComponent(label)}&center=${lat},${lng}&zoom=14`;
+      try {
+        // Google Mapsがインストールされているか確認
+        const canOpen = await Linking.canOpenURL(googleMapsScheme);
+        url = canOpen ? googleMapsUrl : fallbackUrl;
+      } catch (error) {
+        console.error('Linking.canOpenURL エラー:', error);
+        url = fallbackUrl;
+      }
+    } else if (Platform.OS === 'android') {
+      // Android用はgeoスキームでGoogle Mapsの動作を期待（Google Mapsがデフォルトの場合）
+      url = `geo:0,0?q=${lat},${lng}(${encodeURIComponent(label)})`;
+    } else {
+      // web等ではブラウザ版Google Maps
+      url = fallbackUrl;
+    }
+
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('地図を開く際にエラーが発生しました:', error);
+    }
   }, [targetLayer.type, targetRecord.coords, targetRecord.field]);
 
   const gotoBack = useCallback(async () => {

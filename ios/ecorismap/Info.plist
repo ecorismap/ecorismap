@@ -1,193 +1,197 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>This permission is required to use voice analysis.</string>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>EcorisMap</string>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>GPX File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>jp.co.ecoris.ecorismap.document.gpx</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>GeoJSON File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>jp.co.ecoris.ecorismap.document.geojson</string>
-			</array>
-		</dict>
-		<dict>
-			<key>CFBundleTypeName</key>
-			<string>CSV File</string>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSHandlerRank</key>
-			<string>Owner</string>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>jp.co.ecoris.ecorismap.document.csv</string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string></string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<false/>
-	<key>NSAppTransportSecurity</key>
 	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSAllowsLocalNetworking</key>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>comgooglemaps</string>
+		</array>
+		<key>NSSpeechRecognitionUsageDescription</key>
+		<string>This permission is required to use voice analysis.</string>
+		<key>CFBundleDevelopmentRegion</key>
+		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<key>CFBundleDisplayName</key>
+		<string>EcorisMap</string>
+		<key>CFBundleDocumentTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>GPX File</string>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>LSHandlerRank</key>
+				<string>Owner</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>jp.co.ecoris.ecorismap.document.gpx</string>
+				</array>
+			</dict>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>GeoJSON File</string>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>LSHandlerRank</key>
+				<string>Owner</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>jp.co.ecoris.ecorismap.document.geojson</string>
+				</array>
+			</dict>
+			<dict>
+				<key>CFBundleTypeName</key>
+				<string>CSV File</string>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>LSHandlerRank</key>
+				<string>Owner</string>
+				<key>LSItemContentTypes</key>
+				<array>
+					<string>jp.co.ecoris.ecorismap.document.csv</string>
+				</array>
+			</dict>
+		</array>
+		<key>CFBundleExecutable</key>
+		<string>$(EXECUTABLE_NAME)</string>
+		<key>CFBundleIdentifier</key>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+		<key>CFBundleInfoDictionaryVersion</key>
+		<string>6.0</string>
+		<key>CFBundleName</key>
+		<string>$(PRODUCT_NAME)</string>
+		<key>CFBundlePackageType</key>
+		<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+		<key>CFBundleShortVersionString</key>
+		<string>$(MARKETING_VERSION)</string>
+		<key>CFBundleSignature</key>
+		<string>????</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string></string>
+				</array>
+			</dict>
+		</array>
+		<key>CFBundleVersion</key>
+		<string>$(CURRENT_PROJECT_VERSION)</string>
+		<key>LSRequiresIPhoneOS</key>
 		<true/>
+		<key>LSSupportsOpeningDocumentsInPlace</key>
+		<false/>
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSAllowsArbitraryLoads</key>
+			<false/>
+			<key>NSAllowsLocalNetworking</key>
+			<true/>
+		</dict>
+		<key>NSCameraUsageDescription</key>
+		<string>Give $(PRODUCT_NAME) permission to access your camera</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Turning on location services allows us to show your current location and record your tracks.</string>
+		<key>NSLocationAlwaysUsageDescription</key>
+		<string>Allow $(PRODUCT_NAME) to use your location</string>
+		<key>NSLocationUsageDescription</key>
+		<string>Turning on location services allows us to show your current location and record your tracks.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Turning on location services allows us to show your current location and record your tracks.</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Give $(PRODUCT_NAME) permission to use your microphone</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Give $(PRODUCT_NAME) permission to save photos</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Give $(PRODUCT_NAME) permission to access your photos</string>
+		<key>UIApplicationSceneManifest</key>
+		<dict>
+			<key>UISceneConfigurations</key>
+			<dict/>
+		</dict>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>fetch</string>
+			<string>location</string>
+		</array>
+		<key>UILaunchStoryboardName</key>
+		<string>SplashScreen</string>
+		<key>UIRequiredDeviceCapabilities</key>
+		<array>
+			<string>arm64</string>
+		</array>
+		<key>UIRequiresFullScreen</key>
+		<true/>
+		<key>UISupportedInterfaceOrientations</key>
+		<array>
+			<string>UIInterfaceOrientationPortrait</string>
+		</array>
+		<key>UISupportedInterfaceOrientations~ipad</key>
+		<array>
+			<string>UIInterfaceOrientationLandscapeLeft</string>
+			<string>UIInterfaceOrientationLandscapeRight</string>
+			<string>UIInterfaceOrientationPortrait</string>
+		</array>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<false/>
+		<key>UTExportedTypeDeclarations</key>
+		<array>
+			<dict>
+				<key>UTTypeConformsTo</key>
+				<array>
+					<string>public.data</string>
+				</array>
+				<key>UTTypeDescription</key>
+				<string>GPX File</string>
+				<key>UTTypeIdentifier</key>
+				<string>jp.co.ecoris.ecorismap.document.gpx</string>
+				<key>UTTypeTagSpecification</key>
+				<dict>
+					<key>public.filename-extension</key>
+					<array>
+						<string>gpx</string>
+					</array>
+				</dict>
+			</dict>
+			<dict>
+				<key>UTTypeConformsTo</key>
+				<array>
+					<string>public.data</string>
+				</array>
+				<key>UTTypeDescription</key>
+				<string>GeoJSON File</string>
+				<key>UTTypeIconFiles</key>
+				<array/>
+				<key>UTTypeIdentifier</key>
+				<string>jp.co.ecoris.ecorismap.document.geojson</string>
+				<key>UTTypeTagSpecification</key>
+				<dict>
+					<key>public.filename-extension</key>
+					<array>
+						<string>geojson</string>
+					</array>
+				</dict>
+			</dict>
+			<dict>
+				<key>UTTypeConformsTo</key>
+				<array>
+					<string>public.data</string>
+				</array>
+				<key>UTTypeDescription</key>
+				<string>CSV File</string>
+				<key>UTTypeIconFiles</key>
+				<array/>
+				<key>UTTypeIdentifier</key>
+				<string>jp.co.ecoris.ecorismap.document.csv</string>
+				<key>UTTypeTagSpecification</key>
+				<dict>
+					<key>public.filename-extension</key>
+					<array>
+						<string>csv</string>
+					</array>
+				</dict>
+			</dict>
+		</array>
 	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>Give $(PRODUCT_NAME) permission to access your camera</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Turning on location services allows us to show your current location and record your tracks.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Allow $(PRODUCT_NAME) to use your location</string>
-	<key>NSLocationUsageDescription</key>
-	<string>Turning on location services allows us to show your current location and record your tracks.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Turning on location services allows us to show your current location and record your tracks.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Give $(PRODUCT_NAME) permission to use your microphone</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Give $(PRODUCT_NAME) permission to save photos</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Give $(PRODUCT_NAME) permission to access your photos</string>
-	<key>UIApplicationSceneManifest</key>
-	<dict>
-		<key>UISceneConfigurations</key>
-		<dict/>
-	</dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>location</string>
-	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>SplashScreen</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	<key>UIRequiresFullScreen</key>
-	<true/>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>GPX File</string>
-			<key>UTTypeIdentifier</key>
-			<string>jp.co.ecoris.ecorismap.document.gpx</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>gpx</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>GeoJSON File</string>
-			<key>UTTypeIconFiles</key>
-			<array/>
-			<key>UTTypeIdentifier</key>
-			<string>jp.co.ecoris.ecorismap.document.geojson</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>geojson</string>
-				</array>
-			</dict>
-		</dict>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeDescription</key>
-			<string>CSV File</string>
-			<key>UTTypeIconFiles</key>
-			<array/>
-			<key>UTTypeIdentifier</key>
-			<string>jp.co.ecoris.ecorismap.document.csv</string>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>csv</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
-</dict>
 </plist>
