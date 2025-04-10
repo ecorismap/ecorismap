@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { PixelRatio, Platform, useWindowDimensions } from 'react-native';
+import { PixelRatio, useWindowDimensions } from 'react-native';
 import { RegionType } from '../types';
 import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { initialWindowMetrics } from 'react-native-safe-area-context';
 
 export type UseWindowReturnType = {
   mapRegion: RegionType;
@@ -24,10 +23,8 @@ export const useWindow = (): UseWindowReturnType => {
   const windowWidth = window.width;
 
   //Android15（>=API 35）の場合、window.heightはinsetsを含まない値になるため、insetsを引いて計算する
-  const windowHeight =
-    Platform.Version === 35 && initialWindowMetrics
-      ? window.height - initialWindowMetrics.insets.top - initialWindowMetrics.insets.bottom
-      : window.height;
+  // 2025.4.10現在、Andoridの更新で修正された？
+  const windowHeight = window.height;
   const devicePixelRatio = PixelRatio.get();
 
   const mapSize = useMemo(() => {
