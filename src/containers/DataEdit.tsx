@@ -375,22 +375,11 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     let url: string;
 
     if (Platform.OS === 'ios') {
-      // Google Maps専用スキーム (iOS)
-      const googleMapsScheme = 'comgooglemaps://';
-      const googleMapsUrl = `${googleMapsScheme}?q=${encodeURIComponent(label)}&center=${lat},${lng}&zoom=14`;
-      try {
-        // Google Mapsがインストールされているか確認
-        const canOpen = await Linking.canOpenURL(googleMapsScheme);
-        url = canOpen ? googleMapsUrl : fallbackUrl;
-      } catch (error) {
-        console.error('Linking.canOpenURL エラー:', error);
-        url = fallbackUrl;
-      }
+      url = fallbackUrl;
     } else if (Platform.OS === 'android') {
       // Android用はgeoスキームでGoogle Mapsの動作を期待（Google Mapsがデフォルトの場合）
       url = `geo:0,0?q=${lat},${lng}(${encodeURIComponent(label)})`;
     } else {
-      // web等ではブラウザ版Google Maps
       url = fallbackUrl;
     }
 
