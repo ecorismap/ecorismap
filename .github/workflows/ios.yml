@@ -55,10 +55,13 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Install CocoaPods
+      - name: Clean build and derived data
         run: |
-          cd ios
-          pod install
+          rm -rf ~/Library/Developer/Xcode/DerivedData/*
+          rm -rf ios/build
+          rm -rf ios/Pods
+          yarn cache clean
+          cd ios && pod install
 
       - name: Archive Project
         env:
