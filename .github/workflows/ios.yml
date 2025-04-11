@@ -61,6 +61,8 @@ jobs:
           pod install
 
       - name: Archive Project
+        env:
+          NODE_BINARY: $(which node)
         run: |
           xcodebuild archive -workspace ios/ecorismap.xcworkspace \
                              -scheme ecorismap \
