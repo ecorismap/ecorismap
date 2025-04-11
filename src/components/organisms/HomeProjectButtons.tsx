@@ -9,11 +9,11 @@ export const HomeProjectButtons = React.memo(() => {
   //console.log('render HomeButtons');
   const {
     isSettingProject,
-    isSynced,
+    //isSynced,
     pressJumpProject,
     pressDownloadData,
     pressUploadData,
-    pressSyncPosition,
+    //pressSyncPosition,
     pressCloseProject,
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
@@ -73,7 +73,7 @@ export const HomeProjectButtons = React.memo(() => {
               labelText={t('Home.label.uploadData')}
             />
           </View>
-          <View style={{ marginHorizontal: 9 }}>
+          {/* <View style={{ marginHorizontal: 9 }}>
             <Button
               name="podcast"
               backgroundColor={isSynced ? COLOR.RED : COLOR.BLUE}
@@ -81,7 +81,7 @@ export const HomeProjectButtons = React.memo(() => {
               tooltipText={t('Home.tooltip.syncPosition')}
               labelText={t('Home.label.syncPosition')}
             />
-          </View>
+          </View> */}
           <View style={{ marginHorizontal: 9 }}>
             <Button
               name="close-thick"
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 82 : 60,
+    top: Platform.OS === 'ios' ? 90 : 60,
     zIndex: 100,
   },
 });

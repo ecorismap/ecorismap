@@ -17,7 +17,7 @@ export default function HomeProjectLabel(props: Props) {
       style={{
         alignSelf: 'center',
         position: 'absolute',
-        top: Platform.OS === 'ios' && !isLandscape ? 50 : 20,
+        top: Platform.OS === 'ios' && !isLandscape ? 55 : 20,
         padding: 5,
         backgroundColor: COLOR.ALFAWHITE,
         borderRadius: 5,
