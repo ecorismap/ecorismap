@@ -52,6 +52,13 @@ jobs:
           # Decode and install provisioning profile
           echo "${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision
 
+      - name: Download and integrate react-native-gdalwarp
+        run: |
+          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+          unzip react-native-gdalwarp.zip
+          mkdir -p modules
+          cp -r react-native-gdalwarp modules/
+
       - name: Install dependencies
         run: yarn install
 
