@@ -8,7 +8,7 @@ interface Props {
   borderColor: string;
 }
 
-// 10文字ごとに改行を入れるヘルパー関数
+// 15文字ごとに改行を入れるヘルパー関数
 const formatLabel = (label: string, maxCharsPerLine: number = 15): string => {
   let formatted = '';
   for (let i = 0; i < label.length; i += maxCharsPerLine) {
