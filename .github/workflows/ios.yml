@@ -52,6 +52,9 @@ jobs:
           # Decode and install provisioning profile
           echo "${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision
 
+      - name: Install dependencies
+        run: yarn install
+
       - name: Install CocoaPods
         run: |
           cd ios
