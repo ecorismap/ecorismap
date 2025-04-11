@@ -7,10 +7,24 @@ interface Props {
   color: string;
   borderColor: string;
 }
+
+// 10文字ごとに改行を入れるヘルパー関数
+const formatLabel = (label: string, maxCharsPerLine: number = 15): string => {
+  let formatted = '';
+  for (let i = 0; i < label.length; i += maxCharsPerLine) {
+    // 最大10文字ずつ切り出して改行を挿入する
+    formatted += label.slice(i, i + maxCharsPerLine);
+    if (i + maxCharsPerLine < label.length) {
+      formatted += '\n';
+    }
+  }
+  return formatted;
+};
+
 const PointLabel = React.memo((props: Props) => {
-  //console.log('render PointLabel');
   const { label, size, color, borderColor } = props;
-  //console.log(label);
+  const formattedLabel = formatLabel(label);
+
   return (
     <Text
       style={{
@@ -24,7 +38,7 @@ const PointLabel = React.memo((props: Props) => {
         textShadowColor: borderColor,
       }}
     >
-      {label}
+      {formattedLabel}
     </Text>
   );
 });

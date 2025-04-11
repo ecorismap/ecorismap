@@ -36,20 +36,21 @@ jobs:
         run: |
           echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
 
-      - name: Create Private Key
+      - name: Setup Certificate and Provisioning Profile
         run: |
-          mkdir private_keys
-          echo -n '${{ secrets.APPLE_API_KEY_BASE64 }}' | base64 --decode > ./private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8
+          # Create directories
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
 
-      - name: Download and integrate react-native-gdalwarp
-        run: |
-          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
-          unzip react-native-gdalwarp.zip
-          mkdir -p modules
-          cp -r react-native-gdalwarp modules/
+          # Decode and install certificate (.p12)
+          echo "${{ secrets.IOS_CERTIFICATE_BASE64 }}" | base64 --decode > certificate.p12
+          security create-keychain -p temp_pass build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p temp_pass build.keychain
+          security import certificate.p12 -k build.keychain -P "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k temp_pass build.keychain
 
-      - name: Install dependencies
-        run: yarn install
+          # Decode and install provisioning profile
+          echo "${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision
 
       - name: Install CocoaPods
         run: |
@@ -63,21 +64,15 @@ jobs:
                              -sdk iphoneos \
                              -configuration Release \
                              -archivePath ecorismap.xcarchive \
-                             -allowProvisioningUpdates \
-                             -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
-                             -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                             -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+                             CODE_SIGN_STYLE=Manual \
+                             PROVISIONING_PROFILE_SPECIFIER="$(/usr/libexec/PlistBuddy -c 'Print Name' /dev/stdin <<< $(security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/ecorismap.mobileprovision))"
 
       - name: Export IPA
         run: |
           xcodebuild -exportArchive \
                      -archivePath ecorismap.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
-                     -exportPath app.ipa \
-                     -allowProvisioningUpdates \
-                     -authenticationKeyPath `pwd`/private_keys/AuthKey_${{ secrets.APPLE_API_ISSUER_ID }}.p8 \
-                     -authenticationKeyID ${{ secrets.APPLE_API_KEY_ID }} \
-                     -authenticationKeyIssuerID ${{ secrets.APPLE_API_ISSUER_ID }}
+                     -exportPath app.ipa
 
       - name: Upload IPA to App Store Connect
         run: |
