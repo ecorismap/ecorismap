@@ -3,7 +3,7 @@ on: [push, workflow_dispatch]
 jobs:
   build-and-upload:
     name: Build and Upload to App Store
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
