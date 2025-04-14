@@ -54,8 +54,8 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   const isOwner = useMemo(() => role === 'OWNER', [role]);
 
   useEffect(() => {
-    //Ownerを先頭にして、他はアルファベット順に並び替え
-    const sortedMembers = initialProject.members.sort((a, b) => {
+    // Ownerを先頭にして他はアルファベット順に並び替え
+    const sortedMembers = [...initialProject.members].sort((a, b) => {
       if (a.role === 'OWNER' && b.role !== 'OWNER') return -1;
       if (a.role !== 'OWNER' && b.role === 'OWNER') return 1;
       return a.email.localeCompare(b.email);
