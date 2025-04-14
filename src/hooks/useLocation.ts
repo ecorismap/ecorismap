@@ -291,12 +291,16 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (headingUp_) {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
         headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-          (mapViewRef as MapView).animateCamera(
-            {
-              heading: Math.abs((-1.0 * pos.trueHeading) % 360),
-            },
-            { duration: 300 }
-          );
+          Platform.OS === 'ios'
+            ? (mapViewRef as MapView).setCamera({
+                heading: Math.abs((-1.0 * pos.trueHeading) % 360),
+              })
+            : (mapViewRef as MapView).animateCamera(
+                {
+                  heading: Math.abs((-1.0 * pos.trueHeading) % 360),
+                },
+                { duration: 300 }
+              );
           setAzimuth(pos.trueHeading);
         });
       } else {
