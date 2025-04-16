@@ -1,69 +1,72 @@
-import React, { useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, Image, Modal, TouchableOpacity } from 'react-native';
-import { COLOR } from '../../constants/AppConstants';
+import React, { useContext } from 'react';
+import { View, StyleSheet, Modal } from 'react-native';
+import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditContext } from '../../contexts/DataEdit';
-import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
+import ImageViewer from 'react-native-image-zoom-viewer';
+import { useWindow } from '../../hooks/useWindow';
 import { Button } from '../atoms';
 
 export const DataEditModalPhotoView = () => {
   const { photo, isPhotoViewOpen, pressClosePhoto, pressRemovePhoto, pressDownloadPhoto } = useContext(DataEditContext);
-
   const { windowWidth } = useWindow();
-  // const { visible, photo, pressClose, pressRemove, pressDownloadPhoto } = props;
 
-  const photoSize = useMemo(() => {
-    return {
-      width: photo.width > photo.height ? windowWidth * 1 : windowWidth * 1 * 0.75,
-      height: photo.width < photo.height ? windowWidth * 1 : windowWidth * 1 * 0.75,
-    };
-  }, [photo.height, photo.width, windowWidth]);
+  if (!isPhotoViewOpen || !photo?.uri) return null;
 
-  //console.log(photo);
+  const images = [{ url: photo.uri }];
+
   return (
-    <Modal animationType="none" transparent={false} visible={isPhotoViewOpen}>
-      <View style={styles.modalCenteredView}>
-        <View style={[styles.modalContents, { width: windowWidth * 1 }]}>
-          {photo.hasLocal && photo.uri ? (
-            <View style={{ flex: 10 }}>
-              <Image
-                source={{
-                  uri: photo.uri,
-                }}
-                style={{
-                  width: photoSize.width,
-                  height: photoSize.height,
-                  resizeMode: 'contain',
-                  flex: 1,
-                }}
-              />
-            </View>
-          ) : (
-            <View style={{ flex: 10 }}>
-              <View style={{ flex: 1, justifyContent: 'center' }}>
-                <Button name="download" onPress={pressDownloadPhoto} />
-              </View>
-            </View>
-          )}
-          <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
-            <TouchableOpacity style={styles.modalOKCancelButton} onPress={pressClosePhoto}>
-              <Text>{`${t('common.close')}`}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
+    <Modal visible={isPhotoViewOpen} transparent={true} animationType="fade">
+      <View style={{ flex: 1, backgroundColor: COLOR.BLACK }}>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={styles.headerLeft}>
+            <Button
+              name={DATAEDIT_BTN.DELETE}
+              labelText={t('DataEdit.label.delete')}
               onPress={pressRemovePhoto}
-            >
-              <Text style={{ color: COLOR.WHITE }}>{`${t('common.delete')}`}</Text>
-            </TouchableOpacity>
+              backgroundColor={COLOR.DARKRED}
+              size={20}
+            />
+          </View>
+
+          <View style={styles.headerRight}>
+            <Button name={DATAEDIT_BTN.CLOSE} onPress={pressClosePhoto} backgroundColor={COLOR.BLACK} size={30} />
           </View>
         </View>
-        {/* </View> */}
+        {photo.hasLocal && photo.uri ? (
+          <ImageViewer imageUrls={images} onCancel={pressClosePhoto} renderIndicator={() => <View />} />
+        ) : (
+          <View style={styles.modalCenteredView}>
+            <View style={[styles.modalContents, { width: windowWidth * 1 }]}>
+              <View style={[styles.modalButtonContainer, { width: windowWidth * 0.6 }]}>
+                <View style={{ flex: 10 }}>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    <Button name="download" onPress={pressDownloadPhoto} />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  headerLeft: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginLeft: 10,
+  },
+  headerRight: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
   modalButtonContainer: {
     //backgroundColor: COLOR.WHITE,
     flexDirection: 'row',
@@ -81,15 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-
-  modalOKCancelButton: {
-    alignItems: 'center',
-    backgroundColor: COLOR.GRAY1,
-    borderRadius: 5,
-    elevation: 2,
-    height: 48,
-    justifyContent: 'center',
-    padding: 10,
-    width: 80,
-  },
 });
+/* <TouchableOpacity style={[styles.button, { backgroundColor: COLOR.GRAY2 }]} onPress={pressDownloadPhoto}>
+<Text style={{ color: COLOR.WHITE }}>{t('common.download')}</Text>
+</TouchableOpacity> */

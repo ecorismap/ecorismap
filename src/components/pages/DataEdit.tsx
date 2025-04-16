@@ -1,7 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, Platform, KeyboardAvoidingView } from 'react-native';
 
-import { DataEditModalPhotoView } from '../organisms/DataEditModalPhotoView';
 import { DataEditButtons } from '../organisms/DataEditButtons';
 import { DataEditPhoto } from '../organisms/DataEditPhoto';
 import { DataEditCoords } from '../organisms/DataEditCoords';
@@ -140,7 +139,6 @@ export default function DataEditScreen() {
               return (
                 <View key={index}>
                   <DataEditPhoto fieldName={name} />
-                  <DataEditModalPhotoView />
                 </View>
               );
             case 'STRING':

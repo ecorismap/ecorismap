@@ -20,6 +20,7 @@ import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
 import { useWindow } from '../hooks/useWindow';
 import { isLocationType, isLocationTypeArray } from '../utils/General';
+import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPhotoView';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -554,6 +555,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       }}
     >
       <DataEdit />
+      <DataEditModalPhotoView />
     </DataEditContext.Provider>
   );
 }

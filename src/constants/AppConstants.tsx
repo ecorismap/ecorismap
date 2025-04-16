@@ -303,6 +303,7 @@ export const DATAEDIT_BTN = {
   COPY: 'content-copy',
   SAVE: 'content-save',
   EDIT: 'pencil',
+  CLOSE: 'close',
 } as const;
 
 export const DATA_BTN = {
