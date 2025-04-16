@@ -44,34 +44,13 @@ export default function Settings() {
     <View style={styles.container}>
       <Loading visible={isLoading} text="" />
       <ScrollView>
-        <TextButton
-          name={SETTINGS_BTN.PDF_SAVE}
-          text={t('Settings.pdf_save.text')}
-          info={t('Settings.pdf_save.info')}
-          onPress={pressPDFSettingsOpen}
-        />
-        <TextButton
-          name={SETTINGS_BTN.FILE_SAVE}
-          text={t('Settings.file_save.text')}
-          info={t('Settings.file_save.info')}
-          onPress={pressFileSave}
-        />
-        <TextButton
-          name={SETTINGS_BTN.FILE_OPEN}
-          text={t('Settings.file_open.text')}
-          info={t('Settings.file_open.info')}
-          onPress={pressFileOpen}
-        />
-        <TextButton
-          name={SETTINGS_BTN.FILE_NEW}
-          text={t('Settings.file_new.text')}
-          info={t('Settings.file_new.info')}
-          onPress={pressClearData}
-        />
+        <TextButton name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
+        <TextButton name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
+        <TextButton name={SETTINGS_BTN.FILE_OPEN} text={t('Settings.file_open.text')} onPress={pressFileOpen} />
+        <TextButton name={SETTINGS_BTN.FILE_NEW} text={t('Settings.file_new.text')} onPress={pressClearData} />
         <TextButton
           name={SETTINGS_BTN.GPS_SETTINGS}
           text={t('Settings.gps_settings.text')}
-          info={t('Settings.gps_settings.info')}
           onPress={pressGPSSettingsOpen}
         />
         {/* <TextButton
@@ -84,7 +63,6 @@ export default function Settings() {
         <TextButton
           name={SETTINGS_BTN.MAP_CACHE_DELETE}
           text={t('Settings.mapcachedelete.text')}
-          info={t('Settings.mapcachedelete.info')}
           onPress={pressClearTileCache}
         />
 
@@ -92,29 +70,13 @@ export default function Settings() {
           <TextButton
             name={SETTINGS_BTN.PHOTO_CACHE_DELETE}
             text={t('Settings.photocachedelete.text')}
-            info={t('Settings.photocachedelete.info')}
             onPress={pressClearPhotoCache}
           />
         )}
 
-        <TextButton
-          name={SETTINGS_BTN.OSSLICENSE}
-          text={t('Settings.OSSLicense.txt')}
-          info={t('Settings.OSSLicense.info')}
-          onPress={pressOSSLicense}
-        />
-        <TextButton
-          name={SETTINGS_BTN.MANUAL}
-          text={t('Settings.manual.text')}
-          info={t('Settings.manual.info')}
-          onPress={pressGotoManual}
-        />
-        <TextButton
-          name={SETTINGS_BTN.VERSION}
-          text={VERSION}
-          info={t('Settings.version.info')}
-          onPress={pressVersion}
-        />
+        <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
+        <TextButton name={SETTINGS_BTN.MANUAL} text={t('Settings.manual.text')} onPress={pressGotoManual} />
+        <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} onPress={pressVersion} />
       </ScrollView>
     </View>
   );
