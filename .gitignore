@@ -33,6 +33,7 @@ build/
 *.aab
 *.keystore
 !debug.keystore
+android/app/.cxx/
 
 # node.js
 #
