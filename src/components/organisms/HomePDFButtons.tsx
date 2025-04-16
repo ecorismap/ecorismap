@@ -1,9 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { COLOR, ORIENTATIONTYPE } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import { t } from '../../i18n/config';
 
 interface Props {
@@ -30,12 +29,12 @@ export const HomePDFButtons = React.memo((props: Props) => {
           labelText={t('Home.label.pdfdownload')}
         />
       </View>
-      <TouchableOpacity
+      <Pressable
         onPress={pressPDFSettingsOpen}
         style={{ borderWidth: 1, margin: 2, padding: 2, borderRadius: 2, backgroundColor: COLOR.WHITE }}
       >
         <Text>{`${pdfPaperSize} ${ORIENTATIONTYPE[pdfOrientation]} ${scaleText} ${pdfTileMapZoomLevel}`}</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 });

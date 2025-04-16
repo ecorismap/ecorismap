@@ -614,8 +614,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
 
   const pressDownloadTiles = useCallback(async () => {
+    if (zoom < 11) {
+      await AlertAsync(t('Home.alert.zoomLevel'));
+      return;
+    }
     downloadTiles();
-  }, [downloadTiles]);
+  }, [downloadTiles, zoom]);
+
   const pressStopDownloadTiles = useCallback(() => {
     stopDownloadTiles();
   }, [stopDownloadTiles]);

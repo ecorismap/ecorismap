@@ -1,15 +1,11 @@
 import React from 'react';
 import { View } from 'react-native';
 
-import { Marker, Polygon } from 'react-native-maps';
-import { COLOR } from '../../constants/AppConstants';
-import { Button } from '../atoms';
+import { Polygon } from 'react-native-maps';
+
 import { TileRegionType } from '../../types';
-import { t } from '../../i18n/config';
 
 interface Props_ProgressArea {
-  zoom: number;
-  downloading: boolean;
   downloadArea: TileRegionType;
   onPress: () => void;
 }
@@ -21,11 +17,11 @@ interface Props_SavedArea {
 type Props = Props_ProgressArea & Props_SavedArea;
 
 export const DownloadArea = (props: Props) => {
-  const { zoom, downloading, downloadArea, savedArea, onPress } = props;
+  const { downloadArea, savedArea, onPress } = props;
   return (
     <>
       <SavedArea savedArea={savedArea} />
-      <ProgressArea zoom={zoom} downloading={downloading} downloadArea={downloadArea} onPress={onPress} />
+      <ProgressArea downloadArea={downloadArea} onPress={onPress} />
     </>
   );
 };
@@ -51,24 +47,15 @@ const SavedArea = (props: Props_SavedArea) => {
 };
 
 const ProgressArea = (props: Props_ProgressArea) => {
-  const { zoom, downloading, downloadArea, onPress } = props;
-  //console.log(downloadArea);
+  const { downloadArea } = props;
 
   return (
-    <>
-      {zoom >= 11 && !downloading && (
-        <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={downloadArea.centroid} onPress={onPress} zIndex={10000}>
-          <Button size={25} name="download" backgroundColor={COLOR.RED} labelText={t('Home.label.download')} />
-        </Marker>
-      )}
-
-      <Polygon
-        coordinates={downloadArea.coords}
-        strokeColor={'black'}
-        fillColor={'rgba(255,0,0,0.2)'}
-        strokeWidth={2}
-        zIndex={100}
-      />
-    </>
+    <Polygon
+      coordinates={downloadArea.coords}
+      strokeColor={'black'}
+      fillColor={'rgba(255,0,0,0.2)'}
+      strokeWidth={2}
+      zIndex={100}
+    />
   );
 };

@@ -38,7 +38,7 @@
       "point": "Point",
       "line": "Line",
       "polygon": "Polgon",
-      "none": "No location information",
+      "none": "No coordinates",
       "memo": "memo",
       "group": "group",
       "layergroup": "layer group"
@@ -728,7 +728,8 @@
       "individualColor": "Changed the layer style color type to [Individual].",
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
-      "exportPDF": "I saved the PDF."
+      "exportPDF": "I saved the PDF.",
+      "zoomLevel": "It cannot be obtained within this range. \nPlease zoom in."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",

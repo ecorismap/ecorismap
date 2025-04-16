@@ -46,6 +46,7 @@ import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
+import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -498,13 +499,7 @@ export default function HomeScreen() {
               )}
             {/************* download mode ******************** */}
             {downloadMode && (
-              <DownloadArea
-                zoom={zoom}
-                downloading={isDownloading}
-                downloadArea={downloadArea}
-                savedArea={savedArea}
-                onPress={pressDownloadTiles}
-              />
+              <DownloadArea downloadArea={downloadArea} savedArea={savedArea} onPress={pressDownloadTiles} />
             )}
             {/************* exportPDF mode ******************** */}
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
@@ -534,6 +529,7 @@ export default function HomeScreen() {
           )}
           {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
+          {downloadMode && <HomeDownloadButtons zoom={zoom} downloading={isDownloading} onPress={pressDownloadTiles} />}
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
