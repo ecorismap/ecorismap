@@ -41,9 +41,9 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressToggleOnline = useCallback(async () => {
     if (isOffline) {
-      await runTutrial('MAPS_BTN_OFFLINE');
+      //await runTutrial('MAPS_BTN_OFFLINE');
     } else {
-      //await runTutrial('MAPS_BTN_ONLINE');
+      await runTutrial('MAPS_BTN_ONLINE');
     }
     toggleOnline();
   }, [isOffline, runTutrial, toggleOnline]);

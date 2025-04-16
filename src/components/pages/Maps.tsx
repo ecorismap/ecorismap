@@ -22,7 +22,7 @@ export default function MapScreen() {
           backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
           onPress={pressToggleOnline}
           labelText={isOffline ? t('Maps.label.offline') : t('Maps.label.online')}
-          size={18}
+          size={20}
         />
       ),
     [isOffline, pressToggleOnline]
