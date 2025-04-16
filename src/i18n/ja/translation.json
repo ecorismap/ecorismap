@@ -313,7 +313,9 @@
       "eraser": "消しｺﾞﾑ",
       "brush": "ブラシ",
       "color": "色選択",
-      "redo": "やり直す"
+      "redo": "やり直す",
+      "cacheDelete": "キャッシュ",
+      "download": "取得"
     }
   },
   "AccountSettings": {

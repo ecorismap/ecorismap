@@ -19,9 +19,10 @@ export default function MapScreen() {
       Platform.OS === 'web' ? null : (
         <HeaderRightButton
           name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
-          backgroundColor={isOffline ? 'red' : COLOR.BLUE}
+          backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
           onPress={pressToggleOnline}
           labelText={isOffline ? t('Maps.label.offline') : t('Maps.label.online')}
+          size={18}
         />
       ),
     [isOffline, pressToggleOnline]

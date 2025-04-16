@@ -4,7 +4,6 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
-import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
 import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
@@ -101,7 +100,6 @@ export default function HomeScreen() {
     onRegionChangeMapView,
     onDrop,
     pressStopDownloadTiles,
-    pressDeleteTiles,
     gotoMaps,
     gotoHome,
     onDragEndPoint,
@@ -843,7 +841,6 @@ export default function HomeScreen() {
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
-          {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}

@@ -810,7 +810,8 @@
       "brush": "brush",
       "color": "color",
       "redo": "redo",
-      "syncPosition": "share"
+      "syncPosition": "share",
+      "download": "DL"
     }
   },
   "LayerEditFeatureStyle": {

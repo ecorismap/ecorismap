@@ -5,6 +5,7 @@ import { Marker, Polygon } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { TileRegionType } from '../../types';
+import { t } from '../../i18n/config';
 
 interface Props_ProgressArea {
   zoom: number;
@@ -57,7 +58,7 @@ const ProgressArea = (props: Props_ProgressArea) => {
     <>
       {zoom >= 11 && !downloading && (
         <Marker anchor={{ x: 0.5, y: 0.5 }} coordinate={downloadArea.centroid} onPress={onPress} zIndex={10000}>
-          <Button size={30} name="download" backgroundColor={COLOR.RED} />
+          <Button size={25} name="download" backgroundColor={COLOR.RED} labelText={t('Home.label.download')} />
         </Marker>
       )}
 

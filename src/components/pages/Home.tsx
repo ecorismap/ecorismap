@@ -6,7 +6,6 @@ import ScaleBar from 'react-native-scale-bar';
 import { COLOR, FUNC_LOGIN, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
-import { HomeDownloadButton } from '../organisms/HomeDownloadButton';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { Point } from '../organisms/HomePoint';
 import { Line } from '../organisms/HomeLine';
@@ -206,18 +205,22 @@ export default function HomeScreen() {
     } else {
       return (
         <View style={styles.headerRight}>
-          <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
+          <View style={{ width: 80, alignItems: 'flex-end' }}>
+            <Text style={{ marginHorizontal: 5 }}>{savedTileSize}MB</Text>
+          </View>
+          <Button name="delete" onPress={pressDeleteTiles} size={13} backgroundColor={COLOR.DARKRED} />
         </View>
       );
     }
   }, [
-    downloadProgress,
     isDownloading,
     exportPDFMode,
-    pressPDFSettingsOpen,
-    pressStopDownloadTiles,
-    savedTileSize,
     styles.headerRight,
+    pressStopDownloadTiles,
+    downloadProgress,
+    pressPDFSettingsOpen,
+    savedTileSize,
+    pressDeleteTiles,
   ]);
 
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
@@ -274,7 +277,7 @@ export default function HomeScreen() {
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
+            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 30 }}>×</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -531,7 +534,6 @@ export default function HomeScreen() {
           )}
           {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
-          {downloadMode && <HomeDownloadButton onPress={pressDeleteTiles} />}
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
