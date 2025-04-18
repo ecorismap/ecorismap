@@ -177,20 +177,18 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const checkRecordEditable = useCallback(
-    (targetLayer: LayerType, feature?: RecordType) => {
+    (targetLayer: LayerType) => {
       if (isRunningProject && targetLayer.permission === 'COMMON') {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
-      if (isRunningProject && feature && feature.userId !== user.uid) {
-        return { isOK: false, message: t('hooks.message.cannotEditOthers') };
-      }
+
       if (!targetLayer.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [isRunningProject, user.uid]
+    [isRunningProject]
   );
 
   const isLayerEditable = useCallback(

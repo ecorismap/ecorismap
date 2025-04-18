@@ -18,7 +18,6 @@ import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
 import { LatLonDMS } from './Coords';
 import { t } from '../i18n/config';
-import { ulid } from 'ulid';
 import { isLocationType } from './General';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
@@ -344,27 +343,20 @@ export const getTargetRecordSet = (
     : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }));
 };
 
-export const createRecordSetFromTemplate = (
+export const createMergedDataSetWithTemplate = (
   dataSet: DataType[],
   user: UserType,
   publicOwnLayerIds: string[],
   privateLayerIds: string[]
 ) => {
+  // テンプレートデータはuserId/displayName/idを変換せず、そのまま返す
+  // 既に自分のデータが存在するレイヤはスキップ
   return dataSet
     .map((recordSet) => {
       const alreadyHasData = [...publicOwnLayerIds, ...privateLayerIds].find((id) => id === recordSet.layerId);
-      // console.log('alreadyHasData', alreadyHasData);
-      // console.log('displayName', user.displayName);
-      // console.log(recordSet.data);
       if (alreadyHasData) return undefined;
-      const updatedRecordSet = recordSet.data.map((d) => ({
-        ...d,
-        id: ulid(),
-        userId: user.uid,
-        displayName: user.displayName,
-      }));
-
-      return { ...recordSet, data: updatedRecordSet, userId: user.uid };
+      // ここでidやuserId, displayNameは変換しない
+      return { ...recordSet };
     })
     .filter((v) => v !== undefined) as DataType[];
 };
@@ -382,3 +374,87 @@ export const isPointRecordType = (
 ): recordSet is PointRecordType => {
   return recordSet !== undefined && !Array.isArray(recordSet.coords);
 };
+
+/**
+ * マージ処理
+ * 自分のデータが優先、なければ他人、テンプレートデータを利用
+ * [ユーザーのデータ配列, テンプレートのデータ] のタプルで返す
+ */
+export async function mergeLayerData({
+  layerData,
+  templateData,
+  ownUserId,
+  strategy = 'self',
+  conflictsResolver,
+}: {
+  layerData: DataType[];
+  templateData: DataType | undefined;
+  ownUserId: string | undefined;
+  strategy?: 'self' | 'latest' | 'manual';
+  conflictsResolver?: (candidates: RecordType[], id: string) => Promise<RecordType>;
+}): Promise<[DataType[], DataType | undefined]> {
+  const allRecords = layerData.flatMap((d) => d.data);
+  const templateRecords = templateData ? templateData.data : [];
+  const idSet = new Set([...allRecords.map((r) => r.id), ...templateRecords.map((r) => r.id)]);
+  const mergedRecords: RecordType[] = [];
+  const templateOnlyRecords: RecordType[] = [];
+
+  for (const id of idSet) {
+    const candidates = allRecords.filter((r) => r.id === id);
+    if (strategy === 'latest') {
+      let latest = candidates[0];
+      for (const c of candidates) {
+        if (c.updatedAt && latest.updatedAt && c.updatedAt > latest.updatedAt) latest = c;
+      }
+      if (latest) {
+        mergedRecords.push(latest);
+        continue;
+      }
+    } else if (strategy === 'manual' && conflictsResolver) {
+      if (candidates.length > 0) {
+        const selected = await conflictsResolver(candidates, id);
+        if (selected) {
+          mergedRecords.push(selected);
+          continue;
+        }
+      }
+    } else {
+      // self優先
+      const own = candidates.find((r) => r.userId === ownUserId);
+      if (own) {
+        mergedRecords.push(own);
+        continue;
+      }
+      const other = candidates.find((r) => r.userId !== ownUserId);
+      if (other) {
+        mergedRecords.push(other);
+        continue;
+      }
+    }
+    // テンプレート
+    const tmpl = templateRecords.find((r) => r.id === id);
+    if (tmpl) {
+      templateOnlyRecords.push(tmpl);
+    }
+  }
+
+  const mergedUserData: DataType[] = mergedRecords.length
+    ? [
+        {
+          layerId: layerData.length > 0 ? layerData[0].layerId : templateData?.layerId ?? '',
+          userId: ownUserId,
+          data: mergedRecords,
+        },
+      ]
+    : [];
+
+  const mergedTemplateData: DataType | undefined = templateOnlyRecords.length
+    ? {
+        layerId: layerData.length > 0 ? layerData[0].layerId : templateData?.layerId ?? '',
+        userId: 'template',
+        data: templateOnlyRecords,
+      }
+    : undefined;
+
+  return [mergedUserData, mergedTemplateData];
+}

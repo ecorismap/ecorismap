@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Modal, Text, Button } from 'react-native';
 import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { ProjectEditButtons } from '../organisms/ProjectEditButtons';
@@ -134,5 +134,80 @@ export default function ProjectEditScreen() {
         onPressSettingProject={pressSettingProject}
       />
     </View>
+  );
+}
+
+// カラー定数を定義
+const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.5)';
+const MODAL_BG_COLOR = '#fff';
+const MODAL_BORDER_COLOR = '#eee';
+
+// 競合解決用モーダル
+const modalStyles = StyleSheet.create({
+  bold: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  candidate: {
+    borderBottomWidth: 1,
+    borderColor: MODAL_BORDER_COLOR,
+    marginBottom: 12,
+  },
+  candidateField: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+  },
+  modal: {
+    backgroundColor: MODAL_BG_COLOR,
+    borderRadius: 8,
+    minWidth: 300,
+    padding: 20,
+  },
+  overlay: {
+    alignItems: 'center',
+    backgroundColor: MODAL_OVERLAY_COLOR,
+    flex: 1,
+    justifyContent: 'center',
+  },
+});
+
+export function ConflictResolverModal({
+  visible,
+  candidates,
+  id,
+  onSelect,
+  onBulkSelect,
+  onClose,
+}: {
+  visible: boolean;
+  candidates: any[];
+  id: string;
+  onSelect: (c: any) => void;
+  onBulkSelect: (mode: 'self' | 'latest') => void;
+  onClose: () => void;
+}) {
+  // manual戦略・latest戦略・self戦略すべてに対応
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={modalStyles.overlay}>
+        <View style={modalStyles.modal}>
+          <Text style={modalStyles.bold}>{`競合データID: ${id}`}</Text>
+          <ScrollView style={{ maxHeight: 300 }}>
+            {candidates.map((c, idx) => (
+              <View key={idx} style={modalStyles.candidate}>
+                <Text>{`編集者: ${c.displayName} / 更新日時: ${c.updatedAt}`}</Text>
+                <Text selectable style={modalStyles.candidateField}>
+                  {JSON.stringify(c.field, null, 2)}
+                </Text>
+                <Button title="このデータを採用" onPress={() => onSelect(c)} />
+              </View>
+            ))}
+          </ScrollView>
+          <Button title="残りはすべて自分優先" onPress={() => onBulkSelect('self')} />
+          <Button title="残りはすべて最新編集優先" onPress={() => onBulkSelect('latest')} />
+          <Button title="キャンセル" onPress={onClose} color="#888" />
+        </View>
+      </View>
+    </Modal>
   );
 }

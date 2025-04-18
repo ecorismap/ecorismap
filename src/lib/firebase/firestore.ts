@@ -396,30 +396,6 @@ export const downloadAllData = async (projectId: string) => {
   }
 };
 
-export const downloadPublicAndAllPrivateData = async (projectId: string, excludeUserId?: string) => {
-  try {
-    // ベースクエリを作成
-    const baseQuery = firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', 'in', ['PUBLIC', 'PRIVATE']);
-
-    // クエリを実行
-    const projectDataSet = await baseQuery.get();
-
-    // クライアント側でexcludeUserIdを除外する
-    let docs = projectDataSet.docs;
-    if (excludeUserId) {
-      docs = docs.filter((doc) => doc.data().userId !== excludeUserId);
-    }
-
-    const dataSet = await projectDataSetToDataSet(projectId, { docs });
-    return { isOK: true, message: '', data: dataSet };
-  } catch (error) {
-    console.error(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
-  }
-};
-
 export const downloadPublicAndCommonData = async (projectId: string) => {
   try {
     const projectDataSet = await firestore

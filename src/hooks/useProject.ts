@@ -39,31 +39,77 @@ export const useProject = (): UseProjectReturnType => {
   const project = useMemo(() => projects.find((d) => d.id === projectId), [projectId, projects]);
   const role = useMemo(() => project?.members.find((v) => v.uid === user.uid)?.role, [project?.members, user.uid]);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
+  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers);
 
   const {
-    downloadPublicData,
-    downloadPublicAndAllPrivateData,
+    fetchPublicData,
+    fetchPrivateData,
+    fetchTemplateData,
     uploadDataToRepository,
     uploadProjectSettings,
     deleteCommonAndTemplateData,
+    createMergedDataSet,
   } = useRepository();
 
   const downloadData = useCallback(
     async (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
       if (downloadType === 'ADMIN') {
-        //自分以外のメンバーのデータを取得する
-        const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload, true);
-        if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
+        //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
+        const [publicRes, privateRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchPrivateData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || privateRes.message || templateRes.message);
+        }
+        //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
+        const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
+        const ownPrivateData = dataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
+
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [...privateRes.data, ...ownPrivateData],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: [],
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
       } else {
-        //自分以外のメンバーのデータを取得する
-        const publicDataResult = await downloadPublicData(project, shouldPhotoDownload, true);
-        if (!publicDataResult.isOK) throw new Error(publicDataResult.message);
-        // privateDataは取得する必要がない。
+        //自分以外のPUBLICデータをサーバーから取得する
+        const [publicRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || templateRes.message);
+        }
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: templateRes.data,
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
       }
       dispatch(editSettingsAction({ photosToBeDeleted: [] }));
     },
-    [dispatch, downloadPublicAndAllPrivateData, downloadPublicData, project]
+    [
+      createMergedDataSet,
+      dataSet,
+      dispatch,
+      fetchPrivateData,
+      fetchPublicData,
+      fetchTemplateData,
+      layers,
+      project,
+      user.uid,
+    ]
   );
 
   const uploadData = useCallback(

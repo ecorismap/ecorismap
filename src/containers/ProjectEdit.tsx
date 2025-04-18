@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import ProjectEdit from '../components/pages/ProjectEdit';
+import ProjectEdit, { ConflictResolverModal } from '../components/pages/ProjectEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
@@ -47,11 +47,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     createProject,
     updateProject,
     downloadProjectSettings,
-    downloadAllPrivateData,
-    downloadPublicData,
+    fetchPublicData,
+    fetchPrivateData,
+    fetchTemplateData,
     downloadCommonData,
-    downloadPrivateData,
     downloadTemplateData,
+    createMergedDataSet,
+    conflictState,
+    setConflictState,
   } = useRepository();
   const { generateEcorisMapData, createExportSettings } = useEcorisMapFile();
 
@@ -59,51 +62,35 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     const shouldPhotoDownload = false;
     const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
     if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload, [], []);
+    const templateDataResult = await downloadTemplateData(targetProject, shouldPhotoDownload);
     if (!templateDataResult.isOK) throw new Error(templateDataResult.message);
   }, [downloadCommonData, downloadTemplateData, targetProject]);
 
-  const downloadDataForAdmin = useCallback(async () => {
-    const shouldPhotoDownload = false;
-    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
-    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-    const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
-    if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
-      throw new Error(publicDataResult.message);
+  const downloadData = useCallback(
+    async ({ isAdmin = false }) => {
+      const shouldPhotoDownload = false;
+      const mode = isAdmin ? 'all' : 'own';
 
-    const privateDataResult = await downloadAllPrivateData(targetProject, shouldPhotoDownload);
-    if (!privateDataResult.isOK || privateDataResult.privateLayerIds === undefined)
-      throw new Error(privateDataResult.message);
+      const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
+      if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
 
-    const downloadTemplateResult = await downloadTemplateData(
-      targetProject,
-      shouldPhotoDownload,
-      publicDataResult.publicOwnLayerIds,
-      privateDataResult.privateLayerIds
-    );
-    if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
-  }, [downloadAllPrivateData, downloadCommonData, downloadPublicData, downloadTemplateData, targetProject]);
-
-  const downloadDataForUser = useCallback(async () => {
-    const shouldPhotoDownload = false;
-
-    const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
-    if (!commonDataResult.isOK) throw new Error(commonDataResult.message);
-    const publicDataResult = await downloadPublicData(targetProject, shouldPhotoDownload);
-    if (!publicDataResult.isOK || publicDataResult.publicOwnLayerIds === undefined)
-      throw new Error(publicDataResult.message);
-
-    const privateDataResult = await downloadPrivateData(targetProject, shouldPhotoDownload);
-    if (!privateDataResult.isOK || privateDataResult.privateLayerIds === undefined)
-      throw new Error(privateDataResult.message);
-    const downloadTemplateResult = await downloadTemplateData(
-      targetProject,
-      shouldPhotoDownload,
-      publicDataResult.publicOwnLayerIds,
-      privateDataResult.privateLayerIds
-    );
-    if (!downloadTemplateResult.isOK) throw new Error(downloadTemplateResult.message);
-  }, [downloadCommonData, targetProject, downloadPublicData, downloadPrivateData, downloadTemplateData]);
+      const [publicRes, privateRes, templateRes] = await Promise.all([
+        fetchPublicData(targetProject, shouldPhotoDownload, 'all'),
+        fetchPrivateData(targetProject, shouldPhotoDownload, mode),
+        fetchTemplateData(targetProject, shouldPhotoDownload),
+      ]);
+      if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
+        throw new Error(publicRes.message || privateRes.message || templateRes.message);
+      }
+      const mergedDataResult = await createMergedDataSet({
+        privateData: privateRes.data,
+        publicData: publicRes.data,
+        templateData: templateRes.data,
+      });
+      if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+    },
+    [createMergedDataSet, downloadCommonData, fetchPrivateData, fetchPublicData, fetchTemplateData, targetProject]
+  );
 
   const pressOpenProject = useCallback(
     async (isSetting: boolean) => {
@@ -133,9 +120,9 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         if (isSetting) {
           await downloadDataForSetting();
         } else if (Platform.OS === 'web' && isOwnerAdmin) {
-          await downloadDataForAdmin();
+          await downloadData({ isAdmin: true });
         } else {
-          await downloadDataForUser();
+          await downloadData({ isAdmin: false });
         }
 
         openProject();
@@ -164,8 +151,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       openProject,
       navigation,
       downloadDataForSetting,
-      downloadDataForAdmin,
-      downloadDataForUser,
+      downloadData,
     ]
   );
 
@@ -314,6 +300,46 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     navigation.navigate('Projects');
   }, [isEdited, navigation]);
 
+  // 競合解決モーダルの選択ハンドラ
+  const handleSelect = useCallback(
+    (_selected: any) => {
+      setConflictState((prev: typeof conflictState) => {
+        const nextQueue = prev.queue.slice(1);
+        return {
+          ...prev,
+          queue: nextQueue,
+          visible: nextQueue.length > 0,
+        };
+      });
+    },
+    [setConflictState]
+  );
+
+  // 一括選択（自分優先・最新編集優先）
+  const handleBulkSelect = useCallback(
+    (mode: 'self' | 'latest') => {
+      setConflictState((prev: typeof conflictState) => {
+        const resolved: Record<string, any> = { ...prev.resolved };
+        prev.queue.forEach(({ id, candidates }: { id: string; candidates: any[] }) => {
+          let selected;
+          if (mode === 'self') {
+            selected = candidates.find((c: any) => c.userId === 'self') || candidates[0];
+          } else {
+            selected = candidates.reduce((a: any, b: any) => (a.updatedAt > b.updatedAt ? a : b));
+          }
+          resolved[id] = selected;
+        });
+        return {
+          ...prev,
+          queue: [],
+          resolved,
+          visible: false,
+        };
+      });
+    },
+    [setConflictState]
+  );
+
   return (
     <ProjectEditContext.Provider
       value={{
@@ -338,6 +364,17 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }}
     >
       <ProjectEdit />
+      {/* 手動マージ用競合解決モーダル */}
+      {conflictState.visible && conflictState.queue.length > 0 && (
+        <ConflictResolverModal
+          visible={conflictState.visible}
+          candidates={conflictState.queue[0].candidates}
+          id={conflictState.queue[0].id}
+          onSelect={handleSelect}
+          onBulkSelect={handleBulkSelect}
+          onClose={() => setConflictState((prev: typeof conflictState) => ({ ...prev, visible: false, queue: [] }))}
+        />
+      )}
     </ProjectEditContext.Provider>
   );
 }

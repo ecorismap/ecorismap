@@ -75,20 +75,18 @@ export const useData = (layerId: string): UseDataReturnType => {
   );
 
   const checkRecordEditable = useCallback(
-    (targetLayer_: LayerType, feature?: RecordType) => {
+    (targetLayer_: LayerType) => {
       if (isRunningProject && targetLayer_.permission === 'COMMON') {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
-      if (isRunningProject && feature && feature.userId !== user.uid) {
-        return { isOK: false, message: t('hooks.message.cannotEditOthers') };
-      }
+
       if (!targetLayer_.active) {
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
       return { isOK: true, message: '' };
     },
-    [isRunningProject, user.uid]
+    [isRunningProject]
   );
 
   const changeOrder = useCallback(
