@@ -249,7 +249,6 @@ describe('mergeLayerData', () => {
   });
 
   it('手動マージ（manual）: conflictsResolverで選択したものを採用', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const resolver = jest.fn(async (candidates: any[], _id: string) =>
       candidates.find((r: any) => r.userId === otherUserId)
     );
@@ -279,5 +278,25 @@ describe('mergeLayerData', () => {
     });
     expect(merged[0].data.find((r) => r.id === 'x')).toBeUndefined();
     expect(tmpl!.data.find((r) => r.id === 'x')).toBeDefined();
+  });
+
+  it('publicDataが複数ユーザー分存在する場合は全てマージされる', async () => {
+    const ownUserId = 'user1';
+    const layerId = 'layerX';
+    const record1 = { id: 'a', userId: 'user1', field: { value: 'A' }, coords: null } as any;
+    const record2 = { id: 'b', userId: 'user2', field: { value: 'B' }, coords: null } as any;
+    const publicData = [
+      { layerId, userId: 'user1', data: [record1] },
+      { layerId, userId: 'user2', data: [record2] },
+    ];
+    const [merged, tmpl] = await mergeLayerData({
+      layerData: publicData,
+      templateData: undefined,
+      ownUserId,
+      strategy: 'self',
+    });
+    expect(merged.length).toBe(2);
+    expect(merged).toEqual(publicData);
+    expect(tmpl).toBeUndefined();
   });
 });

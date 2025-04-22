@@ -334,6 +334,10 @@ export const getTargetRecordSet = (
   let targetDataSet: DataType | undefined;
   if (layer.permission === 'COMMON') {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id);
+  } else if (isTemplate) {
+    targetDataSet = dataSet.find(
+      (d) => d.layerId === layer.id && (d.userId === 'template' || d.userId === undefined || d.userId === user.uid)
+    );
   } else {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id && (d.userId === undefined || d.userId === user.uid));
   }
@@ -393,67 +397,63 @@ export async function mergeLayerData({
   strategy?: 'self' | 'latest' | 'manual';
   conflictsResolver?: (candidates: RecordType[], id: string) => Promise<RecordType>;
 }): Promise<[DataType[], DataType | undefined]> {
+  // --- 全レコードを一旦まとめる ---
   const allRecords = layerData.flatMap((d) => d.data);
   const templateRecords = templateData ? templateData.data : [];
-  const idSet = new Set([...allRecords.map((r) => r.id), ...templateRecords.map((r) => r.id)]);
-  const mergedRecords: RecordType[] = [];
-  const templateOnlyRecords: RecordType[] = [];
+  const combinedRecords: RecordType[] = [...allRecords, ...templateRecords];
+
+  // --- ユニークな ID を収集 ---
+  const idSet = Array.from(new Set(combinedRecords.map((r) => r.id)));
+
+  // --- layerId はどの DataType を参照しても同じものを利用 ---
+  const layerId = layerData[0]?.layerId ?? templateData?.layerId ?? '';
+
+  // --- ID ごとにマージ戦略を適用し、選ばれたレコードを userId 毎に集計 ---
+  const resolvedMap = new Map<string, RecordType[]>();
 
   for (const id of idSet) {
-    const candidates = allRecords.filter((r) => r.id === id);
-    if (strategy === 'latest') {
-      let latest = candidates[0];
-      for (const c of candidates) {
-        if (c.updatedAt && latest.updatedAt && c.updatedAt > latest.updatedAt) latest = c;
-      }
-      if (latest) {
-        mergedRecords.push(latest);
-        continue;
-      }
-    } else if (strategy === 'manual' && conflictsResolver) {
-      if (candidates.length > 0) {
-        const selected = await conflictsResolver(candidates, id);
-        if (selected) {
-          mergedRecords.push(selected);
-          continue;
-        }
-      }
+    const candidates = combinedRecords.filter((r) => r.id === id);
+    let chosen: RecordType;
+    // 「候補が２つ」で「そのうち一つが template」、もう一つが user の場合は必ずユーザーを選択
+    if (
+      candidates.length === 2 &&
+      candidates.some((r) => r.userId === 'template') &&
+      candidates.some((r) => r.userId !== 'template')
+    ) {
+      chosen = candidates.find((r) => r.userId !== 'template')!;
+    } else if (candidates.length === 1) {
+      chosen = candidates[0];
     } else {
-      // self優先
-      const own = candidates.find((r) => r.userId === ownUserId);
-      if (own) {
-        mergedRecords.push(own);
-        continue;
-      }
-      const other = candidates.find((r) => r.userId !== ownUserId);
-      if (other) {
-        mergedRecords.push(other);
-        continue;
+      if (strategy === 'manual' && conflictsResolver) {
+        chosen = await conflictsResolver(candidates, id);
+      } else if (strategy === 'latest') {
+        chosen = candidates.reduce((prev, cur) =>
+          prev.updatedAt && cur.updatedAt && cur.updatedAt > prev.updatedAt ? cur : prev
+        );
+      } else if (strategy === 'self' && ownUserId) {
+        const own = candidates.find((r) => r.userId === ownUserId);
+        chosen = own ?? candidates[0];
+      } else {
+        chosen = candidates[0];
       }
     }
-    // テンプレート
-    const tmpl = templateRecords.find((r) => r.id === id);
-    if (tmpl) {
-      templateOnlyRecords.push(tmpl);
-    }
+
+    const list = resolvedMap.get(chosen.userId!) ?? [];
+    list.push(chosen);
+    resolvedMap.set(chosen.userId!, list);
   }
+  // --- 結果の整形 ---
+  const mergedUserData: DataType[] = Array.from(resolvedMap.entries())
+    .filter(([userId]) => userId !== 'template')
+    .map(([userId, records]) => ({
+      layerId,
+      userId,
+      data: records,
+    }));
 
-  const mergedUserData: DataType[] = mergedRecords.length
-    ? [
-        {
-          layerId: layerData.length > 0 ? layerData[0].layerId : templateData?.layerId ?? '',
-          userId: ownUserId,
-          data: mergedRecords,
-        },
-      ]
-    : [];
-
-  const mergedTemplateData: DataType | undefined = templateOnlyRecords.length
-    ? {
-        layerId: layerData.length > 0 ? layerData[0].layerId : templateData?.layerId ?? '',
-        userId: 'template',
-        data: templateOnlyRecords,
-      }
+  const templateOnly = resolvedMap.get('template');
+  const mergedTemplateData: DataType | undefined = templateOnly
+    ? { layerId, userId: 'template', data: templateOnly }
     : undefined;
 
   return [mergedUserData, mergedTemplateData];

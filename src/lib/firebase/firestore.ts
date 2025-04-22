@@ -410,13 +410,16 @@ export const downloadPublicAndCommonData = async (projectId: string) => {
   }
 };
 
-export const downloadPublicData = async (projectId: string, excludeUserId?: string) => {
+/**
+ * PUBLICデータを取得する
+ * @param projectId プロジェクトID
+ * @param options オプション: excludeUserId
+ */
+export const downloadPublicData = async (projectId: string, { excludeUserId }: { excludeUserId?: string } = {}) => {
   try {
-    // permissionが'PUBLIC'のデータを取得
     const query = firestore.collection(`projects/${projectId}/data`).where('permission', '==', 'PUBLIC');
     const projectDataSet = await query.get();
 
-    // クライアント側でexcludeUserIdを除外する
     let docs = projectDataSet.docs;
     if (excludeUserId) {
       docs = docs.filter((doc) => doc.data().userId !== excludeUserId);
@@ -430,14 +433,25 @@ export const downloadPublicData = async (projectId: string, excludeUserId?: stri
   }
 };
 
-export const downloadPrivateData = async (userId_: string, projectId: string) => {
+/**
+ * PRIVATEデータを取得する
+ * @param projectId プロジェクトID
+ * @param options オプション: userId, excludeUserId
+ */
+export const downloadPrivateData = async (
+  projectId: string,
+  { userId, excludeUserId }: { userId?: string; excludeUserId?: string } = {}
+) => {
   try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'PRIVATE')
-      .where('userId', '==', userId_)
-      .get();
-    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+    let query = firestore.collection(`projects/${projectId}/data`).where('permission', '==', 'PRIVATE');
+    if (userId) {
+      query = query.where('userId', '==', userId);
+    }
+    const projectDataSet = await query.get();
+    let dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+    if (excludeUserId) {
+      dataSet = dataSet.filter((data) => data.userId !== excludeUserId);
+    }
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
     console.log(error);
@@ -445,21 +459,7 @@ export const downloadPrivateData = async (userId_: string, projectId: string) =>
   }
 };
 
-export const downloadAllPrivateData = async (userId_: string, projectId: string) => {
-  try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'PRIVATE')
-      .get();
-    const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
-    return { isOK: true, message: '', data: dataSet };
-  } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
-  }
-};
-
-export const downloadTemplateData = async (userId_: string, projectId: string) => {
+export const downloadTemplateData = async (projectId: string) => {
   try {
     const projectDataSet = await firestore
       .collection(`projects/${projectId}/data`)
@@ -513,4 +513,29 @@ export const updateLicense = async (project: ProjectType) => {
       }
     });
   });
+};
+
+// 指定したlayerIdの全データのpermissionを一括で更新
+export const updateLayerDataPermission = async (
+  projectId: string,
+  layerId: string,
+  oldPermission: string,
+  newPermission: string
+) => {
+  try {
+    const querySnapshot = await firestore
+      .collection(`projects/${projectId}/data`)
+      .where('layerId', '==', layerId)
+      .where('permission', '==', oldPermission)
+      .get();
+    if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
+    const batch = firestore.batch();
+    querySnapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { permission: newPermission });
+    });
+    await batch.commit();
+    return { isOK: true, message: '' };
+  } catch (error) {
+    return { isOK: false, message: '権限の一括更新に失敗しました' };
+  }
 };

@@ -10,7 +10,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
-import { useRepository } from '../hooks/useRepository';
+import { ConflictState, useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
@@ -19,6 +19,7 @@ import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 
 export default function ProjectEditContainer({ navigation, route }: Props_ProjectEdit) {
   const {
+    user,
     isProjectOpen,
     isOwner,
     isOwnerAdmin,
@@ -67,8 +68,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   }, [downloadCommonData, downloadTemplateData, targetProject]);
 
   const downloadData = useCallback(
-    async ({ isAdmin = false }) => {
-      const shouldPhotoDownload = false;
+    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
       const mode = isAdmin ? 'all' : 'own';
 
       const commonDataResult = await downloadCommonData(targetProject, shouldPhotoDownload);
@@ -108,6 +108,11 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
             await AlertAsync(t('ProjectEdit.alert.openProject'));
           }
         }
+        let isAdmin = false;
+        if (isOwnerAdmin) {
+          const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
+          if (resp) isAdmin = true;
+        }
 
         setIsLoading(true);
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
@@ -119,10 +124,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
         if (isSetting) {
           await downloadDataForSetting();
-        } else if (Platform.OS === 'web' && isOwnerAdmin) {
-          await downloadData({ isAdmin: true });
         } else {
-          await downloadData({ isAdmin: false });
+          await downloadData({ isAdmin, shouldPhotoDownload: false });
         }
 
         openProject();
@@ -210,7 +213,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const ret = await ConfirmAsync(t('ProjectEdit.confirm.deleteProject'));
       if (!ret) return;
       setIsLoading(true);
-      //ToDo 消した後に他のユーザーがアップロード、ダウンロードした時のエラー処理
       const deleteProjectResult = await deleteProject(targetProject);
       if (!deleteProjectResult.isOK) throw new Error(deleteProjectResult.message);
       const deleteE3kitGroupResult = await deleteE3kitGroup(targetProject);
@@ -227,7 +229,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const saveUpdatedProject = useCallback(
     async (project: ProjectType) => {
       const e3kitGroupResult = await updateE3kitGroupMembers(originalProject, project);
-      if (!e3kitGroupResult.isOK || e3kitGroupResult.project === undefined) throw new Error(e3kitGroupResult.message);
+      if (!e3kitGroupResult.isOK || !e3kitGroupResult.project) throw new Error(e3kitGroupResult.message);
       const updateProjectResult = await updateProject(e3kitGroupResult.project);
       if (!updateProjectResult.isOK) throw new Error(updateProjectResult.message);
       saveProject(e3kitGroupResult.project);
@@ -238,7 +240,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   const saveNewProject = useCallback(
     async (project: ProjectType) => {
       const e3kitGroupResult = await createE3kitGroup(project);
-      if (!e3kitGroupResult.isOK || e3kitGroupResult.project === undefined) throw new Error(e3kitGroupResult.message);
+      if (!e3kitGroupResult.isOK || !e3kitGroupResult.project) throw new Error(e3kitGroupResult.message);
       const createProjectResult = await createProject(e3kitGroupResult.project);
       if (!createProjectResult.isOK) throw new Error(createProjectResult.message);
       const updateLicenseResult = await updateLicense(e3kitGroupResult.project);
@@ -251,8 +253,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     try {
       setIsLoading(true);
       const checkedProjectResult = await checkedProject();
-      if (!checkedProjectResult.isOK || checkedProjectResult.project === undefined)
-        throw new Error(checkedProjectResult.message);
+      if (!checkedProjectResult.isOK || !checkedProjectResult.project) throw new Error(checkedProjectResult.message);
 
       if (isNew) {
         await saveNewProject(checkedProjectResult.project);
@@ -300,45 +301,62 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     navigation.navigate('Projects');
   }, [isEdited, navigation]);
 
-  // 競合解決モーダルの選択ハンドラ
+  // 競合解決: 選択された候補を resolve してキューから取り除く
   const handleSelect = useCallback(
-    (_selected: any) => {
-      setConflictState((prev: typeof conflictState) => {
-        const nextQueue = prev.queue.slice(1);
+    (selected: any) => {
+      setConflictState((prev: ConflictState) => {
+        const [current, ...rest] = prev.queue;
+        if (current) {
+          current.resolve(selected);
+        }
         return {
           ...prev,
-          queue: nextQueue,
-          visible: nextQueue.length > 0,
+          queue: rest,
+          visible: rest.length > 0,
         };
       });
     },
     [setConflictState]
   );
 
-  // 一括選択（自分優先・最新編集優先）
+  // 一括選択（残りすべて self か latest）
   const handleBulkSelect = useCallback(
     (mode: 'self' | 'latest') => {
-      setConflictState((prev: typeof conflictState) => {
-        const resolved: Record<string, any> = { ...prev.resolved };
-        prev.queue.forEach(({ id, candidates }: { id: string; candidates: any[] }) => {
-          let selected;
+      setConflictState((prev: ConflictState) => {
+        const [current, ...rest] = prev.queue;
+        if (current) {
+          const { candidates, resolve } = current;
+          let chosen: any;
           if (mode === 'self') {
-            selected = candidates.find((c: any) => c.userId === 'self') || candidates[0];
+            chosen = candidates.find((c: any) => c.userId === user.uid) || candidates[0];
           } else {
-            selected = candidates.reduce((a: any, b: any) => (a.updatedAt > b.updatedAt ? a : b));
+            chosen = candidates.reduce((a: any, b: any) => (a.updatedAt > b.updatedAt ? a : b));
           }
-          resolved[id] = selected;
-        });
+          resolve(chosen);
+        }
         return {
           ...prev,
-          queue: [],
-          resolved,
-          visible: false,
+          queue: rest,
+          visible: rest.length > 0,
         };
       });
     },
-    [setConflictState]
+    [setConflictState, user.uid]
   );
+
+  // キャンセル時にもデフォルトを resolve して閉じる
+  const handleClose = useCallback(() => {
+    setConflictState((prev: ConflictState) => {
+      const [current] = prev.queue;
+      if (current) {
+        current.resolve(current.candidates[0]);
+      }
+      return {
+        queue: [],
+        visible: false,
+      };
+    });
+  }, [setConflictState]);
 
   return (
     <ProjectEditContext.Provider
@@ -364,7 +382,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       }}
     >
       <ProjectEdit />
-      {/* 手動マージ用競合解決モーダル */}
       {conflictState.visible && conflictState.queue.length > 0 && (
         <ConflictResolverModal
           visible={conflictState.visible}
@@ -372,7 +389,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           id={conflictState.queue[0].id}
           onSelect={handleSelect}
           onBulkSelect={handleBulkSelect}
-          onClose={() => setConflictState((prev: typeof conflictState) => ({ ...prev, visible: false, queue: [] }))}
+          onClose={handleClose}
         />
       )}
     </ProjectEditContext.Provider>

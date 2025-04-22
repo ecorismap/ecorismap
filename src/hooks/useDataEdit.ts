@@ -247,17 +247,39 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     //unixTimeを更新
     updatedRecord.updatedAt = Date.now();
 
+    //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
+    if (targetRecord.userId !== dataUser.uid) {
+      dispatch(
+        deleteRecordsAction({
+          layerId: targetLayer.id,
+          userId: targetRecord.userId,
+          data: [targetRecord],
+        })
+      );
+    }
+    updatedRecord.userId = dataUser.uid;
+    updatedRecord.displayName = dataUser.displayName;
     dispatch(
       updateRecordsAction({
         layerId: targetLayer.id,
-        userId: updatedRecord.userId,
+        userId: dataUser.uid,
         data: [updatedRecord],
       })
     );
 
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
-  }, [targetRecord, targetLayer, latlon, isDecimal, temporaryDeletePhotoList, dispatch, setIsEditingRecord]);
+  }, [
+    temporaryDeletePhotoList,
+    targetLayer,
+    targetRecord,
+    latlon,
+    isDecimal,
+    dataUser.uid,
+    dataUser.displayName,
+    dispatch,
+    setIsEditingRecord,
+  ]);
 
   const deleteRecord = useCallback(() => {
     deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);

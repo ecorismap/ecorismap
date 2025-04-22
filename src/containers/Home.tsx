@@ -761,17 +761,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
       }
-      let downloadType: 'MEMBER' | 'ADMIN' = 'MEMBER';
-      if (Platform.OS === 'web') {
-        downloadType = 'ADMIN';
-      } else if (isOwnerAdmin) {
+      let isAdmin = false;
+      if (isOwnerAdmin) {
         const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
-        if (resp) downloadType = 'ADMIN';
+        if (resp) isAdmin = true;
       }
-      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
-      const shouldPhotoDownload = false;
       setIsLoading(true);
-      await downloadData(downloadType, shouldPhotoDownload);
+      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
+      await downloadData({ isAdmin, shouldPhotoDownload: false });
       setIsLoading(false);
       await AlertAsync(t('Home.alert.download'));
     } catch (e: any) {

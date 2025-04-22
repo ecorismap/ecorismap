@@ -4,13 +4,14 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { getUidsByEmails } from '../lib/firebase/firestore';
 import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
-import { ProjectType, RegionType, VerifiedType } from '../types';
+import { ProjectType, RegionType, UserType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
 import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
 
 export type UseProjectEditReturnType = {
+  user: UserType;
   isProjectOpen: boolean;
   isOwner: boolean;
   isOwnerAdmin: boolean;
@@ -236,6 +237,7 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   );
 
   return {
+    user,
     isProjectOpen,
     isOwner,
     isOwnerAdmin,

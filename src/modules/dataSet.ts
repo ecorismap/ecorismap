@@ -56,12 +56,19 @@ const reducers = {
   updateRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data } = action.payload;
     const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
-    if (dataIndex !== -1) {
-      state[dataIndex].data = state[dataIndex].data.map((d) => {
+    //console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
+    if (dataIndex === -1) {
+      // レイヤーが存在しない場合は新規追加
+      state.push(action.payload);
+    } else {
+      // 既存レコードは更新、存在しないレコードは追加
+      const existingData = state[dataIndex].data;
+      const updatedData = existingData.map((d) => {
         const updateData = data.find((v) => v.id === d.id);
         return updateData ? updateData : d;
       });
+      const newRecords = data.filter((v) => !existingData.find((d) => d.id === v.id));
+      state[dataIndex].data = [...updatedData, ...newRecords];
     }
   },
   deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {

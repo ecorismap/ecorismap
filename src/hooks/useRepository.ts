@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   DataType,
   LayerType,
@@ -148,6 +148,19 @@ export type UseRepositoryReturnType = {
   }>;
 };
 
+// キューアイテムの型
+export type ConflictQueueItem = {
+  id: string;
+  candidates: RecordType[];
+  resolve: (result: RecordType) => void;
+};
+
+// state の型
+export type ConflictState = {
+  queue: ConflictQueueItem[];
+  visible: boolean;
+};
+
 export const useRepository = (): UseRepositoryReturnType & {
   conflictState: any;
   setConflictState: any;
@@ -166,22 +179,15 @@ export const useRepository = (): UseRepositoryReturnType & {
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
   const { photosToBeDeleted } = usePhoto();
 
-  // 手動マージ用の競合状態とresolver
-  const [conflictState, setConflictState] = useState<{
-    queue: { id: string; candidates: any[] }[];
-    resolved: Record<string, any>;
-    bulkMode: null | 'self' | 'latest';
-    visible: boolean;
-  }>({ queue: [], resolved: {}, bulkMode: null, visible: false });
-  const conflictResolverRef = useRef<null | ((result: any) => void)>(null);
+  const [conflictState, setConflictState] = useState<ConflictState>({
+    queue: [],
+    visible: false,
+  });
 
-  // conflictsResolver: 競合発生時にconflictStateをセットし、Promiseで選択を待つ
-  const conflictsResolver = useCallback((candidates: any[], id: string) => {
-    return new Promise<any>((resolve) => {
-      conflictResolverRef.current = resolve;
-      setConflictState((prev: any) => ({
-        ...prev,
-        queue: [...prev.queue, { id, candidates }],
+  const conflictsResolver = useCallback((candidates: RecordType[], id: string): Promise<RecordType> => {
+    return new Promise<RecordType>((resolve) => {
+      setConflictState((prev: ConflictState) => ({
+        queue: [...prev.queue, { id, candidates, resolve }],
         visible: true,
       }));
     });
@@ -431,10 +437,26 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
+      // 旧レイヤ設定を取得してpermissionの変更を検知
+      const oldSettingsRes = await projectStore.downloadProjectSettings(project_.id);
+      const oldLayers = oldSettingsRes.isOK && oldSettingsRes.data ? oldSettingsRes.data.layers : [];
+      // 変更後のレイヤ設定をアップロード前に作成
       const excludeItems = tileMaps.map((tileMap) => tileMap.id);
       await projectStorage.deleteProjectPDF(project_.id, excludeItems);
       const updatedTileMaps = await uploadTileMaps(project_.id);
       const updatedLayers = await uploadDictionary(project_.id);
+      // permission変更があればサーバーデータも一括更新
+      for (const newLayer of updatedLayers) {
+        const oldLayer = oldLayers.find((l) => l.id === newLayer.id);
+        if (oldLayer && oldLayer.permission !== newLayer.permission) {
+          await projectStore.updateLayerDataPermission(
+            project_.id,
+            newLayer.id,
+            oldLayer.permission,
+            newLayer.permission
+          );
+        }
+      }
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers: updatedLayers,
         tileMaps: updatedTileMaps,
@@ -644,20 +666,16 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      const { isOK, message, data } = await projectStore.downloadPublicData(
-        project_.id,
-        mode === 'others' ? user.uid : undefined
-      );
+      const options: { excludeUserId?: string } = {};
+      if (mode === 'others') {
+        options.excludeUserId = user.uid;
+      }
+      const { isOK, message, data } = await projectStore.downloadPublicData(project_.id, options);
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
       }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
+      const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
 
       return { isOK: true, message: '', data: updatedData };
     },
@@ -669,33 +687,20 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      let isOK: boolean, message: string, data: DataType[] | undefined;
-      if (mode === 'all') {
-        const res = await projectStore.downloadAllPrivateData(user.uid, project_.id);
-        isOK = res.isOK;
-        message = res.message;
-        data = res.data;
+
+      const options: { userId?: string; excludeUserId?: string } = {};
+      if (mode === 'own') {
+        options.userId = user.uid;
       } else if (mode === 'others') {
-        const res = await projectStore.downloadAllPrivateData(user.uid, project_.id);
-        isOK = res.isOK;
-        message = res.message;
-        data = res.data?.filter((d) => d.userId !== user.uid);
-      } else {
-        const res = await projectStore.downloadPrivateData(user.uid, project_.id);
-        isOK = res.isOK;
-        message = res.message;
-        data = res.data;
+        options.excludeUserId = user.uid;
       }
+      const res = await projectStore.downloadPrivateData(project_.id, options);
+      const { isOK, message, data } = res;
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
       }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
+      const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
       return { isOK: true, message: '', data: updatedData };
     },
     [downloadPhotos, layers, user]
@@ -706,7 +711,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
+      const { isOK, message, data } = await projectStore.downloadTemplateData(project_.id);
 
       if (!isOK || data === undefined) {
         return { isOK: false, message, data: [] };
@@ -717,7 +722,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       } else {
         updatedData = data;
       }
-      return { isOK: true, message: '', data: updatedData };
+      return { isOK: true, message: '', data: updatedData.map((d) => ({ ...d, userId: 'template' })) };
     },
     [downloadPhotos, layers, user]
   );
@@ -744,21 +749,23 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const layerId of allLayerIds) {
         const templateItem = templateData.find((d) => d.layerId === layerId);
         const privateItems = privateData.filter((d) => d.layerId === layerId);
-        //privateItemsは基本的には一つだが、Admin用だと複数人の可能性があるのでfor文で回す。
-        for (const privateItem of privateItems) {
-          if (privateItem) {
-            // プライベートとテンプレートのマージ
-            const [mergedPrivate, mergedTemplate] = await mergeLayerData({
-              layerData: [privateItem],
-              templateData: templateItem,
-              ownUserId: user.uid,
-              strategy: 'manual',
-              conflictsResolver,
-            });
-            dispatch(updateRecordsAction({ layerId, userId: user.uid, data: mergedPrivate[0].data }));
-            if (mergedTemplate) {
-              dispatch(updateRecordsAction({ layerId, userId: 'template', data: mergedTemplate.data }));
-            }
+        if (privateItems.length > 0) {
+          //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
+
+          // プライベートとテンプレートのマージ
+          const [mergedPrivate, mergedTemplate] = await mergeLayerData({
+            layerData: privateItems,
+            templateData: templateItem,
+            ownUserId: user.uid,
+            strategy: 'manual',
+            conflictsResolver,
+          });
+
+          if (mergedPrivate.length > 0) {
+            dispatch(updateDataAction(mergedPrivate));
+          }
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
           }
         }
         const publicItems = publicData.filter((d) => d.layerId === layerId);
@@ -771,12 +778,16 @@ export const useRepository = (): UseRepositoryReturnType & {
             strategy: 'manual',
             conflictsResolver,
           });
-          for (const item of mergedPublic) {
-            dispatch(updateRecordsAction({ layerId, userId: item.userId, data: item.data }));
+
+          dispatch(updateDataAction(mergedPublic));
+
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
           }
-          if (mergedTemplate) {
-            dispatch(updateRecordsAction({ layerId, userId: 'template', data: mergedTemplate.data }));
-          }
+        }
+        // private/publicがなくtemplateのみの場合
+        if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
+          dispatch(updateDataAction([templateItem]));
         }
       }
       return { isOK: true, message: '' };

@@ -1,7 +1,7 @@
 import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowStyleType, LineRecordType, MapMemoToolType, PenWidthType } from '../types';
 import { useWindow } from './useWindow';
-import { useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
 import {
@@ -113,6 +113,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const dispatch = useDispatch();
   const { mapSize, mapRegion } = useWindow();
   const user = useSelector((state: RootState) => state.user);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
+
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector((state: RootState) => state.dataSet);
   const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
@@ -291,7 +297,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
         .flat();
 
       if (activeMemoRecordSet === undefined) {
-        dispatch(addDataAction([{ layerId: activeMemoLayer!.id, userId: user.uid, data: newRecords }]));
+        dispatch(addDataAction([{ layerId: activeMemoLayer!.id, userId: dataUser.uid, data: newRecords }]));
       } else {
         dispatch(addRecordsAction({ ...activeMemoRecordSet, data: newRecords }));
       }
@@ -301,7 +307,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       setFuture([]);
       setMapMemoLines([]);
     },
-    [activeMemoLayer, activeMemoRecordSet, dispatch, generateRecord, memoLines, user.uid]
+    [activeMemoLayer, activeMemoRecordSet, dataUser.uid, dispatch, generateRecord, memoLines]
   );
 
   /**
@@ -558,10 +564,21 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
             },
           };
 
+          if (updatedRecord.userId !== dataUser.uid) {
+            dispatch(
+              deleteRecordsAction({
+                layerId: activeMemoLayer!.id,
+                userId: updatedRecord.userId,
+                data: [updatedRecord],
+              })
+            );
+          }
+          updatedRecord.userId = dataUser.uid;
+          updatedRecord.displayName = dataUser.displayName;
           dispatch(
             updateRecordsAction({
               layerId: activeMemoLayer!.id,
-              userId: user.uid,
+              userId: dataUser.uid,
               data: [updatedRecord],
             })
           );
@@ -615,8 +632,9 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       saveMapMemo(newMapMemoLines);
     }, 500);
   }, [
-    arrowStyle,
-    clearMapMemoEditingLine,
+    isEditingLine,
+    editingLineId,
+    editingPointIndex,
     isMapMemoLineSmoothed,
     isStraightStyle,
     mapMemoLines,
@@ -625,14 +643,14 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     mapViewRef,
     penColor,
     penWidth,
-    saveMapMemo,
-    isEditingLine,
-    editingLineId,
-    editingPointIndex,
+    arrowStyle,
+    clearMapMemoEditingLine,
     memoLines,
-    activeMemoLayer,
-    user.uid,
+    dataUser.uid,
+    dataUser.displayName,
     dispatch,
+    activeMemoLayer,
+    saveMapMemo,
   ]);
 
   /**

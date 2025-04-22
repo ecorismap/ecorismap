@@ -18,7 +18,13 @@ export type UseProjectReturnType = {
   isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  downloadData: (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => Promise<void>;
+  downloadData: ({
+    isAdmin,
+    shouldPhotoDownload,
+  }: {
+    isAdmin?: boolean | undefined;
+    shouldPhotoDownload?: boolean | undefined;
+  }) => Promise<void>;
   uploadData: (isLicenseOK: boolean) => Promise<{
     isOK: boolean;
     message: string;
@@ -53,9 +59,9 @@ export const useProject = (): UseProjectReturnType => {
   } = useRepository();
 
   const downloadData = useCallback(
-    async (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => {
+    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (downloadType === 'ADMIN') {
+      if (isAdmin) {
         //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
         const [publicRes, privateRes, templateRes] = await Promise.all([
           fetchPublicData(project, shouldPhotoDownload, 'others'),
@@ -75,7 +81,7 @@ export const useProject = (): UseProjectReturnType => {
         const mergedDataResult = await createMergedDataSet({
           privateData: [...privateRes.data, ...ownPrivateData],
           publicData: [...publicRes.data, ...ownPublicData],
-          templateData: [],
+          templateData: templateRes.data,
         });
         if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
       } else {
