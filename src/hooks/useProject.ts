@@ -18,13 +18,6 @@ export type UseProjectReturnType = {
   isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  downloadData: ({
-    isAdmin,
-    shouldPhotoDownload,
-  }: {
-    isAdmin?: boolean | undefined;
-    shouldPhotoDownload?: boolean | undefined;
-  }) => Promise<void>;
   uploadData: (isLicenseOK: boolean) => Promise<{
     isOK: boolean;
     message: string;
@@ -45,78 +38,8 @@ export const useProject = (): UseProjectReturnType => {
   const project = useMemo(() => projects.find((d) => d.id === projectId), [projectId, projects]);
   const role = useMemo(() => project?.members.find((v) => v.uid === user.uid)?.role, [project?.members, user.uid]);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
-  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
-  const layers = useSelector((state: RootState) => state.layers);
 
-  const {
-    fetchPublicData,
-    fetchPrivateData,
-    fetchTemplateData,
-    uploadDataToRepository,
-    uploadProjectSettings,
-    deleteCommonAndTemplateData,
-    createMergedDataSet,
-  } = useRepository();
-
-  const downloadData = useCallback(
-    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
-      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (isAdmin) {
-        //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
-        const [publicRes, privateRes, templateRes] = await Promise.all([
-          fetchPublicData(project, shouldPhotoDownload, 'others'),
-          fetchPrivateData(project, shouldPhotoDownload, 'others'),
-          fetchTemplateData(project, shouldPhotoDownload),
-        ]);
-        if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
-          throw new Error(publicRes.message || privateRes.message || templateRes.message);
-        }
-        //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
-        const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
-        const ownPrivateData = dataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
-
-        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
-        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
-        const mergedDataResult = await createMergedDataSet({
-          privateData: [...privateRes.data, ...ownPrivateData],
-          publicData: [...publicRes.data, ...ownPublicData],
-          templateData: templateRes.data,
-        });
-        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
-      } else {
-        //自分以外のPUBLICデータをサーバーから取得する
-        const [publicRes, templateRes] = await Promise.all([
-          fetchPublicData(project, shouldPhotoDownload, 'others'),
-          fetchTemplateData(project, shouldPhotoDownload),
-        ]);
-        if (!publicRes.isOK || !templateRes.isOK) {
-          throw new Error(publicRes.message || templateRes.message);
-        }
-        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
-        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
-        const mergedDataResult = await createMergedDataSet({
-          privateData: [],
-          publicData: [...publicRes.data, ...ownPublicData],
-          templateData: templateRes.data,
-        });
-        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
-      }
-      dispatch(editSettingsAction({ photosToBeDeleted: [] }));
-    },
-    [
-      createMergedDataSet,
-      dataSet,
-      dispatch,
-      fetchPrivateData,
-      fetchPublicData,
-      fetchTemplateData,
-      layers,
-      project,
-      user.uid,
-    ]
-  );
+  const { uploadDataToRepository, uploadProjectSettings, deleteCommonAndTemplateData } = useRepository();
 
   const uploadData = useCallback(
     async (isLicenseOK: boolean) => {
@@ -178,7 +101,6 @@ export const useProject = (): UseProjectReturnType => {
     isOwnerAdmin,
     project,
     projectRegion,
-    downloadData,
     uploadData,
     syncPosition,
     clearProject,

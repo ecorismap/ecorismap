@@ -146,6 +146,8 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  handleSelect: (selected: any) => void;
+  handleBulkSelect: (mode: 'self' | 'latest') => void;
 };
 
 // キューアイテムの型
@@ -157,7 +159,8 @@ export type ConflictQueueItem = {
 
 // state の型
 export type ConflictState = {
-  queue: ConflictQueueItem[];
+  queue: { id: string; candidates: RecordType[]; resolve: (r: RecordType) => void }[];
+  bulkMode: null | 'self' | 'latest';
   visible: boolean;
 };
 
@@ -181,17 +184,152 @@ export const useRepository = (): UseRepositoryReturnType & {
 
   const [conflictState, setConflictState] = useState<ConflictState>({
     queue: [],
+    bulkMode: null,
     visible: false,
   });
 
-  const conflictsResolver = useCallback((candidates: RecordType[], id: string): Promise<RecordType> => {
-    return new Promise<RecordType>((resolve) => {
-      setConflictState((prev: ConflictState) => ({
-        queue: [...prev.queue, { id, candidates, resolve }],
-        visible: true,
-      }));
-    });
-  }, []);
+  const conflictsResolver = useCallback(
+    (candidates: RecordType[], id: string): Promise<RecordType> =>
+      new Promise<RecordType>((resolve) => {
+        setConflictState((prev) => {
+          // bulkMode が設定済みなら即時解決
+          if (prev.bulkMode) {
+            const chosen =
+              prev.bulkMode === 'self'
+                ? candidates.find((c) => c.userId === user.uid) || candidates[0]
+                : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
+            resolve(chosen);
+            return prev;
+          }
+          // まだ bulkMode なし → モーダルキューに積む
+          return {
+            ...prev,
+            queue: [...prev.queue, { id, candidates, resolve }],
+            visible: true,
+          };
+        });
+      }),
+    [user.uid]
+  );
+
+  // 競合解決: 選択された候補を resolve してキューから取り除く
+  const handleSelect = useCallback(
+    (selected: any) => {
+      setConflictState((prev: ConflictState) => {
+        const [current, ...rest] = prev.queue;
+        if (current) {
+          current.resolve(selected);
+        }
+        return {
+          ...prev,
+          queue: rest,
+          visible: rest.length > 0,
+        };
+      });
+    },
+    [setConflictState]
+  );
+
+  // 一括選択（残りすべて self か latest）
+  const handleBulkSelect = useCallback(
+    (mode: 'self' | 'latest') => {
+      setConflictState((prev) => {
+        // 1) いまキューにある全件を一括解決
+        prev.queue.forEach(({ candidates, resolve }) => {
+          const chosen =
+            mode === 'self'
+              ? candidates.find((c) => c.userId === user.uid) || candidates[0]
+              : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
+          resolve(chosen);
+        });
+        // 2) 今後はこのモードで自動解決
+        return { queue: [], bulkMode: mode, visible: false };
+      });
+    },
+    [user.uid]
+  );
+
+  const createMergedDataSet = useCallback(
+    async ({
+      privateData,
+      publicData,
+      templateData,
+    }: {
+      privateData: DataType[];
+      publicData: DataType[];
+      templateData: DataType[];
+    }) => {
+      // すべてのlayerIdを抽出
+      const allLayerIds = Array.from(
+        new Set([
+          ...privateData.map((d) => d.layerId),
+          ...publicData.map((d) => d.layerId),
+          ...templateData.map((d) => d.layerId),
+        ])
+      );
+
+      for (const layerId of allLayerIds) {
+        const templateItem = templateData.find((d) => d.layerId === layerId);
+        const privateItems = privateData.filter((d) => d.layerId === layerId);
+        if (privateItems.length > 0) {
+          //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
+
+          // プライベートとテンプレートのマージ
+          const [mergedPrivate, mergedTemplate] = await mergeLayerData({
+            layerData: privateItems,
+            templateData: templateItem,
+            ownUserId: user.uid,
+            strategy: 'manual',
+            conflictsResolver,
+          });
+
+          if (mergedPrivate.length > 0) {
+            dispatch(updateDataAction(mergedPrivate));
+          }
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
+          }
+        }
+        const publicItems = publicData.filter((d) => d.layerId === layerId);
+        if (publicItems.length > 0) {
+          // 複数人のパブリックとテンプレートのマージ
+          const [mergedPublic, mergedTemplate] = await mergeLayerData({
+            layerData: publicItems,
+            templateData: templateItem,
+            ownUserId: user.uid,
+            strategy: 'manual',
+            conflictsResolver,
+          });
+
+          dispatch(updateDataAction(mergedPublic));
+
+          // 2) マージ結果に自分(user.uid)が含まれなければ、空配列をセットしてローカルデータをクリア
+          const hasSelf = mergedPublic.some((dt) => dt.userId === user.uid);
+          if (!hasSelf) {
+            dispatch(
+              updateDataAction([
+                {
+                  layerId,
+                  userId: user.uid,
+                  data: [], // 空にすることで既存の自分データを消去
+                },
+              ])
+            );
+          }
+
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
+          }
+        }
+        // private/publicがなくtemplateのみの場合
+        if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
+          dispatch(updateDataAction([templateItem]));
+        }
+      }
+      return { isOK: true, message: '' };
+    },
+    [dispatch, user.uid, conflictsResolver]
+  );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
     const { isOK, message, data: projectSettings } = await projectStore.downloadProjectSettings(project.id);
@@ -727,74 +865,6 @@ export const useRepository = (): UseRepositoryReturnType & {
     [downloadPhotos, layers, user]
   );
 
-  const createMergedDataSet = useCallback(
-    async ({
-      privateData,
-      publicData,
-      templateData,
-    }: {
-      privateData: DataType[];
-      publicData: DataType[];
-      templateData: DataType[];
-    }) => {
-      // すべてのlayerIdを抽出
-      const allLayerIds = Array.from(
-        new Set([
-          ...privateData.map((d) => d.layerId),
-          ...publicData.map((d) => d.layerId),
-          ...templateData.map((d) => d.layerId),
-        ])
-      );
-
-      for (const layerId of allLayerIds) {
-        const templateItem = templateData.find((d) => d.layerId === layerId);
-        const privateItems = privateData.filter((d) => d.layerId === layerId);
-        if (privateItems.length > 0) {
-          //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
-
-          // プライベートとテンプレートのマージ
-          const [mergedPrivate, mergedTemplate] = await mergeLayerData({
-            layerData: privateItems,
-            templateData: templateItem,
-            ownUserId: user.uid,
-            strategy: 'manual',
-            conflictsResolver,
-          });
-
-          if (mergedPrivate.length > 0) {
-            dispatch(updateDataAction(mergedPrivate));
-          }
-          if (mergedTemplate && templateItem) {
-            dispatch(updateDataAction([mergedTemplate]));
-          }
-        }
-        const publicItems = publicData.filter((d) => d.layerId === layerId);
-        if (publicItems.length > 0) {
-          // 複数人のパブリックとテンプレートのマージ
-          const [mergedPublic, mergedTemplate] = await mergeLayerData({
-            layerData: publicItems,
-            templateData: templateItem,
-            ownUserId: user.uid,
-            strategy: 'manual',
-            conflictsResolver,
-          });
-
-          dispatch(updateDataAction(mergedPublic));
-
-          if (mergedTemplate && templateItem) {
-            dispatch(updateDataAction([mergedTemplate]));
-          }
-        }
-        // private/publicがなくtemplateのみの場合
-        if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
-          dispatch(updateDataAction([templateItem]));
-        }
-      }
-      return { isOK: true, message: '' };
-    },
-    [dispatch, user.uid, conflictsResolver]
-  );
-
   const downloadTemplateData = useCallback(
     async (project: ProjectType, shouldPhotoDownload: boolean) => {
       const res = await fetchTemplateData(project, shouldPhotoDownload);
@@ -827,5 +897,7 @@ export const useRepository = (): UseRepositoryReturnType & {
     conflictsResolver,
     createMergedDataSet,
     downloadTemplateData,
+    handleBulkSelect,
+    handleSelect,
   } as const;
 };

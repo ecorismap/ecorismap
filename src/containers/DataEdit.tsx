@@ -531,6 +531,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         isDecimal,
         recordNumber,
         maxRecordNumber,
+        projectId,
         pressSaveData,
         changeLatLonType,
         changeLatLon,

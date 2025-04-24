@@ -85,18 +85,37 @@ describe('createMergedDataSet', () => {
 
   test('publicDataのみ', async () => {
     const { result } = renderWithProvider(() => useRepository());
+    const layerId = 'l2';
+
     const publicData = [
       {
-        layerId: 'l2',
+        layerId,
         userId: 'other',
         data: [{ id: '2', userId: 'other', displayName: 'O', visible: true, redraw: false, coords: [], field: {} }],
       },
     ];
+
     await act(async () => {
       await result.current.createMergedDataSet({ privateData: [], publicData, templateData: [] });
     });
-    expect(store.dispatch).toHaveBeenCalledTimes(1);
-    expect(store.dispatch).toHaveBeenCalledWith(updateDataAction([publicData[0]]));
+
+    // 2回呼ばれること
+    expect(store.dispatch).toHaveBeenCalledTimes(2);
+
+    // 1回目: 他ユーザーのデータ
+    expect(store.dispatch).toHaveBeenNthCalledWith(1, updateDataAction([publicData[0]]));
+
+    // 2回目: 自分の空データでローカルをクリア
+    expect(store.dispatch).toHaveBeenNthCalledWith(
+      2,
+      updateDataAction([
+        {
+          layerId,
+          userId: 'test-user',
+          data: [],
+        },
+      ])
+    );
   });
 
   test('templateDataのみ', async () => {
@@ -117,23 +136,32 @@ describe('createMergedDataSet', () => {
 
   test('publicDataが複数ユーザー分存在する場合', async () => {
     const { result } = renderWithProvider(() => useRepository());
+    const layerId = 'l6';
     const publicData = [
       {
-        layerId: 'l6',
+        layerId,
         userId: 'user1',
         data: [{ id: 'a', userId: 'user1', displayName: 'A', visible: true, redraw: false, coords: [], field: {} }],
       },
       {
-        layerId: 'l6',
+        layerId,
         userId: 'user2',
         data: [{ id: 'b', userId: 'user2', displayName: 'B', visible: true, redraw: false, coords: [], field: {} }],
       },
     ];
+
     await act(async () => {
       await result.current.createMergedDataSet({ privateData: [], publicData, templateData: [] });
     });
-    expect(store.dispatch).toHaveBeenCalledTimes(1);
-    expect(store.dispatch).toHaveBeenCalledWith(updateDataAction(publicData));
+
+    // 他人の publicData と、自分の空データでクリアする 2 回 dispatch
+    expect(store.dispatch).toHaveBeenCalledTimes(2);
+
+    // 1 回目: 他人のデータがセットされる
+    expect(store.dispatch).toHaveBeenNthCalledWith(1, updateDataAction(publicData));
+
+    // 2 回目: 自分のローカルデータを空配列で上書き
+    expect(store.dispatch).toHaveBeenNthCalledWith(2, updateDataAction([{ layerId, userId: 'test-user', data: [] }]));
   });
 
   test('すべて空の場合は dispatch されない', async () => {
@@ -223,7 +251,7 @@ describe('createMergedDataSet', () => {
     expect(second).toEqual(updateDataAction([templateData[0]]));
   });
 
-  test('publicData と templateData が同じ layerId の場合は public のみ dispatch', async () => {
+  test('publicData と templateData が同じ layerId の場合は public → self-clear → template の順で3回 dispatch', async () => {
     const { result } = renderWithProvider(() => useRepository());
     const layerId = 'lY';
 
@@ -231,14 +259,34 @@ describe('createMergedDataSet', () => {
       {
         layerId,
         userId: 'user2',
-        data: [{ id: 'pY', userId: 'user2', displayName: 'U2', visible: true, redraw: false, coords: [], field: {} }],
+        data: [
+          {
+            id: 'pY',
+            userId: 'user2',
+            displayName: 'U2',
+            visible: true,
+            redraw: false,
+            coords: [],
+            field: {},
+          },
+        ],
       },
     ];
     const templateData = [
       {
         layerId,
         userId: 'template',
-        data: [{ id: 'tY', userId: 'template', displayName: 'T', visible: true, redraw: false, coords: [], field: {} }],
+        data: [
+          {
+            id: 'tY',
+            userId: 'template',
+            displayName: 'T',
+            visible: true,
+            redraw: false,
+            coords: [],
+            field: {},
+          },
+        ],
       },
     ];
 
@@ -246,11 +294,68 @@ describe('createMergedDataSet', () => {
       await result.current.createMergedDataSet({ privateData: [], publicData, templateData });
     });
 
-    // 2回呼ばれること
-    expect(store.dispatch).toHaveBeenCalledTimes(2);
+    // 合計 3 回呼ばれること
+    expect(store.dispatch).toHaveBeenCalledTimes(3);
+
     // 1回目: public 側
-    expect(store.dispatch).toHaveBeenCalledWith(updateDataAction([publicData[0]]));
-    // 2回目: template 側
-    expect(store.dispatch).toHaveBeenCalledWith(updateDataAction([templateData[0]]));
+    expect(store.dispatch).toHaveBeenNthCalledWith(1, updateDataAction([publicData[0]]));
+
+    // 2回目: 自分の空データでクリア
+    expect(store.dispatch).toHaveBeenNthCalledWith(2, updateDataAction([{ layerId, userId: 'test-user', data: [] }]));
+
+    // 3回目: template 側
+    expect(store.dispatch).toHaveBeenNthCalledWith(3, updateDataAction([templateData[0]]));
+  });
+
+  // --- 新規テスト追加 ---
+  test('publicData のみマージで他人のレコードが選択された場合、自分のローカルデータがクリアされる', async () => {
+    const { result } = renderWithProvider(() => useRepository());
+    const layerId = 'lZ';
+    const publicData = [
+      {
+        layerId,
+        userId: 'other',
+        data: [
+          { id: 'o1', userId: 'other', displayName: 'Other', visible: true, redraw: false, coords: [], field: {} },
+        ],
+      },
+    ];
+    // 既存のローカルデータとして、自分のデータも store.dispatch で設定しておく
+    await act(async () => {
+      // 初期マージで自分のデータを入れる
+      await result.current.createMergedDataSet({
+        privateData: [],
+        publicData: [
+          {
+            layerId,
+            userId: 'test-user',
+            data: [
+              {
+                id: 's1',
+                userId: 'test-user',
+                displayName: 'Self',
+                visible: true,
+                redraw: false,
+                coords: [],
+                field: {},
+              },
+            ],
+          },
+        ],
+        templateData: [],
+      });
+    });
+    // モック dispatch 関数をクリア
+    (store.dispatch as jest.Mock).mockClear();
+
+    await act(async () => {
+      // 今度は他人のレコードのみでマージ実行
+      await result.current.createMergedDataSet({ privateData: [], publicData, templateData: [] });
+    });
+
+    // 他人のレコードと、自分の空データの2回呼び出しを検証
+    expect(store.dispatch).toHaveBeenCalledTimes(2);
+    expect(store.dispatch).toHaveBeenNthCalledWith(1, updateDataAction([publicData[0]]));
+    expect(store.dispatch).toHaveBeenNthCalledWith(2, updateDataAction([{ layerId, userId: 'test-user', data: [] }]));
   });
 });

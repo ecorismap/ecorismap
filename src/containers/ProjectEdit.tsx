@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import ProjectEdit, { ConflictResolverModal } from '../components/pages/ProjectEdit';
+import ProjectEdit from '../components/pages/ProjectEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
@@ -10,16 +10,16 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
-import { ConflictState, useRepository } from '../hooks/useRepository';
+import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
+import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 
 export default function ProjectEditContainer({ navigation, route }: Props_ProjectEdit) {
   const {
-    user,
     isProjectOpen,
     isOwner,
     isOwnerAdmin,
@@ -55,7 +55,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     downloadTemplateData,
     createMergedDataSet,
     conflictState,
-    setConflictState,
+    handleSelect,
+    handleBulkSelect,
   } = useRepository();
   const { generateEcorisMapData, createExportSettings } = useEcorisMapFile();
 
@@ -109,7 +110,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           }
         }
         let isAdmin = false;
-        if (isOwnerAdmin) {
+        if (!isSetting && isOwnerAdmin) {
           const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
           if (resp) isAdmin = true;
         }
@@ -301,63 +302,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     navigation.navigate('Projects');
   }, [isEdited, navigation]);
 
-  // 競合解決: 選択された候補を resolve してキューから取り除く
-  const handleSelect = useCallback(
-    (selected: any) => {
-      setConflictState((prev: ConflictState) => {
-        const [current, ...rest] = prev.queue;
-        if (current) {
-          current.resolve(selected);
-        }
-        return {
-          ...prev,
-          queue: rest,
-          visible: rest.length > 0,
-        };
-      });
-    },
-    [setConflictState]
-  );
-
-  // 一括選択（残りすべて self か latest）
-  const handleBulkSelect = useCallback(
-    (mode: 'self' | 'latest') => {
-      setConflictState((prev: ConflictState) => {
-        const [current, ...rest] = prev.queue;
-        if (current) {
-          const { candidates, resolve } = current;
-          let chosen: any;
-          if (mode === 'self') {
-            chosen = candidates.find((c: any) => c.userId === user.uid) || candidates[0];
-          } else {
-            chosen = candidates.reduce((a: any, b: any) => (a.updatedAt > b.updatedAt ? a : b));
-          }
-          resolve(chosen);
-        }
-        return {
-          ...prev,
-          queue: rest,
-          visible: rest.length > 0,
-        };
-      });
-    },
-    [setConflictState, user.uid]
-  );
-
-  // キャンセル時にもデフォルトを resolve して閉じる
-  const handleClose = useCallback(() => {
-    setConflictState((prev: ConflictState) => {
-      const [current] = prev.queue;
-      if (current) {
-        current.resolve(current.candidates[0]);
-      }
-      return {
-        queue: [],
-        visible: false,
-      };
-    });
-  }, [setConflictState]);
-
   return (
     <ProjectEditContext.Provider
       value={{
@@ -389,7 +333,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           id={conflictState.queue[0].id}
           onSelect={handleSelect}
           onBulkSelect={handleBulkSelect}
-          onClose={handleClose}
         />
       )}
     </ProjectEditContext.Provider>

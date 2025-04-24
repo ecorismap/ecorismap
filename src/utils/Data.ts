@@ -414,8 +414,15 @@ export async function mergeLayerData({
   for (const id of idSet) {
     const candidates = combinedRecords.filter((r) => r.id === id);
     let chosen: RecordType;
-    // 「候補が２つ」で「そのうち一つが template」、もう一つが user の場合は必ずユーザーを選択
-    if (
+
+    // ユーザー候補のみ抽出 (template を除外)
+    const userCandidates = candidates.filter((r) => r.userId !== 'template');
+
+    // ユーザーが2人以上いる場合 → template を除外して手動マージ
+    if (userCandidates.length > 1 && conflictsResolver) {
+      chosen = await conflictsResolver(userCandidates, id);
+    } else if (
+      // 「候補が２つ」で「一方が template、もう一方がユーザー」の場合は必ずユーザーを選択
       candidates.length === 2 &&
       candidates.some((r) => r.userId === 'template') &&
       candidates.some((r) => r.userId !== 'template')
@@ -424,6 +431,7 @@ export async function mergeLayerData({
     } else if (candidates.length === 1) {
       chosen = candidates[0];
     } else {
+      // 通常の戦略適用部
       if (strategy === 'manual' && conflictsResolver) {
         chosen = await conflictsResolver(candidates, id);
       } else if (strategy === 'latest') {
@@ -438,10 +446,12 @@ export async function mergeLayerData({
       }
     }
 
+    // 選ばれたレコードを userId 毎に集計
     const list = resolvedMap.get(chosen.userId!) ?? [];
     list.push(chosen);
     resolvedMap.set(chosen.userId!, list);
   }
+
   // --- 結果の整形 ---
   const mergedUserData: DataType[] = Array.from(resolvedMap.entries())
     .filter(([userId]) => userId !== 'template')

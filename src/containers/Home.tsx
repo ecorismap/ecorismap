@@ -12,7 +12,7 @@ import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -61,6 +61,9 @@ import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPi
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
+import { useRepository } from '../hooks/useRepository';
+import { editSettingsAction } from '../modules/settings';
+import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -84,6 +87,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { runTutrial } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
   const { isConnected } = useNetInfo();
+  const dispatch = useDispatch();
 
   //タイルのダウンロード関連
   const {
@@ -242,7 +246,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isSynced,
     project,
     projectRegion,
-    downloadData,
     uploadData,
     syncPosition,
     clearProject,
@@ -276,6 +279,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setOutputDataPDF,
   } = usePDF();
 
+  const {
+    conflictState,
+    handleSelect,
+    handleBulkSelect,
+    fetchPublicData,
+    fetchPrivateData,
+    fetchTemplateData,
+    createMergedDataSet,
+  } = useRepository();
+
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion, isLandscape } = useWindow();
 
@@ -292,6 +305,68 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const downloadMode = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
   const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
+
+  /******************************* */
+  const downloadData = useCallback(
+    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
+      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+      if (isAdmin) {
+        //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
+        const [publicRes, privateRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchPrivateData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || privateRes.message || templateRes.message);
+        }
+        //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
+        const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
+        const ownPrivateData = dataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
+
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [...privateRes.data, ...ownPrivateData],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: templateRes.data,
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      } else {
+        //自分以外のPUBLICデータをサーバーから取得する
+        const [publicRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || templateRes.message);
+        }
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: templateRes.data,
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      }
+      dispatch(editSettingsAction({ photosToBeDeleted: [] }));
+    },
+    [
+      createMergedDataSet,
+      dataSet,
+      dispatch,
+      fetchPrivateData,
+      fetchPublicData,
+      fetchTemplateData,
+      layers,
+      project,
+      user.uid,
+    ]
+  );
 
   /*************** onXXXXMapView *********************/
 
@@ -1755,6 +1830,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setOutputDataPDF={setOutputDataPDF}
         pressOK={() => setIsPDFSettingsVisible(false)}
       />
+      {conflictState.visible && conflictState.queue.length > 0 && (
+        <ConflictResolverModal
+          visible={conflictState.visible}
+          candidates={conflictState.queue[0].candidates}
+          id={conflictState.queue[0].id}
+          onSelect={handleSelect}
+          onBulkSelect={handleBulkSelect}
+        />
+      )}
     </HomeContext.Provider>
   );
 }

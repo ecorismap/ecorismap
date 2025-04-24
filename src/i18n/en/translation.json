@@ -138,7 +138,11 @@
     "point": "point",
     "track": "track",
     "polygon": "polygon",
-    "message": {},
+    "message": {
+      "failGetUids": "Failed to retrieve user ID",
+      "cannotLoadProject": "There are some projects that cannot be loaded. \nAsk the project owner to reset your account.",
+      "failGetProjects": "Failed to retrieve project"
+    },
     "login": "Login",
     "manual": "manual",
     "issue": "defect report",
@@ -261,7 +265,8 @@
     "useAdd": "Used to add data",
     "notSupported": "Microphone cannot be used in web version",
     "none": "(none)",
-    "selectionType": "Selection Type"
+    "selectionType": "Selection Type",
+    "userName": "User"
   },
   "firebase": {
     "message": {
@@ -729,7 +734,8 @@
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
       "exportPDF": "I saved the PDF.",
-      "zoomLevel": "It cannot be obtained within this range. \nPlease zoom in."
+      "zoomLevel": "It cannot be obtained within this range. \nPlease zoom in.",
+      "noInternet": "I'm not connected to the internet. \nPlease connect and try again."
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
@@ -745,7 +751,8 @@
       "track_start": "Do you want to start recording the track?",
       "download": "Do you want to retrieve updated data?",
       "upload": "Do you want to send data?",
-      "reOpenProject": "Would you like to open a project? \nData from the current project that you have not saved will be discarded."
+      "reOpenProject": "Would you like to open a project? \nData from the current project that you have not saved will be discarded.",
+      "downloadAllUserData": "Do you also download private data from other members as an administrator?"
     },
     "navigation": {
       "download": "Map download",

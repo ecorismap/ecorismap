@@ -10,6 +10,7 @@ interface DataEditContextType {
   isDecimal: boolean;
   recordNumber: number;
   maxRecordNumber: number;
+  projectId: string | undefined;
   changeLatLonType: () => void;
   changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
   changeField: (name: string, value: string | number) => void;

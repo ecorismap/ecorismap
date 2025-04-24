@@ -89,7 +89,7 @@ export const DataTable = React.memo(() => {
               disabled={isActive}
               onPress={() => gotoDataEdit(index)}
             >
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+              <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
                 {item.displayName}
               </Text>
             </TouchableOpacity>

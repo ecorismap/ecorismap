@@ -199,7 +199,8 @@
     "option": "オプション",
     "useAdd": "データ追加に使用",
     "notSupported": "web版ではマイクは使用できません",
-    "none": "（なし）"
+    "none": "（なし）",
+    "userName": "User"
   },
   "Home": {
     "confirm": {
@@ -217,7 +218,7 @@
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
       "track_start": "トラックの記録を開始しますか？",
-      "downloadAllUserData": "他のメンバーのデータもダウンロードしますか？"
+      "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
