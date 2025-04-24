@@ -16,6 +16,7 @@ import { ulid } from 'ulid';
 import { deleteLocalPhoto } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -59,7 +60,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
-  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
+  const dataSet = useSelector(selectNonDeletedDataSet);
   //const [isEditingRecord, setIsEditingRecord] = useState(false);
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);

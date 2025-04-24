@@ -9,7 +9,7 @@ import { cloneDeep } from 'lodash';
 import { getRandomColor, hsv2rgbaString } from '../utils/Color';
 import { updateLayerAction } from '../modules/layers';
 import { t } from '../i18n/config';
-import { createSelector } from '@reduxjs/toolkit';
+import { selectDataSetForLayer } from '../modules/selectors';
 
 export type UseFeatureStyleReturnType = {
   isEdited: boolean;
@@ -41,13 +41,6 @@ export type UseFeatureStyleReturnType = {
   selectColorCancel: () => void;
   saveColorStyle: () => void;
 };
-
-// メモ化されたセレクターを作成
-const selectDataSetForLayer = createSelector(
-  (state: RootState) => state.dataSet,
-  (state: RootState, layerId: string) => layerId,
-  (dataSet, layerId) => dataSet.filter((d) => d.layerId === layerId)
-);
 
 export const useFeatureStyle = (layer_: LayerType, isEdited_: boolean): UseFeatureStyleReturnType => {
   const dispatch = useDispatch();

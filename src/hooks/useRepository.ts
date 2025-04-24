@@ -29,6 +29,7 @@ import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -171,7 +172,7 @@ export const useRepository = (): UseRepositoryReturnType & {
 } => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dataSet = useSelector(selectNonDeletedDataSet);
   const layers = useSelector((state: RootState) => state.layers);
   const mapRegion = useSelector((state: RootState) => state.settings.mapRegion, shallowEqual);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);

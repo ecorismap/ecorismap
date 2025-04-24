@@ -11,6 +11,7 @@ import { usePermission } from './usePermission';
 import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -42,7 +43,7 @@ export const useData = (layerId: string): UseDataReturnType => {
   const targetLayer = useSelector((state: RootState) => state.layers.find((l) => l.id === layerId)!, shallowEqual);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
-  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
+  const dataSet = useSelector(selectNonDeletedDataSet);
   const { isRunningProject } = usePermission();
   const route = useRoute();
   const [allUserRecordSet, setAllUserRecordSet] = useState<RecordType[]>([]);

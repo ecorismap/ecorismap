@@ -13,22 +13,7 @@ import { addDataAction, deleteDataAction, updateDataAction } from '../modules/da
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import sanitize from 'sanitize-filename';
-import { createSelector } from '@reduxjs/toolkit';
-
-// メモ化されたセレクターを作成
-const selectProjectId = (state: RootState) => state.settings.projectId;
-const selectLayers = (state: RootState) => state.layers;
-const selectUser = (state: RootState) => state.user;
-const selectDataSet = createSelector(
-  (state: RootState) => state.dataSet,
-  (_: RootState, layerId: string) => layerId,
-  (dataSet, layerId) => dataSet.filter((d) => d.layerId === layerId)
-);
-const selectIsNewLayer = createSelector(
-  selectLayers,
-  (_: RootState, layerId: string) => layerId,
-  (layers, layerId) => layers.every((d) => d.id !== layerId)
-);
+import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
 
 export type UseLayerEditReturnType = {
   targetLayer: LayerType;
@@ -59,9 +44,9 @@ export const useLayerEdit = (
   useLastValue: boolean | undefined
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
-  const projectId = useSelector(selectProjectId, shallowEqual);
-  const layers = useSelector(selectLayers, shallowEqual);
-  const user = useSelector(selectUser, shallowEqual);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers, shallowEqual);
+  const user = useSelector((state: RootState) => state.user, shallowEqual);
   const dataSet = useSelector((state: RootState) => selectDataSet(state, layer.id), shallowEqual);
   const isNewLayer = useSelector((state: RootState) => selectIsNewLayer(state, layer.id));
 

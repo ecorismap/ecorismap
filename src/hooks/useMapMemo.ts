@@ -35,6 +35,7 @@ import { STAMP } from '../constants/AppConstants';
 import { isBrushTool, isEraserTool, isPenTool, isStampTool } from '../utils/General';
 import { Position } from 'geojson';
 import { editSettingsAction } from '../modules/settings';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 // Type Definitions
 export type UseMapMemoReturnType = {
@@ -120,7 +121,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   const layers = useSelector((state: RootState) => state.layers);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dataSet = useSelector(selectNonDeletedDataSet);
   const isModalMapMemoToolHidden = useSelector((state: RootState) => state.settings.isModalMapMemoToolHidden);
 
   // State management

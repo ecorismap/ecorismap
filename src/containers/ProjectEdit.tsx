@@ -110,7 +110,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           }
         }
         let isAdmin = false;
-        if (!isSetting && isOwnerAdmin) {
+        //Webで管理者なら全員のデータをダウンロードするか確認
+        if (!isSetting && isOwnerAdmin && Platform.OS === 'web') {
           const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
           if (resp) isAdmin = true;
         }

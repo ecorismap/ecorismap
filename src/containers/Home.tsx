@@ -64,6 +64,7 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { editSettingsAction } from '../modules/settings';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -80,7 +81,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const memberLocations = useSelector((state: RootState) => state.settings.memberLocation, shallowEqual);
 
   const layers = useSelector((state: RootState) => state.layers);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dataSet = useSelector(selectNonDeletedDataSet);
+  const fullDataSet = useSelector((state: RootState) => state.dataSet);
+
   const routeName = getFocusedRouteNameFromRoute(route);
 
   const { importGeoFile } = useGeoFile();
@@ -322,11 +325,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
         //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
         const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
-        const ownPrivateData = dataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const ownPrivateData = fullDataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
 
         //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
         const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
         const mergedDataResult = await createMergedDataSet({
           privateData: [...privateRes.data, ...ownPrivateData],
           publicData: [...publicRes.data, ...ownPublicData],
@@ -344,7 +347,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
         //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
         const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
-        const ownPublicData = dataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
 
         const mergedDataResult = await createMergedDataSet({
           privateData: [],
@@ -357,11 +360,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     },
     [
       createMergedDataSet,
-      dataSet,
       dispatch,
       fetchPrivateData,
       fetchPublicData,
       fetchTemplateData,
+      fullDataSet,
       layers,
       project,
       user.uid,

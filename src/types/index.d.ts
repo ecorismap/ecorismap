@@ -106,6 +106,8 @@ export interface RecordType {
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
   updatedAt?: number;
+  deleted?: boolean;
+  isSynced?: boolean;
 }
 
 export interface PointRecordType {

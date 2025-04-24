@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, Modal, Text, Button } from 'react-native';
+import { RecordType } from '../../types';
+import { COLOR } from '../../constants/AppConstants';
 
 // カラー定数を定義
 const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.5)';
@@ -29,6 +31,10 @@ const modalStyles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 12,
   },
+  deletedText: {
+    color: COLOR.RED,
+    marginVertical: 8,
+  },
   modal: {
     backgroundColor: MODAL_BG_COLOR,
     borderRadius: 8,
@@ -57,19 +63,14 @@ export const ConflictResolverModal = React.memo(
     onBulkSelect,
   }: {
     visible: boolean;
-    candidates: any[];
+    candidates: RecordType[]; // deleted フラグを持つ RecordType
     id: string;
-    onSelect: (c: any) => void;
+    onSelect: (c: RecordType) => void;
     onBulkSelect: (mode: 'self' | 'latest') => void;
   }) => {
-    // unixtimeを日付文字列に変換する関数
-    const formatDate = (unixtime: number | string) => {
+    const formatDate = (unixtime?: number) => {
       if (!unixtime) return '';
-      const date = new Date(typeof unixtime === 'string' ? parseInt(unixtime, 10) : unixtime);
-      if (date.getFullYear() < 2000) {
-        return new Date(date.getTime() * 1000).toLocaleString('ja-JP', { hour12: false });
-      }
-      return date.toLocaleString('ja-JP', { hour12: false });
+      return new Date(unixtime).toLocaleString('ja-JP', { hour12: false });
     };
 
     return (
@@ -81,11 +82,20 @@ export const ConflictResolverModal = React.memo(
             <ScrollView style={modalStyles.scrollContainer}>
               {candidates.map((c, idx) => (
                 <View key={idx} style={modalStyles.candidate}>
+                  {/* 編集者／更新日時 */}
                   <Text>{`編集者: ${c.displayName} / 更新日時: ${formatDate(c.updatedAt)}`}</Text>
-                  <Text selectable style={modalStyles.candidateField}>
-                    {JSON.stringify(c.field, null, 2)}
-                  </Text>
-                  <Button title="このデータを採用" onPress={() => onSelect(c)} />
+
+                  {/* 削除済みマーク */}
+                  {c.deleted ? (
+                    <Text style={modalStyles.deletedText}>[削除済み] {formatDate(c.updatedAt)}</Text>
+                  ) : (
+                    <Text selectable style={modalStyles.candidateField}>
+                      {JSON.stringify(c.field, null, 2)}
+                    </Text>
+                  )}
+
+                  {/* ボタンラベルも切り替え */}
+                  <Button title={c.deleted ? '削除を適用' : 'このデータを採用'} onPress={() => onSelect(c)} />
                 </View>
               ))}
             </ScrollView>

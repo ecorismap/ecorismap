@@ -72,12 +72,34 @@ const reducers = {
     }
   },
   deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
-    const { layerId, userId, data } = action.payload;
-    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'DELETE_RECORDS' });
-    if (dataIndex !== -1) {
-      state[dataIndex].data = state[dataIndex].data.filter((d) => !data.find((v) => v.id === d.id));
-    }
+    const { layerId, userId, data: toDelete } = action.payload;
+    const idx = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    if (idx === -1) return;
+
+    const existing = state[idx].data as RecordType[];
+
+    // flatMap で「残すもの」「置き換えるもの」「除外するもの」を一度に処理
+    state[idx].data = existing.flatMap((record) => {
+      const isTarget = toDelete.some((d) => d.id === record.id);
+      if (!isTarget) {
+        return record;
+      }
+
+      if (record.isSynced) {
+        // すでにサーバー同期済み → 論理削除フラグを立てて、coords を undefined にする。サイズを小さくするため。
+        return {
+          ...record,
+          //field: {},
+          //coords: undefined,
+          userId: userId,
+          deleted: true,
+          updatedAt: Date.now(),
+        };
+      } else {
+        // 未同期 → 物理削除
+        return [];
+      }
+    });
   },
 };
 

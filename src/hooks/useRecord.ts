@@ -24,7 +24,7 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createSelector } from '@reduxjs/toolkit';
+import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -103,16 +103,9 @@ export const useRecord = (): UseRecordReturnType => {
   const user = useSelector((state: RootState) => state.user);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
 
-  const selectDataByLayerType = (layerType: string) =>
-    createSelector([(state: RootState) => state.dataSet, (_) => layers], (dataSet, layers_) =>
-      layers_.map((layer) => (layer.type === layerType ? dataSet.filter((v) => v.layerId === layer.id) : [])).flat()
-    );
-  const selectPointData = selectDataByLayerType('POINT');
-  const selectLineData = selectDataByLayerType('LINE');
-  const selectPolygonData = selectDataByLayerType('POLYGON');
-  const pointDataSet = useSelector((state) => selectPointData(state) as PointDataType[]);
-  const lineDataSet = useSelector((state) => selectLineData(state) as LineDataType[]);
-  const polygonDataSet = useSelector((state) => selectPolygonData(state) as PolygonDataType[]);
+  const pointDataSet = useSelector(selectPointDataSet);
+  const lineDataSet = useSelector(selectLineDataSet);
+  const polygonDataSet = useSelector(selectPolygonDataSet);
 
   const selectedRecord = useSelector((state: RootState) => state.settings.selectedRecord, shallowEqual);
 

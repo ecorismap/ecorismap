@@ -9,6 +9,7 @@ import {
   ProjectSettingsFS,
   ProjectSettingsType,
   ProjectType,
+  RecordType,
   UpdateProjectFS,
 } from '../../types';
 //@ts-ignore
@@ -276,7 +277,16 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
         .flat();
       const data = await dec(toDate(encryptedAt), encdata, userId, projectId);
       if (data !== undefined) {
-        return { userId, layerId, ...data } as DataType;
+        const recordsWithSyncFlag: RecordType[] = data.data.map((record: RecordType) => ({
+          ...record,
+          isSynced: true,
+        }));
+
+        return {
+          userId,
+          layerId,
+          data: recordsWithSyncFlag,
+        } as DataType;
       } else {
         // 復号できない場合は null を返す
         return null;
