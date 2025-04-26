@@ -230,6 +230,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
 
   const pressPhoto = useCallback(
     (fieldName: string, photo: PhotoType, index: number) => {
+      console.log('####', fieldName, photo, index);
       selectPhoto(fieldName, photo, index);
       setPhotoEditorOpen(true);
     },

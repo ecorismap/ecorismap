@@ -279,7 +279,6 @@ const projectDataSetToDataSet = async (projectId: string, projectDataSet: any) =
       if (data !== undefined) {
         const recordsWithSyncFlag: RecordType[] = data.data.map((record: RecordType) => ({
           ...record,
-          isSynced: true,
         }));
 
         return {

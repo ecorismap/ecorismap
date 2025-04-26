@@ -11,9 +11,7 @@ export const DataEditModalPhotoView = () => {
   const { photo, isPhotoViewOpen, pressClosePhoto, pressRemovePhoto, pressDownloadPhoto } = useContext(DataEditContext);
   const { windowWidth } = useWindow();
 
-  if (!isPhotoViewOpen || !photo?.uri) return null;
-
-  const images = [{ url: photo.uri }];
+  if (!isPhotoViewOpen) return null;
 
   return (
     <Modal visible={isPhotoViewOpen} transparent={true} animationType="fade">
@@ -34,7 +32,7 @@ export const DataEditModalPhotoView = () => {
           </View>
         </View>
         {photo.hasLocal && photo.uri ? (
-          <ImageViewer imageUrls={images} onCancel={pressClosePhoto} renderIndicator={() => <View />} />
+          <ImageViewer imageUrls={[{ url: photo.uri }]} onCancel={pressClosePhoto} renderIndicator={() => <View />} />
         ) : (
           <View style={styles.modalCenteredView}>
             <View style={[styles.modalContents, { width: windowWidth * 1 }]}>

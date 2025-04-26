@@ -25,11 +25,9 @@ import { isLoggedIn } from '../utils/Account';
 import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
-import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
-import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -172,7 +170,7 @@ export const useRepository = (): UseRepositoryReturnType & {
 } => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user);
-  const dataSet = useSelector(selectNonDeletedDataSet);
+  const fullDataSet = useSelector((state: RootState) => state.dataSet);
   const layers = useSelector((state: RootState) => state.layers);
   const mapRegion = useSelector((state: RootState) => state.settings.mapRegion, shallowEqual);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
@@ -181,7 +179,6 @@ export const useRepository = (): UseRepositoryReturnType & {
   //const drawTools = useSelector((state: RootState) => state.settings.drawTools);
   const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
-  const { photosToBeDeleted } = usePhoto();
 
   const [conflictState, setConflictState] = useState<ConflictState>({
     queue: [],
@@ -382,7 +379,11 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       for (const { name } of photoField) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
-          if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
+          console.log(data);
+          if (data.deleted) {
+            //データごと削除された写真をストレージから削除
+            await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
+          } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
             if (!isLicenseOK) {
               //ライセンス制限あればアップロードしない
@@ -411,23 +412,6 @@ export const useRepository = (): UseRepositoryReturnType & {
       return newData;
     },
     [user]
-  );
-
-  const updateStoragePhotos = useCallback(
-    async (
-      isLicenseOK: boolean,
-      data: RecordType[],
-      project: ProjectType,
-      layerId: string,
-      photoFields: LayerType['field']
-    ) => {
-      return await Promise.all(
-        data.map((d: RecordType) => {
-          return updateStoragePhoto(isLicenseOK, d, project, layerId, photoFields);
-        })
-      );
-    },
-    [updateStoragePhoto]
   );
 
   const deleteCommonAndTemplateData = useCallback(
@@ -482,13 +466,12 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const layer of targetLayers) {
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
-        const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
+        const targetRecordSet = getTargetRecordSet(fullDataSet, layer, user, isTemplate);
 
-        const updatedData = await updateStoragePhotos(isLicenseOK, targetRecordSet, project, layer.id, photoFields);
-        //データごと削除された写真をまとめて削除
-        await Promise.all(
-          photosToBeDeleted.map(async (photo) => {
-            await projectStorage.deleteStoragePhoto(photo.projectId, photo.layerId, photo.userId, photo.photoId);
+        //写真の更新
+        const updatedData = await Promise.all(
+          targetRecordSet.map((d: RecordType) => {
+            return updateStoragePhoto(isLicenseOK, d, project, layer.id, photoFields);
           })
         );
 
@@ -515,7 +498,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       return { isOK: true, message: '' };
     },
-    [dataSet, dispatch, isSettingProject, layers, photosToBeDeleted, updateStoragePhotos, updatedAt, user]
+    [dispatch, fullDataSet, isSettingProject, layers, updateStoragePhoto, updatedAt, user]
   );
 
   const uploadTileMaps = useCallback(

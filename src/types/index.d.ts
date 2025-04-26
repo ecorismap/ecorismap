@@ -107,7 +107,7 @@ export interface RecordType {
   field: { [key: string]: string | number | PhotoType[] };
   updatedAt?: number;
   deleted?: boolean;
-  isSynced?: boolean;
+  uploaded?: boolean;
 }
 
 export interface PointRecordType {
@@ -323,12 +323,12 @@ export interface SettingsType {
       }
     | undefined;
   plugins: any;
-  photosToBeDeleted: {
-    projectId: string;
-    layerId: string;
-    userId: string;
-    photoId: string;
-  }[];
+  // photosToBeDeleted: {
+  //   projectId: string;
+  //   layerId: string;
+  //   userId: string;
+  //   photoId: string;
+  // }[];
   mapListURL: string;
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;

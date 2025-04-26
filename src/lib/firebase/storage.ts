@@ -268,7 +268,8 @@ export const deleteProjectStorageData = async (projectId: string) => {
 
 export const deleteStoragePhoto = async (projectId: string, layerId: string, userId: string, photoId: string) => {
   try {
-    const reference = storage.ref(`projects/${projectId}/${layerId}/${userId}/PHOTO/${photoId}`);
+    console.log('deleteStoragePhoto:', projectId, layerId, userId, photoId);
+    const reference = storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
     await reference.delete();
     return { isOK: true, message: '' };
   } catch (error) {

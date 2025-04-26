@@ -10,7 +10,6 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
-import { usePhoto } from '../hooks/usePhoto';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
@@ -41,7 +40,6 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const { isOwnerAdmin } = usePermission();
 
   const { generateExportGeoData } = useGeoFile();
-  const { deleteRecordPhotos } = usePhoto();
 
   const pressExportData = useCallback(async () => {
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
@@ -85,10 +83,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
     }
     deleteRecords();
-    checkedRecords.forEach((record) => {
-      deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
-    });
-  }, [checkRecordEditable, checkedRecords, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer]);
+  }, [checkRecordEditable, checkedRecords, deleteRecords, route.params.targetLayer]);
 
   const pressAddData = useCallback(() => {
     if (!route.params.targetLayer.active) {

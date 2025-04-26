@@ -85,7 +85,7 @@ const reducers = {
         return record;
       }
 
-      if (record.isSynced) {
+      if (record.uploaded) {
         // すでにサーバー同期済み → 論理削除フラグを立てて、coords を undefined にする。サイズを小さくするため。
         return {
           ...record,

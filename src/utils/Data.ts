@@ -343,8 +343,8 @@ export const getTargetRecordSet = (
   }
   const recordSet: RecordType[] = cloneDeep(targetDataSet?.data ?? []);
   return isTemplate
-    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: 'template' }))
-    : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }));
+    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: 'template', uploaded: true }))
+    : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName, uploaded: true }));
 };
 
 export const createMergedDataSetWithTemplate = (

@@ -10,10 +10,9 @@ import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
-import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
-import { deleteLocalPhoto } from '../utils/Photo';
+import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
 import { selectNonDeletedDataSet } from '../modules/selectors';
@@ -75,7 +74,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
   // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
-  const { deleteRecordPhotos } = usePhoto();
   const { selectRecord, setIsEditingRecord } = useRecord();
   const route = useRoute();
 
@@ -283,7 +281,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   ]);
 
   const deleteRecord = useCallback(() => {
-    deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);
+    deleteRecordPhotos(targetLayer, targetRecord);
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
 
@@ -305,7 +303,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         data: deletedRecords,
       })
     );
-  }, [deleteRecordPhotos, targetLayer, targetRecord, projectId, isMapMemoLayer, dispatch, dataSet, layer.id]);
+  }, [targetLayer, targetRecord, isMapMemoLayer, dispatch, dataSet, layer.id]);
 
   const changeField = useCallback(
     (name: string, value: string | number) => {

@@ -76,7 +76,6 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
         role: role,
         projectId: targetProject.id,
         projectName: targetProject.name,
-        photosToBeDeleted: [],
       })
     );
   }, [dispatch, role, targetProject.id, targetProject.name, user]);

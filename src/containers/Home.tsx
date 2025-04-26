@@ -12,7 +12,7 @@ import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -62,7 +62,6 @@ import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
-import { editSettingsAction } from '../modules/settings';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 
@@ -90,7 +89,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { runTutrial } = useTutrial();
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
   const { isConnected } = useNetInfo();
-  const dispatch = useDispatch();
 
   //タイルのダウンロード関連
   const {
@@ -356,19 +354,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         });
         if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
       }
-      dispatch(editSettingsAction({ photosToBeDeleted: [] }));
     },
-    [
-      createMergedDataSet,
-      dispatch,
-      fetchPrivateData,
-      fetchPublicData,
-      fetchTemplateData,
-      fullDataSet,
-      layers,
-      project,
-      user.uid,
-    ]
+    [createMergedDataSet, fetchPrivateData, fetchPublicData, fetchTemplateData, fullDataSet, layers, project, user.uid]
   );
 
   /*************** onXXXXMapView *********************/

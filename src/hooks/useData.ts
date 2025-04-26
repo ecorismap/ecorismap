@@ -12,6 +12,7 @@ import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
 import { selectNonDeletedDataSet } from '../modules/selectors';
+import { deleteRecordPhotos } from '../utils/Photo';
 
 export type UseDataReturnType = {
   allUserRecordSet: RecordType[];
@@ -203,6 +204,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
         const subGroupRecords = allUserRecordSet.filter((r) => r.field._group === record.id);
         deletedRecords = [...deletedRecords, record, ...subGroupRecords];
+        deleteRecordPhotos(targetLayer, record);
       });
     } else {
       deletedRecords = checkedRecords;
@@ -215,7 +217,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         data: deletedRecords,
       })
     );
-  }, [allUserRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer.id]);
+  }, [allUserRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;

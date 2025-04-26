@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
-import configureMockStore from 'redux-mock-store';
+import { configureStore } from '@reduxjs/toolkit';
 import { useRepository } from '../useRepository';
 import { updateDataAction } from '../../modules/dataSet';
 
@@ -46,9 +46,7 @@ jest.mock('../../i18n/config', () => ({ t: jest.fn((key) => key) }));
 jest.mock('../../modules/tileMaps', () => ({ createTileMapsInitialState: jest.fn(() => []) }));
 
 describe('createMergedDataSet', () => {
-  const middlewares: any[] = [];
-  const mockStore = configureMockStore(middlewares);
-  let store: ReturnType<typeof mockStore>;
+  let store: ReturnType<typeof configureStore>;
 
   beforeEach(() => {
     const initialState = {
@@ -58,7 +56,16 @@ describe('createMergedDataSet', () => {
       settings: {},
       tileMaps: [],
     };
-    store = mockStore(initialState);
+    store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet, _action: any) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+      } as any, // 型エラー回避のためanyを付与
+      preloadedState: initialState,
+    });
     store.dispatch = jest.fn();
   });
 

@@ -33,7 +33,6 @@ export const settingsInitialState: SettingsType = {
   memberLocation: [] as MemberLocationType[],
   selectedRecord: undefined,
   plugins: {},
-  photosToBeDeleted: [],
   mapListURL: DEFAULT_MAP_LIST_URL,
   mapList: [],
   gpsAccuracy: 'HIGH',

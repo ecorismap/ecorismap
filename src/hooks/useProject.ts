@@ -71,7 +71,6 @@ export const useProject = (): UseProjectReturnType => {
         isSynced: false,
         projectId: undefined,
         projectName: undefined,
-        photosToBeDeleted: [],
       })
     );
     dispatch(setLayersAction(layersInitialState));
