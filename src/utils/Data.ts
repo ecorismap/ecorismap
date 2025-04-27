@@ -47,12 +47,19 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
   if (order === 'DESCENDING') {
     sortedDataWithIdx.reverse();
   }
-  // 前のソート順序に基づいて二次ソート
+  // 二次ソート
   sortedDataWithIdx = sortedDataWithIdx.sort((a, b) => {
-    if (a.field[fieldName] === b.field[fieldName]) {
-      return a.idx - b.idx;
+    if (fieldName === '_user_') {
+      if ((a.displayName || '') === (b.displayName || '')) {
+        return a.idx - b.idx;
+      }
+      return 0;
+    } else {
+      if (a.field[fieldName] === b.field[fieldName]) {
+        return a.idx - b.idx;
+      }
+      return 0;
     }
-    return 0;
   });
   const sortedData: RecordType[] = sortedDataWithIdx.map(({ idx: _, ...d }) => d);
   idx = sortedDataWithIdx.map(({ idx: Idx }) => Idx);

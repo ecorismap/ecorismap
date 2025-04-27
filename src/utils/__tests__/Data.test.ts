@@ -124,6 +124,99 @@ describe('sortData', () => {
   });
 });
 
+describe('sortData with _user_ column', () => {
+  const recordExt: RecordType[] = [
+    {
+      id: '0',
+      userId: '0',
+      displayName: 'mizutani',
+      visible: true,
+      redraw: false,
+      coords: [
+        { latitude: 0, longitude: 0 },
+        { latitude: 1, longitude: 1 },
+      ],
+      field: { no: 1, name: 'みやぎ' },
+    },
+    {
+      id: '1',
+      userId: '1',
+      displayName: 'sato',
+      visible: true,
+      redraw: false,
+      coords: [
+        { latitude: 0, longitude: 0 },
+        { latitude: 1, longitude: 1 },
+      ],
+      field: { no: 2, name: 'あいち' },
+    },
+  ];
+
+  it('return ASCENDING recordSet sorted by _user_', () => {
+    expect(sortData(recordExt, '_user_', 'ASCENDING')).toStrictEqual({
+      data: [
+        {
+          coords: [
+            { latitude: 0, longitude: 0 },
+            { latitude: 1, longitude: 1 },
+          ],
+          displayName: 'mizutani',
+          field: { name: 'みやぎ', no: 1 },
+          id: '0',
+          redraw: false,
+          userId: '0',
+          visible: true,
+        },
+        {
+          coords: [
+            { latitude: 0, longitude: 0 },
+            { latitude: 1, longitude: 1 },
+          ],
+          displayName: 'sato',
+          field: { name: 'あいち', no: 2 },
+          id: '1',
+          redraw: false,
+          userId: '1',
+          visible: true,
+        },
+      ],
+      idx: [0, 1],
+    });
+  });
+
+  it('return DESCENDING recordSet sorted by _user_', () => {
+    expect(sortData(recordExt, '_user_', 'DESCENDING')).toStrictEqual({
+      data: [
+        {
+          coords: [
+            { latitude: 0, longitude: 0 },
+            { latitude: 1, longitude: 1 },
+          ],
+          displayName: 'sato',
+          field: { name: 'あいち', no: 2 },
+          id: '1',
+          redraw: false,
+          userId: '1',
+          visible: true,
+        },
+        {
+          coords: [
+            { latitude: 0, longitude: 0 },
+            { latitude: 1, longitude: 1 },
+          ],
+          displayName: 'mizutani',
+          field: { name: 'みやぎ', no: 1 },
+          id: '0',
+          redraw: false,
+          userId: '0',
+          visible: true,
+        },
+      ],
+      idx: [1, 0],
+    });
+  });
+});
+
 describe('getInitialFieldValue', () => {
   it('return default value', () => {
     expect(getInitialFieldValue('STRING')).toStrictEqual('');

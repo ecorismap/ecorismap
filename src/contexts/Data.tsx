@@ -5,7 +5,7 @@ import { SortOrderType } from '../utils/Data';
 interface DataContextType {
   projectId: string | undefined;
   isOwnerAdmin: boolean;
-  data: RecordType[];
+  sortedRecordSet: RecordType[];
   layer: LayerType;
   isChecked: boolean;
   checkList: { id: number; checked: boolean }[];

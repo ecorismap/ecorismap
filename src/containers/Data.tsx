@@ -20,7 +20,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
-    allUserRecordSet: data,
+    sortedRecordSet,
     isChecked,
     checkList,
     checkedRecords,
@@ -52,7 +52,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     if (isMapMemoLayer) {
       checkedRecords.forEach((record) => {
         if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-        const subGroupRecords = data.filter((r) => r.field._group === record.id);
+        const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
         exportedRecords = [...exportedRecords, record, ...subGroupRecords];
       });
     } else {
@@ -70,7 +70,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     } else {
       await AlertAsync(t('hooks.message.failExport'));
     }
-  }, [checkedRecords, data, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
+  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
@@ -114,11 +114,11 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     (index: number) => {
       navigation.navigate('DataEdit', {
         previous: 'Data',
-        targetData: data[index],
+        targetData: sortedRecordSet[index],
         targetLayer: { ...layer },
       });
     },
-    [navigation, data, layer]
+    [navigation, sortedRecordSet, layer]
   );
 
   const gotoBack = useCallback(() => {
@@ -130,7 +130,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       value={{
         projectId,
         isOwnerAdmin,
-        data,
+        sortedRecordSet,
         layer,
         isChecked,
         checkList,

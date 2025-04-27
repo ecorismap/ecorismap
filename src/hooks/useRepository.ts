@@ -379,7 +379,6 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       for (const { name } of photoField) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
-          console.log(data);
           if (data.deleted) {
             //データごと削除された写真をストレージから削除
             await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);

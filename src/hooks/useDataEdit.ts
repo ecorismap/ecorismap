@@ -15,7 +15,7 @@ import { ulid } from 'ulid';
 import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
-import { selectNonDeletedDataSet } from '../modules/selectors';
+import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -60,10 +60,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const user = useSelector((state: RootState) => state.user);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
   const dataSet = useSelector(selectNonDeletedDataSet);
-  //const [isEditingRecord, setIsEditingRecord] = useState(false);
+  const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, layer.id));
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
-  const [oldRecord, setOldRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
@@ -71,8 +70,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const [isDecimal, setIsDecimal] = useState(true);
   const [temporaryDeletePhotoList, setTemporaryDeletePhotoList] = useState<{ photoId: string; uri: string }[]>([]);
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
-  // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
-  // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
   const { selectRecord, setIsEditingRecord } = useRecord();
   const route = useRoute();
@@ -101,22 +98,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     //データの初期化。以降はchangeRecordで行う。
     if (route.name !== 'DataEdit') return;
 
-    //console.log('useDataEdit useEffect');
-
-    const allUserRecordSet = dataSet
-      .flatMap((d) => (d.layerId === layer.id ? d.data : []))
-      .filter((d) => (d.field._group ? d.field._group === '' : true));
-    let newRecord: RecordType;
-    if (targetRecordSet.length > 0 && oldRecord.id === record.id) {
-      //drawToolで編集された場合.copyの場合はrecord.idとoldRecord.idが異なる
-      newRecord = allUserRecordSet[recordNumber - 1];
-    } else {
-      newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
-      setOldRecord(record);
-    }
-
-    if (newRecord === undefined) return;
-
+    // allUserRecordSetをセレクタから取得
+    const newRecord = allUserRecordSet.find((d) => d.id === targetRecord.id) || record;
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
@@ -128,7 +111,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     }
     //targetRecordとoldRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSet, layer, record, recordNumber, route.name]);
+  }, [allUserRecordSet, layer, record, recordNumber, route.name]);
 
   const changeRecord = useCallback(
     (value: number) => {

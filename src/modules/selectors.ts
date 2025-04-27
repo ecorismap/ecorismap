@@ -1,6 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../store';
-import { DataType, LineDataType, PointDataType, PolygonDataType } from '../types';
+import { DataType, LineDataType, PointDataType, PolygonDataType, RecordType } from '../types';
 
 export const selectNonDeletedDataSet = createSelector(
   (state: RootState) => state.dataSet,
@@ -54,3 +54,12 @@ export const selectPointDataSet = makeSelectDataByLayerType('POINT') as (state: 
 export const selectLineDataSet = makeSelectDataByLayerType('LINE') as (state: RootState) => LineDataType[];
 
 export const selectPolygonDataSet = makeSelectDataByLayerType('POLYGON') as (state: RootState) => PolygonDataType[];
+
+export const selectNonDeletedAllUserRecordSet = createSelector(
+  selectNonDeletedDataSet,
+  (_: RootState, layerId: string) => layerId,
+  (dataSet, layerId): RecordType[] =>
+    dataSet
+      .flatMap((d) => (d.layerId === layerId ? d.data : []))
+      .filter((d) => !d.deleted && (d.field._group ? d.field._group === '' : true))
+);

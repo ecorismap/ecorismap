@@ -56,13 +56,13 @@ export const DataEditReference = (props: Props) => {
     [data.field, data.id, primaryField]
   );
 
-  const { allUserRecordSet, addDefaultRecord } = useData(refLayer.id);
+  const { sortedRecordSet, addDefaultRecord } = useData(refLayer.id);
   const refData = useMemo(() => {
-    return allUserRecordSet
+    return sortedRecordSet
       .filter((d) => refField.every((ref, index) => d.field[ref] === primaryKey[index]))
       .filter((d) => d.field._group === undefined || d.field._group === '')
       .reverse();
-  }, [allUserRecordSet, primaryKey, refField]);
+  }, [sortedRecordSet, primaryKey, refField]);
 
   const fields = useMemo(() => {
     return refField.reduce((obj, f, index) => {
