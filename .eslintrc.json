@@ -25,7 +25,8 @@
     "no-alert": "off",
     "react-native/no-inline-styles": 0,
     "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off"
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "react-native/sort-styles": "off",
     //"complexity": ["error", 10]
   }
 }
