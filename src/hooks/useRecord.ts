@@ -85,10 +85,7 @@ export type UseRecordReturnType = {
     options?: { groupId?: string }
   ) => RecordType;
   isLayerEditable: (type: FeatureType, layer: LayerType) => boolean | undefined;
-  checkRecordEditable: (
-    targetLayer: LayerType,
-    feature?: RecordType
-  ) => {
+  checkRecordEditable: (targetLayer: LayerType) => {
     isOK: boolean;
     message: string;
   };

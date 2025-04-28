@@ -87,7 +87,7 @@ export const LayersTable = React.memo(() => {
             {item.type !== 'LAYERGROUP' && (
               <RectButton2
                 name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
-                onPress={() => changeActiveLayer(index)}
+                onPress={() => changeActiveLayer(item)}
                 color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
                 style={{
                   flex: 1,

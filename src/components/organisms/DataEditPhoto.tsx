@@ -2,9 +2,9 @@ import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { RectButton } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
-import { PhotoType } from '../../types';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { ScrollView } from 'react-native-gesture-handler';
+import { isPhotoField } from '../../utils/Geometry';
 
 interface Props {
   fieldName: string;
@@ -12,8 +12,11 @@ interface Props {
 export const DataEditPhoto = (props: Props) => {
   const { data, pressPhoto, pressTakePhoto, pressPickPhoto } = useContext(DataEditContext);
   const { fieldName } = props;
-  //console.log('####', photos);
-  if (data.field[fieldName] === undefined) return null;
+  const fieldData = data.field[fieldName]; // 変数に格納して型推論を助ける
+
+  // isPhotoField でチェックし、PhotoType[] でない場合は null を返す
+  if (!isPhotoField(fieldData)) return null;
+
   return (
     <>
       <View style={styles.tr}>
@@ -30,7 +33,7 @@ export const DataEditPhoto = (props: Props) => {
         </View>
       </View>
       <ScrollView horizontal={true} style={{ borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>
-        {(data.field[fieldName] as PhotoType[]).map(
+        {fieldData.map(
           (photo, index) =>
             photo.uri !== undefined && (
               <TouchableOpacity style={{ margin: 2 }} key={index} onPress={() => pressPhoto(fieldName, photo, index)}>

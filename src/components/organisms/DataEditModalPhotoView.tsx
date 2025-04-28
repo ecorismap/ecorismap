@@ -83,6 +83,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-/* <TouchableOpacity style={[styles.button, { backgroundColor: COLOR.GRAY2 }]} onPress={pressDownloadPhoto}>
-<Text style={{ color: COLOR.WHITE }}>{t('common.download')}</Text>
-</TouchableOpacity> */

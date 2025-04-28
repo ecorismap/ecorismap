@@ -12,7 +12,7 @@ export type UseLayersReturnType = {
   changeLabel: (layer: LayerType, labelValue: string) => void;
   changeCustomLabel: (layer: LayerType, labelValue: string) => void;
   changeVisible: (visible: boolean, index: number) => void;
-  changeActiveLayer: (index: number) => void;
+  changeActiveLayer: (layer: LayerType) => void;
   changeLayerOrder: (index: number) => void;
 };
 
@@ -63,9 +63,12 @@ export const useLayers = (): UseLayersReturnType => {
   );
 
   const changeActiveLayer = useCallback(
-    (index: number) => {
+    (layer: LayerType) => {
       //自分がアクティブになる場合、同じタイプの他のものはfalseにする。
       //Noneは排他処理はしない
+
+      const index = layers.findIndex((l) => l.id === layer.id);
+      if (index === -1) return;
       const newlayers = cloneDeep(layers);
 
       if (layers[index].active) {

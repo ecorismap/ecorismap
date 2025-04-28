@@ -21,6 +21,7 @@ import { boundingBoxFromCoords, deltaToZoom } from '../utils/Coords';
 import { useWindow } from '../hooks/useWindow';
 import { isLocationType, isLocationTypeArray } from '../utils/General';
 import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPhotoView';
+import { useLayers } from '../hooks/useLayers';
 
 export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
   //console.log(route.params.targetData);
@@ -50,6 +51,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     changeLatLon,
     cancelUpdate,
   } = useDataEdit(route.params.targetData, route.params.targetLayer);
+  const { changeActiveLayer } = useLayers();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const { checkRecordEditable } = useRecord();
@@ -58,11 +60,21 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   //console.log('####', targetLayer);
   //console.log('$$$$', targetRecord);
 
-  const pressSaveData = useCallback(() => {
-    const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
-    if (!isOK) {
-      Alert.alert('', message);
-      return;
+  const pressSaveData = useCallback(async () => {
+    const checkResult = checkRecordEditable(targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
+        return;
+      }
     }
 
     if (Platform.OS === 'ios') {
@@ -113,6 +125,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       });
     }
   }, [
+    changeActiveLayer,
     checkRecordEditable,
     isDecimal,
     keyboardShown,
@@ -163,10 +176,20 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
     if (ret) {
-      const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
-      if (!isOK) {
-        await AlertAsync(message);
-        return;
+      const checkResult = checkRecordEditable(targetLayer);
+
+      if (!checkResult.isOK) {
+        if (checkResult.message === t('hooks.message.noEditMode')) {
+          // 編集モードでない場合、確認ダイアログを表示
+          const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+          if (!confirmResult) return;
+          // 編集モードにする
+          changeActiveLayer(targetLayer);
+        } else {
+          // その他の編集不可理由（プロジェクトロックなど）
+          Alert.alert('', checkResult.message);
+          return;
+        }
       }
 
       if (isEditingRecord) saveData();
@@ -189,6 +212,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       }
     }
   }, [
+    changeActiveLayer,
     checkRecordEditable,
     deleteRecord,
     isEditingRecord,
@@ -198,7 +222,6 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.previous,
     saveData,
     targetLayer,
-    targetRecord,
   ]);
 
   const pressPickPhoto = useCallback(
@@ -470,15 +493,25 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     [isEditingRecord, navigation, targetLayer, targetRecord]
   );
 
-  const pressEditPosition = useCallback(() => {
+  const pressEditPosition = useCallback(async () => {
     if (isEditingRecord) {
       Alert.alert('', '一旦変更を保存してください。');
       return;
     }
-    const { isOK, message } = checkRecordEditable(targetLayer, targetRecord);
-    if (!isOK) {
-      Alert.alert('', message);
-      return;
+    const checkResult = checkRecordEditable(targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
+        return;
+      }
     }
     const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
 
@@ -491,6 +524,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       withCoord: jumpRegion !== undefined,
     });
   }, [
+    changeActiveLayer,
     checkRecordEditable,
     isEditingRecord,
     isLandscape,

@@ -711,7 +711,8 @@
     },
     "pdf": {
       "comment": "This map is created using the Web Mercator projection. \nThe scale length is a guideline at the center of the diagram."
-    }
+    },
+    "confirmEditModeMessage": "Do you want to switch to edit mode?"
   },
   "Home": {
     "alert": {
@@ -916,5 +917,14 @@
       "import": "import",
       "add": "create"
     }
+  },
+  "conflict": {
+    "title": "Conflict Data ID: {{id}}",
+    "meta": "Editor: {{displayName}} / Updated At: {{date}}",
+    "deletedMark": "[Deleted] {{date}}",
+    "applyDelete": "Apply Deletion",
+    "applyThis": "Apply This Data",
+    "bulkSelf": "Prioritize Mine for Remaining",
+    "bulkLatest": "Prioritize Latest for Remaining"
   }
 }

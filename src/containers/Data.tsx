@@ -13,6 +13,8 @@ import { exportGeoFile } from '../utils/File';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
+import { useRecord } from '../hooks/useRecord';
+import { useLayers } from '../hooks/useLayers';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
@@ -34,9 +36,10 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    checkRecordEditable,
     updateOwnRecordSetOrder,
   } = useData(route.params.targetLayer.id);
+  const { changeActiveLayer } = useLayers();
+  const { checkRecordEditable } = useRecord();
   const { isOwnerAdmin } = usePermission();
 
   const { generateExportGeoData } = useGeoFile();
@@ -75,40 +78,72 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (!ret) return;
-    for (const record of checkedRecords) {
-      const { isOK, message } = checkRecordEditable(route.params.targetLayer, record);
-      if (!isOK) {
-        await AlertAsync(message);
+
+    const checkResult = checkRecordEditable(route.params.targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(route.params.targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
         return;
       }
     }
     deleteRecords();
-  }, [checkRecordEditable, checkedRecords, deleteRecords, route.params.targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, deleteRecords, route.params.targetLayer]);
 
-  const pressAddData = useCallback(() => {
-    if (!route.params.targetLayer.active) {
-      Alert.alert('', t('hooks.message.noEditMode'));
-      return;
+  const pressAddData = useCallback(async () => {
+    const checkResult = checkRecordEditable(route.params.targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(route.params.targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
+        return;
+      }
     }
+
     const addedData = addDefaultRecord();
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
       targetLayer: layer,
     });
-  }, [addDefaultRecord, layer, navigation, route.params.targetLayer.active]);
+  }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer]);
 
   const addDataByDictinary = useCallback(
-    (fieldId: string, value: string) => {
-      if (!route.params.targetLayer.active) {
-        Alert.alert('', t('hooks.message.noEditMode'));
-        return;
+    async (fieldId: string, value: string) => {
+      const checkResult = checkRecordEditable(route.params.targetLayer);
+
+      if (!checkResult.isOK) {
+        if (checkResult.message === t('hooks.message.noEditMode')) {
+          // 編集モードでない場合、確認ダイアログを表示
+          const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+          if (!confirmResult) return;
+          // 編集モードにする
+          changeActiveLayer(route.params.targetLayer);
+        } else {
+          // その他の編集不可理由（プロジェクトロックなど）
+          Alert.alert('', checkResult.message);
+          return;
+        }
       }
       const fieldName = route.params.targetLayer.field.find((f) => f.id === fieldId)?.name;
       if (!fieldName) return;
       addDefaultRecord({ [fieldName]: value });
     },
-    [addDefaultRecord, route.params.targetLayer.active, route.params.targetLayer.field]
+    [addDefaultRecord, changeActiveLayer, checkRecordEditable, route.params.targetLayer]
   );
   const gotoDataEdit = useCallback(
     (index: number) => {

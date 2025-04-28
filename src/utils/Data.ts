@@ -350,7 +350,7 @@ export const getTargetRecordSet = (
   }
   const recordSet: RecordType[] = cloneDeep(targetDataSet?.data ?? []);
   return isTemplate
-    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: 'template', uploaded: true }))
+    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: t('common.admin'), uploaded: true }))
     : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName, uploaded: true }));
 };
 

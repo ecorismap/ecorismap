@@ -1,27 +1,27 @@
 import React from 'react';
-// Import Image from react-native
 import { View, StyleSheet, ScrollView, Modal, Text, Button, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { RecordType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
+import dayjs from '../../i18n/dayjs';
+import { t } from '../../i18n/config';
 
-// カラー定数を定義
 const MODAL_OVERLAY_COLOR = 'rgba(0,0,0,0.5)';
 const MODAL_BG_COLOR = '#fff';
 const MODAL_BORDER_COLOR = '#eee';
 
-// 競合解決用モーダル
 const modalStyles = StyleSheet.create({
   bold: {
     fontWeight: 'bold',
     marginBottom: 8,
   },
   buttonContainer: {
-    flexDirection: 'row', // 横並びになる
-    justifyContent: 'space-between', // 両端にボタンを配置
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   buttonWrapper: {
     flex: 1,
-    marginHorizontal: 4, // ボタン同士の間隔
+    marginHorizontal: 4,
   },
   candidate: {
     borderBottomWidth: 1,
@@ -48,18 +48,22 @@ const modalStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-
+  photoList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
   scrollContainer: {
-    marginBottom: 16, // ScrollView とボタン群の間にスペース
+    marginBottom: 16,
     maxHeight: 300,
     maxWidth: 400,
   },
-  // Add style for thumbnail image
+
   thumbnailImage: {
-    height: 100, // Adjust size as needed
-    marginVertical: 8,
-    resizeMode: 'contain',
-    width: 100, // Adjust size as needed
+    height: 100,
+    marginBottom: 8,
+    resizeMode: 'cover',
+    width: '48%',
   },
 });
 
@@ -72,25 +76,26 @@ export const ConflictResolverModal = React.memo(
     onBulkSelect,
   }: {
     visible: boolean;
-    candidates: RecordType[]; // deleted フラグを持つ RecordType
+    candidates: RecordType[];
     id: string;
     onSelect: (c: RecordType) => void;
     onBulkSelect: (mode: 'self' | 'latest') => void;
   }) => {
+    const { i18n } = useTranslation();
+
     const formatDate = (unixtime?: number) => {
       if (!unixtime) return '';
-      return new Date(unixtime).toLocaleString('ja-JP', { hour12: false });
+      return dayjs(unixtime).locale(i18n.language).format('L LT');
     };
 
     return (
       <Modal visible={visible} transparent animationType="slide">
         <View style={modalStyles.overlay}>
           <View style={modalStyles.modal}>
-            <Text style={modalStyles.bold}>{`競合データID: ${id}`}</Text>
+            <Text style={modalStyles.bold}>{t('conflict.title', { id })}</Text>
 
             <ScrollView style={modalStyles.scrollContainer}>
               {candidates.map((c, idx) => {
-                // Create a copy of field and remove the photo property for display
                 const fieldForDisplay = { ...c.field };
                 if (fieldForDisplay && 'photo' in fieldForDisplay) {
                   delete fieldForDisplay.photo;
@@ -98,36 +103,45 @@ export const ConflictResolverModal = React.memo(
 
                 return (
                   <View key={idx} style={modalStyles.candidate}>
-                    {/* 編集者／更新日時 */}
-                    <Text>{`編集者: ${c.displayName} / 更新日時: ${formatDate(c.updatedAt)}`}</Text>
+                    <Text>
+                      {t('conflict.meta', {
+                        displayName: c.displayName,
+                        date: formatDate(c.updatedAt),
+                      })}
+                    </Text>
 
-                    {/* 削除済みマーク */}
                     {c.deleted ? (
-                      <Text style={modalStyles.deletedText}>[削除済み] {formatDate(c.updatedAt)}</Text>
+                      <Text style={modalStyles.deletedText}>
+                        {t('conflict.deletedMark', {
+                          date: formatDate(c.updatedAt),
+                        })}
+                      </Text>
                     ) : (
                       <>
-                        {/* Display field data excluding photo */}
                         <Text selectable style={modalStyles.candidateField}>
                           {JSON.stringify(fieldForDisplay, null, 2)}
                         </Text>
-                        {/* Display thumbnail image if available */}
-                        {c.field?.photo &&
-                          Array.isArray(c.field.photo) &&
-                          c.field.photo.map(
-                            (photo, photoIdx) =>
-                              photo.thumbnail && (
+
+                        {c.field?.photo && Array.isArray(c.field.photo) && (
+                          <View style={modalStyles.photoList}>
+                            {c.field.photo.map((photo, photoIdx) =>
+                              photo.thumbnail ? (
                                 <Image
                                   key={photoIdx}
                                   source={{ uri: photo.thumbnail }}
                                   style={modalStyles.thumbnailImage}
                                 />
-                              )
-                          )}
+                              ) : null
+                            )}
+                          </View>
+                        )}
                       </>
                     )}
 
-                    {/* ボタンラベルも切り替え */}
-                    <Button title={c.deleted ? '削除を適用' : 'このデータを採用'} onPress={() => onSelect(c)} />
+                    <Button
+                      title={c.deleted ? t('conflict.applyDelete') : t('conflict.applyThis')}
+                      onPress={() => onSelect(c)}
+                    />
                   </View>
                 );
               })}
@@ -135,10 +149,10 @@ export const ConflictResolverModal = React.memo(
 
             <View style={modalStyles.buttonContainer}>
               <View style={modalStyles.buttonWrapper}>
-                <Button title="残りは自分優先" onPress={() => onBulkSelect('self')} />
+                <Button title={t('conflict.bulkSelf')} onPress={() => onBulkSelect('self')} />
               </View>
               <View style={modalStyles.buttonWrapper}>
-                <Button title="残りは最新優先" onPress={() => onBulkSelect('latest')} />
+                <Button title={t('conflict.bulkLatest')} onPress={() => onBulkSelect('latest')} />
               </View>
             </View>
           </View>

@@ -126,7 +126,7 @@ describe('useLayers', () => {
     const { result } = renderHook(() => useLayers());
     expect(result.current.layers[0].active).toBe(true);
     act(() => {
-      result.current.changeActiveLayer(0);
+      result.current.changeActiveLayer(layers[0]);
     });
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'layers/setLayersAction',
@@ -143,7 +143,7 @@ describe('useLayers', () => {
     expect(result.current.layers[1].type).toBe('POINT');
 
     act(() => {
-      result.current.changeActiveLayer(1);
+      result.current.changeActiveLayer(layers[1]);
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({
@@ -166,7 +166,7 @@ describe('useLayers', () => {
     expect(result.current.layers[3].type).toBe('NONE');
 
     act(() => {
-      result.current.changeActiveLayer(3);
+      result.current.changeActiveLayer(layers[3]);
     });
 
     expect(mockDispatch).toHaveBeenCalledWith({

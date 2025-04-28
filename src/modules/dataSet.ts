@@ -1,6 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { ulid } from 'ulid';
 import { DataType, RecordType } from '../types';
+import { produce } from 'immer'; // Immerをインポート
 
 export const DEFAULT_DATA: RecordType = {
   id: '',
@@ -17,6 +18,15 @@ export const dataSetInitialState: DataType[] = [
   { layerId: ulid(), userId: undefined, data: [] },
   { layerId: ulid(), userId: undefined, data: [] },
 ];
+
+// 新しいAction Payloadの型定義
+interface SetAllRecordsVisibilityPayload {
+  layerId: string;
+  visible: boolean;
+}
+
+// 新しいActionの定義
+export const setAllRecordsVisibilityAction = createAction<SetAllRecordsVisibilityPayload>('dataSet/setAllVisibility');
 
 const reducers = {
   setDataSetAction: (_state: DataType[], action: PayloadAction<DataType[]>) => {
@@ -39,7 +49,7 @@ const reducers = {
   setRecordSetAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data } = action.payload;
     const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
+    // console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
     if (dataIndex !== -1) {
       state[dataIndex].data = data;
     }
@@ -107,6 +117,25 @@ const dataSetSlice = createSlice({
   name: 'dataSet',
   initialState: dataSetInitialState,
   reducers,
+  extraReducers: (builder) => {
+    // setAllRecordsVisibilityActionのハンドラを追加
+    builder.addCase(setAllRecordsVisibilityAction, (state, action) => {
+      // Immerを使って状態を効率的に更新
+      return produce(state, (draft) => {
+        const { layerId, visible } = action.payload;
+        draft.forEach((dataSetEntry) => {
+          if (dataSetEntry.layerId === layerId) {
+            dataSetEntry.data.forEach((record) => {
+              // visibleが異なる場合のみ更新（不要な更新を避ける）
+              if (record.visible !== visible) {
+                record.visible = visible;
+              }
+            });
+          }
+        });
+      });
+    });
+  },
 });
 
 export const {

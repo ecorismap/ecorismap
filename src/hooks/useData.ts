@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { CheckListItem, LayerType, PhotoType, RecordType } from '../types';
+import { CheckListItem, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
-import { addRecordsAction, deleteRecordsAction, setRecordSetAction, updateRecordsAction } from '../modules/dataSet';
+import {
+  addRecordsAction,
+  deleteRecordsAction,
+  setAllRecordsVisibilityAction,
+  setRecordSetAction,
+  updateRecordsAction,
+} from '../modules/dataSet';
 import { ulid } from 'ulid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 
-import { usePermission } from './usePermission';
-import { t } from '../i18n/config';
 import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
-import { selectNonDeletedAllUserRecordSet, selectNonDeletedDataSet } from '../modules/selectors';
+import { selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
 
 export type UseDataReturnType = {
@@ -29,13 +33,6 @@ export type UseDataReturnType = {
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
-  checkRecordEditable: (
-    targetLayer: LayerType,
-    feature?: RecordType
-  ) => {
-    isOK: boolean;
-    message: string;
-  };
   updateOwnRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
 };
 
@@ -44,8 +41,6 @@ export const useData = (layerId: string): UseDataReturnType => {
   const targetLayer = useSelector((state: RootState) => state.layers.find((l) => l.id === layerId)!, shallowEqual);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
-  const dataSet = useSelector(selectNonDeletedDataSet);
-  const { isRunningProject } = usePermission();
   const route = useRoute();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
@@ -75,21 +70,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     [sortedRecordSet]
   );
 
-  const checkRecordEditable = useCallback(
-    (targetLayer_: LayerType) => {
-      if (isRunningProject && targetLayer_.permission === 'COMMON') {
-        return { isOK: false, message: t('hooks.message.lockProject') };
-      }
-
-      if (!targetLayer_.active) {
-        return { isOK: false, message: t('hooks.message.noEditMode') };
-      }
-
-      return { isOK: true, message: '' };
-    },
-    [isRunningProject]
-  );
-
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType, checkList_: CheckListItem[] = checkList) => {
       if (order === 'UNSORTED') {
@@ -113,17 +93,9 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   const changeVisibleAll = useCallback(
     (visible: boolean) => {
-      const data = dataSet.filter((d) => d.layerId === targetLayer.id);
-      data.forEach((d) =>
-        dispatch(
-          setRecordSetAction({
-            ...d,
-            data: d.data.map((record) => ({ ...record, visible })),
-          })
-        )
-      );
+      dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible }));
     },
-    [dataSet, dispatch, targetLayer.id]
+    [dispatch, targetLayer.id]
   );
 
   const changeVisible = useCallback(
@@ -220,10 +192,10 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   useEffect(() => {
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;
-    if (dataSet === undefined) return;
+    if (allUserRecordSet === undefined) return;
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSet, route.name]);
+  }, [allUserRecordSet, route.name]);
 
   return {
     sortedRecordSet,
@@ -240,7 +212,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    checkRecordEditable,
     updateOwnRecordSetOrder,
   } as const;
 };

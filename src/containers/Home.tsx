@@ -64,6 +64,7 @@ import { useMaps } from '../hooks/useMaps';
 import { useRepository } from '../hooks/useRepository';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
 import { selectNonDeletedDataSet } from '../modules/selectors';
+import { useLayers } from '../hooks/useLayers';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -117,7 +118,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     calculateStorageSize,
     setIsEditingRecord,
   } = useRecord();
-
+  const { changeActiveLayer } = useLayers();
   const {
     drawLine,
     editingLineXY,
@@ -1043,18 +1044,34 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         resetPointPosition(layer, feature);
         return;
       }
-      const { isOK, message } = checkRecordEditable(layer, feature);
-      if (!isOK) {
-        resetPointPosition(layer, feature);
-        await AlertAsync(message);
-        return;
+      const checkResult = checkRecordEditable(layer);
+
+      if (!checkResult.isOK) {
+        if (checkResult.message === t('hooks.message.noEditMode')) {
+          // 編集モードでない場合、確認ダイアログを表示
+          const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+          if (!confirmResult) return;
+          // 編集モードにする
+          changeActiveLayer(layer);
+        } else {
+          resetPointPosition(layer, feature);
+          await AlertAsync(checkResult.message);
+          return;
+        }
       }
       updatePointPosition(layer, feature, coordinate);
       if (route.params?.mode === 'editPosition') {
         finishEditPosition();
       }
     },
-    [checkRecordEditable, finishEditPosition, resetPointPosition, route.params?.mode, updatePointPosition]
+    [
+      changeActiveLayer,
+      checkRecordEditable,
+      finishEditPosition,
+      resetPointPosition,
+      route.params?.mode,
+      updatePointPosition,
+    ]
   );
 
   const getInfoOfFeature = useCallback(
