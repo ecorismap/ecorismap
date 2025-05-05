@@ -1,4 +1,4 @@
-import React, { useContext, useCallback, useMemo } from 'react';
+import React, { useContext, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -29,7 +29,7 @@ const MapTableTitle = () => (
 
 export const MapTable = React.memo(() => {
   const {
-    maps,
+    filterdMaps,
     changeVisible,
     pressDownloadMap,
     pressOpenEditMap,
@@ -40,11 +40,6 @@ export const MapTable = React.memo(() => {
     onDragBegin,
   } = useContext(MapsContext);
   //閉じたグループの子要素を除外する
-
-  const filterdMaps = useMemo(
-    () => maps.filter((map) => map.isGroup || (map.groupId && map.expanded) || !map.groupId),
-    [maps]
-  );
 
   // 各行の描画
   const renderItem = useCallback(

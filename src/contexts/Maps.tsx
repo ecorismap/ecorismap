@@ -9,6 +9,7 @@ interface MapsContextType {
   maps: TileMapType[];
   editedMap: TileMapType;
   isMapEditorOpen: boolean;
+  filterdMaps: TileMapType[];
   changeVisible: (visible: boolean, tileMap: TileMapType) => void;
   pressToggleOnline: () => void;
   pressDownloadMap: (item: TileMapType) => void;

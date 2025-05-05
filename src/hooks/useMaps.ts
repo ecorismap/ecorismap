@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -30,6 +30,7 @@ export type UseMapsReturnType = {
   editedMap: TileMapType;
   isOffline: boolean;
   isMapEditorOpen: boolean;
+  filterdMaps: TileMapType[];
   changeVisible: (visible: boolean, tileMap: TileMapType) => void;
   changeMapOrder: (tileMap: TileMapType, direction: 'up' | 'down') => void;
   toggleOnline: () => void;
@@ -104,6 +105,11 @@ export const useMaps = (): UseMapsReturnType => {
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
   const [progress, setProgress] = useState('10');
   const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
+
+  const filterdMaps = useMemo(
+    () => maps.filter((map) => map.isGroup || (map.groupId && map.expanded) || !map.groupId),
+    [maps]
+  );
 
   const fetchMapList = useCallback(
     async (signal: AbortSignal) => {
@@ -842,6 +848,7 @@ export const useMaps = (): UseMapsReturnType => {
     editedMap,
     isOffline,
     isMapEditorOpen,
+    filterdMaps,
     changeVisible,
     changeMapOrder,
     toggleOnline,
