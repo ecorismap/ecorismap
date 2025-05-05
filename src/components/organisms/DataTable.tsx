@@ -12,7 +12,7 @@ import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flat
 export const DataTable = React.memo(() => {
   //console.log(data[0]);
   const {
-    data,
+    sortedRecordSet,
     checkList,
     projectId,
     layer,
@@ -89,7 +89,7 @@ export const DataTable = React.memo(() => {
               disabled={isActive}
               onPress={() => gotoDataEdit(index)}
             >
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+              <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
                 {item.displayName}
               </Text>
             </TouchableOpacity>
@@ -143,7 +143,7 @@ export const DataTable = React.memo(() => {
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
-  return data.length !== 0 ? (
+  return sortedRecordSet.length !== 0 ? (
     <DraggableFlatList
       // eslint-disable-next-line react/no-unstable-nested-components
       ListHeaderComponent={() => (
@@ -160,14 +160,13 @@ export const DataTable = React.memo(() => {
           layer={layer}
         />
       )}
-      data={data}
+      data={sortedRecordSet}
       stickyHeaderIndices={[0]}
       initialNumToRender={15}
       removeClippedSubviews={true}
-      extraData={data}
+      extraData={sortedRecordSet}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
-      // eslint-disable-next-line @typescript-eslint/no-shadow
       onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
       activationDistance={5}
     />

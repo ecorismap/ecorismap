@@ -35,7 +35,7 @@ export const MapListTable = React.memo(() => {
 
         {titles.map((title, idx) => (
           <View key={idx} style={[styles.th, { flex: 2, width: 120 }]}>
-            <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
               {title}
             </Text>
           </View>
@@ -74,7 +74,7 @@ const MapListTableComponent = React.memo(({ item, addMap }: Props_MapListTableCo
 
       {Object.values(item).map((value, idx) => (
         <View key={idx} style={[styles.td, { flex: 2, width: 120 }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
             {value.toString()}
           </Text>
         </View>

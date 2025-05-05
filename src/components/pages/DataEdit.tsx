@@ -27,6 +27,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditDictionary } from '../organisms/DataEditDictionary';
+import { DataEditUserName } from '../organisms/DataEditUserName';
 
 export default function DataEditScreen() {
   // console.log('render DataEdit');
@@ -38,6 +39,7 @@ export default function DataEditScreen() {
     recordNumber,
     maxRecordNumber,
     isEditingRecord,
+    projectId,
     pressSaveData,
     changeLatLonType,
     changeLatLon,
@@ -131,6 +133,7 @@ export default function DataEditScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView>
+        {projectId && data.displayName && <DataEditUserName value={data.displayName} />}
         <DataEditLayerName value={layer.name} />
 
         {layer.field.map(({ id, name, format, list }, index) => {

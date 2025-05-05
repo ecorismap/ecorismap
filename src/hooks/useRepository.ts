@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   DataType,
   LayerType,
@@ -22,10 +22,9 @@ import { addProjectAction, deleteProjectAction, updateProjectAction } from '../m
 import { cloneDeep } from 'lodash';
 import { getPhotoFields, getTargetLayers } from '../utils/Layer';
 import { isLoggedIn } from '../utils/Account';
-import { createRecordSetFromTemplate, getTargetRecordSet } from '../utils/Data';
+import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
-import { usePhoto } from './usePhoto';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
@@ -83,48 +82,41 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
   }>;
-  downloadPublicData: (
-    project: ProjectType,
-    shouldPhotoDownload: boolean,
-    excludeOwnData?: boolean
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-    publicOwnLayerIds?: string[];
-  }>;
-  downloadPrivateData: (
-    project: ProjectType,
-    shouldPhotoDownload: boolean
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-    privateLayerIds?: string[];
-  }>;
-  downloadAllPrivateData: (
-    project: ProjectType,
-    shouldPhotoDownload: boolean
-  ) => Promise<{
-    isOK: boolean;
-    message: string;
-    privateLayerIds?: string[];
-  }>;
   downloadTemplateData: (
+    project: ProjectType,
+    shouldPhotoDownload: boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+    data: DataType[];
+  }>;
+  fetchPublicData: (
     project_: ProjectType,
     shouldPhotoDownload: boolean,
-    publicOwnLayerIds: string[],
-    privateLayerIds: string[]
+    mode: 'all' | 'others'
   ) => Promise<{
     isOK: boolean;
     message: string;
+    data: DataType[];
   }>;
-  downloadPublicAndAllPrivateData: (
+  fetchPrivateData: (
     project: ProjectType,
     shouldPhotoDownload: boolean,
-    excludeOwnData?: boolean
+    mode: 'own' | 'all' | 'others'
   ) => Promise<{
     isOK: boolean;
     message: string;
+    data: DataType[];
   }>;
+  fetchTemplateData: (
+    project_: ProjectType,
+    shouldPhotoDownload: boolean
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+    data: DataType[];
+  }>;
+
   uploadDataToRepository: (
     project_: ProjectType,
     isLicenseOK: boolean,
@@ -141,12 +133,44 @@ export type UseRepositoryReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  createMergedDataSet: ({
+    privateData,
+    publicData,
+    templateData,
+  }: {
+    privateData: DataType[];
+    publicData: DataType[];
+    templateData: DataType[];
+  }) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
+  handleSelect: (selected: any) => void;
+  handleBulkSelect: (mode: 'self' | 'latest') => void;
 };
 
-export const useRepository = (): UseRepositoryReturnType => {
+// キューアイテムの型
+export type ConflictQueueItem = {
+  id: string;
+  candidates: RecordType[];
+  resolve: (result: RecordType) => void;
+};
+
+// state の型
+export type ConflictState = {
+  queue: { id: string; candidates: RecordType[]; resolve: (r: RecordType) => void }[];
+  bulkMode: null | 'self' | 'latest';
+  visible: boolean;
+};
+
+export const useRepository = (): UseRepositoryReturnType & {
+  conflictState: any;
+  setConflictState: any;
+  conflictsResolver: any;
+} => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const fullDataSet = useSelector((state: RootState) => state.dataSet);
   const layers = useSelector((state: RootState) => state.layers);
   const mapRegion = useSelector((state: RootState) => state.settings.mapRegion, shallowEqual);
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
@@ -155,7 +179,155 @@ export const useRepository = (): UseRepositoryReturnType => {
   //const drawTools = useSelector((state: RootState) => state.settings.drawTools);
   const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
-  const { photosToBeDeleted } = usePhoto();
+
+  const [conflictState, setConflictState] = useState<ConflictState>({
+    queue: [],
+    bulkMode: null,
+    visible: false,
+  });
+
+  const conflictsResolver = useCallback(
+    (candidates: RecordType[], id: string): Promise<RecordType> =>
+      new Promise<RecordType>((resolve) => {
+        setConflictState((prev) => {
+          // bulkMode が設定済みなら即時解決
+          if (prev.bulkMode) {
+            const chosen =
+              prev.bulkMode === 'self'
+                ? candidates.find((c) => c.userId === user.uid) || candidates[0]
+                : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
+            resolve(chosen);
+            return prev;
+          }
+          // まだ bulkMode なし → モーダルキューに積む
+          return {
+            ...prev,
+            queue: [...prev.queue, { id, candidates, resolve }],
+            visible: true,
+          };
+        });
+      }),
+    [user.uid]
+  );
+
+  // 競合解決: 選択された候補を resolve してキューから取り除く
+  const handleSelect = useCallback(
+    (selected: any) => {
+      setConflictState((prev: ConflictState) => {
+        const [current, ...rest] = prev.queue;
+        if (current) {
+          current.resolve(selected);
+        }
+        return {
+          ...prev,
+          queue: rest,
+          visible: rest.length > 0,
+        };
+      });
+    },
+    [setConflictState]
+  );
+
+  // 一括選択（残りすべて self か latest）
+  const handleBulkSelect = useCallback(
+    (mode: 'self' | 'latest') => {
+      setConflictState((prev) => {
+        // 1) いまキューにある全件を一括解決
+        prev.queue.forEach(({ candidates, resolve }) => {
+          const chosen =
+            mode === 'self'
+              ? candidates.find((c) => c.userId === user.uid) || candidates[0]
+              : candidates.reduce((a, b) => (a.updatedAt && b.updatedAt && b.updatedAt > a.updatedAt ? b : a));
+          resolve(chosen);
+        });
+        // 2) 今後はこのモードで自動解決
+        return { queue: [], bulkMode: mode, visible: false };
+      });
+    },
+    [user.uid]
+  );
+
+  const createMergedDataSet = useCallback(
+    async ({
+      privateData,
+      publicData,
+      templateData,
+    }: {
+      privateData: DataType[];
+      publicData: DataType[];
+      templateData: DataType[];
+    }) => {
+      // すべてのlayerIdを抽出
+      const allLayerIds = Array.from(
+        new Set([
+          ...privateData.map((d) => d.layerId),
+          ...publicData.map((d) => d.layerId),
+          ...templateData.map((d) => d.layerId),
+        ])
+      );
+
+      for (const layerId of allLayerIds) {
+        const templateItem = templateData.find((d) => d.layerId === layerId);
+        const privateItems = privateData.filter((d) => d.layerId === layerId);
+        if (privateItems.length > 0) {
+          //privateItemsは基本的には一つだが、Admin用だと複数人の可能性がある。
+
+          // プライベートとテンプレートのマージ
+          const [mergedPrivate, mergedTemplate] = await mergeLayerData({
+            layerData: privateItems,
+            templateData: templateItem,
+            ownUserId: user.uid,
+            strategy: 'manual',
+            conflictsResolver,
+          });
+
+          if (mergedPrivate.length > 0) {
+            dispatch(updateDataAction(mergedPrivate));
+          }
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
+          }
+        }
+        const publicItems = publicData.filter((d) => d.layerId === layerId);
+        if (publicItems.length > 0) {
+          // 複数人のパブリックとテンプレートのマージ
+          const [mergedPublic, mergedTemplate] = await mergeLayerData({
+            layerData: publicItems,
+            templateData: templateItem,
+            ownUserId: user.uid,
+            strategy: 'manual',
+            conflictsResolver,
+          });
+
+          dispatch(updateDataAction(mergedPublic));
+
+          // 2) マージ結果に自分(user.uid)が含まれなければ、空配列をセットしてローカルデータをクリア
+          const hasSelf = mergedPublic.some((dt) => dt.userId === user.uid);
+          if (!hasSelf) {
+            dispatch(
+              updateDataAction([
+                {
+                  layerId,
+                  userId: user.uid,
+                  data: [], // 空にすることで既存の自分データを消去
+                },
+              ])
+            );
+          }
+
+          if (mergedTemplate && templateItem) {
+            dispatch(updateDataAction([mergedTemplate]));
+          }
+        }
+        // private/publicがなくtemplateのみの場合
+        if (privateItems.length === 0 && publicItems.length === 0 && templateItem) {
+          dispatch(updateDataAction([templateItem]));
+        }
+      }
+      return { isOK: true, message: '' };
+    },
+    [dispatch, user.uid, conflictsResolver]
+  );
 
   const fetchProjectSettings = useCallback(async (project: ProjectType) => {
     const { isOK, message, data: projectSettings } = await projectStore.downloadProjectSettings(project.id);
@@ -207,7 +379,10 @@ export const useRepository = (): UseRepositoryReturnType => {
 
       for (const { name } of photoField) {
         const photos = (data.field[name] as PhotoType[]).map(async (photo) => {
-          if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
+          if (data.deleted) {
+            //データごと削除された写真をストレージから削除
+            await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
+          } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
             if (!isLicenseOK) {
               //ライセンス制限あればアップロードしない
@@ -236,23 +411,6 @@ export const useRepository = (): UseRepositoryReturnType => {
       return newData;
     },
     [user]
-  );
-
-  const updateStoragePhotos = useCallback(
-    async (
-      isLicenseOK: boolean,
-      data: RecordType[],
-      project: ProjectType,
-      layerId: string,
-      photoFields: LayerType['field']
-    ) => {
-      return await Promise.all(
-        data.map((d: RecordType) => {
-          return updateStoragePhoto(isLicenseOK, d, project, layerId, photoFields);
-        })
-      );
-    },
-    [updateStoragePhoto]
   );
 
   const deleteCommonAndTemplateData = useCallback(
@@ -307,13 +465,12 @@ export const useRepository = (): UseRepositoryReturnType => {
       for (const layer of targetLayers) {
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
-        const targetRecordSet = getTargetRecordSet(dataSet, layer, user, isTemplate);
+        const targetRecordSet = getTargetRecordSet(fullDataSet, layer, user, isTemplate);
 
-        const updatedData = await updateStoragePhotos(isLicenseOK, targetRecordSet, project, layer.id, photoFields);
-        //データごと削除された写真をまとめて削除
-        await Promise.all(
-          photosToBeDeleted.map(async (photo) => {
-            await projectStorage.deleteStoragePhoto(photo.projectId, photo.layerId, photo.userId, photo.photoId);
+        //写真の更新
+        const updatedData = await Promise.all(
+          targetRecordSet.map((d: RecordType) => {
+            return updateStoragePhoto(isLicenseOK, d, project, layer.id, photoFields);
           })
         );
 
@@ -340,7 +497,7 @@ export const useRepository = (): UseRepositoryReturnType => {
       }
       return { isOK: true, message: '' };
     },
-    [dataSet, dispatch, isSettingProject, layers, photosToBeDeleted, updateStoragePhotos, updatedAt, user]
+    [dispatch, fullDataSet, isSettingProject, layers, updateStoragePhoto, updatedAt, user]
   );
 
   const uploadTileMaps = useCallback(
@@ -401,10 +558,26 @@ export const useRepository = (): UseRepositoryReturnType => {
       if (!isLoggedIn(user)) {
         return { isOK: false, message: t('hooks.message.pleaseLogin') };
       }
+      // 旧レイヤ設定を取得してpermissionの変更を検知
+      const oldSettingsRes = await projectStore.downloadProjectSettings(project_.id);
+      const oldLayers = oldSettingsRes.isOK && oldSettingsRes.data ? oldSettingsRes.data.layers : [];
+      // 変更後のレイヤ設定をアップロード前に作成
       const excludeItems = tileMaps.map((tileMap) => tileMap.id);
       await projectStorage.deleteProjectPDF(project_.id, excludeItems);
       const updatedTileMaps = await uploadTileMaps(project_.id);
       const updatedLayers = await uploadDictionary(project_.id);
+      // permission変更があればサーバーデータも一括更新
+      for (const newLayer of updatedLayers) {
+        const oldLayer = oldLayers.find((l) => l.id === newLayer.id);
+        if (oldLayer && oldLayer.permission !== newLayer.permission) {
+          await projectStore.updateLayerDataPermission(
+            project_.id,
+            newLayer.id,
+            oldLayer.permission,
+            newLayer.permission
+          );
+        }
+      }
       const { isOK, message, timestamp } = await projectStore.uploadProjectSettings(project_.id, user.uid, {
         layers: updatedLayers,
         tileMaps: updatedTileMaps,
@@ -609,61 +782,60 @@ export const useRepository = (): UseRepositoryReturnType => {
     [dispatch, downloadPhotos, layers]
   );
 
-  const downloadPublicData = useCallback(
-    async (project_: ProjectType, shouldPhotoDownload: boolean, excludeOwnData?: boolean) => {
-      const { isOK, message, data } = await projectStore.downloadPublicData(
-        project_.id,
-        excludeOwnData ? user.uid : undefined
-      );
+  const fetchPublicData = useCallback(
+    async (project_: ProjectType, shouldPhotoDownload: boolean, mode: 'all' | 'others' = 'all') => {
+      if (!isLoggedIn(user)) {
+        return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
+      }
+      const options: { excludeUserId?: string } = {};
+      if (mode === 'others') {
+        options.excludeUserId = user.uid;
+      }
+      const { isOK, message, data } = await projectStore.downloadPublicData(project_.id, options);
 
       if (!isOK || data === undefined) {
-        return { isOK: false, message };
+        return { isOK: false, message, data: [] };
       }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
-      const publicOwnLayerIds = updatedData.filter((d) => d.userId === user.uid).map((d) => d.layerId);
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '', publicOwnLayerIds };
+      const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
+
+      return { isOK: true, message: '', data: updatedData };
     },
-    [dispatch, downloadPhotos, layers, user.uid]
+    [downloadPhotos, layers, user]
   );
 
-  const downloadPrivateData = useCallback(
-    async (project_: ProjectType, shouldPhotoDownload: boolean) => {
+  const fetchPrivateData = useCallback(
+    async (project_: ProjectType, shouldPhotoDownload: boolean, mode: 'own' | 'all' | 'others' = 'own') => {
       if (!isLoggedIn(user)) {
-        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+        return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      const { isOK, message, data } = await projectStore.downloadPrivateData(user.uid, project_.id);
+
+      const options: { userId?: string; excludeUserId?: string } = {};
+      if (mode === 'own') {
+        options.userId = user.uid;
+      } else if (mode === 'others') {
+        options.excludeUserId = user.uid;
+      }
+      const res = await projectStore.downloadPrivateData(project_.id, options);
+      const { isOK, message, data } = res;
 
       if (!isOK || data === undefined) {
-        return { isOK: false, message };
+        return { isOK: false, message, data: [] };
       }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
-      const privateLayerIds = updatedData.map((d) => d.layerId);
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '', privateLayerIds };
+      const updatedData = shouldPhotoDownload ? await downloadPhotos(layers, data, project_) : data;
+      return { isOK: true, message: '', data: updatedData };
     },
-    [dispatch, downloadPhotos, layers, user]
+    [downloadPhotos, layers, user]
   );
 
-  const downloadAllPrivateData = useCallback(
+  const fetchTemplateData = useCallback(
     async (project_: ProjectType, shouldPhotoDownload: boolean) => {
       if (!isLoggedIn(user)) {
-        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+        return { isOK: false, message: t('hooks.message.pleaseLogin'), data: [] };
       }
-      const { isOK, message, data } = await projectStore.downloadAllPrivateData(user.uid, project_.id);
+      const { isOK, message, data } = await projectStore.downloadTemplateData(project_.id);
 
       if (!isOK || data === undefined) {
-        return { isOK: false, message };
+        return { isOK: false, message, data: [] };
       }
       let updatedData: DataType[];
       if (shouldPhotoDownload) {
@@ -671,64 +843,20 @@ export const useRepository = (): UseRepositoryReturnType => {
       } else {
         updatedData = data;
       }
-      const privateLayerIds = updatedData.map((d) => d.layerId);
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '', privateLayerIds };
+      return { isOK: true, message: '', data: updatedData.map((d) => ({ ...d, userId: 'template' })) };
     },
-    [dispatch, downloadPhotos, layers, user]
+    [downloadPhotos, layers, user]
   );
 
   const downloadTemplateData = useCallback(
-    async (
-      project_: ProjectType,
-      shouldPhotoDownload: boolean,
-      publicOwnLayerIds: string[],
-      privateLayerIds: string[]
-    ) => {
-      if (!isLoggedIn(user)) {
-        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+    async (project: ProjectType, shouldPhotoDownload: boolean) => {
+      const res = await fetchTemplateData(project, shouldPhotoDownload);
+      if (res.isOK && res.data) {
+        dispatch(updateDataAction(res.data));
       }
-      const { isOK, message, data } = await projectStore.downloadTemplateData(user.uid, project_.id);
-      //console.log(project_.id);
-      //console.log(data);
-      if (!isOK || data === undefined) {
-        return { isOK: false, message };
-      }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
-
-      updatedData = createRecordSetFromTemplate(updatedData, user, publicOwnLayerIds, privateLayerIds);
-      //console.log(updatedData.length);
-      //console.log(updatedData[0]);
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '' };
+      return res;
     },
-    [dispatch, downloadPhotos, layers, user]
-  );
-
-  const downloadPublicAndAllPrivateData = useCallback(
-    async (project_: ProjectType, shouldPhotoDownload: boolean, excludeOwnData?: boolean) => {
-      const { isOK, message, data } = await projectStore.downloadPublicAndAllPrivateData(
-        project_.id,
-        excludeOwnData ? user.uid : undefined
-      );
-      if (!isOK || data === undefined) {
-        return { isOK: false, message };
-      }
-      let updatedData: DataType[];
-      if (shouldPhotoDownload) {
-        updatedData = await downloadPhotos(layers, data, project_);
-      } else {
-        updatedData = data;
-      }
-      dispatch(updateDataAction(updatedData));
-      return { isOK: true, message: '' };
-    },
-    [dispatch, downloadPhotos, layers, user.uid]
+    [dispatch, fetchTemplateData]
   );
 
   return {
@@ -741,13 +869,18 @@ export const useRepository = (): UseRepositoryReturnType => {
     downloadProjectSettings,
     downloadPublicAndCommonData,
     downloadCommonData,
-    downloadPublicData,
-    downloadPrivateData,
-    downloadAllPrivateData,
-    downloadTemplateData,
-    downloadPublicAndAllPrivateData,
+    fetchPublicData,
+    fetchPrivateData,
+    fetchTemplateData,
     uploadDataToRepository,
     uploadProjectSettings,
     deleteCommonAndTemplateData,
+    conflictState,
+    setConflictState,
+    conflictsResolver,
+    createMergedDataSet,
+    downloadTemplateData,
+    handleBulkSelect,
+    handleSelect,
   } as const;
 };

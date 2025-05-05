@@ -18,7 +18,6 @@ export type UseProjectReturnType = {
   isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  downloadData: (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => Promise<void>;
   uploadData: (isLicenseOK: boolean) => Promise<{
     isOK: boolean;
     message: string;
@@ -40,31 +39,7 @@ export const useProject = (): UseProjectReturnType => {
   const role = useMemo(() => project?.members.find((v) => v.uid === user.uid)?.role, [project?.members, user.uid]);
   const isOwnerAdmin = useMemo(() => role === 'OWNER' || role === 'ADMIN', [role]);
 
-  const {
-    downloadPublicData,
-    downloadPublicAndAllPrivateData,
-    uploadDataToRepository,
-    uploadProjectSettings,
-    deleteCommonAndTemplateData,
-  } = useRepository();
-
-  const downloadData = useCallback(
-    async (downloadType: 'MEMBER' | 'ADMIN', shouldPhotoDownload: boolean) => {
-      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      if (downloadType === 'ADMIN') {
-        //自分以外のメンバーのデータを取得する
-        const publicAndAllPrivateDataResult = await downloadPublicAndAllPrivateData(project, shouldPhotoDownload, true);
-        if (!publicAndAllPrivateDataResult.isOK) throw new Error(publicAndAllPrivateDataResult.message);
-      } else {
-        //自分以外のメンバーのデータを取得する
-        const publicDataResult = await downloadPublicData(project, shouldPhotoDownload, true);
-        if (!publicDataResult.isOK) throw new Error(publicDataResult.message);
-        // privateDataは取得する必要がない。
-      }
-      dispatch(editSettingsAction({ photosToBeDeleted: [] }));
-    },
-    [dispatch, downloadPublicAndAllPrivateData, downloadPublicData, project]
-  );
+  const { uploadDataToRepository, uploadProjectSettings, deleteCommonAndTemplateData } = useRepository();
 
   const uploadData = useCallback(
     async (isLicenseOK: boolean) => {
@@ -96,7 +71,6 @@ export const useProject = (): UseProjectReturnType => {
         isSynced: false,
         projectId: undefined,
         projectName: undefined,
-        photosToBeDeleted: [],
       })
     );
     dispatch(setLayersAction(layersInitialState));
@@ -126,7 +100,6 @@ export const useProject = (): UseProjectReturnType => {
     isOwnerAdmin,
     project,
     projectRegion,
-    downloadData,
     uploadData,
     syncPosition,
     clearProject,

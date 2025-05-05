@@ -4,6 +4,8 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import dayjs from '../i18n/dayjs';
+import { getPhotoFields } from './Layer';
+import { LayerType, PhotoType, RecordType } from '../types';
 
 export const createThumbnail = async (uri: string) => {
   const thumbnail = await manipulateAsync(uri, [{ resize: { height: 150 } }], {
@@ -31,14 +33,19 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
   return newUri;
 };
 
-export const deleteLocalAllPhotos = (uri: string) => {
+export const deleteLocalPhoto = async (uri: string) => {
   if (Platform.OS === 'web') return;
-  FileSystem.deleteAsync(uri, { idempotent: true });
+  await FileSystem.deleteAsync(uri, { idempotent: true });
 };
 
-export const deleteLocalPhoto = (uri: string) => {
-  if (Platform.OS === 'web') return;
-  FileSystem.deleteAsync(uri, { idempotent: true });
+export const deleteRecordPhotos = (layer: LayerType, record: RecordType) => {
+  const photoFields = getPhotoFields(layer);
+
+  for (const { name } of photoFields) {
+    (record.field[name] as PhotoType[]).forEach((photo) => {
+      if (photo.uri) deleteLocalPhoto(photo.uri);
+    });
+  }
 };
 
 export const pickImage = async (photoFolder: string) => {

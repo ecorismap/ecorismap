@@ -18,7 +18,6 @@ import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
 import { LatLonDMS } from './Coords';
 import { t } from '../i18n/config';
-import { ulid } from 'ulid';
 import { isLocationType } from './General';
 
 export type SortOrderType = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
@@ -48,12 +47,19 @@ export const sortData = (data: RecordType[], fieldName: string, order: SortOrder
   if (order === 'DESCENDING') {
     sortedDataWithIdx.reverse();
   }
-  // 前のソート順序に基づいて二次ソート
+  // 二次ソート
   sortedDataWithIdx = sortedDataWithIdx.sort((a, b) => {
-    if (a.field[fieldName] === b.field[fieldName]) {
-      return a.idx - b.idx;
+    if (fieldName === '_user_') {
+      if ((a.displayName || '') === (b.displayName || '')) {
+        return a.idx - b.idx;
+      }
+      return 0;
+    } else {
+      if (a.field[fieldName] === b.field[fieldName]) {
+        return a.idx - b.idx;
+      }
+      return 0;
     }
-    return 0;
   });
   const sortedData: RecordType[] = sortedDataWithIdx.map(({ idx: _, ...d }) => d);
   idx = sortedDataWithIdx.map(({ idx: Idx }) => Idx);
@@ -335,36 +341,33 @@ export const getTargetRecordSet = (
   let targetDataSet: DataType | undefined;
   if (layer.permission === 'COMMON') {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id);
+  } else if (isTemplate) {
+    targetDataSet = dataSet.find(
+      (d) => d.layerId === layer.id && (d.userId === 'template' || d.userId === undefined || d.userId === user.uid)
+    );
   } else {
     targetDataSet = dataSet.find((d) => d.layerId === layer.id && (d.userId === undefined || d.userId === user.uid));
   }
   const recordSet: RecordType[] = cloneDeep(targetDataSet?.data ?? []);
   return isTemplate
-    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: 'template' }))
-    : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName }));
+    ? recordSet.map((d) => ({ ...d, userId: 'template', displayName: t('common.admin'), uploaded: true }))
+    : recordSet.map((d) => ({ ...d, userId: user.uid, displayName: user.displayName, uploaded: true }));
 };
 
-export const createRecordSetFromTemplate = (
+export const createMergedDataSetWithTemplate = (
   dataSet: DataType[],
   user: UserType,
   publicOwnLayerIds: string[],
   privateLayerIds: string[]
 ) => {
+  // テンプレートデータはuserId/displayName/idを変換せず、そのまま返す
+  // 既に自分のデータが存在するレイヤはスキップ
   return dataSet
     .map((recordSet) => {
       const alreadyHasData = [...publicOwnLayerIds, ...privateLayerIds].find((id) => id === recordSet.layerId);
-      // console.log('alreadyHasData', alreadyHasData);
-      // console.log('displayName', user.displayName);
-      // console.log(recordSet.data);
       if (alreadyHasData) return undefined;
-      const updatedRecordSet = recordSet.data.map((d) => ({
-        ...d,
-        id: ulid(),
-        userId: user.uid,
-        displayName: user.displayName,
-      }));
-
-      return { ...recordSet, data: updatedRecordSet, userId: user.uid };
+      // ここでidやuserId, displayNameは変換しない
+      return { ...recordSet };
     })
     .filter((v) => v !== undefined) as DataType[];
 };
@@ -382,3 +385,93 @@ export const isPointRecordType = (
 ): recordSet is PointRecordType => {
   return recordSet !== undefined && !Array.isArray(recordSet.coords);
 };
+
+/**
+ * マージ処理
+ * 自分のデータが優先、なければ他人、テンプレートデータを利用
+ * [ユーザーのデータ配列, テンプレートのデータ] のタプルで返す
+ */
+export async function mergeLayerData({
+  layerData,
+  templateData,
+  ownUserId,
+  strategy = 'self',
+  conflictsResolver,
+}: {
+  layerData: DataType[];
+  templateData: DataType | undefined;
+  ownUserId: string | undefined;
+  strategy?: 'self' | 'latest' | 'manual';
+  conflictsResolver?: (candidates: RecordType[], id: string) => Promise<RecordType>;
+}): Promise<[DataType[], DataType | undefined]> {
+  // --- 全レコードを一旦まとめる ---
+  const allRecords = layerData.flatMap((d) => d.data);
+  const templateRecords = templateData ? templateData.data : [];
+  const combinedRecords: RecordType[] = [...allRecords, ...templateRecords];
+
+  // --- ユニークな ID を収集 ---
+  const idSet = Array.from(new Set(combinedRecords.map((r) => r.id)));
+
+  // --- layerId はどの DataType を参照しても同じものを利用 ---
+  const layerId = layerData[0]?.layerId ?? templateData?.layerId ?? '';
+
+  // --- ID ごとにマージ戦略を適用し、選ばれたレコードを userId 毎に集計 ---
+  const resolvedMap = new Map<string, RecordType[]>();
+
+  for (const id of idSet) {
+    const candidates = combinedRecords.filter((r) => r.id === id);
+    let chosen: RecordType;
+
+    // ユーザー候補のみ抽出 (template を除外)
+    const userCandidates = candidates.filter((r) => r.userId !== 'template');
+
+    // ユーザーが2人以上いる場合 → template を除外して手動マージ
+    if (userCandidates.length > 1 && conflictsResolver) {
+      chosen = await conflictsResolver(userCandidates, id);
+    } else if (
+      // 「候補が２つ」で「一方が template、もう一方がユーザー」の場合は必ずユーザーを選択
+      candidates.length === 2 &&
+      candidates.some((r) => r.userId === 'template') &&
+      candidates.some((r) => r.userId !== 'template')
+    ) {
+      chosen = candidates.find((r) => r.userId !== 'template')!;
+    } else if (candidates.length === 1) {
+      chosen = candidates[0];
+    } else {
+      // 通常の戦略適用部
+      if (strategy === 'manual' && conflictsResolver) {
+        chosen = await conflictsResolver(candidates, id);
+      } else if (strategy === 'latest') {
+        chosen = candidates.reduce((prev, cur) =>
+          prev.updatedAt && cur.updatedAt && cur.updatedAt > prev.updatedAt ? cur : prev
+        );
+      } else if (strategy === 'self' && ownUserId) {
+        const own = candidates.find((r) => r.userId === ownUserId);
+        chosen = own ?? candidates[0];
+      } else {
+        chosen = candidates[0];
+      }
+    }
+
+    // 選ばれたレコードを userId 毎に集計
+    const list = resolvedMap.get(chosen.userId!) ?? [];
+    list.push(chosen);
+    resolvedMap.set(chosen.userId!, list);
+  }
+
+  // --- 結果の整形 ---
+  const mergedUserData: DataType[] = Array.from(resolvedMap.entries())
+    .filter(([userId]) => userId !== 'template')
+    .map(([userId, records]) => ({
+      layerId,
+      userId,
+      data: records,
+    }));
+
+  const templateOnly = resolvedMap.get('template');
+  const mergedTemplateData: DataType | undefined = templateOnly
+    ? { layerId, userId: 'template', data: templateOnly }
+    : undefined;
+
+  return [mergedUserData, mergedTemplateData];
+}

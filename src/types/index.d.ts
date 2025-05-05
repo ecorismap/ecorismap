@@ -106,6 +106,8 @@ export interface RecordType {
   centroid?: LocationType;
   field: { [key: string]: string | number | PhotoType[] };
   updatedAt?: number;
+  deleted?: boolean;
+  uploaded?: boolean;
 }
 
 export interface PointRecordType {
@@ -288,6 +290,10 @@ export interface ProjectType {
   abstract: string;
   storage: { count: number };
   license: License;
+  // Grouping properties
+  isGroup?: boolean;
+  groupId?: string;
+  expanded?: boolean;
 }
 
 export interface ProjectSettingsType {
@@ -321,12 +327,12 @@ export interface SettingsType {
       }
     | undefined;
   plugins: any;
-  photosToBeDeleted: {
-    projectId: string;
-    layerId: string;
-    userId: string;
-    photoId: string;
-  }[];
+  // photosToBeDeleted: {
+  //   projectId: string;
+  //   layerId: string;
+  //   userId: string;
+  //   photoId: string;
+  // }[];
   mapListURL: string;
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;

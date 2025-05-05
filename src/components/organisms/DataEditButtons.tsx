@@ -7,7 +7,7 @@ import { DataEditContext } from '../../contexts/DataEdit';
 import { t } from '../../i18n/config';
 
 export const DataEditButtons = () => {
-  const { layer, isEditingRecord, pressCopyData, pressDeleteData, gotoHomeAndJump, gotoGoogleMaps, pressEditPosition } =
+  const { layer, isEditingRecord, pressCopyData, pressDeleteData, pressJumpToData, gotoGoogleMaps, pressEditPosition } =
     useContext(DataEditContext);
 
   return (
@@ -15,7 +15,7 @@ export const DataEditButtons = () => {
       <View style={styles.buttonContainer}>
         <Button
           name={DATAEDIT_BTN.JUMP}
-          onPress={gotoHomeAndJump}
+          onPress={pressJumpToData}
           backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord}
           tooltipText={t('DataEdit.tooltip.jump')}

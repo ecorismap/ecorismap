@@ -10,12 +10,12 @@ import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
-import { usePhoto } from './usePhoto';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
-import { deleteLocalPhoto } from '../utils/Photo';
+import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
+import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -59,11 +59,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
-  const dataSet = useSelector((state: RootState) => state.dataSet, shallowEqual);
-  //const [isEditingRecord, setIsEditingRecord] = useState(false);
+  const dataSet = useSelector(selectNonDeletedDataSet);
+  const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, layer.id));
   const [targetLayer, setTargetLayer] = useState<LayerType>(layer);
   const [targetRecord, setTargetRecord] = useState<RecordType>(record);
-  const [oldRecord, setOldRecord] = useState<RecordType>(record);
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
@@ -71,10 +70,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const [isDecimal, setIsDecimal] = useState(true);
   const [temporaryDeletePhotoList, setTemporaryDeletePhotoList] = useState<{ photoId: string; uri: string }[]>([]);
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
-  // console.log('$$$ temporaryDeletePhotoList $$$', temporaryDeletePhotoList);
-  // console.log('%%% temporaryAddedPhotoList %%%', temporaryAddedPhotoList);
 
-  const { deleteRecordPhotos } = usePhoto();
   const { selectRecord, setIsEditingRecord } = useRecord();
   const route = useRoute();
 
@@ -102,22 +98,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     //データの初期化。以降はchangeRecordで行う。
     if (route.name !== 'DataEdit') return;
 
-    //console.log('useDataEdit useEffect');
-
-    const allUserRecordSet = dataSet
-      .flatMap((d) => (d.layerId === layer.id ? d.data : []))
-      .filter((d) => (d.field._group ? d.field._group === '' : true));
-    let newRecord: RecordType;
-    if (targetRecordSet.length > 0 && oldRecord.id === record.id) {
-      //drawToolで編集された場合.copyの場合はrecord.idとoldRecord.idが異なる
-      newRecord = allUserRecordSet[recordNumber - 1];
-    } else {
-      newRecord = dataSet.find((d) => d.layerId === layer.id)?.data.find((d) => d.id === record.id) || record;
-      setOldRecord(record);
-    }
-
-    if (newRecord === undefined) return;
-
+    // allUserRecordSetをセレクタから取得
+    const newRecord = allUserRecordSet.find((d) => d.id === targetRecord.id) || record;
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
@@ -129,7 +111,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     }
     //targetRecordとoldRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataSet, layer, record, recordNumber, route.name]);
+  }, [allUserRecordSet, layer, record, recordNumber, route.name]);
 
   const changeRecord = useCallback(
     (value: number) => {
@@ -178,14 +160,23 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     let hasLocal = false;
     if (photo.uri) {
       if (Platform.OS === 'web') {
-        //web版はpickerImageで読み込んだuriはbase64で読み込まれる。
-        hasLocal = photo.uri !== null;
+        // Web版: URIの有効性を確認
+        if (photo.uri.startsWith('blob:')) {
+          // Blob URIの場合、fetchでアクセス試行
+          try {
+            const response = await fetch(photo.uri);
+            if (response.ok) hasLocal = true;
+          } catch (error) {
+            hasLocal = false;
+          }
+        }
       } else {
-        const { exists } = await FileSystem.getInfoAsync(photo.uri);
-        //PHOTO_FOLDERになければオリジナルがあってもダウンロードするバージョン
-        //hasLocal = exists && photo.url !== null;
-        //PHOTO_FOLDERもしくはオリジナルがあればダウンロードしないバージョン
-        hasLocal = exists;
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(photo.uri);
+          hasLocal = fileInfo.exists;
+        } catch (error) {
+          hasLocal = false;
+        }
       }
     }
     setSelectedPhoto({ ...photo, hasLocal, index: index, fieldName: fieldName });
@@ -247,20 +238,42 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     //unixTimeを更新
     updatedRecord.updatedAt = Date.now();
 
+    //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
+    if (targetRecord.userId !== dataUser.uid) {
+      dispatch(
+        deleteRecordsAction({
+          layerId: targetLayer.id,
+          userId: targetRecord.userId,
+          data: [targetRecord],
+        })
+      );
+    }
+    updatedRecord.userId = dataUser.uid;
+    updatedRecord.displayName = dataUser.displayName;
     dispatch(
       updateRecordsAction({
         layerId: targetLayer.id,
-        userId: updatedRecord.userId,
+        userId: dataUser.uid,
         data: [updatedRecord],
       })
     );
 
     setIsEditingRecord(false);
     return { isOK: true, message: '' };
-  }, [targetRecord, targetLayer, latlon, isDecimal, temporaryDeletePhotoList, dispatch, setIsEditingRecord]);
+  }, [
+    temporaryDeletePhotoList,
+    targetLayer,
+    targetRecord,
+    latlon,
+    isDecimal,
+    dataUser.uid,
+    dataUser.displayName,
+    dispatch,
+    setIsEditingRecord,
+  ]);
 
   const deleteRecord = useCallback(() => {
-    deleteRecordPhotos(targetLayer, targetRecord, projectId, targetRecord.userId);
+    deleteRecordPhotos(targetLayer, targetRecord);
     setTemporaryDeletePhotoList([]);
     setTemporaryAddedPhotoList([]);
 
@@ -282,7 +295,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
         data: deletedRecords,
       })
     );
-  }, [deleteRecordPhotos, targetLayer, targetRecord, projectId, isMapMemoLayer, dispatch, dataSet, layer.id]);
+  }, [targetLayer, targetRecord, isMapMemoLayer, dispatch, dataSet, layer.id]);
 
   const changeField = useCallback(
     (name: string, value: string | number) => {

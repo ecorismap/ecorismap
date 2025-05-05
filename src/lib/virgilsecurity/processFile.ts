@@ -24,7 +24,7 @@ export function processFile({
   file,
   chunkSize,
   signal,
-  // eslint-disable-next-line no-shadow
+
   onChunkCallback,
   onFinishCallback,
   onErrorCallback,

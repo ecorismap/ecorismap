@@ -199,7 +199,10 @@
     "option": "オプション",
     "useAdd": "データ追加に使用",
     "notSupported": "web版ではマイクは使用できません",
-    "none": "（なし）"
+    "none": "（なし）",
+    "userName": "User",
+    "move": "上下",
+    "download": "取得"
   },
   "Home": {
     "confirm": {
@@ -217,7 +220,7 @@
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
       "track_start": "トラックの記録を開始しますか？",
-      "downloadAllUserData": "他のメンバーのデータもダウンロードしますか？"
+      "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",
@@ -912,7 +915,8 @@
     },
     "pdf": {
       "comment": "この地図はウェブメルカトル図法で作成しています。スケールの長さは図の中心位置での目安です。"
-    }
+    },
+    "confirmEditModeMessage": " 編集モードに切り替えますか？"
   },
   "site": {
     "privacypolicy": "https://ecoris-map.web.app/policy_ja.html",
@@ -943,5 +947,14 @@
       "import": "ｲﾝﾎﾟｰﾄ",
       "add": "作成"
     }
+  },
+  "conflict": {
+    "title": "競合データID: {{id}}",
+    "meta": "編集者: {{displayName}} / 更新日時: {{date}}",
+    "deletedMark": "[削除済み] {{date}}",
+    "applyDelete": "削除を適用",
+    "applyThis": "このデータを採用",
+    "bulkSelf": "残りは自分優先",
+    "bulkLatest": "残りは最新優先"
   }
 }

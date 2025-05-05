@@ -3,11 +3,12 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { MapButtons } from '../organisms/MapButttons';
-import { MapItems } from '../organisms/MapItems';
+import { MapTable } from '../organisms/MapTable';
 import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function MapScreen() {
   //console.log('render Maps');
@@ -37,7 +38,9 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
-      <MapItems />
+      <ScrollView>
+        <MapTable />
+      </ScrollView>
       <MapButtons />
     </View>
   );

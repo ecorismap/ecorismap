@@ -10,10 +10,11 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
-import { usePhoto } from '../hooks/usePhoto';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
+import { useRecord } from '../hooks/useRecord';
+import { useLayers } from '../hooks/useLayers';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
@@ -21,7 +22,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const [layer] = useState<LayerType>(route.params.targetLayer);
 
   const {
-    allUserRecordSet: data,
+    sortedRecordSet,
     isChecked,
     checkList,
     checkedRecords,
@@ -35,13 +36,13 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    checkRecordEditable,
     updateOwnRecordSetOrder,
   } = useData(route.params.targetLayer.id);
+  const { changeActiveLayer } = useLayers();
+  const { checkRecordEditable } = useRecord();
   const { isOwnerAdmin } = usePermission();
 
   const { generateExportGeoData } = useGeoFile();
-  const { deleteRecordPhotos } = usePhoto();
 
   const pressExportData = useCallback(async () => {
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
@@ -54,7 +55,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     if (isMapMemoLayer) {
       checkedRecords.forEach((record) => {
         if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-        const subGroupRecords = data.filter((r) => r.field._group === record.id);
+        const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
         exportedRecords = [...exportedRecords, record, ...subGroupRecords];
       });
     } else {
@@ -72,58 +73,87 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     } else {
       await AlertAsync(t('hooks.message.failExport'));
     }
-  }, [checkedRecords, data, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
+  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (!ret) return;
-    for (const record of checkedRecords) {
-      const { isOK, message } = checkRecordEditable(route.params.targetLayer, record);
-      if (!isOK) {
-        await AlertAsync(message);
+
+    const checkResult = checkRecordEditable(route.params.targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(route.params.targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
         return;
       }
     }
     deleteRecords();
-    checkedRecords.forEach((record) => {
-      deleteRecordPhotos(route.params.targetLayer, record, projectId, record.userId);
-    });
-  }, [checkRecordEditable, checkedRecords, deleteRecordPhotos, deleteRecords, projectId, route.params.targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, deleteRecords, route.params.targetLayer]);
 
-  const pressAddData = useCallback(() => {
-    if (!route.params.targetLayer.active) {
-      Alert.alert('', t('hooks.message.noEditMode'));
-      return;
+  const pressAddData = useCallback(async () => {
+    const checkResult = checkRecordEditable(route.params.targetLayer);
+
+    if (!checkResult.isOK) {
+      if (checkResult.message === t('hooks.message.noEditMode')) {
+        // 編集モードでない場合、確認ダイアログを表示
+        const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+        if (!confirmResult) return;
+        // 編集モードにする
+        changeActiveLayer(route.params.targetLayer);
+      } else {
+        // その他の編集不可理由（プロジェクトロックなど）
+        Alert.alert('', checkResult.message);
+        return;
+      }
     }
+
     const addedData = addDefaultRecord();
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
       targetLayer: layer,
     });
-  }, [addDefaultRecord, layer, navigation, route.params.targetLayer.active]);
+  }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer]);
 
   const addDataByDictinary = useCallback(
-    (fieldId: string, value: string) => {
-      if (!route.params.targetLayer.active) {
-        Alert.alert('', t('hooks.message.noEditMode'));
-        return;
+    async (fieldId: string, value: string) => {
+      const checkResult = checkRecordEditable(route.params.targetLayer);
+
+      if (!checkResult.isOK) {
+        if (checkResult.message === t('hooks.message.noEditMode')) {
+          // 編集モードでない場合、確認ダイアログを表示
+          const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+          if (!confirmResult) return;
+          // 編集モードにする
+          changeActiveLayer(route.params.targetLayer);
+        } else {
+          // その他の編集不可理由（プロジェクトロックなど）
+          Alert.alert('', checkResult.message);
+          return;
+        }
       }
       const fieldName = route.params.targetLayer.field.find((f) => f.id === fieldId)?.name;
       if (!fieldName) return;
       addDefaultRecord({ [fieldName]: value });
     },
-    [addDefaultRecord, route.params.targetLayer.active, route.params.targetLayer.field]
+    [addDefaultRecord, changeActiveLayer, checkRecordEditable, route.params.targetLayer]
   );
   const gotoDataEdit = useCallback(
     (index: number) => {
       navigation.navigate('DataEdit', {
         previous: 'Data',
-        targetData: data[index],
+        targetData: sortedRecordSet[index],
         targetLayer: { ...layer },
       });
     },
-    [navigation, data, layer]
+    [navigation, sortedRecordSet, layer]
   );
 
   const gotoBack = useCallback(() => {
@@ -135,7 +165,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       value={{
         projectId,
         isOwnerAdmin,
-        data,
+        sortedRecordSet,
         layer,
         isChecked,
         checkList,

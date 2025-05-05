@@ -1,13 +1,14 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { LayerType, LocationType, RecordType } from '../types';
 import * as Location from 'expo-location';
 import { toLocationType } from '../utils/Location';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
 import { cloneDeep } from 'lodash';
-import { useDispatch } from 'react-redux';
-import { updateRecordsAction } from '../modules/dataSet';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
+import { RootState } from '../store';
 
 export type UsePointToolReturnType = {
   addCurrentPoint: () => Promise<{
@@ -23,6 +24,12 @@ export type UsePointToolReturnType = {
 
 export const usePointTool = (): UsePointToolReturnType => {
   const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+  const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
   const { addRecordWithCheck } = useRecord();
 
   const getCurrentPoint = useCallback(async () => {
@@ -56,11 +63,31 @@ export const usePointTool = (): UsePointToolReturnType => {
 
   const updatePointPosition = useCallback(
     (targetLayer: LayerType, feature: RecordType, coordinate: LatLng | undefined) => {
-      const data = cloneDeep(feature);
-      data.coords = coordinate ? { latitude: coordinate.latitude, longitude: coordinate.longitude } : undefined;
-      dispatch(updateRecordsAction({ layerId: targetLayer.id, userId: feature.userId, data: [data] }));
+      const targetRecord = cloneDeep(feature);
+      targetRecord.coords = coordinate ? { latitude: coordinate.latitude, longitude: coordinate.longitude } : undefined;
+      //unixTimeを更新
+      targetRecord.updatedAt = Date.now();
+      //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
+      if (targetRecord.userId !== dataUser.uid) {
+        dispatch(
+          deleteRecordsAction({
+            layerId: targetLayer.id,
+            userId: targetRecord.userId,
+            data: [targetRecord],
+          })
+        );
+      }
+      targetRecord.userId = dataUser.uid;
+      targetRecord.displayName = dataUser.displayName;
+      dispatch(
+        updateRecordsAction({
+          layerId: targetLayer.id,
+          userId: dataUser.uid,
+          data: [targetRecord],
+        })
+      );
     },
-    [dispatch]
+    [dataUser.displayName, dataUser.uid, dispatch]
   );
 
   return {

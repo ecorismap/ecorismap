@@ -61,6 +61,10 @@ import { HomeModalEraserPicker } from '../components/organisms/HomeModalEraserPi
 import { HomeModalInfoPicker } from '../components/organisms/HomeModalInfoPicker';
 import { Position } from 'geojson';
 import { useMaps } from '../hooks/useMaps';
+import { useRepository } from '../hooks/useRepository';
+import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
+import { selectNonDeletedDataSet } from '../modules/selectors';
+import { useLayers } from '../hooks/useLayers';
 
 export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
@@ -77,7 +81,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const memberLocations = useSelector((state: RootState) => state.settings.memberLocation, shallowEqual);
 
   const layers = useSelector((state: RootState) => state.layers);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dataSet = useSelector(selectNonDeletedDataSet);
+  const fullDataSet = useSelector((state: RootState) => state.dataSet);
+
   const routeName = getFocusedRouteNameFromRoute(route);
 
   const { importGeoFile } = useGeoFile();
@@ -112,7 +118,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     calculateStorageSize,
     setIsEditingRecord,
   } = useRecord();
-
+  const { changeActiveLayer } = useLayers();
   const {
     drawLine,
     editingLineXY,
@@ -242,7 +248,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     isSynced,
     project,
     projectRegion,
-    downloadData,
     uploadData,
     syncPosition,
     clearProject,
@@ -276,6 +281,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setOutputDataPDF,
   } = usePDF();
 
+  const {
+    conflictState,
+    handleSelect,
+    handleBulkSelect,
+    fetchPublicData,
+    fetchPrivateData,
+    fetchTemplateData,
+    createMergedDataSet,
+  } = useRepository();
+
   const { vectorTileInfo, getVectorTileInfo, openVectorTileInfo, closeVectorTileInfo } = useVectorTile();
   const { mapSize, mapRegion, isLandscape } = useWindow();
 
@@ -292,6 +307,57 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const downloadMode = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
   const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
+
+  /******************************* */
+  const downloadData = useCallback(
+    async ({ isAdmin = false, shouldPhotoDownload = false }) => {
+      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+      if (isAdmin) {
+        //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
+        const [publicRes, privateRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchPrivateData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !privateRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || privateRes.message || templateRes.message);
+        }
+        //自分のPRIVATEデータをローカルから取得する。（編集されている可能性のため）
+        const privateLayerIds = layers.filter((layer) => layer.permission === 'PRIVATE').map((layer) => layer.id);
+        const ownPrivateData = fullDataSet.filter((d) => privateLayerIds.includes(d.layerId) && d.userId === user.uid);
+
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [...privateRes.data, ...ownPrivateData],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: templateRes.data,
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      } else {
+        //自分以外のPUBLICデータをサーバーから取得する
+        const [publicRes, templateRes] = await Promise.all([
+          fetchPublicData(project, shouldPhotoDownload, 'others'),
+          fetchTemplateData(project, shouldPhotoDownload),
+        ]);
+        if (!publicRes.isOK || !templateRes.isOK) {
+          throw new Error(publicRes.message || templateRes.message);
+        }
+        //自分のPUBLICデータをローカルから取得する。（編集されている可能性のため）
+        const publicLayerIds = layers.filter((layer) => layer.permission === 'PUBLIC').map((layer) => layer.id);
+        const ownPublicData = fullDataSet.filter((d) => publicLayerIds.includes(d.layerId) && d.userId === user.uid);
+
+        const mergedDataResult = await createMergedDataSet({
+          privateData: [],
+          publicData: [...publicRes.data, ...ownPublicData],
+          templateData: templateRes.data,
+        });
+        if (!mergedDataResult.isOK) throw new Error(mergedDataResult.message);
+      }
+    },
+    [createMergedDataSet, fetchPrivateData, fetchPublicData, fetchTemplateData, fullDataSet, layers, project, user.uid]
+  );
 
   /*************** onXXXXMapView *********************/
 
@@ -761,17 +827,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
       }
-      let downloadType: 'MEMBER' | 'ADMIN' = 'MEMBER';
-      if (Platform.OS === 'web') {
-        downloadType = 'ADMIN';
-      } else if (isOwnerAdmin) {
+      let isAdmin = false;
+      if (isOwnerAdmin) {
         const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
-        if (resp) downloadType = 'ADMIN';
+        if (resp) isAdmin = true;
       }
-      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
-      const shouldPhotoDownload = false;
       setIsLoading(true);
-      await downloadData(downloadType, shouldPhotoDownload);
+      //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
+      await downloadData({ isAdmin, shouldPhotoDownload: false });
       setIsLoading(false);
       await AlertAsync(t('Home.alert.download'));
     } catch (e: any) {
@@ -981,18 +1044,34 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         resetPointPosition(layer, feature);
         return;
       }
-      const { isOK, message } = checkRecordEditable(layer, feature);
-      if (!isOK) {
-        resetPointPosition(layer, feature);
-        await AlertAsync(message);
-        return;
+      const checkResult = checkRecordEditable(layer);
+
+      if (!checkResult.isOK) {
+        if (checkResult.message === t('hooks.message.noEditMode')) {
+          // 編集モードでない場合、確認ダイアログを表示
+          const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
+          if (!confirmResult) return;
+          // 編集モードにする
+          changeActiveLayer(layer);
+        } else {
+          resetPointPosition(layer, feature);
+          await AlertAsync(checkResult.message);
+          return;
+        }
       }
       updatePointPosition(layer, feature, coordinate);
       if (route.params?.mode === 'editPosition') {
         finishEditPosition();
       }
     },
-    [checkRecordEditable, finishEditPosition, resetPointPosition, route.params?.mode, updatePointPosition]
+    [
+      changeActiveLayer,
+      checkRecordEditable,
+      finishEditPosition,
+      resetPointPosition,
+      route.params?.mode,
+      updatePointPosition,
+    ]
   );
 
   const getInfoOfFeature = useCallback(
@@ -1385,9 +1464,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         //データの範囲にジャンプする場合
         changeMapRegion(route.params.jumpTo, true);
         if (isLandscape) {
-          bottomSheetRef.current?.snapToIndex(2);
+          bottomSheetRef.current?.snapToIndex(0);
         } else {
-          bottomSheetRef.current?.snapToIndex(1);
+          bottomSheetRef.current?.snapToIndex(0);
         }
       } else if (route.params?.mode === 'editPosition') {
         if (route.params?.layer === undefined || route.params?.record === undefined) return;
@@ -1758,6 +1837,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setOutputDataPDF={setOutputDataPDF}
         pressOK={() => setIsPDFSettingsVisible(false)}
       />
+      {conflictState.visible && conflictState.queue.length > 0 && (
+        <ConflictResolverModal
+          visible={conflictState.visible}
+          candidates={conflictState.queue[0].candidates}
+          id={conflictState.queue[0].id}
+          onSelect={handleSelect}
+          onBulkSelect={handleBulkSelect}
+        />
+      )}
     </HomeContext.Provider>
   );
 }

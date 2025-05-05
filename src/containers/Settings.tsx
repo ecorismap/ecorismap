@@ -21,11 +21,12 @@ import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { editSettingsAction } from '../modules/settings';
 import { GpsAccuracyType } from '../types';
+import { selectNonDeletedDataSet } from '../modules/selectors';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const dispatch = useDispatch();
   const layers = useSelector((state: RootState) => state.layers);
-  const dataSet = useSelector((state: RootState) => state.dataSet);
+  const dataSet = useSelector(selectNonDeletedDataSet);
   const maps = useSelector((state: RootState) => state.tileMaps);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();

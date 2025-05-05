@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import * as FileSystem from 'expo-file-system';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -30,8 +30,9 @@ export type UseMapsReturnType = {
   editedMap: TileMapType;
   isOffline: boolean;
   isMapEditorOpen: boolean;
-  changeVisible: (visible: boolean, index: number) => void;
-  changeMapOrder: (index: number) => void;
+  filterdMaps: TileMapType[];
+  changeVisible: (visible: boolean, tileMap: TileMapType) => void;
+  changeMapOrder: (tileMap: TileMapType, direction: 'up' | 'down') => void;
   toggleOnline: () => void;
   deleteMap: (deletedTileMap: TileMapType) => Promise<{
     isOK: boolean;
@@ -85,11 +86,13 @@ export type UseMapsReturnType = {
   clearTileCache: () => Promise<void>;
   updatePmtilesURL: () => Promise<void>;
 
-  changeExpand: (expanded: boolean, index: number) => void;
+  changeExpand: (expanded: boolean, tileMap: TileMapType) => void;
   getPmtilesBoundary: (url: string) => Promise<{
     header: pmtiles.Header | undefined;
     boundary: boundaryType | undefined;
   }>;
+  updateMapOrder: (data: TileMapType[], from: number, to: number) => void;
+  onDragBegin: (tileMap: TileMapType) => void;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -102,6 +105,11 @@ export const useMaps = (): UseMapsReturnType => {
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
   const [progress, setProgress] = useState('10');
   const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
+
+  const filterdMaps = useMemo(
+    () => maps.filter((map) => map.isGroup || (map.groupId && map.expanded) || !map.groupId),
+    [maps]
+  );
 
   const fetchMapList = useCallback(
     async (signal: AbortSignal) => {
@@ -169,14 +177,15 @@ export const useMaps = (): UseMapsReturnType => {
   }, [dispatch]);
 
   const changeVisible = useCallback(
-    (visible: boolean, index: number) => {
+    (visible: boolean, tileMap: TileMapType) => {
       const newTileMaps = cloneDeep(maps);
+      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
       newTileMaps[index].visible = visible;
 
       const groupTileMapId = maps[index].id;
-      newTileMaps.forEach((tileMap) => {
-        if (tileMap.groupId === groupTileMapId) {
-          tileMap.visible = visible;
+      newTileMaps.forEach((item) => {
+        if (item.groupId === groupTileMapId) {
+          item.visible = visible;
         }
       });
 
@@ -201,71 +210,241 @@ export const useMaps = (): UseMapsReturnType => {
   );
 
   const changeExpand = useCallback(
-    (expanded: boolean, index: number) => {
-      const groupTileMapId = maps[index].id;
-      const newTileMaps = maps.map((tileMap) => {
-        if (tileMap.groupId === groupTileMapId || tileMap.id === groupTileMapId) {
-          return { ...tileMap, expanded };
-        }
-        return tileMap;
-      });
+    (expanded: boolean, tileMap: TileMapType) => {
+      const newTileMaps = cloneDeep(maps);
+      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
+      newTileMaps[index].expanded = expanded;
+      if (newTileMaps[index].isGroup) {
+        newTileMaps.forEach((item) => {
+          if (item.groupId === newTileMaps[index].id) {
+            item.expanded = expanded;
+          }
+        });
+      }
       dispatch(setTileMapsAction(newTileMaps));
     },
     [dispatch, maps]
   );
 
   const changeMapOrder = useCallback(
-    (index: number) => {
-      if (index === 0) return;
+    (tileMap: TileMapType, direction: 'up' | 'down') => {
       const newTileMaps = cloneDeep(maps);
+      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
 
-      const currentTileMap = newTileMaps[index];
-      const previousTileMap = newTileMaps[index - 1];
-      if (currentTileMap.isGroup) {
-        // 親レイヤーを移動するとき、その中の子レイヤーも一緒に移動する
-        const childTileMaps = newTileMaps.filter((tileMap) => tileMap.groupId === currentTileMap.id);
-        const childTileMapCount = childTileMaps.length;
-        if (previousTileMap.groupId === undefined) {
-          // 上のレイヤーがグループに入っていない場合
-          newTileMaps.splice(index, 1 + childTileMapCount);
-          newTileMaps.splice(index - 1, 0, currentTileMap, ...childTileMaps);
-        } else {
-          // 上のレイヤーがグループに入っている場合
-          const groupParentIndex = newTileMaps.findIndex((tileMap) => tileMap.id === previousTileMap.groupId);
-          if (groupParentIndex !== -1) {
+      if (direction === 'up') {
+        if (index === 0) return;
+        const currentTileMap = newTileMaps[index];
+        const previousTileMap = newTileMaps[index - 1];
+        if (currentTileMap.isGroup) {
+          const childTileMaps = newTileMaps.filter((item) => item.groupId === currentTileMap.id);
+          const childTileMapCount = childTileMaps.length;
+          if (previousTileMap.groupId === undefined) {
             newTileMaps.splice(index, 1 + childTileMapCount);
-            newTileMaps.splice(groupParentIndex, 0, currentTileMap, ...childTileMaps);
+            newTileMaps.splice(index - 1, 0, currentTileMap, ...childTileMaps);
+          } else {
+            const groupParentIndex = newTileMaps.findIndex((item) => item.id === previousTileMap.groupId);
+            if (groupParentIndex !== -1) {
+              newTileMaps.splice(index, 1 + childTileMapCount);
+              newTileMaps.splice(groupParentIndex, 0, currentTileMap, ...childTileMaps);
+            }
+          }
+          dispatch(setTileMapsAction(newTileMaps));
+          return;
+        } else {
+          if (previousTileMap.isGroup && currentTileMap.groupId !== previousTileMap.id) {
+            currentTileMap.groupId = previousTileMap.id;
+            currentTileMap.expanded = previousTileMap.expanded;
+            dispatch(setTileMapsAction(newTileMaps));
+            return;
+          } else if (previousTileMap.groupId && currentTileMap.groupId !== previousTileMap.groupId) {
+            currentTileMap.groupId = previousTileMap.groupId;
+            currentTileMap.expanded = previousTileMap.expanded;
+            dispatch(setTileMapsAction(newTileMaps));
+            return;
+          } else if (previousTileMap.isGroup && currentTileMap.groupId) {
+            const groupParentIndex = newTileMaps.findIndex((item) => item.id === currentTileMap.groupId);
+            if (groupParentIndex !== -1) {
+              currentTileMap.groupId = undefined;
+              newTileMaps.splice(index, 1);
+              newTileMaps.splice(groupParentIndex, 0, currentTileMap);
+              dispatch(setTileMapsAction(newTileMaps));
+              return;
+            }
           }
         }
+        [newTileMaps[index], newTileMaps[index - 1]] = [newTileMaps[index - 1], newTileMaps[index]];
         dispatch(setTileMapsAction(newTileMaps));
-        return;
-      } else {
-        if (previousTileMap.isGroup && currentTileMap.groupId !== previousTileMap.id) {
-          currentTileMap.groupId = previousTileMap.id;
-          currentTileMap.expanded = previousTileMap.expanded;
+      } else if (direction === 'down') {
+        const currentTileMap = newTileMaps[index];
+        if (currentTileMap.isGroup) {
+          const childTileMaps = newTileMaps.filter((item) => item.groupId === currentTileMap.id);
+          const childTileMapCount = childTileMaps.length;
+          const groupEndIndex = index + childTileMapCount;
+          if (groupEndIndex >= newTileMaps.length - 3) {
+            return;
+          }
+          const groupToMove = newTileMaps.slice(index, groupEndIndex + 1);
+          const nextItemIndex = groupEndIndex + 1;
+          const nextItem = newTileMaps[nextItemIndex];
+          let endOfNextBlockIndex;
+          if (nextItem.isGroup) {
+            const nextGroupChildren = newTileMaps.filter((item) => item.groupId === nextItem.id);
+            endOfNextBlockIndex = nextItemIndex + nextGroupChildren.length;
+          } else {
+            endOfNextBlockIndex = nextItemIndex;
+          }
+          let insertionIndex = endOfNextBlockIndex + 1;
+          newTileMaps.splice(index, 1 + childTileMapCount);
+          if (index < insertionIndex) {
+            insertionIndex -= 1 + childTileMapCount;
+          }
+          newTileMaps.splice(insertionIndex, 0, ...groupToMove);
           dispatch(setTileMapsAction(newTileMaps));
           return;
-        } else if (previousTileMap.groupId && currentTileMap.groupId !== previousTileMap.groupId) {
-          currentTileMap.groupId = previousTileMap.groupId;
-          currentTileMap.expanded = previousTileMap.expanded;
-          dispatch(setTileMapsAction(newTileMaps));
-          return;
-        } else if (previousTileMap.isGroup && currentTileMap.groupId) {
-          const groupParentIndex = newTileMaps.findIndex((tileMap) => tileMap.id === currentTileMap.groupId);
-          if (groupParentIndex !== -1) {
-            currentTileMap.groupId = undefined;
+        } else {
+          const nextTileMap = newTileMaps[index + 1];
+          if (nextTileMap.isGroup && currentTileMap.groupId !== nextTileMap.id) {
+            currentTileMap.groupId = nextTileMap.id;
+            currentTileMap.expanded = nextTileMap.expanded;
             newTileMaps.splice(index, 1);
-            newTileMaps.splice(groupParentIndex, 0, currentTileMap);
+            newTileMaps.splice(index + 1, 0, currentTileMap);
             dispatch(setTileMapsAction(newTileMaps));
+            return;
+          } else if (nextTileMap.groupId && currentTileMap.groupId !== nextTileMap.groupId) {
+            currentTileMap.groupId = nextTileMap.groupId;
+            const parent = newTileMaps.find((l) => l.id === nextTileMap.groupId);
+            if (parent) currentTileMap.expanded = parent.expanded;
+            newTileMaps.splice(index, 1);
+            newTileMaps.splice(index, 0, currentTileMap);
+            dispatch(setTileMapsAction(newTileMaps));
+            return;
+          } else if (currentTileMap.groupId && (!nextTileMap || nextTileMap.groupId !== currentTileMap.groupId)) {
+            const currentGroupId = currentTileMap.groupId;
+            currentTileMap.groupId = undefined;
+            let groupLastIndex = -1;
+            for (let i = newTileMaps.length - 1; i >= 0; i--) {
+              if (i !== index && newTileMaps[i].groupId === currentGroupId) {
+                groupLastIndex = i;
+                break;
+              }
+            }
+            if (groupLastIndex !== -1) {
+              const tileMapToMove = newTileMaps.splice(index, 1)[0];
+              const insertionIndex = index < groupLastIndex ? groupLastIndex : groupLastIndex + 1;
+              newTileMaps.splice(insertionIndex, 0, tileMapToMove);
+              dispatch(setTileMapsAction(newTileMaps));
+              return;
+            }
+          } else if (index === newTileMaps.length - 3) {
             return;
           }
         }
+        const tileMapToMove = newTileMaps[index];
+        const nextTileMap = newTileMaps[index + 1];
+        [newTileMaps[index], newTileMaps[index + 1]] = [nextTileMap, tileMapToMove];
+        dispatch(setTileMapsAction(newTileMaps));
       }
-
-      [newTileMaps[index], newTileMaps[index - 1]] = [newTileMaps[index - 1], newTileMaps[index]];
-      dispatch(setTileMapsAction(newTileMaps));
     },
     [dispatch, maps]
+  );
+
+  const updateMapOrder = useCallback(
+    (data: TileMapType[], from: number, to: number) => {
+      if (from === to) return;
+      if (to > data.length - 2) return;
+      if (from > data.length - 3) return;
+
+      const draggedTileMap = data[from];
+      const targetTileMap = to > 0 ? data[to - 1] : undefined;
+      const fromIndex = maps.findIndex(({ id }) => id === data[from].id);
+      const toIndex = maps.findIndex(({ id }) => id === data[to].id);
+      const newMaps = cloneDeep(maps);
+
+      //ドラッグするものがグループ親の場合
+      if (draggedTileMap.isGroup) {
+        //グループの中には移動できない
+        if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
+          return;
+        } else {
+          //グループごと移動する
+          const groupTileMaps = newMaps.filter(
+            (tileMap) => tileMap.id === draggedTileMap.id || tileMap.groupId === draggedTileMap.id
+          );
+          newMaps.splice(fromIndex, groupTileMaps.length);
+          const fixedToIndex = toIndex > fromIndex ? toIndex - groupTileMaps.length : toIndex;
+          // groupTileMapsはすでにdeep cloneされているのでそのまま使う
+          newMaps.splice(fixedToIndex, 0, ...groupTileMaps);
+        }
+        //ドラッグするものがグループの子要素の場合
+      } else if (draggedTileMap.groupId) {
+        // 子要素の場合は新しいオブジェクトとして挿入
+        newMaps.splice(fromIndex, 1);
+        const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+        newMaps.splice(fixedToIndex, 0, draggedTileMap);
+        //グループの中で移動する場合
+        if (
+          targetTileMap &&
+          targetTileMap.expanded &&
+          ((targetTileMap.isGroup && targetTileMap.id === draggedTileMap.groupId) ||
+            (targetTileMap.groupId && targetTileMap.groupId === draggedTileMap.groupId))
+        ) {
+          // 何もしない
+        } else if (
+          targetTileMap &&
+          targetTileMap.expanded &&
+          ((targetTileMap.isGroup && targetTileMap.id !== draggedTileMap.groupId) ||
+            (targetTileMap.groupId && targetTileMap.groupId !== draggedTileMap.groupId))
+        ) {
+          // 別のグループに移動
+          newMaps[fixedToIndex] = {
+            ...newMaps[fixedToIndex],
+            groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
+            expanded: targetTileMap.expanded,
+          };
+        } else {
+          // グループの外に移動
+          newMaps[fixedToIndex] = {
+            ...newMaps[fixedToIndex],
+            groupId: undefined,
+          };
+        }
+      } else {
+        //グループに属していない場合
+        newMaps.splice(fromIndex, 1);
+        const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+        newMaps.splice(fixedToIndex, 0, draggedTileMap);
+        if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
+          newMaps[fixedToIndex] = {
+            ...newMaps[fixedToIndex],
+            groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
+            expanded: targetTileMap.expanded,
+          };
+        }
+        //グループに入らない場合は何もしない
+      }
+
+      dispatch(setTileMapsAction(newMaps));
+    },
+    [dispatch, maps]
+  );
+
+  const onDragBegin = useCallback(
+    (tileMap: TileMapType) => {
+      // ドラッグ開始時の処理
+      //ドラッグしたものがグループの場合、グループの展開を閉じる
+      const index = maps.findIndex(({ id }) => id === tileMap.id);
+      const item = maps[index];
+      if (item.isGroup) {
+        const newMaps = maps.map((map) => {
+          if (map.groupId === item.id || map.id === item.id) {
+            return { ...map, expanded: false };
+          }
+          return map;
+        });
+        dispatch(setTileMapsAction(newMaps));
+      }
+    },
+    [maps, dispatch]
   );
 
   const toggleOnline = useCallback(() => {
@@ -669,6 +848,7 @@ export const useMaps = (): UseMapsReturnType => {
     editedMap,
     isOffline,
     isMapEditorOpen,
+    filterdMaps,
     changeVisible,
     changeMapOrder,
     toggleOnline,
@@ -686,5 +866,7 @@ export const useMaps = (): UseMapsReturnType => {
     updatePmtilesURL,
     changeExpand,
     getPmtilesBoundary,
+    updateMapOrder,
+    onDragBegin,
   } as const;
 };

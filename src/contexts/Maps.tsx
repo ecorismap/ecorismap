@@ -9,8 +9,8 @@ interface MapsContextType {
   maps: TileMapType[];
   editedMap: TileMapType;
   isMapEditorOpen: boolean;
-  changeVisible: (visible: boolean, index: number) => void;
-  changeMapOrder: (index: number) => void;
+  filterdMaps: TileMapType[];
+  changeVisible: (visible: boolean, tileMap: TileMapType) => void;
   pressToggleOnline: () => void;
   pressDownloadMap: (item: TileMapType) => void;
   pressDeleteMap: (tileMap: TileMapType) => void;
@@ -22,7 +22,10 @@ interface MapsContextType {
   pressExportMaps: () => Promise<void>;
   jumpToBoundary: (tileMap: TileMapType) => void;
   pressImportStyle: (tileMap: TileMapType) => Promise<void>;
-  changeExpand: (expanded: boolean, index: number) => void;
+  changeExpand: (expanded: boolean, tileMap: TileMapType) => void;
+  pressMapOrder: (tileMap: TileMapType, direction: 'up' | 'down') => void;
+  updateMapOrder: (data: TileMapType[], from: number, to: number) => void;
+  onDragBegin: (tileMap: TileMapType) => void;
 }
 
 export const MapsContext = createContext({} as MapsContextType);

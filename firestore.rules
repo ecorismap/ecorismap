@@ -37,7 +37,12 @@ service cloud.firestore {
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE"))
           && request.auth.uid == request.resource.data.userId 
-          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"]);
+          && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"])
+          || (
+              request.method == "update"
+              && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+              && verifyUpdateFields(["permission"])
+            )
           
           allow delete: if isSignedIn() 
           && (request.auth.uid == resource.data.userId

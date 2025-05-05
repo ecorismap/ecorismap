@@ -1,6 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { ulid } from 'ulid';
 import { DataType, RecordType } from '../types';
+import { produce } from 'immer'; // Immerをインポート
 
 export const DEFAULT_DATA: RecordType = {
   id: '',
@@ -17,6 +18,15 @@ export const dataSetInitialState: DataType[] = [
   { layerId: ulid(), userId: undefined, data: [] },
   { layerId: ulid(), userId: undefined, data: [] },
 ];
+
+// 新しいAction Payloadの型定義
+interface SetAllRecordsVisibilityPayload {
+  layerId: string;
+  visible: boolean;
+}
+
+// 新しいActionの定義
+export const setAllRecordsVisibilityAction = createAction<SetAllRecordsVisibilityPayload>('dataSet/setAllVisibility');
 
 const reducers = {
   setDataSetAction: (_state: DataType[], action: PayloadAction<DataType[]>) => {
@@ -39,7 +49,7 @@ const reducers = {
   setRecordSetAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data } = action.payload;
     const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
+    // console.assert(dataIndex !== -1, { dataIndex, error: 'SET_RECORDSET' });
     if (dataIndex !== -1) {
       state[dataIndex].data = data;
     }
@@ -56,21 +66,50 @@ const reducers = {
   updateRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
     const { layerId, userId, data } = action.payload;
     const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
-    if (dataIndex !== -1) {
-      state[dataIndex].data = state[dataIndex].data.map((d) => {
+    //console.assert(dataIndex !== -1, { dataIndex, error: 'UPDATE_RECORDS' });
+    if (dataIndex === -1) {
+      // レイヤーが存在しない場合は新規追加
+      state.push(action.payload);
+    } else {
+      // 既存レコードは更新、存在しないレコードは追加
+      const existingData = state[dataIndex].data;
+      const updatedData = existingData.map((d) => {
         const updateData = data.find((v) => v.id === d.id);
         return updateData ? updateData : d;
       });
+      const newRecords = data.filter((v) => !existingData.find((d) => d.id === v.id));
+      state[dataIndex].data = [...updatedData, ...newRecords];
     }
   },
   deleteRecordsAction: (state: DataType[], action: PayloadAction<DataType>) => {
-    const { layerId, userId, data } = action.payload;
-    const dataIndex = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
-    console.assert(dataIndex !== -1, { dataIndex, error: 'DELETE_RECORDS' });
-    if (dataIndex !== -1) {
-      state[dataIndex].data = state[dataIndex].data.filter((d) => !data.find((v) => v.id === d.id));
-    }
+    const { layerId, userId, data: toDelete } = action.payload;
+    const idx = state.findIndex((d) => d.layerId === layerId && d.userId === userId);
+    if (idx === -1) return;
+
+    const existing = state[idx].data as RecordType[];
+
+    // flatMap で「残すもの」「置き換えるもの」「除外するもの」を一度に処理
+    state[idx].data = existing.flatMap((record) => {
+      const isTarget = toDelete.some((d) => d.id === record.id);
+      if (!isTarget) {
+        return record;
+      }
+
+      if (record.uploaded) {
+        // すでにサーバー同期済み → 論理削除フラグを立てて、coords を undefined にする。サイズを小さくするため。
+        return {
+          ...record,
+          //field: {},
+          //coords: undefined,
+          userId: userId,
+          deleted: true,
+          updatedAt: Date.now(),
+        };
+      } else {
+        // 未同期 → 物理削除
+        return [];
+      }
+    });
   },
 };
 
@@ -78,6 +117,25 @@ const dataSetSlice = createSlice({
   name: 'dataSet',
   initialState: dataSetInitialState,
   reducers,
+  extraReducers: (builder) => {
+    // setAllRecordsVisibilityActionのハンドラを追加
+    builder.addCase(setAllRecordsVisibilityAction, (state, action) => {
+      // Immerを使って状態を効率的に更新
+      return produce(state, (draft) => {
+        const { layerId, visible } = action.payload;
+        draft.forEach((dataSetEntry) => {
+          if (dataSetEntry.layerId === layerId) {
+            dataSetEntry.data.forEach((record) => {
+              // visibleが異なる場合のみ更新（不要な更新を避ける）
+              if (record.visible !== visible) {
+                record.visible = visible;
+              }
+            });
+          }
+        });
+      });
+    });
+  },
 });
 
 export const {
