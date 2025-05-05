@@ -266,7 +266,9 @@
     "notSupported": "Microphone cannot be used in web version",
     "none": "(none)",
     "selectionType": "Selection Type",
-    "userName": "User"
+    "userName": "User",
+    "move": "U/D",
+    "download": "Get"
   },
   "firebase": {
     "message": {

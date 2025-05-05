@@ -35,6 +35,8 @@ export default function MapContainer({ navigation }: Props_Maps) {
     importStyleFile,
     changeExpand,
     getPmtilesBoundary,
+    updateMapOrder,
+    onDragBegin,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const { runTutrial } = useTutrial();
@@ -235,6 +237,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
     [getPmtilesBoundary, navigation]
   );
 
+  const pressMapOrder = useCallback(
+    (tileMap: TileMapType, direction: 'up' | 'down') => {
+      changeMapOrder(tileMap, direction);
+    },
+    [changeMapOrder]
+  );
+
   return (
     <MapsContext.Provider
       value={{
@@ -245,7 +254,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
         editedMap,
         isMapEditorOpen,
         changeVisible,
-        changeMapOrder,
         pressToggleOnline,
         pressDownloadMap,
         pressDeleteMap,
@@ -258,6 +266,9 @@ export default function MapContainer({ navigation }: Props_Maps) {
         jumpToBoundary,
         pressImportStyle,
         changeExpand,
+        pressMapOrder,
+        updateMapOrder,
+        onDragBegin,
       }}
     >
       <Maps />

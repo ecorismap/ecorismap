@@ -14610,7 +14610,7 @@ __metadata:
     react-native: 0.74.3
     react-native-date-picker: ^4.2.13
     react-native-device-info: ^11.1.0
-    react-native-draggable-flatlist: ^4.0.1
+    react-native-draggable-flatlist: ^4.0.2
     react-native-fs: ^2.20.0
     react-native-gdalwarp: "link:./modules/react-native-gdalwarp"
     react-native-gesture-handler: ~2.16.1
@@ -24718,16 +24718,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-draggable-flatlist@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "react-native-draggable-flatlist@npm:4.0.1"
+"react-native-draggable-flatlist@npm:^4.0.2":
+  version: 4.0.2
+  resolution: "react-native-draggable-flatlist@npm:4.0.2"
   dependencies:
     "@babel/preset-typescript": ^7.17.12
   peerDependencies:
     react-native: ">=0.64.0"
     react-native-gesture-handler: ">=2.0.0"
     react-native-reanimated: ">=2.8.0"
-  checksum: f904e3f30737a883b683e12e119856188e81d7b6cd8811e38124353630391326385bec040a3c200a06535bcd4bbbe973e504c2e0546f7aa4cc96aa573787813d
+  checksum: ec00d3feb2f2a7b8b591990b4b679cb0f33e9a1f59f992d278db701dbce982f6b1d4e1145671b5a95eeae7ce70cb1a1c5961dff44711d46354ab2fba4f7baa98
   languageName: node
   linkType: hard
 

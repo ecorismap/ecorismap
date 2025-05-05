@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { LayersTable } from '../organisms/LayersTable';
 import { LayerButtons } from '../organisms/LayerButtons';
 
@@ -21,7 +21,8 @@ export default function LayerScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+      {/* Webでtrueにするとドラッグの挙動がおかしくなる。webは幅があるのでひとまずOK。タイトルあhスクロールしてしまう。*/}
+      <ScrollView horizontal={Platform.OS === 'web' ? false : true} contentContainerStyle={{ flexGrow: 1 }}>
         <LayersTable />
       </ScrollView>
       <LayerButtons />

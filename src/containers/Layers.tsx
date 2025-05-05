@@ -16,21 +16,29 @@ import { getExt } from '../utils/General';
 
 export default function LayerContainer({ navigation }: Props_Layers) {
   //console.log('render LayerContainer');
-  const { layers, changeExpand, changeLabel, changeVisible, changeCustomLabel, changeActiveLayer, changeLayerOrder } =
-    useLayers();
+  const {
+    layers,
+    filterdLayers,
+    changeExpand,
+    changeLabel,
+    changeVisible,
+    changeCustomLabel,
+    changeActiveLayer,
+    changeLayerOrder,
+    updateLayersOrder,
+    onDragBegin,
+  } = useLayers();
   const { isRunningProject } = usePermission();
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
 
   const pressLayerOrder = useCallback(
-    (index: number) => {
-      if (isRunningProject) {
-        AlertAsync(t('hooks.message.cannotInRunningProject'));
-        return;
-      }
-      changeLayerOrder(index);
+    (layer: LayerType, direction: 'up' | 'down') => {
+      const index = layers.findIndex((l) => l.id === layer.id);
+      if (index === -1) return;
+      changeLayerOrder(index, direction);
     },
-    [changeLayerOrder, isRunningProject]
+    [changeLayerOrder, layers]
   );
 
   const pressImportLayerAndData = useCallback(async () => {
@@ -116,8 +124,11 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     <LayersContext.Provider
       value={{
         layers,
+        filterdLayers,
         changeExpand,
-        changeVisible,
+        changeVisible: (visible, layer) => {
+          changeVisible(visible, layer);
+        },
         changeLabel,
         changeCustomLabel,
         changeActiveLayer,
@@ -127,6 +138,8 @@ export default function LayerContainer({ navigation }: Props_Layers) {
         gotoData,
         gotoLayerEdit,
         gotoColorStyle,
+        updateLayersOrder,
+        onDragBegin,
       }}
     >
       <Layers />

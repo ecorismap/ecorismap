@@ -37,7 +37,7 @@ interface DataEditContextType {
     value: string
   ) => void;
   pressEditPosition: () => void;
-  gotoHomeAndJump: () => void;
+  pressJumpToData: () => void;
   gotoGoogleMaps: () => void;
   gotoBack: () => void;
   gotoReferenceData: (referenceData: RecordType, referenceLayer: LayerType) => void;

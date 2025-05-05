@@ -1,53 +1,51 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Platform } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { COLOR } from '../../constants/AppConstants';
 import { Picker, PointView, LineView, PolygonView, RectButton2, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayersContext } from '../../contexts/Layers';
-import { FlatList } from 'react-native-gesture-handler';
 import { LayerType } from '../../types';
 
 export const LayersTable = React.memo(() => {
   const {
-    layers,
+    filterdLayers,
     changeExpand,
     changeVisible,
     changeLabel,
     changeCustomLabel,
     changeActiveLayer,
-    pressLayerOrder,
+    updateLayersOrder,
     gotoData,
     gotoLayerEdit,
     gotoColorStyle,
+    pressLayerOrder,
+    onDragBegin,
   } = useContext(LayersContext);
 
-  const hasCustomLabel = layers.some((layer) => layer.label === t('common.custom'));
+  const hasCustomLabel = filterdLayers.some((layer) => layer.label === t('common.custom'));
+  const [customLabel, setCustomLabel] = useState<{ [key: string]: string }>({});
 
-  const [customLabel, setCustomLabel] = useState({} as { [key: string]: string });
-
-  const handleCustomLabel = useCallback(
-    (id: string, value: string) => {
-      const newCustomLabel = { ...customLabel, [id]: value };
-      setCustomLabel(newCustomLabel);
-    },
-    [customLabel]
-  );
+  const handleCustomLabel = useCallback((id: string, value: string) => {
+    setCustomLabel((prev) => ({ ...prev, [id]: value }));
+  }, []);
 
   useEffect(() => {
-    setCustomLabel(
-      layers.reduce((obj, layer) => {
-        return { ...obj, [layer.id]: layer.customLabel };
-      }, {})
-    );
-  }, [layers]);
+    setCustomLabel(filterdLayers.reduce((obj, layer) => ({ ...obj, [layer.id]: layer.customLabel }), {}));
+  }, [filterdLayers]);
 
   const renderItem = useCallback(
-    ({ item, index }: { item: LayerType; index: number }) => {
-      // console.log(item.id, item.name, item.groupId, item.expanded);
-      if (item.type !== 'LAYERGROUP' && item.groupId && !item.expanded) return null;
-      const backgroundColor = item.type === 'LAYERGROUP' ? COLOR.KHAKI : item.groupId ? COLOR.LIGHTKHAKI : COLOR.MAIN;
-      //ラベルの候補は、空白を追加し、Photoを抜く
+    ({ item, drag, isActive }: RenderItemParams<LayerType>) => {
+      const backgroundColor = isActive
+        ? COLOR.WHITE
+        : item.type === 'LAYERGROUP'
+        ? COLOR.KHAKI
+        : item.groupId
+        ? COLOR.LIGHTKHAKI
+        : COLOR.MAIN;
+
+      // ラベル候補作成
       const labelNames = [
         ...item.field.reduce((a, b) => (b.format !== 'PHOTO' ? [...a, b.name] : a), [t('common.none')]),
         t('common.custom'),
@@ -58,128 +56,70 @@ export const LayersTable = React.memo(() => {
       ];
 
       return (
-        <View
-          style={{
-            flex: 1,
-            height: 60,
-            flexDirection: 'row',
-          }}
-        >
-          <View
-            style={[
-              styles.td,
-              {
-                flex: 1,
-                width: 60,
-                backgroundColor: backgroundColor,
-                borderRightWidth: item.groupId ? 1 : 0,
-                borderRightColor: COLOR.GRAY1,
-              },
-            ]}
-          >
-            {item.type === 'LAYERGROUP' && (
+        <View style={[styles.row, { backgroundColor: backgroundColor }]}>
+          <View style={[styles.td, { flex: 2, width: 100 }]}>
+            {item.type === 'LAYERGROUP' ? (
               <RectButton2
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
                 onPress={() => changeExpand(item)}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor }}
+                style={[styles.iconBtn, { backgroundColor }]}
               />
-            )}
-            {item.type !== 'LAYERGROUP' && (
+            ) : (
               <RectButton2
                 name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                 onPress={() => changeActiveLayer(item)}
                 color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: backgroundColor,
-                }}
+                style={[styles.iconBtn, { backgroundColor }]}
               />
             )}
           </View>
-          <View
-            style={[
-              styles.td,
-              {
-                flex: 2,
-                width: 100,
-                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
-                backgroundColor,
-              },
-            ]}
-          >
+
+          <View style={[styles.td, { flex: 2, width: 100 }]}>
             <RectButton2
               name={item.visible ? 'eye' : 'eye-off-outline'}
-              onPress={() => changeVisible(!item.visible, index)}
+              onPress={() => changeVisible(!item.visible, item)}
               color={COLOR.GRAY4}
-              style={{
-                backgroundColor,
-                padding: 0,
-              }}
+              style={[styles.iconBtn, { backgroundColor }]}
             />
-
             {item.type === 'POINT' && (
-              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                <PointView
-                  style={{ margin: 2, transform: [{ scale: 0.6 }] }}
-                  color={item.colorStyle.color}
-                  size={20}
-                  borderColor={COLOR.WHITE}
-                />
-              </TouchableOpacity>
+              <Pressable onPress={() => gotoColorStyle(item)}>
+                <PointView style={styles.symbol} color={item.colorStyle.color} size={20} borderColor={COLOR.WHITE} />
+              </Pressable>
             )}
             {item.type === 'LINE' && (
-              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                <LineView
-                  style={{
-                    marginLeft: 3,
-                    marginRight: 3,
-                    marginTop: 10,
-                    marginBottom: 10,
-                    transform: [{ scale: 0.6 }],
-                  }}
-                  color={item.colorStyle.color}
-                />
-              </TouchableOpacity>
+              <Pressable onPress={() => gotoColorStyle(item)}>
+                <LineView style={styles.symbol} color={item.colorStyle.color} />
+              </Pressable>
             )}
             {item.type === 'POLYGON' && (
-              <TouchableOpacity onPress={() => gotoColorStyle(item)}>
-                <PolygonView style={{ margin: 3, transform: [{ scale: 0.6 }] }} color={item.colorStyle.color} />
-              </TouchableOpacity>
+              <Pressable onPress={() => gotoColorStyle(item)}>
+                <PolygonView style={styles.symbol} color={item.colorStyle.color} />
+              </Pressable>
             )}
             {(item.type === 'NONE' || item.type === 'LAYERGROUP') && (
               <LineView style={{ marginLeft: 10, transform: [{ scale: 0.0 }] }} color={COLOR.MAIN} />
             )}
           </View>
-          <TouchableOpacity
-            style={[
-              styles.td,
-              { flex: 5, width: 150, borderRightWidth: 1, borderRightColor: COLOR.GRAY1, backgroundColor },
-            ]}
-            onPress={() => (item.type === 'LAYERGROUP' ? null : gotoData(item))}
+
+          <Pressable
+            style={[styles.td, { flex: 5, width: 150 }]}
+            onLongPress={drag}
+            disabled={isActive}
+            onPress={() => item.type !== 'LAYERGROUP' && gotoData(item)}
           >
-            <Text style={{ flex: 4, padding: 5, textAlign: 'center' }} adjustsFontSizeToFit={true} numberOfLines={2}>
+            <Text style={styles.nameText} numberOfLines={2} adjustsFontSizeToFit>
               {item.name}
             </Text>
-            {item.type === 'LAYERGROUP' ? (
-              <View style={[styles.icon, { marginHorizontal: 2 }]} />
-            ) : (
-              <MaterialCommunityIcons
-                color={COLOR.GRAY3}
-                style={[styles.icon, { marginHorizontal: 2, backgroundColor }]}
-                size={16}
-                name={'chevron-right'}
-                iconStyle={{ marginRight: 0 }}
-              />
+            {item.type !== 'LAYERGROUP' && (
+              <MaterialCommunityIcons name="chevron-right" size={16} color={COLOR.GRAY3} style={styles.chevron} />
             )}
-          </TouchableOpacity>
+          </Pressable>
 
-          <View style={[styles.td, { flex: 5, width: 160, backgroundColor }]}>
+          <View style={[styles.td, { flex: 5, width: 160 }]}>
             {item.type !== 'LAYERGROUP' && (
               <Picker
                 selectedValue={item.label}
-                onValueChange={(itemValue) => changeLabel(item, itemValue as string)}
+                onValueChange={(val) => changeLabel(item, val as string)}
                 itemLabelArray={labelNames}
                 itemValueArray={labelValues}
                 maxIndex={labelValues.length - 1}
@@ -189,87 +129,75 @@ export const LayersTable = React.memo(() => {
           </View>
 
           {hasCustomLabel && (
-            <View style={[styles.td, { flex: 5, width: 160, backgroundColor }]}>
+            <View style={[styles.td, { flex: 5, width: 160 }]}>
               {item.label === t('common.custom') && (
                 <TextInput
                   placeholder={'field1|field2'}
                   placeholderTextColor={COLOR.GRAY3}
                   value={customLabel[item.id]}
-                  onChangeText={(value: string) => handleCustomLabel(item.id, value)}
+                  onChangeText={(v: string) => handleCustomLabel(item.id, v)}
                   onBlur={() => changeCustomLabel(item, customLabel[item.id])}
                   style={styles.input}
-                  editable={true}
                 />
               )}
             </View>
           )}
-          <View
-            style={[
-              styles.td,
-              {
-                flex: 3,
-                width: 60,
-                borderRightColor: item.type === 'LAYERGROUP' ? COLOR.GRAY1 : COLOR.MAIN,
-                backgroundColor,
-              },
-            ]}
-          >
-            <RectButton2 name="table-cog" style={{ backgroundColor }} onPress={() => gotoLayerEdit(item)} />
+
+          <View style={[styles.td, { flex: 4, width: 110 }]}>
+            <RectButton2 name="table-cog" onPress={() => gotoLayerEdit(item)} style={{ backgroundColor }} />
           </View>
-          <View
-            style={[
-              styles.td,
-              {
-                flex: 1,
-                width: 50,
-                backgroundColor,
-              },
-            ]}
-          >
+
+          {/* 上下移動ボタン */}
+          <View style={[styles.td, { flex: 3, width: 80, flexDirection: 'row', justifyContent: 'center' }]}>
+            {/* 上へ */}
             <RectButton2
-              name="chevron-double-up"
-              style={{ backgroundColor }}
-              onPress={() => pressLayerOrder(index)}
+              name="chevron-up"
+              onPress={() => pressLayerOrder(item, 'up')}
               color={COLOR.GRAY2}
+              style={[styles.iconBtn, { backgroundColor }]}
+            />
+            {/* 下へ */}
+            <RectButton2
+              name="chevron-down"
+              onPress={() => pressLayerOrder(item, 'down')}
+              color={COLOR.GRAY2}
+              style={[styles.iconBtn, { backgroundColor }]}
             />
           </View>
         </View>
       );
     },
     [
-      changeActiveLayer,
-      changeCustomLabel,
       changeExpand,
-      changeLabel,
       changeVisible,
-      customLabel,
+      changeActiveLayer,
       gotoColorStyle,
       gotoData,
       gotoLayerEdit,
+      changeLabel,
+      changeCustomLabel,
+      customLabel,
       handleCustomLabel,
       hasCustomLabel,
       pressLayerOrder,
     ]
   );
+
   const keyExtractor = useCallback((item: LayerType) => item.id, []);
-  //console.log(layers);
+
   return (
-    <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-      {layers.length !== 0 ? (
-        <FlatList
-          stickyHeaderIndices={[0]}
-          initialNumToRender={30}
-          data={layers}
-          keyExtractor={keyExtractor}
-          ListHeaderComponent={<LayersTitle hasCustomLabel={hasCustomLabel} />}
-          renderItem={renderItem}
-          removeClippedSubviews={true}
-          disableVirtualization={true}
-        />
-      ) : (
-        <LayersTitle hasCustomLabel={hasCustomLabel} />
-      )}
-    </View>
+    <DraggableFlatList<LayerType>
+      data={filterdLayers}
+      keyExtractor={keyExtractor}
+      renderItem={renderItem}
+      ListHeaderComponent={<LayersTitle hasCustomLabel={hasCustomLabel} />}
+      stickyHeaderIndices={[0]}
+      initialNumToRender={filterdLayers.length}
+      removeClippedSubviews
+      activationDistance={5}
+      onDragBegin={(index) => onDragBegin(filterdLayers[index])}
+      onDragEnd={({ from, to }) => updateLayersOrder(filterdLayers, from, to > from ? to + 1 : to)}
+    />
   );
 });
 
@@ -277,17 +205,15 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <View style={[styles.th, { flex: 1, width: 60 }]}>
+      <View style={[styles.th, { flex: 2, width: 100 }]}>
         <Text>{`${t('common.edit')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 2, width: 100 }]}>
         <Text>{`${t('common.visible')}`}</Text>
       </View>
-
       <View style={[styles.th, { flex: 5, width: 150 }]}>
         <Text>{`${t('common.layerName')}`}</Text>
       </View>
-
       <View style={[styles.th, { flex: 5, width: 160 }]}>
         <Text>{`${t('common.label')}`}</Text>
       </View>
@@ -296,44 +222,28 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
           <Text>{`${t('common.customLabel')}`}</Text>
         </View>
       )}
-      {Platform.OS === 'web' ? (
-        <>
-          <View style={[styles.th, { flex: 3, width: 80, borderRightColor: COLOR.GRAY1 }]}>
-            <Text>{`${t('common.layerSetting')}`}</Text>
-          </View>
-          <View style={[styles.th, { flex: 1, width: 30 }]} />
-        </>
-      ) : (
-        <View style={[styles.th, { flex: 4, width: 110, borderRightColor: COLOR.GRAY1 }]}>
-          <Text>{`${t('common.layerSetting')}`}</Text>
-        </View>
-      )}
+      <View style={[styles.th, { flex: 4, width: 110 }]}>
+        <Text>{`${t('common.layerSetting')}`}</Text>
+      </View>
+      <View style={[styles.th, { flex: 3, width: 80 }]}>
+        <Text>{`${t('common.move')}`}</Text>
+      </View>
     </View>
   );
 });
+
 const styles = StyleSheet.create({
-  icon: {
-    backgroundColor: COLOR.MAIN,
-    flex: 1,
-    padding: 0,
-  },
-  input: {
-    backgroundColor: COLOR.GRAY0,
-    borderRadius: 5,
-    flex: 1,
-    fontSize: 16,
-    marginVertical: 10,
-    paddingHorizontal: 10,
+  row: {
+    flexDirection: 'row',
+    height: 60,
   },
   td: {
     alignItems: 'center',
-    backgroundColor: COLOR.MAIN,
-    borderBottomColor: COLOR.GRAY2,
     borderBottomWidth: 1,
+    borderBottomColor: COLOR.GRAY2,
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 5,
-    paddingVertical: 0,
   },
   th: {
     alignItems: 'center',
@@ -343,6 +253,31 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     justifyContent: 'center',
     paddingHorizontal: 5,
-    paddingVertical: 0,
+  },
+  iconBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  symbol: {
+    margin: 3,
+    transform: [{ scale: 0.6 }],
+  },
+  nameText: {
+    flex: 4,
+    padding: 5,
+    textAlign: 'center',
+  },
+  chevron: {
+    flex: 1,
+    marginHorizontal: 2,
+  },
+  input: {
+    backgroundColor: COLOR.GRAY0,
+    borderRadius: 5,
+    flex: 1,
+    fontSize: 16,
+    marginVertical: 10,
+    paddingHorizontal: 10,
   },
 });

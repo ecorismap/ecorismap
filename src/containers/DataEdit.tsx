@@ -354,7 +354,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     return jumpRegion;
   };
 
-  const gotoHomeAndJump = useCallback(() => {
+  const pressJumpToData = useCallback(() => {
     const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
     if (jumpRegion === undefined) return;
     navigation.navigate('Home', {
@@ -583,7 +583,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         pressAddReferenceData,
         pressAddReferenceDataByDictinary,
         pressEditPosition,
-        gotoHomeAndJump,
+        pressJumpToData,
         gotoGoogleMaps,
         gotoBack,
         gotoReferenceData,

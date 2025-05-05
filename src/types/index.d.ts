@@ -290,6 +290,10 @@ export interface ProjectType {
   abstract: string;
   storage: { count: number };
   license: License;
+  // Grouping properties
+  isGroup?: boolean;
+  groupId?: string;
+  expanded?: boolean;
 }
 
 export interface ProjectSettingsType {

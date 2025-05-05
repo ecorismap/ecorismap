@@ -83,7 +83,7 @@ describe('gotoGoogleMaps', () => {
     expect(true).toBe(true);
   });
 });
-describe('gotoHomeAndJump', () => {
+describe('pressJumpToData', () => {
   test('', () => {
     expect(true).toBe(true);
   });

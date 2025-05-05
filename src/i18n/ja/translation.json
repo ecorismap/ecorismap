@@ -200,7 +200,9 @@
     "useAdd": "データ追加に使用",
     "notSupported": "web版ではマイクは使用できません",
     "none": "（なし）",
-    "userName": "User"
+    "userName": "User",
+    "move": "上下",
+    "download": "取得"
   },
   "Home": {
     "confirm": {

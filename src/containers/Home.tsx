@@ -1464,9 +1464,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         //データの範囲にジャンプする場合
         changeMapRegion(route.params.jumpTo, true);
         if (isLandscape) {
-          bottomSheetRef.current?.snapToIndex(2);
+          bottomSheetRef.current?.snapToIndex(0);
         } else {
-          bottomSheetRef.current?.snapToIndex(1);
+          bottomSheetRef.current?.snapToIndex(0);
         }
       } else if (route.params?.mode === 'editPosition') {
         if (route.params?.layer === undefined || route.params?.record === undefined) return;
