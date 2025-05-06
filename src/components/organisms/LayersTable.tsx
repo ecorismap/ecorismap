@@ -57,7 +57,7 @@ export const LayersTable = React.memo(() => {
 
       return (
         <View style={[styles.row, { backgroundColor: backgroundColor }]}>
-          <View style={[styles.td, { flex: 2, width: 100 }]}>
+          <View style={[styles.td, { flex: 2, width: 60 }]}>
             {item.type === 'LAYERGROUP' ? (
               <RectButton2
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
@@ -74,7 +74,7 @@ export const LayersTable = React.memo(() => {
             )}
           </View>
 
-          <View style={[styles.td, { flex: 2, width: 100 }]}>
+          <View style={[styles.td, { flex: 3, width: 100 }]}>
             <RectButton2
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(!item.visible, item)}
@@ -143,7 +143,7 @@ export const LayersTable = React.memo(() => {
             </View>
           )}
 
-          <View style={[styles.td, { flex: 4, width: 110 }]}>
+          <View style={[styles.td, { flex: 2, width: 60 }]}>
             <RectButton2 name="table-cog" onPress={() => gotoLayerEdit(item)} style={{ backgroundColor }} />
           </View>
 
@@ -205,10 +205,10 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
   const { hasCustomLabel } = props;
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
-      <View style={[styles.th, { flex: 2, width: 100 }]}>
+      <View style={[styles.th, { flex: 2, width: 60 }]}>
         <Text>{`${t('common.edit')}`}</Text>
       </View>
-      <View style={[styles.th, { flex: 2, width: 100 }]}>
+      <View style={[styles.th, { flex: 3, width: 100 }]}>
         <Text>{`${t('common.visible')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 5, width: 150 }]}>
@@ -222,7 +222,7 @@ const LayersTitle = React.memo((props: { hasCustomLabel: boolean }) => {
           <Text>{`${t('common.customLabel')}`}</Text>
         </View>
       )}
-      <View style={[styles.th, { flex: 4, width: 110 }]}>
+      <View style={[styles.th, { flex: 2, width: 60 }]}>
         <Text>{`${t('common.layerSetting')}`}</Text>
       </View>
       <View style={[styles.th, { flex: 3, width: 80 }]}>
