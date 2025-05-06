@@ -4,7 +4,6 @@ import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { Button } from '../atoms';
 import { InfoToolType } from '../../types';
-import { CheckBox } from '../molecules/CheckBox';
 
 interface Props {
   currentInfoTool: InfoToolType;
@@ -17,14 +16,7 @@ interface Props {
 }
 
 export const HomeModalInfoPicker = React.memo((props: Props) => {
-  const {
-    currentInfoTool,
-    modalVisible,
-    isModalInfoToolHidden,
-    selectInfoTool,
-    setVisibleInfoPicker,
-    setIsModalInfoToolHidden,
-  } = props;
+  const { currentInfoTool, modalVisible, selectInfoTool, setVisibleInfoPicker } = props;
   const [infoTool, setInfoTool] = useState<InfoToolType>('ALL_INFO');
 
   useEffect(() => {
@@ -201,16 +193,6 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
               >
                 <Text>Cancel</Text>
               </TouchableOpacity>
-            </View>
-            <View style={{ width: 200, height: 50 }}>
-              <CheckBox
-                style={{ backgroundColor: COLOR.WHITE }}
-                label={t('Home.modal.infoTool.checkbox')}
-                width={200}
-                checked={isModalInfoToolHidden}
-                onCheck={() => setIsModalInfoToolHidden(!isModalInfoToolHidden)}
-                numberOfLines={2}
-              />
             </View>
           </View>
         </View>
