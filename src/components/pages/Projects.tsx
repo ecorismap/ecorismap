@@ -4,7 +4,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { RectButton2 } from '../atoms';
+import { Button } from '../atoms';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
@@ -103,7 +103,14 @@ export default function Projects() {
                     </Text>
                   </View>
                   <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
-                    {item.ownerUid === user.uid && <RectButton2 name={'star'} onPress={() => null} />}
+                    {item.ownerUid === user.uid && (
+                      <Button
+                        name={'star'}
+                        onPress={() => null}
+                        color={COLOR.GRAY4}
+                        style={{ backgroundColor: COLOR.MAIN }}
+                      />
+                    )}
                   </View>
                 </Pressable>
               )}

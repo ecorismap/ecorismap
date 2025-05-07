@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-import { RectButton, TextInput } from '../atoms';
+import { Button, TextInput } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
@@ -41,10 +41,10 @@ export const DataEditNumber = (props: Props) => {
         {(type === 'INTEGER' || type === 'SERIAL') && (
           <>
             <View style={styles.button}>
-              <RectButton name="plus" backgroundColor={COLOR.GRAY3} onPress={() => plus()} />
+              <Button name="plus" onPress={() => plus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
             </View>
             <View style={styles.button}>
-              <RectButton name="minus" backgroundColor={COLOR.GRAY3} onPress={() => minus()} />
+              <Button name="minus" onPress={() => minus()} style={{ backgroundColor: COLOR.GRAY3 }} borderRadius={10} />
             </View>
           </>
         )}

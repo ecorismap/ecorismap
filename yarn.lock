@@ -5296,9 +5296,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gorhom/bottom-sheet@npm:^5.1.2":
-  version: 5.1.2
-  resolution: "@gorhom/bottom-sheet@npm:5.1.2"
+"@gorhom/bottom-sheet@npm:^5.1.4":
+  version: 5.1.4
+  resolution: "@gorhom/bottom-sheet@npm:5.1.4"
   dependencies:
     "@gorhom/portal": 1.0.14
     invariant: ^2.2.4
@@ -5314,7 +5314,7 @@ __metadata:
       optional: true
     "@types/react-native":
       optional: true
-  checksum: 13265dffdd20c682e8236b623784804d1e04a924f98e75cee91b8e532871b650fad603f4256f77c244b73cacc137679abb55dbb5ab54e55fca24026431cb9f39
+  checksum: 661c89e43c84b2b5452fb5b7eb185bdb5368507d541253009fe915356a5d3983a74cca7a6e6ae3580d13b61f86f79a261f120ef93aaf8f5a0ad0243b098099e0
   languageName: node
   linkType: hard
 
@@ -7137,6 +7137,18 @@ __metadata:
   peerDependencies:
     react: "*"
   checksum: 22e0dadd71f4748b123effc69eab5ca8d8ab0c8733927f2fab7be52bd53c85f9ed178c25e5c42b86d465f87235766a1889e1285505b3239146ac0ac6934f7b68
+  languageName: node
+  linkType: hard
+
+"@react-navigation/elements@npm:1.3.31":
+  version: 1.3.31
+  resolution: "@react-navigation/elements@npm:1.3.31"
+  peerDependencies:
+    "@react-navigation/native": ^6.0.0
+    react: "*"
+    react-native: "*"
+    react-native-safe-area-context: ">= 3.0.0"
+  checksum: 1e4a65ccd9fab757d01bf41f605aafd6ca8301ae25ad7d3f1769320793418cca9fe2f25ac9337578ce1e0a1560bbbc3a88f18b899867aacd4d31de7a789e417e
   languageName: node
   linkType: hard
 
@@ -14894,7 +14906,7 @@ __metadata:
     "@emotion/styled": ^11.11.5
     "@expo/webpack-config": ~19.0.1
     "@firebase/rules-unit-testing": ^3.0.4
-    "@gorhom/bottom-sheet": ^5.1.2
+    "@gorhom/bottom-sheet": ^5.1.4
     "@mapbox/geojsonhint": ^3.1.1
     "@mapbox/vector-tile": ^1.3.1
     "@mui/lab": ^5.0.0-alpha.172
@@ -14918,7 +14930,7 @@ __metadata:
     "@react-native/eslint-config": 0.74.85
     "@react-native/metro-config": 0.74.85
     "@react-native/typescript-config": 0.74.85
-    "@react-navigation/elements": ^1.3.30
+    "@react-navigation/elements": 1.3.31
     "@react-navigation/native": ^6.1.17
     "@react-navigation/native-stack": ^6.10.0
     "@react-navigation/stack": ^6.4.0
@@ -16466,9 +16478,9 @@ __metadata:
   linkType: hard
 
 "fast-loops@npm:^1.1.3":
-  version: 1.1.3
-  resolution: "fast-loops@npm:1.1.3"
-  checksum: b674378ba2ed8364ca1a00768636e88b22201c8d010fa62a8588a4cace04f90bac46714c13cf638be82b03438d2fe813600da32291fb47297a1bd7fa6cef0cee
+  version: 1.1.4
+  resolution: "fast-loops@npm:1.1.4"
+  checksum: 8031a20f465ef35ac4ad98258470250636112d34f7e4efcb4ef21f3ced99df95a1ef1f0d6943df729a1e3e12a9df9319f3019df8cc1a0e0ed5a118bd72e505f9
   languageName: node
   linkType: hard
 
@@ -25348,8 +25360,8 @@ __metadata:
   linkType: hard
 
 "react-native-web@npm:^0.19.12":
-  version: 0.19.12
-  resolution: "react-native-web@npm:0.19.12"
+  version: 0.19.13
+  resolution: "react-native-web@npm:0.19.13"
   dependencies:
     "@babel/runtime": ^7.18.6
     "@react-native/normalize-colors": ^0.74.1
@@ -25362,7 +25374,7 @@ __metadata:
   peerDependencies:
     react: ^18.0.0
     react-dom: ^18.0.0
-  checksum: 676b1ba510c92e01dc69cb3102080f83976d2d209647323fb0a3a14113a455a6a506cf78d3e392c3fa33015135b61e2d6a3eed837a6876665064a6eb87516781
+  checksum: 15077f88204cb980203b8e3784c092c8c25c972bf281db43fd4ccc9696b603380a49f5289fb9a742daddd8e7599baab5798a1f1c857bdd634add827bc39fd8d8
   languageName: node
   linkType: hard
 

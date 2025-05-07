@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
-import { RectButton } from '../atoms';
+import { Button } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { DataEditContext } from '../../contexts/DataEdit';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -25,10 +25,20 @@ export const DataEditPhoto = (props: Props) => {
             <Text style={styles.title}>{fieldName}</Text>
           </View>
           <View style={styles.button}>
-            <RectButton name="camera" onPress={() => pressTakePhoto(fieldName)} />
+            <Button
+              name="camera"
+              onPress={() => pressTakePhoto(fieldName)}
+              style={{ backgroundColor: COLOR.GRAY3 }}
+              borderRadius={10}
+            />
           </View>
           <View style={styles.button}>
-            <RectButton name="file-image" onPress={() => pressPickPhoto(fieldName)} />
+            <Button
+              name="file-image"
+              onPress={() => pressPickPhoto(fieldName)}
+              style={{ backgroundColor: COLOR.GRAY3 }}
+              borderRadius={10}
+            />
           </View>
         </View>
       </View>
@@ -42,8 +52,8 @@ export const DataEditPhoto = (props: Props) => {
                   style={{
                     width: photo.width > photo.height ? 200 : (150 * 3) / 4,
                     height: photo.width > photo.height ? 150 : 150,
-                    resizeMode: 'contain',
                   }}
+                  resizeMode="contain"
                 />
               </Pressable>
             )

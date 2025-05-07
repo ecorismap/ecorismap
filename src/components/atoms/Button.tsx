@@ -118,7 +118,7 @@ const Button = React.memo((props: Props) => {
     const iconComponent = isCustomIcon(name) ? (
       <CustomIcon name={name} size={size} color={color} />
     ) : (
-      <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} />
+      <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} selectable={undefined} />
     );
     return <View style={{ bottom: labelText ? 6 : 0 }}>{iconComponent}</View>;
   };

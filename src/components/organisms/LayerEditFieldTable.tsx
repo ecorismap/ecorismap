@@ -5,7 +5,7 @@ import { COLOR, DATAFORMAT } from '../../constants/AppConstants';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { t } from '../../i18n/config';
 import { FormatType } from '../../types';
-import { Button, Picker, RectButton2 } from '../atoms';
+import { Button, Picker } from '../atoms';
 import { FlatList } from 'react-native-gesture-handler';
 import { CheckBox } from '../molecules/CheckBox';
 
@@ -142,11 +142,12 @@ export const LayerEditFieldTable = () => {
                 )}
               </View>
               <View style={[styles.td, { flex: 3, width: 75 }]}>
-                <RectButton2
+                <Button
                   name="chevron-double-up"
                   disabled={!editable}
                   onPress={() => onChangeFieldOrder(index)}
                   color={COLOR.GRAY2}
+                  style={{ backgroundColor: COLOR.MAIN }}
                 />
               </View>
             </View>
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     maxWidth: 130,
     paddingHorizontal: 5,
     paddingLeft: 10,
-    textAlignVertical: 'center',
+    verticalAlign: 'middle',
   },
 
   td: {

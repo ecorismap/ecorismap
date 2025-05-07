@@ -8,7 +8,7 @@ import { formattedInputs } from '../../utils/Format';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
 import { MapsContext } from '../../contexts/Maps';
-import { SmallButton } from '../atoms';
+import { Button } from '../atoms';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export const MapModalTileMap = React.memo(() => {
@@ -147,7 +147,13 @@ export const MapModalTileMap = React.memo(() => {
           <View style={styles.modalContents}>
             <Text style={styles.modalTitle}>{`${t('Maps.modal.title')}`}</Text>
             <View style={styles.modalHeaderButton}>
-              <SmallButton name={NAV_BTN.CLOSE} onPress={pressEditMapCancel} backgroundColor={COLOR.GRAY1} />
+              <Button
+                name={NAV_BTN.CLOSE}
+                onPress={pressEditMapCancel}
+                backgroundColor={COLOR.GRAY1}
+                size={16}
+                borderRadius={50}
+              />
             </View>
             <ScrollView>
               <CheckBox
@@ -248,12 +254,13 @@ export const MapModalTileMap = React.memo(() => {
                           marginBottom: 10,
                         }}
                       >
-                        <SmallButton
+                        <Button
                           name={'folder-open'}
                           onPress={() => pressImportStyle(tileMap())}
-                          backgroundColor={COLOR.GRAY3}
-                          size={22}
+                          backgroundColor={COLOR.GRAY2}
+                          size={20}
                           borderRadius={5}
+                          color={COLOR.GRAY3}
                         />
                       </View>
                     </View>

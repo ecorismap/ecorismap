@@ -108,6 +108,7 @@ const CustomPicker = React.memo((props: Props) => {
                 size={20}
                 name={'chevron-down'}
                 iconStyle={{ marginRight: 0 }}
+                selectable={undefined}
               />
             </View>
           )}

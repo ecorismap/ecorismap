@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { COLOR } from '../../constants/AppConstants';
-import { Picker, PointView, LineView, PolygonView, RectButton2, TextInput } from '../atoms';
+import { Picker, PointView, LineView, PolygonView, Button, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayersContext } from '../../contexts/Layers';
 import { LayerType } from '../../types';
@@ -59,13 +59,14 @@ export const LayersTable = React.memo(() => {
         <View style={[styles.row, { backgroundColor: backgroundColor }]}>
           <View style={[styles.td, { flex: 2, width: 60 }]}>
             {item.type === 'LAYERGROUP' ? (
-              <RectButton2
+              <Button
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
                 onPress={() => changeExpand(item)}
                 style={[styles.iconBtn, { backgroundColor }]}
+                color={COLOR.GRAY4}
               />
             ) : (
-              <RectButton2
+              <Button
                 name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                 onPress={() => changeActiveLayer(item)}
                 color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
@@ -75,7 +76,7 @@ export const LayersTable = React.memo(() => {
           </View>
 
           <View style={[styles.td, { flex: 3, width: 100 }]}>
-            <RectButton2
+            <Button
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(!item.visible, item)}
               color={COLOR.GRAY4}
@@ -111,7 +112,13 @@ export const LayersTable = React.memo(() => {
               {item.name}
             </Text>
             {item.type !== 'LAYERGROUP' && (
-              <MaterialCommunityIcons name="chevron-right" size={16} color={COLOR.GRAY3} style={styles.chevron} />
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={16}
+                color={COLOR.GRAY3}
+                style={styles.chevron}
+                selectable={undefined}
+              />
             )}
           </Pressable>
 
@@ -144,20 +151,25 @@ export const LayersTable = React.memo(() => {
           )}
 
           <View style={[styles.td, { flex: 2, width: 60 }]}>
-            <RectButton2 name="table-cog" onPress={() => gotoLayerEdit(item)} style={{ backgroundColor }} />
+            <Button
+              name="table-cog"
+              onPress={() => gotoLayerEdit(item)}
+              style={{ backgroundColor }}
+              color={COLOR.GRAY4}
+            />
           </View>
 
           {/* 上下移動ボタン */}
           <View style={[styles.td, { flex: 3, width: 80, flexDirection: 'row', justifyContent: 'center' }]}>
             {/* 上へ */}
-            <RectButton2
+            <Button
               name="chevron-up"
               onPress={() => pressLayerOrder(item, 'up')}
               color={COLOR.GRAY2}
               style={[styles.iconBtn, { backgroundColor }]}
             />
             {/* 下へ */}
-            <RectButton2
+            <Button
               name="chevron-down"
               onPress={() => pressLayerOrder(item, 'down')}
               color={COLOR.GRAY2}

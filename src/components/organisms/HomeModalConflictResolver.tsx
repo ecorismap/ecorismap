@@ -62,7 +62,6 @@ const modalStyles = StyleSheet.create({
   thumbnailImage: {
     height: 100,
     marginBottom: 8,
-    resizeMode: 'cover',
     width: '48%',
   },
 });
@@ -130,6 +129,7 @@ export const ConflictResolverModal = React.memo(
                                   key={photoIdx}
                                   source={{ uri: photo.thumbnail }}
                                   style={modalStyles.thumbnailImage}
+                                  resizeMode="cover"
                                 />
                               ) : null
                             )}

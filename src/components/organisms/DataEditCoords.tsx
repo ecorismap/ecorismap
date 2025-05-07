@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { TextInput, RectButton } from '../atoms';
+import { TextInput, Button } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { LatLonDMSType } from '../../types';
 import { t } from '../../i18n/config';
@@ -55,7 +55,12 @@ export const DataEditCoords = (props: Props) => {
         )}
       </View>
       <View style={[styles.td, { flex: 1, justifyContent: 'flex-end' }]}>
-        <RectButton name="arrow-left-right" onPress={changeLatLonType} />
+        <Button
+          name="arrow-left-right"
+          onPress={changeLatLonType}
+          style={{ backgroundColor: COLOR.GRAY3 }}
+          borderRadius={10}
+        />
       </View>
     </View>
   );

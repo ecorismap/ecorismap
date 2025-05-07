@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
-import { Button, SmallButton } from '../atoms';
+import { Button } from '../atoms';
 import { Alert } from '../atoms/Alert';
 
 interface Props {
@@ -19,7 +19,7 @@ export const TextButton = React.memo((props: Props) => {
     <View style={styles.tr}>
       <View style={[styles.td, { flex: 10 }]}>
         <View style={{ width: 33 }}>
-          <SmallButton name={name} borderRadius={5} backgroundColor={COLOR.GRAY3} onPress={onPress} />
+          <Button name={name} borderRadius={5} backgroundColor={COLOR.GRAY3} onPress={onPress} />
         </View>
         <View style={{ marginLeft: 10, flex: 9 }}>
           <Pressable onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>

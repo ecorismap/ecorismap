@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
-import { Button, Picker, RectButton2, TextInput } from '../atoms';
+import { Button, Picker, TextInput } from '../atoms';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { FlatList, ScrollView } from 'react-native-gesture-handler';
@@ -222,7 +222,12 @@ export default function LayerEditFieldItemScreen() {
                       />
                     </View>
                     <View style={styles.td}>
-                      <RectButton2 name="chevron-double-up" onPress={() => pressListOrder(index)} color={COLOR.GRAY2} />
+                      <Button
+                        name="chevron-double-up"
+                        onPress={() => pressListOrder(index)}
+                        color={COLOR.GRAY2}
+                        style={{ backgroundColor: COLOR.MAIN }}
+                      />
                     </View>
                   </View>
                 )

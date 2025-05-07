@@ -39,12 +39,9 @@ src
 │   │   ├── PolygonLabel.web.tsx
 │   │   ├── PolygonView.tsx
 │   │   ├── RadioButton.tsx
-│   │   ├── RectButton.tsx
-│   │   ├── RectButton2.tsx
 │   │   ├── SelectionalButton.tsx
 │   │   ├── SelectionalLongPressButton.tsx
 │   │   ├── Slider.tsx
-│   │   ├── SmallButton.tsx
 │   │   ├── Text.tsx
 │   │   ├── TextInput.tsx
 │   │   ├── X.tsx

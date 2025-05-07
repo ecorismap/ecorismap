@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
-import { Button, RectButton2 } from '../atoms';
+import { Button } from '../atoms';
 import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
@@ -69,7 +69,12 @@ export const DataTable = React.memo(() => {
           style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
         >
           <View style={[styles.td, { width: 50 }]}>
-            <RectButton2 name={item.visible ? 'eye' : 'eye-off-outline'} onPress={() => changeVisible(item)} />
+            <Button
+              name={item.visible ? 'eye' : 'eye-off-outline'}
+              onPress={() => changeVisible(item)}
+              color={COLOR.GRAY4}
+              style={{ backgroundColor: COLOR.MAIN }}
+            />
           </View>
           <View style={[styles.td, { width: 60 }]}>
             <Button
@@ -217,11 +222,12 @@ const DataTitle = React.memo((props: Props) => {
   return (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <View style={[styles.th, { width: 50 }]}>
-        <MaterialCommunityIcons
+        <Button
           name={visibleAll ? 'eye' : 'eye-off-outline'}
-          size={24}
-          color="black"
+          size={20}
           onPress={onVisibleAll}
+          color={COLOR.GRAY4}
+          style={{ backgroundColor: COLOR.GRAY1 }}
         />
       </View>
       <View style={[styles.th, { width: 60 }]}>

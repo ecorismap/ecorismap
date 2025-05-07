@@ -23,9 +23,9 @@ export const SvgView = React.memo(() => {
         position: 'absolute',
         height: '100%',
         width: '100%',
+        pointerEvents: 'none',
       }}
       //タッチイベントを無効化。MapViewのタッチイベントを優先させるため
-      pointerEvents={'none'}
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />

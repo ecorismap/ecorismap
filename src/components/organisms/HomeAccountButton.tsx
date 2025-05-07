@@ -44,7 +44,7 @@ export const HomeAccountButton = () => {
       fontWeight: 'bold',
       justifyContent: 'center',
       textAlign: 'center',
-      textAlignVertical: 'center',
+      verticalAlign: 'middle',
     },
   });
   return (

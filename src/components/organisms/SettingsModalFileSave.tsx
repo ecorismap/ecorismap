@@ -102,7 +102,7 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
       lineHeight: 40,
       marginLeft: 3,
       paddingHorizontal: 5,
-      textAlignVertical: 'center',
+      verticalAlign: 'middle',
     },
   });
 
