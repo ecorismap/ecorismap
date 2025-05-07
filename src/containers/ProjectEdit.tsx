@@ -109,12 +109,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
             await AlertAsync(t('ProjectEdit.alert.openProject'));
           }
         }
-        let isAdmin = false;
-        //Webで管理者なら全員のデータをダウンロードするか確認
-        if (!isSetting && isOwnerAdmin && Platform.OS === 'web') {
-          const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
-          if (resp) isAdmin = true;
-        }
+        //ユーザーとしてプロジェクトを開く。管理者は取得時に全てのデータを取得できる。
+        const isAdmin = false;
 
         setIsLoading(true);
         const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
@@ -152,7 +148,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       isOwner,
       loadE3kitGroup,
       downloadProjectSettings,
-      isOwnerAdmin,
       openProject,
       navigation,
       downloadDataForSetting,
