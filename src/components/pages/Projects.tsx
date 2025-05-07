@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView, Pressable } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
 import { useNavigation } from '@react-navigation/native';
@@ -68,7 +68,7 @@ export default function Projects() {
               data={projects}
               extraData={projects}
               renderItem={({ item, index }) => (
-                <TouchableOpacity
+                <Pressable
                   key={index}
                   style={{
                     flex: 1,
@@ -105,7 +105,7 @@ export default function Projects() {
                   <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
                     {item.ownerUid === user.uid && <RectButton2 name={'star'} onPress={() => null} />}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               )}
             />
           )}

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useNavigation } from '@react-navigation/native';
 import { CheckBox } from '../molecules/CheckBox';
@@ -97,7 +97,7 @@ const ProductPage = (props: ProductPage_Props) => {
           <View style={styles.products}>
             {products.map(({ product, prices }, idx) => {
               return (
-                <TouchableOpacity
+                <Pressable
                   key={idx}
                   style={[styles.price, { backgroundColor: checkedPlan[idx] ? COLOR.ALFARED : COLOR.WHITE }]}
                   onPress={() => changeCheckedPlan(idx)}
@@ -118,7 +118,7 @@ const ProductPage = (props: ProductPage_Props) => {
                       currencyDisplay: 'name',
                     }).format(price.unit_amount)}/${price.interval}`}</Text>
                   ))}
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -137,13 +137,13 @@ const ProductPage = (props: ProductPage_Props) => {
         </View>
 
         <View style={styles.purchase}>
-          <TouchableOpacity
+          <Pressable
             style={[styles.button, { backgroundColor: checked ? COLOR.BLUE : COLOR.ALFABLUE }]}
             onPress={() => selectedPrice && onPressPurchase(selectedPrice)}
             disabled={!checked}
           >
             <Text style={{ color: COLOR.WHITE, fontWeight: 'bold', fontSize: 18 }}>{`${t('Purchases.apply')}`}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
       <View style={{ marginBottom: 100 }}>
@@ -242,13 +242,13 @@ const CustomerPage = (props: CustomerPage_Props) => {
       <View style={styles.frame}>
         <Text style={styles.subtitle}>{`${t('Purchases.applicationInfo')}`}</Text>
         <View style={{ marginTop: 10, alignItems: 'center' }}>
-          <TouchableOpacity
+          <Pressable
             style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}
             onPress={() => customerPortal && window.location.assign(customerPortal)}
           >
             <Text style={styles.portal}>{`${t('Purchases.applicationChange')}`}</Text>
             <Feather name="external-link" size={24} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     </View>

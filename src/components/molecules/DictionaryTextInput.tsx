@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDictionaryInput } from '../../hooks/useDictionaryInput';
 import { COLOR } from '../../constants/AppConstants';
@@ -73,14 +73,14 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
         <ScrollView style={styles.flatList} nestedScrollEnabled>
           {filteredData.map((item, index) => {
             return (
-              <TouchableOpacity key={index} onPress={() => handleSelectItem(item)} style={styles.separator}>
+              <Pressable key={index} onPress={() => handleSelectItem(item)} style={styles.separator}>
                 <Text
                   style={[styles.listText, { color: index === filteredData.length - 1 ? COLOR.GRAY4 : COLOR.BLACK }]}
                 >
                   {item}
                   {index === filteredData.length - 1 && item.length > 0 && ' (入力)'}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ArrowStyleType, MapMemoToolType, PenWidthType } from '../../types';
@@ -251,7 +251,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
             </View> */}
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   selectMapMemoTool('PEN');
@@ -263,8 +263,8 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   selectMapMemoTool(undefined);
@@ -272,7 +272,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <View style={{ width: 200, height: 50 }}>
               <CheckBox

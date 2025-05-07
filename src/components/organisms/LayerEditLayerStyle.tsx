@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLOR, FEATURETYPE } from '../../constants/AppConstants';
 import { Picker, PointView, LineView, PolygonView } from '../atoms';
@@ -19,14 +19,14 @@ export const LayerStyle = () => {
           {layer.type !== 'NONE' && layer.type !== 'LAYERGROUP' && (
             <>
               <Text style={styles.title}>{`${t('common.style')}`}</Text>
-              <TouchableOpacity style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
+              <Pressable style={styles.td2} onPress={() => (editable ? gotoLayerEditFeatureStyle() : null)}>
                 {layer.type === 'POINT' && (
                   <PointView size={20} borderColor={COLOR.WHITE} color={layer.colorStyle.color} />
                 )}
                 {layer.type === 'LINE' && <LineView color={layer.colorStyle.color} />}
                 {layer.type === 'POLYGON' && <PolygonView color={layer.colorStyle.color} />}
                 <MaterialIcons color={COLOR.GRAY4} style={styles.icon} size={25} name={'color-lens'} />
-              </TouchableOpacity>
+              </Pressable>
             </>
           )}
         </View>

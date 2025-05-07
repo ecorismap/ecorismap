@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';
@@ -137,22 +137,22 @@ export const HomeModalTermsOfUse = React.memo(() => {
               )}
               <Text style={styles.notice}>{t('tutrials.termsOfUse')}</Text>
               <View style={{ alignItems: 'center', margin: 10 }}>
-                <TouchableOpacity onPress={pressTermsOfUse}>
+                <Pressable onPress={pressTermsOfUse}>
                   <Text style={styles.text}>{`${t('common.termsOfUse')}`}</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
+              <Pressable style={styles.modalOKCancelButton} onPress={termsOfUseOK}>
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={termsOfUseCancel}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

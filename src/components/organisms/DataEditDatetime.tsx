@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, Text, Pressable, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import DatePicker from 'react-native-date-picker';
 import dayjs from '../../i18n/dayjs';
@@ -57,7 +57,7 @@ export const DataEditDatetime = (props: Props) => {
   return (
     <View style={styles.tr}>
       <View style={styles.td}>
-        <TouchableOpacity style={styles.tr2} onPress={() => setOpen(true)}>
+        <Pressable style={styles.tr2} onPress={() => setOpen(true)}>
           {name && <Text style={styles.title}>{name}</Text>}
           <Text style={styles.text}>{dateValueString}</Text>
           <DatePicker
@@ -77,7 +77,7 @@ export const DataEditDatetime = (props: Props) => {
             mode={mode}
             is24hourSource={'locale'}
           />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

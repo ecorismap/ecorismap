@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { Button } from '../atoms';
@@ -116,10 +116,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 borderColor: COLOR.GRAY3,
               }}
             >
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => setInfoTool('ALL_INFO')}
-              >
+              <Pressable style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setInfoTool('ALL_INFO')}>
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
                     name={INFOTOOL.ALL_INFO}
@@ -129,8 +126,8 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectAllInfo')}`}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => setInfoTool('POINT_INFO')}
               >
@@ -143,8 +140,8 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectPointInfo')}`}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => setInfoTool('LINE_INFO')}
               >
@@ -157,8 +154,8 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectLineInfo')}`}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => setInfoTool('POLYGON_INFO')}
               >
@@ -171,11 +168,11 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectPolygonInfo')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   selectInfoTool(infoTool);
@@ -183,8 +180,8 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
                   selectInfoTool(undefined);
@@ -192,7 +189,7 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

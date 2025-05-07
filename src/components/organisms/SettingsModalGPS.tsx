@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet } from 'react-native';
 import { COLOR, GPS_ACCURACY } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
@@ -130,18 +130,15 @@ export const SettingsModalGPS = React.memo((props: Props) => {
             <Text style={styles.alert_text}>{`${t('common.gps_settings_alert')}`} </Text>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => pressOK(gpsAccuracyList[checkedIndex] as GpsAccuracyType)}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
-              >
+              </Pressable>
+              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

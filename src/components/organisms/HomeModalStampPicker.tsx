@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { COLOR, PLUGIN, STAMP } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
@@ -239,7 +239,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   selectMapMemoTool(stamp);
@@ -248,8 +248,8 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
                   selectMapMemoTool(undefined);
@@ -257,7 +257,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, Pressable, Text } from 'react-native';
 import { HomeContext } from '../../contexts/Home';
 import { COLOR } from '../../constants/AppConstants';
 import { FontAwesome } from '@expo/vector-icons';
@@ -20,7 +20,7 @@ export const HomePopup = React.memo(() => {
       }}
     >
       {/* クローズボタン */}
-      <TouchableOpacity
+      <Pressable
         style={{
           position: 'absolute',
           top: 5,
@@ -30,7 +30,7 @@ export const HomePopup = React.memo(() => {
         onPress={closeVectorTileInfo} // クローズボタンが押されたときの動作
       >
         <FontAwesome name="close" size={24} color="black" />
-      </TouchableOpacity>
+      </Pressable>
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 8 }}
         style={{

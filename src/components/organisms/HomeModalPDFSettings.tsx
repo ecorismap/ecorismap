@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, Platform } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet, Platform } from 'react-native';
 import { COLOR, ORIENTATIONTYPE } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
@@ -207,9 +207,9 @@ export const HomeModalPDFSettings = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK()}>
+              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK()}>
                 <Text>OK</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

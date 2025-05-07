@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, Platform, TouchableOpacity } from 'react-native';
+import { Text, Platform, Pressable } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
@@ -13,7 +13,7 @@ export default function HomeProjectLabel(props: Props) {
   const { name, onPress } = props;
   const { isLandscape } = useWindow();
   return (
-    <TouchableOpacity
+    <Pressable
       style={{
         alignSelf: 'center',
         position: 'absolute',
@@ -28,6 +28,6 @@ export default function HomeProjectLabel(props: Props) {
       onPress={onPress}
     >
       <Text>{name}</Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

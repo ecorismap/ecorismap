@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
+import { View, TextInput, Pressable, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { AccountContext } from '../../contexts/Account';
 import { t } from '../../i18n/config';
@@ -242,24 +242,24 @@ export default function Account() {
             </View>
           )}
           {(accountFormState === 'loginUserAccount' || accountFormState === 'restoreEncryptKey') && (
-            <TouchableOpacity
+            <Pressable
               style={styles.resetText}
               onPress={accountFormState === 'loginUserAccount' ? changeResetPasswordForm : changeResetEncryptForm}
             >
               <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{`${t('Account.text.forgetPassword')}`}</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
           <Loading visible={isLoading} text="" />
 
           <View style={styles.modalButtonContainer}>
             {accountFormState === 'loginUserAccount' ? (
-              <TouchableOpacity style={styles.resetText} onPress={changeSignUpForm}>
+              <Pressable style={styles.resetText} onPress={changeSignUpForm}>
                 <Text style={styles.underline}>{`${t('Account.text.createAccount')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ) : (
               <Text />
             )}
-            <TouchableOpacity
+            <Pressable
               style={[styles.modalOKCancelButton, { backgroundColor: COLOR.BLUE }]}
               onPress={() =>
                 accountFormState === 'loginUserAccount'
@@ -288,7 +288,7 @@ export default function Account() {
               }
             >
               <Text style={{ color: COLOR.WHITE }}>{`${t('Account.text.next')}`}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
       </View>

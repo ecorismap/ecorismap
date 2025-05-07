@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet, TextInput } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet, TextInput } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
@@ -132,15 +132,12 @@ export const SettingsModalFileSave = React.memo((props: Props) => {
               />
             </View>
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK(value, includePhoto)}>
+              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value, includePhoto)}>
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
-              >
+              </Pressable>
+              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

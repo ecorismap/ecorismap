@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, RectButton2 } from '../atoms';
@@ -83,7 +83,7 @@ export const DataTable = React.memo(() => {
           </View>
 
           {projectId !== undefined && (
-            <TouchableOpacity
+            <Pressable
               style={[styles.td, { flex: 2, width: 100 }]}
               onLongPress={drag}
               disabled={isActive}
@@ -92,7 +92,7 @@ export const DataTable = React.memo(() => {
               <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
                 {item.displayName}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
           {projectId === undefined && layer.field.length === 0 ? (
             <View style={[styles.td, { width: 60 }]}>
@@ -106,7 +106,7 @@ export const DataTable = React.memo(() => {
             </View>
           ) : (
             layer.field.map(({ name, format }, field_index) => (
-              <TouchableOpacity
+              <Pressable
                 key={field_index}
                 style={[styles.td, { flex: 2, width: 120 }]}
                 onLongPress={drag}
@@ -124,7 +124,7 @@ export const DataTable = React.memo(() => {
                     ? 'Reference'
                     : `${item.field[name]}`}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))
           )}
           {isMapMemoLayer &&
@@ -235,10 +235,7 @@ const DataTitle = React.memo((props: Props) => {
         />
       </View>
       {projectId !== undefined && (
-        <TouchableOpacity
-          style={[styles.th, { flex: 2, width: 100 }]}
-          onPress={() => onChangeOrder('_user_', '_user_')}
-        >
+        <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onChangeOrder('_user_', '_user_')}>
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User
           </Text>
@@ -248,13 +245,13 @@ const DataTitle = React.memo((props: Props) => {
           {sortedName === '_user_' && sortedOrder === 'DESCENDING' && (
             <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
           )}
-        </TouchableOpacity>
+        </Pressable>
       )}
       {projectId === undefined && layer.field.length === 0 ? (
         <View style={[styles.th, { width: 60 }]} />
       ) : (
         layer.field.map(({ name, format }, field_index) => (
-          <TouchableOpacity
+          <Pressable
             key={field_index}
             style={[styles.th, { flex: 2, width: 120 }]}
             onPress={() => onChangeOrder(name, format)}
@@ -266,7 +263,7 @@ const DataTitle = React.memo((props: Props) => {
             {sortedName === name && sortedOrder === 'DESCENDING' && (
               <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
             )}
-          </TouchableOpacity>
+          </Pressable>
         ))
       )}
       {isMapMemoLayer &&

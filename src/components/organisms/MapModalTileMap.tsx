@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Pressable, Modal, Text, StyleSheet } from 'react-native';
 
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
 import Slider from '../atoms/Slider';
@@ -262,24 +262,24 @@ export const MapModalTileMap = React.memo(() => {
               )}
             </ScrollView>
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => (checkInputs() ? pressEditMapOK(tileMap()) : null)}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressEditMapCancel}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
                 onPress={() => pressDeleteMap(tileMap())}
               >
                 <Text style={{ color: COLOR.WHITE }}>{`${t('common.delete')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

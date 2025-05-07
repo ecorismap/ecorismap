@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { RectButton } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { DataEditContext } from '../../contexts/DataEdit';
@@ -36,7 +36,7 @@ export const DataEditPhoto = (props: Props) => {
         {fieldData.map(
           (photo, index) =>
             photo.uri !== undefined && (
-              <TouchableOpacity style={{ margin: 2 }} key={index} onPress={() => pressPhoto(fieldName, photo, index)}>
+              <Pressable style={{ margin: 2 }} key={index} onPress={() => pressPhoto(fieldName, photo, index)}>
                 <Image
                   source={{ uri: photo.thumbnail ? photo.thumbnail : undefined }}
                   style={{
@@ -45,7 +45,7 @@ export const DataEditPhoto = (props: Props) => {
                     resizeMode: 'contain',
                   }}
                 />
-              </TouchableOpacity>
+              </Pressable>
             )
         )}
       </ScrollView>

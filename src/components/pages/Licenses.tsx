@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { LicensesContext } from '../../contexts/Licenses';
 import { FlatList } from 'react-native-gesture-handler';
@@ -30,7 +30,7 @@ export default function Licenses() {
       renderItem={({ item }) => {
         return (
           <View style={{ flex: 1, height: 60, flexDirection: 'row' }}>
-            <TouchableOpacity
+            <Pressable
               style={[styles.td, { flex: 5, width: 150, borderRightWidth: 1 }]}
               onPress={() => pressPackageName(item)}
             >
@@ -41,7 +41,7 @@ export default function Licenses() {
               >
                 {item}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         );
       }}

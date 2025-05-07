@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
@@ -112,21 +112,15 @@ export const SettingsModalMapListURL = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
+              <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressCancel}
-              >
+              </Pressable>
+              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressCancel}>
                 <Text>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={pressReset}
-              >
+              </Pressable>
+              <Pressable style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]} onPress={pressReset}>
                 <Text>{`${t('common.reset')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

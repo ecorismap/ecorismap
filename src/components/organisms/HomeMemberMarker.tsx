@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, View, Image, StyleSheet, Text } from 'react-native';
+import { Pressable, View, Image, StyleSheet, Text } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { MemberLocationType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';
@@ -25,12 +25,12 @@ export const MemberMarker = (props: Props) => {
     >
       {memberLocation.icon.photoURL !== null ? (
         //@ts-ignore
-        <TouchableOpacity name="account" onPress={() => null}>
+        <Pressable name="account" onPress={() => null}>
           <Image style={styles.icon} source={{ uri: memberLocation.icon.photoURL }} />
-        </TouchableOpacity>
+        </Pressable>
       ) : (
         //@ts-ignore
-        <TouchableOpacity name="account" onPress={() => null}>
+        <Pressable name="account" onPress={() => null}>
           <View
             style={{
               width: 35,
@@ -44,7 +44,7 @@ export const MemberMarker = (props: Props) => {
           >
             <Text style={styles.textIcon}>{memberLocation.icon.initial}</Text>
           </View>
-        </TouchableOpacity>
+        </Pressable>
       )}
     </Marker>
   );

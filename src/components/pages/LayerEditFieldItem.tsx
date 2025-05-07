@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
@@ -260,9 +260,9 @@ const ListButtons = () => {
         labelText={t('LayerEditFieldItem.label.addValue')}
       />
       {(itemFormat === 'LIST' || itemFormat === 'CHECK' || itemFormat === 'RADIO') && (
-        <TouchableOpacity style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
+        <Pressable style={{ margin: 5 }} disabled={!editable} onPress={() => pressAddValue(true)}>
           <Text style={{ fontSize: 14, color: COLOR.BLUE }}>{`${t('common.addOther')}`}</Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   ) : null;

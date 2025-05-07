@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Platform, Text, Pressable } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -266,7 +266,7 @@ export default function HomeScreen() {
           }}
         />
         {!isEditingRecord && (
-          <TouchableOpacity
+          <Pressable
             style={{
               position: 'absolute',
               right: 0,
@@ -279,7 +279,7 @@ export default function HomeScreen() {
             onPress={onCloseBottomSheet}
           >
             <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 33 }}>×</Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
     );

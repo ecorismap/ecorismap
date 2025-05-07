@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button, SmallButton } from '../atoms';
@@ -22,9 +22,9 @@ export const TextButton = React.memo((props: Props) => {
           <SmallButton name={name} borderRadius={5} backgroundColor={COLOR.GRAY3} onPress={onPress} />
         </View>
         <View style={{ marginLeft: 10, flex: 9 }}>
-          <TouchableOpacity onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>
+          <Pressable onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>
             <Text style={styles.text}>{text}</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
       {info && (

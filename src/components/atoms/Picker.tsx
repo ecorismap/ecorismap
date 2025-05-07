@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';
@@ -78,7 +78,7 @@ const CustomPicker = React.memo((props: Props) => {
     <View style={styles.tr2}>
       {label && <Text style={styles.title}>{label}</Text>}
       <View style={styles.td2}>
-        <TouchableOpacity onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <Pressable onPress={openSelector} style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <View style={{ flex: 10 }}>
             <ModalSelector
               ref={selectorRef}
@@ -111,7 +111,7 @@ const CustomPicker = React.memo((props: Props) => {
               />
             </View>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

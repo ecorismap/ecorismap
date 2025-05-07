@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { COLOR, ERASER } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
@@ -107,7 +107,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
           <View style={[styles.modalContents, { width: 200, height: 250 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectEraser')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10 }}>
-              <TouchableOpacity
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setEraser('PEN_ERASER');
@@ -125,9 +125,9 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectPenEraser')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setEraser('BRUSH_ERASER');
@@ -146,8 +146,8 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                 </View>
 
                 <Text>{`${t('common.selectBrushEraser')}`}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
                 onPress={() => {
                   setEraser('STAMP_ERASER');
@@ -165,11 +165,11 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                   />
                 </View>
                 <Text>{`${t('common.selectStampEraser')}`}</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   selectMapMemoTool(eraser);
@@ -177,8 +177,8 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
                   selectMapMemoTool(undefined);
@@ -186,7 +186,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
                 }}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

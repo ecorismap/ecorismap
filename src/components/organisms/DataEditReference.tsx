@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Pressable } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useData } from '../../hooks/useData';
 import { LayerType, PhotoType, RecordType } from '../../types';
@@ -155,7 +155,7 @@ const DataItems = React.memo((props: Props_DataItems) => {
     <View style={{ flex: 1, flexDirection: 'column' }}>
       {data.map((item, index) => {
         return (
-          <TouchableOpacity key={item.id} style={{ height: 45, flexDirection: 'row' }} onPress={() => onPress(index)}>
+          <Pressable key={item.id} style={{ height: 45, flexDirection: 'row' }} onPress={() => onPress(index)}>
             {layer.field.map(({ name, format }, field_index) => (
               <View key={field_index} style={[styles.td, { flex: 1, width: 120 }]}>
                 <Text adjustsFontSizeToFit={true} numberOfLines={2}>
@@ -167,7 +167,7 @@ const DataItems = React.memo((props: Props_DataItems) => {
                 </Text>
               </View>
             ))}
-          </TouchableOpacity>
+          </Pressable>
         );
       })}
     </View>

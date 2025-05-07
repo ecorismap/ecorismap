@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import ColorPicker, { Panel2, BrightnessSlider, Swatches, OpacitySlider, colorKit } from 'reanimated-color-picker';
 import { t } from '../../i18n/config';
@@ -87,18 +87,15 @@ export const HomeMapMemoColorPicker = React.memo((props: Props) => {
             </ColorPicker>
 
             <View style={[styles.modalButtonContainer, { width: 230 }]}>
-              <TouchableOpacity
-                style={styles.modalOKCancelButton}
-                onPress={() => pressSelectColorOK(hue, sat, val, alpha)}
-              >
+              <Pressable style={styles.modalOKCancelButton} onPress={() => pressSelectColorOK(hue, sat, val, alpha)}>
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => pressSelectColorCancel()}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, Pressable } from 'react-native';
 
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -287,7 +287,7 @@ export default function HomeScreen() {
           }}
         />
         {!isEditingRecord && (
-          <TouchableOpacity
+          <Pressable
             style={{
               position: 'absolute',
               right: 0,
@@ -300,7 +300,7 @@ export default function HomeScreen() {
             onPress={onCloseBottomSheet}
           >
             <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
-          </TouchableOpacity>
+          </Pressable>
         )}
       </View>
     );

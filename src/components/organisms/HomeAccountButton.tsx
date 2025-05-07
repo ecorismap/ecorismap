@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { TouchableOpacity, View, Image, StyleSheet, Platform, Text } from 'react-native';
+import { Pressable, View, Image, StyleSheet, Platform, Text } from 'react-native';
 import { Button, SelectionalButton } from '../atoms';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
@@ -63,12 +63,12 @@ export const HomeAccountButton = () => {
           <SelectionalButton selectedButton={'ACCOUNT'} direction="topToDown">
             {user.photoURL !== null && valid ? (
               //@ts-ignore
-              <TouchableOpacity id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
+              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
                 <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: user.photoURL }} />
-              </TouchableOpacity>
+              </Pressable>
             ) : (
               //@ts-ignore
-              <TouchableOpacity id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
+              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
                 <View
                   style={{
                     width: 40,
@@ -82,7 +82,7 @@ export const HomeAccountButton = () => {
                 >
                   <Text style={styles.textIcon}>{initial}</Text>
                 </View>
-              </TouchableOpacity>
+              </Pressable>
             )}
             {FUNC_PROJECT && (
               <Button

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Modal, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Modal, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
@@ -108,7 +108,7 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
             </View>
 
             <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalOKCancelButton}
                 onPress={() => {
                   pressOK(value);
@@ -116,8 +116,8 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
                 }}
               >
                 <Text>OK</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={() => {
                   setValue('');
@@ -125,7 +125,7 @@ export const ProjectsModalEncryptPassword = React.memo((props: Props) => {
                 }}
               >
                 <Text>Cancel</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -45,12 +45,12 @@ const ColorList = () => {
             />
           </View>
 
-          <TouchableOpacity
+          <Pressable
             style={[styles.td, { flex: 3, backgroundColor: colorStyle.colorList[index].color }]}
             onPress={() => pressSelectValueColor(index)}
           >
             <Text>{item.color}</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           <View style={styles.td}>
             <Button

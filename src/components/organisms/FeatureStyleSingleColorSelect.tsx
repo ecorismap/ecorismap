@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 
 interface Props {
@@ -12,9 +12,9 @@ export const SingleColorSelect = (props: Props) => {
 
   return (
     <View style={styles.tr}>
-      <TouchableOpacity style={[styles.td, { backgroundColor: value }]} onPress={() => onPressColorSelect()}>
+      <Pressable style={[styles.td, { backgroundColor: value }]} onPress={() => onPressColorSelect()}>
         <Text>{value}</Text>
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 };
