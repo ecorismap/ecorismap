@@ -244,6 +244,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   //Project Buttons関連
   const {
     isSettingProject,
+    isOwnerAdmin,
     isSynced,
     project,
     projectRegion,
@@ -826,8 +827,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
       }
-      //プロジェクトを開くときは、管理者もユーザーとして。取得時に管理者かどうかを確認する。
-      const isAdmin = false;
+      let isAdmin = false;
+      if (isOwnerAdmin) {
+        const resp = await ConfirmAsync(t('Home.confirm.downloadAllUserData'));
+        if (resp) isAdmin = true;
+      }
       setIsLoading(true);
       //写真はひとまずダウンロードしない。（プロジェクトの一括か個別で十分）
       await downloadData({ isAdmin, shouldPhotoDownload: false });
@@ -837,7 +841,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [downloadData, isConnected]);
+  }, [downloadData, isConnected, isOwnerAdmin]);
 
   const pressUploadData = useCallback(async () => {
     try {
