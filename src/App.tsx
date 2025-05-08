@@ -6,7 +6,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import Routes from './routes';
 import { persistor, store } from './store';
 
-const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter'];
+const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter', 'Possible'];
 
 LogBox.ignoreLogs(IGNORED_LOGS);
 

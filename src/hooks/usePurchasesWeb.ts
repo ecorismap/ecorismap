@@ -58,10 +58,6 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
     // product フィールドが DocumentReference 型であることを想定
     const productRef = subData.product;
     const productSnap = await getDoc(productRef);
-    if (!productSnap.exists()) {
-      setCustomerLicense('Unknown');
-      return;
-    }
 
     const productData = productSnap.data() as { name?: License };
     setCustomerLicense(productData.name ?? 'Unknown');

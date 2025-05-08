@@ -257,10 +257,7 @@ export const getSettingsUpdatedAt = async (projectId: string): Promise<Date | un
     const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
     // ドキュメントを取得
     const snap = await getDoc(settingsRef);
-    if (!snap.exists()) {
-      // ドキュメントが存在しない場合
-      return undefined;
-    }
+
     // データをプロジェクト設定型として取得
     const settings = snap.data() as ProjectSettingsFS;
     // encryptedAt フィールドを Date に変換して返す
@@ -281,9 +278,6 @@ export const downloadProjectSettings = async (
     const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
     // ドキュメントを取得
     const snap = await getDoc(settingsRef);
-    if (!snap.exists()) {
-      throw new Error('設定ドキュメントが存在しません');
-    }
 
     // データを型付きで取得
     const settings = snap.data() as ProjectSettingsFS;
