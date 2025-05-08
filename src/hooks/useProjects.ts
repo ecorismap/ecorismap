@@ -43,7 +43,7 @@ export const useProjects = (): UseProjectsReturnType => {
       membersUid: [user.uid],
       abstract: '',
       storage: { count: 0 },
-      license: 'Unkown',
+      license: 'Unknown',
     };
     return project;
   }, [user]);

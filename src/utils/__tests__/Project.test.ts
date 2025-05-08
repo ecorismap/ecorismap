@@ -8,7 +8,7 @@ import {
 } from '../Project';
 
 // 型定義
-type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unkown';
+type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unknown';
 type VerifiedType = 'OK' | 'HOLD' | 'NO_ACCOUNT';
 type RoleType = 'MEMBER' | 'ADMIN' | 'OWNER';
 
@@ -256,8 +256,8 @@ describe('Project', () => {
       });
     });
 
-    it('returns isOK: false when license is Unkown', () => {
-      expect(validateMemberLicense('Unkown', 0)).toEqual({
+    it('returns isOK: false when license is Unknown', () => {
+      expect(validateMemberLicense('Unknown', 0)).toEqual({
         isOK: true,
         message: '',
       });
@@ -470,7 +470,7 @@ describe('Project', () => {
       });
     });
 
-    it('returns isOK: false when license is Unkown', () => {
+    it('returns isOK: false when license is Unknown', () => {
       expect(
         validateStorageLicense({
           id: 'project-1',
@@ -480,7 +480,7 @@ describe('Project', () => {
           adminsUid: [],
           membersUid: [],
           abstract: '',
-          license: 'Unkown' as License,
+          license: 'Unknown' as License,
           storage: { count: 0 },
         } as ProjectType)
       ).toEqual({

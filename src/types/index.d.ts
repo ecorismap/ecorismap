@@ -1,5 +1,4 @@
 import { Position } from '@turf/turf';
-import { Timestamp } from '@firebase/firestore-types';
 import {
   COLORRAMP,
   COLORTYPE,
@@ -490,7 +489,7 @@ export interface Checkout_sessions {
   [propName: string]: any;
 }
 
-export type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unkown';
+export type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unknown';
 
 export interface EcorisMapFileType {
   dataSet: DataType[];

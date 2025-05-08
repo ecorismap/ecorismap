@@ -92,7 +92,7 @@ export const validateMemberLicense = (projectLicense: License, memberCount: numb
       isOK: false,
       message: t('utils.Project.message.validateMemberBusinessB'),
     };
-  } else if (projectLicense === 'Unkown') {
+  } else if (projectLicense === 'Unknown') {
     return {
       isOK: false,
       message: t('utils.Project.message.validateUndefined'),
@@ -135,7 +135,7 @@ export const validateStorageLicense = (project: ProjectType | undefined) => {
       isOK: false,
       message: t('utils.Project.message.validateStorageBusinessB'),
     };
-  } else if (projectLicense === 'Unkown') {
+  } else if (projectLicense === 'Unknown') {
     return {
       isOK: false,
       message: t('utils.Project.message.validateUndefined'),

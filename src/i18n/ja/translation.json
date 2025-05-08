@@ -719,7 +719,7 @@
   },
   "firebase": {
     "message": {
-      "unkownUser": "ユーザーが不明です。",
+      "unknownUser": "ユーザーが不明です。",
       "failUpdateUser": "ユーザー情報の更新に失敗しました",
       "failEncryptPhoto": "写真の暗号化に失敗しました",
       "failUploadPhoto": "写真のアップロードに失敗しました",
@@ -852,7 +852,7 @@
       "failDeleteGroupMembers": "メンバーの削除に失敗しました",
       "failAddGroupMembers": "メンバーの追加に失敗しました",
       "openProject": "プロジェクトを開いてください。",
-      "unkownURL": "urlが不明です。",
+      "unknownURL": "urlが不明です。",
       "downloaded": "ダウンロードしました。",
       "cannotEditInTracking": "トラックの記録中は編集できません。",
       "noEditMode": "編集モードになっていません。",

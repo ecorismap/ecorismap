@@ -280,7 +280,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
 
       const { url, key, name, fieldName, index } = selectedPhoto;
       if (url === null || key === null) {
-        await AlertAsync(t('hooks.message.unkownURL'));
+        await AlertAsync(t('hooks.message.unknownURL'));
         return;
       }
       const { isOK, message, uri } = await projectStorage.downloadPhoto(url, key, name, photoFolder);

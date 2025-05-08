@@ -39,7 +39,7 @@ export default function Purchases(props: Props) {
 
   return customerLicense === undefined ? (
     <View style={styles.container} />
-  ) : customerLicense === 'Unkown' ? (
+  ) : customerLicense === 'Unknown' ? (
     <ErrorPage />
   ) : customerLicense === 'Free' ? (
     <ProductPage isLoading={isLoading} products={products} onPressPurchase={onPressPurchase} />
