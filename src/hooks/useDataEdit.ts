@@ -216,17 +216,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     [setIsEditingRecord, targetRecord, temporaryAddedPhotoList]
   );
 
-  const updatePhoto = useCallback(
-    (fieldName: string, index: number, uri: string) => {
-      const updatedRecord = cloneDeep(targetRecord);
-      const photoField = updatedRecord.field[fieldName] as PhotoType[];
-      photoField[index].uri = uri;
-      setTargetRecord(updatedRecord);
-      setIsEditingRecord(true);
-    },
-    [targetRecord, setIsEditingRecord]
-  );
-
   const saveData = useCallback(() => {
     temporaryDeletePhotoList.forEach(({ uri }) => deleteLocalPhoto(uri));
     setTemporaryDeletePhotoList([]);
@@ -271,6 +260,25 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     dispatch,
     setIsEditingRecord,
   ]);
+
+  const updatePhoto = useCallback(
+    (fieldName: string, index: number, uri: string) => {
+      const updatedRecord = cloneDeep(targetRecord);
+      (updatedRecord.field[fieldName] as PhotoType[])[index].uri = uri;
+      setTargetRecord(updatedRecord);
+      //編集中でなければ、保存する。ユーザーは変更しない。
+      if (!isEditingRecord) {
+        dispatch(
+          updateRecordsAction({
+            layerId: targetLayer.id,
+            userId: updatedRecord.userId,
+            data: [updatedRecord],
+          })
+        );
+      }
+    },
+    [dispatch, isEditingRecord, targetLayer.id, targetRecord]
+  );
 
   const deleteRecord = useCallback(() => {
     deleteRecordPhotos(targetLayer, targetRecord);
