@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Platform, Text } from 'react-native';
 
 interface Props {
   label: string;
@@ -24,23 +24,15 @@ const formatLabel = (label: string, maxCharsPerLine: number = 15): string => {
 const PointLabel = React.memo((props: Props) => {
   const { label, size, color, borderColor } = props;
   const formattedLabel = formatLabel(label);
-
-  return (
-    <Text
-      style={{
-        fontSize: size,
-        color: color,
-        textShadowOffset: {
-          width: 1,
-          height: 1,
-        },
-        textShadowRadius: 1,
-        textShadowColor: borderColor,
-      }}
-    >
-      {formattedLabel}
-    </Text>
-  );
+  const shadowStyle =
+    Platform.OS === 'web'
+      ? { textShadow: `1px 1px 1px ${borderColor}` }
+      : {
+          textShadowOffset: { width: 1, height: 1 },
+          textShadowRadius: 1,
+          textShadowColor: borderColor,
+        };
+  return <Text style={{ fontSize: size, color, ...shadowStyle }}>{formattedLabel}</Text>;
 });
 
 export default PointLabel;

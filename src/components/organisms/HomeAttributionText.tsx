@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 
@@ -10,20 +10,34 @@ interface Props {
 
 export const HomeAttributionText = (props: Props) => {
   const { bottom, attribution } = props;
+  if (!attribution) return null;
 
-  return attribution.length > 0 ? (
-    <View style={{ position: 'absolute', bottom: bottom, alignSelf: 'flex-end', paddingBottom: 0, paddingRight: 15 }}>
+  const isWeb = Platform.OS === 'web';
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        bottom,
+        alignSelf: 'flex-end',
+        paddingRight: 15,
+      }}
+    >
       <Text
         style={{
           fontSize: 9,
           color: COLOR.BLACK,
-          textShadowColor: COLOR.WHITE,
-          textShadowOffset: { width: 1, height: 1 },
-          textShadowRadius: 1,
+          ...(isWeb
+            ? { textShadow: `1px 1px 1px ${COLOR.WHITE}` }
+            : {
+                textShadowColor: COLOR.WHITE,
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 1,
+              }),
         }}
       >
         {`${t('common.source')}`}: {attribution}
       </Text>
     </View>
-  ) : null;
+  );
 };

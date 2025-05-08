@@ -12,25 +12,22 @@ interface Props {
 
 const LineLabel = React.memo((props: Props) => {
   const { coordinate, label, size, color, borderColor } = props;
-  //console.log(arrow.deg);
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <Marker
-      anchor={{ x: 1, y: 1 }}
-      coordinate={coordinate}
-      tracksViewChanges={Platform.OS === 'ios' ? true : false}
-      zIndex={9999}
-    >
+    <Marker anchor={{ x: 1, y: 1 }} coordinate={coordinate} tracksViewChanges={Platform.OS === 'ios'} zIndex={9999}>
       <View style={{ alignItems: 'center' }}>
         <Text
           style={{
             fontSize: size,
-            color: color,
-            textShadowOffset: {
-              width: 1,
-              height: 1,
-            },
-            textShadowRadius: 1,
-            textShadowColor: borderColor,
+            color,
+            ...(isWeb
+              ? { textShadow: `1px 1px 1px ${borderColor}` }
+              : {
+                  textShadowOffset: { width: 1, height: 1 },
+                  textShadowRadius: 1,
+                  textShadowColor: borderColor,
+                }),
           }}
         >
           {label}
