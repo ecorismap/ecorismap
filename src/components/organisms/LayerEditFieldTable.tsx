@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingLeft: 10,
     verticalAlign: 'middle',
+    textAlignVertical: 'center',
   },
 
   td: {

@@ -71,6 +71,7 @@ export const CheckBox = React.memo((props: Props) => {
               fontWeight: labelWeight ?? 'normal',
               color: labelColor ?? COLOR.GRAY4,
               verticalAlign: labelAlign === 'column' ? 'bottom' : 'middle',
+              textAlignVertical: labelAlign === 'column' ? 'bottom' : 'center',
               textAlign: labelAlign === 'column' ? 'center' : 'left',
 
               //maxWidth: 500,

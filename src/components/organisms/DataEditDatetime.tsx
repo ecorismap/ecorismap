@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingVertical: 0,
     verticalAlign: 'middle',
+    textAlignVertical: 'center',
     ...Platform.select({
       ios: {
         lineHeight: 40, // as same as height

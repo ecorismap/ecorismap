@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
 
   td: {
     alignItems: 'center',
-    borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
     borderTopWidth: 1,
     flex: 1,

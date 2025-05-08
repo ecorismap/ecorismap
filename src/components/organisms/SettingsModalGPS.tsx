@@ -38,6 +38,7 @@ export const SettingsModalGPS = React.memo((props: Props) => {
       marginLeft: 3,
       paddingHorizontal: 5,
       verticalAlign: 'middle',
+      textAlignVertical: 'center',
     },
 
     checkbox: {
@@ -102,6 +103,7 @@ export const SettingsModalGPS = React.memo((props: Props) => {
       marginLeft: 3,
       paddingHorizontal: 5,
       verticalAlign: 'middle',
+      textAlignVertical: 'center',
     },
   });
 
