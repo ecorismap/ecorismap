@@ -18,10 +18,6 @@ import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
 import SplitScreen from './split';
 import { t } from '../i18n/config';
-// import { Platform } from 'react-native';
-// import { useSelector } from 'react-redux';
-// import { FUNC_LOGIN } from '../constants/AppConstants';
-// import { RootState } from '../store';
 
 export type RootStackParamList = {
   Account: { accountFormState?: AccountFormStateType; message?: string; previous?: keyof RootStackParamList };
@@ -104,8 +100,6 @@ export type Props_LayerEditFieldItem = NativeStackScreenProps<RootStackParamList
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function Routes() {
-  // const user = useSelector((state: RootState) => state.user);
-
   return (
     <NavigationContainer
       documentTitle={{
@@ -118,27 +112,21 @@ export default function Routes() {
           animation: 'none',
         }}
       >
-        {/* {FUNC_LOGIN && user.uid === undefined && Platform.OS === 'web' ? (
-          <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
-        ) : ( */}
-        <>
-          <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-          <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
-          <Stack.Screen
-            name="AccountSettings"
-            component={AccountSettings}
-            options={{ title: t('AccountSettings.navigation.title') }}
-          />
-          <Stack.Screen name="Purchases" component={Purchases} options={{ title: t('Purchases.navigation.title') }} />
-          <Stack.Screen name="Projects" component={Projects} options={{ title: t('Projects.navigation.title') }} />
-          <Stack.Screen
-            name="ProjectEdit"
-            component={ProjectEdit}
-            options={{ title: t('ProjectEdit.navigation.title') }}
-          />
-          <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
-        </>
-        {/* )} */}
+        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+        <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="AccountSettings"
+          component={AccountSettings}
+          options={{ title: t('AccountSettings.navigation.title') }}
+        />
+        <Stack.Screen name="Purchases" component={Purchases} options={{ title: t('Purchases.navigation.title') }} />
+        <Stack.Screen name="Projects" component={Projects} options={{ title: t('Projects.navigation.title') }} />
+        <Stack.Screen
+          name="ProjectEdit"
+          component={ProjectEdit}
+          options={{ title: t('ProjectEdit.navigation.title') }}
+        />
+        <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
