@@ -1,3 +1,9 @@
+jest.mock('@react-native-firebase/auth', () => ({
+  __esModule: true,
+  getAuth: jest.fn(() => ({ currentUser: { uid: 'test-user' } })),
+  default: {},
+}));
+
 import React from 'react';
 import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
@@ -22,22 +28,27 @@ beforeAll(() => {
 
 jest.mock('@react-native-firebase/app', () => ({
   __esModule: true,
-  default: {
-    app: jest.fn(() => ({ functions: jest.fn(() => ({})) })),
-  },
+  getApp: jest.fn().mockReturnValue({}),
 }));
-jest.mock('@react-native-firebase/functions', () => ({}));
+jest.mock('@react-native-firebase/functions', () => ({
+  __esModule: true,
+  getFunctions: jest.fn().mockReturnValue({}),
+}));
 jest.mock('@react-native-firebase/app-check', () => ({
   __esModule: true,
-  firebase: {
-    app: jest.fn(() => ({ functions: jest.fn(() => ({})) })),
-    appCheck: jest.fn(() => ({ activate: jest.fn() })),
-  },
-  default: {},
+  initializeAppCheck: jest.fn(),
+  ReactNativeFirebaseAppCheckProvider: jest.fn(
+    () =>
+      ({
+        configure: jest.fn(),
+      } as unknown as React.FC)
+  ),
 }));
-jest.mock('@react-native-firebase/auth', () => ({ __esModule: true, default: {} }));
-jest.mock('@react-native-firebase/firestore', () => ({ __esModule: true, default: jest.fn(() => ({})) }));
-jest.mock('@react-native-firebase/storage', () => ({ __esModule: true, default: jest.fn(() => ({})) }));
+jest.mock('@react-native-firebase/firestore', () => ({
+  __esModule: true,
+  getFirestore: jest.fn().mockReturnValue({}),
+}));
+jest.mock('@react-native-firebase/storage', () => ({ __esModule: true, getStorage: jest.fn().mockReturnValue({}) }));
 jest.mock('i18next', () => ({
   __esModule: true,
   default: { use: jest.fn().mockReturnThis(), init: jest.fn().mockReturnThis(), language: 'ja' },

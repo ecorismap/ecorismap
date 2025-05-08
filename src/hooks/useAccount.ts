@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as firebase from '../lib/firebase/sign-in';
 import { userInitialState, setUserAction } from '../modules/user';
 import { Platform } from 'react-native';
-import { initFirebaseAuth } from '../lib/firebase/sign-in.web';
+import { FBsignOut, initFirebaseAuth, FBsendPasswordResetEmail, FBupdateProfile } from '../lib/firebase/sign-in';
 
 import { RootState } from '../store';
 import { AccountFormStateType, UserType } from '../types';
@@ -171,14 +171,14 @@ export const useAccount = (): UseAccountReturnType => {
   );
 
   const logout = useCallback(async () => {
-    await firebase.signOut();
+    await FBsignOut();
     dispatch(setUserAction(userInitialState));
     dispatch(setProjectsAction(projectsInitialState));
   }, [dispatch]);
 
   const resetUserPassword = useCallback(async (email: string) => {
     setIsLoading(true);
-    const response = await firebase.sendPasswordResetEmail(email);
+    const response = await FBsendPasswordResetEmail(email);
     setIsLoading(false);
     if (response === 'auth/user-not-found') {
       setAccountMessage(t('hooks.message.noUser'));
@@ -237,7 +237,7 @@ export const useAccount = (): UseAccountReturnType => {
   const updateUserProfile = useCallback(
     async (displayName: string, photoURL: string) => {
       setIsLoading(true);
-      const { isOK, authUser } = await firebase.updateProfile(displayName, photoURL);
+      const { isOK, authUser } = await FBupdateProfile(displayName, photoURL);
       setIsLoading(false);
       if (!isOK || authUser === undefined) {
         setAccountMessage(t('hooks.message.failUpdateProfile'));

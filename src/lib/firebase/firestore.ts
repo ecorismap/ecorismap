@@ -16,13 +16,28 @@ import {
 import sizeof from 'firestore-size';
 import obj_sizeof from 'object-sizeof';
 import { decryptEThree as dec, encryptEThree as enc } from '../virgilsecurity/e3kit';
-import firebase, { firestore, functions } from './firebase';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  firestore,
+  functions,
+  getDoc,
+  getDocs,
+  getDocsFromServer,
+  httpsCallable,
+  onSnapshot,
+  query,
+  setDoc,
+  Timestamp,
+  where,
+  writeBatch,
+} from './firebase';
 import { t } from '../../i18n/config';
-import { Timestamp } from '@firebase/firestore-types';
 
 export const getUidByEmail = async (email: string) => {
   try {
-    const getUid = functions.httpsCallable('getUidByEmail');
+    const getUid = httpsCallable(functions, 'getUidByEmail');
     const { data } = await getUid({ email: email });
     if (data === null) throw new Error(t('common.message.failGetUids'));
     return data as string;
@@ -33,7 +48,7 @@ export const getUidByEmail = async (email: string) => {
 
 export const getUidsByEmails = async (emails: string[]) => {
   try {
-    const getUids = functions.httpsCallable('getUidsByEmails');
+    const getUids = httpsCallable(functions, 'getUidsByEmails');
     const { data } = await getUids({ emails: emails });
     return data as (string | null)[];
   } catch (e) {
@@ -43,16 +58,13 @@ export const getUidsByEmails = async (emails: string[]) => {
 
 export const getAllProjects = async (uid: string, excludeMember = false) => {
   try {
-    let querySnapshot;
+    let q;
     if (excludeMember) {
-      querySnapshot = await firestore.collection('projects').where('ownerUid', '==', uid).get({ source: 'server' });
+      q = query(collection(firestore, 'projects'), where('ownerUid', '==', uid));
     } else {
-      querySnapshot = await firestore
-        .collection('projects')
-        .where('membersUid', 'array-contains', uid)
-        .get({ source: 'server' });
+      q = query(collection(firestore, 'projects'), where('membersUid', 'array-contains', uid));
     }
-
+    const querySnapshot = await getDocsFromServer(q);
     const result = querySnapshot.docs.map(async (doc) => {
       const { encdata, ownerUid, encryptedAt, license, storage, ...others } = doc.data() as ProjectFS;
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, doc.id);
@@ -93,7 +105,7 @@ export const addProject = async (project: ProjectType) => {
       adminsUid,
       membersUid,
       encdata,
-      encryptedAt: firebase.firestore.Timestamp.now(),
+      encryptedAt: Timestamp.now(),
     };
     await firestore.doc(`projects/${id}`).set(projectFS);
 
@@ -113,7 +125,7 @@ export const updateProject = async (project: ProjectType) => {
       adminsUid,
       membersUid,
       encdata,
-      encryptedAt: firebase.firestore.Timestamp.now(),
+      encryptedAt: Timestamp.now(),
     };
     await firestore.doc(`projects/${project.id}`).update(updateProjectFS);
     return { isOK: true, message: '' };
@@ -126,10 +138,12 @@ export const updateProject = async (project: ProjectType) => {
 export const deleteAllProjects = async (uid: string) => {
   const deletedIds = [];
   try {
-    const querySnapshot = await firestore.collection('projects').where('ownerUid', '==', uid).get();
+    const q = query(collection(firestore, 'projects'), where('ownerUid', '==', uid));
+    const querySnapshot = await getDocs(q);
     for (const v of querySnapshot.docs) {
       //projectを削除するとfunctionsがトリガーされsubcollectionも削除する
-      await firestore.collection('projects').doc(v.id).delete();
+      const projectRef = doc(firestore, 'projects', v.id);
+      await deleteDoc(projectRef);
       deletedIds.push(v.id);
     }
     return { isOK: true, message: '', deletedIds };
@@ -141,28 +155,40 @@ export const deleteAllProjects = async (uid: string) => {
 
 export const deleteProject = async (projectId: string) => {
   try {
-    //projectを削除するとfunctionsがトリガーされsubcollectionも削除する
-    await firestore.collection('projects').doc(projectId).delete();
+    // ドキュメント参照を作成
+    const projectRef = doc(firestore, 'projects', projectId);
+    // ドキュメント削除（Cloud Functions 側で subcollection も削除される想定）
+    await deleteDoc(projectRef);
     return { isOK: true, message: '' };
   } catch (error) {
+    console.error('プロジェクト削除エラー:', error);
     return { isOK: false, message: 'プロジェクトの削除に失敗しました' };
   }
 };
 
 export const deleteAllData = async (projectId: string) => {
   try {
-    const querySnapshot = await firestore.collection(`projects/${projectId}/data`).get();
-    if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
-    const batch = firestore.batch();
-    //@ts-ignore
-    querySnapshot.docs.forEach((v) => batch.delete(v.ref));
-    batch.commit();
+    // 1. サブコレクション 'data' への参照を取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    // 2. 全ドキュメントを取得
+    const querySnapshot = await getDocs(dataCol);
+    if (querySnapshot.empty) {
+      return { isOK: true, message: '' };
+    }
+
+    // 3. バッチを作成して一括削除
+    const batch = writeBatch(firestore);
+    querySnapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+    await batch.commit();
+
     return { isOK: true, message: '' };
   } catch (error) {
+    console.error('データ削除エラー:', error);
     return { isOK: false, message: 'データの削除に失敗しました' };
   }
 };
-
 export const deleteData = async (
   projectId: string,
   layerId: string,
@@ -170,39 +196,50 @@ export const deleteData = async (
   userId?: string
 ) => {
   try {
-    let querySnapshot;
+    // ベースのコレクション参照
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
 
+    // クエリを動的に組み立て
+    let q;
     if (permission === 'TEMPLATE') {
-      //他の管理者が作成したテンプレートも含め削除する
-      querySnapshot = await firestore
-        .collection(`projects/${projectId}/data`)
-        .where('layerId', '==', layerId)
-        .where('permission', '==', 'TEMPLATE')
-        .get();
+      // テンプレートを含めて削除
+      q = query(dataCol, where('layerId', '==', layerId), where('permission', '==', 'TEMPLATE'));
     } else if (permission !== undefined && userId !== undefined) {
-      querySnapshot = await firestore
-        .collection(`projects/${projectId}/data`)
-        .where('layerId', '==', layerId)
-        .where('userId', '==', userId)
-        .where('permission', '==', permission)
-        .get();
+      // 特定ユーザー＆権限のデータを削除
+      q = query(
+        dataCol,
+        where('layerId', '==', layerId),
+        where('userId', '==', userId),
+        where('permission', '==', permission)
+      );
     } else {
-      querySnapshot = await firestore.collection(`projects/${projectId}/data`).where('layerId', '==', layerId).get();
+      // layerId のみで削除
+      q = query(dataCol, where('layerId', '==', layerId));
     }
-    if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
-    const batch = firestore.batch();
-    //@ts-ignore
-    querySnapshot.docs.forEach((v) => batch.delete(v.ref));
-    batch.commit();
+
+    // ドキュメント取得
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      return { isOK: true, message: '' };
+    }
+
+    // バッチ処理で一括削除
+    const batch = writeBatch(firestore);
+    snapshot.docs.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+    await batch.commit();
+
     return { isOK: true, message: '' };
   } catch (error) {
+    console.error('データ削除エラー:', error);
     return { isOK: false, message: 'データの削除に失敗しました' };
   }
 };
 
 export const uploadProjectSettings = async (projectId: string, editorUid: string, settings: ProjectSettingsType) => {
   try {
-    const timestamp = firebase.firestore.Timestamp.now();
+    const timestamp = Timestamp.now();
     const encdata = await enc({ ...settings, updatedAt: toDate(timestamp) }, editorUid, projectId);
     const settingsFS: ProjectSettingsFS = { editorUid, encdata, encryptedAt: timestamp };
     await firestore.doc(`projects/${projectId}/settings/default`).set(settingsFS);
@@ -213,30 +250,59 @@ export const uploadProjectSettings = async (projectId: string, editorUid: string
   }
 };
 
-export const getSettingsUpdatedAt = async (projectId: string) => {
+export const getSettingsUpdatedAt = async (projectId: string): Promise<Date | undefined> => {
   try {
-    const settings = (await firestore.doc(`projects/${projectId}/settings/default`).get()).data() as ProjectSettingsFS;
+    // ドキュメント参照をモジュラー API で作成
+    const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
+    // ドキュメントを取得
+    const snap = await getDoc(settingsRef);
+    if (!snap.exists()) {
+      // ドキュメントが存在しない場合
+      return undefined;
+    }
+    // データをプロジェクト設定型として取得
+    const settings = snap.data() as ProjectSettingsFS;
+    // encryptedAt フィールドを Date に変換して返す
     return toDate(settings.encryptedAt);
   } catch (error) {
-    console.log(error);
+    console.error('設定更新日時取得エラー:', error);
     return undefined;
   }
 };
 
-export const downloadProjectSettings = async (projectId: string) => {
+export const downloadProjectSettings = async (
+  projectId: string
+): Promise<
+  { isOK: true; message: ''; data: ProjectSettingsType } | { isOK: false; message: string; data?: undefined }
+> => {
   try {
-    const settings = (await firestore.doc(`projects/${projectId}/settings/default`).get()).data() as ProjectSettingsFS;
-    const data: ProjectSettingsType | undefined = await dec(
-      toDate(settings.encryptedAt),
-      settings.encdata,
-      settings.editorUid,
-      projectId
-    );
-    if (data === undefined) throw new Error('復号化できません');
+    // ドキュメント参照をモジュラー API で作成
+    const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
+    // ドキュメントを取得
+    const snap = await getDoc(settingsRef);
+    if (!snap.exists()) {
+      throw new Error('設定ドキュメントが存在しません');
+    }
+
+    // データを型付きで取得
+    const settings = snap.data() as ProjectSettingsFS;
+
+    // encryptedAt を Date に変換
+    const encryptedAtDate = toDate(settings.encryptedAt);
+
+    // 復号化を実行
+    const data = await dec(encryptedAtDate, settings.encdata, settings.editorUid, projectId);
+    if (data === undefined) {
+      throw new Error('復号化できません');
+    }
+
     return { isOK: true, message: '', data };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'プロジェクトの設定のダウンロードに失敗しました', data: undefined };
+    console.error('プロジェクト設定ダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'プロジェクトの設定のダウンロードに失敗しました',
+    };
   }
 };
 
@@ -322,45 +388,67 @@ const chunkData = (encdataArray: string[], chunkSize: number): string[][] => {
 const MAX_SIZE_KB = 5000;
 const CHUNK_SIZE = 900 * 1024; // 900KB
 
-const uploadChunks = async (
+export const uploadChunks = async (
   projectId: string,
   chunks: string[][],
   userId: string,
   layerId: string,
   permission: PermissionType | 'TEMPLATE'
-) => {
-  const batch = firestore.batch();
-  for (let i = 0; i < chunks.length; i++) {
+): Promise<void> => {
+  // モジュラー API でバッチを作成
+  const batch = writeBatch(firestore);
+
+  // data サブコレクション参照
+  const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+  // 各チャンクをバッチに追加
+  chunks.forEach((chunk, index) => {
     const dataFS: DataFS = {
       userId,
       layerId,
       permission,
-      encdata: chunks[i],
-      encryptedAt: firebase.firestore.Timestamp.now(),
-      chunkIndex: i,
+      encdata: chunk,
+      encryptedAt: Timestamp.now(),
+      chunkIndex: index,
     };
-    const docRef = firestore.collection(`projects/${projectId}/data`).doc();
-    //@ts-ignore
+    // 自動 ID のドキュメント参照を作成
+    const docRef = doc(dataCol);
     batch.set(docRef, dataFS);
-  }
+  });
+
+  // コミットして一括書き込みを実行
   await batch.commit();
 };
 
-const deleteExistingData = async (
+export const deleteExistingData = async (
   projectId: string,
   userId: string,
   layerId: string,
   permission: PermissionType | 'TEMPLATE'
-) => {
-  const batch = firestore.batch();
-  const querySnapshot = await firestore
-    .collection(`projects/${projectId}/data`)
-    .where('permission', '==', permission)
-    .where('layerId', '==', layerId)
-    .where('userId', '==', userId)
-    .get();
-  //@ts-ignore
-  querySnapshot.docs.forEach((doc) => batch.delete(doc.ref));
+): Promise<void> => {
+  // 1. バッチ作成
+  const batch = writeBatch(firestore);
+
+  // 2. サブコレクションへの参照を作成
+  const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+  // 3. クエリを組み立て
+  const q = query(
+    dataCol,
+    where('permission', '==', permission),
+    where('layerId', '==', layerId),
+    where('userId', '==', userId)
+  );
+
+  // 4. 一致するドキュメントを取得
+  const snapshot = await getDocs(q);
+
+  // 5. バッチに削除操作を登録
+  snapshot.docs.forEach((docSnap) => {
+    batch.delete(docSnap.ref);
+  });
+
+  // 6. 一括コミットで削除を実行
   await batch.commit();
 };
 
@@ -382,40 +470,66 @@ export const uploadDataHelper = async (projectId: string, data: ProjectDataType)
 
 export const downloadCommonData = async (projectId: string) => {
   try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'COMMON')
-      .get();
+    // 1. サブコレクション 'data' への参照を作成
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+    // 2. 'permission' フィールドが 'COMMON' のドキュメントを絞り込むクエリを作成
+    const q = query(dataCol, where('permission', '==', 'COMMON'));
+
+    // 3. クエリを実行してスナップショットを取得
+    const projectDataSet = await getDocs(q);
+
+    // 4. ユーティリティ関数で変換
     const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'コモンデータのダウンロードに失敗しました', data: undefined };
+    console.error('コモンデータダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'コモンデータのダウンロードに失敗しました',
+    };
   }
 };
 
 export const downloadAllData = async (projectId: string) => {
   try {
-    const projectDataSet = await firestore.collection(`projects/${projectId}/data`).get();
+    // サブコレクション 'data' への参照をモジュラー API で取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+    // 全ドキュメントを取得
+    const projectDataSet = await getDocs(dataCol);
+
+    // ユーティリティ関数で変換
     const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+    console.error('データダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'データのダウンロードに失敗しました',
+    };
   }
 };
 
 export const downloadPublicAndCommonData = async (projectId: string) => {
   try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', 'in', ['PUBLIC', 'COMMON'])
-      .get();
+    // 1. サブコレクション 'data' への参照を取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    // 2. 'permission' が 'PUBLIC' または 'COMMON' のドキュメントを取得するクエリを作成
+    const q = query(dataCol, where('permission', 'in', ['PUBLIC', 'COMMON']));
+    // 3. クエリを実行してスナップショットを取得
+    const projectDataSet = await getDocs(q);
+    // 4. ユーティリティ関数でスナップショットをアプリ向けデータ形式に変換
     const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+    console.error('データダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'データのダウンロードに失敗しました',
+    };
   }
 };
 
@@ -426,19 +540,29 @@ export const downloadPublicAndCommonData = async (projectId: string) => {
  */
 export const downloadPublicData = async (projectId: string, { excludeUserId }: { excludeUserId?: string } = {}) => {
   try {
-    const query = firestore.collection(`projects/${projectId}/data`).where('permission', '==', 'PUBLIC');
-    const projectDataSet = await query.get();
+    // 1. data サブコレクションへの参照を取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    // 2. 'PUBLIC' 権限のドキュメントを絞り込むクエリを作成
+    const q = query(dataCol, where('permission', '==', 'PUBLIC'));
+    // 3. クエリを実行してスナップショットを取得
+    const projectDataSet = await getDocs(q);
 
+    // 4. excludeUserId があれば対象外ユーザーのドキュメントをフィルタリング
     let docs = projectDataSet.docs;
     if (excludeUserId) {
-      docs = docs.filter((doc) => doc.data().userId !== excludeUserId);
+      docs = docs.filter((docSnap) => docSnap.data().userId !== excludeUserId);
     }
 
+    // 5. フィルタ後の docs 配列をユーティリティ関数に渡す
     const dataSet = await projectDataSetToDataSet(projectId, { docs });
+
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.error(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+    console.error('データダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'データのダウンロードに失敗しました',
+    };
   }
 };
 
@@ -452,56 +576,89 @@ export const downloadPrivateData = async (
   { userId, excludeUserId }: { userId?: string; excludeUserId?: string } = {}
 ) => {
   try {
-    let query = firestore.collection(`projects/${projectId}/data`).where('permission', '==', 'PRIVATE');
+    // 1. 'data' サブコレクションへの参照を取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+    // 2. 'permission' === 'PRIVATE' のクエリを組み立て
+    let q = query(dataCol, where('permission', '==', 'PRIVATE'));
+
+    // 3. userId が指定されていればさらに絞り込む
     if (userId) {
-      query = query.where('userId', '==', userId);
+      q = query(q, where('userId', '==', userId));
     }
-    const projectDataSet = await query.get();
+
+    // 4. クエリを実行してスナップショットを取得
+    const projectDataSet = await getDocs(q);
+
+    // 5. スナップショットをアプリ用データ形式に変換
     let dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
+
+    // 6. excludeUserId があれば結果から除外
     if (excludeUserId) {
-      dataSet = dataSet.filter((data) => data.userId !== excludeUserId);
+      dataSet = dataSet.filter((item) => item.userId !== excludeUserId);
     }
+
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+    console.error('プライベートデータダウンロードエラー:', error);
+    return {
+      isOK: false,
+      message: 'データのダウンロードに失敗しました',
+    };
   }
 };
-
 export const downloadTemplateData = async (projectId: string) => {
   try {
-    const projectDataSet = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('permission', '==', 'TEMPLATE')
-      .get();
+    // 'data' サブコレクションを参照し、permission==='TEMPLATE' のドキュメントを取得
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const q = query(dataCol, where('permission', '==', 'TEMPLATE'));
+    const projectDataSet = await getDocs(q);
+
+    // 取得したスナップショットをアプリ用データ形式に変換
     const dataSet = await projectDataSetToDataSet(projectId, projectDataSet);
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
-    console.log(error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました', data: undefined };
+    console.error('テンプレートデータダウンロードエラー:', error);
+    return { isOK: false, message: 'データのダウンロードに失敗しました' };
   }
 };
 
+/**
+ * 現在位置情報を暗号化してアップロードします
+ */
 export const uploadCurrentPosition = async (
   userId: string,
   projectId: string,
   data: { icon: { photoURL: string | null; initial: string }; coords: LocationType }
 ) => {
   try {
+    // データを暗号化
     const encdata = await enc(data, userId, projectId);
-    const positionFS: PositionFS = { encdata, encryptedAt: firebase.firestore.Timestamp.now() };
-    await firestore.doc(`projects/${projectId}/position/${userId}`).set(positionFS);
+    const positionFS: PositionFS = {
+      encdata,
+      encryptedAt: Timestamp.now(),
+    };
+
+    // ドキュメント参照を作成してアップロード
+    const positionRef = doc(firestore, 'projects', projectId, 'position', userId);
+    await setDoc(positionRef, positionFS);
+
     return { isOK: true, message: '' };
-  } catch (error: any) {
+  } catch (error) {
+    console.error('現在位置アップロードエラー:', error);
     return { isOK: false, message: '現在位置のアップロードに失敗しました' };
   }
 };
 
 export const deleteCurrentPosition = async (userId: string, projectId: string) => {
   try {
-    await firestore.collection(`projects/${projectId}/position`).doc(userId).delete();
+    // ドキュメント参照をモジュラー API で作成
+    const positionRef = doc(firestore, 'projects', projectId, 'position', userId);
+    // ドキュメント削除
+    await deleteDoc(positionRef);
     return { isOK: true, message: '' };
-  } catch (error: any) {
+  } catch (error) {
+    console.error('現在位置削除エラー:', error);
     return { isOK: false, message: '現在位置の削除に失敗しました' };
   }
 };
@@ -511,11 +668,20 @@ export const toDate = (timestamp: Timestamp) => {
 };
 
 export const updateLicense = async (project: ProjectType) => {
-  return await new Promise<{ isOK: boolean; message: string }>((resolve) => {
-    //@ts-ignore
-    const unsubscribe = firestore.doc(`projects/${project.id}`).onSnapshot(async (snapshot) => {
-      if (!snapshot.exists) return;
-      const license = snapshot.get('license');
+  // ドキュメント参照をモジュラー API で作成
+  const projectRef = doc(firestore, 'projects', project.id);
+
+  return new Promise<{ isOK: boolean; message: string }>((resolve) => {
+    // onSnapshot でリアルタイム監視を開始
+    const unsubscribe = onSnapshot(projectRef, (snapshot) => {
+      if (!snapshot.exists()) {
+        return;
+      }
+      // フィールドを取得（snapshot.get() も使用可能）
+      const data = snapshot.data();
+      const license = data?.license as string | undefined;
+
+      // license が設定されていて 'Unknown' でなければ解決
       if (license !== undefined && license !== 'Unknown') {
         unsubscribe();
         resolve({ isOK: true, message: '' });
@@ -532,19 +698,28 @@ export const updateLayerDataPermission = async (
   newPermission: string
 ) => {
   try {
-    const querySnapshot = await firestore
-      .collection(`projects/${projectId}/data`)
-      .where('layerId', '==', layerId)
-      .where('permission', '==', oldPermission)
-      .get();
-    if (querySnapshot.docs.length === 0) return { isOK: true, message: '' };
-    const batch = firestore.batch();
-    querySnapshot.docs.forEach((doc) => {
-      batch.update(doc.ref, { permission: newPermission });
+    // 1. data サブコレクションを参照し、layerId と oldPermission で絞り込むクエリを作成
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const q = query(dataCol, where('layerId', '==', layerId), where('permission', '==', oldPermission));
+
+    // 2. クエリを実行
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      // 更新対象がなければ即座に成功を返す
+      return { isOK: true, message: '' };
+    }
+
+    // 3. バッチ作成＆更新操作を登録
+    const batch = writeBatch(firestore);
+    snapshot.docs.forEach((docSnap) => {
+      batch.update(docSnap.ref, { permission: newPermission });
     });
+
+    // 4. 一括コミットで更新を実行
     await batch.commit();
     return { isOK: true, message: '' };
   } catch (error) {
+    console.error('権限一括更新エラー:', error);
     return { isOK: false, message: '権限の一括更新に失敗しました' };
   }
 };

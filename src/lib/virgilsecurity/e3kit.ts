@@ -1,22 +1,19 @@
 import { EThree } from '@virgilsecurity/e3kit-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import firebaseRN from '@react-native-firebase/app';
-//firebaseRN.app().functions('asia-northeast1')を呼ぶために以下の空のインポートが必要
-import {} from '@react-native-firebase/functions';
 import { ProjectType } from '../../types';
 import { virgilCrypto } from 'react-native-virgil-crypto';
 import { Buffer } from 'buffer';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
-import { gzip, unzip } from '../../utils/Zip';
+import { gzip, saveZipFileToTemp, unzip, unzipFileToTemp } from '../../utils/Zip';
+import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
-//let group: Group | null = null;
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
 
-  const getToken = firebaseRN.app().functions('asia-northeast1').httpsCallable('getVirgilJwt');
+  const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
   try {
@@ -126,7 +123,6 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
   try {
     if (!FUNC_ENCRYPTION) {
       return [gzip(JSON.stringify(data))];
-      //return [JSON.stringify(data)];
     }
     const { isOK, group } = await loadGroup(groupId, userId);
     if (!isOK || group === undefined) {
@@ -146,7 +142,6 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
   try {
     if (!FUNC_ENCRYPTION) {
       return JSON.parse(unzip(dataString[0]));
-      //return JSON.parse(dataString[0]);
     }
 
     const { isOK, group } = await loadGroup(groupId, userId);
@@ -191,7 +186,10 @@ export const encryptFileEThree = async (
 };
 export const encryptFileEThreeRN = async (uri: string) => {
   try {
-    //if (!FUNC_ENCRYPTION) return { encUri: uri, key: '' };
+    if (!FUNC_ENCRYPTION) {
+      const zipUri = await saveZipFileToTemp(uri);
+      return { encUri: zipUri, key: '' };
+    }
     const keypair = virgilCrypto.generateKeys();
     const encryptedFilePath = await virgilCrypto.encryptFile({
       inputPath: uri,
@@ -228,8 +226,10 @@ export const decryptFileEThree = async (
 
 export const decryptFileEThreeRN = async (uri: string, key: string) => {
   try {
-    //なぜコメントアウト？実装必要では？
-    //if (!FUNC_ENCRYPTION) return { decUri: uri };
+    if (!FUNC_ENCRYPTION) {
+      const unzipUri = await unzipFileToTemp(uri);
+      return { decUri: unzipUri };
+    }
     const decryptedFilePath = await virgilCrypto.decryptFile({
       inputPath: uri,
       outputPath: undefined,

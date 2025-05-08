@@ -1,10 +1,6 @@
 import * as FileSystem from 'expo-file-system';
-// let FileSaver: { saveAs: (arg0: any, arg1: string) => void };
-// if (Platform.OS === 'web') {
-//   FileSaver = require('file-saver');
-// }
-
 import { Platform } from 'react-native';
+import { storage, ref, uploadBytes, getDownloadURL, deleteObject, listAll } from './firebase';
 import { t } from '../../i18n/config';
 import {
   encryptFileEThreeRN as encFileRN,
@@ -12,7 +8,6 @@ import {
   encryptFileEThree as encFile,
   decryptFileEThree as decFile,
 } from '../virgilsecurity/e3kit';
-import { storage } from './firebase';
 import { db } from '../../utils/db';
 import { blobToBase64 } from '../../utils/File.web';
 
@@ -22,18 +17,20 @@ export const uploadDictionary = async (projectId: string, layerId: string, dicti
     if (encdata === undefined || key === undefined) {
       return { isOK: false, message: t('firebase.message.failEncryptDictionary'), key: undefined };
     }
-    const reference = storage.ref().child(`projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
-    await reference.put(encdata as Blob);
+    const storageRef = ref(storage, `projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
+    await uploadBytes(storageRef, encdata as Blob);
     return { isOK: true, message: '', key };
   } catch (error) {
-    console.log('uploadDictionary Error:', error);
+    console.error('uploadDictionary Error:', error);
     return { isOK: false, message: t('firebase.message.failUploadDictionary'), key: undefined };
   }
 };
 
 export const downloadDictionary = async (projectId: string, layerId: string, key: string) => {
   try {
-    const url = await storage.ref(`projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`).getDownloadURL();
+    const storageRef = ref(storage, `projects/${projectId}/DICTIONARY/${layerId}/dictionary.sqlite`);
+    const url = await getDownloadURL(storageRef);
+
     if (url === undefined) {
       return { isOK: false, message: t('firebase.message.failGetDictionary') };
     }
@@ -82,12 +79,12 @@ export const uploadPDF = async (projectId: string, tileMapId: string) => {
     if (encdata === undefined || key === undefined) {
       return { isOK: false, message: t('firebase.message.failEncryptPDF'), url: null, key: null };
     }
-    const reference = storage.ref().child(`projects/${projectId}/PDF/${tileMapId}`);
-    await reference.put(encdata as Blob);
-    const url = await storage.ref(`projects/${projectId}/PDF/${tileMapId}`).getDownloadURL();
+    const storageRef = ref(storage, `projects/${projectId}/PDF/${tileMapId}`);
+    await uploadBytes(storageRef, encdata as Blob);
+    const url = await getDownloadURL(storageRef);
     return { isOK: true, message: '', url: 'pdf://' + url, key };
   } catch (error) {
-    console.log('uploadPDF Error:', error);
+    console.error('uploadPDF Error:', error);
     return { isOK: false, message: t('firebase.message.failUploadPDF'), url: null, key: null };
   }
 };
@@ -130,48 +127,48 @@ export const downloadPDF = async (url: string, key: string) => {
 
 export const deleteProjectPDF = async (projectId: string, excludeItems: string[]) => {
   try {
-    const reference = storage.ref(`projects/${projectId}/PDF`);
-    reference.listAll().then(async (listResults) => {
-      const promises = listResults.items.map((item) => {
-        console.log(item.name);
-        if (excludeItems.includes(item.name)) {
-          return;
-        }
-        return item.delete();
-      });
-      await Promise.all(promises);
-    });
+    const pdfFolderRef = ref(storage, `projects/${projectId}/PDF`);
+    const listResult = await listAll(pdfFolderRef);
+    await Promise.all(
+      listResult.items.map((itemRef) =>
+        excludeItems.includes(itemRef.name) ? Promise.resolve() : deleteObject(itemRef)
+      )
+    );
     return { isOK: true, message: '' };
   } catch (error) {
-    console.log('deleteProjecPDF Error:', error);
+    console.error('deleteProjectPDF Error:', error);
     return { isOK: false, message: t('firebase.message.failDeleteProjectPDF') };
   }
 };
 
 export const uploadPhoto = async (projectId: string, layerId: string, userId: string, photoId: string, uri: string) => {
+  const path = `projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`;
+  const storageRef = ref(storage, path);
   try {
+    let payload: Blob | string | undefined;
+    let key: string | undefined;
+
     if (Platform.OS === 'web') {
-      const { encdata, key } = await encFile(uri);
-      if (encdata === undefined || key === undefined) {
-        return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
-      }
-      const reference = storage.ref().child(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
-      await reference.put(encdata as Blob);
-      const url = await storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`).getDownloadURL();
-      return { isOK: true, message: '', url, key };
+      const { encdata, key: k } = await encFile(uri);
+      payload = encdata as Blob | undefined;
+      key = k;
     } else {
-      const { encUri, key } = await encFileRN(uri);
-      if (encUri === undefined || key === undefined) {
-        return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
-      }
-      const reference = storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
-      //@ts-ignore
-      await reference.putFile(encUri);
-      const url = await storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`).getDownloadURL();
-      return { isOK: true, message: '', url, key };
+      const { encUri, key: k } = await encFileRN(uri);
+      payload = encUri;
+      key = k;
     }
+    if (!payload || !key) {
+      return { isOK: false, message: t('firebase.message.failEncryptPhoto'), url: null, key: null };
+    }
+    if (Platform.OS === 'web') {
+      await uploadBytes(storageRef, payload as Blob);
+    } else {
+      await storageRef.putFile(payload as string);
+    }
+    const url = await getDownloadURL(storageRef);
+    return { isOK: true, message: '', url, key };
   } catch (error) {
-    console.log('uploadPhoto Error:', error);
+    console.error('uploadPhoto Error:', error);
     return { isOK: false, message: t('firebase.message.failUploadPhoto'), url: null, key: null };
   }
 };
@@ -221,7 +218,7 @@ export const fetchPhoto = async (url: string, key: string) => {
       }
     }
   } catch (error) {
-    console.log('dowanloadPhoto Error:', error);
+    console.error('fetchPhoto Error:', error);
     return { isOK: false, message: t('firebase.message.failGetPhoto') };
   }
 };
@@ -252,28 +249,23 @@ export const downloadPhoto = async (url: string, key: string, filename: string, 
 
 export const deleteProjectStorageData = async (projectId: string) => {
   try {
-    const reference = storage.ref(`projects/${projectId}`);
-    reference.listAll().then((listResults) => {
-      const promises = listResults.items.map((item) => {
-        return item.delete();
-      });
-      Promise.all(promises);
-    });
+    const folderRef = ref(storage, `projects/${projectId}`);
+    const listResult = await listAll(folderRef);
+    await Promise.all(listResult.items.map((itemRef) => deleteObject(itemRef)));
     return { isOK: true, message: '' };
   } catch (error) {
-    console.log('deleteProjecStorageData Error:', error);
+    console.error('deleteProjectStorageData Error:', error);
     return { isOK: false, message: t('firebase.message.failDeleteProjectPhoto') };
   }
 };
 
 export const deleteStoragePhoto = async (projectId: string, layerId: string, userId: string, photoId: string) => {
   try {
-    console.log('deleteStoragePhoto:', projectId, layerId, userId, photoId);
-    const reference = storage.ref(`projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
-    await reference.delete();
+    const photoRef = ref(storage, `projects/${projectId}/PHOTO/${layerId}/${userId}/${photoId}`);
+    await deleteObject(photoRef);
     return { isOK: true, message: '' };
   } catch (error) {
-    console.log('deletePhoto Error:', error);
+    console.error('deleteStoragePhoto Error:', error);
     return { isOK: false, message: t('firebase.message.failDeletePhoto') };
   }
 };

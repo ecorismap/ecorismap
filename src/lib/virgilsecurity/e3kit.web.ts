@@ -1,16 +1,12 @@
 //@ts-ignore
 import { EThree } from '@virgilsecurity/e3kit-browser';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import 'firebase/compat/firestore';
-import 'firebase/compat/storage';
-import 'firebase/compat/functions';
 import { ProjectType } from '../../types';
 import { decryptSharedFile, encryptSharedFile } from './e3kit-browser';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
 import { gzip, unzip } from '../../utils/Zip';
 import { gzipFile, unzipFile } from '../../utils/Zip';
+import { functions, httpsCallable } from '../firebase/firebase';
 
 //ToDo バックアップUI
 //キーのリセット処理UI
@@ -20,7 +16,8 @@ let eThree: EThree;
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, state: '' };
 
-  const getToken = firebase.app().functions('asia-northeast1').httpsCallable('getVirgilJwt');
+  const getToken = httpsCallable(functions, 'getVirgilJwt');
+  //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
   try {
     eThree = await EThree.initialize(initializeFunction);
@@ -128,7 +125,6 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
   try {
     if (!FUNC_ENCRYPTION) {
       return [gzip(JSON.stringify(data))];
-      //return [JSON.stringify(data)];
     }
     const { isOK, group } = await loadGroup(groupId, userId);
     if (!isOK || group === undefined) {
@@ -148,7 +144,6 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
   try {
     if (!FUNC_ENCRYPTION) {
       return JSON.parse(unzip(dataString[0]));
-      //return JSON.parse(dataString[0]);
     }
 
     const { isOK, group } = await loadGroup(groupId, userId);
@@ -172,7 +167,6 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
 export const encryptFileEThreeRN = () => {};
 export const encryptFileEThree = async (uri: string) => {
   try {
-    //if (!FUNC_ENCRYPTION) return { encdata: file, key: '' };
     if (!FUNC_ENCRYPTION) return { encdata: await gzipFile(uri), key: '' };
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -191,7 +185,6 @@ export const encryptFileEThree = async (uri: string) => {
 export const decryptFileEThreeRN = () => {};
 export const decryptFileEThree = async (file: Blob, key: string) => {
   try {
-    //if (!FUNC_ENCRYPTION) return { decdata: file };
     if (!FUNC_ENCRYPTION) return { decdata: await unzipFile(file) };
     const decryptedData = await decryptSharedFile(file, key);
     return { decdata: decryptedData };

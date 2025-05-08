@@ -2,8 +2,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { Checkout_sessions, License, Price, Product } from '../types';
-import { firestore, functions } from '../lib/firebase/firebase';
 import { Platform } from 'react-native';
+import {
+  collection,
+  firestore,
+  functions,
+  getDocs,
+  query,
+  where,
+  httpsCallable,
+  getDoc,
+  orderBy,
+} from '../lib/firebase/firebase';
 
 export type UsePurchasesWebReturnType = {
   isLoading: boolean;
@@ -22,37 +32,40 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
 
   const getPortalLink = useCallback(async () => {
     if (Platform.OS !== 'web') return;
-    const createPortalLink = functions.httpsCallable('ext-firestore-stripe-payments-createPortalLink');
+    const createPortalLink = httpsCallable(functions, 'ext-firestore-stripe-payments-createPortalLink');
     const { data: link } = await createPortalLink({ returnUrl: window.location.origin });
     //@ts-ignore
     setCustomerPortal(link.url);
   }, []);
 
   const checkPurchased = useCallback(async () => {
-    let subscription;
-    let productData;
+    if (currentUser === undefined) {
+      setCustomerLicense(undefined);
+      return;
+    }
+    const q = query(
+      collection(firestore, 'customers', currentUser, 'subscriptions'),
+      where('status', 'in', ['active'])
+    );
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      setCustomerLicense('Free');
+      return;
+    }
+    const subDoc = querySnapshot.docs[0];
+    const subData = subDoc.data();
 
-    firestore
-      .collection('customers')
-      .doc(currentUser)
-      .collection('subscriptions')
-      .where('status', 'in', ['active'])
-      .onSnapshot(
-        async (snapshot) => {
-          if (snapshot.empty) {
-            setCustomerLicense('Free');
-            return;
-          }
-          subscription = snapshot.docs[0].data();
-          productData = (await subscription.product.get()).data();
-          setCustomerLicense(productData.name);
-          await getPortalLink();
-        },
-        (error) => {
-          console.log('$$$$$$$$$', error);
-          setCustomerLicense('Unkown');
-        }
-      );
+    // product フィールドが DocumentReference 型であることを想定
+    const productRef = subData.product;
+    const productSnap = await getDoc(productRef);
+    if (!productSnap.exists()) {
+      setCustomerLicense('Unknown');
+      return;
+    }
+
+    const productData = productSnap.data() as { name?: License };
+    setCustomerLicense(productData.name ?? 'Unknown');
+    await getPortalLink();
   }, [currentUser, getPortalLink]);
 
   const purchaseItem = async (price: string) => {
@@ -90,18 +103,19 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
   };
 
   const getProductData = useCallback(async () => {
-    const querySnapshot = await firestore
-      .collection('products')
-      .where('active', '==', true)
-      .orderBy('metadata.no')
-      .get();
-
+    const q = query(collection(firestore, 'products'), where('active', '==', true), orderBy('metadata.no'));
+    const querySnapshot = await getDocs(q);
     const data = querySnapshot.docs.map(async (productDoc) => {
       const product = productDoc.data() as Product;
       //エラーで読み込まれないときは、orderByのためのインデックスが作成されていない。
       //デベロッパーコンソールにindex作成のリンクが出力されているのでクリック。
-      const priceSnap = await productDoc.ref.collection('prices').where('active', '==', true).get();
-      const prices = priceSnap.docs.map((priceDoc) => ({ priceId: priceDoc.id, price: priceDoc.data() as Price }));
+      const pricesRef = collection(productDoc.ref, 'prices');
+      const pricesQuery = query(pricesRef, where('active', '==', true));
+      const priceSnap = await getDocs(pricesQuery);
+      const prices = priceSnap.docs.map((priceDoc) => ({
+        priceId: priceDoc.id,
+        price: priceDoc.data() as Price,
+      }));
       return { product, prices };
     });
     setProducts(await Promise.all(data));
