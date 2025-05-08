@@ -23,6 +23,7 @@ export const COLOR = {
   GRAY4: '#555',
   ALFAGRAY: '#55555555',
   BLUE: '#007AFF',
+  DARKBLUE: '#0000FF',
   LIGHTBLUE: '#b0c4de',
   LIGHTBLUE2: '#4285F4',
   ALFABLUE: '#007AFF99',

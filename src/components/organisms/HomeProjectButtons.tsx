@@ -49,7 +49,7 @@ export const HomeProjectButtons = React.memo(() => {
               name="home"
               onPress={() => pressJumpProject()}
               borderRadius={50}
-              backgroundColor={COLOR.BLUE}
+              backgroundColor={COLOR.DARKGREEN}
               tooltipText={t('Home.tooltip.jumpProject')}
               labelText={t('Home.label.jumpProject')}
             />
@@ -59,7 +59,7 @@ export const HomeProjectButtons = React.memo(() => {
               name="cloud-download"
               onPress={pressDownloadData}
               borderRadius={50}
-              backgroundColor={COLOR.BLUE}
+              backgroundColor={COLOR.DARKBLUE}
               tooltipText={t('Home.tooltip.downloadData')}
               labelText={t('Home.label.downloadData')}
             />
@@ -67,10 +67,12 @@ export const HomeProjectButtons = React.memo(() => {
           <View style={{ marginHorizontal: 9 }}>
             <Button
               name="cloud-upload"
-              backgroundColor={COLOR.BLUE}
+              color={COLOR.BLACK}
+              backgroundColor={COLOR.YELLOW}
               onPress={pressUploadData}
               tooltipText={t('Home.tooltip.uploadData')}
               labelText={t('Home.label.uploadData')}
+              labelTextColor={COLOR.BLACK}
             />
           </View>
           {/* <View style={{ marginHorizontal: 9 }}>
@@ -85,7 +87,7 @@ export const HomeProjectButtons = React.memo(() => {
           <View style={{ marginHorizontal: 9 }}>
             <Button
               name="close-thick"
-              backgroundColor={COLOR.BLUE}
+              backgroundColor={COLOR.DARKRED}
               disabled={false}
               onPress={pressCloseProject}
               tooltipText={t('Home.tooltip.closeProject')}
