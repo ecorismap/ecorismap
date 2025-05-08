@@ -30,6 +30,7 @@ import {
   query,
   setDoc,
   Timestamp,
+  updateDoc,
   where,
   writeBatch,
 } from './firebase';
@@ -107,7 +108,7 @@ export const addProject = async (project: ProjectType) => {
       encdata,
       encryptedAt: Timestamp.now(),
     };
-    await firestore.doc(`projects/${id}`).set(projectFS);
+    await setDoc(doc(firestore, 'projects', id), projectFS);
 
     return { isOK: true, message: '' };
   } catch (error) {
@@ -127,7 +128,7 @@ export const updateProject = async (project: ProjectType) => {
       encdata,
       encryptedAt: Timestamp.now(),
     };
-    await firestore.doc(`projects/${project.id}`).update(updateProjectFS);
+    await updateDoc(doc(firestore, 'projects', id), updateProjectFS);
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);
@@ -242,7 +243,7 @@ export const uploadProjectSettings = async (projectId: string, editorUid: string
     const timestamp = Timestamp.now();
     const encdata = await enc({ ...settings, updatedAt: toDate(timestamp) }, editorUid, projectId);
     const settingsFS: ProjectSettingsFS = { editorUid, encdata, encryptedAt: timestamp };
-    await firestore.doc(`projects/${projectId}/settings/default`).set(settingsFS);
+    await setDoc(doc(firestore, 'projects', projectId, 'settings', 'default'), settingsFS);
     return { isOK: true, message: '', timestamp: toDate(timestamp) };
   } catch (error) {
     console.log(error);

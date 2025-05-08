@@ -48,3 +48,33 @@ export async function unzipFromUri(uri: string) {
   const loaded = await JSZip.loadAsync(base64, { base64: true });
   return loaded;
 }
+
+//zipファイルを作成してtempフォルダに保存する
+export async function compressFileToTempUri(uri: string) {
+  const zip = await gzipFile(uri);
+  const zipFileName = uri.split('/').pop() || 'temp.zip';
+  const zipFilePath = `${FileSystem.cacheDirectory}${zipFileName}`;
+  // Blob を base64 文字列に変換
+  const arrayBuffer = await zip.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const base64 = Buffer.from(uint8Array).toString('base64');
+  await FileSystem.writeAsStringAsync(zipFilePath, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return zipFilePath;
+}
+
+//zipファイルを解凍してuriを返す
+export async function decompressFileToTempUri(uri: string) {
+  const loaded = await unzipFromUri(uri);
+  //console.log(loaded);
+  const files = Object.keys(loaded.files);
+  const tempDir = `${FileSystem.cacheDirectory}temp/`;
+  if (files.length !== 1) return;
+  const fileData = await loaded.files[files[0]].async('base64');
+  const filePath = `${tempDir}temp`;
+  await FileSystem.writeAsStringAsync(filePath, fileData, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return filePath;
+}

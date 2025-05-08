@@ -30,6 +30,7 @@ export {
   onSnapshot,
   setDoc,
   getDocsFromServer,
+  updateDoc,
 } from 'firebase/firestore';
 
 export { httpsCallable } from 'firebase/functions';

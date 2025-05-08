@@ -5,7 +5,7 @@ import { virgilCrypto } from 'react-native-virgil-crypto';
 import { Buffer } from 'buffer';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
-import { gzip, saveZipFileToTemp, unzip, unzipFileToTemp } from '../../utils/Zip';
+import { compressFileToTempUri, decompressFileToTempUri, gzip, unzip } from '../../utils/Zip';
 import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
@@ -187,7 +187,7 @@ export const encryptFileEThree = async (
 export const encryptFileEThreeRN = async (uri: string) => {
   try {
     if (!FUNC_ENCRYPTION) {
-      const zipUri = await saveZipFileToTemp(uri);
+      const zipUri = await compressFileToTempUri(uri);
       return { encUri: zipUri, key: '' };
     }
     const keypair = virgilCrypto.generateKeys();
@@ -227,7 +227,7 @@ export const decryptFileEThree = async (
 export const decryptFileEThreeRN = async (uri: string, key: string) => {
   try {
     if (!FUNC_ENCRYPTION) {
-      const unzipUri = await unzipFileToTemp(uri);
+      const unzipUri = await decompressFileToTempUri(uri);
       return { decUri: unzipUri };
     }
     const decryptedFilePath = await virgilCrypto.decryptFile({
