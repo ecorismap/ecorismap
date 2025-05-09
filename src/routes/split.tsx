@@ -18,10 +18,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function SplitScreen() {
   return (
-    // <NavigationContainer independent={true}>
     <Stack.Navigator
       screenOptions={{
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
         headerShadowVisible: false,
         //headerTintColor: 'white',
         headerStyle: { backgroundColor: COLOR.MAIN },
@@ -49,6 +48,5 @@ export default function SplitScreen() {
         options={{ title: t('LayerEditFieldItem.navigation.title') }}
       />
     </Stack.Navigator>
-    // {/* </NavigationContainer> */}
   );
 }

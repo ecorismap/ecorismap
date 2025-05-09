@@ -177,13 +177,13 @@ export default function HomeScreen() {
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
+      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoMaps} />
     ),
     [gotoMaps]
   );
   const headerGotoHomeButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} />
+      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoHome} />
     ),
     [gotoHome]
   );
@@ -548,10 +548,11 @@ export default function HomeScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
-        animateOnMount={false}
+        animateOnMount={true}
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
+        enableDynamicSizing={false}
         style={[
           {
             marginLeft: isLandscape ? '50%' : '0%',

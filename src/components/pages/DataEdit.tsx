@@ -58,7 +58,12 @@ export default function DataEditScreen() {
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', justifyContent: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} style={{ width: 30, marginLeft: 20 }} />
+          <HeaderBackButton
+            {...props_}
+            displayMode={'minimal'}
+            onPress={gotoBack}
+            style={{ width: 30, marginLeft: 20 }}
+          />
         </View>
         <View style={{ flex: 1 }}>
           {maxRecordNumber > 0 && (
@@ -359,7 +364,6 @@ export default function DataEditScreen() {
           </>
         )}
       </ScrollView>
-
       <DataEditButtons />
     </KeyboardAvoidingView>
   );

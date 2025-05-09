@@ -95,8 +95,8 @@ export const useMapView = (mapViewRef: MapView | MapRef | null): UseMapViewRetur
           const delta = { longitudeDelta: region.longitudeDelta, latitudeDelta: region.latitudeDelta };
           const newRegion = { ...region, zoom: deltaToZoom(windowWidth, delta).zoom };
           dispatch(editSettingsAction({ mapRegion: newRegion }));
-        } else if (jumpTo && isRegionType(region)) {
-          (mapViewRef as MapView).setCamera({
+        } else if (jumpTo && isRegionType(region) && isMapView(mapViewRef)) {
+          mapViewRef.setCamera({
             center: {
               latitude: region.latitude,
               longitude: region.longitude,

@@ -44,7 +44,7 @@ export default function ProjectEditScreen() {
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props} labelVisible={false} onPress={gotoBack} />
+      <HeaderBackButton {...props} displayMode={'minimal'} onPress={gotoBack} />
     ),
     [gotoBack]
   );

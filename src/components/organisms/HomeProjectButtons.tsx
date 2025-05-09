@@ -67,12 +67,12 @@ export const HomeProjectButtons = React.memo(() => {
           <View style={{ marginHorizontal: 9 }}>
             <Button
               name="cloud-upload"
-              color={COLOR.BLACK}
-              backgroundColor={COLOR.YELLOW}
+              color={COLOR.GRAY4}
+              backgroundColor={COLOR.DARKYELLOW}
               onPress={pressUploadData}
               tooltipText={t('Home.tooltip.uploadData')}
               labelText={t('Home.label.uploadData')}
-              labelTextColor={COLOR.BLACK}
+              labelTextColor={COLOR.GRAY4}
             />
           </View>
           {/* <View style={{ marginHorizontal: 9 }}>

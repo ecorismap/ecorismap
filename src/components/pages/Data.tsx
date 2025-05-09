@@ -20,7 +20,7 @@ export default function DataScreen() {
 
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
+      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoBack} />
     ),
     [gotoBack]
   );
@@ -61,7 +61,9 @@ export default function DataScreen() {
         </View>
       )}
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        <DataTable />
+        <View style={{ flex: 1 }}>
+          <DataTable />
+        </View>
       </ScrollView>
       <DataButton />
     </View>

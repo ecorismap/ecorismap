@@ -57,9 +57,9 @@ export const selectPolygonDataSet = makeSelectDataByLayerType('POLYGON') as (sta
 
 export const selectNonDeletedAllUserRecordSet = createSelector(
   selectNonDeletedDataSet,
-  (_: RootState, layerId: string) => layerId,
+  (_: RootState, layerId?: string) => layerId,
   (dataSet, layerId): RecordType[] =>
     dataSet
-      .flatMap((d) => (d.layerId === layerId ? d.data : []))
+      .flatMap((d) => (layerId === undefined || d.layerId === layerId ? d.data : []))
       .filter((d) => !d.deleted && (d.field._group ? d.field._group === '' : true))
 );

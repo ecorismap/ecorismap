@@ -11,51 +11,49 @@ export const DataEditButtons = () => {
     useContext(DataEditContext);
 
   return (
-    <>
-      <View style={styles.buttonContainer}>
+    <View style={styles.buttonContainer}>
+      <Button
+        name={DATAEDIT_BTN.JUMP}
+        onPress={pressJumpToData}
+        backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord}
+        tooltipText={t('DataEdit.tooltip.jump')}
+        labelText={t('DataEdit.label.jump')}
+      />
+      <Button
+        name={DATAEDIT_BTN.GOOGLE}
+        onPress={gotoGoogleMaps}
+        backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord}
+        tooltipText={t('DataEdit.tooltip.google')}
+        labelText={t('DataEdit.label.google')}
+      />
+      {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
         <Button
-          name={DATAEDIT_BTN.JUMP}
-          onPress={pressJumpToData}
+          name={DATAEDIT_BTN.EDIT}
+          onPress={pressEditPosition}
           backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord}
-          tooltipText={t('DataEdit.tooltip.jump')}
-          labelText={t('DataEdit.label.jump')}
+          tooltipText={t('DataEdit.tooltip.edit')}
+          labelText={t('DataEdit.label.edit')}
         />
-        <Button
-          name={DATAEDIT_BTN.GOOGLE}
-          onPress={gotoGoogleMaps}
-          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditingRecord}
-          tooltipText={t('DataEdit.tooltip.google')}
-          labelText={t('DataEdit.label.google')}
-        />
-        {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
-          <Button
-            name={DATAEDIT_BTN.EDIT}
-            onPress={pressEditPosition}
-            backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
-            disabled={isEditingRecord}
-            tooltipText={t('DataEdit.tooltip.edit')}
-            labelText={t('DataEdit.label.edit')}
-          />
-        )}
-        <Button
-          name={DATAEDIT_BTN.COPY}
-          onPress={pressCopyData}
-          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditingRecord}
-          tooltipText={t('DataEdit.tooltip.copy')}
-          labelText={t('DataEdit.label.copy')}
-        />
-        <Button
-          name={DATAEDIT_BTN.DELETE}
-          onPress={pressDeleteData}
-          backgroundColor={COLOR.BLUE}
-          tooltipText={t('DataEdit.tooltip.delete')}
-          labelText={t('DataEdit.label.delete')}
-        />
-      </View>
-    </>
+      )}
+      <Button
+        name={DATAEDIT_BTN.COPY}
+        onPress={pressCopyData}
+        backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord}
+        tooltipText={t('DataEdit.tooltip.copy')}
+        labelText={t('DataEdit.label.copy')}
+      />
+      <Button
+        name={DATAEDIT_BTN.DELETE}
+        onPress={pressDeleteData}
+        backgroundColor={COLOR.BLUE}
+        tooltipText={t('DataEdit.tooltip.delete')}
+        labelText={t('DataEdit.label.delete')}
+      />
+    </View>
   );
 };
 

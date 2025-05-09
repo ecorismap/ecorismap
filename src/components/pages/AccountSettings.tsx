@@ -28,7 +28,7 @@ export default function AccountSettings() {
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props} labelVisible={false} onPress={pressGotoHome} />
+      <HeaderBackButton {...props} displayMode={'minimal'} onPress={pressGotoHome} />
     ),
     [pressGotoHome]
   );
