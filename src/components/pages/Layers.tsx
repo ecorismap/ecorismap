@@ -21,9 +21,11 @@ export default function LayerScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Webでtrueにするとドラッグの挙動がおかしくなる。webは幅があるのでひとまずOK。タイトルあhスクロールしてしまう。*/}
+      {/* Webでtrueにするとドラッグの挙動がおかしくなる。webは幅があるのでひとまずOK。タイトルはスクロールしてしまう。*/}
       <ScrollView horizontal={Platform.OS === 'web' ? false : true} contentContainerStyle={{ flexGrow: 1 }}>
-        <LayersTable />
+        <View style={{ flex: 1 }}>
+          <LayersTable />
+        </View>
       </ScrollView>
       <LayerButtons />
     </View>
