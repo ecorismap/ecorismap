@@ -631,7 +631,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
 
     timer.current = setTimeout(() => {
       saveMapMemo(newMapMemoLines);
-    }, 500);
+    }, 1000);
   }, [
     isEditingLine,
     editingLineId,
