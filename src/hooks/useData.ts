@@ -44,10 +44,10 @@ export const useData = (layerId: string): UseDataReturnType => {
   const route = useRoute();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
-  const [sortedOrder, setSortedOrder] = useState<SortOrderType>(targetLayer.sortedOrder || 'UNSORTED');
-  const [sortedName, setSortedName] = useState<string>(targetLayer.sortedName || '');
+  const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
+  const [sortedName, setSortedName] = useState<string>('');
 
-  const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, targetLayer.id));
+  const allUserRecordSet = useSelector((state: RootState) => selectNonDeletedAllUserRecordSet(state, targetLayer?.id));
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -95,7 +95,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     (visible: boolean) => {
       dispatch(setAllRecordsVisibilityAction({ layerId: targetLayer.id, visible }));
     },
-    [dispatch, targetLayer.id]
+    [dispatch, targetLayer]
   );
 
   const changeVisible = useCallback(
@@ -116,7 +116,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         })
       );
     },
-    [sortedRecordSet, dispatch, isMapMemoLayer, targetLayer.id]
+    [sortedRecordSet, dispatch, isMapMemoLayer, targetLayer]
   );
 
   const changeCheckedAll = useCallback(
@@ -142,7 +142,7 @@ export const useData = (layerId: string): UseDataReturnType => {
 
       dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: dataUser.uid, data: ownRecordSet_ }));
     },
-    [changeCheckedAll, dataUser.uid, dispatch, targetLayer.id]
+    [changeCheckedAll, dataUser.uid, dispatch, targetLayer]
   );
 
   const addDefaultRecord = useCallback(
@@ -191,6 +191,7 @@ export const useData = (layerId: string): UseDataReturnType => {
   }, [sortedRecordSet, checkedRecords, dataUser.uid, dispatch, isMapMemoLayer, targetLayer]);
 
   useEffect(() => {
+    if (targetLayer === undefined) return;
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;
     if (allUserRecordSet === undefined) return;
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
