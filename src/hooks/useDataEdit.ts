@@ -101,6 +101,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     // allUserRecordSetをセレクタから取得
     const newRecord = allUserRecordSet.find((d) => d.id === targetRecord.id) || record;
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
+    selectRecord(targetLayer.id, newRecord);
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
