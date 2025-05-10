@@ -951,3 +951,62 @@ export const cleanupLine = (line: LocationType[]): LocationType[] => {
 //turfのbooleanIntersectsのignoreSelfIntersectionsにバグがあるため、一旦自前で実装
 export const booleanIntersects = (feature1: Feature<any> | Geometry, feature2: Feature<any> | Geometry) =>
   turf.lineIntersect(feature1, feature2, { ignoreSelfIntersections: true }).features.length > 0;
+
+// 1. 角度計算ヘルパー
+function calcAngleDeg(p0: Position, p1: Position, p2: Position): number {
+  const v1x = p1[0] - p0[0];
+  const v1y = p1[1] - p0[1];
+  const v2x = p2[0] - p1[0];
+  const v2y = p2[1] - p1[1];
+  const dot = v1x * v2x + v1y * v2y;
+  const mag1 = Math.hypot(v1x, v1y);
+  const mag2 = Math.hypot(v2x, v2y);
+  if (mag1 === 0 || mag2 === 0) return 0;
+  let cos = dot / (mag1 * mag2);
+  cos = Math.min(1, Math.max(-1, cos)); // 数値誤差防止
+  const rad = Math.acos(cos);
+  return (rad * 180) / Math.PI; // 度に変換して返す
+}
+
+/**
+ * 末尾10%ゾーンで「細かいハネ（span=1）」「大きいハネ（span=2）」の
+ * ２つの span を使って角度チェックし、どちらかでハネ判定が出たら
+ * その位置以降を全部切り落とす
+ */
+export function trimHane(points: Position[], thresholdDeg: number = 60): Position[] {
+  const N = points.length;
+  if (N < 3) return points;
+
+  // 末尾10%分の点数（最低1点）
+  const zoneLen = Math.max(1, Math.floor(N * 0.1));
+  // 角度計算に使う最大 span が 2 なので、i-2*2 >= 0 を保証
+  const maxSpan = 2;
+  // チェック開始インデックス
+  const zoneStart = Math.max(2 * maxSpan, N - zoneLen);
+
+  // 使う span リスト（細かい ↔ 大きい）
+  const spans = [1, 2];
+
+  for (let i = zoneStart; i < N; i++) {
+    for (const span of spans) {
+      const p0Idx = i - 2 * span;
+      const p1Idx = i - span;
+      const p2Idx = i;
+      if (p0Idx < 0) continue;
+
+      // calcAngleDeg: p0,p1,p2 の３点から“度”で折れ角度を返す関数
+      const angleDeg = calcAngleDeg(points[p0Idx], points[p1Idx], points[p2Idx]);
+      console.log(`span=${span} angleDeg=${angleDeg}`);
+
+      if (angleDeg > thresholdDeg) {
+        // 「ハネ」と判定 → p0Idx までを残す
+        // slice の end は除外なので p0Idx+1 を指定
+        console.log(`ハネ検出(span=${span}) at i=${i}, cut at ${p0Idx}`);
+        return points.slice(0, p0Idx + 1);
+      }
+    }
+  }
+
+  // 末尾10%にハネがなければそのまま返す
+  return points;
+}
