@@ -13,6 +13,7 @@ import {
   latLonObjectsToXYArray,
   latlonArrayToLatLonObjects,
   smoothingByBezier,
+  trimHane,
   xyArrayToLatLonArray,
 } from '../utils/Coords';
 import MapView from 'react-native-maps';
@@ -609,6 +610,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     if (isMapMemoLineSmoothed && !isStraightStyle) {
       if (drawingLine.length > 8) {
         drawingLine = drawingLine.slice(2, -2);
+        drawingLine = trimHane(drawingLine, 50); // 角度閾値は50°くらいから調整
       }
       drawingLine = smoothingByBezier(drawingLine);
     }
