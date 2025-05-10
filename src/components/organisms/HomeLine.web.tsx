@@ -17,6 +17,7 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
+  editingLineId?: string;
 }
 
 const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
@@ -35,9 +36,8 @@ const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
   return strokeWidth;
 };
 
-export const Line = React.memo((props: Props) => {
-  const { data, layer, zoom, selectedRecord } = props;
-
+export const Line = React.memo((props: Props & { editingLineId?: string }) => {
+  const { data, layer, zoom, selectedRecord, editingLineId } = props;
   if (data === undefined || data.length === 0) return null;
 
   const stampRecords: LineRecordType[] = [];
@@ -114,7 +114,14 @@ export const Line = React.memo((props: Props) => {
           />
         );
       })}
-      <PolylineComponent data={lineRecords} layer={layer} userId={userId} displayName={displayName} zoom={zoom} />
+      <PolylineComponent
+        data={lineRecords}
+        layer={layer}
+        userId={userId}
+        displayName={displayName}
+        zoom={zoom}
+        editingLineId={editingLineId}
+      />
     </>
   );
 });
@@ -125,14 +132,15 @@ interface PolylineProps {
   userId: string;
   displayName: string;
   zoom: number;
+  editingLineId?: string; // 追加
 }
 
 const PolylineComponent = React.memo((props: PolylineProps) => {
-  const { data, layer, userId, displayName, zoom } = props;
+  const { data, layer, userId, displayName, zoom, editingLineId } = props;
 
   const labelStyle = getLabelStyle(layer, userId, displayName);
 
-  const dataStyle = getDataStyleLine(layer, userId, displayName);
+  const dataStyle = getDataStyleLine(layer, userId, displayName, editingLineId);
 
   const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name);
   const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name);
@@ -147,11 +155,9 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
         </Source>
       )}
 
-      {/*
-                  //@ts-ignore*/}
+      {/*//@ts-ignore*/}
       <Source id={`${layer.id}_${userId}`} type="geojson" data={geojsonData} promoteId={'_id'}>
-        {/*
-                  //@ts-ignore*/}
+        {/*// @ts-ignore*/}
         <Layer {...dataStyle} />
       </Source>
     </View>

@@ -2,13 +2,15 @@ import { t } from '../i18n/config';
 import { LayerType } from '../types';
 import { getColorRule } from './Layer';
 
-export const getColorExpression = (layer_: LayerType, displayName: string) => {
+export const getColorExpression = (layer_: LayerType, displayName: string, editingLineId?: string) => {
   const colorExpression = [
     'case',
     ['boolean', ['feature-state', 'clicked'], false],
     'rgba(255, 255, 0, 0.7)',
     ['boolean', ['feature-state', 'hover'], false],
     'rgba(255, 255, 0, 0.7)',
+    ['==', ['get', '_id'], editingLineId || ''],
+    'rgba(151, 151, 151, 0.61)',
     getColorRule(layer_, displayName),
   ];
 
@@ -65,8 +67,9 @@ export const getLabelStyle = (layer_: LayerType, userId: string, displayName: st
   };
 };
 
-export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string) => {
-  const colorExpression = getColorExpression(layer_, displayName);
+// editingLineIdを受け取れるように引数追加
+export const getDataStyleLine = (layer_: LayerType, userId: string, displayName: string, editingLineId?: string) => {
+  const colorExpression = getColorExpression(layer_, displayName, editingLineId);
 
   return {
     id: `${layer_.id}_${userId}`,

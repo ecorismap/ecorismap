@@ -121,6 +121,7 @@ export default function HomeScreen() {
     isPencilTouch,
     pressPDFSettingsOpen,
     isEditingRecord,
+    editingLineId,
   } = useContext(HomeContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
@@ -413,6 +414,7 @@ export default function HomeScreen() {
                   zoom={zoom}
                   zIndex={101}
                   selectedRecord={selectedRecord}
+                  editingLineId={editingLineId}
                 />
               );
             })}

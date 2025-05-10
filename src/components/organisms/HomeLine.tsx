@@ -15,6 +15,7 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
+  editingLineId?: string; // 追加
 }
 
 const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
@@ -36,8 +37,7 @@ const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
 export const Line = React.memo(
   (props: Props) => {
     //console.log('render Line', now());
-    const { data, layer, zoom, zIndex, selectedRecord } = props;
-
+    const { data, layer, zoom, zIndex, selectedRecord, editingLineId } = props;
     if (data === undefined || data.length === 0) return null;
 
     return (
@@ -49,7 +49,9 @@ export const Line = React.memo(
             selectedRecord?.record?.id !== undefined &&
             (feature.id === selectedRecord?.record?.id || feature.field._group === selectedRecord?.record.id);
 
-          const lineColor = selected ? COLOR.YELLOW : color;
+          // 編集対象ラインは水色、それ以外は従来通り
+          const isEditingTarget = editingLineId && feature.id === editingLineId;
+          const lineColor = isEditingTarget ? COLOR.GRAY3 : selected ? COLOR.YELLOW : color;
           const labelPosition = feature.coords[feature.coords.length - 1];
           const label = generateLabel(layer, feature);
 
@@ -100,6 +102,7 @@ export const Line = React.memo(
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
     if (prevProps.zIndex !== nextProps.zIndex) return false;
+    if (prevProps.editingLineId !== nextProps.editingLineId) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
     if (

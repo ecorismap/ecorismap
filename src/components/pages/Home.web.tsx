@@ -119,6 +119,8 @@ export default function HomeScreen() {
     updatePmtilesURL,
     isTerrainActive,
     toggleTerrain,
+    isEditingLine,
+    editingLineId,
   } = useContext(HomeContext);
   //console.log('render Home');
   const layers = useSelector((state: RootState) => state.layers);
@@ -798,6 +800,9 @@ export default function HomeScreen() {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
 
+                  // HomeContextからisEditingLine, editingLineIdを取得
+                  // ここではuseContext(HomeContext)のスコープ内なので直接参照可能
+                  // isEditingLineがtrueのときのみeditingLineIdを渡す
                   return (
                     <Line
                       key={`${d.layerId}-${d.userId}`}
@@ -806,6 +811,7 @@ export default function HomeScreen() {
                       zoom={zoom}
                       zIndex={101}
                       selectedRecord={selectedRecord}
+                      editingLineId={isEditingLine ? editingLineId : undefined}
                     />
                   );
                 })}
