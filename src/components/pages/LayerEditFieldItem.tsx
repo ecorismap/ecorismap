@@ -1,9 +1,10 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, Picker, TextInput } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 import { t } from '../../i18n/config';
 import { LayerEditFieldItemContext } from '../../contexts/LayerEditFieldItem';
 import { FlatList, ScrollView } from 'react-native-gesture-handler';

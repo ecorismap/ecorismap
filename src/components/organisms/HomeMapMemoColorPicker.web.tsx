@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
 //@ts-ignore

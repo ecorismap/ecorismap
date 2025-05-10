@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, View, Image, StyleSheet, Text } from 'react-native';
+import { View, Image, StyleSheet, Text } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { Marker } from 'react-native-maps';
 import { MemberLocationType } from '../../types';
 import { COLOR } from '../../constants/AppConstants';

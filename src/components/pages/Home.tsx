@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
-import { StyleSheet, View, Platform, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Platform, Text } from 'react-native';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -47,6 +47,7 @@ import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
+import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');

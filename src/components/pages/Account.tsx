@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, TextInput, Pressable, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
+import { View, TextInput, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { AccountContext } from '../../contexts/Account';
 import { t } from '../../i18n/config';

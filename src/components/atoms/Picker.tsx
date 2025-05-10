@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from './Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
 import { ItemValue } from '@react-native-picker/picker/typings/Picker';

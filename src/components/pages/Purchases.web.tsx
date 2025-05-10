@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { useNavigation } from '@react-navigation/native';
 import { CheckBox } from '../molecules/CheckBox';
@@ -8,6 +8,7 @@ import { Loading } from '../molecules/Loading';
 import { Feather } from '@expo/vector-icons';
 import { t } from '../../i18n/config';
 import * as Localization from 'expo-localization';
+import { Pressable } from '../atoms/Pressable';
 
 interface Props {
   products: { product: Product; prices: { priceId: string; price: Price }[] }[];

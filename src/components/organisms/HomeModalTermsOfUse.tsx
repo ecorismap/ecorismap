@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { View, Pressable, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
+import { View, Modal, Text, StyleSheet, Linking, Platform } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR, CURRENT_TERMS_VERSION } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { useDispatch, useSelector } from 'react-redux';

@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';

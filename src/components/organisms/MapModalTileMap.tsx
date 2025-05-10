@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, TextInput, Pressable, Modal, Text, StyleSheet } from 'react-native';
+import { View, TextInput, Modal, Text, StyleSheet } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 
 import { COLOR, NAV_BTN } from '../../constants/AppConstants';
 import Slider from '../atoms/Slider';

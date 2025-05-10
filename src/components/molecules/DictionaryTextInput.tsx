@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, TextInput, Text, Pressable, StyleSheet } from 'react-native';
+import { View, TextInput, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDictionaryInput } from '../../hooks/useDictionaryInput';
 import { COLOR } from '../../constants/AppConstants';
 import { ScrollView } from 'react-native-gesture-handler';
+import { Pressable } from '../atoms/Pressable';
 
 interface DictionaryTextInputProp {
   editable?: boolean;

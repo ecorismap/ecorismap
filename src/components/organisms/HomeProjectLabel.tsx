@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, Platform, Pressable } from 'react-native';
+import { Text, Platform } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';

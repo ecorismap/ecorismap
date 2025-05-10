@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Pressable, Modal, Text, StyleSheet } from 'react-native';
+import { View, Modal, Text, StyleSheet } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';

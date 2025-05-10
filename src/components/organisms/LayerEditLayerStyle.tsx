@@ -1,5 +1,6 @@
 import React, { useContext, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLOR, FEATURETYPE } from '../../constants/AppConstants';
 import { Picker, PointView, LineView, PolygonView } from '../atoms';

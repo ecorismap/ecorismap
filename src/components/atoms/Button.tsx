@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import CustomIcon, { isCustomIcon } from './CustomIcon';
+import { Pressable } from './Pressable';
 
 interface Props {
   id?: string;

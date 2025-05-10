@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Pressable, View, Image, StyleSheet, Platform, Text } from 'react-native';
+import { View, Image, StyleSheet, Platform, Text } from 'react-native';
 import { Button, SelectionalButton } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
 import { useWindow } from '../../hooks/useWindow';

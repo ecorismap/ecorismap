@@ -1,5 +1,6 @@
 import React, { useContext, useMemo } from 'react';
-import { View, StyleSheet, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useData } from '../../hooks/useData';
 import { LayerType, PhotoType, RecordType } from '../../types';

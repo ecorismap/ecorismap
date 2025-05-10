@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
 import { useNavigation } from '@react-navigation/native';

@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import { COLOR, ERASER } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
 import { isEraserTool } from '../../utils/General';
 import { Button } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 
 interface Props {
   currentMapMemoTool: MapMemoToolType;

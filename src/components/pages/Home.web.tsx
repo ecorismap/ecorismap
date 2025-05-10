@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -57,6 +57,7 @@ import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
 import { db } from '../../utils/db';
 import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
+import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   const {

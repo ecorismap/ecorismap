@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Pressable, Modal, Text, StyleSheet, Platform } from 'react-native';
+import { View, Modal, Text, StyleSheet, Platform } from 'react-native';
 import { COLOR, ORIENTATIONTYPE } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import Picker from '../atoms/Picker';
 import { CheckBox } from '../molecules/CheckBox';
+import { Pressable } from '../atoms/Pressable';
 
 interface Props {
   visible: boolean;

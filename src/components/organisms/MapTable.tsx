@@ -1,7 +1,8 @@
 import React, { useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 import { MapsContext } from '../../contexts/Maps';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { t } from 'i18next';

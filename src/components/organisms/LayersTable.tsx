@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, Text, Pressable } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
 import { COLOR } from '../../constants/AppConstants';
@@ -7,6 +7,7 @@ import { Picker, PointView, LineView, PolygonView, Button, TextInput } from '../
 import { t } from '../../i18n/config';
 import { LayersContext } from '../../contexts/Layers';
 import { LayerType } from '../../types';
+import { Pressable } from '../atoms/Pressable';
 
 export const LayersTable = React.memo(() => {
   const {

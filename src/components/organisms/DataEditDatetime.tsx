@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, StyleSheet, Text, Pressable, Platform } from 'react-native';
+import { View, StyleSheet, Text, Platform } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import DatePicker from 'react-native-date-picker';
 import dayjs from '../../i18n/dayjs';

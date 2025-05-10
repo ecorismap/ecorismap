@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { View, Pressable, Text } from 'react-native';
+import { View, Text } from 'react-native';
+import { Pressable } from '../atoms/Pressable';
 import { HomeContext } from '../../contexts/Home';
 import { COLOR } from '../../constants/AppConstants';
 import { FontAwesome } from '@expo/vector-icons';

@@ -1,7 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { COLOR, ORIENTATIONTYPE } from '../../constants/AppConstants';
 import { Button } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 import { PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { t } from '../../i18n/config';
 

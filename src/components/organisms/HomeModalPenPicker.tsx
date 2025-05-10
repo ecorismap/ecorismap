@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, Modal } from 'react-native';
 import { COLOR, PEN_STYLE, PEN_WIDTH } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { ArrowStyleType, MapMemoToolType, PenWidthType } from '../../types';
 import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
+import { Pressable } from '../atoms/Pressable';
 
 interface Props {
   currentMapMemoTool: MapMemoToolType;
