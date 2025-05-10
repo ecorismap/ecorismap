@@ -45,7 +45,7 @@ import { HomePopup } from '../organisms/HomePopup';
 import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { useSharedValue } from 'react-native-reanimated';
+import { ReduceMotion, useSharedValue } from 'react-native-reanimated';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
@@ -867,8 +867,11 @@ export default function HomeScreen() {
         snapPoints={snapPoints}
         enablePanDownToClose
         animatedIndex={animatedIndex}
+        animateOnMount={true}
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
+        enableDynamicSizing={false}
+        overrideReduceMotion={ReduceMotion.Always}
         style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
       >
         <BottomSheetView

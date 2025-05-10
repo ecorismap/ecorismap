@@ -39,7 +39,7 @@ import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import Animated, { useAnimatedStyle, useSharedValue, interpolate } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
@@ -556,6 +556,7 @@ export default function HomeScreen() {
         onClose={onCloseBottomSheet}
         handleComponent={customHandle}
         enableDynamicSizing={false}
+        overrideReduceMotion={ReduceMotion.Always}
         style={[
           {
             marginLeft: isLandscape ? '50%' : '0%',
