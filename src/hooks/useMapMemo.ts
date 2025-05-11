@@ -543,11 +543,10 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
       let newLineCoords = drawingLine;
       if (isMapMemoLineSmoothed && !isStraightStyle && newLineCoords.length > 8) {
-        const newPortion = newLineCoords.slice(editingPointIndex);
-        if (newPortion.length > 8) {
-          const smoothedPortion = smoothingByBezier(newPortion.slice(4, -2));
-          newLineCoords = [...newLineCoords.slice(0, editingPointIndex), ...smoothedPortion];
-        }
+        const line1 = newLineCoords.slice(0, editingPointIndex - 2);
+        const line2 = newLineCoords.slice(editingPointIndex + 2);
+
+        newLineCoords = smoothingByBezier([...line1, ...line2]);
       }
       const latlonCoords = xyArrayToLatLonArray(newLineCoords, mapRegion, mapSize, mapViewRef);
 
