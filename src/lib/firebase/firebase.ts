@@ -9,6 +9,7 @@ import { getStorage, FirebaseStorageTypes } from '@react-native-firebase/storage
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 
 export {
+  //@ts-ignore
   EmailAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -48,6 +49,7 @@ export let auth: FirebaseAuthTypes.Module;
 const initialize = async (isEmulating = false) => {
   auth = getAuth();
   firestore = getFirestore();
+  // @ts-ignore
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
 
@@ -62,6 +64,7 @@ const initialize = async (isEmulating = false) => {
       debugToken: 'some token you have configured for your project firebase web console',
     },
   });
+  // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const appCheck = initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
 

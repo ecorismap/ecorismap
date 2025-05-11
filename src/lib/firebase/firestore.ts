@@ -669,9 +669,6 @@ export const updateLicense = async (project: ProjectType) => {
   return new Promise<{ isOK: boolean; message: string }>((resolve) => {
     // onSnapshot でリアルタイム監視を開始
     const unsubscribe = onSnapshot(projectRef, (snapshot) => {
-      if (!snapshot.exists()) {
-        return;
-      }
       // フィールドを取得（snapshot.get() も使用可能）
       const data = snapshot.data();
       const license = data?.license as string | undefined;
