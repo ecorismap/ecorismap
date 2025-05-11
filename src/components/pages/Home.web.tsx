@@ -235,13 +235,13 @@ export default function HomeScreen() {
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoMaps} />
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
     ),
     [gotoMaps]
   );
   const headerGotoHomeButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoHome} />
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} />
     ),
     [gotoHome]
   );

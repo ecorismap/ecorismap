@@ -23,7 +23,7 @@ export default function LayerEditScreen() {
 
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} displayMode={'minimal'} onPress={gotoBack} />
+      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
     ),
     [gotoBack]
   );

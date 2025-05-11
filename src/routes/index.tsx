@@ -105,7 +105,6 @@ export default function Routes() {
       documentTitle={{
         formatter: () => `EcorisMap`,
       }}
-      navigationInChildEnabled
     >
       <Stack.Navigator
         screenOptions={{
