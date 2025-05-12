@@ -95,38 +95,47 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const maxRecordNumber = targetRecordSet.length;
 
   useEffect(() => {
-    //データの初期化。以降はchangeRecordで行う。
+    //changeRecordが呼ばれた場合、targetRecordを変更する
     if (route.name !== 'DataEdit') return;
 
-    // allUserRecordSetをセレクタから取得
-    const newRecord = allUserRecordSet.find((d) => d.id === targetRecord.id) || record;
-    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === newRecord.id) + 1;
+    //recordNumberが変更された場合、targetRecordを変更する
+    const newRecord = allUserRecordSet[recordNumber - 1];
     selectRecord(targetLayer.id, newRecord);
     setTargetRecord(newRecord);
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
-    setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
       const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
       setLatLon(newLatLon);
     }
-    //targetRecordとoldRecordは変更されるとuseEffectが発火するので、以下のeslint-disableを追加
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUserRecordSet, layer, record, recordNumber, route.name]);
+  }, [recordNumber]);
+
+  useEffect(() => {
+    //recordが変更された場合、targetRecordを変更する
+    if (route.name !== 'DataEdit') return;
+
+    // allUserRecordSetをセレクタから取得
+    const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
+    selectRecord(targetLayer.id, record);
+    setTargetRecord(record);
+    setTargetRecordSet(allUserRecordSet);
+    setTargetLayer(layer);
+    setRecordNumber(initialRecordNumber);
+    if (layer.type === 'POINT') {
+      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSTemplate;
+      setLatLon(newLatLon);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record]);
 
   const changeRecord = useCallback(
     (value: number) => {
       if (targetRecordSet.length === 0) return;
-      const newRecord = targetRecordSet[value - 1];
-      selectRecord(targetLayer.id, newRecord);
-      setTargetRecord(newRecord);
+
       setRecordNumber(value);
-      if (targetLayer.type === 'POINT') {
-        const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
-        setLatLon(newLatLon);
-      }
     },
-    [selectRecord, targetLayer.id, targetLayer.type, targetRecordSet]
+    [targetRecordSet]
   );
 
   const removePhoto = useCallback(
