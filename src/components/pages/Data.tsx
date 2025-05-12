@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
@@ -61,9 +61,15 @@ export default function DataScreen() {
         </View>
       )}
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={{ flex: 1 }}>
-          <DataTable />
-        </View>
+        {Platform.OS === 'web' ? (
+          <ScrollView style={{ flex: 1 }}>
+            <DataTable />
+          </ScrollView>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <DataTable />
+          </View>
+        )}
       </ScrollView>
       <DataButton />
     </View>
