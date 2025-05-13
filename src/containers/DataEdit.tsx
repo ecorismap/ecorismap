@@ -54,7 +54,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const { changeActiveLayer } = useLayers();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
-  const { checkRecordEditable } = useRecord();
+  const { checkRecordEditable, unselectRecord } = useRecord();
   const { keyboardShown } = useKeyboard();
   const { isLandscape, windowWidth, mapRegion } = useWindow();
   //console.log('####', targetLayer);
@@ -417,6 +417,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const gotoBack = useCallback(async () => {
     const goBack = () => {
       if (route.params.previous === 'Data') {
+        unselectRecord();
         navigation.navigate('Data', {
           targetLayer: { ...targetLayer },
         });
@@ -449,6 +450,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     route.params.mainLayer,
     route.params.previous,
     targetLayer,
+    unselectRecord,
   ]);
 
   const gotoReferenceData = useCallback(
