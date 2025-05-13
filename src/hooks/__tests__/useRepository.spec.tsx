@@ -36,7 +36,13 @@ jest.mock('@react-native-firebase/functions', () => ({
 }));
 jest.mock('@react-native-firebase/app-check', () => ({
   __esModule: true,
+  default: jest.fn(), // 追加: defaultエクスポートをモック
   initializeAppCheck: jest.fn(),
+  getToken: jest.fn(),
+  getAppCheck: jest.fn().mockReturnValue({
+    activate: jest.fn(),
+    setTokenAutoRefreshEnabled: jest.fn(),
+  }),
   ReactNativeFirebaseAppCheckProvider: jest.fn(
     () =>
       ({
