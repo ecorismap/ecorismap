@@ -1,4 +1,5 @@
 #import "AppDelegate.h"
+#import "RNFBAppCheckModule.h"
 #import <Firebase.h>
 
 #import <React/RCTBundleURLProvider.h>
@@ -11,6 +12,7 @@
 
 - (BOOL)application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  [RNFBAppCheckModule sharedInstance];
   [FIRApp configure];
   NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Maps"
                                                        ofType:@"plist"];

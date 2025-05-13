@@ -1,6 +1,10 @@
 import { getApp } from '@react-native-firebase/app';
-//@ts-ignore
-import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider } from '@react-native-firebase/app-check';
+
+import getAppCheck, {
+  initializeAppCheck,
+  ReactNativeFirebaseAppCheckProvider,
+  getToken,
+} from '@react-native-firebase/app-check';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';
@@ -57,17 +61,26 @@ const initialize = async (isEmulating = false) => {
   rnfbProvider.configure({
     android: {
       provider: __DEV__ ? 'debug' : 'playIntegrity',
-      debugToken: 'some token you have configured for your project firebase web console',
+      debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
     apple: {
       provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback',
-      debugToken: 'some token you have configured for your project firebase web console',
+      debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
   });
-  // @ts-ignore
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const appCheck = initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
-
+  const appCheck = getAppCheck(getApp());
+  // // @ts-ignore
+  await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+  // // `appCheckInstance` is the saved return value from initializeAppCheck
+  try {
+    const { token } = await getToken(appCheck, true);
+    if (token.length > 0) {
+      console.log('AppCheck verification passed');
+    }
+  } catch (error) {
+    console.log('AppCheck verification failed');
+    console.log(error);
+  }
   if (isEmulating) {
     auth.useEmulator('http://localhost:9099');
     functions.useEmulator('localhost', 5001);

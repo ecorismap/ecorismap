@@ -2540,7 +2540,7 @@ PODS:
   - RNFBApp (20.5.0):
     - Firebase/CoreOnly (= 10.29.0)
     - React-Core
-  - RNFBAppCheck (20.5.0):
+  - RNFBAppCheck (22.2.0):
     - Firebase/AppCheck (= 10.29.0)
     - React-Core
     - RNFBApp
@@ -2563,7 +2563,7 @@ PODS:
     - RNFBApp
   - RNFS (2.20.0):
     - React-Core
-  - RNGestureHandler (2.16.2):
+  - RNGestureHandler (2.25.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3225,13 +3225,13 @@ SPEC CHECKSUMS:
   RNCPicker: ba7ceb25a6e7c1d98aec9fa5a0d842934c7b316e
   RNDeviceInfo: 900bd20e1fd3bfd894e7384cc4a83880c0341bd3
   RNFBApp: 4e6da65e29a144d20bcb5bf264fc8e2055831bab
-  RNFBAppCheck: 9398428121e0c1f70d30a474845bac373d4d6b3c
+  RNFBAppCheck: ea038c11ecefc130e68f223e145c704cda9494e6
   RNFBAuth: 0e317b179cef51f450531da980b927212cfb73cb
   RNFBFirestore: 5ebbd50cd31648e656f4f01fc44c4f0807e32f4d
   RNFBFunctions: a2422de4ec2217cb9dd8d0bcdcc52df9e2c5e44d
   RNFBStorage: 7e5f7484e854108ad8ec4f7262925cf37bf70c70
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
-  RNGestureHandler: 5d95b0a3cffed8325ed0c181f4f411c1dcd49317
+  RNGestureHandler: 514e542d339e9925349bfcbcb18f264330799715
   RNKeychain: bbe2f6d5cc008920324acb49ef86ccc03d3b38e4
   RNReanimated: 7d2b65b07d3457710ef7880522388ab04d8bcf48
   RNScreens: b2c718d8ecb0ae4d68c2135687d31f03aa84438c

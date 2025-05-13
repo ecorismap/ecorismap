@@ -6823,16 +6823,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app-check@npm:20.5.0":
-  version: 20.5.0
-  resolution: "@react-native-firebase/app-check@npm:20.5.0"
+"@react-native-firebase/app-check@npm:^22.2.0":
+  version: 22.2.0
+  resolution: "@react-native-firebase/app-check@npm:22.2.0"
   peerDependencies:
-    "@react-native-firebase/app": 20.5.0
+    "@react-native-firebase/app": 22.2.0
     expo: ">=47.0.0"
   peerDependenciesMeta:
     expo:
       optional: true
-  checksum: 51c7b772e9d97775bcf2bddda9ba347ae5f2590e5ad6cebba51c8a3ac21c301005ffda30a547ff7454f143aebf84a163a839fb037c782aca29cc129dc30f9e64
+  checksum: a466699a0741ca6db13aa07149e3803aa6ba86552d1e4fdcef2ee6ca3391333b933027572a35578c59f8a2d6c9be306cda6965a24203a66ddbedf804dc62a646
   languageName: node
   linkType: hard
 
@@ -15034,7 +15034,7 @@ __metadata:
     "@react-native-community/netinfo": ^11.3.1
     "@react-native-community/slider": ^4.5.2
     "@react-native-firebase/app": 20.5.0
-    "@react-native-firebase/app-check": 20.5.0
+    "@react-native-firebase/app-check": ^22.2.0
     "@react-native-firebase/auth": 20.5.0
     "@react-native-firebase/firestore": 20.5.0
     "@react-native-firebase/functions": 20.5.0
