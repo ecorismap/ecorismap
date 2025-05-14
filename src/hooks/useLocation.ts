@@ -402,7 +402,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (!isOK) {
         await AlertAsync(message);
       }
-      toggleHeadingUp(false);
     })();
 
     return () => {
@@ -436,6 +435,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
             });
           }
         }
+        if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         //console.log('App has come to the background!');
         if (headingSubscriber.current !== undefined) {
@@ -452,7 +452,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     return () => {
       subscription && subscription.remove();
     };
-  }, [gpsState]);
+  }, [gpsState, headingUp, toggleHeadingUp]);
 
   return {
     currentLocation,
