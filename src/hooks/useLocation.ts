@@ -402,6 +402,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (!isOK) {
         await AlertAsync(message);
       }
+      toggleHeadingUp(false);
     })();
 
     return () => {
