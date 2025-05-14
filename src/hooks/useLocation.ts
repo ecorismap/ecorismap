@@ -72,6 +72,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
+  const dataUser = useMemo(
+    () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
+    [projectId, user]
+  );
 
   const trackLog = useSelector((state: RootState) => state.trackLog);
   const { addRecordWithCheck } = useRecord();
@@ -187,12 +191,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     } catch (e) {
       console.log(e);
     } finally {
-      if (isLoggedIn(user) && hasOpened(projectId)) {
-        projectStore.deleteCurrentPosition(user.uid!, projectId);
+      if (isLoggedIn(dataUser) && hasOpened(projectId)) {
+        projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
         setCurrentLocation(null);
       }
     }
-  }, [projectId, user]);
+  }, [projectId, dataUser]);
 
   const startTracking = useCallback(async () => {
     if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
@@ -235,8 +239,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     async (gpsState_: LocationStateType) => {
       if (gpsState_ === 'off') {
         await stopGPS();
-        if (isLoggedIn(user) && hasOpened(projectId)) {
-          projectStore.deleteCurrentPosition(user.uid!, projectId);
+        if (isLoggedIn(dataUser) && hasOpened(projectId)) {
+          projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
           setCurrentLocation(null);
         }
       } else if (gpsState_ === 'follow') {
@@ -263,7 +267,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       setGpsState(gpsState_);
     },
-    [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, user]
+    [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, dataUser]
   );
 
   const toggleTracking = useCallback(

@@ -173,8 +173,8 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   );
 
   const activeMemoRecordSet = useMemo(
-    () => dataSet.find(({ layerId, userId }) => layerId === activeMemoLayer?.id && userId === user.uid),
-    [dataSet, activeMemoLayer?.id, user.uid]
+    () => dataSet.find(({ layerId, userId }) => layerId === activeMemoLayer?.id && userId === dataUser.uid),
+    [dataSet, activeMemoLayer?.id, dataUser.uid]
   );
 
   const memoLines = useMemo(
@@ -726,12 +726,12 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
       dispatch(
         deleteRecordsAction({
           layerId: activeMemoLayer!.id,
-          userId: user.uid,
+          userId: dataUser.uid,
           data: deletedLines.map((dline) => dline.line),
         })
       );
     },
-    [activeMemoLayer, dispatch, user.uid]
+    [activeMemoLayer, dataUser.uid, dispatch]
   );
 
   /**
