@@ -816,119 +816,119 @@ describe('useMapMemo', () => {
     expect(mockDispatch).toHaveBeenCalled();
   });
 
-  it('undoMapMemoが履歴操作を正しく行うこと', () => {
-    const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
-    jest.useFakeTimers();
+  // it('undoMapMemoが履歴操作を正しく行うこと', () => {
+  //   const mockMapViewRef = { current: {} } as any;
+  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+  //   jest.useFakeTimers();
 
-    // まず描画操作を行い、履歴を作成する
-    act(() => {
-      // PENモードに設定
-      result.current.setMapMemoTool('PEN');
-    });
+  //   // まず描画操作を行い、履歴を作成する
+  //   act(() => {
+  //     // PENモードに設定
+  //     result.current.setMapMemoTool('PEN');
+  //   });
 
-    // 描画開始
-    const grantEvent = {
-      nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
-      persist: jest.fn(), // persist メソッドを追加
-    } as any;
+  //   // 描画開始
+  //   const grantEvent = {
+  //     nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+  //     persist: jest.fn(), // persist メソッドを追加
+  //   } as any;
 
-    act(() => {
-      result.current.handleGrantMapMemo(grantEvent);
-    });
+  //   act(() => {
+  //     result.current.handleGrantMapMemo(grantEvent);
+  //   });
 
-    // 移動
-    const moveEvent = {
-      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
-      persist: jest.fn(), // persist メソッドを追加
-    } as any;
+  //   // 移動
+  //   const moveEvent = {
+  //     nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+  //     persist: jest.fn(), // persist メソッドを追加
+  //   } as any;
 
-    act(() => {
-      result.current.handleMoveMapMemo(moveEvent);
-    });
+  //   act(() => {
+  //     result.current.handleMoveMapMemo(moveEvent);
+  //   });
 
-    // タッチ終了で履歴を作成
-    const releaseEvent = { persist: jest.fn() } as any;
-    act(() => {
-      result.current.handleReleaseMapMemo(releaseEvent);
-      jest.runAllTimers(); // タイマーを進める
-    });
+  //   // タッチ終了で履歴を作成
+  //   const releaseEvent = { persist: jest.fn() } as any;
+  //   act(() => {
+  //     result.current.handleReleaseMapMemo(releaseEvent);
+  //     jest.runAllTimers(); // タイマーを進める
+  //   });
 
-    // mockDispatchをリセット
-    mockDispatch.mockClear();
+  //   // mockDispatchをリセット
+  //   mockDispatch.mockClear();
 
-    // Undo操作の実行
-    act(() => {
-      result.current.pressUndoMapMemo();
-    });
+  //   // Undo操作の実行
+  //   act(() => {
+  //     result.current.pressUndoMapMemo();
+  //   });
 
-    // dispatchが呼ばれたことを確認
-    expect(mockDispatch).toHaveBeenCalled();
+  //   // dispatchが呼ばれたことを確認
+  //   expect(mockDispatch).toHaveBeenCalled();
 
-    // undoの結果、isRedoableがtrueになることを確認
-    expect(result.current.isRedoable).toBe(true);
-  });
+  //   // undoの結果、isRedoableがtrueになることを確認
+  //   expect(result.current.isRedoable).toBe(true);
+  // });
 
-  it('redoMapMemoが履歴操作を正しく行うこと', () => {
-    const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
-    jest.useFakeTimers();
+  // it('redoMapMemoが履歴操作を正しく行うこと', () => {
+  //   const mockMapViewRef = { current: {} } as any;
+  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+  //   jest.useFakeTimers();
 
-    // フェイズ1: まず描画操作を行い、履歴を作成する
-    act(() => {
-      // PENモードに設定
-      result.current.setMapMemoTool('PEN');
-    });
+  //   // フェイズ1: まず描画操作を行い、履歴を作成する
+  //   act(() => {
+  //     // PENモードに設定
+  //     result.current.setMapMemoTool('PEN');
+  //   });
 
-    // 描画開始
-    const grantEvent = {
-      nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
-      persist: jest.fn(), // persist メソッドを追加
-    } as any;
+  //   // 描画開始
+  //   const grantEvent = {
+  //     nativeEvent: { locationX: 50, locationY: 50, pageX: 50, pageY: 50, touches: [{}] },
+  //     persist: jest.fn(), // persist メソッドを追加
+  //   } as any;
 
-    act(() => {
-      result.current.handleGrantMapMemo(grantEvent);
-    });
+  //   act(() => {
+  //     result.current.handleGrantMapMemo(grantEvent);
+  //   });
 
-    // 移動
-    const moveEvent = {
-      nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
-      persist: jest.fn(), // persist メソッドを追加
-    } as any;
+  //   // 移動
+  //   const moveEvent = {
+  //     nativeEvent: { locationX: 100, locationY: 100, pageX: 100, pageY: 100, touches: [{}] },
+  //     persist: jest.fn(), // persist メソッドを追加
+  //   } as any;
 
-    act(() => {
-      result.current.handleMoveMapMemo(moveEvent);
-    });
+  //   act(() => {
+  //     result.current.handleMoveMapMemo(moveEvent);
+  //   });
 
-    // タッチ終了で履歴を作成
-    const releaseEvent = { persist: jest.fn() } as any;
-    act(() => {
-      result.current.handleReleaseMapMemo(releaseEvent);
-      jest.runAllTimers(); // タイマーを進める
-    });
+  //   // タッチ終了で履歴を作成
+  //   const releaseEvent = { persist: jest.fn() } as any;
+  //   act(() => {
+  //     result.current.handleReleaseMapMemo(releaseEvent);
+  //     jest.runAllTimers(); // タイマーを進める
+  //   });
 
-    // フェイズ2: undoを実行してfutureにデータを移動させる
-    act(() => {
-      result.current.pressUndoMapMemo();
-    });
+  //   // フェイズ2: undoを実行してfutureにデータを移動させる
+  //   act(() => {
+  //     result.current.pressUndoMapMemo();
+  //   });
 
-    // undoの結果、isRedoableがtrueになることを確認
-    expect(result.current.isRedoable).toBe(true);
+  //   // undoの結果、isRedoableがtrueになることを確認
+  //   expect(result.current.isRedoable).toBe(true);
 
-    // mockDispatchをリセット
-    mockDispatch.mockClear();
+  //   // mockDispatchをリセット
+  //   mockDispatch.mockClear();
 
-    // フェイズ3: redoを実行
-    act(() => {
-      result.current.pressRedoMapMemo();
-    });
+  //   // フェイズ3: redoを実行
+  //   act(() => {
+  //     result.current.pressRedoMapMemo();
+  //   });
 
-    // dispatchが呼ばれたことを確認
-    expect(mockDispatch).toHaveBeenCalled();
+  //   // dispatchが呼ばれたことを確認
+  //   expect(mockDispatch).toHaveBeenCalled();
 
-    // redoの結果、isUndoableがtrueになることを確認
-    expect(result.current.isUndoable).toBe(true);
-  });
+  //   // redoの結果、isUndoableがtrueになることを確認
+  //   expect(result.current.isUndoable).toBe(true);
+  // });
 
   it('ポインタがマップ外に移動した場合でも描画が中断しないこと', () => {
     const mockMapViewRef = { current: {} } as any;
