@@ -57,7 +57,7 @@ export type UseLocationReturnType = {
   trackingState: TrackingStateType;
   headingUp: boolean;
   azimuth: number;
-  toggleHeadingUp: (headingUp_: boolean) => void;
+  toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
   checkUnsavedTrackLog: () => Promise<{ isOK: boolean; message: string }>;

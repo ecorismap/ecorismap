@@ -501,7 +501,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const selectInfoTool = useCallback(
-    (value: InfoToolType | undefined) => {
+    async (value: InfoToolType | undefined) => {
       if (value === undefined) {
         setInfoToolActive(false);
         toggleTerrain(true);
@@ -509,7 +509,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setInfoToolActive(true);
         setCurrentInfoTool(value);
         toggleTerrain(false);
-        if (Platform.OS !== 'web') toggleHeadingUp(false);
+        if (Platform.OS !== 'web') await toggleHeadingUp(false);
       }
       resetDrawTools();
       setDrawTool('NONE');
@@ -696,7 +696,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (featureButton !== 'NONE') return;
     if ((await confirmLocationPermission()) !== 'granted') return;
     if (headingUp === false && gpsState === 'off' && trackingState === 'off') await toggleGPS('show');
-    toggleHeadingUp(!headingUp);
+    await toggleHeadingUp(!headingUp);
   }, [
     confirmLocationPermission,
     featureButton,
