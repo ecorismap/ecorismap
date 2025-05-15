@@ -120,28 +120,45 @@ export default function LayerContainer({ navigation }: Props_Layers) {
     [navigation]
   );
 
+  const layersContextValue = React.useMemo(
+    () => ({
+      layers,
+      filterdLayers,
+      changeExpand,
+      changeVisible,
+      changeLabel,
+      changeCustomLabel,
+      changeActiveLayer,
+      pressLayerOrder,
+      gotoLayerEditForAdd,
+      pressImportLayerAndData,
+      gotoData,
+      gotoLayerEdit,
+      gotoColorStyle,
+      updateLayersOrder,
+      onDragBegin,
+    }),
+    [
+      changeActiveLayer,
+      changeCustomLabel,
+      changeExpand,
+      changeLabel,
+      changeVisible,
+      filterdLayers,
+      gotoColorStyle,
+      gotoData,
+      gotoLayerEdit,
+      gotoLayerEditForAdd,
+      layers,
+      onDragBegin,
+      pressImportLayerAndData,
+      pressLayerOrder,
+      updateLayersOrder,
+    ]
+  );
+
   return (
-    <LayersContext.Provider
-      value={{
-        layers,
-        filterdLayers,
-        changeExpand,
-        changeVisible: (visible, layer) => {
-          changeVisible(visible, layer);
-        },
-        changeLabel,
-        changeCustomLabel,
-        changeActiveLayer,
-        pressLayerOrder,
-        gotoLayerEditForAdd,
-        pressImportLayerAndData,
-        gotoData,
-        gotoLayerEdit,
-        gotoColorStyle,
-        updateLayersOrder,
-        onDragBegin,
-      }}
-    >
+    <LayersContext.Provider value={layersContextValue}>
       <Layers />
     </LayersContext.Provider>
   );

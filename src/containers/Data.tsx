@@ -160,32 +160,58 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     navigation.navigate('Layers');
   }, [navigation]);
 
+  // DataContext.ProviderのvalueをuseMemoでメモ化し、props変更時のみ再生成
+  const dataContextValue = React.useMemo(
+    () => ({
+      projectId,
+      isOwnerAdmin,
+      sortedRecordSet,
+      layer,
+      isChecked,
+      checkList,
+      isMapMemoLayer,
+      sortedName,
+      sortedOrder,
+      changeOrder,
+      changeChecked,
+      changeCheckedAll,
+      changeVisible,
+      changeVisibleAll,
+      addDataByDictinary,
+      pressAddData,
+      pressDeleteData,
+      pressExportData,
+      gotoDataEdit,
+      gotoBack,
+      updateOwnRecordSetOrder,
+    }),
+    [
+      projectId,
+      isOwnerAdmin,
+      sortedRecordSet,
+      layer,
+      isChecked,
+      checkList,
+      isMapMemoLayer,
+      sortedName,
+      sortedOrder,
+      changeOrder,
+      changeChecked,
+      changeCheckedAll,
+      changeVisible,
+      changeVisibleAll,
+      addDataByDictinary,
+      pressAddData,
+      pressDeleteData,
+      pressExportData,
+      gotoDataEdit,
+      gotoBack,
+      updateOwnRecordSetOrder,
+    ]
+  );
+
   return (
-    <DataContext.Provider
-      value={{
-        projectId,
-        isOwnerAdmin,
-        sortedRecordSet,
-        layer,
-        isChecked,
-        checkList,
-        isMapMemoLayer,
-        sortedName,
-        sortedOrder,
-        changeOrder,
-        changeChecked,
-        changeCheckedAll,
-        changeVisible,
-        changeVisibleAll,
-        addDataByDictinary,
-        pressAddData,
-        pressDeleteData,
-        pressExportData,
-        gotoDataEdit,
-        gotoBack,
-        updateOwnRecordSetOrder,
-      }}
-    >
+    <DataContext.Provider value={dataContextValue}>
       <Data />
     </DataContext.Provider>
   );

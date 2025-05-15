@@ -107,31 +107,55 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     }
   }, [isEdited, navigation]);
 
+  const layersContextValue = React.useMemo(
+    () => ({
+      layer: targetLayer,
+      isEdited,
+      isNewLayer,
+      onChangeLayerName: changeLayerName,
+      submitLayerName,
+      onChangeFeatureType: changeFeatureType,
+      onChangeFieldOrder: changeFieldOrder,
+      onChangeFieldName: changeFieldName,
+      changePermission,
+      onChangeOption: changeOption,
+      submitFieldName,
+      onChangeFieldFormat: changeFieldFormat,
+      pressSaveLayer,
+      pressDeleteField: deleteField,
+      pressAddField: addField,
+      pressDeleteLayer,
+      gotoLayerEditFeatureStyle,
+      gotoLayerEditFieldItem,
+      gotoBack,
+      pressExportLayer,
+    }),
+    [
+      addField,
+      changeFeatureType,
+      changeFieldFormat,
+      changeFieldName,
+      changeFieldOrder,
+      changeLayerName,
+      changeOption,
+      changePermission,
+      deleteField,
+      gotoBack,
+      gotoLayerEditFeatureStyle,
+      gotoLayerEditFieldItem,
+      isEdited,
+      isNewLayer,
+      pressDeleteLayer,
+      pressExportLayer,
+      pressSaveLayer,
+      submitFieldName,
+      submitLayerName,
+      targetLayer,
+    ]
+  );
+
   return (
-    <LayerEditContext.Provider
-      value={{
-        layer: targetLayer,
-        isEdited,
-        isNewLayer,
-        onChangeLayerName: changeLayerName,
-        submitLayerName,
-        onChangeFeatureType: changeFeatureType,
-        onChangeFieldOrder: changeFieldOrder,
-        onChangeFieldName: changeFieldName,
-        changePermission,
-        onChangeOption: changeOption,
-        submitFieldName,
-        onChangeFieldFormat: changeFieldFormat,
-        pressSaveLayer,
-        pressDeleteField: deleteField,
-        pressAddField: addField,
-        pressDeleteLayer,
-        gotoLayerEditFeatureStyle,
-        gotoLayerEditFieldItem,
-        gotoBack,
-        pressExportLayer,
-      }}
-    >
+    <LayerEditContext.Provider value={layersContextValue}>
       <LayerEdit />
     </LayerEditContext.Provider>
   );
