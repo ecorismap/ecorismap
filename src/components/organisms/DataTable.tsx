@@ -23,7 +23,7 @@ export const DataTable = React.memo(() => {
     gotoDataEdit,
     changeChecked,
     changeVisible,
-    updateOwnRecordSetOrder,
+    updateRecordSetOrder,
     changeOrder,
     changeCheckedAll,
     changeVisibleAll,
@@ -173,7 +173,7 @@ export const DataTable = React.memo(() => {
       extraData={sortedRecordSet}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
-      onDragEnd={({ data }) => updateOwnRecordSetOrder(data)}
+      onDragEnd={({ data }) => updateRecordSetOrder(data)}
       activationDistance={5}
     />
   ) : (

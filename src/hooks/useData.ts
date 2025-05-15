@@ -33,7 +33,7 @@ export type UseDataReturnType = {
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
   deleteRecords: () => void;
-  updateOwnRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
+  updateRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
 };
 
 export const useData = (layerId: string): UseDataReturnType => {
@@ -53,11 +53,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
-  //ドラッグで並び順を変更するため。自分のデータのみ
-  const ownRecordSet = useMemo(
-    () => sortedRecordSet.filter((d) => d.userId === dataUser.uid),
-    [sortedRecordSet, dataUser.uid]
-  );
+
   const isChecked = useMemo(() => checkList.some((c) => c?.checked), [checkList]);
 
   const checkedRecords = useMemo(
@@ -135,19 +131,27 @@ export const useData = (layerId: string): UseDataReturnType => {
     [checkList]
   );
 
-  const updateOwnRecordSetOrder = useCallback(
+  const updateRecordSetOrder = useCallback(
     (sortedRecordSet_: RecordType[]) => {
       changeCheckedAll(false);
-      const ownRecordSet_ = sortedRecordSet_.filter((d) => d.userId === dataUser.uid);
-
-      dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: dataUser.uid, data: ownRecordSet_ }));
+      // userIdごとにグループ化
+      const userMap: { [userId: string]: RecordType[] } = {};
+      sortedRecordSet_.forEach((record) => {
+        if (!record.userId) return;
+        if (!userMap[record.userId]) userMap[record.userId] = [];
+        userMap[record.userId].push(record);
+      });
+      Object.entries(userMap).forEach(([userId, data]) => {
+        dispatch(setRecordSetAction({ layerId: targetLayer.id, userId, data }));
+      });
     },
-    [changeCheckedAll, dataUser.uid, dispatch, targetLayer]
+    [changeCheckedAll, dispatch, targetLayer]
   );
 
   const addDefaultRecord = useCallback(
     (fields?: { [key: string]: string | number | PhotoType[] }) => {
       const id = ulid();
+      const ownRecordSet = sortedRecordSet.filter((d) => d.userId === dataUser.uid);
       const field = getDefaultField(targetLayer, ownRecordSet, id);
 
       const newData: RecordType = {
@@ -164,7 +168,7 @@ export const useData = (layerId: string): UseDataReturnType => {
       setCheckList([]);
       return newData;
     },
-    [targetLayer, ownRecordSet, dataUser.uid, dataUser.displayName, dispatch]
+    [sortedRecordSet, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
   );
 
   const deleteRecords = useCallback(() => {
@@ -213,6 +217,6 @@ export const useData = (layerId: string): UseDataReturnType => {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    updateOwnRecordSetOrder,
+    updateRecordSetOrder,
   } as const;
 };

@@ -36,7 +36,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     changeOrder,
     addDefaultRecord,
     deleteRecords,
-    updateOwnRecordSetOrder,
+    updateRecordSetOrder,
   } = useData(route.params.targetLayer.id);
   const { changeActiveLayer } = useLayers();
   const { checkRecordEditable } = useRecord();
@@ -183,7 +183,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       pressExportData,
       gotoDataEdit,
       gotoBack,
-      updateOwnRecordSetOrder,
+      updateRecordSetOrder,
     }),
     [
       projectId,
@@ -206,7 +206,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       pressExportData,
       gotoDataEdit,
       gotoBack,
-      updateOwnRecordSetOrder,
+      updateRecordSetOrder,
     ]
   );
 
