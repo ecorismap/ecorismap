@@ -16,11 +16,20 @@ interface Props {
 
 export const HomeModalBrushPicker = React.memo((props: Props) => {
   const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoBrush } = props;
-  const [brush, setBrush] = useState<MapMemoToolType | undefined>(undefined);
+  const [_brush, setBrush] = useState<MapMemoToolType | undefined>(undefined);
 
   useEffect(() => {
     setBrush(currentMapMemoTool);
   }, [currentMapMemoTool]);
+
+  const handleBrushPress = (tool: MapMemoToolType) => {
+    if (currentMapMemoTool === tool) {
+      selectMapMemoTool(undefined);
+    } else {
+      selectMapMemoTool(tool);
+    }
+    setVisibleMapMemoBrush(false);
+  };
 
   const styles = StyleSheet.create({
     checkbox: {
@@ -103,13 +112,35 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
       height: 18,
       width: 18,
     },
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 1,
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonText: {
+      fontSize: 24,
+      color: COLOR.GRAY2,
+    },
   });
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 300 : 220 }]}>
+          {/* バツボタン */}
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => setVisibleMapMemoBrush(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.closeButtonText}>×</Text>
+          </Pressable>
+          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 260 : 180 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectBrush')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10, width: 180 }}>
               <Text style={styles.modalSubTitle}>{`${t('common.common')}`} </Text>
@@ -118,18 +149,18 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
                   <Button
                     id={'PLUS'}
                     name={BRUSH.PLUS}
-                    backgroundColor={brush === 'PLUS' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    backgroundColor={currentMapMemoTool === 'PLUS' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => (currentMapMemoTool === 'PLUS' ? setBrush(undefined) : setBrush('PLUS'))}
+                    onPress={() => handleBrushPress('PLUS')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
                   <Button
                     id={'CROSS'}
                     name={BRUSH.CROSS}
-                    backgroundColor={brush === 'CROSS' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    backgroundColor={currentMapMemoTool === 'CROSS' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => (currentMapMemoTool === 'CROSS' ? setBrush(undefined) : setBrush('CROSS'))}
+                    onPress={() => handleBrushPress('CROSS')}
                   />
                 </View>
               </View>
@@ -142,36 +173,36 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
                       <Button
                         id={'SENKAI'}
                         name={BRUSH.SENKAI}
-                        backgroundColor={brush === 'SENKAI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'SENKAI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'SENKAI' ? setBrush(undefined) : setBrush('SENKAI'))}
+                        onPress={() => handleBrushPress('SENKAI')}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
                       <Button
                         id={'SENJYOU'}
                         name={BRUSH.SENJYOU}
-                        backgroundColor={brush === 'SENJYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'SENJYOU' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'SENJYOU' ? setBrush(undefined) : setBrush('SENJYOU'))}
+                        onPress={() => handleBrushPress('SENJYOU')}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
                       <Button
                         id={'KOUGEKI'}
                         name={BRUSH.KOUGEKI}
-                        backgroundColor={brush === 'KOUGEKI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'KOUGEKI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'KOUGEKI' ? setBrush(undefined) : setBrush('KOUGEKI'))}
+                        onPress={() => handleBrushPress('KOUGEKI')}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
                       <Button
                         id={'DISPLAY'}
                         name={BRUSH.DISPLAY}
-                        backgroundColor={brush === 'DISPLAY' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'DISPLAY' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'DISPLAY' ? setBrush(undefined) : setBrush('DISPLAY'))}
+                        onPress={() => handleBrushPress('DISPLAY')}
                       />
                     </View>
                   </View>
@@ -180,43 +211,23 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
                       <Button
                         id={'KYUKOKA'}
                         name={BRUSH.KYUKOKA}
-                        backgroundColor={brush === 'KYUKOKA' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'KYUKOKA' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'KYUKOKA' ? setBrush(undefined) : setBrush('KYUKOKA'))}
+                        onPress={() => handleBrushPress('KYUKOKA')}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
                       <Button
                         id={'TANJI'}
                         name={BRUSH.TANJI}
-                        backgroundColor={brush === 'TANJI' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        backgroundColor={currentMapMemoTool === 'TANJI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => (currentMapMemoTool === 'TANJI' ? setBrush(undefined) : setBrush('TANJI'))}
+                        onPress={() => handleBrushPress('TANJI')}
                       />
                     </View>
                   </View>
                 </>
               )}
-            </View>
-            <View style={styles.modalButtonContainer}>
-              <Pressable
-                style={styles.modalOKCancelButton}
-                onPress={() => {
-                  selectMapMemoTool(brush);
-                  setVisibleMapMemoBrush(false);
-                }}
-              >
-                <Text>OK</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => {
-                  selectMapMemoTool(undefined);
-                  setVisibleMapMemoBrush(false);
-                }}
-              >
-                <Text>Cancel</Text>
-              </Pressable>
             </View>
           </View>
         </View>

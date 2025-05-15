@@ -46,7 +46,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [straightStyle, setStraightStyle] = useState(false);
 
-  const [smoothed, setSmoothed] = useState(false);
+  const [_smoothed, setSmoothed] = useState(false);
 
   useEffect(() => {
     setPenWidth(currentPenWidth);
@@ -54,6 +54,29 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     setStraightStyle(isStraightStyle);
     setSmoothed(isMapMemoLineSmoothed);
   }, [arrowStyle, currentMapMemoTool, currentPenWidth, isMapMemoLineSmoothed, isStraightStyle]);
+
+  const handlePenWidth = (width: PenWidthType) => {
+    setPenWidth(width);
+    selectMapMemoPenWidth(width);
+    selectMapMemoTool('PEN');
+  };
+  const handleStraightStyle = (straight: boolean) => {
+    setStraightStyle(straight);
+    selectMapMemoStraightStyle(straight);
+    selectMapMemoTool('PEN');
+  };
+  const handleArrowStyle = (style: ArrowStyleType) => {
+    setArrowStyle(style);
+    selectMapMemoArrowStyle(style);
+    selectMapMemoTool('PEN');
+    if (style === 'NONE') {
+      setSmoothed(false);
+      selectMapMemoLineSmoothed(false);
+    } else {
+      setSmoothed(true);
+      selectMapMemoLineSmoothed(true);
+    }
+  };
 
   const styles = StyleSheet.create({
     checkbox: {
@@ -135,13 +158,35 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
       height: 18,
       width: 18,
     },
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      zIndex: 1,
+      width: 32,
+      height: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    closeButtonText: {
+      fontSize: 24,
+      color: COLOR.GRAY2,
+    },
   });
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
       <View style={styles.modalCenteredView}>
         <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: 200, height: 400 }]}>
+          {/* バツボタン */}
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => setVisibleMapMemoPen(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.closeButtonText}>×</Text>
+          </Pressable>
+          <View style={[styles.modalContents, { width: 200, height: 300 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10 }}>
               <Text style={styles.modalSubTitle}>{`${t('common.strokeWidth')}`} </Text>
@@ -152,7 +197,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_THIN}
                     backgroundColor={penWidth === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPenWidth('PEN_THIN')}
+                    onPress={() => handlePenWidth('PEN_THIN')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -161,7 +206,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_MEDIUM}
                     backgroundColor={penWidth === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPenWidth('PEN_MEDIUM')}
+                    onPress={() => handlePenWidth('PEN_MEDIUM')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -170,7 +215,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_THICK}
                     backgroundColor={penWidth === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => setPenWidth('PEN_THICK')}
+                    onPress={() => handlePenWidth('PEN_THICK')}
                   />
                 </View>
               </View>
@@ -182,9 +227,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.FREEHAND}
                     backgroundColor={!straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => {
-                      setStraightStyle(false);
-                    }}
+                    onPress={() => handleStraightStyle(false)}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -193,9 +236,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.STRAIGHT}
                     backgroundColor={straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => {
-                      setStraightStyle(true);
-                    }}
+                    onPress={() => handleStraightStyle(true)}
                   />
                 </View>
               </View>
@@ -207,10 +248,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.NONE}
                     backgroundColor={arrowStyle_ === 'NONE' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => {
-                      setArrowStyle('NONE');
-                      setSmoothed(false);
-                    }}
+                    onPress={() => handleArrowStyle('NONE')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -219,10 +257,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.ARROW_END}
                     backgroundColor={arrowStyle_ === 'ARROW_END' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => {
-                      setArrowStyle('ARROW_END');
-                      setSmoothed(true);
-                    }}
+                    onPress={() => handleArrowStyle('ARROW_END')}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -231,15 +266,11 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.ARROW_BOTH}
                     backgroundColor={arrowStyle_ === 'ARROW_BOTH' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => {
-                      setArrowStyle('ARROW_BOTH');
-                      setSmoothed(true);
-                    }}
+                    onPress={() => handleArrowStyle('ARROW_BOTH')}
                   />
                 </View>
               </View>
             </View>
-
             {/* <View style={styles.checkbox}>
               <CheckBox
                 label={t('common.smoothLine')}
@@ -250,31 +281,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                 onCheck={setSmoothed}
               />
             </View> */}
-
-            <View style={styles.modalButtonContainer}>
-              <Pressable
-                style={styles.modalOKCancelButton}
-                onPress={() => {
-                  selectMapMemoTool('PEN');
-                  selectMapMemoPenWidth(penWidth);
-                  selectMapMemoArrowStyle(arrowStyle_);
-                  selectMapMemoStraightStyle(straightStyle);
-                  selectMapMemoLineSmoothed(smoothed);
-                  setVisibleMapMemoPen(false);
-                }}
-              >
-                <Text>OK</Text>
-              </Pressable>
-              <Pressable
-                style={styles.modalOKCancelButton}
-                onPress={() => {
-                  selectMapMemoTool(undefined);
-                  setVisibleMapMemoPen(false);
-                }}
-              >
-                <Text>Cancel</Text>
-              </Pressable>
-            </View>
+            {/* OK/Cancelボタン削除 */}
             <View style={{ width: 200, height: 50 }}>
               <CheckBox
                 style={{ backgroundColor: COLOR.WHITE }}
