@@ -695,18 +695,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (isInfoToolActive) return;
     if (featureButton !== 'NONE') return;
     if ((await confirmLocationPermission()) !== 'granted') return;
-    if (headingUp === false && gpsState === 'off' && trackingState === 'off') await toggleGPS('show');
+    await toggleGPS('show');
     await toggleHeadingUp(!headingUp);
-  }, [
-    confirmLocationPermission,
-    featureButton,
-    gpsState,
-    headingUp,
-    isInfoToolActive,
-    toggleGPS,
-    toggleHeadingUp,
-    trackingState,
-  ]);
+  }, [confirmLocationPermission, featureButton, headingUp, isInfoToolActive, toggleGPS, toggleHeadingUp]);
 
   const pressTracking = useCallback(async () => {
     if (Platform.OS === 'web') {
