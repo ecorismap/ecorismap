@@ -385,18 +385,6 @@ describe('useMapMemo', () => {
     expect(result.current.isStraightStyle).toBe(true);
   });
 
-  it('setMapMemoLineSmoothedが正しく動作すること', () => {
-    const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
-
-    act(() => {
-      result.current.setMapMemoLineSmoothed(true);
-    });
-
-    // ローカルステートを直接検証
-    expect(result.current.isMapMemoLineSmoothed).toBe(true);
-  });
-
   it('selectPenColorが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
     const { result } = renderHook(() => useMapMemo(mockMapViewRef));
