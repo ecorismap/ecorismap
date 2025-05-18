@@ -8,6 +8,10 @@ export type PressableProps = RNPressableProps & {
    * デフォルトは opacity 0.6 です
    */
   pressedStyle?: StyleProp<ViewStyle>;
+  /**
+   * 押下時のアニメーションを無効化したい場合は true
+   */
+  disablePressedAnimation?: boolean;
 };
 
 const DEFAULT_PRESSED_STYLE: StyleProp<ViewStyle> = {
@@ -18,6 +22,7 @@ export const Pressable: React.FC<PressableProps> = ({
   style,
   pressedStyle = DEFAULT_PRESSED_STYLE,
   children,
+  disablePressedAnimation = false,
   ...rest
 }) => (
   <RNPressable
@@ -25,7 +30,7 @@ export const Pressable: React.FC<PressableProps> = ({
     style={({ pressed }) => {
       // If style is a function, resolve it with the current state
       const resolvedStyle = typeof style === 'function' ? style({ pressed }) : style;
-      const resolvedPressedStyle = pressed && pressedStyle ? pressedStyle : null;
+      const resolvedPressedStyle = !disablePressedAnimation && pressed && pressedStyle ? pressedStyle : null;
       return [resolvedStyle, resolvedPressedStyle];
     }}
   >

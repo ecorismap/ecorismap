@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
-import { COLOR, ERASER } from '../../constants/AppConstants';
+import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
 import { isEraserTool } from '../../utils/General';
@@ -25,11 +25,7 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
   }, [currentMapMemoTool]);
 
   const handleEraserPress = (tool: MapMemoToolType) => {
-    if (currentMapMemoTool === tool) {
-      selectMapMemoTool(undefined);
-    } else {
-      selectMapMemoTool(tool);
-    }
+    selectMapMemoTool(tool);
     setVisibleMapMemoEraser(false);
   };
 
@@ -126,70 +122,132 @@ export const HomeModalEraserPicker = React.memo((props: Props) => {
   });
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
-      <View style={styles.modalCenteredView}>
-        <View style={styles.modalFrameView}>
+      <Pressable
+        style={styles.modalCenteredView}
+        onPress={() => {
+          selectMapMemoTool(undefined);
+          setVisibleMapMemoEraser(false);
+        }}
+        disablePressedAnimation
+      >
+        <Pressable
+          style={styles.modalFrameView}
+          onPress={() => {}} // モーダル本体は閉じない
+          disablePressedAnimation
+        >
           {/* バツボタン */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => setVisibleMapMemoEraser(false)}
+            onPress={() => {
+              selectMapMemoTool(undefined);
+              setVisibleMapMemoEraser(false);
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: 200 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 230 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectEraser')}`} </Text>
-            <View style={{ flexDirection: 'column', margin: 10 }}>
+            <View
+              style={{
+                flexDirection: 'column',
+                margin: 10,
+                borderWidth: 1,
+                borderRadius: 5,
+                padding: 10,
+                borderColor: COLOR.GRAY3,
+              }}
+            >
               <Pressable
-                style={{ flexDirection: 'row', alignItems: 'center' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: COLOR.WHITE,
+                  borderRadius: 5,
+                  width: 200,
+                  marginVertical: 5,
+                }}
                 onPress={() => handleEraserPress('PEN_ERASER')}
               >
-                <View style={{ marginVertical: 5, marginRight: 10 }}>
+                <View style={{ marginVertical: 0, marginRight: 10 }}>
                   <Button
                     id={'PEN_ERASER'}
-                    name={ERASER.ERASER}
-                    backgroundColor={currentMapMemoTool === 'PEN_ERASER' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={
+                      currentMapMemoTool === 'PEN_ERASER'
+                        ? 'checkbox-marked-circle-outline'
+                        : 'checkbox-blank-circle-outline'
+                    }
+                    color={COLOR.GRAY4}
+                    backgroundColor={COLOR.WHITE}
                     borderRadius={50}
                     onPress={() => handleEraserPress('PEN_ERASER')}
+                    size={24}
                   />
                 </View>
-                <Text>{`${t('common.selectPenEraser')}`}</Text>
+                <Text style={{ fontSize: 15, textAlignVertical: 'center' }}>{`${t('common.selectPenEraser')}`}</Text>
               </Pressable>
 
               <Pressable
-                style={{ flexDirection: 'row', alignItems: 'center' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: COLOR.WHITE,
+                  borderRadius: 5,
+                  width: 200,
+                  marginVertical: 5,
+                }}
                 onPress={() => handleEraserPress('BRUSH_ERASER')}
               >
-                <View style={{ marginVertical: 5, marginRight: 10 }}>
+                <View style={{ marginVertical: 0, marginRight: 10 }}>
                   <Button
                     id={'BRUSH_ERASER'}
-                    name={ERASER.BRUSH_ERASER}
-                    backgroundColor={currentMapMemoTool === 'BRUSH_ERASER' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={
+                      currentMapMemoTool === 'BRUSH_ERASER'
+                        ? 'checkbox-marked-circle-outline'
+                        : 'checkbox-blank-circle-outline'
+                    }
+                    color={COLOR.GRAY4}
+                    backgroundColor={COLOR.WHITE}
                     borderRadius={50}
                     onPress={() => handleEraserPress('BRUSH_ERASER')}
+                    size={24}
                   />
                 </View>
-                <Text>{`${t('common.selectBrushEraser')}`}</Text>
+                <Text style={{ fontSize: 15, textAlignVertical: 'center' }}>{`${t('common.selectBrushEraser')}`}</Text>
               </Pressable>
               <Pressable
-                style={{ flexDirection: 'row', alignItems: 'center' }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: COLOR.WHITE,
+                  borderRadius: 5,
+                  width: 200,
+                  marginVertical: 5,
+                }}
                 onPress={() => handleEraserPress('STAMP_ERASER')}
               >
-                <View style={{ marginVertical: 5, marginRight: 10 }}>
+                <View style={{ marginVertical: 0, marginRight: 10 }}>
                   <Button
                     id={'STAMP_ERASER'}
-                    name={ERASER.STAMP_ERASER}
-                    backgroundColor={currentMapMemoTool === 'STAMP_ERASER' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                    name={
+                      currentMapMemoTool === 'STAMP_ERASER'
+                        ? 'checkbox-marked-circle-outline'
+                        : 'checkbox-blank-circle-outline'
+                    }
+                    color={COLOR.GRAY4}
+                    backgroundColor={COLOR.WHITE}
                     borderRadius={50}
                     onPress={() => handleEraserPress('STAMP_ERASER')}
+                    size={24}
                   />
                 </View>
-                <Text>{`${t('common.selectStampEraser')}`}</Text>
+                <Text style={{ fontSize: 15, textAlignVertical: 'center' }}>{`${t('common.selectStampEraser')}`}</Text>
               </Pressable>
             </View>
             {/* OK/Cancelボタン削除 */}
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 });

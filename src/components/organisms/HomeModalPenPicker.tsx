@@ -12,7 +12,6 @@ interface Props {
   modalVisible: boolean;
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
-  isMapMemoLineSmoothed: boolean;
   isModalMapMemoToolHidden: boolean;
   currentPenWidth: PenWidthType;
   setIsModalMapMemoToolHidden: (value: boolean) => void;
@@ -20,7 +19,6 @@ interface Props {
   selectMapMemoPenWidth: (penWidth: PenWidthType) => void;
   selectMapMemoArrowStyle: (arrowStyle: ArrowStyleType) => void;
   selectMapMemoStraightStyle: (straightStyle: boolean) => void;
-  selectMapMemoLineSmoothed: (smoothed: boolean) => void;
   setVisibleMapMemoPen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -30,14 +28,12 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
     currentMapMemoTool,
     arrowStyle,
     isStraightStyle,
-    isMapMemoLineSmoothed,
     isModalMapMemoToolHidden,
     currentPenWidth,
     setIsModalMapMemoToolHidden,
     selectMapMemoTool,
     selectMapMemoArrowStyle,
     selectMapMemoStraightStyle,
-    selectMapMemoLineSmoothed,
     setVisibleMapMemoPen,
     selectMapMemoPenWidth,
   } = props;
@@ -46,36 +42,25 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
   const [arrowStyle_, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [straightStyle, setStraightStyle] = useState(false);
 
-  const [_smoothed, setSmoothed] = useState(false);
-
   useEffect(() => {
-    setPenWidth(currentPenWidth);
-    setArrowStyle(arrowStyle);
-    setStraightStyle(isStraightStyle);
-    setSmoothed(isMapMemoLineSmoothed);
-  }, [arrowStyle, currentMapMemoTool, currentPenWidth, isMapMemoLineSmoothed, isStraightStyle]);
-
-  const handlePenWidth = (width: PenWidthType) => {
-    setPenWidth(width);
-    selectMapMemoPenWidth(width);
-    selectMapMemoTool('PEN');
-  };
-  const handleStraightStyle = (straight: boolean) => {
-    setStraightStyle(straight);
-    selectMapMemoStraightStyle(straight);
-    selectMapMemoTool('PEN');
-  };
-  const handleArrowStyle = (style: ArrowStyleType) => {
-    setArrowStyle(style);
-    selectMapMemoArrowStyle(style);
-    selectMapMemoTool('PEN');
-    if (style === 'NONE') {
-      setSmoothed(false);
-      selectMapMemoLineSmoothed(false);
-    } else {
-      setSmoothed(true);
-      selectMapMemoLineSmoothed(true);
+    if (modalVisible) {
+      setPenWidth(currentPenWidth);
+      setArrowStyle(arrowStyle);
+      setStraightStyle(isStraightStyle);
     }
+  }, [modalVisible, arrowStyle, currentMapMemoTool, currentPenWidth, isStraightStyle]);
+
+  const handleCancel = () => {
+    selectMapMemoTool(undefined);
+    setVisibleMapMemoPen(false);
+  };
+
+  const handleOK = () => {
+    selectMapMemoTool('PEN');
+    selectMapMemoPenWidth(penWidth);
+    selectMapMemoArrowStyle(arrowStyle_);
+    selectMapMemoStraightStyle(straightStyle);
+    setVisibleMapMemoPen(false);
   };
 
   const styles = StyleSheet.create({
@@ -176,19 +161,33 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
-      <View style={styles.modalCenteredView}>
-        <View style={styles.modalFrameView}>
+      <Pressable style={styles.modalCenteredView} onPress={handleCancel} disablePressedAnimation>
+        <Pressable
+          style={styles.modalFrameView}
+          onPress={() => {}} // モーダル本体は閉じない
+          disablePressedAnimation
+        >
           {/* バツボタン */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => setVisibleMapMemoPen(false)}
+            onPress={handleCancel}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: 300 }]}>
+          <View style={[styles.modalContents, { width: 200, height: 400 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectPen')}`} </Text>
-            <View style={{ flexDirection: 'column', margin: 10 }}>
+
+            <View
+              style={{
+                flexDirection: 'column',
+                margin: 10,
+                borderWidth: 1,
+                borderRadius: 5,
+                padding: 20,
+                borderColor: COLOR.GRAY3,
+              }}
+            >
               <Text style={styles.modalSubTitle}>{`${t('common.strokeWidth')}`} </Text>
               <View style={{ flexDirection: 'row' }}>
                 <View style={{ margin: 5 }}>
@@ -197,7 +196,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_THIN}
                     backgroundColor={penWidth === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handlePenWidth('PEN_THIN')}
+                    onPress={() => setPenWidth('PEN_THIN')}
+                    labelText="細"
+                    size={22}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -206,7 +207,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_MEDIUM}
                     backgroundColor={penWidth === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handlePenWidth('PEN_MEDIUM')}
+                    onPress={() => setPenWidth('PEN_MEDIUM')}
+                    labelText="中"
+                    size={22}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -215,7 +218,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_WIDTH.PEN_THICK}
                     backgroundColor={penWidth === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handlePenWidth('PEN_THICK')}
+                    onPress={() => setPenWidth('PEN_THICK')}
+                    labelText="太"
+                    size={22}
                   />
                 </View>
               </View>
@@ -227,7 +232,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.FREEHAND}
                     backgroundColor={!straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handleStraightStyle(false)}
+                    onPress={() => setStraightStyle(false)}
+                    labelText="曲線"
+                    size={22}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -236,7 +243,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.STRAIGHT}
                     backgroundColor={straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handleStraightStyle(true)}
+                    onPress={() => setStraightStyle(true)}
+                    labelText="直線"
+                    size={22}
                   />
                 </View>
               </View>
@@ -248,7 +257,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.NONE}
                     backgroundColor={arrowStyle_ === 'NONE' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handleArrowStyle('NONE')}
+                    onPress={() => setArrowStyle('NONE')}
+                    labelText="なし"
+                    size={22}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -257,7 +268,9 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.ARROW_END}
                     backgroundColor={arrowStyle_ === 'ARROW_END' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handleArrowStyle('ARROW_END')}
+                    onPress={() => setArrowStyle('ARROW_END')}
+                    labelText="終端"
+                    size={22}
                   />
                 </View>
                 <View style={{ margin: 5 }}>
@@ -266,22 +279,23 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     name={PEN_STYLE.ARROW_BOTH}
                     backgroundColor={arrowStyle_ === 'ARROW_BOTH' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
-                    onPress={() => handleArrowStyle('ARROW_BOTH')}
+                    onPress={() => setArrowStyle('ARROW_BOTH')}
+                    labelText="両側"
+                    size={22}
                   />
                 </View>
               </View>
             </View>
-            {/* <View style={styles.checkbox}>
-              <CheckBox
-                label={t('common.smoothLine')}
-                style={{ backgroundColor: COLOR.WHITE }}
-                labelColor="black"
-                width={300}
-                checked={smoothed}
-                onCheck={setSmoothed}
-              />
-            </View> */}
-            {/* OK/Cancelボタン削除 */}
+
+            <View style={styles.modalButtonContainer}>
+              <Pressable style={styles.modalOKCancelButton} onPress={handleOK}>
+                <Text>OK</Text>
+              </Pressable>
+              <Pressable style={styles.modalOKCancelButton} onPress={handleCancel}>
+                <Text>Cancel</Text>
+              </Pressable>
+            </View>
+
             <View style={{ width: 200, height: 50 }}>
               <CheckBox
                 style={{ backgroundColor: COLOR.WHITE }}
@@ -293,8 +307,8 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
               />
             </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 });

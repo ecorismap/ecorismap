@@ -473,12 +473,16 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
           }" stroke="#ffffffaa" stroke-width="${1 / tileScale}" fill="${color}" />`;
           break;
         case 'KARI':
-          svg = `<line x1="${pixels[0].pixelX - 6 / tileScale}" y1="${pixels[0].pixelY - 6 / tileScale}" x2="${
-            pixels[0].pixelX + 6 / tileScale
-          }" y2="${pixels[0].pixelY + 6 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />
-                <line x1="${pixels[0].pixelX + 6 / tileScale}" y1="${pixels[0].pixelY - 6 / tileScale}" x2="${
-            pixels[0].pixelX - 6 / tileScale
-          }" y2="${pixels[0].pixelY + 6 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />`;
+          svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
+            7 / tileScale
+          }" stroke="${color}" stroke-width="${1 / tileScale}" fill="#ffffffaa" /><line x1="${
+            pixels[0].pixelX - 5 / tileScale
+          }" y1="${pixels[0].pixelY - 5 / tileScale}" x2="${pixels[0].pixelX + 6 / tileScale}" y2="${
+            pixels[0].pixelY + 5 / tileScale
+          }" stroke="${color}" stroke-width="${2 / tileScale}" />
+                <line x1="${pixels[0].pixelX + 5 / tileScale}" y1="${pixels[0].pixelY - 5 / tileScale}" x2="${
+            pixels[0].pixelX - 5 / tileScale
+          }" y2="${pixels[0].pixelY + 5 / tileScale}" stroke="${color}" stroke-width="${2 / tileScale}" />`;
           break;
         case 'HOVERING':
           svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
@@ -487,6 +491,19 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
                 <text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
             12 / tileScale
           }" fill="${color}" text-anchor="middle">H</text>`;
+          break;
+        case 'VOICE':
+          svg = `<circle cx="${pixels[0].pixelX}" cy="${pixels[0].pixelY}" r="${
+            7 / tileScale
+          }" stroke="${color}" stroke-width="${1 / tileScale}" fill="#ffffffaa" />
+                <text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
+            12 / tileScale
+          }" fill="${color}" text-anchor="middle">Vo</text>`;
+          break;
+        case 'KOUBI':
+          svg = `<text x="${pixels[0].pixelX}" y="${pixels[0].pixelY + 4 / tileScale}" font-family="Arial" font-size="${
+            12 / tileScale
+          }" fill="${color}" text-anchor="middle">★</text>`;
           break;
         default:
           svg = '';
@@ -512,7 +529,8 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
     ) => {
       if (!isLocationTypeArray(feature.coords)) return '';
       const latlon = latLonObjectsToLatLonArray(feature.coords);
-      const brushLatLon = interpolateLineString(latlon, (pageScale.value / 10000) * 0.1);
+      const tileZoom = parseInt(pdfTileMapZoomLevel, 10);
+      const brushLatLon = interpolateLineString(latlon, 1 / 2 ** (tileZoom - 12));
 
       const brush = feature.field._strokeStyle as string;
       let svg = '';
@@ -569,13 +587,34 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             }" stroke="none" fill="${color}" transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />`;
             break;
 
-          case 'DISPLAY':
+          case 'DISPLAY1':
             svg += `<path d="M${point.pixelX - 6 / tileScale},${point.pixelY + 9 / tileScale} L${
               point.pixelX + 6 / tileScale
             },${point.pixelY + 3 / tileScale} L${point.pixelX - 6 / tileScale},${point.pixelY - 3 / tileScale}  L${
               point.pixelX + 6 / tileScale
             },${point.pixelY - 9 / tileScale}" 
             stroke="${color}" stroke-width="${1.5 / tileScale}" fill="none" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />`;
+            break;
+          case 'DISPLAY2':
+            svg += `<path d="M${point.pixelX + 6 / tileScale},${point.pixelY - 9 / tileScale} L${
+              point.pixelX + 6 / tileScale
+            },${point.pixelY + 9 / tileScale}" 
+            stroke="${color}" stroke-width="${2 / tileScale}" stroke-dasharray=" ${10 / tileScale},${
+              10 / tileScale
+            }" fill="none" transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />`;
+            break;
+          case 'ESA':
+            svg += `<circle cx="${point.pixelX + 5 / tileScale}" cy="${point.pixelY}" r="${
+              2 / tileScale
+            }" stroke="${color}" stroke-width="${1.5 / tileScale}" fill="${color}" transform="rotate(${angle}, ${
+              point.pixelX
+            }, ${point.pixelY})" />`;
+            break;
+          case 'SUZAI':
+            svg += `<path d="M${point.pixelX},${point.pixelY} L${point.pixelX + 10 / tileScale},${point.pixelY}" 
+            stroke="${color}" stroke-width="${2 / tileScale}"  fill="none" transform="rotate(${angle}, ${
               point.pixelX
             }, ${point.pixelY})" />`;
             break;
@@ -601,14 +640,14 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
             break;
           case 'TANJI':
             svg += `<path d="M${point.pixelX},${point.pixelY} 
-                            L${point.pixelX - 20 / tileScale},${point.pixelY - 10 / tileScale} 
-                            V${point.pixelY + 10 / tileScale} 
+                            L${point.pixelX - 6 / tileScale},${point.pixelY - 6 / tileScale} 
+                            V${point.pixelY + 6 / tileScale} 
                             L${point.pixelX},${point.pixelY} Z" 
                             fill="${color}" 
                             transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />
                        <path d="M${point.pixelX},${point.pixelY} 
-                            L${point.pixelX + 20 / tileScale},${point.pixelY - 10 / tileScale} 
-                            V${point.pixelY + 10 / tileScale} 
+                            L${point.pixelX + 6 / tileScale},${point.pixelY - 6 / tileScale} 
+                            V${point.pixelY + 6 / tileScale} 
                             L${point.pixelX},${point.pixelY} Z" 
                             fill="${color}" 
                             transform="rotate(${angle}, ${point.pixelX}, ${point.pixelY})" />`;
@@ -626,7 +665,7 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       //   strokeWidth + 5
       // }; stroke-opacity:1;"/>`;
     },
-    [convertCoordToPixel, pageScale.value]
+    [convertCoordToPixel, pdfTileMapZoomLevel]
   );
 
   const generatePointSvg = useCallback(

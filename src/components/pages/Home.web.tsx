@@ -48,7 +48,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { ReduceMotion, useSharedValue } from 'react-native-reanimated';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
-import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 //import Dexie from 'dexie';
 
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
@@ -693,7 +693,7 @@ export default function HomeScreen() {
           }}
         >
           <Loading visible={isLoading} text={t('common.processing')} />
-          <HomeMapMemoColorPicker
+          <HomeModalColorPicker
             color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}

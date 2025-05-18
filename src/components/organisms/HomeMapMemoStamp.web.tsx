@@ -71,8 +71,9 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
         <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
           <View style={{ width: 20, height: 20 }}>
             <Svg height="20" width="20" viewBox="0 0 20 20">
-              <Line x1="6" y1="6" x2="14" y2="14" stroke={lineColor} strokeWidth="2" />
-              <Line x1="14" y1="6" x2="6" y2="14" stroke={lineColor} strokeWidth="2" />
+              <Circle cx="10" cy="10" r="7" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
+              <Line x1="5" y1="5" x2="15" y2="15" stroke={lineColor} strokeWidth="1.5" />
+              <Line x1="15" y1="5" x2="5" y2="15" stroke={lineColor} strokeWidth="1.5" />
             </Svg>
           </View>
         </Marker>
@@ -85,6 +86,31 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
               <Circle cx="10" cy="10" r="7" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
               <Text x="10" y="14" fontSize="12" fontWeight="bold" fill={lineColor} textAnchor="middle">
                 H
+              </Text>
+            </Svg>
+          </View>
+        </Marker>
+      );
+    case 'VOICE':
+      return (
+        <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
+          <View style={{ width: 20, height: 20 }}>
+            <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Circle cx="10" cy="10" r="7" stroke={lineColor} strokeWidth="1" fill="#ffffffaa" />
+              <Text x="10" y="14" fontSize="11" fontWeight="bold" fill={lineColor} textAnchor="middle">
+                Vo
+              </Text>
+            </Svg>
+          </View>
+        </Marker>
+      );
+    case 'KOUBI':
+      return (
+        <Marker key={`${feature.id}-${feature.redraw}`} {...feature.coords} anchor={'center'} draggable={false}>
+          <View style={{ width: 20, height: 20 }}>
+            <Svg height="20" width="20" viewBox="0 0 20 20">
+              <Text x="10" y="15" fontSize="18" fontWeight="bold" fill={lineColor} textAnchor="middle">
+                ★
               </Text>
             </Svg>
           </View>

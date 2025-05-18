@@ -206,8 +206,10 @@ export const PEN_STYLE = {
 
 export const STAMP_HISYOU = {
   TOMARI: 'circle-medium',
-  KARI: 'close-thick',
+  KARI: 'close-circle-outline',
   HOVERING: 'alpha-h-circle-outline',
+  KOUBI: 'star',
+  VOICE: 'voice-custom',
 } as const;
 
 export const STAMP = {
@@ -230,9 +232,12 @@ export const BRUSH_HISYOU = {
   SENKAI: 'circle-outline',
   SENJYOU: 'circle-double',
   KOUGEKI: 'kougeki-custom',
-  DISPLAY: 'display-custom',
+  DISPLAY1: 'display1-custom',
+  DISPLAY2: 'display2-custom',
   KYUKOKA: 'kyukoka-custom',
   TANJI: 'tanji-custom',
+  ESA: 'esa-custom',
+  SUZAI: 'suzai-custom',
 } as const;
 
 export const BRUSH = {
@@ -244,9 +249,9 @@ export const BRUSH = {
 
 export const ERASER = {
   ERASER: 'eraser',
-  PEN_ERASER: 'eraser',
-  BRUSH_ERASER: 'brush',
-  STAMP_ERASER: 'stamper',
+  PEN_ERASER: 'checkbox-blank-circle-outline',
+  BRUSH_ERASER: 'checkbox-blank-circle-outline',
+  STAMP_ERASER: 'checkbox-blank-circle-outline',
 } as const;
 export const MAPMEMOTOOL = {
   PEN: 'lead-pencil',

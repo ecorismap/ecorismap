@@ -193,7 +193,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     snapWithLine,
     arrowStyle,
     isStraightStyle,
-    isMapMemoLineSmoothed,
     isModalMapMemoToolHidden,
     isEditingLine,
     editingLineId,
@@ -217,7 +216,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
-    setMapMemoLineSmoothed,
     setIsModalMapMemoToolHidden,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
@@ -1769,14 +1767,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         currentMapMemoTool={currentMapMemoTool}
         arrowStyle={arrowStyle}
         isStraightStyle={isStraightStyle}
-        isMapMemoLineSmoothed={isMapMemoLineSmoothed}
         isModalMapMemoToolHidden={isModalMapMemoToolHidden}
         currentPenWidth={currentPenWidth}
         selectMapMemoTool={selectMapMemoTool}
         selectMapMemoPenWidth={setPenWidth}
         selectMapMemoArrowStyle={setArrowStyle}
         selectMapMemoStraightStyle={setIsStraightStyle}
-        selectMapMemoLineSmoothed={setMapMemoLineSmoothed}
         setVisibleMapMemoPen={setVisibleMapMemoPen}
         setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
       />

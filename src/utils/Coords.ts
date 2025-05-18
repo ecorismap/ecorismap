@@ -996,12 +996,12 @@ export function trimHane(points: Position[], thresholdDeg: number = 60): Positio
 
       // calcAngleDeg: p0,p1,p2 の３点から“度”で折れ角度を返す関数
       const angleDeg = calcAngleDeg(points[p0Idx], points[p1Idx], points[p2Idx]);
-      console.log(`span=${span} angleDeg=${angleDeg}`);
+      //console.log(`span=${span} angleDeg=${angleDeg}`);
 
       if (angleDeg > thresholdDeg) {
         // 「ハネ」と判定 → p0Idx までを残す
         // slice の end は除外なので p0Idx+1 を指定
-        console.log(`ハネ検出(span=${span}) at i=${i}, cut at ${p0Idx}`);
+        //console.log(`ハネ検出(span=${span}) at i=${i}, cut at ${p0Idx}`);
         return points.slice(0, p0Idx + 1);
       }
     }

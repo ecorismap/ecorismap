@@ -33,11 +33,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
   }, [currentMapMemoTool, snapWithLine]);
 
   const handleStampPress = (tool: MapMemoToolType) => {
-    if (currentMapMemoTool === tool) {
-      selectMapMemoTool(undefined);
-    } else {
-      selectMapMemoTool(tool);
-    }
+    selectMapMemoTool(tool);
     selectMapMemoSnapWithLine(snapped);
     setVisibleMapMemoStamp(false);
   };
@@ -136,51 +132,44 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
   });
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
-      <View style={styles.modalCenteredView}>
-        <View style={styles.modalFrameView}>
+      <Pressable
+        style={styles.modalCenteredView}
+        onPress={() => {
+          selectMapMemoTool(undefined);
+          setVisibleMapMemoStamp(false);
+        }}
+        disablePressedAnimation
+      >
+        <Pressable
+          style={styles.modalFrameView}
+          onPress={() => {}} // モーダル本体は閉じない
+          disablePressedAnimation
+        >
           {/* バツボタン追加 */}
           <Pressable
             style={styles.closeButton}
-            onPress={() => setVisibleMapMemoStamp(false)}
+            onPress={() => {
+              selectMapMemoTool(undefined);
+              setVisibleMapMemoStamp(false);
+            }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 260 : 180 }]}>
+          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 320 : 200 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectStamp')}`} </Text>
-            <View style={{ flexDirection: 'column', margin: 10, width: 180 }}>
-              <Text style={styles.modalSubTitle}>{`${t('common.common')}`} </Text>
-              <View style={{ flexDirection: 'row' }}>
-                <View style={{ margin: 5 }}>
-                  <Button
-                    id={'CIRCLE'}
-                    name={STAMP.CIRCLE}
-                    backgroundColor={currentMapMemoTool === 'CIRCLE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-                    borderRadius={10}
-                    onPress={() => handleStampPress('CIRCLE')}
-                  />
-                </View>
-                <View style={{ margin: 5 }}>
-                  <Button
-                    id={'TRIANGLE'}
-                    name={STAMP.TRIANGLE}
-                    backgroundColor={currentMapMemoTool === 'TRIANGLE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-                    borderRadius={10}
-                    onPress={() => handleStampPress('TRIANGLE')}
-                  />
-                </View>
-                <View style={{ margin: 5 }}>
-                  <Button
-                    id={'SQUARE'}
-                    name={STAMP.SQUARE}
-                    backgroundColor={currentMapMemoTool === 'SQUARE' ? COLOR.ALFARED : COLOR.ALFABLUE}
-                    borderRadius={10}
-                    onPress={() => handleStampPress('SQUARE')}
-                  />
-                </View>
-              </View>
+            <View style={{ flexDirection: 'column', margin: 10, width: 260 }}>
               {PLUGIN.HISYOUTOOL && (
-                <>
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    margin: 10,
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    padding: 10,
+                    borderColor: COLOR.GRAY3,
+                  }}
+                >
                   <Text style={styles.modalSubTitle}>{`飛翔図`} </Text>
                   <View style={{ flexDirection: 'row' }}>
                     <View style={{ margin: 5 }}>
@@ -190,6 +179,8 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
                         backgroundColor={currentMapMemoTool === 'TOMARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
                         onPress={() => handleStampPress('TOMARI')}
+                        labelText="とまり"
+                        size={22}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
@@ -199,38 +190,96 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
                         backgroundColor={currentMapMemoTool === 'KARI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
                         onPress={() => handleStampPress('KARI')}
+                        labelText="狩り"
+                        size={22}
                       />
                     </View>
                     <View style={{ margin: 5 }}>
                       <Button
-                        id={'HOVERING'}
-                        name={STAMP.HOVERING}
-                        backgroundColor={currentMapMemoTool === 'HOVERING' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        id={'KOUBI'}
+                        name={STAMP.KOUBI}
+                        backgroundColor={currentMapMemoTool === 'KOUBI' ? COLOR.ALFARED : COLOR.ALFABLUE}
                         borderRadius={10}
-                        onPress={() => handleStampPress('HOVERING')}
+                        onPress={() => handleStampPress('KOUBI')}
+                        labelText="交尾"
+                        size={22}
+                      />
+                    </View>
+                    <View style={{ margin: 5 }}>
+                      <Button
+                        id={'VOICE'}
+                        name={STAMP.VOICE}
+                        backgroundColor={currentMapMemoTool === 'VOICE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                        borderRadius={10}
+                        onPress={() => handleStampPress('VOICE')}
+                        labelText="声のみ"
+                        size={22}
                       />
                     </View>
                   </View>
-                </>
+                </View>
               )}
-            </View>
-
-            <View style={styles.checkbox}>
-              <CheckBox
-                label={t('common.snapWithLine')}
-                style={{ backgroundColor: COLOR.WHITE }}
-                labelColor="black"
-                width={300}
-                checked={snapped}
-                onCheck={(isChecked) => {
-                  setSnapped(isChecked);
-                  selectMapMemoSnapWithLine(isChecked);
+              <View
+                style={{
+                  flexDirection: 'column',
+                  margin: 10,
+                  borderWidth: 1,
+                  borderRadius: 5,
+                  padding: 10,
+                  borderColor: COLOR.GRAY3,
                 }}
-              />
+              >
+                <Text style={styles.modalSubTitle}>{`${t('common.common')}`} </Text>
+                <View style={{ flexDirection: 'row' }}>
+                  <View style={{ margin: 5 }}>
+                    <Button
+                      id={'CIRCLE'}
+                      name={STAMP.CIRCLE}
+                      backgroundColor={currentMapMemoTool === 'CIRCLE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={() => handleStampPress('CIRCLE')}
+                      size={22}
+                    />
+                  </View>
+                  <View style={{ margin: 5 }}>
+                    <Button
+                      id={'TRIANGLE'}
+                      name={STAMP.TRIANGLE}
+                      backgroundColor={currentMapMemoTool === 'TRIANGLE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={() => handleStampPress('TRIANGLE')}
+                      size={22}
+                    />
+                  </View>
+                  <View style={{ margin: 5 }}>
+                    <Button
+                      id={'SQUARE'}
+                      name={STAMP.SQUARE}
+                      backgroundColor={currentMapMemoTool === 'SQUARE' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                      borderRadius={10}
+                      onPress={() => handleStampPress('SQUARE')}
+                      size={22}
+                    />
+                  </View>
+                </View>
+              </View>
+              <View style={styles.checkbox}>
+                <CheckBox
+                  label={t('common.snapWithLine')}
+                  style={{ backgroundColor: COLOR.WHITE }}
+                  labelColor="black"
+                  width={300}
+                  checked={snapped}
+                  onCheck={(isChecked) => {
+                    setSnapped(isChecked);
+                    selectMapMemoSnapWithLine(isChecked);
+                  }}
+                />
+              </View>
             </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 });

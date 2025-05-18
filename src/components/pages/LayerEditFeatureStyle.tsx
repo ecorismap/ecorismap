@@ -12,7 +12,7 @@ import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureSty
 import { TextInput } from '../atoms';
 import { ScrollView } from 'react-native-gesture-handler';
 import HeaderRightButton from '../molecules/HeaderRightButton';
-import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 import { CheckBox } from '../molecules/CheckBox';
 
 export default function LayerEditFeatureStyleScreen() {
@@ -173,7 +173,7 @@ export default function LayerEditFeatureStyleScreen() {
         )}
       </ScrollView>
 
-      <HomeMapMemoColorPicker
+      <HomeModalColorPicker
         color={colorStyle.color}
         withAlpha={true}
         modalVisible={modalVisible}

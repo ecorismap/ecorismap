@@ -28,7 +28,7 @@ interface Props {
   pressSelectColorCancel: () => void;
 }
 
-export const HomeMapMemoColorPicker = React.memo((props: Props) => {
+export const HomeModalColorPicker = React.memo((props: Props) => {
   const { color, modalVisible, withAlpha, pressSelectColorOK, pressSelectColorCancel } = props;
 
   const [hue, setHue] = useState(0);
@@ -56,15 +56,36 @@ export const HomeMapMemoColorPicker = React.memo((props: Props) => {
   );
 
   useEffect(() => {
-    if (color !== undefined) {
+    if (modalVisible && color !== undefined) {
       onSelectColor({ hex: color });
     }
-  }, [color, onSelectColor]);
+  }, [modalVisible, color, onSelectColor]);
 
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
-      <View style={styles.modalCenteredView}>
-        <View style={styles.modalFrameView}>
+      <Pressable style={styles.modalCenteredView} onPress={pressSelectColorCancel} disablePressedAnimation>
+        <Pressable
+          style={styles.modalFrameView}
+          onPress={() => {}} // モーダル本体は閉じない
+          disablePressedAnimation
+        >
+          {/* バツボタン */}
+          <Pressable
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={pressSelectColorCancel}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={{ fontSize: 24, color: COLOR.GRAY2 }}>×</Text>
+          </Pressable>
           <View style={[styles.modalContents, { width: 230, height: 370 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectColor')}`} </Text>
             <ColorPicker
@@ -99,8 +120,8 @@ export const HomeMapMemoColorPicker = React.memo((props: Props) => {
               </Pressable>
             </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 });

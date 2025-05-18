@@ -58,7 +58,6 @@ export type UseMapMemoReturnType = {
   snapWithLine: boolean;
   arrowStyle: ArrowStyleType;
   isStraightStyle: boolean;
-  isMapMemoLineSmoothed: boolean;
   isModalMapMemoToolHidden: boolean;
   isEditingLine: boolean;
   editingLineId: string | undefined;
@@ -83,7 +82,6 @@ export type UseMapMemoReturnType = {
   setPencilModeActive: Dispatch<SetStateAction<boolean>>;
   setSnapWithLine: Dispatch<SetStateAction<boolean>>;
   setIsStraightStyle: Dispatch<SetStateAction<boolean>>;
-  setMapMemoLineSmoothed: Dispatch<SetStateAction<boolean>>;
   setIsModalMapMemoToolHidden: (value: boolean) => void;
 };
 
@@ -149,7 +147,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
   const [arrowStyle, setArrowStyle] = useState<ArrowStyleType>('NONE');
   const [snapWithLine, setSnapWithLine] = useState(true);
   const [isStraightStyle, setIsStraightStyle] = useState(false);
-  const [isMapMemoLineSmoothed, setMapMemoLineSmoothed] = useState(false);
 
   // Force redraw mechanism
   const [, setRedraw] = useState('');
@@ -542,7 +539,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     // Handle editing an existing line
     if (isEditingLine && editingLineId && editingPointIndex !== undefined) {
       let newLineCoords = drawingLine;
-      if (isMapMemoLineSmoothed && !isStraightStyle && newLineCoords.length > 8) {
+      if (arrowStyle !== 'NONE' && !isStraightStyle && newLineCoords.length > 8) {
         const line1 = newLineCoords.slice(0, editingPointIndex - 2);
         const line2 = newLineCoords.slice(editingPointIndex + 2);
 
@@ -606,7 +603,7 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     }
 
     // Normal new line drawing
-    if (isMapMemoLineSmoothed && !isStraightStyle) {
+    if (arrowStyle !== 'NONE' && !isStraightStyle) {
       if (drawingLine.length > 8) {
         drawingLine = drawingLine.slice(2, -2);
         drawingLine = trimHane(drawingLine, 50); // 角度閾値は50°くらいから調整
@@ -637,7 +634,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     isEditingLine,
     editingLineId,
     editingPointIndex,
-    isMapMemoLineSmoothed,
     isStraightStyle,
     mapMemoLines,
     mapRegion,
@@ -1018,7 +1014,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     snapWithLine,
     arrowStyle,
     isStraightStyle,
-    isMapMemoLineSmoothed,
     isModalMapMemoToolHidden,
     isEditingLine,
     editingLineId,
@@ -1043,7 +1038,6 @@ export const useMapMemo = (mapViewRef: MapView | MapRef | null): UseMapMemoRetur
     setPencilModeActive,
     setSnapWithLine,
     setIsStraightStyle,
-    setMapMemoLineSmoothed,
     setIsModalMapMemoToolHidden,
   } as const;
 };

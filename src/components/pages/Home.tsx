@@ -43,7 +43,7 @@ import Animated, { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
-import { HomeMapMemoColorPicker } from '../organisms/HomeMapMemoColorPicker';
+import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
@@ -339,7 +339,7 @@ export default function HomeScreen() {
               <MemberMarker key={memberLocation.uid} memberLocation={memberLocation} />
             ))}
           <Loading visible={isLoading} text="" />
-          <HomeMapMemoColorPicker
+          <HomeModalColorPicker
             color={penColor}
             modalVisible={visibleMapMemoColor}
             withAlpha={true}

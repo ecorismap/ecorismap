@@ -21,9 +21,9 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
   //turfで
   return (
     <>
-      {points.map((point) => (
+      {points.map((point, idx) => (
         <Marker
-          key={`${feature.id}-${feature.redraw}`}
+          key={idx}
           longitude={point.coordinates[0]}
           latitude={point.coordinates[1]}
           anchor={'center'}
@@ -66,12 +66,16 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
                 <Polygon points="10,4 20,10 10,16" stroke={lineColor} strokeWidth="0" fill={lineColor} />
               </Svg>
             )}
-            {feature.field._strokeStyle === 'DISPLAY' && (
+            {feature.field._strokeStyle === 'DISPLAY1' && (
               <Svg height="20" width="20" viewBox="0 0 20 20">
                 <Path d="M4,19 L16,13 L4,7 L16,1" stroke={lineColor} strokeWidth="1.5" fill="none" />
               </Svg>
             )}
-
+            {feature.field._strokeStyle === 'DISPLAY2' && (
+              <Svg height="20" width="20" viewBox="0 0 20 20">
+                <Path d="M16,19 L16,1" stroke={lineColor} strokeWidth="2" strokeDasharray={[10, 10]} fill="none" />
+              </Svg>
+            )}
             {feature.field._strokeStyle === 'KYUKOKA' && (
               <Svg height="20" width="20" viewBox="0 0 20 20">
                 {/* 上のくさび型 */}
@@ -84,8 +88,18 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
             )}
             {feature.field._strokeStyle === 'TANJI' && (
               <Svg height="20" width="20" viewBox="0 0 20 20">
-                <Path d="M10 10 L2 6 V14 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
-                <Path d="M10 10 L18 6 V14 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
+                <Path d="M10 10 L4 4 V16 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
+                <Path d="M10 10 L16 4 V16 L10 10 Z" stroke={lineColor} strokeWidth="0" fill={lineColor} />
+              </Svg>
+            )}
+            {feature.field._strokeStyle === 'ESA' && (
+              <Svg height="20" width="20" viewBox="0 0 20 20">
+                <Circle cx="15" cy="10" r="2" stroke={lineColor} strokeWidth="1.5" fill={lineColor} />
+              </Svg>
+            )}
+            {feature.field._strokeStyle === 'SUZAI' && (
+              <Svg height="20" width="20" viewBox="0 0 20 20">
+                <Path d="M10 10 H34" stroke={lineColor} strokeWidth="2" fill={lineColor} />
               </Svg>
             )}
           </View>

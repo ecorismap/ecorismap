@@ -103,9 +103,40 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
   });
   return (
     <Modal animationType="none" transparent={true} visible={modalVisible}>
-      <View style={styles.modalCenteredView}>
-        <View style={styles.modalFrameView}>
-          <View style={[styles.modalContents, { width: 200, height: 380 }]}>
+      <Pressable
+        style={styles.modalCenteredView}
+        onPress={() => {
+          selectInfoTool(undefined);
+          setVisibleInfoPicker(false);
+        }}
+        disablePressedAnimation
+      >
+        <Pressable
+          style={styles.modalFrameView}
+          onPress={() => {}} // モーダル本体は閉じない
+          disablePressedAnimation
+        >
+          {/* バツボタン */}
+          <Pressable
+            style={{
+              position: 'absolute',
+              top: 10,
+              right: 10,
+              zIndex: 1,
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => {
+              selectInfoTool(undefined);
+              setVisibleInfoPicker(false);
+            }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={{ fontSize: 24, color: COLOR.GRAY2 }}>×</Text>
+          </Pressable>
+          <View style={[styles.modalContents, { width: 200, height: 300 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectionType')}`} </Text>
             <View
               style={{
@@ -117,84 +148,98 @@ export const HomeModalInfoPicker = React.memo((props: Props) => {
                 borderColor: COLOR.GRAY3,
               }}
             >
-              <Pressable style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setInfoTool('ALL_INFO')}>
+              <Pressable
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+                onPress={() => {
+                  setInfoTool('ALL_INFO');
+                  selectInfoTool('ALL_INFO');
+                  setVisibleInfoPicker(false);
+                }}
+              >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
                     name={INFOTOOL.ALL_INFO}
                     backgroundColor={infoTool === 'ALL_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
-                    onPress={() => setInfoTool('ALL_INFO')}
+                    onPress={() => {
+                      setInfoTool('ALL_INFO');
+                      selectInfoTool('ALL_INFO');
+                      setVisibleInfoPicker(false);
+                    }}
                   />
                 </View>
                 <Text>{`${t('common.selectAllInfo')}`}</Text>
               </Pressable>
               <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => setInfoTool('POINT_INFO')}
+                onPress={() => {
+                  setInfoTool('POINT_INFO');
+                  selectInfoTool('POINT_INFO');
+                  setVisibleInfoPicker(false);
+                }}
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
                     name={INFOTOOL.POINT_INFO}
                     backgroundColor={infoTool === 'POINT_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
-                    onPress={() => setInfoTool('POINT_INFO')}
+                    onPress={() => {
+                      setInfoTool('POINT_INFO');
+                      selectInfoTool('POINT_INFO');
+                      setVisibleInfoPicker(false);
+                    }}
                   />
                 </View>
                 <Text>{`${t('common.selectPointInfo')}`}</Text>
               </Pressable>
               <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => setInfoTool('LINE_INFO')}
+                onPress={() => {
+                  setInfoTool('LINE_INFO');
+                  selectInfoTool('LINE_INFO');
+                  setVisibleInfoPicker(false);
+                }}
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
                     name={INFOTOOL.LINE_INFO}
                     backgroundColor={infoTool === 'LINE_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
-                    onPress={() => setInfoTool('LINE_INFO')}
+                    onPress={() => {
+                      setInfoTool('LINE_INFO');
+                      selectInfoTool('LINE_INFO');
+                      setVisibleInfoPicker(false);
+                    }}
                   />
                 </View>
                 <Text>{`${t('common.selectLineInfo')}`}</Text>
               </Pressable>
               <Pressable
                 style={{ flexDirection: 'row', alignItems: 'center' }}
-                onPress={() => setInfoTool('POLYGON_INFO')}
+                onPress={() => {
+                  setInfoTool('POLYGON_INFO');
+                  selectInfoTool('POLYGON_INFO');
+                  setVisibleInfoPicker(false);
+                }}
               >
                 <View style={{ marginVertical: 5, marginRight: 10 }}>
                   <Button
                     name={INFOTOOL.POLYGON_INFO}
                     backgroundColor={infoTool === 'POLYGON_INFO' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={50}
-                    onPress={() => setInfoTool('POLYGON_INFO')}
+                    onPress={() => {
+                      setInfoTool('POLYGON_INFO');
+                      selectInfoTool('POLYGON_INFO');
+                      setVisibleInfoPicker(false);
+                    }}
                   />
                 </View>
                 <Text>{`${t('common.selectPolygonInfo')}`}</Text>
               </Pressable>
             </View>
-
-            <View style={styles.modalButtonContainer}>
-              <Pressable
-                style={styles.modalOKCancelButton}
-                onPress={() => {
-                  selectInfoTool(infoTool);
-                  setVisibleInfoPicker(false);
-                }}
-              >
-                <Text>OK</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
-                onPress={() => {
-                  selectInfoTool(undefined);
-                  setVisibleInfoPicker(false);
-                }}
-              >
-                <Text>Cancel</Text>
-              </Pressable>
-            </View>
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 });
