@@ -77,7 +77,7 @@ export const LayerEditFieldTable = () => {
                     padding: 0,
                   }}
                   name="minus"
-                  size={16}
+                  size={14}
                   disabled={!editable}
                   onPress={() => pressDeleteField(index)}
                 />
@@ -118,10 +118,10 @@ export const LayerEditFieldTable = () => {
                   item.format === 'LISTTABLE') && (
                   <Button
                     style={{
-                      //color: COLOR.BLACK,
-                      backgroundColor: COLOR.GRAY4,
+                      backgroundColor: COLOR.MAIN,
                       padding: 0,
                     }}
+                    color={COLOR.GRAY3}
                     name="play"
                     size={16}
                     onPress={() => gotoLayerEditFieldItem(index, item)}
