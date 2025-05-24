@@ -67,12 +67,14 @@ export const LayersTable = React.memo(() => {
                 color={COLOR.GRAY4}
               />
             ) : (
-              <Button
-                name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
-                onPress={() => changeActiveLayer(item)}
-                color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
-                style={[styles.iconBtn, { backgroundColor }]}
-              />
+              item.permission !== 'COMMON' && (
+                <Button
+                  name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
+                  onPress={() => changeActiveLayer(item)}
+                  color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
+                  style={[styles.iconBtn, { backgroundColor }]}
+                />
+              )
             )}
           </View>
 
