@@ -316,7 +316,7 @@ export const DATAEDIT_BTN = {
 export const DATA_BTN = {
   ADD: 'plus',
   DELETE: 'delete',
-  DOWNLOAD: 'download',
+  DOWNLOAD: 'share-variant',
 } as const;
 
 export const LAYERS_BTN = {
