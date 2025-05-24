@@ -13,15 +13,10 @@ const MapTableTitle = () => (
     <View style={[styles.th, { flex: 1, width: 80 }]}>
       <Text>{t('common.visible')}</Text>
     </View>
-    <View style={[styles.th, { flex: 4 }]}>
+    <View style={[styles.th, { flex: 6 }]}>
       <Text>{t('common.name')}</Text>
     </View>
-    <View style={[styles.th, { flex: 1, width: 80 }]}>
-      <Text>{t('common.edit')}</Text>
-    </View>
-    <View style={[styles.th, { flex: 1, width: 80 }]}>
-      <Text>{t('common.download')}</Text>
-    </View>
+
     <View style={[styles.th, { flex: 2, width: 80 }]}>
       <Text>{t('common.move')}</Text>
     </View>

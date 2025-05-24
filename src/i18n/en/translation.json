@@ -577,7 +577,7 @@
       "deleteData": "Do you want to delete the data?"
     },
     "navigation": {
-      "title": " "
+      "title": "Data list"
     },
     "tooltip": {
       "export": "export",

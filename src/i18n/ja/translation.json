@@ -111,7 +111,7 @@
     "add": "追加",
     "admin": "管理者",
     "mapListURL": "地図の設定リストURL",
-    "name": "名前",
+    "name": "名称",
     "sourceName": "出典表記",
     "minZoom": "最小ズーム",
     "maxZoom": "最大ズーム",
@@ -202,7 +202,9 @@
     "none": "（なし）",
     "userName": "User",
     "move": "上下",
-    "download": "取得"
+    "download": "取得",
+    "offline": "オフライン地図",
+    "map": "地図"
   },
   "Home": {
     "confirm": {
@@ -532,7 +534,7 @@
     "label": {
       "import": "ｲﾝﾎﾟｰﾄ",
       "add": "追加",
-      "download": "取得",
+      "download": "DL",
       "edit": "編集",
       "export": "ｴｸｽﾎﾟｰﾄ",
       "offline": "ｵﾌﾗｲﾝ",
@@ -659,7 +661,7 @@
   },
   "Data": {
     "navigation": {
-      "title": " "
+      "title": "データ一覧"
     },
     "alert": {
       "exportData": "メンバーはデータのエクスポートは出来ません。",

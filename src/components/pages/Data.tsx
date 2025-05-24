@@ -10,6 +10,7 @@ import { DataContext } from '../../contexts/Data';
 //import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
+import { t } from '../../i18n/config';
 
 export default function DataScreen() {
   //console.log('render Data');
@@ -20,7 +21,13 @@ export default function DataScreen() {
 
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
+      <HeaderBackButton
+        {...props_}
+        labelVisible={true}
+        label={t('Layers.navigation.title')}
+        labelStyle={{ fontSize: 11 }}
+        onPress={gotoBack}
+      />
     ),
     [gotoBack]
   );
