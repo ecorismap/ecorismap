@@ -122,8 +122,8 @@ export const LayerEditFieldTable = () => {
                       padding: 0,
                     }}
                     color={COLOR.GRAY3}
-                    name="play"
-                    size={16}
+                    name="chevron-right-circle-outline"
+                    size={18}
                     onPress={() => gotoLayerEditFieldItem(index, item)}
                   />
                 )}
