@@ -52,7 +52,7 @@ export const layersInitialState: LayerType[] = [
   },
   {
     id: ulid(),
-    name: t('common.track'),
+    name: t('common.line'),
     type: 'LINE',
     permission: 'PRIVATE',
     colorStyle: {
@@ -92,6 +92,30 @@ export const layersInitialState: LayerType[] = [
     label: 'name',
     visible: true,
     active: true,
+    field: [
+      { id: ulid(), name: 'name', format: 'SERIAL' },
+      { id: ulid(), name: 'time', format: 'DATETIME' },
+      { id: ulid(), name: 'cmt', format: 'STRING' },
+    ],
+  },
+  {
+    id: 'track',
+    name: t('common.track'),
+    type: 'LINE',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      transparency: 0.2,
+      color: COLOR.BLUE,
+      fieldName: 'name',
+      customFieldValue: '',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      lineWidth: 2.5,
+    },
+    label: 'name',
+    visible: true,
+    active: false,
     field: [
       { id: ulid(), name: 'name', format: 'SERIAL' },
       { id: ulid(), name: 'time', format: 'DATETIME' },

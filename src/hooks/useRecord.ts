@@ -25,6 +25,7 @@ import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
+import { addLayerAction, layersInitialState } from '../modules/layers';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -52,6 +53,12 @@ export type UseRecordReturnType = {
     featureType: FeatureType,
     locations: LocationType | LocationType[]
   ) => {
+    isOK: boolean;
+    message: string;
+    layer: LayerType | undefined;
+    record: RecordType | undefined;
+  };
+  addTrackRecord: (locations: LocationType[]) => {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
@@ -267,6 +274,25 @@ export const useRecord = (): UseRecordReturnType => {
     [dataUser.uid, dispatch]
   );
 
+  const addTrackRecord = useCallback(
+    (locations: LocationType[]) => {
+      let trackLayer = layers.find((l) => l.id === 'track');
+      if (!trackLayer) {
+        // Trackレイヤーがなければ初期状態から作成
+        trackLayer = layersInitialState.find((l) => l.id === 'track');
+        if (!trackLayer) throw new Error('Track layer template not found');
+        dispatch(addLayerAction(trackLayer));
+      }
+      const trackDataSet = lineDataSet.find((d) => d.layerId === trackLayer.id && d.userId === dataUser.uid);
+      const trackRecordSet = trackDataSet ? trackDataSet.data : [];
+      const record = generateRecord('LINE', trackLayer, trackRecordSet, locations);
+      addRecord(trackLayer, record);
+
+      return { isOK: true, message: '', layer: trackLayer, record };
+    },
+    [layers, lineDataSet, generateRecord, addRecord, dispatch, dataUser.uid]
+  );
+
   const addRecordWithCheck = useCallback(
     (featureType: FeatureType, locations: LocationType | LocationType[]) => {
       const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck(featureType);
@@ -317,6 +343,7 @@ export const useRecord = (): UseRecordReturnType => {
     activeLineLayer,
     activePolygonLayer,
     addRecordWithCheck,
+    addTrackRecord,
     findRecord,
     selectRecord,
     unselectRecord,

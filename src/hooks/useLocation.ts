@@ -78,7 +78,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   );
 
   const trackLog = useSelector((state: RootState) => state.trackLog);
-  const { addRecordWithCheck } = useRecord();
+  const { addTrackRecord } = useRecord();
   const [azimuth, setAzimuth] = useState(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
@@ -350,19 +350,15 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
 
-    // const retOrg = addRecordWithCheck('LINE', trackLog.track);
-    // if (!retOrg.isOK) {
-    //   return { isOK: retOrg.isOK, message: retOrg.message };
-    // }
     const cleanupedLine = cleanupLine(trackLog.track);
-    const ret = addRecordWithCheck('LINE', cleanupedLine);
+    const ret = addTrackRecord(cleanupedLine);
     if (!ret.isOK) {
       return { isOK: ret.isOK, message: ret.message };
     }
 
     dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
     return { isOK: true, message: '' };
-  }, [addRecordWithCheck, dispatch, trackLog]);
+  }, [addTrackRecord, dispatch, trackLog.track]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {

@@ -689,7 +689,14 @@ export const useRepository = (): UseRepositoryReturnType & {
       const { layers: layers_, tileMaps: tileMaps_, ...settings } = projectSettings;
       await downloadDictionaries(project.id, layers_);
       const projectRegion = cloneDeep(settings.mapRegion);
-      dispatch(setLayersAction(layers_));
+      let trackLayer = layers_.find((l) => l.id === 'track');
+      if (!trackLayer) {
+        // Trackレイヤーがなければ初期状態から作成。旧プロジェクトの互換性のため。
+        trackLayer = layersInitialState.find((l) => l.id === 'track');
+        dispatch(setLayersAction([...layers_, trackLayer!]));
+      } else {
+        dispatch(setLayersAction(layers_));
+      }
       dispatch(setTileMapsAction(tileMaps_));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
