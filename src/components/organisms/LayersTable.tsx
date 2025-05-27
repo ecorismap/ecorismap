@@ -8,6 +8,7 @@ import { t } from '../../i18n/config';
 import { LayersContext } from '../../contexts/Layers';
 import { LayerType } from '../../types';
 import { Pressable } from '../atoms/Pressable';
+import { useProject } from '../../hooks/useProject';
 
 export const LayersTable = React.memo(() => {
   const {
@@ -24,7 +25,7 @@ export const LayersTable = React.memo(() => {
     pressLayerOrder,
     onDragBegin,
   } = useContext(LayersContext);
-
+  const { isSettingProject } = useProject();
   const hasCustomLabel = filterdLayers.some((layer) => layer.label === t('common.custom'));
   const [customLabel, setCustomLabel] = useState<{ [key: string]: string }>({});
 
@@ -67,12 +68,11 @@ export const LayersTable = React.memo(() => {
                 color={COLOR.GRAY4}
               />
             ) : (
-              item.permission !== 'COMMON' &&
-              item.id !== 'track' && (
+              (isSettingProject || (item.permission !== 'COMMON' && item.id !== 'track')) && (
                 <Button
                   name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                   onPress={() => changeActiveLayer(item)}
-                  color={!item.active ? COLOR.GRAY2 : COLOR.GRAY3}
+                  color={COLOR.GRAY3}
                   style={[styles.iconBtn, { backgroundColor }]}
                 />
               )
@@ -186,17 +186,18 @@ export const LayersTable = React.memo(() => {
       );
     },
     [
+      isSettingProject,
+      hasCustomLabel,
+      customLabel,
       changeExpand,
-      changeVisible,
       changeActiveLayer,
+      changeVisible,
       gotoColorStyle,
       gotoData,
-      gotoLayerEdit,
       changeLabel,
-      changeCustomLabel,
-      customLabel,
       handleCustomLabel,
-      hasCustomLabel,
+      changeCustomLabel,
+      gotoLayerEdit,
       pressLayerOrder,
     ]
   );

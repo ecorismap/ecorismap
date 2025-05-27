@@ -334,6 +334,14 @@ export const useRepository = (): UseRepositoryReturnType & {
     if (!isOK || projectSettings === undefined) {
       return { isOK: false, message, data: undefined };
     }
+    let trackLayer = projectSettings.layers.find((l) => l.id === 'track');
+    if (!trackLayer) {
+      // Trackレイヤーがなければ初期状態から作成。旧プロジェクトの互換性のため。
+      trackLayer = layersInitialState.find((l) => l.id === 'track');
+      if (trackLayer) {
+        projectSettings.layers.push(trackLayer);
+      }
+    }
     return { isOK: true, message: '', data: projectSettings };
   }, []);
 

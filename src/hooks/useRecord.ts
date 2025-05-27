@@ -179,7 +179,8 @@ export const useRecord = (): UseRecordReturnType => {
         return { isOK: false, message: t('hooks.message.lockProject') };
       }
 
-      if (!targetLayer.active) {
+      if (!targetLayer.active && targetLayer.id !== 'track') {
+        // レイヤーがアクティブでない場合。ただし、トラックレイヤーは除外
         return { isOK: false, message: t('hooks.message.noEditMode') };
       }
 
