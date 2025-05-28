@@ -7,8 +7,16 @@ import { DataEditContext } from '../../contexts/DataEdit';
 import { t } from '../../i18n/config';
 
 export const DataEditButtons = () => {
-  const { layer, isEditingRecord, pressCopyData, pressDeleteData, pressJumpToData, gotoGoogleMaps, pressEditPosition } =
-    useContext(DataEditContext);
+  const {
+    layer,
+    isEditingRecord,
+    isEditable,
+    pressCopyData,
+    pressDeleteData,
+    pressJumpToData,
+    gotoGoogleMaps,
+    pressEditPosition,
+  } = useContext(DataEditContext);
 
   return (
     <View style={styles.buttonContainer}>
@@ -32,8 +40,8 @@ export const DataEditButtons = () => {
         <Button
           name={DATAEDIT_BTN.EDIT}
           onPress={pressEditPosition}
-          backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          disabled={isEditingRecord}
+          backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
+          disabled={isEditingRecord || !isEditable}
           tooltipText={t('DataEdit.tooltip.edit')}
           labelText={t('DataEdit.label.edit')}
         />
@@ -41,15 +49,16 @@ export const DataEditButtons = () => {
       <Button
         name={DATAEDIT_BTN.COPY}
         onPress={pressCopyData}
-        backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
-        disabled={isEditingRecord}
+        backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord || !isEditable}
         tooltipText={t('DataEdit.tooltip.copy')}
         labelText={t('DataEdit.label.copy')}
       />
       <Button
         name={DATAEDIT_BTN.DELETE}
         onPress={pressDeleteData}
-        backgroundColor={COLOR.BLUE}
+        backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        disabled={isEditingRecord || !isEditable}
         tooltipText={t('DataEdit.tooltip.delete')}
         labelText={t('DataEdit.label.delete')}
       />

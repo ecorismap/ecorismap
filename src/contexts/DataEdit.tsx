@@ -11,6 +11,7 @@ interface DataEditContextType {
   recordNumber: number;
   maxRecordNumber: number;
   projectId: string | undefined;
+  isEditable: boolean;
   changeLatLonType: () => void;
   changeLatLon: (val: string, latlonType: 'latitude' | 'longitude', dmsType: 'decimal' | 'deg' | 'min' | 'sec') => void;
   changeField: (name: string, value: string | number) => void;

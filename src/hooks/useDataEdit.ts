@@ -16,6 +16,7 @@ import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
 import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
 import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
+import { useProject } from './useProject';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -27,6 +28,7 @@ export type UseDataEditReturnType = {
   recordNumber: number;
   maxRecordNumber: number;
   photoFolder: string;
+  isEditable: boolean;
   changeRecord: (value: number) => void;
   saveData: () => {
     isOK: boolean;
@@ -56,6 +58,7 @@ export type UseDataEditReturnType = {
 
 export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditReturnType => {
   const dispatch = useDispatch();
+  const { isSettingProject } = useProject();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
@@ -90,6 +93,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     () =>
       dataSet.flatMap((d) => (d.layerId === layer.id ? d.data : [])).some((d) => d.field._strokeColor !== undefined),
     [dataSet, layer.id]
+  );
+  const isEditable = useMemo(
+    () => isSettingProject || targetLayer.permission !== 'COMMON',
+    [isSettingProject, targetLayer.permission]
   );
 
   const maxRecordNumber = targetRecordSet.length;
@@ -388,6 +395,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     recordNumber,
     maxRecordNumber,
     photoFolder,
+    isEditable,
     addPhoto,
     removePhoto,
     selectPhoto,

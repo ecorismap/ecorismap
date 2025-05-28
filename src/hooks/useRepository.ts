@@ -696,14 +696,22 @@ export const useRepository = (): UseRepositoryReturnType & {
       //console.log(Object.keys(settings));
       const { layers: layers_, tileMaps: tileMaps_, ...settings } = projectSettings;
       await downloadDictionaries(project.id, layers_);
+      //COMMONのactivateをfalseにする。
+      const updatedLayers = layers_.map((l) => {
+        if (l.permission === 'COMMON') {
+          return { ...l, activate: false };
+        } else {
+          return l;
+        }
+      });
       const projectRegion = cloneDeep(settings.mapRegion);
-      let trackLayer = layers_.find((l) => l.id === 'track');
+      let trackLayer = updatedLayers.find((l) => l.id === 'track');
       if (!trackLayer) {
         // Trackレイヤーがなければ初期状態から作成。旧プロジェクトの互換性のため。
         trackLayer = layersInitialState.find((l) => l.id === 'track');
-        dispatch(setLayersAction([...layers_, trackLayer!]));
+        dispatch(setLayersAction([...updatedLayers, trackLayer!]));
       } else {
-        dispatch(setLayersAction(layers_));
+        dispatch(setLayersAction(updatedLayers));
       }
       dispatch(setTileMapsAction(tileMaps_));
       dispatch(editSettingsAction({ ...settings, projectRegion }));

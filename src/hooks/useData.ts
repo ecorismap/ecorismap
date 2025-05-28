@@ -17,6 +17,7 @@ import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
 import { selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
+import { useProject } from './useProject';
 
 export type UseDataReturnType = {
   sortedRecordSet: RecordType[];
@@ -26,6 +27,7 @@ export type UseDataReturnType = {
   isMapMemoLayer: boolean;
   sortedOrder: SortOrderType;
   sortedName: string;
+  isEditable: boolean;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
   changeChecked: (index: number) => void;
@@ -42,6 +44,7 @@ export const useData = (layerId: string): UseDataReturnType => {
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
   const route = useRoute();
+  const { isSettingProject } = useProject();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
   const [sortedOrder, setSortedOrder] = useState<SortOrderType>('UNSORTED');
@@ -64,6 +67,11 @@ export const useData = (layerId: string): UseDataReturnType => {
   const isMapMemoLayer = useMemo(
     () => sortedRecordSet.some((r) => r.field._strokeColor !== undefined),
     [sortedRecordSet]
+  );
+
+  const isEditable = useMemo(
+    () => isSettingProject || targetLayer.permission !== 'COMMON',
+    [isSettingProject, targetLayer.permission]
   );
 
   const changeOrder = useCallback(
@@ -210,6 +218,7 @@ export const useData = (layerId: string): UseDataReturnType => {
     isMapMemoLayer,
     sortedOrder,
     sortedName,
+    isEditable,
     changeVisible,
     changeVisibleAll,
     changeChecked,

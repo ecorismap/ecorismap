@@ -12,6 +12,7 @@ interface DataContextType {
   isMapMemoLayer: boolean;
   sortedName: string;
   sortedOrder: SortOrderType;
+  isEditable: boolean;
   addDataByDictinary: (fieldId: string, value: string) => void;
   pressAddData: () => void;
   pressDeleteData: () => void;
