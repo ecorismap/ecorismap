@@ -706,7 +706,8 @@
       "failUploadDictionary": "Failed to upload dictionary",
       "successSaveFile": "File saved.",
       "successExportData": "Your data has been saved.",
-      "successExportMaps": "Map settings have been saved."
+      "successExportMaps": "Map settings have been saved.",
+      "dataSizeTooLarge": "Cannot upload data due to large size"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

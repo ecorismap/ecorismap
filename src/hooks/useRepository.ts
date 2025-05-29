@@ -490,7 +490,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         });
         if (!isOK) {
           //ToDo 処理続けるかどうか？
-          return { isOK: false, message: message };
+          return { isOK: false, message: `${message} (${layer.name})` };
         }
 
         if (!isSettingProject) {

@@ -910,7 +910,8 @@
       "failUploadDictionary": "辞書のアップロードに失敗しました",
       "successSaveFile": "ファイルを保存しました。",
       "successExportData": "データを保存しました。",
-      "successExportMaps": "地図の設定を保存しました。"
+      "successExportMaps": "地図の設定を保存しました。",
+      "dataSizeTooLarge": "データのサイズが大きいためアップロードできません"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

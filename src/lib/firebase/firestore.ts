@@ -453,7 +453,7 @@ export const uploadDataHelper = async (projectId: string, data: ProjectDataType)
   const KBytes = sizeof(encdataArray) / 1024;
 
   if (KBytes > MAX_SIZE_KB) {
-    return { isOK: false, message: 'データのサイズが大きいためアップロードできません' };
+    return { isOK: false, message: t('hooks.message.dataSizeTooLarge') };
   }
 
   const chunks = chunkData(encdataArray, CHUNK_SIZE);
