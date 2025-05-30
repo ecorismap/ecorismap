@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { updateTrackLog } from '../utils/Location';
+import { updateTrackLog, calculateSpeed, detectStationary, calculateTrackStatistics } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -22,12 +22,13 @@ import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
+import { TRACK } from '../constants/AppConstants';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
-    console.log('cannot open settings');
+    // 設定ページを開けなかった場合
   });
 };
 
@@ -35,7 +36,7 @@ const locationEventsEmitter = new EventEmitter();
 
 TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   if (event.error) {
-    return console.error('[tracking]', 'Something went wrong within the background location task...', event.error);
+    return; // バックグラウンドタスクエラー
   }
 
   const locations = (event.data as any).locations as Location.LocationObject[];
@@ -65,6 +66,7 @@ export type UseLocationReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  saveTrackSegment: () => Promise<void>; // 自動保存用
   confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
 };
 
@@ -90,8 +92,32 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const trackStartTimeRef = useRef<number>(0);
+  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
+  const [isStationary, setIsStationary] = useState<boolean>(false);
+  const [_, setGpsLocationHistory] = useState<LocationType[]>([]);
 
   const gpsAccuracyOption = useMemo(() => {
+    // 通常GPS用の動的精度調整（トラック記録と同じロジック）
+    if (trackingState === 'off') {
+      // 通常GPSモードでも速度に応じた精度調整
+      if (isStationary) {
+        // 静止時（調査ポイント）は最高精度
+        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
+      } else if (currentSpeed < 10) {
+        // 歩行・調査速度（10km/h以下）は高精度
+        return { accuracy: Location.Accuracy.Highest, distanceInterval: 5 };
+      } else if (currentSpeed < 30) {
+        // 自転車・低速車両（30km/h以下）は中精度
+        return { accuracy: Location.Accuracy.High, distanceInterval: 20 };
+      } else {
+        // 高速車両（30km/h以上）は低精度
+        return { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 };
+      }
+    }
+
+    // トラック記録中は固定設定を使用
     switch (gpsAccuracy) {
       case 'HIGH':
         return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
@@ -102,33 +128,36 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       default:
         return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
     }
-  }, [gpsAccuracy]);
+  }, [gpsAccuracy, trackingState, currentSpeed, isStationary]);
 
   const trackingAccuracyOption = useMemo(() => {
-    switch (gpsAccuracy) {
-      case 'HIGH':
-        return {
-          accuracy: Location.Accuracy.Highest,
-          distanceInterval: 2,
-          //timeInterval: 2000,
-          //activityType: Location.ActivityType.Other,
-        };
-      case 'MEDIUM':
-        return {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 10,
-        };
-      case 'LOW':
-        return {
-          accuracy: Location.Accuracy.Balanced,
-        };
-      default:
-        return {
-          accuracy: Location.Accuracy.High,
-          distanceInterval: 2,
-        };
+    // バッテリー最適化：調査用途に最適化（歩行時高精度、車両時低精度）
+    if (isStationary) {
+      // 静止時（調査ポイント記録）は最高精度
+      return {
+        accuracy: Location.Accuracy.Highest,
+        distanceInterval: 2,
+      };
+    } else if (currentSpeed < 10) {
+      // 歩行・調査速度（10km/h以下）は高精度
+      return {
+        accuracy: Location.Accuracy.Highest,
+        distanceInterval: 5,
+      };
+    } else if (currentSpeed < 30) {
+      // 自転車・低速車両（30km/h以下）は中精度
+      return {
+        accuracy: Location.Accuracy.High,
+        distanceInterval: 20,
+      };
+    } else {
+      // 高速車両（30km/h以上）は低精度でバッテリー節約
+      return {
+        accuracy: Location.Accuracy.Balanced,
+        distanceInterval: 50,
+      };
     }
-  }, [gpsAccuracy]);
+  }, [currentSpeed, isStationary]);
 
   const confirmLocationPermission = useCallback(async () => {
     try {
@@ -149,23 +178,44 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       return 'granted' as Location.PermissionStatus.GRANTED;
     } catch (e: any) {
-      console.log(e.message); // エラーメッセージをコンソールに出力
+      // エラーハンドリング
     }
   }, []);
 
   const startGPS = useCallback(async () => {
     //GPSもトラッキングもOFFの場合
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-      gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) =>
-        updateGpsPosition.current(pos)
-      );
+      gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) => {
+        updateGpsPosition.current(pos);
+
+        // 通常GPSでも速度と静止状態を計算
+        if (trackingState === 'off') {
+          const newLocation: LocationType = { ...pos.coords, timestamp: pos.timestamp };
+          setGpsLocationHistory((prev) => {
+            const updated = [...prev, newLocation].slice(-10); // 最新10点を保持
+
+            // 速度と静止状態を計算
+            const speed = calculateSpeed(updated);
+            setCurrentSpeed(speed);
+
+            const stationary = detectStationary(
+              updated,
+              TRACK.STATIONARY_THRESHOLD_DISTANCE,
+              TRACK.STATIONARY_THRESHOLD_TIME
+            );
+            setIsStationary(stationary);
+
+            return updated;
+          });
+        }
+      });
     }
     if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption]);
+  }, [gpsAccuracyOption, trackingState]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -176,6 +226,10 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       headingSubscriber.current.remove();
       headingSubscriber.current = undefined;
     }
+    // GPS履歴をクリア
+    setGpsLocationHistory([]);
+    setCurrentSpeed(0);
+    setIsStationary(false);
   }, []);
 
   const stopTracking = useCallback(async () => {
@@ -189,7 +243,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         }
       }
     } catch (e) {
-      console.log(e);
+      // エラーハンドリング
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
         projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
@@ -270,6 +324,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, dataUser]
   );
 
+  const saveTrackSegmentRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
   const toggleTracking = useCallback(
     async (trackingState_: TrackingStateType) => {
       //Tracking Stateの変更後の処理
@@ -278,9 +334,26 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (trackingState_ === 'on') {
         await moveCurrentPosition();
         dispatch(clearTrackLogAction());
+        trackStartTimeRef.current = Date.now();
+        // トラック記録開始時は通常GPSの履歴をクリア
+        setGpsLocationHistory([]);
         await startTracking();
+
+        // 自動保存タイマーの開始
+        if (autoSaveTimerRef.current) {
+          clearInterval(autoSaveTimerRef.current);
+        }
+        autoSaveTimerRef.current = setInterval(() => {
+          saveTrackSegmentRef.current();
+        }, TRACK.AUTO_SAVE_INTERVAL);
       } else if (trackingState_ === 'off') {
         await stopTracking();
+
+        // 自動保存タイマーの停止
+        if (autoSaveTimerRef.current) {
+          clearInterval(autoSaveTimerRef.current);
+          autoSaveTimerRef.current = null;
+        }
       }
       setTrackingState(trackingState_);
     },
@@ -327,10 +400,29 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       const result = updateTrackLog(locations, trackLog);
       if (result.newLocations.length === 0) return;
 
-      dispatch(appendTrackLogAction(result));
+      // 統計情報を計算
+      const statistics = calculateTrackStatistics(
+        [...trackLog.track, ...result.newLocations],
+        trackLog.distance + result.additionalDistance,
+        trackStartTimeRef.current
+      );
+
+      dispatch(appendTrackLogAction({ ...result, statistics }));
 
       const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
+
+      // 速度と静止状態の更新
+      const updatedTrack = [...trackLog.track, ...result.newLocations];
+      const speed = calculateSpeed(updatedTrack);
+      setCurrentSpeed(speed);
+
+      const stationary = detectStationary(
+        updatedTrack,
+        TRACK.STATIONARY_THRESHOLD_DISTANCE,
+        TRACK.STATIONARY_THRESHOLD_TIME
+      );
+      setIsStationary(stationary);
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
@@ -360,6 +452,30 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     dispatch(clearTrackLogAction());
     return { isOK: true, message: '' };
   }, [addTrackRecord, dispatch, trackLog.track]);
+
+  const saveTrackSegment = useCallback(async () => {
+    // 最小ポイント数未満の場合はスキップ
+    if (trackLog.track.length < TRACK.SEGMENT_SAVE_MIN_POINTS) return;
+
+    try {
+      // セグメントをtrackレイヤーに保存
+      const cleanupedLine = cleanupLine(trackLog.track);
+      const ret = addTrackRecord(cleanupedLine);
+
+      if (ret.isOK) {
+        // 保存成功後、現在のトラックをクリア
+        dispatch(clearTrackLogAction());
+        trackStartTimeRef.current = Date.now();
+      }
+    } catch (error) {
+      // エラーハンドリング
+    }
+  }, [addTrackRecord, dispatch, trackLog.track]);
+
+  // saveTrackSegmentRefに関数を設定
+  useEffect(() => {
+    saveTrackSegmentRef.current = saveTrackSegment;
+  }, [saveTrackSegment]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {
@@ -462,6 +578,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     toggleHeadingUp,
     checkUnsavedTrackLog,
     saveTrackLog,
+    saveTrackSegment,
     confirmLocationPermission,
   } as const;
 };

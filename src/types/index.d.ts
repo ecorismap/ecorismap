@@ -72,6 +72,25 @@ export interface TrackLogType {
   distance: number;
   track: LocationType[];
   lastTimeStamp: number;
+  segments?: TrackSegmentType[]; // 保存済みセグメント
+  statistics?: TrackStatisticsType; // トラック統計情報
+}
+
+export interface TrackSegmentType {
+  id: string;
+  startTime: number;
+  endTime: number;
+  distance: number;
+  pointCount: number;
+}
+
+export interface TrackStatisticsType {
+  duration: number; // 総時間（ミリ秒）
+  movingTime: number; // 移動時間（ミリ秒）
+  averageSpeed: number; // 平均速度（km/h）
+  maxSpeed: number; // 最高速度（km/h）
+  pauseCount: number; // 一時停止回数
+  elevationGain?: number; // 累積上昇高度（m）
 }
 export interface ProjectDataType extends DataType {
   userId: string;
