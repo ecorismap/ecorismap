@@ -79,6 +79,10 @@ src/
 - Mocked dependencies using Jest
 - Test utilities in `src/__tests__/resources/`
 
+### Test File Naming Convention
+- All test files should use `.test.ts` or `.test.tsx` pattern (e.g., `useData.test.ts`, `dataSet.test.ts`)
+- This unified convention ensures consistency across the entire codebase
+
 ## Important Implementation Details
 
 ### Multi-language Support
