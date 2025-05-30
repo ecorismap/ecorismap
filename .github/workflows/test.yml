@@ -12,7 +12,15 @@ jobs:
           cache: yarn
       - name: Install dependencies
         run: yarn install
-      - name: Run Tests
-        run: TZ=Asia/Tokyo yarn test
+      - name: Run Tests with Coverage
+        run: TZ=Asia/Tokyo yarn test:coverage
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
       - name: Run ESLint
         run: yarn lint

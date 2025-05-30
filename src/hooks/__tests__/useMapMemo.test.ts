@@ -1,78 +1,31 @@
+// i18nモックを最初に設定
+jest.mock('../../i18n/config', () => ({
+  __esModule: true,
+  default: {
+    language: 'en',
+    t: jest.fn((key) => key),
+  },
+  i18n: {
+    language: 'en',
+    t: jest.fn((key) => key),
+  },
+  t: jest.fn((key) => key),
+}));
+
 import { renderHook, act } from '@testing-library/react-hooks';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import React from 'react';
 import { useMapMemo } from '../useMapMemo';
+import dataSetReducer from '../../modules/dataSet';
+import layersReducer from '../../modules/layers';
+import userReducer from '../../modules/user';
+import settingsReducer, { settingsInitialState } from '../../modules/settings';
+import projectsReducer from '../../modules/projects';
+import tileMapsReducer from '../../modules/tileMaps';
+import trackLogReducer from '../../modules/trackLog';
 
 // モックの設定
-const mockDispatch = jest.fn();
-
-// 安定した参照を返す定数としてのモック状態
-const mockLayers = [
-  {
-    id: 'memo1',
-    name: 'メモレイヤー',
-    type: 'LINE',
-    active: true,
-    visible: true,
-    colorStyle: { colorType: 'SINGLE' },
-  },
-];
-const mockUser = { uid: 'user1' };
-const mockSettings = {
-  currentPenWidth: 'PEN_MEDIUM',
-  mapMemoHistoryItems: [],
-  mapMemoFutureItems: [],
-  isModalMapMemoToolHidden: false,
-  mapMemoStrokeColor: { h: 0, s: 1, v: 1, a: 0.7 },
-  mapMemoFillColor: { h: 0, s: 1, v: 1, a: 0.3 },
-  mapMemoStampType: 'STAMP1',
-  mapMemoBrushType: 'BRUSH1',
-  mapMemoEraserWidth: 10,
-};
-// テスト用のラインレコードを作成
-const mockLineRecord = {
-  id: 'test-line-id',
-  userId: 'user1',
-  displayName: 'Test User',
-  visible: true,
-  redraw: false,
-  coords: [
-    { latitude: 35.0, longitude: 135.0 },
-    { latitude: 35.001, longitude: 135.001 },
-    { latitude: 35.002, longitude: 135.002 },
-  ],
-  field: {
-    _strokeWidth: 5,
-    _strokeColor: 'rgba(255,0,0,0.7)',
-    _strokeStyle: '',
-    _stamp: '',
-    _group: '',
-    _zoom: 15,
-  },
-};
-
-const mockDataSet = [
-  {
-    layerId: 'memo1',
-    userId: 'user1',
-    data: [mockLineRecord],
-  },
-];
-
-// react-reduxモジュール全体をモック（安定した参照を返す）
-jest.mock('react-redux', () => ({
-  useDispatch: () => mockDispatch,
-  useSelector: (selector: any) => {
-    const mockState = {
-      layers: mockLayers,
-      activeLayerId: 'memo1',
-      dataSet: mockDataSet,
-      user: mockUser,
-      settings: mockSettings,
-      currentMapMemoTool: 'NONE',
-      mapMemoLines: [],
-    };
-    return selector(mockState);
-  },
-}));
 
 // 他のモックを追加
 jest.mock('react-native-maps', () => ({
@@ -153,9 +106,125 @@ jest.mock('../../utils/Color', () => ({
   hexToRgba: jest.fn(() => 'rgba(255,0,0,0.7)'),
 }));
 
+// Redux store作成関数
+const createTestStore = () => {
+  const mockLayers = [
+    {
+      id: 'memo1',
+      name: 'メモレイヤー',
+      type: 'LINE' as const,
+      active: true,
+      visible: true,
+      permission: 'PRIVATE' as const,
+      colorStyle: {
+        colorType: 'SINGLE' as const,
+        transparency: 0.8,
+        color: '#FF0000',
+        fieldName: '',
+        customFieldValue: '',
+        colorRamp: 'RANDOM' as const,
+        colorList: [],
+      },
+      label: '',
+      field: [],
+    },
+  ];
+
+  const mockLineRecord = {
+    id: 'test-line-id',
+    userId: 'user1',
+    displayName: 'Test User',
+    visible: true,
+    redraw: false,
+    coords: [
+      { latitude: 35.0, longitude: 135.0 },
+      { latitude: 35.001, longitude: 135.001 },
+      { latitude: 35.002, longitude: 135.002 },
+    ],
+    field: {
+      _strokeWidth: 5,
+      _strokeColor: 'rgba(255,0,0,0.7)',
+      _strokeStyle: '',
+      _stamp: '',
+      _group: '',
+      _zoom: 15,
+    },
+  };
+
+  const mockDataSet = [
+    {
+      layerId: 'memo1',
+      userId: 'user1',
+      data: [mockLineRecord],
+    },
+  ];
+
+  return configureStore({
+    reducer: {
+      dataSet: dataSetReducer,
+      layers: layersReducer,
+      user: userReducer,
+      settings: settingsReducer,
+      projects: projectsReducer,
+      tileMaps: tileMapsReducer,
+      trackLog: trackLogReducer,
+    },
+    preloadedState: {
+      dataSet: mockDataSet,
+      layers: mockLayers,
+      user: {
+        uid: 'user1',
+        displayName: 'Test User',
+        email: 'test@example.com',
+        photoURL: null,
+      },
+      settings: {
+        ...settingsInitialState,
+        currentPenWidth: 'PEN_MEDIUM',
+        mapMemoHistoryItems: [],
+        mapMemoFutureItems: [],
+        isModalMapMemoToolHidden: false,
+        mapMemoStrokeColor: { h: 0, s: 1, v: 1, a: 0.7 },
+        mapMemoFillColor: { h: 0, s: 1, v: 1, a: 0.3 },
+        mapMemoStampType: 'STAMP1',
+        mapMemoBrushType: 'BRUSH1',
+        mapMemoEraserWidth: 10,
+      },
+      projects: [],
+      tileMaps: [],
+      trackLog: {
+        distance: 0,
+        track: [],
+        lastTimeStamp: 0,
+        segments: [],
+        statistics: {
+          duration: 0,
+          movingTime: 0,
+          averageSpeed: 0,
+          maxSpeed: 0,
+          pauseCount: 0,
+        },
+      },
+    },
+  });
+};
+
+// Test wrapper
+const createWrapper = (store: any) => {
+  return ({ children }: { children: React.ReactNode }) => {
+    // eslint-disable-next-line react/no-children-prop
+    return React.createElement(Provider, { store, children });
+  };
+};
+
 describe('useMapMemo', () => {
+  let store: any;
+  let wrapper: any;
+
   // テスト前に毎回モックをリセット
   beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
     jest.clearAllMocks();
     // Generalモジュールのモック関数をリセット
     const General = require('../../utils/General');
@@ -167,7 +236,7 @@ describe('useMapMemo', () => {
 
   it('初期状態を正しく返すこと', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     // 初期状態の検証
     expect(result.current.editableMapMemo).toBe(true);
@@ -178,7 +247,7 @@ describe('useMapMemo', () => {
 
   it('clearMapMemoEditingLineが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.clearMapMemoEditingLine();
@@ -190,29 +259,33 @@ describe('useMapMemo', () => {
 
   it('changeColorTypeToIndividualが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.changeColorTypeToIndividual();
     });
 
-    expect(mockDispatch).toHaveBeenCalled();
+    // Redux storeの状態が更新されることを確認
+    const updatedLayers = store.getState().layers;
+    expect(updatedLayers[0].colorStyle.colorType).toBe('INDIVIDUAL');
   });
 
   it('setIsModalMapMemoToolHiddenが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setIsModalMapMemoToolHidden(true);
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith(expect.objectContaining({ payload: { isModalMapMemoToolHidden: true } }));
+    // Redux storeの状態が更新されることを確認
+    const updatedSettings = store.getState().settings;
+    expect(updatedSettings.isModalMapMemoToolHidden).toBe(true);
   });
 
   it('setMapMemoToolがローカルステートを更新すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setMapMemoTool('PEN');
@@ -224,7 +297,7 @@ describe('useMapMemo', () => {
 
   it('setPenWidthがローカルステートを更新すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setPenWidth('PEN_THIN');
@@ -239,7 +312,7 @@ describe('useMapMemo', () => {
   /*
   it('setMapMemoStampTypeが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setMapMemoStampType('STAMP2');
@@ -252,7 +325,7 @@ describe('useMapMemo', () => {
 
   it('setMapMemoBrushTypeが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setMapMemoBrushType('BRUSH2');
@@ -265,7 +338,7 @@ describe('useMapMemo', () => {
 
   it('setMapMemoEraserWidthが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setMapMemoEraserWidth(20);
@@ -279,7 +352,7 @@ describe('useMapMemo', () => {
 
   it('setVisibleMapMemoColorが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setVisibleMapMemoColor(true);
@@ -291,7 +364,7 @@ describe('useMapMemo', () => {
 
   it('setVisibleMapMemoPenが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setVisibleMapMemoPen(true);
@@ -303,7 +376,7 @@ describe('useMapMemo', () => {
 
   it('setVisibleMapMemoStampが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setVisibleMapMemoStamp(true);
@@ -315,7 +388,7 @@ describe('useMapMemo', () => {
 
   it('setVisibleMapMemoBrushが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setVisibleMapMemoBrush(true);
@@ -327,7 +400,7 @@ describe('useMapMemo', () => {
 
   it('setVisibleMapMemoEraserが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setVisibleMapMemoEraser(true);
@@ -339,7 +412,7 @@ describe('useMapMemo', () => {
 
   it('setArrowStyleが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setArrowStyle('ARROW_END');
@@ -351,7 +424,7 @@ describe('useMapMemo', () => {
 
   it('setPencilModeActiveが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setPencilModeActive(true);
@@ -363,7 +436,7 @@ describe('useMapMemo', () => {
 
   it('setSnapWithLineが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setSnapWithLine(false);
@@ -375,7 +448,7 @@ describe('useMapMemo', () => {
 
   it('setIsStraightStyleが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.setIsStraightStyle(true);
@@ -387,7 +460,7 @@ describe('useMapMemo', () => {
 
   it('selectPenColorが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.selectPenColor(0, 1, 1, 0.7);
@@ -401,7 +474,7 @@ describe('useMapMemo', () => {
   /*
   it('selectFillColorが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.selectFillColor(120, 1, 1, 0.3);
@@ -414,7 +487,7 @@ describe('useMapMemo', () => {
 
   it('selectStrokeColorが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     act(() => {
       result.current.selectStrokeColor(240, 1, 1, 0.7);
@@ -428,7 +501,7 @@ describe('useMapMemo', () => {
 
   it('clearMapMemoHistoryが正しく動作すること', () => {
     const mockMapViewRef = {} as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     // まず履歴を作るため、何かアクションを実行
     act(() => {
@@ -442,7 +515,7 @@ describe('useMapMemo', () => {
 
   it('handleGrantMapMemoがPENモードでタッチ座標を正しく記録すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     const mockEvent = {
       nativeEvent: {
@@ -469,7 +542,7 @@ describe('useMapMemo', () => {
 
   it('handleGrantMapMemoがBRUSHモードでsnappedLineを設定すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     const mockEvent = {
       nativeEvent: {
@@ -506,7 +579,7 @@ describe('useMapMemo', () => {
 
   it('handleGrantMapMemoがERASERモードでタッチ座標を正しく記録すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     const mockEvent = {
       nativeEvent: {
@@ -533,7 +606,7 @@ describe('useMapMemo', () => {
 
   it('handleGrantMapMemoがSTAMPモードで座標を正しく記録すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     const mockEvent = {
       nativeEvent: {
@@ -563,7 +636,7 @@ describe('useMapMemo', () => {
 
   it('handleMoveMapMemoがSTAMPモードで座標を更新すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     const mockEvent = {
       nativeEvent: {
@@ -610,7 +683,7 @@ describe('useMapMemo', () => {
 
   it('handleMoveMapMemoがPENモードで座標を追加すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     // PENモードに設定
     act(() => {
@@ -657,7 +730,7 @@ describe('useMapMemo', () => {
 
   it('直線モードで描画すると開始点と終了点のみを記録すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     // PENモードに設定して直線スタイルをONに
     act(() => {
@@ -719,7 +792,7 @@ describe('useMapMemo', () => {
 
   it('handleReleaseMapMemoがPENモードで描画内容を保存すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
     jest.useFakeTimers();
 
     // PENモードに設定
@@ -755,13 +828,13 @@ describe('useMapMemo', () => {
       jest.runAllTimers(); // タイマーを即時実行
     });
 
-    // dispatchが呼ばれたことを確認（データ保存のアクションがディスパッチされるはず）
-    expect(mockDispatch).toHaveBeenCalled();
+    // データ保存が実行されたことを確認するため、編集ラインがリセットされたかを確認
+    expect(result.current.mapMemoEditingLine.current).toEqual([]);
   });
 
   it('handleReleaseMapMemoがSTAMPモードでstampデータを保存すること', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
     jest.useFakeTimers();
 
     // STAMPモードに設定
@@ -800,13 +873,13 @@ describe('useMapMemo', () => {
       jest.runAllTimers(); // タイマーを即時実行
     });
 
-    // dispatchが呼ばれたことを確認（データ保存のアクションがディスパッチされるはず）
-    expect(mockDispatch).toHaveBeenCalled();
+    // データ保存が実行されたことを確認するため、編集ラインがリセットされたかを確認
+    expect(result.current.mapMemoEditingLine.current).toEqual([]);
   });
 
   // it('undoMapMemoが履歴操作を正しく行うこと', () => {
   //   const mockMapViewRef = { current: {} } as any;
-  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
   //   jest.useFakeTimers();
 
   //   // まず描画操作を行い、履歴を作成する
@@ -859,7 +932,7 @@ describe('useMapMemo', () => {
 
   // it('redoMapMemoが履歴操作を正しく行うこと', () => {
   //   const mockMapViewRef = { current: {} } as any;
-  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+  //   const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
   //   jest.useFakeTimers();
 
   //   // フェイズ1: まず描画操作を行い、履歴を作成する
@@ -920,7 +993,7 @@ describe('useMapMemo', () => {
 
   it('ポインタがマップ外に移動した場合でも描画が中断しないこと', () => {
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     // PENモードに設定
     act(() => {
@@ -964,7 +1037,7 @@ describe('useMapMemo', () => {
   it('編集機能が存在し正しい形で出力されること', () => {
     // isEditingLineとeditingLineIdがfalse/undefinedで初期化されていることを確認
     const mockMapViewRef = { current: {} } as any;
-    const { result } = renderHook(() => useMapMemo(mockMapViewRef));
+    const { result } = renderHook(() => useMapMemo(mockMapViewRef), { wrapper });
 
     expect(result.current.isEditingLine).toBe(false);
     expect(result.current.editingLineId).toBeUndefined();

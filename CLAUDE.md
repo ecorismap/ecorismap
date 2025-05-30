@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Testing & Quality
 - `yarn test` - Run all tests with flags: --detectOpenHandles --runInBand --forceExit
+- `yarn test:coverage` - Run tests with coverage report
+- `yarn test:coverage:watch` - Run tests with coverage in watch mode
 - `yarn test src/path/to/specific.test.ts` - Run single test file
 - `yarn testemu` - Run tests with Firebase emulator
 - `yarn lint` - ESLint check for .ts and .tsx files in src/
@@ -83,6 +85,16 @@ src/
 - All test files should use `.test.ts` or `.test.tsx` pattern (e.g., `useData.test.ts`, `dataSet.test.ts`)
 - This unified convention ensures consistency across the entire codebase
 
+### Coverage Reporting
+- Coverage reports are generated in the `coverage/` directory
+- Coverage thresholds are enforced:
+  - Global: 70% for all metrics (branches, functions, lines, statements)
+  - Hooks: 80% (critical business logic)
+  - Utils: 80% (utility functions)
+  - Modules: 75% (Redux modules)
+- HTML coverage report: `coverage/lcov-report/index.html`
+- Use `yarn test:coverage` to generate reports locally
+
 ## Important Implementation Details
 
 ### Multi-language Support
@@ -107,3 +119,18 @@ src/
 - Map features rendered conditionally based on zoom
 - Redux selectors memoized with reselect
 - Platform-specific optimizations for file handling
+
+## Code Quality Guidelines
+
+### File Modification Policy
+When modifying files, always ensure:
+1. **Lint compliance**: Run `yarn lint` and fix all ESLint errors
+2. **Type safety**: Run `yarn type-check` and resolve all TypeScript errors
+3. **Test integrity**: Run relevant tests and ensure they pass
+4. **Coverage maintenance**: Maintain or improve test coverage
+5. **Full test suite**: Run `yarn test` to ensure all tests pass, not just the modified ones
+
+### Common Fixes
+- **ESLint**: Use appropriate disable comments only when necessary (e.g., `eslint-disable-next-line`)
+- **TypeScript**: Prefer type assertions and non-null assertions only when logic guarantees safety
+- **Tests**: Mock external dependencies properly, especially Firebase and React Navigation
