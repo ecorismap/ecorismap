@@ -1,27 +1,40 @@
 import { LocationType, TrackLogType } from '../types';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
-export const updateTrackLog = (locations: LocationObject[], trackLog: TrackLogType): TrackLogType => {
+export const updateTrackLog = (locations: LocationObject[], trackLog: TrackLogType) => {
   //バックグラウンドの場合は、保存する
-  const { distance, track, lastTimeStamp } = trackLog;
+  const { track, lastTimeStamp } = trackLog;
   const checkedLocations = checkLocations(lastTimeStamp, locations);
 
-  const updatedTrackLog = [...track, ...checkedLocations];
-  const updatedDistance =
-    distance +
-    (track.length === 0
-      ? getLineLength(checkedLocations)
-      : getLineLength([track[track.length - 1], ...checkedLocations]));
-  const updatedLastTimeStamp =
-    updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
+  if (checkedLocations.length === 0) {
+    return { newLocations: [], additionalDistance: 0, lastTimeStamp };
+  }
 
-  const updatedLocations = {
+  // 増分距離のみ計算
+  let additionalDistance = 0;
+  if (track.length > 0 && checkedLocations.length > 0) {
+    // 最後の点と新しい最初の点の距離
+    additionalDistance = getDistanceBetweenPoints(track[track.length - 1], checkedLocations[0]);
+  }
+
+  // 新しい点同士の距離を追加
+  if (checkedLocations.length > 1) {
+    additionalDistance += getLineLength(checkedLocations);
+  }
+
+  const updatedLastTimeStamp = checkedLocations[checkedLocations.length - 1].timestamp ?? 0;
+
+  return {
+    newLocations: checkedLocations,
+    additionalDistance,
     lastTimeStamp: updatedLastTimeStamp,
-    distance: updatedDistance,
-    track: updatedTrackLog,
   };
+};
 
-  return updatedLocations;
+export const getDistanceBetweenPoints = (point1: LocationType, point2: LocationType): number => {
+  const from = turf.point([point1.longitude, point1.latitude]);
+  const to = turf.point([point2.longitude, point2.latitude]);
+  return turf.distance(from, to, { units: 'kilometers' });
 };
 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {

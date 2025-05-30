@@ -20,7 +20,7 @@ import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
-import { updateTrackLogAction } from '../modules/trackLog';
+import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
@@ -277,7 +277,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
         await moveCurrentPosition();
-        dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
+        dispatch(clearTrackLogAction());
         await startTracking();
       } else if (trackingState_ === 'off') {
         await stopTracking();
@@ -324,11 +324,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const updateTrackLogEvent = useCallback(
     (locations: LocationObject[]) => {
-      const { track, distance, lastTimeStamp } = updateTrackLog(locations, trackLog);
-      if (track.length === 0) return;
-      dispatch(updateTrackLogAction({ distance, track, lastTimeStamp }));
+      const result = updateTrackLog(locations, trackLog);
+      if (result.newLocations.length === 0) return;
 
-      const currentCoords = track[track.length - 1];
+      dispatch(appendTrackLogAction(result));
+
+      const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
@@ -356,7 +357,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       return { isOK: ret.isOK, message: ret.message };
     }
 
-    dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
+    dispatch(clearTrackLogAction());
     return { isOK: true, message: '' };
   }, [addTrackRecord, dispatch, trackLog.track]);
 
@@ -367,7 +368,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         const ret = await saveTrackLog();
         if (!ret.isOK) return ret;
       } else {
-        dispatch(updateTrackLogAction({ distance: 0, track: [], lastTimeStamp: 0 }));
+        dispatch(clearTrackLogAction());
       }
     }
     return { isOK: true, message: '' };
