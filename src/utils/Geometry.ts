@@ -95,7 +95,7 @@ function parseCSVLine(line: string) {
   return result;
 }
 
-export const Csv2Data = (
+export const csv2Data = (
   csv: string,
   fileName: string,
   userId: string | undefined,
@@ -192,12 +192,11 @@ export const Csv2Data = (
     //csvから
     return { layer: layer, recordSet: importedData };
   } catch (e) {
-    console.log(e);
     return undefined;
   }
 };
 
-export const Gpx2Data = (
+export const gpx2Data = (
   gpx: string,
   type: FeatureType,
   fileName: string,
@@ -348,7 +347,7 @@ function checkGeoJSONCRS(geojson: any) {
   return false;
 }
 
-export const GeoJson2Data = (
+export const geoJson2Data = (
   geojson: FeatureCollection<Geometry | null, GeoJsonProperties>,
   layer: LayerType,
   type: GeoJsonFeatureType,

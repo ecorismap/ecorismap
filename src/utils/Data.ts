@@ -16,7 +16,7 @@ import {
 import dayjs from '../i18n/dayjs';
 import { formattedInputs } from './Format';
 import { cloneDeep } from 'lodash';
-import { LatLonDMS } from './Coords';
+import { latLonDMS } from './Coords';
 import { t } from '../i18n/config';
 import { isLocationType } from './General';
 
@@ -317,7 +317,7 @@ export const checkCoordsInput = (latlon: LatLonDMSType, isDecimal: boolean) => {
 
 export const updateRecordCoords = (record: RecordType, latlon: LatLonDMSType, isDecimal: boolean) => {
   if (isLocationType(record.coords) || record.coords === undefined) {
-    const latLonDms = LatLonDMS(latlon, isDecimal);
+    const latLonDms = latLonDMS(latlon, isDecimal);
     return {
       ...record,
       coords: {
@@ -356,7 +356,7 @@ export const getTargetRecordSet = (
 
 export const createMergedDataSetWithTemplate = (
   dataSet: DataType[],
-  user: UserType,
+  _user: UserType,
   publicOwnLayerIds: string[],
   privateLayerIds: string[]
 ) => {

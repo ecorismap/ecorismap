@@ -6,7 +6,7 @@ import { RootState } from '../store';
 import { addLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system';
 
-import { Gpx2Data, GeoJson2Data, createLayerFromGeoJson, Csv2Data, detectGeoJsonType } from '../utils/Geometry';
+import { gpx2Data, geoJson2Data, createLayerFromGeoJson, csv2Data, detectGeoJsonType } from '../utils/Geometry';
 import { Platform } from 'react-native';
 import { addDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
@@ -72,7 +72,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const importGPX = useCallback(
     (gpx: string, featureType: FeatureType, importFileName: string) => {
-      const data = Gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
+      const data = gpx2Data(gpx, featureType, importFileName, dataUser.uid, dataUser.displayName);
       if (data === undefined) return;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
@@ -85,7 +85,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const importCsv = useCallback(
     (csv: string, importFileName: string, importedLayer?: LayerType) => {
-      const data = Csv2Data(csv, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
+      const data = csv2Data(csv, importFileName, dataUser.uid, dataUser.displayName, importedLayer);
       if (data === undefined) return;
       //console.log(recordSet[0].field);
       if (data.recordSet.length > 0) {
@@ -107,7 +107,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         importedLayer === undefined
           ? createLayerFromGeoJson(geojson, importFileName, featureType)
           : cloneDeep(importedLayer);
-      const recordSet = GeoJson2Data(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
+      const recordSet = geoJson2Data(geojson, layer, featureType, dataUser.uid, dataUser.displayName);
 
       if (recordSet === undefined) return false;
       if (recordSet.length === 0) return false;

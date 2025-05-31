@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
-import { LatLonDMS, toLatLonDMS } from '../utils/Coords';
+import { latLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
 import * as FileSystem from 'expo-file-system';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
@@ -346,7 +346,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const changeLatLonType = useCallback(() => {
-    const latLonDms = LatLonDMS(latlon, isDecimal);
+    const latLonDms = latLonDMS(latlon, isDecimal);
     setLatLon(latLonDms);
     setIsDecimal(!isDecimal);
   }, [isDecimal, latlon]);

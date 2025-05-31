@@ -204,7 +204,7 @@ export const zoomToDelta = (mapRef: MapRef): { latitudeDelta: number; longitudeD
   };
 };
 
-export const LatLonDMS = (latLonDms: LatLonDMSType, isDecimal: boolean) => {
+export const latLonDMS = (latLonDms: LatLonDMSType, isDecimal: boolean) => {
   //decimalからdms,dmsからdecimalを計算して更新する。
   const updatedLatLonDms = cloneDeep(latLonDms);
   const latlonTypes: LatLonDMSKey[] = ['latitude', 'longitude'];
@@ -327,7 +327,7 @@ export const isClosedPolygon = (lineXY: Position[]) => {
   return first[0] === last[0] && first[1] === last[1];
 };
 
-export const dot = (a: Position, b: Position) => a.map((x, i) => a[i] * b[i]).reduce((m, n) => m + n);
+export const dot = (a: Position, b: Position) => a.map((_, i) => a[i] * b[i]).reduce((m, n) => m + n);
 export const calcInnerProduct = (pA: Position[], pB: Position[]) => {
   const vecA = [pA[1][0] - pA[0][0], pA[1][1] - pA[0][1]];
   const vecB = [pB[1][0] - pB[0][0], pB[1][1] - pB[0][1]];

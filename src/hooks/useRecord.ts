@@ -284,7 +284,7 @@ export const useRecord = (): UseRecordReturnType => {
         if (!trackLayer) throw new Error('Track layer template not found');
         dispatch(addLayerAction(trackLayer));
       }
-      const trackDataSet = lineDataSet.find((d) => d.layerId === trackLayer.id && d.userId === dataUser.uid);
+      const trackDataSet = lineDataSet.find((d) => d.layerId === trackLayer!.id && d.userId === dataUser.uid);
       const trackRecordSet = trackDataSet ? trackDataSet.data : [];
       const record = generateRecord('LINE', trackLayer, trackRecordSet, locations);
       addRecord(trackLayer, record);

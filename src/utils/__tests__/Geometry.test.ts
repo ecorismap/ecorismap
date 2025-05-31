@@ -1,4 +1,4 @@
-import { Gpx2Data, GeoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../Geometry';
+import { gpx2Data, geoJson2Data, generateCSV, generateGPX, generateGeoJson } from '../Geometry';
 import { geoJsonString } from '../../__tests__/resources/geojson';
 import track_gpx from '../../__tests__/resources/track_gpx';
 import invalid_track_gpx from '../../__tests__/resources/invalid_track_gpx';
@@ -12,9 +12,9 @@ import MockDate from 'mockdate';
 jest.mock('ulid', () => ({ ulid: () => '1234' }));
 MockDate.set('2000-01-01');
 
-describe('Gpx2Data', () => {
+describe('gpx2Data', () => {
   it('return data from gpx', () => {
-    expect(Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual({
+    expect(gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual({
       layer: {
         active: false,
         colorStyle: {
@@ -58,11 +58,11 @@ describe('Gpx2Data', () => {
   });
 
   it('return undefined from invalid gpx', () => {
-    expect(Gpx2Data('invalid gpx', 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual(undefined);
+    expect(gpx2Data('invalid gpx', 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual(undefined);
   });
 
   it('return track from valid gpx', () => {
-    const data = Gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
+    const data = gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
@@ -76,7 +76,7 @@ describe('Gpx2Data', () => {
   });
 
   it('return track from invalid gpx', () => {
-    const data = Gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
+    const data = gpx2Data(invalid_track_gpx, 'LINE', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
@@ -91,7 +91,7 @@ describe('Gpx2Data', () => {
 
   it('return point from valid gpx', () => {
     //jest.useFakeTimers('modern').setSystemTime(new Date('2022-06-02 12:00:00'));
-    const data = Gpx2Data(point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
+    const data = gpx2Data(point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
@@ -107,7 +107,7 @@ describe('Gpx2Data', () => {
 });
 
 it('return  point from invalid gpx', () => {
-  const data = Gpx2Data(invalid_point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
+  const data = gpx2Data(invalid_point_gpx, 'POINT', 'test.gpx', '34-56', 'user1');
   const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
   expect(checkValue).toStrictEqual([
     {
@@ -125,7 +125,7 @@ it('return  point from invalid gpx', () => {
   ]);
 });
 
-describe('GeoJson2Data', () => {
+describe('geoJson2Data', () => {
   const layer: LayerType = {
     active: false,
     colorStyle: {
@@ -148,7 +148,7 @@ describe('GeoJson2Data', () => {
   it('return data from geojson', () => {
     const geojson = JSON.parse(geoJsonString);
 
-    expect(GeoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual([
+    expect(geoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual([
       {
         coords: { latitude: 38.24715800176878, longitude: 140.71658064854364 },
         field: { name: 'St.1' },
@@ -172,7 +172,7 @@ describe('GeoJson2Data', () => {
 
   it('return undefine from invalid geojson', () => {
     const geojson = JSON.parse('{ "features": "invalid geojson" }');
-    expect(GeoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual(undefined);
+    expect(geoJson2Data(geojson, layer, 'POINT', '34-56', 'user1')).toStrictEqual(undefined);
   });
 });
 
