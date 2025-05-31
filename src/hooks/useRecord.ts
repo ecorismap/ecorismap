@@ -313,7 +313,7 @@ export const useRecord = (): UseRecordReturnType => {
     const stores = await AsyncStorage.multiGet(keys);
 
     let totalSize = 0;
-    stores.map((result, i, store) => {
+    stores.map((_, i, store) => {
       const key = store[i][0];
       const value = store[i][1];
       const currentSize = key.length + value!.length;
