@@ -16,7 +16,7 @@ interface Props_SavedArea {
 
 type Props = Props_ProgressArea & Props_SavedArea;
 
-export const DownloadArea = (props: Props) => {
+export const DownloadArea = React.memo((props: Props) => {
   const { downloadArea, savedArea, onPress } = props;
   return (
     <>
@@ -24,7 +24,7 @@ export const DownloadArea = (props: Props) => {
       <ProgressArea downloadArea={downloadArea} onPress={onPress} />
     </>
   );
-};
+});
 
 const SavedArea = (props: Props_SavedArea) => {
   const { savedArea } = props;

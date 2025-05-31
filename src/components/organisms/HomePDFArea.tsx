@@ -9,7 +9,7 @@ interface Props_ProgressArea {
 
 type Props = Props_ProgressArea;
 
-export const PDFArea = (props: Props) => {
+export const PDFArea = React.memo((props: Props) => {
   const { pdfArea } = props;
 
   return (
@@ -23,4 +23,4 @@ export const PDFArea = (props: Props) => {
       />
     </>
   );
-};
+});

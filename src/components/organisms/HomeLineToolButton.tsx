@@ -15,7 +15,7 @@ interface Props {
   setLineTool: React.Dispatch<React.SetStateAction<LineToolType>>;
 }
 
-export const HomeLineToolButton = (props: Props) => {
+export const HomeLineToolButton = React.memo((props: Props) => {
   const { disabled, isPositionRight, currentDrawTool, currentLineTool, selectDrawTool, setLineTool } = props;
 
   return (
@@ -60,4 +60,4 @@ export const HomeLineToolButton = (props: Props) => {
       />
     </SelectionalLongPressButton>
   );
-};
+});

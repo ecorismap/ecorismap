@@ -9,7 +9,7 @@ interface Props {
   memberLocation: MemberLocationType;
 }
 
-export const MemberMarker = (props: Props) => {
+export const MemberMarker = React.memo((props: Props) => {
   const { memberLocation } = props;
 
   //console.log(angle);
@@ -43,7 +43,7 @@ export const MemberMarker = (props: Props) => {
       </div>
     </Marker>
   );
-};
+});
 
 const styles = StyleSheet.create({
   icon: {

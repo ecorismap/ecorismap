@@ -8,7 +8,7 @@ interface Props {
   attribution: string;
 }
 
-export const HomeAttributionText = (props: Props) => {
+export const HomeAttributionText = React.memo((props: Props) => {
   const { bottom, attribution } = props;
   if (!attribution) return null;
 
@@ -40,4 +40,4 @@ export const HomeAttributionText = (props: Props) => {
       </Text>
     </View>
   );
-};
+});

@@ -10,7 +10,7 @@ interface Props {
   name: string;
 }
 
-export default function HomeProjectLabel(props: Props) {
+const HomeProjectLabel = React.memo(function HomeProjectLabel(props: Props) {
   const { name, onPress } = props;
   const { isLandscape } = useWindow();
   return (
@@ -31,4 +31,6 @@ export default function HomeProjectLabel(props: Props) {
       <Text>{name}</Text>
     </Pressable>
   );
-}
+});
+
+export default HomeProjectLabel;

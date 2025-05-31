@@ -138,12 +138,14 @@ describe('trackLog reducer', () => {
 
     const actual = trackLogReducer(initialState, appendTrackLogAction(payload));
 
-    // Should have exactly 10000 points (MAX_POINTS)
-    expect(actual.track).toHaveLength(10000);
+    // With new memory optimization, should apply decimation when total > MAX_POINTS * MEMORY_CLEANUP_THRESHOLD
+    // Initial: 9999 points + 10 new = 10009 total > 8000 (80% of 10000), so decimation is applied
+    expect(actual.track.length).toBeLessThanOrEqual(10000);
+    expect(actual.track.length).toBeGreaterThan(5000); // Should still have substantial data after decimation
     expect(actual.distance).toBe(105.0);
 
-    // Should have removed 9 old points and added 10 new ones
-    expect(actual.track[0]).toEqual(manyLocations[9]); // First 9 should be removed
+    // First and last points should be preserved during decimation
+    expect(actual.track[0]).toEqual(manyLocations[0]); // First should be preserved
     expect(actual.track[actual.track.length - 1]).toEqual(newLocations[9]); // Last should be the new one
   });
 

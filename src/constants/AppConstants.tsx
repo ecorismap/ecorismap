@@ -65,6 +65,9 @@ export const TRACK = {
   STATIONARY_THRESHOLD_DISTANCE: 0.01, // 10m以内を静止とみなす（調査ポイント記録用に高精度）
   STATIONARY_THRESHOLD_TIME: 15 * 1000, // 15秒（調査ポイントでの素早い静止検出）
   SEGMENT_SAVE_MIN_POINTS: 100, // セグメント保存の最小ポイント数
+  MEMORY_CLEANUP_THRESHOLD: 0.8, // メモリ使用率80%でクリーンアップ開始
+  POINT_DECIMATION_FACTOR: 2, // ポイント間引き倍率
+  MIN_DISTANCE_FILTER: 0.005, // 最小距離フィルタ（5m）
 };
 
 export const ROLETYPE = {

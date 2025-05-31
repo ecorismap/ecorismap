@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from 'i18next';
 
-export const HomeMapMemoTools = () => {
+export const HomeMapMemoTools = React.memo(() => {
   const {
     currentMapMemoTool,
     isPencilModeActive,
@@ -147,4 +147,4 @@ export const HomeMapMemoTools = () => {
       </View>
     </View>
   );
-};
+});

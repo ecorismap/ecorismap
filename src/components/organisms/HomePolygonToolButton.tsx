@@ -15,7 +15,7 @@ interface Props {
   setPolygonTool: React.Dispatch<React.SetStateAction<PolygonToolType>>;
 }
 
-export const HomePolygonToolButton = (props: Props) => {
+export const HomePolygonToolButton = React.memo((props: Props) => {
   const { disabled, isPositionRight, currentDrawTool, currentPolygonTool, selectDrawTool, setPolygonTool } = props;
 
   return (
@@ -54,4 +54,4 @@ export const HomePolygonToolButton = (props: Props) => {
       />
     </SelectionalLongPressButton>
   );
-};
+});
