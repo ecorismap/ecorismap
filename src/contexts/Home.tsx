@@ -15,6 +15,14 @@ import {
 import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 import { Position } from 'geojson';
 
+// NOTE: HomeContext is being split into smaller contexts for better performance.
+// During migration, it will contain all properties but will gradually be replaced by:
+// - TileManagementContext: Tile download related functionality
+// - MapMemoContext: Map annotation tools
+// - DataSelectionContext: Data selection and editing
+// - InfoToolContext: Information display tools
+// - AppStateContext: General app state and navigation
+
 export interface HomeContextType {
   // Data sets
   pointDataSet: PointDataType[];
@@ -59,9 +67,7 @@ export interface HomeContextType {
   currentPenWidth: PenWidthType;
   penColor: string;
   penWidth: number;
-  mapMemoEditingLine: Position[];
   isPencilModeActive: boolean;
-  isPencilTouch: boolean | undefined;
   isUndoable: boolean;
   isRedoable: boolean;
   mapMemoLines: {

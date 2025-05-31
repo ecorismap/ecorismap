@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Platform, Text } from 'react-native';
+import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -32,12 +33,16 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { isMapMemoDrawTool } from '../../utils/General';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
-import { HomeContext } from '../../contexts/Home';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { PDFExportContext } from '../../contexts/PDFExport';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { ProjectContext } from '../../contexts/Project';
+import { TileManagementContext } from '../../contexts/TileManagement';
+import { MapMemoContext } from '../../contexts/MapMemo';
+import { DataSelectionContext } from '../../contexts/DataSelection';
+import { AppStateContext } from '../../contexts/AppState';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
@@ -56,40 +61,41 @@ import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
-  // HomeContext - remaining properties after split
+
+  // TileManagementContext
   const {
-    pointDataSet,
-    lineDataSet,
-    polygonDataSet,
     downloadMode,
-    downloadProgress,
-    savedTileSize,
-    restored,
     tileMaps,
-    isOffline,
+    savedTileSize,
     isDownloading,
     downloadArea,
     savedArea,
-    attribution,
-    selectedRecord,
-    isLoading,
-    currentMapMemoTool,
-    visibleMapMemoColor,
-    penColor,
-    gotoMaps,
-    gotoHome,
-    setVisibleMapMemoColor,
-    selectPenColor,
-    bottomSheetRef,
-    onCloseBottomSheet,
-    isPencilModeActive,
-    isPencilTouch,
-    isEditingRecord,
-    mapMemoEditingLine,
+    downloadProgress,
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressDeleteTiles,
-  } = useContext(HomeContext);
+  } = useContext(TileManagementContext);
+
+  // MapMemoContext
+  const {
+    currentMapMemoTool,
+    visibleMapMemoColor,
+    penColor,
+    isPencilModeActive,
+    setVisibleMapMemoColor,
+    selectPenColor,
+  } = useContext(MapMemoContext);
+
+  // DataSelectionContext
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord } =
+    useContext(DataSelectionContext);
+
+  // AppStateContext
+  const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet } =
+    useContext(AppStateContext);
+
+  // SVGDrawingContext
+  const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -399,7 +405,7 @@ export default function HomeScreen() {
               return (
                 <Point
                   key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
+                  data={d.data as PointRecordType[]}
                   layer={layer}
                   zoom={zoom}
                   editPositionMode={editPositionMode}
@@ -420,7 +426,7 @@ export default function HomeScreen() {
               return (
                 <Line
                   key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
+                  data={d.data as LineRecordType[]}
                   layer={layer}
                   zoom={zoom}
                   zIndex={101}
@@ -436,7 +442,7 @@ export default function HomeScreen() {
               return (
                 <Polygon
                   key={`${d.layerId}-${d.userId}`}
-                  data={d.data}
+                  data={d.data as PolygonRecordType[]}
                   layer={layer}
                   zoom={zoom}
                   zIndex={100}
@@ -513,7 +519,11 @@ export default function HomeScreen() {
               )}
             {/************* download mode ******************** */}
             {downloadMode && (
-              <DownloadArea downloadArea={downloadArea} savedArea={savedArea} onPress={pressDownloadTiles} />
+              <DownloadArea
+                downloadArea={downloadArea as any}
+                savedArea={savedArea as any}
+                onPress={pressDownloadTiles}
+              />
             )}
             {/************* exportPDF mode ******************** */}
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}

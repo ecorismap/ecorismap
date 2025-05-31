@@ -1,13 +1,13 @@
 import React, { useContext } from 'react';
 import { View, Text } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
-import { HomeContext } from '../../contexts/Home';
+import { InfoToolContext } from '../../contexts/InfoTool';
 import { COLOR } from '../../constants/AppConstants';
 import { FontAwesome } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export const HomePopup = React.memo(() => {
-  const { vectorTileInfo, closeVectorTileInfo } = useContext(HomeContext);
+  const { vectorTileInfo, closeVectorTileInfo } = useContext(InfoToolContext);
   const WIDTH = 250;
   const HEIGHT = 120;
   return vectorTileInfo ? (

@@ -38,12 +38,17 @@ import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
-import { HomeContext } from '../contexts/Home';
 import { MapViewContext } from '../contexts/MapView';
 import { DrawingToolsContext } from '../contexts/DrawingTools';
 import { PDFExportContext } from '../contexts/PDFExport';
 import { LocationTrackingContext } from '../contexts/LocationTracking';
 import { ProjectContext } from '../contexts/Project';
+import { SVGDrawingContext } from '../contexts/SVGDrawing';
+import { TileManagementContext } from '../contexts/TileManagement';
+import { MapMemoContext } from '../contexts/MapMemo';
+import { DataSelectionContext } from '../contexts/DataSelection';
+import { InfoToolContext } from '../contexts/InfoTool';
+import { AppStateContext } from '../contexts/AppState';
 import { useGeoFile } from '../hooks/useGeoFile';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
 import { getReceivedFiles, deleteReceivedFiles, exportFileFromData, exportFileFromUri } from '../utils/File';
@@ -1684,31 +1689,51 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
-  // DrawingToolsContextの値をメモ化
+  // DrawingToolsContextの値をメモ化（SVG描画要素を除外）
   const drawingToolsContextValue = useMemo(
     () => ({
-      isEditingDraw,
-      isEditingObject,
-      isSelectedDraw,
-      isEditingLine,
-      editingLineId,
-      drawLine: drawLine.current,
-      editingLine: editingLineXY.current,
-      selectLine: selectLine.current,
-      featureButton,
-      currentDrawTool,
-      currentPointTool,
-      currentLineTool,
-      currentPolygonTool,
+      // Drawing states (grouped for better memoization)
+      drawingState: {
+        isEditingDraw,
+        isEditingObject,
+        isSelectedDraw,
+        isEditingLine,
+        editingLineId,
+      },
+
+      // Current tools (grouped for better memoization)
+      currentTools: {
+        featureButton,
+        currentDrawTool,
+        currentPointTool,
+        currentLineTool,
+        currentPolygonTool,
+      },
+
+      // Tool actions (stable references)
       selectFeatureButton,
       selectDrawTool,
       setPointTool,
       setLineTool,
       setPolygonTool,
+
+      // Drawing actions (stable references)
       onDragEndPoint,
       pressUndoDraw,
       pressSaveDraw,
       pressDeleteDraw,
+
+      // Backward compatibility (to be deprecated gradually)
+      isEditingDraw,
+      isEditingObject,
+      isSelectedDraw,
+      isEditingLine,
+      editingLineId,
+      featureButton,
+      currentDrawTool,
+      currentPointTool,
+      currentLineTool,
+      currentPolygonTool,
     }),
     [
       isEditingDraw,
@@ -1730,9 +1755,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressUndoDraw,
       pressSaveDraw,
       pressDeleteDraw,
-      drawLine,
-      editingLineXY,
-      selectLine,
     ]
   );
 
@@ -1824,15 +1846,21 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
-  // HomeContextの値をメモ化して不要な再レンダリングを防ぐ（他のコンテキストに含まれない値のみ）
-  const homeContextValue = useMemo(
-    () => ({
-      // Data sets
-      pointDataSet,
-      lineDataSet,
-      polygonDataSet,
+  // SVGDrawingContextの値（MutableRefObjectがあるためメモ化しない）
+  const svgDrawingContextValue = {
+    // Drawing tools SVG data
+    drawLine,
+    editingLine: editingLineXY,
+    selectLine,
 
-      // Tile download
+    // MapMemo SVG data
+    mapMemoEditingLine: mapMemoEditingLine.current,
+    isPencilTouch: isPencilTouch.current,
+  };
+
+  // TileManagementContextの値をメモ化
+  const tileManagementContextValue = useMemo(
+    () => ({
       downloadMode,
       tileMaps,
       savedTileSize,
@@ -1843,31 +1871,30 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressDownloadTiles,
       pressStopDownloadTiles,
       pressDeleteTiles,
+    }),
+    [
+      downloadMode,
+      tileMaps,
+      savedTileSize,
+      isDownloading,
+      downloadArea,
+      savedArea,
+      downloadProgress,
+      pressDownloadTiles,
+      pressStopDownloadTiles,
+      pressDeleteTiles,
+    ]
+  );
 
-      // General states
-      isOffline,
-      restored,
-      attribution,
-      selectedRecord,
-      isLoading,
-      user,
-      isEditingRecord,
-
-      // Navigation
-      gotoMaps,
-      gotoSettings,
-      gotoLayers,
-      gotoHome,
-
-      // Map memo
+  // MapMemoContextの値をメモ化
+  const mapMemoContextValue = useMemo(
+    () => ({
       currentMapMemoTool,
       visibleMapMemoColor,
       currentPenWidth,
       penColor,
       penWidth,
-      mapMemoEditingLine: mapMemoEditingLine.current,
       isPencilModeActive,
-      isPencilTouch: isPencilTouch.current,
       isUndoable,
       isRedoable,
       mapMemoLines,
@@ -1883,81 +1910,97 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressUndoMapMemo,
       pressRedoMapMemo,
       togglePencilMode,
+    }),
+    [
+      currentMapMemoTool,
+      visibleMapMemoColor,
+      currentPenWidth,
+      penColor,
+      penWidth,
+      isPencilModeActive,
+      isUndoable,
+      isRedoable,
+      mapMemoLines,
+      isModalMapMemoToolHidden,
+      selectMapMemoTool,
+      setPenWidth,
+      setVisibleMapMemoColor,
+      setVisibleMapMemoPen,
+      setVisibleMapMemoStamp,
+      setVisibleMapMemoBrush,
+      setVisibleMapMemoEraser,
+      selectPenColor,
+      pressUndoMapMemo,
+      pressRedoMapMemo,
+      togglePencilMode,
+    ]
+  );
 
-      // Info tool
+  // DataSelectionContextの値をメモ化
+  const dataSelectionContextValue = useMemo(
+    () => ({
+      pointDataSet,
+      lineDataSet,
+      polygonDataSet,
+      selectedRecord,
+      isEditingRecord,
+    }),
+    [pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord]
+  );
+
+  // InfoToolContextの値をメモ化
+  const infoToolContextValue = useMemo(
+    () => ({
       currentInfoTool,
       isModalInfoToolHidden,
       isInfoToolActive,
+      vectorTileInfo,
       selectInfoTool,
       setVisibleInfoPicker,
       setInfoToolActive,
-      vectorTileInfo,
       closeVectorTileInfo,
+    }),
+    [
+      currentInfoTool,
+      isModalInfoToolHidden,
+      isInfoToolActive,
+      vectorTileInfo,
+      selectInfoTool,
+      setVisibleInfoPicker,
+      setInfoToolActive,
+      closeVectorTileInfo,
+    ]
+  );
 
-      // Other
+  // AppStateContextの値をメモ化
+  const appStateContextValue = useMemo(
+    () => ({
+      isOffline,
+      restored,
+      attribution,
+      isLoading,
+      user,
+      gotoMaps,
+      gotoSettings,
+      gotoLayers,
+      gotoHome,
       bottomSheetRef,
       onCloseBottomSheet,
       updatePmtilesURL,
     }),
     [
-      pointDataSet,
-      lineDataSet,
-      polygonDataSet,
-      downloadMode,
-      tileMaps,
-      savedTileSize,
-      isDownloading,
-      downloadArea,
-      savedArea,
-      downloadProgress,
       isOffline,
       restored,
       attribution,
-      selectedRecord,
       isLoading,
       user,
-      isEditingRecord,
-      currentMapMemoTool,
-      visibleMapMemoColor,
-      currentPenWidth,
-      penColor,
-      penWidth,
-      isPencilModeActive,
-      isUndoable,
-      isRedoable,
-      mapMemoLines,
-      isModalMapMemoToolHidden,
-      currentInfoTool,
-      isModalInfoToolHidden,
-      isInfoToolActive,
-      vectorTileInfo,
-      bottomSheetRef,
-      onCloseBottomSheet,
-      updatePmtilesURL,
-      pressDownloadTiles,
-      pressStopDownloadTiles,
-      pressDeleteTiles,
       gotoMaps,
       gotoSettings,
       gotoLayers,
       gotoHome,
-      selectMapMemoTool,
-      setPenWidth,
-      setVisibleMapMemoColor,
-      setVisibleMapMemoPen,
-      setVisibleMapMemoStamp,
-      setVisibleMapMemoBrush,
-      setVisibleMapMemoEraser,
-      selectPenColor,
-      pressUndoMapMemo,
-      pressRedoMapMemo,
-      togglePencilMode,
-      selectInfoTool,
-      setVisibleInfoPicker,
-      setInfoToolActive,
-      closeVectorTileInfo,
-      isPencilTouch,
-      mapMemoEditingLine,
+      bottomSheetRef,
+      onCloseBottomSheet,
+      updatePmtilesURL,
     ]
   );
 
@@ -1967,81 +2010,91 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         <PDFExportContext.Provider value={pdfExportContextValue}>
           <LocationTrackingContext.Provider value={locationTrackingContextValue}>
             <ProjectContext.Provider value={projectContextValue}>
-              <HomeContext.Provider value={homeContextValue}>
-                <Home />
-                <HomeModalTermsOfUse />
-                <HomeModalPenPicker
-                  modalVisible={visibleMapMemoPen}
-                  currentMapMemoTool={currentMapMemoTool}
-                  arrowStyle={arrowStyle}
-                  isStraightStyle={isStraightStyle}
-                  isModalMapMemoToolHidden={isModalMapMemoToolHidden}
-                  currentPenWidth={currentPenWidth}
-                  selectMapMemoTool={selectMapMemoTool}
-                  selectMapMemoPenWidth={setPenWidth}
-                  selectMapMemoArrowStyle={setArrowStyle}
-                  selectMapMemoStraightStyle={setIsStraightStyle}
-                  setVisibleMapMemoPen={setVisibleMapMemoPen}
-                  setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
-                />
-                <HomeModalBrushPicker
-                  modalVisible={visibleMapMemoBrush}
-                  currentMapMemoTool={currentMapMemoTool}
-                  selectMapMemoTool={selectMapMemoTool}
-                  setVisibleMapMemoBrush={setVisibleMapMemoBrush}
-                />
-                <HomeModalStampPicker
-                  modalVisible={visibleMapMemoStamp}
-                  currentMapMemoTool={currentMapMemoTool}
-                  snapWithLine={snapWithLine}
-                  selectMapMemoTool={selectMapMemoTool}
-                  selectMapMemoSnapWithLine={setSnapWithLine}
-                  setVisibleMapMemoStamp={setVisibleMapMemoStamp}
-                />
-                <HomeModalEraserPicker
-                  modalVisible={visibleMapMemoEraser}
-                  currentMapMemoTool={currentMapMemoTool}
-                  selectMapMemoTool={selectMapMemoTool}
-                  setVisibleMapMemoEraser={setVisibleMapMemoEraser}
-                />
-                <HomeModalInfoPicker
-                  modalVisible={visibleInfoPicker}
-                  currentInfoTool={currentInfoTool}
-                  isModalInfoToolHidden={isModalInfoToolHidden}
-                  selectInfoTool={selectInfoTool}
-                  setVisibleInfoPicker={setVisibleInfoPicker}
-                  setIsModalInfoToolHidden={setIsModalInfoToolHidden}
-                />
-                <HomeModalPDFSettings
-                  visible={isPDFSettingsVisible}
-                  pdfOrientation={pdfOrientation}
-                  pdfPaperSize={pdfPaperSize}
-                  pdfScale={pdfScale}
-                  pdfOrientations={pdfOrientations}
-                  pdfPaperSizes={pdfPaperSizes}
-                  pdfScales={pdfScales}
-                  pdfTileMapZoomLevel={pdfTileMapZoomLevel}
-                  pdfTileMapZoomLevels={pdfTileMapZoomLevels}
-                  outputVRT={outputVRT}
-                  outputDataPDF={outputDataPDF}
-                  setPdfOrientation={setPdfOrientation}
-                  setPdfPaperSize={setPdfPaperSize}
-                  setPdfScale={setPdfScale}
-                  setPdfTileMapZoomLevel={setPdfTileMapZoomLevel}
-                  setOutputVRT={setOutputVRT}
-                  setOutputDataPDF={setOutputDataPDF}
-                  pressOK={() => setIsPDFSettingsVisible(false)}
-                />
-                {conflictState.visible && conflictState.queue.length > 0 && (
-                  <ConflictResolverModal
-                    visible={conflictState.visible}
-                    candidates={conflictState.queue[0].candidates}
-                    id={conflictState.queue[0].id}
-                    onSelect={handleSelect}
-                    onBulkSelect={handleBulkSelect}
-                  />
-                )}
-              </HomeContext.Provider>
+              <SVGDrawingContext.Provider value={svgDrawingContextValue}>
+                <TileManagementContext.Provider value={tileManagementContextValue}>
+                  <MapMemoContext.Provider value={mapMemoContextValue}>
+                    <DataSelectionContext.Provider value={dataSelectionContextValue}>
+                      <InfoToolContext.Provider value={infoToolContextValue}>
+                        <AppStateContext.Provider value={appStateContextValue}>
+                          <Home />
+                          <HomeModalTermsOfUse />
+                          <HomeModalPenPicker
+                            modalVisible={visibleMapMemoPen}
+                            currentMapMemoTool={currentMapMemoTool}
+                            arrowStyle={arrowStyle}
+                            isStraightStyle={isStraightStyle}
+                            isModalMapMemoToolHidden={isModalMapMemoToolHidden}
+                            currentPenWidth={currentPenWidth}
+                            selectMapMemoTool={selectMapMemoTool}
+                            selectMapMemoPenWidth={setPenWidth}
+                            selectMapMemoArrowStyle={setArrowStyle}
+                            selectMapMemoStraightStyle={setIsStraightStyle}
+                            setVisibleMapMemoPen={setVisibleMapMemoPen}
+                            setIsModalMapMemoToolHidden={setIsModalMapMemoToolHidden}
+                          />
+                          <HomeModalBrushPicker
+                            modalVisible={visibleMapMemoBrush}
+                            currentMapMemoTool={currentMapMemoTool}
+                            selectMapMemoTool={selectMapMemoTool}
+                            setVisibleMapMemoBrush={setVisibleMapMemoBrush}
+                          />
+                          <HomeModalStampPicker
+                            modalVisible={visibleMapMemoStamp}
+                            currentMapMemoTool={currentMapMemoTool}
+                            snapWithLine={snapWithLine}
+                            selectMapMemoTool={selectMapMemoTool}
+                            selectMapMemoSnapWithLine={setSnapWithLine}
+                            setVisibleMapMemoStamp={setVisibleMapMemoStamp}
+                          />
+                          <HomeModalEraserPicker
+                            modalVisible={visibleMapMemoEraser}
+                            currentMapMemoTool={currentMapMemoTool}
+                            selectMapMemoTool={selectMapMemoTool}
+                            setVisibleMapMemoEraser={setVisibleMapMemoEraser}
+                          />
+                          <HomeModalInfoPicker
+                            modalVisible={visibleInfoPicker}
+                            currentInfoTool={currentInfoTool}
+                            isModalInfoToolHidden={isModalInfoToolHidden}
+                            selectInfoTool={selectInfoTool}
+                            setVisibleInfoPicker={setVisibleInfoPicker}
+                            setIsModalInfoToolHidden={setIsModalInfoToolHidden}
+                          />
+                          <HomeModalPDFSettings
+                            visible={isPDFSettingsVisible}
+                            pdfOrientation={pdfOrientation}
+                            pdfPaperSize={pdfPaperSize}
+                            pdfScale={pdfScale}
+                            pdfOrientations={pdfOrientations}
+                            pdfPaperSizes={pdfPaperSizes}
+                            pdfScales={pdfScales}
+                            pdfTileMapZoomLevel={pdfTileMapZoomLevel}
+                            pdfTileMapZoomLevels={pdfTileMapZoomLevels}
+                            outputVRT={outputVRT}
+                            outputDataPDF={outputDataPDF}
+                            setPdfOrientation={setPdfOrientation}
+                            setPdfPaperSize={setPdfPaperSize}
+                            setPdfScale={setPdfScale}
+                            setPdfTileMapZoomLevel={setPdfTileMapZoomLevel}
+                            setOutputVRT={setOutputVRT}
+                            setOutputDataPDF={setOutputDataPDF}
+                            pressOK={() => setIsPDFSettingsVisible(false)}
+                          />
+                          {conflictState.visible && conflictState.queue.length > 0 && (
+                            <ConflictResolverModal
+                              visible={conflictState.visible}
+                              candidates={conflictState.queue[0].candidates}
+                              id={conflictState.queue[0].id}
+                              onSelect={handleSelect}
+                              onBulkSelect={handleBulkSelect}
+                            />
+                          )}
+                        </AppStateContext.Provider>
+                      </InfoToolContext.Provider>
+                    </DataSelectionContext.Provider>
+                  </MapMemoContext.Provider>
+                </TileManagementContext.Provider>
+              </SVGDrawingContext.Provider>
             </ProjectContext.Provider>
           </LocationTrackingContext.Provider>
         </PDFExportContext.Provider>

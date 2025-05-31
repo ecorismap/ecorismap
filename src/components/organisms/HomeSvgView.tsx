@@ -7,9 +7,11 @@ import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 
 export const SvgView = React.memo(() => {
-  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject } = useContext(DrawingToolsContext);
+  const { currentDrawTool, isEditingObject } = useContext(DrawingToolsContext);
+  const { drawLine, editingLine, selectLine } = useContext(SVGDrawingContext);
 
   const editingStartStyle = '';
   const editingMidStyle = '';
@@ -29,7 +31,7 @@ export const SvgView = React.memo(() => {
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
-        {drawLine.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
+        {drawLine.current.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
           const startStyle =
             currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
               ? ''
@@ -81,7 +83,7 @@ export const SvgView = React.memo(() => {
         {!isPlotTool(currentDrawTool) && (
           <G>
             <Path
-              d={pointsToSvg(editingLine)}
+              d={pointsToSvg(editingLine.current)}
               stroke="blue"
               strokeWidth="2.5"
               strokeDasharray="2,3"
@@ -95,7 +97,7 @@ export const SvgView = React.memo(() => {
         {/* 選択範囲のライン */}
         <G>
           <Path
-            d={pointsToSvg(selectLine)}
+            d={pointsToSvg(selectLine.current)}
             stroke={`${COLOR.YELLOW}`}
             strokeWidth="2"
             strokeDasharray="1"

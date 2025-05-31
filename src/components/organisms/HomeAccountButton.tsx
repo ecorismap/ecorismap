@@ -3,13 +3,13 @@ import { View, Image, StyleSheet, Platform, Text } from 'react-native';
 import { Button, SelectionalButton } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
-import { HomeContext } from '../../contexts/Home';
+import { AppStateContext } from '../../contexts/AppState';
 import { ProjectContext } from '../../contexts/Project';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 export const HomeAccountButton = React.memo(() => {
-  const { user } = useContext(HomeContext);
+  const { user } = useContext(AppStateContext);
   const { gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(ProjectContext);
   const { isLandscape } = useWindow();
   const [valid, setValid] = useState(true);

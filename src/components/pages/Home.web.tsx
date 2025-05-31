@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
+import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -34,12 +35,17 @@ import { useWindow } from '../../hooks/useWindow';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { HomeContext } from '../../contexts/Home';
 import { MapViewContext } from '../../contexts/MapView';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { PDFExportContext } from '../../contexts/PDFExport';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { ProjectContext } from '../../contexts/Project';
+import { TileManagementContext } from '../../contexts/TileManagement';
+import { MapMemoContext } from '../../contexts/MapMemo';
+import { DataSelectionContext } from '../../contexts/DataSelection';
+import { InfoToolContext } from '../../contexts/InfoTool';
+import { AppStateContext } from '../../contexts/AppState';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
@@ -65,34 +71,27 @@ import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
-  // HomeContext - remaining properties after split
-  const {
-    pointDataSet,
-    lineDataSet,
-    polygonDataSet,
-    downloadMode,
-    downloadProgress,
-    savedTileSize,
-    restored,
-    tileMaps,
-    isDownloading,
-    selectedRecord,
-    isLoading,
-    currentMapMemoTool,
-    visibleMapMemoColor,
-    penColor,
-    isInfoToolActive,
-    gotoMaps,
-    gotoHome,
-    setVisibleMapMemoColor,
-    selectPenColor,
-    pressStopDownloadTiles,
-    mapMemoEditingLine,
-    bottomSheetRef,
-    onCloseBottomSheet,
-    isEditingRecord,
-    updatePmtilesURL,
-  } = useContext(HomeContext);
+  // TileManagementContext
+  const { downloadMode, tileMaps, savedTileSize, isDownloading, downloadProgress, pressStopDownloadTiles } =
+    useContext(TileManagementContext);
+
+  // MapMemoContext
+  const { currentMapMemoTool, visibleMapMemoColor, penColor, setVisibleMapMemoColor, selectPenColor } =
+    useContext(MapMemoContext);
+
+  // DataSelectionContext
+  const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord } =
+    useContext(DataSelectionContext);
+
+  // InfoToolContext
+  const { isInfoToolActive } = useContext(InfoToolContext);
+
+  // AppStateContext
+  const { restored, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } =
+    useContext(AppStateContext);
+
+  // SVGDrawingContext
+  const { mapMemoEditingLine } = useContext(SVGDrawingContext);
 
   // MapViewContext
   const {
@@ -795,7 +794,7 @@ export default function HomeScreen() {
                   return (
                     <Point
                       key={`${d.layerId}-${d.userId}`}
-                      data={d.data}
+                      data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
                       selectedRecord={selectedRecord}
@@ -817,7 +816,7 @@ export default function HomeScreen() {
                   return (
                     <Line
                       key={`${d.layerId}-${d.userId}`}
-                      data={d.data}
+                      data={d.data as LineRecordType[]}
                       layer={layer!}
                       zoom={zoom}
                       zIndex={101}
@@ -832,7 +831,13 @@ export default function HomeScreen() {
                   if (!layer?.visible) return null;
 
                   return (
-                    <Polygon key={`${d.layerId}-${d.userId}`} data={d.data} layer={layer!} zoom={zoom} zIndex={100} />
+                    <Polygon
+                      key={`${d.layerId}-${d.userId}`}
+                      data={d.data as PolygonRecordType[]}
+                      layer={layer!}
+                      zoom={zoom}
+                      zIndex={100}
+                    />
                   );
                 })}
                 {exportPDFMode && <PDFArea pdfArea={pdfArea} />}

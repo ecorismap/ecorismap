@@ -5,7 +5,7 @@ import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppCons
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
-import { HomeContext } from '../../contexts/Home';
+import { MapMemoContext } from '../../contexts/MapMemo';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { t } from '../../i18n/config';
 import { useRoute } from '@react-navigation/native';
 
 export const HomeDrawTools = React.memo(() => {
-  const { isPencilModeActive, togglePencilMode } = useContext(HomeContext);
+  const { isPencilModeActive, togglePencilMode } = useContext(MapMemoContext);
   const {
     isEditingDraw,
     isSelectedDraw,

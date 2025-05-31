@@ -1,8 +1,8 @@
 import React, { useContext, useMemo } from 'react';
 import Svg, { Circle, G, Path, Line, Text, Rect, Polygon } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
-import { HomeContext } from '../../contexts/Home';
-import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { MapMemoContext } from '../../contexts/MapMemo';
+import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 import { View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
 import { ulid } from 'ulid';
@@ -12,12 +12,12 @@ export const MapMemoView = React.memo(() => {
   const {
     penColor,
     penWidth,
-    mapMemoEditingLine,
     currentMapMemoTool,
     //zoom: currentZoom,
     mapMemoLines,
-  } = useContext(HomeContext);
-  const { isEditingLine } = useContext(DrawingToolsContext);
+  } = useContext(MapMemoContext);
+  const { mapMemoEditingLine } = useContext(SVGDrawingContext);
+  // Note: We don't need isEditingLine from DrawingToolsContext for MapMemo functionality
   //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
   const stampPos = useMemo(
@@ -26,13 +26,8 @@ export const MapMemoView = React.memo(() => {
   );
 
   const strokeColor = useMemo(
-    () =>
-      currentMapMemoTool.includes('ERASER')
-        ? 'white'
-        : isBrushTool(currentMapMemoTool) || isEditingLine
-        ? 'yellow'
-        : penColor,
-    [currentMapMemoTool, isEditingLine, penColor]
+    () => (currentMapMemoTool.includes('ERASER') ? 'white' : isBrushTool(currentMapMemoTool) ? 'yellow' : penColor),
+    [currentMapMemoTool, penColor]
   );
   const strokeWidth = useMemo(
     () => (currentMapMemoTool.includes('ERASER') ? 10 : isBrushTool(currentMapMemoTool) ? 5 : penWidth),

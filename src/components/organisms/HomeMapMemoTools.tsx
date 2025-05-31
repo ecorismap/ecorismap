@@ -3,7 +3,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR, MAPMEMOTOOL, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
-import { HomeContext } from '../../contexts/Home';
+import { MapMemoContext } from '../../contexts/MapMemo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from 'i18next';
@@ -24,7 +24,7 @@ export const HomeMapMemoTools = () => {
     pressUndoMapMemo,
     pressRedoMapMemo,
     togglePencilMode,
-  } = useContext(HomeContext);
+  } = useContext(MapMemoContext);
 
   const insets = useSafeAreaInsets();
 

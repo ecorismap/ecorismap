@@ -79,7 +79,7 @@
     "test:coverage": "jest --coverage --detectOpenHandles --runInBand --forceExit",
     "test:coverage:watch": "jest --coverage --watchAll --detectOpenHandles --runInBand --forceExit",
     "testemu": "firebase emulators:exec 'yarn jest'",
-    "lint": "eslint --ext .tsx --ext .ts src/",
+    "lint": "eslint --fix --ext .tsx --ext .ts src/",
     "type-check": "tsc --noEmit",
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
     "postinstall": "patch-package;"

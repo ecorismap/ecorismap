@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { HomeContext } from '../../contexts/Home';
+import { InfoToolContext } from '../../contexts/InfoTool';
 import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../atoms';
@@ -9,7 +9,7 @@ import { t } from '../../i18n/config';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 
 export const HomeInfoToolButton = React.memo(() => {
-  const { isInfoToolActive, setVisibleInfoPicker, setInfoToolActive } = useContext(HomeContext);
+  const { isInfoToolActive, setVisibleInfoPicker, setInfoToolActive } = useContext(InfoToolContext);
   const { currentDrawTool } = useContext(DrawingToolsContext);
   const { isLandscape } = useWindow();
   const insets = useSafeAreaInsets();
