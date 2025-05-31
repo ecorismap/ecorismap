@@ -58,6 +58,7 @@ import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { Pressable } from '../atoms/Pressable';
+import { useViewportBounds } from '../../hooks/useViewportBounds';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -146,6 +147,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
   const trackLog = useSelector((state: RootState) => state.trackLog);
+  const { bounds } = useViewportBounds(mapRegion);
 
   const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
 
@@ -414,6 +416,7 @@ export default function HomeScreen() {
                   currentDrawTool={currentDrawTool}
                   selectedRecord={selectedRecord}
                   onDragEndPoint={onDragEndPoint}
+                  bounds={bounds}
                 />
               );
             })}

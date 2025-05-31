@@ -5,6 +5,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { generateLabel, getColor } from '../../utils/Layer';
+import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
 
 interface Props {
   data: PointRecordType[];
@@ -15,6 +16,7 @@ interface Props {
   editPositionRecord: RecordType | undefined;
   editPositionLayer: LayerType | undefined;
   currentDrawTool: string;
+  bounds?: ViewportBounds | null;
 
   onDragEndPoint: (e: MarkerDragStartEndEvent, layer: LayerType, feature: RecordType) => void;
 }
@@ -31,27 +33,35 @@ export const Point = React.memo(
       editPositionLayer,
       editPositionRecord,
       currentDrawTool,
+      bounds,
       onDragEndPoint,
     } = props;
 
+    const culledData = useMemo(() => {
+      const visibleData = data.filter((feature) => feature.visible);
+      return cullPoints(visibleData, bounds || null, zoom, {
+        buffer: 20, // 20% buffer around viewport
+        maxFeatures: 1000, // Maximum 1000 points
+        minZoom: 10, // Only apply culling at zoom level 10 and above
+      });
+    }, [data, bounds, zoom]);
+
     return (
       <>
-        {data.map((feature) =>
-          feature.visible ? (
-            <PointComponent
-              key={`point-${feature.id}-${feature.redraw}`}
-              feature={feature}
-              selectedRecord={selectedRecord}
-              editPositionMode={editPositionMode}
-              editPositionRecord={editPositionRecord}
-              editPositionLayer={editPositionLayer}
-              currentDrawTool={currentDrawTool}
-              onDragEndPoint={onDragEndPoint}
-              layer={layer}
-              zoom={zoom}
-            />
-          ) : null
-        )}
+        {culledData.map((feature) => (
+          <PointComponent
+            key={`point-${feature.id}-${feature.redraw}`}
+            feature={feature}
+            selectedRecord={selectedRecord}
+            editPositionMode={editPositionMode}
+            editPositionRecord={editPositionRecord}
+            editPositionLayer={editPositionLayer}
+            currentDrawTool={currentDrawTool}
+            onDragEndPoint={onDragEndPoint}
+            layer={layer}
+            zoom={zoom}
+          />
+        ))}
       </>
     );
   },
@@ -60,6 +70,7 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.bounds !== nextProps.bounds) return false;
     if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
     if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;
     if (prevProps.editPositionLayer !== nextProps.editPositionLayer) return false;
