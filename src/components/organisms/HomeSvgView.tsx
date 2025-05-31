@@ -6,10 +6,10 @@ import { pointsToSvg } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
 import { isPlotTool, isPolygonTool } from '../../utils/General';
-import { HomeContext } from '../../contexts/Home';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
 
 export const SvgView = React.memo(() => {
-  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject } = useContext(HomeContext);
+  const { drawLine, editingLine, selectLine, currentDrawTool, isEditingObject } = useContext(DrawingToolsContext);
 
   const editingStartStyle = '';
   const editingMidStyle = '';
@@ -29,7 +29,7 @@ export const SvgView = React.memo(() => {
     >
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
-        {drawLine.map(({ xy, properties }, idx: number) => {
+        {drawLine.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
           const startStyle =
             currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
               ? ''

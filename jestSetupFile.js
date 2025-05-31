@@ -1,7 +1,24 @@
+import { jest } from '@jest/globals';
+
+// Mock LogBox before importing react-native
+jest.mock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  RN.LogBox = {
+    ignoreLogs: jest.fn(),
+    ignoreAllLogs: jest.fn(),
+  };
+  return RN;
+});
+
+// Also mock LogBox globally
+global.LogBox = {
+  ignoreLogs: jest.fn(),
+  ignoreAllLogs: jest.fn(),
+};
+
 import mockAsyncStorage from '@react-native-async-storage/async-storage/jest/async-storage-mock';
 import 'react-native';
 import 'expo-localization';
-import { jest } from '@jest/globals';
 //import * as FileSystem from 'expo-file-system';
 
 jest.mock('@react-native-async-storage/async-storage', () => mockAsyncStorage);
@@ -13,11 +30,392 @@ jest.mock('i18next', () => ({
     };
   },
   t: (k) => k,
+  language: 'en',
+  changeLanguage: jest.fn(),
+  languages: ['en', 'ja'],
+  isInitialized: true,
 }));
 
 jest.mock('uuid', () => ({
   v4: () => 'uuid',
 }));
+
+// Mock react-native-reanimated
+jest.mock('react-native-reanimated', () => {
+  const Reanimated = require('react-native-reanimated/mock');
+  Reanimated.default.call = () => {};
+  return Reanimated;
+});
+
+// Mock react-native-gesture-handler
+jest.mock('react-native-gesture-handler', () => {
+  const View = require('react-native').View;
+  return {
+    Swipeable: View,
+    DrawerLayout: View,
+    State: {},
+    ScrollView: View,
+    Slider: View,
+    Switch: View,
+    TextInput: View,
+    ToolbarAndroid: View,
+    ViewPagerAndroid: View,
+    WebView: View,
+    NativeViewGestureHandler: View,
+    TapGestureHandler: View,
+    FlingGestureHandler: View,
+    ForceTouchGestureHandler: View,
+    LongPressGestureHandler: View,
+    PanGestureHandler: View,
+    PinchGestureHandler: View,
+    RotationGestureHandler: View,
+    RawButton: View,
+    BaseButton: View,
+    RectButton: View,
+    BorderlessButton: View,
+    FlatList: View,
+    gestureHandlerRootHOC: jest.fn(component => component),
+    GestureHandlerRootView: View,
+    Directions: {},
+  };
+});
+
+// Mock @gorhom/bottom-sheet
+jest.mock('@gorhom/bottom-sheet', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  
+  const BottomSheet = React.forwardRef((props, ref) => {
+    return React.createElement(View, { ...props, ref });
+  });
+  
+  return {
+    __esModule: true,
+    default: BottomSheet,
+    BottomSheetView: View,
+    BottomSheetModal: View,
+    BottomSheetModalProvider: ({ children }) => children,
+    BottomSheetBackdrop: View,
+    BottomSheetScrollView: View,
+    BottomSheetFlatList: View,
+    BottomSheetSectionList: View,
+    BottomSheetTextInput: View,
+    useBottomSheetModal: () => ({
+      dismiss: jest.fn(),
+      present: jest.fn(),
+    }),
+    useBottomSheetDynamicSnapPoints: () => ({
+      animatedHandleHeight: { value: 0 },
+      animatedSnapPoints: { value: [] },
+      animatedContentHeight: { value: 0 },
+      handleContentLayout: jest.fn(),
+    }),
+  };
+});
+
+// Mock react-native-safe-area-context
+jest.mock('react-native-safe-area-context', () => {
+  const inset = { top: 0, right: 0, bottom: 0, left: 0 };
+  return {
+    SafeAreaProvider: ({ children }) => children,
+    SafeAreaView: require('react-native').View,
+    useSafeAreaInsets: () => inset,
+    initialWindowMetrics: {
+      insets: inset,
+      frame: { x: 0, y: 0, width: 0, height: 0 },
+    },
+  };
+});
+
+// Mock react-native-device-info
+jest.mock('react-native-device-info', () => ({
+  isTablet: jest.fn(() => false),
+  getDeviceId: jest.fn(() => 'test-device-id'),
+  getSystemName: jest.fn(() => 'iOS'),
+  getSystemVersion: jest.fn(() => '14.0'),
+  getVersion: jest.fn(() => '1.0.0'),
+  getBuildNumber: jest.fn(() => '1'),
+  getApplicationName: jest.fn(() => 'ecorismap'),
+  getBundleId: jest.fn(() => 'com.ecorismap'),
+  hasNotch: jest.fn(() => false),
+  hasDynamicIsland: jest.fn(() => false),
+  isPinOrFingerprintSet: jest.fn(() => Promise.resolve(false)),
+}));
+
+// Mock @react-native-voice/voice
+jest.mock('@react-native-voice/voice', () => ({
+  __esModule: true,
+  default: {
+    onSpeechStart: jest.fn(),
+    onSpeechEnd: jest.fn(),
+    onSpeechResults: jest.fn(),
+    onSpeechError: jest.fn(),
+    onSpeechPartialResults: jest.fn(),
+    onSpeechVolumeChanged: jest.fn(),
+    start: jest.fn(() => Promise.resolve()),
+    stop: jest.fn(() => Promise.resolve()),
+    cancel: jest.fn(() => Promise.resolve()),
+    destroy: jest.fn(() => Promise.resolve()),
+    isAvailable: jest.fn(() => Promise.resolve(true)),
+    isRecognizing: jest.fn(() => Promise.resolve(false)),
+    removeAllListeners: jest.fn(),
+  },
+}));
+
+// Mock react-native-fs
+jest.mock('react-native-fs', () => ({
+  mkdir: jest.fn(() => Promise.resolve()),
+  moveFile: jest.fn(() => Promise.resolve()),
+  copyFile: jest.fn(() => Promise.resolve()),
+  pathForBundle: jest.fn(() => Promise.resolve('')),
+  pathForGroup: jest.fn(() => Promise.resolve('')),
+  getFSInfo: jest.fn(() => Promise.resolve({})),
+  getAllExternalFilesDirs: jest.fn(() => Promise.resolve([])),
+  unlink: jest.fn(() => Promise.resolve()),
+  exists: jest.fn(() => Promise.resolve(true)),
+  stopDownload: jest.fn(() => Promise.resolve()),
+  resumeDownload: jest.fn(() => Promise.resolve()),
+  isResumable: jest.fn(() => Promise.resolve(true)),
+  stopUpload: jest.fn(() => Promise.resolve()),
+  completeHandlerIOS: jest.fn(() => Promise.resolve()),
+  readDir: jest.fn(() => Promise.resolve([])),
+  readDirAssets: jest.fn(() => Promise.resolve([])),
+  existsAssets: jest.fn(() => Promise.resolve(true)),
+  readdir: jest.fn(() => Promise.resolve([])),
+  setReadable: jest.fn(() => Promise.resolve()),
+  stat: jest.fn(() => Promise.resolve({})),
+  readFile: jest.fn(() => Promise.resolve('')),
+  read: jest.fn(() => Promise.resolve('')),
+  readFileAssets: jest.fn(() => Promise.resolve('')),
+  hash: jest.fn(() => Promise.resolve('')),
+  copyFileAssets: jest.fn(() => Promise.resolve()),
+  copyFileAssetsIOS: jest.fn(() => Promise.resolve()),
+  copyAssetsVideoIOS: jest.fn(() => Promise.resolve()),
+  writeFile: jest.fn(() => Promise.resolve()),
+  appendFile: jest.fn(() => Promise.resolve()),
+  write: jest.fn(() => Promise.resolve()),
+  downloadFile: jest.fn(() => Promise.resolve({ jobId: 1, promise: Promise.resolve() })),
+  uploadFiles: jest.fn(() => Promise.resolve()),
+  touch: jest.fn(() => Promise.resolve()),
+  MainBundlePath: '',
+  CachesDirectoryPath: '',
+  DocumentDirectoryPath: '',
+  ExternalDirectoryPath: '',
+  ExternalStorageDirectoryPath: '',
+  TemporaryDirectoryPath: '',
+  LibraryDirectoryPath: '',
+  PicturesDirectoryPath: '',
+}));
+
+// Mock react-native-japanese-text-analyzer
+jest.mock('react-native-japanese-text-analyzer', () => ({
+  tokenize: jest.fn((text) => [{ surface: text, features: [] }]),
+}));
+
+// Mock @react-native-community/image-editor
+jest.mock('@react-native-community/image-editor', () => ({
+  __esModule: true,
+  default: {
+    cropImage: jest.fn(() => Promise.resolve('file://test-cropped-image.jpg')),
+  },
+}));
+
+// Mock react-native-maps
+jest.mock('react-native-maps', () => {
+  const { View } = require('react-native');
+  const MockMapView = (props) => {
+    return View(props);
+  };
+  const MockMarker = (props) => View(props);
+  const MockPolyline = (props) => View(props);
+  const MockPolygon = (props) => View(props);
+  const MockUrlTile = (props) => View(props);
+  const MockPMTile = (props) => View(props);
+  
+  return {
+    __esModule: true,
+    default: MockMapView,
+    MapView: MockMapView,
+    Marker: MockMarker,
+    Polyline: MockPolyline,
+    Polygon: MockPolygon,
+    UrlTile: MockUrlTile,
+    PMTile: MockPMTile,
+    PROVIDER_GOOGLE: 'google',
+    PROVIDER_DEFAULT: 'default',
+  };
+});
+
+// Mock react-native-gdalwarp
+jest.mock('react-native-gdalwarp', () => ({
+  warp: jest.fn(() => Promise.resolve({ uri: 'file://test-warped.tif' })),
+  warpedFileType: 'tif',
+}));
+
+// Mock react-native-scale-bar
+jest.mock('react-native-scale-bar', () => {
+  const { View } = require('react-native');
+  return View;
+});
+
+// Mock react-native-zip-archive
+jest.mock('react-native-zip-archive', () => ({
+  zip: jest.fn(() => Promise.resolve('path/to/zip')),
+  unzip: jest.fn(() => Promise.resolve()),
+  unzipAssets: jest.fn(() => Promise.resolve()),
+  subscribe: jest.fn(() => ({ remove: jest.fn() })),
+  isPasswordProtected: jest.fn(() => Promise.resolve(false)),
+  zipWithPassword: jest.fn(() => Promise.resolve('path/to/zip')),
+  unzipWithPassword: jest.fn(() => Promise.resolve()),
+  zipFolder: jest.fn(() => Promise.resolve('path/to/zip')),
+  zipFiles: jest.fn(() => Promise.resolve('path/to/zip')),
+  getUncompressedSize: jest.fn(() => Promise.resolve(1000)),
+}));
+
+
+// Mock expo-sqlite
+jest.mock('expo-sqlite', () => ({
+  SQLiteDatabase: jest.fn(),
+  openDatabaseAsync: jest.fn(() => Promise.resolve({
+    execAsync: jest.fn(),
+    runAsync: jest.fn(),
+    getFirstAsync: jest.fn(),
+    getAllAsync: jest.fn(),
+    closeAsync: jest.fn(),
+  })),
+  openDatabaseSync: jest.fn(() => ({
+    execSync: jest.fn(),
+    runSync: jest.fn(),
+    getFirstSync: jest.fn(),
+    getAllSync: jest.fn(),
+    closeSync: jest.fn(),
+  })),
+}));
+
+// Mock Firebase modules
+jest.mock('@react-native-firebase/app', () => ({
+  __esModule: true,
+  default: () => ({
+    name: '[DEFAULT]',
+  }),
+  getApp: jest.fn(() => ({
+    name: '[DEFAULT]',
+  })),
+  initializeApp: jest.fn(),
+  getApps: jest.fn(() => []),
+  deleteApp: jest.fn(),
+}));
+
+jest.mock('@react-native-firebase/auth', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    currentUser: null,
+    signInWithEmailAndPassword: jest.fn(),
+    createUserWithEmailAndPassword: jest.fn(),
+    signOut: jest.fn(),
+    onAuthStateChanged: jest.fn(() => jest.fn()),
+    sendPasswordResetEmail: jest.fn(),
+    confirmPasswordReset: jest.fn(),
+    applyActionCode: jest.fn(),
+    sendEmailVerification: jest.fn(),
+    updateProfile: jest.fn(),
+    updateEmail: jest.fn(),
+    updatePassword: jest.fn(),
+    reauthenticateWithCredential: jest.fn(),
+    deleteUser: jest.fn(),
+  })),
+}));
+
+jest.mock('@react-native-firebase/firestore', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ exists: false })),
+        set: jest.fn(() => Promise.resolve()),
+        update: jest.fn(() => Promise.resolve()),
+        delete: jest.fn(() => Promise.resolve()),
+        onSnapshot: jest.fn(() => jest.fn()),
+      })),
+      get: jest.fn(() => Promise.resolve({ docs: [] })),
+      add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
+      where: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ docs: [] })),
+        onSnapshot: jest.fn(() => jest.fn()),
+      })),
+      onSnapshot: jest.fn(() => jest.fn()),
+    })),
+    doc: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({ exists: false })),
+      set: jest.fn(() => Promise.resolve()),
+      update: jest.fn(() => Promise.resolve()),
+      delete: jest.fn(() => Promise.resolve()),
+      onSnapshot: jest.fn(() => jest.fn()),
+    })),
+    batch: jest.fn(() => ({
+      set: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      commit: jest.fn(() => Promise.resolve()),
+    })),
+    runTransaction: jest.fn(),
+  })),
+  Timestamp: {
+    now: jest.fn(() => ({ toDate: () => new Date() })),
+    fromDate: jest.fn(date => ({ toDate: () => date })),
+  },
+  FieldValue: {
+    serverTimestamp: jest.fn(),
+    delete: jest.fn(),
+    increment: jest.fn(),
+  },
+}));
+
+jest.mock('@react-native-firebase/storage', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    ref: jest.fn(() => ({
+      child: jest.fn(() => ({
+        put: jest.fn(() => ({
+          on: jest.fn(),
+          then: jest.fn(() => Promise.resolve()),
+          catch: jest.fn(),
+        })),
+        putFile: jest.fn(() => ({
+          on: jest.fn(),
+          then: jest.fn(() => Promise.resolve()),
+          catch: jest.fn(),
+        })),
+        getDownloadURL: jest.fn(() => Promise.resolve('https://example.com/file.jpg')),
+        delete: jest.fn(() => Promise.resolve()),
+        getMetadata: jest.fn(() => Promise.resolve({})),
+        updateMetadata: jest.fn(() => Promise.resolve({})),
+      })),
+    })),
+  })),
+}));
+
+jest.mock('@react-native-firebase/functions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({ data: {} }))),
+  })),
+}));
+
+jest.mock('@react-native-firebase/app-check', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    activate: jest.fn(),
+    initializeAppCheck: jest.fn(),
+    getToken: jest.fn(() => Promise.resolve({ token: 'test-token' })),
+  })),
+  initializeAppCheck: jest.fn(),
+  getAppCheck: jest.fn(() => ({
+    activate: jest.fn(),
+    getToken: jest.fn(() => Promise.resolve({ token: 'test-token' })),
+  })),
+}));
+
 //jest.mock('expo', () => require.requireMock('expo'));
 
 // jest.mock('expo-file-system', () => ({

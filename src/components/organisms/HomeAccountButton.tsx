@@ -4,11 +4,13 @@ import { Button, SelectionalButton } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { HomeContext } from '../../contexts/Home';
+import { ProjectContext } from '../../contexts/Project';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
-export const HomeAccountButton = () => {
-  const { user, gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(HomeContext);
+export const HomeAccountButton = React.memo(() => {
+  const { user } = useContext(HomeContext);
+  const { gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(ProjectContext);
   const { isLandscape } = useWindow();
   const [valid, setValid] = useState(true);
 
@@ -122,4 +124,4 @@ export const HomeAccountButton = () => {
       )}
     </View>
   );
-};
+});

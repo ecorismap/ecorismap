@@ -19,7 +19,7 @@ import { Point } from '../organisms/HomePoint';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
 import { Polygon } from '../organisms/HomePolygon.web';
 import { Line } from '../organisms/HomeLine';
-import { TileMapType } from '../../types';
+import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
@@ -35,6 +35,11 @@ import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { HomeContext } from '../../contexts/Home';
+import { MapViewContext } from '../../contexts/MapView';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { PDFExportContext } from '../../contexts/PDFExport';
+import { LocationTrackingContext } from '../../contexts/LocationTracking';
+import { ProjectContext } from '../../contexts/Project';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
@@ -60,68 +65,74 @@ import { HomeTerrainControl } from '../organisms/HomeTerrainControl';
 import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
+  // HomeContext - remaining properties after split
   const {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
     downloadMode,
+    downloadProgress,
+    savedTileSize,
+    restored,
+    tileMaps,
+    isDownloading,
+    selectedRecord,
+    isLoading,
+    currentMapMemoTool,
+    visibleMapMemoColor,
+    penColor,
+    isInfoToolActive,
+    gotoMaps,
+    gotoHome,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    pressStopDownloadTiles,
+    mapMemoEditingLine,
+    bottomSheetRef,
+    onCloseBottomSheet,
+    isEditingRecord,
+    updatePmtilesURL,
+  } = useContext(HomeContext);
+
+  // MapViewContext
+  const {
+    mapViewRef,
+    gpsState,
+    currentLocation,
+    zoom,
+    onRegionChangeMapView,
+    onDrop,
+    panResponder,
+    isDrawLineVisible,
+    isPinch,
+    onPressMapView,
+    isTerrainActive,
+    toggleTerrain,
+  } = useContext(MapViewContext);
+
+  // DrawingToolsContext
+  const { featureButton, currentDrawTool, onDragEndPoint, isEditingLine, editingLineId } =
+    useContext(DrawingToolsContext);
+
+  // PDFExportContext
+  const {
     exportPDFMode,
     pdfArea,
     pdfOrientation,
     pdfPaperSize,
     pdfScale,
     pdfTileMapZoomLevel,
-    downloadProgress,
-    savedTileSize,
-    restored,
-    mapViewRef,
-    gpsState,
-    trackingState,
-    currentLocation,
-    zoom,
-    tileMaps,
-    isDownloading,
-    featureButton,
-    currentDrawTool,
-    selectedRecord,
-    isLoading,
-    isSynced,
-    memberLocations,
-    isShowingProjectButtons,
-    isSettingProject,
-    projectName,
-    pressProjectLabel,
-    currentMapMemoTool,
-    visibleMapMemoColor,
-    penColor,
-    isInfoToolActive,
-    editPositionMode,
-    editPositionRecord,
-    editPositionLayer,
-    onRegionChangeMapView,
-    onDrop,
-    pressStopDownloadTiles,
-    gotoMaps,
-    gotoHome,
-    onDragEndPoint,
-    setVisibleMapMemoColor,
-    selectPenColor,
     pressExportPDF,
-    panResponder,
-    isDrawLineVisible,
-    mapMemoEditingLine,
-    isPinch,
-    onPressMapView,
-    bottomSheetRef,
-    onCloseBottomSheet,
     pressPDFSettingsOpen,
-    isEditingRecord,
-    updatePmtilesURL,
-    isTerrainActive,
-    toggleTerrain,
-    isEditingLine,
-    editingLineId,
-  } = useContext(HomeContext);
+  } = useContext(PDFExportContext);
+
+  // LocationTrackingContext
+  const { trackingState, memberLocations, editPositionMode, editPositionRecord, editPositionLayer } =
+    useContext(LocationTrackingContext);
+
+  // ProjectContext
+  const { isSynced, isShowingProjectButtons, isSettingProject, projectName, pressProjectLabel } =
+    useContext(ProjectContext);
   //console.log('render Home');
   const layers = useSelector((state: RootState) => state.layers);
 
@@ -754,8 +765,8 @@ export default function HomeScreen() {
                 <HomeTerrainControl
                   top={150}
                   left={10}
-                  isTerrainActive={isTerrainActive}
-                  toggleTerrain={toggleTerrain}
+                  isTerrainActive={isTerrainActive ?? false}
+                  toggleTerrain={toggleTerrain ?? (() => {})}
                 />
                 <GeolocateControl
                   style={{ position: 'absolute', top: 180, left: 0 }}
@@ -851,9 +862,9 @@ export default function HomeScreen() {
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
-              pdfOrientation={pdfOrientation}
-              pdfPaperSize={pdfPaperSize}
-              pdfScale={pdfScale}
+              pdfOrientation={pdfOrientation as PaperOrientationType}
+              pdfPaperSize={pdfPaperSize as PaperSizeType}
+              pdfScale={pdfScale as ScaleType}
               onPress={pressExportPDF}
               pressPDFSettingsOpen={pressPDFSettingsOpen}
             />

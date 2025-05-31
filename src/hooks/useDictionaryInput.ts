@@ -10,7 +10,10 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from 'i18next';
 import { getDatabase } from '../utils/SQLite';
 import { SQLiteDatabase } from 'expo-sqlite';
-LogBox.ignoreLogs(['new NativeEventEmitter()']);
+// Safely ignore logs in non-test environment
+if (LogBox && LogBox.ignoreLogs) {
+  LogBox.ignoreLogs(['new NativeEventEmitter()']);
+}
 
 export type UseDictionaryInputReturnType = {
   queryString: string;

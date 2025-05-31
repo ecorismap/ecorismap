@@ -31,8 +31,13 @@ import { useWindow } from '../../hooks/useWindow';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { isMapMemoDrawTool } from '../../utils/General';
-import { TileMapType } from '../../types';
+import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
 import { HomeContext } from '../../contexts/Home';
+import { MapViewContext } from '../../contexts/MapView';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { PDFExportContext } from '../../contexts/PDFExport';
+import { LocationTrackingContext } from '../../contexts/LocationTracking';
+import { ProjectContext } from '../../contexts/Project';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
@@ -51,78 +56,84 @@ import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
+  // HomeContext - remaining properties after split
   const {
     pointDataSet,
     lineDataSet,
     polygonDataSet,
     downloadMode,
-    exportPDFMode,
     downloadProgress,
     savedTileSize,
     restored,
+    tileMaps,
+    isOffline,
+    isDownloading,
+    downloadArea,
+    savedArea,
+    attribution,
+    selectedRecord,
+    isLoading,
+    currentMapMemoTool,
+    visibleMapMemoColor,
+    penColor,
+    gotoMaps,
+    gotoHome,
+    setVisibleMapMemoColor,
+    selectPenColor,
+    bottomSheetRef,
+    onCloseBottomSheet,
+    isPencilModeActive,
+    isPencilTouch,
+    isEditingRecord,
+    mapMemoEditingLine,
+    pressDownloadTiles,
+    pressStopDownloadTiles,
+    pressDeleteTiles,
+  } = useContext(HomeContext);
+
+  // MapViewContext
+  const {
     mapViewRef,
     mapType,
     gpsState,
-    trackingState,
     currentLocation,
     azimuth,
     headingUp,
     zoom,
     zoomDecimal,
-    tileMaps,
-    isOffline,
-    isDownloading,
-    downloadArea,
+    onRegionChangeMapView,
+    onPressMapView,
+    onDragMapView,
+    pressZoomIn,
+    pressZoomOut,
+    pressCompass,
+    pressGPS,
+    panResponder,
+    isPinch,
+    isDrawLineVisible,
+  } = useContext(MapViewContext);
+
+  // DrawingToolsContext
+  const { featureButton, currentDrawTool, onDragEndPoint, editingLineId } = useContext(DrawingToolsContext);
+
+  // PDFExportContext
+  const {
+    exportPDFMode,
     pdfArea,
     pdfOrientation,
     pdfPaperSize,
     pdfScale,
     pdfTileMapZoomLevel,
-    savedArea,
-    attribution,
-    featureButton,
-    currentDrawTool,
-    selectedRecord,
-    isLoading,
-    isSynced,
-    memberLocations,
-    isShowingProjectButtons,
-    projectName,
-    pressProjectLabel,
-    currentMapMemoTool,
-    visibleMapMemoColor,
-    penColor,
-    editPositionMode,
-    editPositionLayer,
-    editPositionRecord,
-    onRegionChangeMapView,
-    onPressMapView,
-    onDragMapView,
-    onDragEndPoint,
-    pressDownloadTiles,
     pressExportPDF,
-    pressStopDownloadTiles,
-    pressZoomIn,
-    pressZoomOut,
-    pressCompass,
-    pressDeleteTiles,
-    pressGPS,
-    gotoMaps,
-    gotoHome,
-    setVisibleMapMemoColor,
-    selectPenColor,
-    panResponder,
-    isPinch,
-    isDrawLineVisible,
-    mapMemoEditingLine,
-    bottomSheetRef,
-    onCloseBottomSheet,
-    isPencilModeActive,
-    isPencilTouch,
     pressPDFSettingsOpen,
-    isEditingRecord,
-    editingLineId,
-  } = useContext(HomeContext);
+  } = useContext(PDFExportContext);
+
+  // LocationTrackingContext
+  const { trackingState, memberLocations, editPositionMode, editPositionLayer, editPositionRecord } =
+    useContext(LocationTrackingContext);
+
+  // ProjectContext
+  const { projectName, isSynced, isShowingProjectButtons, pressProjectLabel } = useContext(ProjectContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
   const navigation = useNavigation();
@@ -536,9 +547,9 @@ export default function HomeScreen() {
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
-              pdfOrientation={pdfOrientation}
-              pdfPaperSize={pdfPaperSize}
-              pdfScale={pdfScale}
+              pdfOrientation={pdfOrientation as PaperOrientationType}
+              pdfPaperSize={pdfPaperSize as PaperSizeType}
+              pdfScale={pdfScale as ScaleType}
               onPress={pressExportPDF}
               pressPDFSettingsOpen={pressPDFSettingsOpen}
             />

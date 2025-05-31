@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import { HomeContext } from '../../contexts/Home';
+import { ProjectContext } from '../../contexts/Project';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
@@ -17,7 +17,7 @@ export const HomeProjectButtons = React.memo(() => {
     pressCloseProject,
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
-  } = useContext(HomeContext);
+  } = useContext(ProjectContext);
   //console.log('HomeButton');
   return (
     <View style={styles.buttonContainer}>

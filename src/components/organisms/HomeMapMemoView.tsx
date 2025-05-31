@@ -2,6 +2,7 @@ import React, { useContext, useMemo } from 'react';
 import Svg, { Circle, G, Path, Line, Text, Rect, Polygon } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { HomeContext } from '../../contexts/Home';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { View } from 'react-native';
 import { isBrushTool, isPenTool } from '../../utils/General';
 import { ulid } from 'ulid';
@@ -15,8 +16,8 @@ export const MapMemoView = React.memo(() => {
     currentMapMemoTool,
     //zoom: currentZoom,
     mapMemoLines,
-    isEditingLine,
   } = useContext(HomeContext);
+  const { isEditingLine } = useContext(DrawingToolsContext);
   //const strokeWidth = 2 ** (currentZoom - 18) * penWidth;
 
   const stampPos = useMemo(

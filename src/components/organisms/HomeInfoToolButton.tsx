@@ -6,9 +6,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../atoms';
 import { COLOR, INFOTOOL } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
 
-export const HomeInfoToolButton = () => {
-  const { currentDrawTool, isInfoToolActive, setVisibleInfoPicker, setInfoToolActive } = useContext(HomeContext);
+export const HomeInfoToolButton = React.memo(() => {
+  const { isInfoToolActive, setVisibleInfoPicker, setInfoToolActive } = useContext(HomeContext);
+  const { currentDrawTool } = useContext(DrawingToolsContext);
   const { isLandscape } = useWindow();
   const insets = useSafeAreaInsets();
   const disabled = currentDrawTool !== 'NONE';
@@ -44,4 +46,4 @@ export const HomeInfoToolButton = () => {
       </View>
     </View>
   );
-};
+});

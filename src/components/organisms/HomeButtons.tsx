@@ -4,14 +4,17 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { HOME_BTN, COLOR, HOME_FEATURE_BTN } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { HomeContext } from '../../contexts/Home';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { Button, SelectionalButton } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const HomeButtons = React.memo(() => {
   //console.log('render HomeButtons');
 
-  const { featureButton, trackingState, gotoMaps, gotoSettings, pressTracking, gotoLayers, selectFeatureButton } =
-    useContext(HomeContext);
+  const { gotoMaps, gotoSettings, gotoLayers } = useContext(HomeContext);
+  const { featureButton, selectFeatureButton } = useContext(DrawingToolsContext);
+  const { trackingState, pressTracking } = useContext(LocationTrackingContext);
 
   const { isLandscape } = useWindow();
 

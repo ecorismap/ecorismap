@@ -6,12 +6,15 @@ import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
 import { HomePolygonToolButton } from './HomePolygonToolButton';
 import { HomeContext } from '../../contexts/Home';
+import { DrawingToolsContext } from '../../contexts/DrawingTools';
+import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from '../../i18n/config';
 import { useRoute } from '@react-navigation/native';
 
-export const HomeDrawTools = () => {
+export const HomeDrawTools = React.memo(() => {
+  const { isPencilModeActive, togglePencilMode } = useContext(HomeContext);
   const {
     isEditingDraw,
     isSelectedDraw,
@@ -19,17 +22,13 @@ export const HomeDrawTools = () => {
     currentLineTool,
     currentPolygonTool,
     featureButton,
-    isPencilModeActive,
-    editPositionMode,
     selectDrawTool,
     setLineTool,
     setPolygonTool,
     pressUndoDraw,
     pressDeleteDraw,
-    pressDeletePosition,
-    togglePencilMode,
-    finishEditPosition,
-  } = useContext(HomeContext);
+  } = useContext(DrawingToolsContext);
+  const { editPositionMode, pressDeletePosition, finishEditPosition } = useContext(LocationTrackingContext);
   const route = useRoute();
   const insets = useSafeAreaInsets();
 
@@ -247,4 +246,4 @@ export const HomeDrawTools = () => {
       )}
     </View>
   );
-};
+});
