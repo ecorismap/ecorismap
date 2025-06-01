@@ -1,7 +1,7 @@
 import { DEFAULT_MAP_LIST_URL } from '../../constants/AppConstants';
 import { TUTRIALS } from '../../constants/Tutrials';
 import { MemberLocationType, RoleType, SettingsType, TileRegionType } from '../../types';
-import reducer, { editSettingsAction } from '../settings';
+import reducer, { editSettingsAction, setSettingsAction, settingsInitialState } from '../settings';
 describe('modules/settings', () => {
   const state: SettingsType = {
     tutrials: TUTRIALS,
@@ -55,5 +55,55 @@ describe('modules/settings', () => {
     };
     const action = editSettingsAction({ mapRegion: mapRegion });
     expect(reducer(state, action)).toEqual({ ...state, mapRegion: mapRegion });
+  });
+
+  test('should return initial state', () => {
+    expect(reducer(undefined, { type: 'unknown' })).toEqual(settingsInitialState);
+  });
+
+  test('should handle setSettingsAction', () => {
+    const newSettings: SettingsType = {
+      ...settingsInitialState,
+      isOffline: true,
+      mapType: 'satellite',
+      projectId: 'test-project-id',
+    };
+    const action = setSettingsAction(newSettings);
+    expect(reducer(state, action)).toEqual(newSettings);
+  });
+
+  test('should handle editSettingsAction with multiple properties', () => {
+    const updates = {
+      isOffline: true,
+      mapType: 'satellite' as const,
+      projectId: 'new-project-id',
+    };
+    const action = editSettingsAction(updates);
+    const result = reducer(state, action);
+
+    expect(result.isOffline).toBe(true);
+    expect(result.mapType).toBe('satellite');
+    expect(result.projectId).toBe('new-project-id');
+    expect(result.isSettingProject).toBe(state.isSettingProject);
+  });
+
+  test('should handle editSettingsAction with empty object', () => {
+    const action = editSettingsAction({});
+    expect(reducer(state, action)).toEqual(state);
+  });
+
+  test('should handle editSettingsAction with memberLocation', () => {
+    const memberLocation: MemberLocationType[] = [
+      {
+        uid: 'user1',
+        icon: { photoURL: 'photo1.jpg', initial: 'U' },
+        coords: { latitude: 35.5, longitude: 139.5 },
+      },
+    ];
+    const action = editSettingsAction({ memberLocation });
+    const result = reducer(state, action);
+
+    expect(result.memberLocation).toEqual(memberLocation);
+    expect(result.memberLocation).toHaveLength(1);
   });
 });
