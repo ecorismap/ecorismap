@@ -205,16 +205,6 @@ export const DataTable = React.memo(() => {
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
-  // getItemLayoutを追加（行の高さが固定の場合）
-  const getItemLayout = useCallback(
-    (_data: ArrayLike<RecordType> | null | undefined, index: number) => ({
-      length: 45,
-      offset: 45 * index,
-      index,
-    }),
-    []
-  );
-
   return sortedRecordSet.length !== 0 ? (
     <DraggableFlatList
       // eslint-disable-next-line react/no-unstable-nested-components
@@ -235,11 +225,7 @@ export const DataTable = React.memo(() => {
       data={sortedRecordSet}
       stickyHeaderIndices={[0]}
       initialNumToRender={15}
-      maxToRenderPerBatch={10} // 追加：バッチレンダリング
-      windowSize={10} // 追加：ウィンドウサイズ
-      updateCellsBatchingPeriod={50} // 追加：バッチ更新期間
       removeClippedSubviews={true}
-      getItemLayout={getItemLayout} // 追加：アイテムレイアウト
       extraData={checkList} // 変更：必要なデータのみ
       renderItem={renderItem}
       keyExtractor={keyExtractor}
