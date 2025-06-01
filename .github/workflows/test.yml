@@ -13,6 +13,6 @@ jobs:
       - name: Install dependencies
         run: yarn install
       - name: Run Tests
-        run: TZ=Asia/Tokyo yarn test
+        run: TZ=Asia/Tokyo yarn jest --detectOpenHandles --runInBand --forceExit --coverage=false
       - name: Run ESLint
         run: yarn lint
