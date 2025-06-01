@@ -1055,8 +1055,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
         const outputHeight = Platform.OS === 'android' ? paperSize.heightPoint + 1 : paperSize.heightPoint;
         if (Platform.OS === 'web') {
           const pW = window.open('', '', `height=${paperSize.heightPixel}px, width=${paperSize.widthPixel}px`);
-          pW!.document.write(html);
-          pW!.document.close();
+          if (pW) {
+            pW.document.write(html);
+            pW.document.close();
+          }
           return pW;
         } else {
           const { uri } = await Print.printToFileAsync({
@@ -1152,8 +1154,10 @@ export const usePDF = (): UseEcorisMapFileReturnType => {
       //console.log(html);
       if (Platform.OS === 'web') {
         const pW = window.open('', '', `height=794px, width=1123px`);
-        pW!.document.write(html);
-        pW!.document.close();
+        if (pW) {
+          pW.document.write(html);
+          pW.document.close();
+        }
         return pW;
       } else {
         const { uri } = await Print.printToFileAsync({

@@ -88,8 +88,7 @@ async function convertPDFToPNG(page: pdfjs.PDFPageProxy) {
     transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
     intent: 'print',
   }).promise;
-  //@ts-ignore
-  const blob = (await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))) as Uint8Array;
+  const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/png'));
   return { file: new File([blob], 'temp.png'), width: canvas.width, height: canvas.height };
 }
 

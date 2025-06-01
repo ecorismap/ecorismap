@@ -2,6 +2,7 @@
   "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "module": "esnext",
-    "strict": true
+    "strict": true,
+    "lib": ["es2021", "dom", "dom.iterable"]
   }
 }

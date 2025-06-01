@@ -149,6 +149,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       for (const file of files) {
         const kmlString = await file.async('string');
         const xml = parser.parseFromString(kmlString, 'text/xml');
+        //@ts-ignore
         const geojson = kml(xml);
         const featureType = detectGeoJsonType(geojson);
         importGeoJson(geojson, featureType, name);
@@ -162,6 +163,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const kmlString = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const parser = new DOMParser();
       const xml = parser.parseFromString(kmlString, 'text/xml');
+      //@ts-ignore
       const geojson = kml(xml);
 
       geoJsonFeatureTypes.forEach((featureType) => {

@@ -15,7 +15,7 @@ if (Platform.OS === 'web') {
 }
 
 export const exportFileFromData = async (data: string, fileName: string) => {
-  const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([data], { type: 'text/plain;charset=utf-8' } as BlobPropertyBag);
   FileSaver.saveAs(blob, sanitize(fileName));
 };
 
@@ -110,7 +110,7 @@ export async function moveFile() {}
 export async function unlink() {}
 
 export function saveAs(fileBytes: Uint8Array | Blob, fileName: string): void {
-  const blob = fileBytes instanceof Blob ? fileBytes : new Blob([fileBytes]);
+  const blob = fileBytes instanceof Blob ? fileBytes : new Blob([fileBytes] as BlobPart[]);
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = fileName;
