@@ -76,14 +76,17 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   const changeOrder = useCallback(
     (colName: string, order: SortOrderType, checkList_: CheckListItem[] = checkList) => {
+      // allUserRecordSetが空またはundefinedの場合の処理
+      const recordSet = allUserRecordSet || [];
+
       if (order === 'UNSORTED') {
-        const newCheckList = allUserRecordSet.map(
+        const newCheckList = recordSet.map(
           (_, idx) => checkList_.find((c) => idx === c.id) ?? { id: idx, checked: false }
         );
         setCheckList(newCheckList);
-        setSortedRecordSet(allUserRecordSet);
+        setSortedRecordSet(recordSet);
       } else {
-        const result = sortData(allUserRecordSet, colName, order);
+        const result = sortData(recordSet, colName, order);
         const newCheckList = result.idx.map((d) => checkList_.find((c) => d === c.id) ?? { id: d, checked: false });
         setCheckList(newCheckList);
         setSortedRecordSet(result.data);
@@ -205,10 +208,9 @@ export const useData = (layerId: string): UseDataReturnType => {
   useEffect(() => {
     if (targetLayer === undefined) return;
     if (route.name !== 'Data' && route.name !== 'DataEdit') return;
-    if (allUserRecordSet === undefined) return;
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUserRecordSet, route.name]);
+  }, [allUserRecordSet, route.name, targetLayer]);
 
   return {
     sortedRecordSet,
