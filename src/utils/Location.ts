@@ -151,7 +151,8 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
     .filter((v) => v.timestamp! > lastTimeStamp!);
   //ログの取り始めは、精度が悪いので、精度が30m以下になるまでは破棄する
   //console.log('newLocations', newLocations);
-  if (lastTimeStamp === 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30) return [];
+  if (lastTimeStamp === 0 && newLocations.length > 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30)
+    return [];
   return newLocations;
 };
 

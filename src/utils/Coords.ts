@@ -918,9 +918,21 @@ export function boundingBoxFromCoords(points: LatLng[]) {
 }
 
 export function smoothLine(line: LocationType[], windowSize: number): LocationType[] {
-  return line.map((_, index, array) => {
-    const start = Math.max(0, index - Math.floor(windowSize / 2));
-    const end = Math.min(array.length, start + windowSize);
+  const half = Math.floor(windowSize / 2);
+  const lastIndex = line.length - 1;
+
+  return line.map((point, index, array) => {
+    // 始点・終点はそのまま返す
+    if (index === 0 || index === lastIndex) {
+      return {
+        latitude: point.latitude,
+        longitude: point.longitude,
+      };
+    }
+
+    // それ以外は通常の移動平均処理
+    const start = Math.max(1, index - half); // 1 にして最初を保護
+    const end = Math.min(lastIndex, index + half) + 1; // +1 で slice の切り捨て防止
     const window = array.slice(start, end);
 
     const avgLat = window.reduce((sum, p) => sum + p.latitude, 0) / window.length;

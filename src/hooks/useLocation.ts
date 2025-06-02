@@ -93,6 +93,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedPointCountRef = useRef<number>(0);
   const trackStartTimeRef = useRef<number>(0);
 
   const gpsAccuracyOption = useMemo(() => {
@@ -260,15 +261,14 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         await moveCurrentPosition();
         dispatch(clearTrackLogAction());
         trackStartTimeRef.current = Date.now();
+        lastSavedPointCountRef.current = 0;
         await startTracking();
 
-        // 自動保存タイマーの開始
+        // 自動保存タイマーの停止（ポイント数ベースに移行）
         if (autoSaveTimerRef.current) {
           clearInterval(autoSaveTimerRef.current);
+          autoSaveTimerRef.current = null;
         }
-        autoSaveTimerRef.current = setInterval(() => {
-          saveTrackSegmentRef.current();
-        }, TRACK.AUTO_SAVE_INTERVAL);
       } else if (trackingState_ === 'off') {
         await stopTracking();
 
@@ -335,6 +335,13 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
 
+      // ポイント数ベースの自動保存チェック
+      const totalPoints = trackLog.track.length + result.newLocations.length;
+      if (totalPoints - lastSavedPointCountRef.current >= TRACK.AUTO_SAVE_POINTS) {
+        saveTrackSegmentRef.current();
+        lastSavedPointCountRef.current = totalPoints;
+      }
+
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
           {
@@ -365,18 +372,33 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   }, [addTrackRecord, dispatch, trackLog.track]);
 
   const saveTrackSegment = useCallback(async () => {
-    // 最小ポイント数未満の場合はスキップ
-    if (trackLog.track.length < TRACK.SEGMENT_SAVE_MIN_POINTS) return;
-
     try {
       // セグメントをtrackレイヤーに保存
       const cleanupedLine = cleanupLine(trackLog.track);
       const ret = addTrackRecord(cleanupedLine);
 
       if (ret.isOK) {
-        // 保存成功後、現在のトラックをクリア
+        // cleanupedLineの最後の点を取得
+        const lastCleanupedPoint = cleanupedLine[cleanupedLine.length - 1];
+
+        // 保存成功後、最後の点を残して新しいトラックを開始
         dispatch(clearTrackLogAction());
+
+        // cleanupedLineの最後の点を新しいトラックの開始点として追加
+        if (lastCleanupedPoint) {
+          const startPoint: LocationType = lastCleanupedPoint;
+
+          dispatch(
+            appendTrackLogAction({
+              newLocations: [startPoint],
+              additionalDistance: 0,
+              lastTimeStamp: startPoint.timestamp || Date.now(),
+            })
+          );
+        }
+
         trackStartTimeRef.current = Date.now();
+        lastSavedPointCountRef.current = 1; // 新しいトラックの開始点
       }
     } catch (error) {
       // エラーハンドリング

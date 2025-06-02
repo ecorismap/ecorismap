@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `yarn test src/path/to/specific.test.ts` - Run single test file
 - `yarn testemu` - Run tests with Firebase emulator
 - `yarn lint` - ESLint check for .ts and .tsx files in src/
-- `yarn type-check` - TypeScript type checking (tsc --noEmit)
+- `yarn tsc` - TypeScript type checking (tsc --noEmit)
 
 ### Firebase
 - `yarn emu` - Start Firebase emulator with import/export
@@ -125,7 +125,7 @@ src/
 ### File Modification Policy
 When modifying files, always ensure:
 1. **Lint compliance**: Run `yarn lint` and fix all ESLint errors
-2. **Type safety**: Run `yarn type-check` and resolve all TypeScript errors
+2. **Type safety**: Run `yarn tsc` and resolve all TypeScript errors
 3. **Test integrity**: Run relevant tests and ensure they pass
 4. **Coverage maintenance**: Maintain or improve test coverage
 5. **Full test suite**: Run `yarn test` to ensure all tests pass, not just the modified ones

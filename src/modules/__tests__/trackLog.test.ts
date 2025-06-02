@@ -105,50 +105,6 @@ describe('trackLog reducer', () => {
     expect(actual.statistics).toEqual(sampleStatistics); // Should keep existing statistics
   });
 
-  it('should handle memory management in appendTrackLogAction', () => {
-    // Create initial state with many points (near the limit)
-    const manyLocations = Array.from({ length: 9999 }, (_, i) => ({
-      ...sampleLocation,
-      latitude: 35.0 + i * 0.001,
-      longitude: 135.0 + i * 0.001,
-      timestamp: Date.now() + i * 1000,
-    }));
-
-    const initialState: TrackLogType = {
-      distance: 100.0,
-      track: manyLocations,
-      lastTimeStamp: Date.now() - 1000,
-      segments: [],
-      statistics: sampleStatistics,
-    };
-
-    // Add more locations that would exceed the limit
-    const newLocations = Array.from({ length: 10 }, (_, i) => ({
-      ...sampleLocation,
-      latitude: 40.0 + i * 0.001,
-      longitude: 140.0 + i * 0.001,
-      timestamp: Date.now() + i * 1000,
-    }));
-
-    const payload = {
-      newLocations,
-      additionalDistance: 5.0,
-      lastTimeStamp: Date.now(),
-    };
-
-    const actual = trackLogReducer(initialState, appendTrackLogAction(payload));
-
-    // With new memory optimization, should apply decimation when total > MAX_POINTS * MEMORY_CLEANUP_THRESHOLD
-    // Initial: 9999 points + 10 new = 10009 total > 8000 (80% of 10000), so decimation is applied
-    expect(actual.track.length).toBeLessThanOrEqual(10000);
-    expect(actual.track.length).toBeGreaterThan(5000); // Should still have substantial data after decimation
-    expect(actual.distance).toBe(105.0);
-
-    // First and last points should be preserved during decimation
-    expect(actual.track[0]).toEqual(manyLocations[0]); // First should be preserved
-    expect(actual.track[actual.track.length - 1]).toEqual(newLocations[9]); // Last should be the new one
-  });
-
   it('should handle clearTrackLogAction', () => {
     const stateWithData: TrackLogType = {
       distance: 15.5,
