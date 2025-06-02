@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { updateTrackLog, calculateSpeed, detectStationary, calculateTrackStatistics } from '../utils/Location';
+import { updateTrackLog, calculateTrackStatistics } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -94,29 +94,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const trackStartTimeRef = useRef<number>(0);
-  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
-  const [isStationary, setIsStationary] = useState<boolean>(false);
-  const [_, setGpsLocationHistory] = useState<LocationType[]>([]);
 
   const gpsAccuracyOption = useMemo(() => {
-    // 通常GPS用の動的精度調整（トラック記録と同じロジック）
-    if (trackingState === 'off') {
-      // 通常GPSモードでも速度に応じた精度調整
-      if (isStationary) {
-        // 静止時（調査ポイント）は最高精度
-        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
-      } else if (currentSpeed < 10) {
-        // 歩行・調査速度（10km/h以下）は高精度
-        return { accuracy: Location.Accuracy.Highest, distanceInterval: 5 };
-      } else if (currentSpeed < 30) {
-        // 自転車・低速車両（30km/h以下）は中精度
-        return { accuracy: Location.Accuracy.High, distanceInterval: 20 };
-      } else {
-        // 高速車両（30km/h以上）は低精度
-        return { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 };
-      }
-    }
-
     // トラック記録中は固定設定を使用
     switch (gpsAccuracy) {
       case 'HIGH':
@@ -128,36 +107,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       default:
         return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
     }
-  }, [gpsAccuracy, trackingState, currentSpeed, isStationary]);
-
-  const trackingAccuracyOption = useMemo(() => {
-    // バッテリー最適化：調査用途に最適化（歩行時高精度、車両時低精度）
-    if (isStationary) {
-      // 静止時（調査ポイント記録）は最高精度
-      return {
-        accuracy: Location.Accuracy.Highest,
-        distanceInterval: 2,
-      };
-    } else if (currentSpeed < 10) {
-      // 歩行・調査速度（10km/h以下）は高精度
-      return {
-        accuracy: Location.Accuracy.Highest,
-        distanceInterval: 5,
-      };
-    } else if (currentSpeed < 30) {
-      // 自転車・低速車両（30km/h以下）は中精度
-      return {
-        accuracy: Location.Accuracy.High,
-        distanceInterval: 20,
-      };
-    } else {
-      // 高速車両（30km/h以上）は低精度でバッテリー節約
-      return {
-        accuracy: Location.Accuracy.Balanced,
-        distanceInterval: 50,
-      };
-    }
-  }, [currentSpeed, isStationary]);
+  }, [gpsAccuracy]);
 
   const confirmLocationPermission = useCallback(async () => {
     try {
@@ -187,27 +137,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) => {
         updateGpsPosition.current(pos);
-
-        // 通常GPSでも速度と静止状態を計算
-        if (trackingState === 'off') {
-          const newLocation: LocationType = { ...pos.coords, timestamp: pos.timestamp };
-          setGpsLocationHistory((prev) => {
-            const updated = [...prev, newLocation].slice(-10); // 最新10点を保持
-
-            // 速度と静止状態を計算
-            const speed = calculateSpeed(updated);
-            setCurrentSpeed(speed);
-
-            const stationary = detectStationary(
-              updated,
-              TRACK.STATIONARY_THRESHOLD_DISTANCE,
-              TRACK.STATIONARY_THRESHOLD_TIME
-            );
-            setIsStationary(stationary);
-
-            return updated;
-          });
-        }
       });
     }
     if (headingSubscriber.current === undefined) {
@@ -215,7 +144,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, trackingState]);
+  }, [gpsAccuracyOption]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -226,10 +155,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       headingSubscriber.current.remove();
       headingSubscriber.current = undefined;
     }
-    // GPS履歴をクリア
-    setGpsLocationHistory([]);
-    setCurrentSpeed(0);
-    setIsStationary(false);
   }, []);
 
   const stopTracking = useCallback(async () => {
@@ -255,7 +180,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
   const startTracking = useCallback(async () => {
     if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
-        ...trackingAccuracyOption,
+        ...gpsAccuracyOption,
         pausesUpdatesAutomatically: false,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
@@ -270,7 +195,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [trackingAccuracyOption]);
+  }, [gpsAccuracyOption]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');
@@ -335,8 +260,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
         await moveCurrentPosition();
         dispatch(clearTrackLogAction());
         trackStartTimeRef.current = Date.now();
-        // トラック記録開始時は通常GPSの履歴をクリア
-        setGpsLocationHistory([]);
         await startTracking();
 
         // 自動保存タイマーの開始
@@ -411,18 +334,6 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
-
-      // 速度と静止状態の更新
-      const updatedTrack = [...trackLog.track, ...result.newLocations];
-      const speed = calculateSpeed(updatedTrack);
-      setCurrentSpeed(speed);
-
-      const stationary = detectStationary(
-        updatedTrack,
-        TRACK.STATIONARY_THRESHOLD_DISTANCE,
-        TRACK.STATIONARY_THRESHOLD_TIME
-      );
-      setIsStationary(stationary);
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef as MapView).animateCamera(
