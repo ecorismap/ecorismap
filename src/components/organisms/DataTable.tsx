@@ -58,7 +58,7 @@ const DataRow = React.memo(
             style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
             borderRadius={0}
             name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-            onPress={() => changeChecked(index, !checkList[index].checked)}
+            onPress={() => changeChecked(index, !checkList[index]?.checked)}
             size={20}
           />
         </View>

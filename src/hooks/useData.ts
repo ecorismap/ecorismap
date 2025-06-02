@@ -30,7 +30,7 @@ export type UseDataReturnType = {
   isEditable: boolean;
   changeVisible: (record: RecordType) => void;
   changeVisibleAll: (visible: boolean) => void;
-  changeChecked: (index: number) => void;
+  changeChecked: (index: number, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
   addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
@@ -133,14 +133,9 @@ export const useData = (layerId: string): UseDataReturnType => {
     [checkList]
   );
 
-  const changeChecked = useCallback(
-    (index: number) => {
-      const updatedCheckList = [...checkList];
-      updatedCheckList[index].checked = !checkList[index].checked;
-      setCheckList(updatedCheckList);
-    },
-    [checkList]
-  );
+  const changeChecked = useCallback((index: number, checked: boolean) => {
+    setCheckList((prevCheckList) => prevCheckList.map((item, i) => (i === index ? { ...item, checked } : item)));
+  }, []);
 
   const updateRecordSetOrder = useCallback(
     (sortedRecordSet_: RecordType[]) => {

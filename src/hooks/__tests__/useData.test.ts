@@ -101,10 +101,24 @@ const sampleRecord: RecordType = {
   },
 };
 
+const sampleRecord2: RecordType = {
+  id: 'test-record-2',
+  userId: 'test-user',
+  displayName: 'Test User',
+  visible: true,
+  redraw: false,
+  coords: [{ latitude: 35.1, longitude: 135.1 }],
+  field: {
+    name: 'Test Point 2',
+    time: new Date().toISOString(),
+    cmt: 'Test comment 2',
+  },
+};
+
 const sampleDataSet: DataType = {
   layerId: 'test-layer',
   userId: 'test-user',
-  data: [sampleRecord],
+  data: [sampleRecord, sampleRecord2],
 };
 
 // Create test store
@@ -182,16 +196,18 @@ describe('useData', () => {
   it('should return sorted record set', () => {
     const { result } = renderHook(() => useData('test-layer'), { wrapper });
 
-    // Should include our sample record
-    expect(result.current.sortedRecordSet).toHaveLength(1);
+    // Should include our sample records
+    expect(result.current.sortedRecordSet).toHaveLength(2);
     expect(result.current.sortedRecordSet[0]).toEqual(sampleRecord);
+    expect(result.current.sortedRecordSet[1]).toEqual(sampleRecord2);
   });
 
   it('should provide checkList functionality', () => {
     const { result } = renderHook(() => useData('test-layer'), { wrapper });
 
-    expect(result.current.checkList).toHaveLength(1);
+    expect(result.current.checkList).toHaveLength(2);
     expect(result.current.checkList[0].checked).toBe(false);
+    expect(result.current.checkList[1].checked).toBe(false);
   });
 
   it('should handle empty data', () => {
@@ -249,12 +265,114 @@ describe('useData', () => {
 
     // Check an item
     act(() => {
-      result.current.changeChecked(0);
+      result.current.changeChecked(0, true);
     });
 
     expect(result.current.checkList[0].checked).toBe(true);
     expect(result.current.isChecked).toBe(true);
     expect(result.current.checkedRecords).toHaveLength(1);
+  });
+
+  it('should properly update state when toggling checked multiple times', () => {
+    const { result, rerender } = renderHook(() => useData('test-layer'), { wrapper });
+
+    // Initially not checked
+    expect(result.current.checkList[0].checked).toBe(false);
+
+    // Check the item
+    act(() => {
+      result.current.changeChecked(0, true);
+    });
+
+    expect(result.current.checkList[0].checked).toBe(true);
+
+    // Force re-render to ensure state persists
+    rerender();
+    expect(result.current.checkList[0].checked).toBe(true);
+
+    // Uncheck the item
+    act(() => {
+      result.current.changeChecked(0, false);
+    });
+
+    expect(result.current.checkList[0].checked).toBe(false);
+
+    // Force re-render again
+    rerender();
+    expect(result.current.checkList[0].checked).toBe(false);
+  });
+
+  it('should handle rapid consecutive checked state changes', () => {
+    const { result } = renderHook(() => useData('test-layer'), { wrapper });
+
+    // Perform multiple rapid state changes
+    act(() => {
+      result.current.changeChecked(0, true);
+      result.current.changeChecked(0, false);
+      result.current.changeChecked(0, true);
+    });
+
+    // Final state should be true
+    expect(result.current.checkList[0].checked).toBe(true);
+    expect(result.current.isChecked).toBe(true);
+  });
+
+  it('should maintain individual item states when checking multiple items', () => {
+    const { result } = renderHook(() => useData('test-layer'), { wrapper });
+
+    // Check multiple items
+    act(() => {
+      result.current.changeChecked(0, true);
+      result.current.changeChecked(1, true);
+    });
+
+    expect(result.current.checkList[0].checked).toBe(true);
+    expect(result.current.checkList[1].checked).toBe(true);
+    expect(result.current.checkedRecords).toHaveLength(2);
+
+    // Uncheck only the first item
+    act(() => {
+      result.current.changeChecked(0, false);
+    });
+
+    expect(result.current.checkList[0].checked).toBe(false);
+    expect(result.current.checkList[1].checked).toBe(true);
+    expect(result.current.checkedRecords).toHaveLength(1);
+  });
+
+  it('should handle out-of-bounds index gracefully', () => {
+    const { result } = renderHook(() => useData('test-layer'), { wrapper });
+
+    // Try to check an item that doesn't exist
+    act(() => {
+      result.current.changeChecked(999, true);
+    });
+
+    // Should not throw error and state should remain unchanged
+    expect(result.current.isChecked).toBe(false);
+  });
+
+  it('should trigger re-render when checkList changes', () => {
+    const { result } = renderHook(() => useData('test-layer'), { wrapper });
+
+    // Track original references
+    const originalCheckList = result.current.checkList;
+    const originalItem0 = result.current.checkList[0];
+    const originalItem1 = result.current.checkList[1];
+
+    // Change checked state
+    act(() => {
+      result.current.changeChecked(0, true);
+    });
+
+    // checkList should be a new object reference (not the same array)
+    expect(result.current.checkList).not.toBe(originalCheckList);
+
+    // The specific item should be a new object reference
+    expect(result.current.checkList[0]).not.toBe(originalItem0);
+
+    // But unchanged items should remain the same reference (for performance)
+    expect(result.current.checkList[1]).toBe(originalItem1);
   });
 
   it('should handle sorting', () => {
@@ -278,7 +396,7 @@ describe('useData', () => {
     });
 
     // Verify the action was dispatched
-    expect(result.current.sortedRecordSet).toHaveLength(1);
+    expect(result.current.sortedRecordSet).toHaveLength(2);
   });
 
   it('should add default record', () => {
