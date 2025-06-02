@@ -2,135 +2,112 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Project Overview
+EcorisMap is a cross-platform field survey application (iOS, Android, Web) built with React Native + Expo that enables users to record locations and information on maps for outdoor surveys.
 
-### Development
-- `yarn install` - Install dependencies
-- `yarn start` - Start Expo dev server with dev client
-- `yarn android` - Run on Android emulator
-- `yarn android:device` - Run on Android device (starts Pixel 7 emulator)
-- `yarn ios` - Run on iOS simulator
-- `yarn web` - Run web version (GENERATE_SOURCEMAP=false)
-- `yarn build:web` - Export web build
+## Development Commands
 
-### Testing & Quality
-- `yarn test` - Run all tests with flags: --detectOpenHandles --runInBand --forceExit
-- `yarn test:coverage` - Run tests with coverage report
-- `yarn test:coverage:watch` - Run tests with coverage in watch mode
-- `yarn test src/path/to/specific.test.ts` - Run single test file
-- `yarn testemu` - Run tests with Firebase emulator
-- `yarn lint` - ESLint check for .ts and .tsx files in src/
-- `yarn tsc` - TypeScript type checking (tsc --noEmit)
+### Essential Commands
+```bash
+# Install dependencies
+yarn install
 
-### Firebase
-- `yarn emu` - Start Firebase emulator with import/export
+# Start development
+yarn start          # Expo dev client
+yarn ios           # iOS simulator
+yarn android       # Android emulator
+yarn web           # Web version
+
+# Type checking & linting
+yarn tsc           # TypeScript check (no emit)
+yarn lint          # ESLint with auto-fix
+
+# Testing
+yarn test          # Run all tests
+yarn test:coverage # With coverage report
+yarn testemu       # Tests with Firebase emulators
+
+# Firebase emulators (required for development)
+yarn emu           # Start emulators with import/export
+```
+
+### Build Commands
+```bash
+yarn build:web     # Export web build
+```
 
 ## Architecture Overview
 
 ### State Management
-The project uses Redux Toolkit with Redux Persist. Key modules in `src/modules/`:
-- `dataSet` - Geographic feature data (points, lines, polygons)
-- `layers` - Layer configuration and visibility
-- `settings` - App preferences and configuration
-- `user` - Authentication and user profile
-- `projects` - Project management and sharing
-- `tileMaps` - Map tile sources and configurations
-- `trackLog` - GPS tracking and route recording
+The app uses a **hybrid approach**:
+- **Redux Toolkit** for global state (dataSet, layers, settings, user, projects, tileMaps, trackLog)
+- **React Context** for feature-specific state (migrating from monolithic HomeContext to smaller contexts)
 
-Platform-specific stores: `store.ts` (mobile) vs `store.web.ts` (web) with different persistence backends.
-
-### Component Organization
+### Directory Structure
 ```
 src/
-├── components/      # UI layer (Atomic Design)
-│   ├── atoms/      # Basic elements (Button, Text, Input)
-│   ├── molecules/  # Composite components (CheckBox, Picker)
-│   ├── organisms/  # Complex features (DataTable, MapButtons)
-│   └── pages/      # Full screens (Home, Layers, Settings)
-├── containers/     # Business logic and state management
-├── contexts/       # React contexts for page-level state
-├── hooks/          # Custom hooks for reusable logic
-└── utils/          # Helper functions and utilities
+├── components/       # UI components (Atomic Design)
+│   ├── atoms/       # Basic elements
+│   ├── molecules/   # Composite components
+│   ├── organisms/   # Complex components
+│   └── pages/       # Full pages
+├── containers/      # Business logic (connects to Redux/Context)
+├── contexts/        # React Context providers
+├── hooks/           # Custom React hooks
+├── modules/         # Redux slices
+├── utils/           # Utility functions
+└── routes/          # Navigation configuration
 ```
 
-### Platform-Specific Implementation
-- Files with `.web.ts` extension contain web-specific code
-- Mobile uses `react-native-maps`, web uses `maplibre-gl`
-- Different implementations for: Alert, DateTime pickers, File handling, Storage
-- Platform detection: `Platform.OS === 'web'`
+### Cross-Platform Strategy
+- Platform-specific files use `.web.ts` extension
+- Separate store configurations for mobile (AsyncStorage) vs web (sessionStorage)
+- Platform-specific implementations for file handling, alerts, PDF generation
 
-### Data Flow Pattern
-1. User interaction in Component
-2. Container handles event with business logic
-3. Hook orchestrates Redux actions and side effects
-4. Redux module updates state
-5. Selectors compute derived state
-6. Components re-render with new data
+### Data Architecture
+- **GeoJSON-based** data structures for geographic features
+- Support for multiple formats: GPX, KML, GeoJSON, CSV, etc.
+- Layer-based organization with customizable fields and styles
+- Local SQLite storage with cloud sync via Firebase
 
-### Key Integration Points
-- **Firebase**: Auth, Firestore, Storage, Functions (see `src/lib/firebase/`)
-- **Geospatial**: GDAL via native module (`modules/react-native-gdalwarp/`)
-- **Encryption**: Virgil E3Kit for end-to-end encryption (`src/lib/virgilsecurity/`)
-- **Maps**: Different providers per platform with unified interface
-- **Storage**: AsyncStorage (mobile) vs sessionStorage/IndexedDB (web)
+## Security & Access Control
 
-### Testing Strategy
-- Unit tests for: hooks (`hooks/__tests__/`), utils, modules
-- Integration tests for containers
-- Firebase emulator for backend testing
-- Mocked dependencies using Jest
-- Test utilities in `src/__tests__/resources/`
+### Firebase Security Rules
+- All operations require authenticated users with verified emails
+- Role-based access control: Owner > Admin > Member
+- Data permissions: PRIVATE, PUBLIC, COMMON, TEMPLATE
+- File uploads limited to 20MB and specific types (PNG, JPEG, PDF, SQLite3)
 
-### Test File Naming Convention
-- All test files should use `.test.ts` or `.test.tsx` pattern (e.g., `useData.test.ts`, `dataSet.test.ts`)
-- This unified convention ensures consistency across the entire codebase
+### Encryption
+- Virgil E3Kit for end-to-end encryption
+- Encrypted project data with `encdata` and `encryptedAt` fields
 
-### Coverage Reporting
-- Coverage reports are generated in the `coverage/` directory
-- Coverage thresholds are enforced:
-  - Global: 70% for all metrics (branches, functions, lines, statements)
-  - Hooks: 80% (critical business logic)
-  - Utils: 80% (utility functions)
-  - Modules: 75% (Redux modules)
-- HTML coverage report: `coverage/lcov-report/index.html`
-- Use `yarn test:coverage` to generate reports locally
+## Testing Requirements
 
-## Important Implementation Details
+### Coverage Thresholds
+- Global: 20%
+- `src/hooks/**`: 30%
+- `src/utils/**`: 40%
+- `src/modules/**`: 60%
 
-### Multi-language Support
-- i18n configuration in `src/i18n/`
-- Supports English and Japanese
-- Use `t()` function from `react-i18next` for translations
+### Testing Patterns
+- Use Firebase emulators for integration tests
+- Mock React Native, Firebase, and navigation dependencies
+- Tests located in `__tests__` directories alongside source files
 
-### Type Safety
-- Strict TypeScript enabled
-- Comprehensive types in `src/types/index.d.ts`
-- Redux actions and state fully typed
-- Use type guards for runtime validation
+## Key Technologies
+- **React Native + Expo** (Bare Workflow)
+- **TypeScript** (strict mode)
+- **Redux Toolkit** with Redux Persist
+- **React Navigation**
+- **Firebase** (Auth, Firestore, Storage)
+- **React Native Maps** / **MapLibre GL** (web)
+- **GDAL** via custom native module
+- **i18next** for internationalization
 
-### Firebase Security
-- Security rules in `firestore.rules` and `storage.rules`
-- Role-based access: owner, admin, member
-- Email verification required
-- Project-scoped data isolation
-
-### Performance Considerations
-- Large datasets handled with pagination
-- Map features rendered conditionally based on zoom
-- Redux selectors memoized with reselect
-- Platform-specific optimizations for file handling
-
-## Code Quality Guidelines
-
-### File Modification Policy
-When modifying files, always ensure:
-1. **Lint compliance**: Run `yarn lint` and fix all ESLint errors
-2. **Type safety**: Run `yarn tsc` and resolve all TypeScript errors
-3. **Test integrity**: Run relevant tests and ensure they pass
-4. **Coverage maintenance**: Maintain or improve test coverage
-5. **Full test suite**: Run `yarn test` to ensure all tests pass, not just the modified ones
-
-### Common Fixes
-- **ESLint**: Use appropriate disable comments only when necessary (e.g., `eslint-disable-next-line`)
-- **TypeScript**: Prefer type assertions and non-null assertions only when logic guarantees safety
-- **Tests**: Mock external dependencies properly, especially Firebase and React Navigation
+## Important Notes
+1. **Context Migration**: The app is migrating from HomeContext (86 props) to smaller contexts. Check MIGRATION_GUIDE.md when working with contexts.
+2. **Native Module**: `react-native-gdalwarp` provides geospatial operations - check module README for usage.
+3. **API Keys**: Configure MapTiler API key in `src/constants/AppConstants.tsx` from template.
+4. **Type Safety**: Always run `yarn tsc` before committing - strict TypeScript mode is enforced.
+5. **Platform Testing**: Test changes on both mobile and web platforms when modifying shared code.
