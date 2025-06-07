@@ -39,14 +39,14 @@ export const DataEditCoords = (props: Props) => {
             />
             <TextInput
               style={styles.input}
-              label={t('coomon.minutes')}
+              label={t('common.minutes')}
               value={latlon[latlonType].min}
               keyboardType="number-pad"
               onChangeText={(val: string) => onChangeText(val, latlonType, 'min')}
             />
             <TextInput
               style={styles.input}
-              label={t('coomon.second')}
+              label={t('common.second')}
               value={latlon[latlonType].sec}
               keyboardType="number-pad"
               onChangeText={(val: string) => onChangeText(val, latlonType, 'sec')}

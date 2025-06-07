@@ -17,7 +17,7 @@
       "timestring": "Time",
       "timerange": "TimeRange",
       "integer": "Integer",
-      "decimal": "Deciaml",
+      "decimal": "Decimal",
       "numberrange": "NumberRange",
       "list": "List",
       "radio": "Radio",
@@ -37,10 +37,8 @@
     "featuretype": {
       "point": "Point",
       "line": "Line",
-      "polygon": "Polgon",
+      "polygon": "Polygon",
       "none": "No coordinates",
-      "memo": "memo",
-      "group": "group",
       "layergroup": "layer group"
     },
     "roletype": {
@@ -48,11 +46,7 @@
       "admin": "Admin",
       "owner": "Owner"
     },
-    "createproject": {
-      "default": "default",
-      "save": "save",
-      "copy": "copy"
-    },
+    "createproject": {},
     "orientation": {
       "landscape": "landscape",
       "portrait": "portrait"
@@ -66,8 +60,7 @@
   "tutrials": {
     "pointtool": {
       "add": "Add points anywhere. \nPlease touch the place you want to add.",
-      "add_location": "Add a point to your current location. \nTurn on GPS and touch the screen.",
-      "move": "Move point. \nPlease press and hold the point."
+      "add_location": "Add a point to your current location. \nTurn on GPS and touch the screen."
     },
     "home_btn": {
       "gps": "Turn on GPS. \nPress it again to switch off GPS, follow your current location, and jump.",
@@ -81,6 +74,7 @@
       "online": "Switch to offline mode. \nMaps are loaded from cache.",
       "offline": "Switch to online mode. \nMaps are loaded from the net."
     },
+    "hisyoutool_btn": {},
     "selectiontool": "Drag to select features. \nSelected features can be edited with tools.",
     "infotool": "Display feature information. \nPlease touch the feature.",
     "linetool": {
@@ -93,9 +87,6 @@
     },
     "pencilmode": "Use a pen to draw. A finger touch will move."
   },
-  "Project": {
-    "message": {}
-  },
   "DataEdit": {
     "navigation": {
       "title": " "
@@ -107,11 +98,9 @@
       "downloadPhoto": "Do you want to download photos?",
       "changeRecord": "Do you want to discard your changes?",
       "gotoBack": "Do you want to discard your changes?",
-      "close": "Do you want to discard your changes?",
       "copyData": "Do you want to copy the data?",
       "deletePosition": "Do you want to delete the coordinates? \nNo data will be deleted.",
-      "splitLine": "Do you want to split the line?",
-      "addData": "Do you want to add data?"
+      "splitLine": "Do you want to split the line?"
     },
     "alert": {
       "referenceData": "Please save your changes once.",
@@ -135,6 +124,8 @@
     }
   },
   "common": {
+    "minutes": "Minutes",
+    "second": "Seconds",
     "point": "point",
     "track": "track",
     "polygon": "polygon",
@@ -143,10 +134,6 @@
       "cannotLoadProject": "There are some projects that cannot be loaded. \nAsk the project owner to reset your account.",
       "failGetProjects": "Failed to retrieve project"
     },
-    "login": "Login",
-    "manual": "manual",
-    "issue": "defect report",
-    "privacypolicy": "privacy policy",
     "project": "project",
     "user": "user",
     "owner": "owner",
@@ -155,8 +142,6 @@
     "usage": "usage amount",
     "license": "license",
     "member": "member",
-    "preparation": "preparation",
-    "copySource": "copy source",
     "back": "Back",
     "colorType": "color type",
     "transparency": "transparency",
@@ -169,9 +154,7 @@
     "addOther": "Added \"Other\"",
     "layerName": "layer name",
     "select": "selection",
-    "close": "close",
     "delete": "delete",
-    "export": "export",
     "fieldValue": "field value",
     "color": "color",
     "selectColor": "choose a color",
@@ -193,48 +176,36 @@
     "fixZoom": "fixed zoom",
     "highResolution": "high resolution",
     "Yaxis": "Y-axis inversion",
-    "original": "Copy source",
     "other": "others...",
     "satelliteImage": "Satellite image",
     "standardMap": "Standard map",
     "style": "style",
     "url": "URL",
     "reset": "reset",
-    "confirm": "confirmation",
     "termsOfUse": "terms of use",
     "ndash": "–",
     "fileName": "file name",
     "includePhoto": "including photo",
-    "version": "Ver.",
-    "distance": "Distance",
     "customField": "custom field",
     "custom": "CUSTOM",
     "memo": "memo",
     "customLabel": "custom label",
     "vectortile": "vector tiles",
-    "size": "size",
     "width": "line width",
     "pdfSettings": "PDF output settings",
     "paperSize": "size",
     "orientation": "direction",
     "scale": "scale",
-    "settings": "setting",
     "zoomlevelOfMaps": "map level",
-    "currentZoom": "current zoom",
     "outputDataPDF": "Data list",
     "outputVRT": "Output VRT file",
     "gps_settings": "GPS settings",
-    "accuracy": {
-      "high": "High precision, high battery consumption"
-    },
-    "gps_settings_disabled": "Cannot be set when GPS is on",
+    "accuracy": {},
     "gps_settings_alert": "The settings will be reflected when GPS starts up.",
     "processing": "processing...",
     "selectStamp": "select stamp",
     "selectPen": "select pen",
     "selectBrush": "select brush",
-    "selectStrokeWidth": "pen thickness",
-    "eraser": "eraser",
     "strokeWidth": "Thickness",
     "arrow": "arrow",
     "selectEraser": "Select eraser",
@@ -244,10 +215,7 @@
     "selectStampEraser": "Delete stamps",
     "snapWithLine": "snap to line",
     "straight_curve": "kinds",
-    "default": "Default",
     "common": "common",
-    "smoothLine": "smooth the lines",
-    "selectInfoTool": "selection type",
     "selectPointInfo": "points only",
     "selectLineInfo": "line only",
     "selectPolygonInfo": "polygon only",
@@ -260,7 +228,6 @@
     "termsUpdated": "Terms of use have been updated.",
     "addMembers": "Add Members (Enter your email address separated by commas and press Enter)",
     "addGroup": "Group creation",
-    "useInput": "input",
     "option": "option",
     "useAdd": "Used to add data",
     "notSupported": "Microphone cannot be used in web version",
@@ -268,7 +235,7 @@
     "selectionType": "Selection Type",
     "userName": "User",
     "move": "U/D",
-    "download": "Get"
+    "EncryptPassword": "Encryption Password"
   },
   "firebase": {
     "message": {
@@ -282,10 +249,10 @@
       "unknownUser": "The user is unknown.",
       "failEncryptPDF": "PDF encryption failed",
       "failUploadPDF": "Failed to upload PDF",
-      "failDeletePDF": "Failed to delete PDF",
       "failDeleteProjectPDF": "Failed to delete project PDF",
       "failEncryptDictionary": "Dictionary encryption failed",
-      "failUploadDictionary": "Failed to upload dictionary"
+      "failUploadDictionary": "Failed to upload dictionary",
+      "failGetDictionary": "Failed to download dictionary"
     }
   },
   "Settings": {
@@ -294,31 +261,22 @@
       "info": "Input the URL of the map settings list."
     },
     "file_save": {
-      "text": "Save data",
-      "info": "Save the current data and settings to the file in ecorismap format."
+      "text": "Save data"
     },
     "file_open": {
-      "text": "Load data",
-      "info": "Load the saved data and settings from the ecorismap format file."
+      "text": "Load data"
     },
     "mapcachedelete": {
-      "text": "Clear map cache",
-      "info": "Clear map cache and download files."
+      "text": "Clear map cache"
     },
     "photocachedelete": {
-      "text": "Clear photo cache",
-      "info": "Clear the photo cache."
+      "text": "Clear photo cache"
     },
-    "apriclear": {
-      "info": "Reset the app to its initial state. \nAll data and settings in the device will be reset.",
-      "text": "App initialization"
-    },
+    "apriclear": {},
     "manual": {
-      "text": "Manual and Terms of use",
-      "info": "Display the online manual and terms of use."
+      "text": "Manual and Terms of use"
     },
     "confirm": {
-      "saveDataToLocalStorage": "Do you want to save the current data and settings? \nPreviously saved data will be overwritten.",
       "clearLocalStorage": "Initialize? \nAll data and settings will be reset.",
       "clearTileCache": "Clear map cache and download files?",
       "clearPhotoCache": "Clear photo cache?",
@@ -326,7 +284,6 @@
       "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
     },
     "alert": {
-      "saveDataToLocalStorage": "Saved.",
       "loadEcorisMapFile": "File is loaded.",
       "clearTileCache": "Cleared the map cache.",
       "clearPhotoCache": "Cleared the photo cache."
@@ -334,28 +291,18 @@
     "navigation": {
       "title": "Setting"
     },
-    "termsOfUse": {
-      "info": "Display the terms of use.",
-      "text": "Terms of use"
-    },
-    "version": {
-      "info": "Current version. \nYou can check the change history.",
-      "text": "Version"
-    },
+    "termsOfUse": {},
+    "version": {},
     "OSSLicense": {
-      "txt": "Open Source License",
-      "info": "Displays the open source license used in this software."
+      "txt": "Open Source License"
     },
     "file_new": {
-      "text": "Clear data",
-      "info": "Clear the current data."
+      "text": "Clear data"
     },
     "pdf_save": {
-      "info": "Output the current map and data to PDF.",
       "text": "PDF output"
     },
     "gps_settings": {
-      "info": "Change GPS accuracy. \nIt also affects battery consumption.",
       "text": "GPS settings"
     }
   },
@@ -453,10 +400,7 @@
       "text": "Upgrade (paid plan)",
       "info": "You can increase the number of projects and members that can be added."
     },
-    "project_import": {
-      "text": "Import project data",
-      "info": "Import the data and settings exported from the project. \nThe user information in the data will be reset."
-    },
+    "project_import": {},
     "project_delete_all": {
       "info": "Erase all data in your own project.",
       "text": "Delete all projects"
@@ -478,16 +422,10 @@
       "title": "Account settings"
     }
   },
-  "coomon": {
-    "minutes": "Minutes",
-    "second": "Seconds"
-  },
   "Maps": {
     "modal": {
       "title": "Map settings",
-      "placeholder": {
-        "name": "name"
-      }
+      "placeholder": {}
     },
     "confirm": {
       "deleteMap": "Do you want to delete it?"
@@ -520,6 +458,10 @@
     "label": {
       "reloadProjects": "reload",
       "createProject": "create"
+    },
+    "tooltip": {
+      "reloadProjects": "Reload",
+      "createProject": "Create project"
     }
   },
   "ProjectEdit": {
@@ -546,6 +488,12 @@
       "export": "DL",
       "delete": "delete",
       "save": "save"
+    },
+    "tooltip": {
+      "open": "Open project",
+      "setting": "Edit project",
+      "export": "Export project data",
+      "delete": "Delete project"
     }
   },
   "LayerEdit": {
@@ -598,40 +546,20 @@
     "alert": {
       "completeDownload": "The map download is complete.",
       "pleaseActivate": "Please check your email and activate.",
-      "errorDownload": "The map has been downloaded, but some parts may not have been downloaded.",
-      "dataSizeOver": "The data size exceeds 2MB. \nNot saved."
+      "errorDownload": "The map has been downloaded, but some parts may not have been downloaded."
     },
     "message": {
       "pleaseLogin": "Please login",
       "cannotUploadData": "Cannot upload because the layer settings have been updated.",
-      "noCopyProject": "No project to copy",
       "unknownError": "Unknown error.",
       "cannotAddProject": "Cannot be added while editing a project",
-      "cannotFindUser": "User not found.",
-      "cannotChangeInTracking": "It cannot be changed while the track is being recorded.",
-      "cannotDeleteInTracking": "It cannot be deleted while the track is being recorded.",
-      "cannotDeleteOthers": "Other people's data cannot be deleted.",
-      "cannotEditInTracking": "It cannot be edited while the track is being recorded.",
-      "cannotEditOthers": "You cannot edit the data of others.",
-      "cannotEditOthersInWork": "You cannot edit data created by others while you are investigating.",
-      "cannotExportPolygonInGPX": "Polygons cannot be exported with gpx",
       "cannotGetFileSize": "Unable to get file size",
       "cannotImportData": "Cannot import due to the large size of the data.",
-      "cannotImportInProjectOpen": "Cannot be loaded when the project is open",
-      "cannotInProjectOpen": "Not possible when the project is open.",
-      "cannotInTracking": "Not possible while recording a track.",
-      "cannotLoadEcorisMapFile": "Cannot be loaded when the project is open",
-      "cannotLoadDataInTrackking": "Not possible while recording a track.",
-      "cannotSaveDataToLocalStorage": "Cannot be saved when the project is open",
-      "cannotThisLayer": "Not available at this layer",
       "changeProjectName": "There is a project with the same name. \nPlease change the project name.",
-      "couldnotSaveData": "No data is saved",
-      "downloaded": "Downloaded.",
       "duplicateMembers": "Duplicate members.",
       "emailInUse": "That email address is already in use.",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
       "failAddGroupMembers": "Failed to add member",
-      "failCreateBackupKey": "Failed to create backup key.",
       "failCreateE3kitGroup": "Failed to create a group.",
       "failDeleteAccount": "Failed to delete the user account.",
       "failDeleteE3kitGroup": "Failed to delete members of the group",
@@ -642,13 +570,9 @@
       "failExport": "Export failed.",
       "failGetData": "Failed to get the data.",
       "failLoadE3kitGroup": "Unable to load group.",
-      "failResetEncryptKey": "Failed to reset the encryption key.",
-      "failRestoreBackupKey": "Backup restore failed.",
       "failSetProfile": "Failed to set the profile.",
       "failUpdateProfile": "Failed to update your profile.",
-      "failUploadPhoto": "You cannot upload because the photo capacity has been exceeded. \nCheck the web version for details.",
       "failUserCheck": "User check failed.",
-      "finishTrackking": "Please finish recording the track first",
       "inputEncryptPassword": "Please enter the encrypted password.",
       "inputMaplistURL": "Please set the map list URL correctly.",
       "inputProjectName": "Please enter the project name.",
@@ -656,22 +580,16 @@
       "inputValidIconURL": "icon Please enter the URL of the image correctly",
       "inputValidMail": "Please enter your e-mail address correctly",
       "inputValidPassword": "Please enter the password correctly",
-      "inputValidUpdatePassword": "Please enter the changed password correctly",
       "invalidAccount": "Contains an invalid account. \nPlease add after the member signs up.",
       "invalidCoordinate": "There is an invalid input in latitude and longitude.",
       "invalidDataFormat": "The data format is incorrect.",
       "invalidEmail": "Invalid email address.",
       "invalidEmailOrPassword": "The email or password is incorrect.",
-      "invalidFileType": "The file type is different.",
       "lockProject": "This layer cannot be edited.",
       "noActivate": "Your account has not been activated.",
       "noEditMode": "You are not in edit mode.",
-      "noEditingLayer": "Not an edit layer.",
       "noLayerToEdit": "There are no layers to edit.",
-      "noPermissionToCommon": "Common layers can only be edited by the administrator",
       "noUser": "User does not exist.",
-      "onlyAdminCanEdit": "Only admins can edit",
-      "onlySupportWeb": "Only web version is supported",
       "openProject": "Please open the project.",
       "permitAccessGPS": "To use GPS, please allow access permissions for location information and notifications.",
       "pleaseActivate": "Please check your email and activate.",
@@ -679,27 +597,20 @@
       "registEncryptPassword": "Please register the encrypted password.",
       "turnOnGPS": "Please turn on GPS.",
       "unknownURL": "The url is unknown.",
-      "unlockToEditCommon": "Unlock to edit the common layer.",
       "updateProjectInfo": "Updated the project information.",
-      "updateProjectSettings": "Updated project settings.",
-      "upgradeForPhoto": "Please upgrade to upload your photos.",
-      "wrongPassword": "The password is incorrect.",
       "tooManyMapList": "There are too many lists. \nPlease keep it within 50 pieces.",
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
       "wrongExtension": "Incorrect file type.",
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
-      "disableEditProject": "Cannot be edited while the project is open.",
       "inputCorrectFilename": "Please enter a valid file name.",
       "failSaveFile": "Failed to save file.",
       "invalidPolygon": "Can't save for invalid line.",
       "invalidLine": "Can't save for invalid line",
       "invalidPoint": "Can't save for invalid point.",
       "cannotInRunningProject": "Not possible when project is open",
-      "cannotSaveInTracking": "It cannot be changed while the track is being recorded.",
       "encryptKeyFailed": "Check encryption password",
-      "notSupportPDF": "The web version does not support PDF import.",
       "saveTracking": "There are unsaved track logs. \nDo you want to save?",
       "failLoadFile": "Failed to load file. \nMake sure the coordinate system is latitude and longitude.",
       "cannotOpenDB": "Unable to open database.",
@@ -719,7 +630,6 @@
   },
   "Home": {
     "alert": {
-      "compass": "Turn on GPS to use the compass",
       "download": "Data has been obtained.",
       "gps": "Please turn on GPS",
       "gpsWeb": "Not available in the web version",
@@ -732,8 +642,6 @@
       "uploadLicenseWeb": "Please upgrade to upload your photos.",
       "discardChanges": "The data is being edited. \nPlease save first.",
       "termsOfuse": "If you do not agree, please stop using it.",
-      "offline": "Not connected to the internet. \nTo display the downloaded map, switch to offline mode on the map selection screen.",
-      "clearMapMemo": "I deleted the map notes.",
       "individualColor": "Changed the layer style color type to [Individual].",
       "storage": "Loading data is full. \nDelete unnecessary data.",
       "cannotEdit": "There are no editable layers.",
@@ -751,7 +659,6 @@
       "logout": "Do you want to log out?",
       "saveProject": "Do you want to save the project settings?",
       "track": "Do you want to stop recording the track?",
-      "clearMapMemo": "Erase all map notes?",
       "track_start": "Do you want to start recording the track?",
       "download": "Do you want to retrieve updated data?",
       "upload": "Do you want to send data?",
@@ -771,7 +678,14 @@
       "deletePosition": "delete coordinates",
       "closeProject": "close project",
       "setting": "Account Settings",
-      "logout": "Log out"
+      "logout": "Log out",
+      "projects": "Project list",
+      "saveProject": "Save project settings",
+      "jumpProject": "Jump to project home",
+      "downloadData": "Download data",
+      "uploadData": "Upload data",
+      "syncPosition": "Share current location",
+      "discardProect": "Discard project changes"
     },
     "modal": {
       "infoTool": {
@@ -836,7 +750,6 @@
     "navigation": {
       "title": "Setting the value"
     },
-    "importDictionary": "Loading dictionary data (CSV)",
     "dictionaryData": "dictionary",
     "tooltip": {
       "importDictionaryData": "Import dictionary data (CSV)"
@@ -872,7 +785,8 @@
         "validateStorageBasic": "The photo capacity that can be saved with the basic plan is 1 GB.",
         "validateStoragePro": "The photo storage capacity of the Pro plan is 5GB.",
         "validateStorageBusinessA": "The photo storage capacity that can be saved with the Business A plan is 10 GB.",
-        "validateStorageBusinessB": "The photo capacity that can be saved with the Business B plan is 20GB."
+        "validateStorageBusinessB": "The photo capacity that can be saved with the Business B plan is 20GB.",
+        "validateMemberBusinessA": "There are 20 members that can be added in the Business A plan."
       }
     },
     "Layer": {
@@ -886,19 +800,13 @@
         "inputTableItem": "Please set the items in the table.",
         "inputListTableItem": "Set the items in the list table.",
         "duplicateFieldName": "Duplicate field name.",
-        "duplicateSerial": "I have multiple fields in Serial.",
         "listItemsWarning": "If the list item has an \"Other\" item, you cannot add a blank item."
       }
     }
   },
   "site": {
-    "privacypolicy": "https://ecoris-map.web.app/policy_en.html",
     "manual": "https://ecoris-map.web.app/manual_en.html",
     "termsOfUse": "https://ecoris-map.web.app/terms_en.html",
-    "toplogo": "./images/toplogo_en.png",
-    "playlogo": "https://play.google.com/intl/en/badges/static/images/badges/en_badge_web_generic.png",
-    "googleplay": "https://play.google.com/store/apps/details?id=jp.co.ecoris.ecorismap&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1&hl=en-US",
-    "playlogoAlt": "Get it on Google Play",
     "changelog": "https://github.com/ecorismap/ecorismap/blob/main/CHANGELOG.md"
   },
   "Format": {

@@ -39,8 +39,6 @@
       "line": "ライン",
       "polygon": "ポリゴン",
       "none": "位置情報なし",
-      "memo": "メモ",
-      "group": "グループ",
       "layergroup": "レイヤグループ"
     },
     "roletype": {
@@ -48,11 +46,7 @@
       "admin": "管理者",
       "owner": "オーナー"
     },
-    "createproject": {
-      "default": "デフォルト",
-      "save": "現状を保存",
-      "copy": "既存のコピー"
-    },
+    "createproject": {},
     "orientation": {
       "portrait": "縦",
       "landscape": "横"
@@ -64,13 +58,11 @@
     }
   },
   "common": {
+    "minutes": "分",
+    "second": "秒",
     "point": "ポイント",
     "track": "トラック",
     "polygon": "ポリゴン",
-    "login": "ログイン",
-    "manual": "マニュアル",
-    "issue": "不具合報告",
-    "privacypolicy": "プライバシーポリシー",
     "project": "プロジェクト",
     "user": "ユーザー",
     "owner": "オーナー",
@@ -79,9 +71,6 @@
     "usage": "使用量",
     "license": "ライセンス",
     "member": "メンバー",
-    "preparation": "作成方法",
-    "original": "複製元",
-    "copySource": "複製元",
     "back": "戻る",
     "colorType": "カラータイプ",
     "transparency": "透過",
@@ -94,9 +83,7 @@
     "addOther": "「その他」を追加",
     "layerName": "レイヤ名",
     "select": "選択",
-    "close": "閉じる",
     "delete": "削除",
-    "export": "エクスポート",
     "fieldValue": "フィールドの値",
     "color": "色",
     "selectColor": "色を選択",
@@ -124,13 +111,10 @@
     "style": "スタイル",
     "url": "URL",
     "reset": "リセット",
-    "confirm": "確認",
     "termsOfUse": "利用規約",
     "ndash": "–",
     "fileName": "ファイル名",
     "includePhoto": "写真を含む",
-    "version": "バージョン",
-    "distance": "距離",
     "customField": "カスタムフィールド",
     "custom": "カスタム",
     "message": {
@@ -141,31 +125,22 @@
     "EncryptPassword": "暗号化パスワード",
     "memo": "メモ",
     "customLabel": "カスタムラベル",
-    "vector": "ベクタ",
     "vectortile": "ベクタタイル",
-    "size": "サイズ",
     "width": "ライン幅",
     "pdfSettings": "PDFの出力設定",
     "paperSize": "用紙サイズ",
     "orientation": "用紙方向",
     "scale": "スケール",
-    "settings": "設定",
     "zoomlevelOfMaps": "地図レベル",
-    "currentZoom": "現在のズーム",
     "outputDataPDF": "データ一覧",
     "outputVRT": "VRTファイル",
     "gps_settings": "GPSの設定",
-    "accuracy": {
-      "high": "高精度、高バッテリー消費"
-    },
-    "gps_settings_disabled": "GPSがオンの時は設定できません",
+    "accuracy": {},
     "gps_settings_alert": "GPSの起動時に設定が反映されます。",
     "processing": "処理中...",
     "selectStamp": "スタンプを選択",
     "selectPen": "ペンを選択",
     "selectBrush": "ブラシを選択",
-    "selectStrokeWidth": "ペンの太さ",
-    "eraser": "消しゴム",
     "strokeWidth": "太さ",
     "arrow": "矢印",
     "selectEraser": "消しゴムを選択",
@@ -175,13 +150,8 @@
     "selectStampEraser": "スタンプを消す",
     "snapWithLine": "ラインにスナップ",
     "straight_curve": "種類",
-    "general": "一般",
-    "default": "デフォルト",
     "common": "共通",
-    "smoothLine": "ラインを滑らかにする",
     "addMembers": "メンバーを追加（メールアドレスをカンマ区切りで入力し、Enterキーを押す）",
-    "yes": "はい",
-    "no": "いいえ",
     "selectionType": "選択タイプ",
     "selectAllInfo": "すべて",
     "selectPointInfo": "ポイントのみ",
@@ -194,17 +164,12 @@
     "useOutline": "枠線のみ表示",
     "termsUpdated": "利用規約を更新しました。",
     "addGroup": "グループ作成",
-    "useAddData": "データの追加に使用する",
-    "useInput": "入力",
     "option": "オプション",
     "useAdd": "データ追加に使用",
     "notSupported": "web版ではマイクは使用できません",
     "none": "（なし）",
     "userName": "User",
-    "move": "上下",
-    "download": "取得",
-    "offline": "オフライン地図",
-    "map": "地図"
+    "move": "上下"
   },
   "Home": {
     "confirm": {
@@ -217,7 +182,6 @@
       "saveProject": "プロジェクトの設定を保存しますか？",
       "discardProject": "プロジェクトの設定の変更を破棄しますか？",
       "deleteTiles": "ダウンロードした地図を削除しますか？",
-      "clearMapMemo": "地図のメモをすべて消去しますか？",
       "reOpenProject": "プロジェクトを開きますか？保存していない現在のプロジェクトのデータは破棄されます。",
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
@@ -227,7 +191,6 @@
     "alert": {
       "gps": "GPSをオンにしてください",
       "gpsWeb": "Web版では使用できません",
-      "compass": "コンパスを使用するには、GPSをオンにしてください",
       "trackWeb": "Web版ではトラックログは使用できません",
       "download": "データを取得しました。",
       "uploadLicenseWeb": "写真をアップロードするには、アップグレードしてください。",
@@ -238,8 +201,6 @@
       "gpsWithTrack": "GPSをオフにするにはトラックの記録を終了してください。",
       "discardChanges": "データを編集中です。先に保存してください。",
       "termsOfuse": "同意しない場合は、利用を中止してください。",
-      "offline": "ネットに未接続です。ダウンロードした地図を表示するには地図選択画面でオフラインモードに切り替えてください。",
-      "clearMapMemo": "地図のメモを消去しました。",
       "individualColor": "レイヤスタイルのカラータイプを[個別]に変更しました。",
       "storage": "読み込みデータが一杯です。不要なデータを削除してください。",
       "cannotEdit": "編集できるレイヤがありません。",
@@ -320,7 +281,6 @@
       "brush": "ブラシ",
       "color": "色選択",
       "redo": "やり直す",
-      "cacheDelete": "キャッシュ",
       "download": "取得"
     }
   },
@@ -353,10 +313,7 @@
       "text": "アップグレード（有料プラン）",
       "info": "追加できるプロジェクト数、メンバー数を増やすことができます。"
     },
-    "project_import": {
-      "text": "プロジェクトデータのインポート",
-      "info": "プロジェクトからエクスポートされたデータと設定をインポートします。データのユーザー情報はリセットされます。"
-    },
+    "project_import": {},
     "project_delete_all": {
       "text": "プロジェクト全削除",
       "info": "自分がオーナーのプロジェクトのデータをすべて消去します。"
@@ -401,31 +358,22 @@
       "info": "地図の設定リストのURLを指定します。地図の設定リスト画面では、ここで指定したURLのデータを読み込みます。"
     },
     "file_save": {
-      "text": "データの保存",
-      "info": "現在のデータと設定をecorismap形式のファイルに保存します。"
+      "text": "データの保存"
     },
     "file_open": {
-      "text": "データの読み込み",
-      "info": "保存したデータと設定をecorismap形式のファイルから読み込みます。"
+      "text": "データの読み込み"
     },
     "mapcachedelete": {
-      "text": "地図キャッシュをクリア",
-      "info": "地図のキャッシュとダウンロードファイルとをクリアします。"
+      "text": "地図キャッシュをクリア"
     },
     "photocachedelete": {
-      "text": "写真キャッシュをクリア",
-      "info": "アプリ内の写真のキャッシュをクリアします。"
+      "text": "写真キャッシュをクリア"
     },
-    "apriclear": {
-      "text": "アプリの初期化",
-      "info": "アプリを初期状態に戻します。デバイス内のデータと設定がすべてリセットされます。"
-    },
+    "apriclear": {},
     "manual": {
-      "text": "EcorisMapの使い方、利用規約",
-      "info": "オンラインマニュアルと利用規約を表示します。"
+      "text": "EcorisMapの使い方、利用規約"
     },
     "confirm": {
-      "saveDataToLocalStorage": "現在のデータと設定を保存しますか？以前の保存データは上書きされます。",
       "clearLocalStorage": "初期化しますか？データと設定がすべてリセットされます。",
       "clearTileCache": "地図のキャッシュとダウンロードファイルをクリアしますか？",
       "clearPhotoCache": "写真のキャッシュをクリアしますか？",
@@ -433,35 +381,23 @@
       "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。"
     },
     "alert": {
-      "saveDataToLocalStorage": "保存しました",
       "loadEcorisMapFile": "ファイルを読み込みました。",
       "clearTileCache": "地図のキャッシュをクリアしました。",
       "clearPhotoCache": "写真のキャッシュをクリアしました。"
     },
-    "termsOfUse": {
-      "text": "利用規約",
-      "info": "利用規約を表示します。"
-    },
-    "version": {
-      "info": "現在のバージョン。変更履歴を確認できます。",
-      "text": "バージョン"
-    },
+    "termsOfUse": {},
+    "version": {},
     "OSSLicense": {
-      "text": "o-punnso-su ",
-      "txt": "オープンソースライセンス",
-      "info": "当ソフトウェアで使用しているオープンソースのライセンスを表示します。"
+      "txt": "オープンソースライセンス"
     },
     "file_new": {
-      "text": "データをクリア",
-      "info": "現在のデータをクリアします。"
+      "text": "データをクリア"
     },
     "pdf_save": {
-      "text": "PDFの出力",
-      "info": "現在の地図とデータをPDFに出力します。"
+      "text": "PDFの出力"
     },
     "gps_settings": {
-      "text": "GPSの設定",
-      "info": "GPSの精度を変更します。バッテリー消費にも影響します。"
+      "text": "GPSの設定"
     }
   },
   "Projects": {
@@ -510,8 +446,7 @@
       "export": "DL",
       "delete": "削除",
       "save": "保存"
-    },
-    "addMembersHint": "Enterで追加"
+    }
   },
   "Maps": {
     "navigation": {
@@ -519,9 +454,7 @@
     },
     "modal": {
       "title": "地図タイル追加",
-      "placeholder": {
-        "name": "名前"
-      }
+      "placeholder": {}
     },
     "confirm": {
       "deleteMap": "削除しますか？"
@@ -580,7 +513,6 @@
     "navigation": {
       "title": "値の設定"
     },
-    "importDictionary": "辞書データ（CSV）の読み込み",
     "dictionaryData": "辞書",
     "tooltip": {
       "importDictionaryData": "辞書データ（CSV）をインポート"
@@ -592,8 +524,7 @@
   "tutrials": {
     "pointtool": {
       "add": "任意の場所にポイントを追加します。追加したい場所をタッチしてください。",
-      "add_location": "現在地にポイントを追加します。GPSをオンにして画面をタッチしてください。",
-      "move": "ポイントを移動します。ポイントを長押ししてください。"
+      "add_location": "現在地にポイントを追加します。GPSをオンにして画面をタッチしてください。"
     },
     "home_btn": {
       "gps": "GPSをオンにします。もう一度押すと、GPSのオフ、現在地の追従、ジャンプに切り替わります。",
@@ -607,9 +538,7 @@
       "online": "オフラインモードに切り替えます。地図はキャッシュから読み込まれます。",
       "offline": "オンラインモードに切り替えます。地図はネットから読み込まれます。"
     },
-    "hisyoutool_btn": {
-      "setting": "「飛翔凡例」と「_ref」をプロパティに持つラインレイヤを選択します。"
-    },
+    "hisyoutool_btn": {},
     "selectiontool": "ドラッグして地物を選択します。選択した地物はツールで編集できます。",
     "infotool": "地物の情報を表示します。地物をタッチしてください。",
     "linetool": {
@@ -654,7 +583,6 @@
         "inputTableItem": "テーブルのアイテムを設定してください。",
         "inputListTableItem": "リストテーブルのアイテムを設定してください。",
         "duplicateFieldName": "フィールド名が重複しています。",
-        "duplicateSerial": "Serialのフィールドが複数あります。",
         "listItemsWarning": "リストアイテムに「その他」の項目がある場合、空白のアイテムは追加できません。"
       }
     }
@@ -692,11 +620,9 @@
       "downloadPhoto": "写真をダウンロードしますか？",
       "changeRecord": "変更を破棄しますか？",
       "gotoBack": "変更を破棄しますか？",
-      "close": "変更を破棄しますか？",
       "copyData": "データをコピーしますか？",
       "deletePosition": "座標を削除しますか？データは削除されません。",
-      "splitLine": "ラインを分割しますか？",
-      "addData": "データを追加しますか？"
+      "splitLine": "ラインを分割しますか？"
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",
@@ -731,7 +657,6 @@
       "failDeleteProjectPhoto": "プロジェクトの写真の削除に失敗しました",
       "failEncryptPDF": "PDFの暗号化に失敗しました",
       "failUploadPDF": "PDFのアップロードに失敗しました",
-      "failDeletePDF": "PDFの削除に失敗しました",
       "failDeleteProjectPDF": "プロジェクトのPDFの削除に失敗しました",
       "failEncryptDictionary": "辞書の暗号化に失敗しました",
       "failUploadDictionary": "辞書のアップロードに失敗しました",
@@ -789,10 +714,6 @@
       "inputPassword": "ログインパスワードを入力してください。"
     }
   },
-  "coomon": {
-    "minutes": "分",
-    "second": "秒"
-  },
   "hooks": {
     "confirm": {
       "stopDownload": "ダウンロードを中止しますか?",
@@ -801,17 +722,13 @@
     "alert": {
       "completeDownload": "地図のダウンロードが完了しました。",
       "pleaseActivate": "メールを確認して、アクティベートしてください。",
-      "errorDownload": "地図のダウンロードが完了しましたが、一部ダウンロードできていない可能性があります。",
-      "dataSizeOver": "データサイズが2MBを超えています。保存されません。"
+      "errorDownload": "地図のダウンロードが完了しましたが、一部ダウンロードできていない可能性があります。"
     },
     "message": {
       "pleaseLogin": "ログインし直してください。",
       "cannotUploadData": "レイヤの設定が更新されているのでアップロードできません。",
-      "noCopyProject": "コピーするプロジェクトがありません。",
       "unknownError": "不明なエラーです。もう一度試してください",
       "cannotAddProject": "プロジェクトの編集中は追加できません",
-      "cannotFindUser": "ユーザーが見つかりません。",
-      "finishTrackking": "先にトラックの記録を終了してください",
       "inputProjectName": "プロジェクト名を入力してくだい。",
       "changeProjectName": "同名のプロジェクトがあります。プロジェクト名を変更してくだい。",
       "duplicateMembers": "メンバーが重複しています。",
@@ -819,34 +736,15 @@
       "failUserCheck": "ユーザーのチェックに失敗しました。",
       "invalidAccount": "無効なアカウントが含まれています。メンバーがサインアップした後に追加してください。",
       "updateProjectInfo": "プロジェクトの情報を更新しました。",
-      "upgradeForPhoto": "写真をアップロードするには、アップグレードしてください。",
-      "failUploadPhoto": "写真容量の上限を超えているためアップロードできません。Web版で詳細を確認してください。",
-      "updateProjectSettings": "プロジェクトの設定を更新しました。",
       "inputMaplistURL": "地図の設定リストURLを正しく設定してください。",
       "invalidDataFormat": "データの形式が正しくありません。",
       "failGetData": "データの取得に失敗しました。",
-      "onlyAdminCanEdit": "管理者しか編集できません",
       "lockProject": "このレイヤは編集できません。",
-      "cannotSaveDataToLocalStorage": "プロジェクトを開いている時は保存できません",
-      "cannotLoadEcorisMapFile": "プロジェクトを開いている時は読み込めません",
-      "cannotLoadDataInTrackking": "トラックの記録中はできません。",
-      "couldnotSaveData": "データは保存されていません",
       "cannotGetFileSize": "ファイルサイズを取得できません",
       "cannotImportData": "データのサイズが大きいためインポートできません。",
-      "cannotImportInProjectOpen": "プロジェクトを開いている時は読み込めません",
-      "invalidFileType": "ファイルの種類が違います。",
-      "onlySupportWeb": "Web版しかサポートしていません",
-      "cannotInTracking": "トラックの記録中はできません。",
-      "cannotInProjectOpen": "プロジェクトを開いている時はできません。",
-      "cannotChangeInTracking": "トラックの記録中は変更できません。",
       "permitAccessGPS": "GPSを使用するには位置情報と通知のアクセス権限を許可してください。",
-      "noPermissionToCommon": "コモンレイヤは管理者しか編集できません",
-      "unlockToEditCommon": "コモンレイヤを編集するにはアンロックしてください。",
-      "cannotEditOthers": "他人のデータは編集できません。",
       "noLayerToEdit": "編集できるレイヤがありません。",
-      "noEditingLayer": "編集レイヤではありません。",
       "turnOnGPS": "GPSをオンにしてください。",
-      "cannotEditOthersInWork": "調査中は、他の人の作成したデータは編集できません。",
       "failLoadE3kitGroup": "グループを読み込めません。",
       "failCreateE3kitGroup": "グループの作成に失敗しました。",
       "failDeleteE3kitGroup": "グループのメンバーの削除に失敗しました",
@@ -855,18 +753,12 @@
       "failAddGroupMembers": "メンバーの追加に失敗しました",
       "openProject": "プロジェクトを開いてください。",
       "unknownURL": "urlが不明です。",
-      "downloaded": "ダウンロードしました。",
-      "cannotEditInTracking": "トラックの記録中は編集できません。",
       "noEditMode": "編集モードになっていません。",
       "invalidCoordinate": "緯度、経度に不正な入力があります。",
-      "cannotDeleteInTracking": "トラックの記録中は削除できません。",
       "inputValidMail": "メールアドレスを正しく入力してください",
       "inputValidPassword": "パスワードを正しく入力してください",
       "invalidEmailOrPassword": "emailまたはpasswordが間違っています。",
-      "cannotDeleteOthers": "他人のデータは削除できません。",
-      "cannotExportPolygonInGPX": "gpxでポリゴンはエクスポートできません",
       "failExport": "エクスポートに失敗しました。",
-      "cannotThisLayer": "このレイヤでは使用できません",
       "noActivate": "アカウントがアクティベートされていません。",
       "pleaseActivate": "メールを確認して、アクティベートしてください。",
       "registEncryptPassword": "暗号化パスワードを登録してください。",
@@ -878,11 +770,6 @@
       "inputValidDisplayName": "表示名を正しく入力してください",
       "inputValidIconURL": "icon画像のURLを正しく入力してください",
       "failUpdateProfile": "プロフィールの更新に失敗しました。",
-      "inputValidUpdatePassword": "変更後のパスワードを正しく入力してください",
-      "failResetEncryptKey": "暗号化キーのリセットに失敗しました。",
-      "failCreateBackupKey": "バックアップキーの作成に失敗しました。",
-      "failRestoreBackupKey": "バックアップの復元に失敗しました。",
-      "wrongPassword": "パスワードが違います。",
       "pleaseReLogin": "ユーザーが不明です。ログインし直してください。",
       "failDeleteEncryptKey": "暗号化キーの削除に失敗しました。予期せぬエラーです。",
       "failDeleteProject": "プロジェクトの削除に失敗しました。予期せぬエラーです。",
@@ -893,17 +780,13 @@
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
       "wrongExtension": "ファイルの種類が正しくありません。",
       "failedUpdatePassword": "暗号化パスワードの変更に失敗しました。変更前のパスワードは正しいですか？忘れた場合は暗号化キーをリセットしてください。",
-      "disableEditProject": "プロジェクトを開いている時は編集できません。",
       "inputCorrectFilename": "有効なファイル名を入力してください。",
       "failSaveFile": "ファイルの保存に失敗しました。",
       "invalidPolygon": "ポリゴンが不正なため保存できません。",
       "invalidLine": "ラインが不正なため保存できません。",
       "invalidPoint": "ポイントが不正なため保存できません。",
-      "cannotEditCommon": "コモンレイヤは編集できません",
       "encryptKeyFailed": "暗号化パスワードを確認してください",
       "cannotInRunningProject": "プロジェクトを開いている時はできません",
-      "cannotSaveInTracking": "トラックの記録中は変更できません。",
-      "notSupportPDF": "Web版ではPDFのインポートはサポートしていません。",
       "saveTracking": "保存されていないトラックログがあります。保存しますか？",
       "failLoadFile": "ファイルの読み込みに失敗しました。座標系が緯度経度になっているか確認してください。",
       "cannotOpenDB": "データベースを開けません。",
@@ -922,13 +805,8 @@
     "confirmEditModeMessage": " 編集モードに切り替えますか？"
   },
   "site": {
-    "privacypolicy": "https://ecoris-map.web.app/policy_ja.html",
     "manual": "https://ecoris-map.web.app/manual_ja.html",
     "termsOfUse": "https://ecoris-map.web.app/terms_ja.html",
-    "toplogo": "./images/toplogo_ja.png",
-    "playlogo": "https://play.google.com/intl/ja/badges/static/images/badges/ja_badge_web_generic.png",
-    "googleplay": "https://play.google.com/store/apps/details?id=jp.co.ecoris.ecorismap&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1&hl=ja",
-    "playlogoAlt": "Google Play で手に入れよう",
     "changelog": "https://github.com/ecorismap/ecorismap/blob/main/CHANGELOG.md"
   },
   "Format": {
