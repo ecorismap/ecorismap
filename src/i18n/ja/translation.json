@@ -123,7 +123,6 @@
       "cannotLoadProject": "読み込めないプロジェクトがあります。プロジェクトのオーナーにアカウントのリセットを依頼してください。"
     },
     "EncryptPassword": "暗号化パスワード",
-    "memo": "メモ",
     "customLabel": "カスタムラベル",
     "vectortile": "ベクタタイル",
     "width": "ライン幅",
@@ -157,8 +156,6 @@
     "selectPointInfo": "ポイントのみ",
     "selectLineInfo": "ラインのみ",
     "selectPolygonInfo": "ポリゴンのみ",
-    "drawtool": "ドローツール",
-    "InfoTool": "地物選択",
     "line": "ライン",
     "useLastValue": "最後の値を使用する",
     "useOutline": "枠線のみ表示",
@@ -211,24 +208,6 @@
     "navigation": {
       "download": "地図のダウンロード",
       "exportPDF": "PDFの出力"
-    },
-    "tooltip": {
-      "addLocationPoint": "現在地にポイントを追加",
-      "plotPoint": "ポイントを追加",
-      "movePoint": "ポイントを長押しで移動",
-      "deletePoint": "ポイントを削除",
-      "projects": "プロジェクト一覧",
-      "setting": "アカウントの設定",
-      "logout": "ログアウト",
-      "saveProject": "プロジェクトの設定を保存",
-      "discardProect": " プロジェクトの変更を破棄",
-      "jumpProject": "プロジェクトのホームにジャンプ",
-      "downloadData": "データをダウンロード",
-      "uploadData": "データをアップロード",
-      "syncPosition": "現在地を共有",
-      "closeProject": "プロジェクトを閉じる",
-      "finishEditPosition": "編集を終了",
-      "deletePosition": "座標を削除"
     },
     "modal": {
       "infoTool": {
@@ -407,10 +386,6 @@
     "alert": {
       "addProject": "プロジェクトを追加するには、アップグレードしてください。"
     },
-    "tooltip": {
-      "reloadProjects": "リロード",
-      "createProject": "プロジェクト作成"
-    },
     "label": {
       "createProject": "作成",
       "reloadProjects": "更新"
@@ -434,12 +409,6 @@
       "deleteProject": "プロジェクトを削除しますか？",
       "gotoBack": "変更を破棄しますか？"
     },
-    "tooltip": {
-      "open": "プロジェクトを開く",
-      "setting": "プロジェクトを編集",
-      "export": "プロジェクトのデータをエクスポート",
-      "delete": "プロジェクトを削除"
-    },
     "label": {
       "open": "開く",
       "setting": "設定",
@@ -458,11 +427,6 @@
     },
     "confirm": {
       "deleteMap": "削除しますか？"
-    },
-    "tooltip": {
-      "import": "インポート",
-      "add": "地図追加",
-      "download": "エクスポート"
     },
     "label": {
       "import": "ｲﾝﾎﾟｰﾄ",
@@ -492,16 +456,12 @@
       "deleteLayer": "レイヤを削除しますか？レイヤ内のデータも削除されます。",
       "gotoBack": "変更を破棄して戻りますか？"
     },
-    "tooltip": {
-      "delete": "レイヤ削除",
-      "export": "設定のエクスポート",
-      "save": "保存"
-    },
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
       "delete": "削除",
       "save": "保存",
-      "addField": "追加"
+      "addField": "追加",
+      "dictionaty": "csv"
     }
   },
   "LayerEditFeatureStyle": {
@@ -514,9 +474,6 @@
       "title": "値の設定"
     },
     "dictionaryData": "辞書",
-    "tooltip": {
-      "importDictionaryData": "辞書データ（CSV）をインポート"
-    },
     "label": {
       "addValue": "追加"
     }
@@ -598,11 +555,6 @@
     "confirm": {
       "deleteData": "データを削除しますか？"
     },
-    "tooltip": {
-      "add": "データ追加",
-      "export": "エクスポート",
-      "delete": "データ削除"
-    },
     "label": {
       "export": "共有",
       "delete": "削除",
@@ -627,14 +579,6 @@
     "alert": {
       "referenceData": "一旦変更を保存してください。",
       "copyData": "コピーしました。"
-    },
-    "tooltip": {
-      "jump": "データにジャンプ",
-      "google": "グーグルマップで表示",
-      "copy": "データをコピー",
-      "save": "保存",
-      "delete": "削除",
-      "edit": "位置を編集"
     },
     "label": {
       "jump": "表示",
@@ -820,10 +764,6 @@
     }
   },
   "Layer": {
-    "tooltip": {
-      "add": "レイヤを作成します",
-      "import": "インポート"
-    },
     "label": {
       "import": "ｲﾝﾎﾟｰﾄ",
       "add": "作成"

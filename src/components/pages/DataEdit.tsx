@@ -83,7 +83,6 @@ export default function DataEditScreen() {
               onPress={pressSaveData}
               backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
               disabled={!isEditingRecord}
-              tooltipText={t('DataEdit.tooltip.save')}
               labelText={t('DataEdit.label.save')}
             />
           </View>
@@ -124,7 +123,6 @@ export default function DataEditScreen() {
           onPress={pressSaveData}
           backgroundColor={isEditingRecord ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!isEditingRecord}
-          tooltipText={t('DataEdit.tooltip.save')}
         />
       </View>
     ),

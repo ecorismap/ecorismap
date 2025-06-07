@@ -34,7 +34,6 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             onPress={onPressOpenProject}
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={disabled}
-            tooltipText={t('ProjectEdit.tooltip.open')}
             labelText={t('ProjectEdit.label.open')}
           />
         </View>
@@ -45,7 +44,6 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           onPress={onPressSettingProject}
           disabled={disabled}
           backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
-          tooltipText={t('ProjectEdit.tooltip.setting')}
           labelText={t('ProjectEdit.label.setting')}
         />
       )}
@@ -56,7 +54,6 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
             disabled={disabled}
             onPress={onPressExportProject}
-            tooltipText={t('ProjectEdit.tooltip.export')}
             labelText={t('ProjectEdit.label.export')}
           />
         </View>
@@ -68,7 +65,6 @@ export const ProjectEditButtons = React.memo((props: Props) => {
             backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.DARKRED}
             disabled={disabled}
             onPress={onPressDeleteProject}
-            tooltipText={t('ProjectEdit.tooltip.delete')}
             labelText={t('ProjectEdit.label.delete')}
           />
         </View>

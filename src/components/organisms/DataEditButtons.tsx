@@ -25,7 +25,6 @@ export const DataEditButtons = () => {
         onPress={pressJumpToData}
         backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEditingRecord}
-        tooltipText={t('DataEdit.tooltip.jump')}
         labelText={t('DataEdit.label.jump')}
       />
       <Button
@@ -33,7 +32,6 @@ export const DataEditButtons = () => {
         onPress={gotoGoogleMaps}
         backgroundColor={isEditingRecord ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEditingRecord}
-        tooltipText={t('DataEdit.tooltip.google')}
         labelText={t('DataEdit.label.google')}
       />
       {(layer.type === 'POINT' || layer.type === 'LINE' || layer.type === 'POLYGON') && (
@@ -42,7 +40,6 @@ export const DataEditButtons = () => {
           onPress={pressEditPosition}
           backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
           disabled={isEditingRecord || !isEditable}
-          tooltipText={t('DataEdit.tooltip.edit')}
           labelText={t('DataEdit.label.edit')}
         />
       )}
@@ -51,7 +48,6 @@ export const DataEditButtons = () => {
         onPress={pressCopyData}
         backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEditingRecord || !isEditable}
-        tooltipText={t('DataEdit.tooltip.copy')}
         labelText={t('DataEdit.label.copy')}
       />
       <Button
@@ -59,7 +55,6 @@ export const DataEditButtons = () => {
         onPress={pressDeleteData}
         backgroundColor={isEditingRecord || !isEditable ? COLOR.LIGHTBLUE : COLOR.BLUE}
         disabled={isEditingRecord || !isEditable}
-        tooltipText={t('DataEdit.tooltip.delete')}
         labelText={t('DataEdit.label.delete')}
       />
     </View>

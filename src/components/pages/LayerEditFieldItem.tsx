@@ -54,11 +54,7 @@ export default function LayerEditFieldItemScreen() {
   const headerRightButton = useCallback(() => {
     return (
       <View style={styles.headerRight}>
-        <Button
-          name={'folder-open'}
-          onPress={pressImportDictionary}
-          tooltipText={t('LayerEditFieldItem.tooltip.importDictionaryData')}
-        />
+        <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
       </View>
     );
   }, [pressImportDictionary]);

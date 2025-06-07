@@ -20,7 +20,6 @@ export const DataButton = () => {
             onPress={pressAddData}
             backgroundColor={isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
             disabled={!isEditable}
-            tooltipText={t('Data.tooltip.add')}
             labelText={t('Data.label.add')}
           />
         )}
@@ -30,7 +29,6 @@ export const DataButton = () => {
             onPress={pressExportData}
             backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
             disabled={!(isChecked && isEditable)}
-            tooltipText={t('Data.tooltip.export')}
             labelText={t('Data.label.export')}
           />
         )}
@@ -39,7 +37,6 @@ export const DataButton = () => {
           onPress={pressDeleteData}
           backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!(isChecked && isEditable)}
-          tooltipText={t('Data.tooltip.delete')}
           labelText={t('Data.label.delete')}
         />
       </View>

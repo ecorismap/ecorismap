@@ -12,26 +12,9 @@ export const MapButtons = React.memo(() => {
     <View style={styles.buttonContainer}>
       {/* <Button name={MAPS_BTN.MAP_LIST} onPress={gotoMapList} /> */}
 
-      <Button
-        name={MAPS_BTN.IMPORT}
-        onPress={pressImportMaps}
-        tooltipText={t('Maps.tooltip.import')}
-        labelText={t('Maps.label.import')}
-      />
-      <Button
-        name={MAPS_BTN.MAP_ADD}
-        onPress={() => pressOpenEditMap(null)}
-        tooltipText={t('Maps.tooltip.add')}
-        labelText={t('Maps.label.add')}
-      />
-      <Button
-        name={MAPS_BTN.EXPORT}
-        onPress={pressExportMaps}
-        tooltipText={t('Maps.tooltip.download')}
-        tooltipPosition={{ right: 1 }}
-        labelText={t('Maps.label.export')}
-        labelFontSize={9}
-      />
+      <Button name={MAPS_BTN.IMPORT} onPress={pressImportMaps} labelText={t('Maps.label.import')} />
+      <Button name={MAPS_BTN.MAP_ADD} onPress={() => pressOpenEditMap(null)} labelText={t('Maps.label.add')} />
+      <Button name={MAPS_BTN.EXPORT} onPress={pressExportMaps} labelText={t('Maps.label.export')} labelFontSize={9} />
     </View>
   );
 });

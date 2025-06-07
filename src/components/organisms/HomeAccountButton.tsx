@@ -94,8 +94,6 @@ export const HomeAccountButton = React.memo(() => {
                 name={HOME_ACCOUNT_BTN.PROJECTS}
                 backgroundColor={COLOR.ORANGE}
                 onPressCustom={gotoProjects}
-                tooltipText={t('Home.tooltip.projects')}
-                tooltipPosition={{ right: 1 }}
                 labelText={t('Home.label.projects')}
                 labelFontSize={8}
               />
@@ -105,8 +103,6 @@ export const HomeAccountButton = React.memo(() => {
               name={HOME_ACCOUNT_BTN.SETTING}
               backgroundColor={COLOR.ORANGE}
               onPressCustom={gotoAccount}
-              tooltipText={t('Home.tooltip.setting')}
-              tooltipPosition={{ right: 1 }}
               labelText={t('Home.label.setting')}
             />
             <Button
@@ -114,8 +110,6 @@ export const HomeAccountButton = React.memo(() => {
               name={HOME_ACCOUNT_BTN.LOGOUT}
               backgroundColor={COLOR.ORANGE}
               onPressCustom={pressLogout}
-              tooltipText={t('Home.tooltip.logout')}
-              tooltipPosition={{ right: 1 }}
               labelText={t('Home.label.logout')}
               labelFontSize={9}
             />

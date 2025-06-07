@@ -106,14 +106,6 @@
       "referenceData": "Please save your changes once.",
       "copyData": "I copied it."
     },
-    "tooltip": {
-      "jump": "jump to data",
-      "google": "View on Google Maps",
-      "copy": "data copy",
-      "save": "keep",
-      "delete": "delete",
-      "edit": "Edit position"
-    },
     "label": {
       "jump": "jump",
       "google": "Maps",
@@ -188,7 +180,6 @@
     "includePhoto": "including photo",
     "customField": "custom field",
     "custom": "CUSTOM",
-    "memo": "memo",
     "customLabel": "custom label",
     "vectortile": "vector tiles",
     "width": "line width",
@@ -220,8 +211,6 @@
     "selectLineInfo": "line only",
     "selectPolygonInfo": "polygon only",
     "selectAllInfo": "all",
-    "drawtool": "draw tools",
-    "InfoTool": "Feature selection",
     "line": "line",
     "useLastValue": "use last value",
     "useOutline": "Show frame only",
@@ -433,11 +422,6 @@
     "navigation": {
       "title": "Map selection"
     },
-    "tooltip": {
-      "import": "import",
-      "add": "Add map",
-      "download": "export"
-    },
     "label": {
       "import": "import",
       "add": "add",
@@ -458,10 +442,6 @@
     "label": {
       "reloadProjects": "reload",
       "createProject": "create"
-    },
-    "tooltip": {
-      "reloadProjects": "Reload",
-      "createProject": "Create project"
     }
   },
   "ProjectEdit": {
@@ -488,12 +468,6 @@
       "export": "DL",
       "delete": "delete",
       "save": "save"
-    },
-    "tooltip": {
-      "open": "Open project",
-      "setting": "Edit project",
-      "export": "Export project data",
-      "delete": "Delete project"
     }
   },
   "LayerEdit": {
@@ -504,16 +478,12 @@
     "navigation": {
       "title": "Layer settings"
     },
-    "tooltip": {
-      "delete": "Delete layer",
-      "export": "Export settings",
-      "save": "keep"
-    },
     "label": {
       "export": "export",
       "delete": "delete",
       "save": "save",
-      "addField": "add"
+      "addField": "add",
+      "dictionaty": "csv"
     }
   },
   "Data": {
@@ -526,11 +496,6 @@
     },
     "navigation": {
       "title": "Data list"
-    },
-    "tooltip": {
-      "export": "export",
-      "delete": "Data deletion",
-      "add": "add"
     },
     "label": {
       "add": "add",
@@ -669,24 +634,6 @@
       "download": "Map download",
       "exportPDF": "PDF output"
     },
-    "tooltip": {
-      "addLocationPoint": "Add points to current location",
-      "plotPoint": "add points",
-      "movePoint": "Move the point by long pressing",
-      "deletePoint": "remove points",
-      "finishEditPosition": "Finish editing",
-      "deletePosition": "delete coordinates",
-      "closeProject": "close project",
-      "setting": "Account Settings",
-      "logout": "Log out",
-      "projects": "Project list",
-      "saveProject": "Save project settings",
-      "jumpProject": "Jump to project home",
-      "downloadData": "Download data",
-      "uploadData": "Upload data",
-      "syncPosition": "Share current location",
-      "discardProect": "Discard project changes"
-    },
     "modal": {
       "infoTool": {
         "checkbox": "No longer shown. Hold to redisplay."
@@ -751,9 +698,6 @@
       "title": "Setting the value"
     },
     "dictionaryData": "dictionary",
-    "tooltip": {
-      "importDictionaryData": "Import dictionary data (CSV)"
-    },
     "label": {
       "addValue": "add"
     }
@@ -820,10 +764,6 @@
     }
   },
   "Layer": {
-    "tooltip": {
-      "add": "Create layer",
-      "import": "import"
-    },
     "label": {
       "import": "import",
       "add": "create"
