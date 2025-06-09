@@ -69,7 +69,7 @@ export const MapModalTileMap = React.memo(() => {
     },
     modalContents: {
       alignItems: 'center',
-      height: windowHeight * 0.55,
+      height: windowHeight * 0.7,
       width: windowWidth * modalWidthScale,
     },
     modalFrameView: {
