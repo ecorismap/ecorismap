@@ -531,7 +531,7 @@ export const useMaps = (): UseMapsReturnType => {
       // console.log('importStyleFile', uri, name, id);
       const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       if (Platform.OS === 'web') {
-        console.log('importStyleFile', jsonStrings);
+        //console.log('importStyleFile', jsonStrings);
         db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: jsonStrings });
         setEditedMap({ ...tileMap, styleURL: 'style://' + name });
       } else {

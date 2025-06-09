@@ -153,58 +153,6 @@ export default function HomeScreen() {
   const protocol = new pmtiles.Protocol();
   maplibregl.addProtocol('pmtiles', protocol.tile);
 
-  // // データベースの定義
-  // const db = new Dexie('TilesDatabase');
-  // db.version(1).stores({
-  //   tiles: 'url, blob', // Blobデータとして画像を保存
-  // });
-
-  // // IndexedDBに画像をBlobとして保存
-  // const saveImageToIndexedDB = async (url: string, blob: Blob) => {
-  //   //@ts-ignore
-  //   await db.tiles.put({ url, blob });
-  //   console.log('IndexedDBに保存', url);
-  // };
-
-  // const getLocalTile = async (url: string) => {
-  //   const tile = await db.tiles.get(url);
-  //   if (tile?.blob) {
-  //     console.log('IndexedDBから取得', url);
-  //     return tile.blob.arrayBuffer(); // BlobをArrayBufferに変換
-  //   }
-  //   return null;
-  // };
-
-  // const loadFn: maplibregl.AddProtocolAction = (params: RequestParameters, callback: any) => {
-  //   getLocalTile(params.url)
-  //     .then((tileBuffer) => {
-  //       if (tileBuffer) {
-  //         callback(null, tileBuffer, null, null);
-  //       } else {
-  //         fetch(`https://${params.url.split('://')[2]}`)
-  //           .then(async (response) => {
-  //             if (!response.ok) {
-  //               throw new Error(`Tile fetch error: ${response.statusText}`);
-  //             }
-  //             const blob = await response.blob();
-  //             saveImageToIndexedDB(params.url, blob); // Blobとして保存
-  //             const arrayBuffer = await blob.arrayBuffer();
-  //             callback(null, arrayBuffer, null, null);
-  //           })
-  //           .catch((e) => {
-  //             callback(new Error(e.message));
-  //           });
-  //       }
-  //     })
-  //     .catch((e) => {
-  //       return { cancel: () => {} };
-  //     });
-
-  //   return { cancel: () => {} };
-  // };
-
-  // maplibregl.addProtocol('custom', loadFn);
-
   const loadPDF = async (params: RequestParameters, _abortController: AbortController) => {
     try {
       // //parms.urlはpdf://mapId/z/x/yの形式
@@ -319,6 +267,13 @@ export default function HomeScreen() {
     );
   }, [isEditingRecord, onCloseBottomSheet]);
 
+  // ========== レイヤースタイル関連の処理 ==========
+
+  /**
+   * PMTilesファイルのメタデータからデフォルトのベクタースタイルを生成
+   * @param tileMap 対象のタイルマップ
+   * @returns デフォルトのレイヤースタイル配列
+   */
   const getDefaultStyle = async (tileMap: TileMapType) => {
     try {
       const pmtile = new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', ''));
@@ -387,6 +342,11 @@ export default function HomeScreen() {
     }
   };
 
+  /**
+   * ローカルストレージ（IndexedDB）からベクタースタイルを取得
+   * @param tileMap 対象のタイルマップ
+   * @returns レイヤースタイル配列
+   */
   const getStyleFromLocal = useCallback(async (tileMap: TileMapType) => {
     const style = (await db.pmtiles.get(tileMap.id))?.style;
     if (style) {
@@ -396,6 +356,11 @@ export default function HomeScreen() {
     return [];
   }, []);
 
+  /**
+   * 外部URLからベクタースタイルを取得
+   * @param tileMap 対象のタイルマップ
+   * @returns レイヤースタイル配列
+   */
   const getStyleFromURL = useCallback(async (tileMap: TileMapType) => {
     const url = tileMap.styleURL;
     if (!url) return [];
@@ -410,10 +375,53 @@ export default function HomeScreen() {
     return [];
   }, []);
 
-  const updateVectorStyle = useCallback(
+  // ========== レイヤー生成関数 ==========
+
+  /**
+   * ラスタータイル用のレイヤー定義を生成（同期処理）
+   * @param tileMap 対象のタイルマップ
+   * @returns ラスターレイヤー定義またはnull
+   */
+  const getRasterLayer = useCallback((tileMap: TileMapType): AnyLayer | null => {
+    if (tileMap.url) {
+      return {
+        id: tileMap.id,
+        type: 'raster',
+        source: tileMap.id,
+        minzoom: tileMap.minimumZ,
+        maxzoom: 24,
+        paint: { 'raster-opacity': 1 - (tileMap.transparency !== undefined ? tileMap.transparency : 0) },
+      } as AnyLayer;
+    } else if (tileMap.id === 'hybrid') {
+      return {
+        id: 'satellite',
+        type: 'raster',
+        source: 'satellite',
+        minzoom: 0,
+        maxzoom: 24,
+        paint: { 'raster-opacity': 1 },
+      };
+    } else if (tileMap.id === 'standard') {
+      return {
+        id: 'standard',
+        type: 'raster',
+        source: 'standard',
+        minzoom: 0,
+        maxzoom: 24,
+        paint: { 'raster-opacity': 1 },
+      };
+    }
+    return null;
+  }, []);
+
+  /**
+   * ベクタータイル用のレイヤー定義を生成（非同期処理）
+   * スタイル情報を取得し、透過度を適用して返す
+   * @param tileMap 対象のタイルマップ
+   * @returns ベクターレイヤー定義の配列
+   */
+  const getVectorLayers = useCallback(
     async (tileMap: TileMapType) => {
-      if (!mapViewRef.current) return;
-      const map = (mapViewRef.current as MapRef).getMap();
       let layerStyles: LineLayerSpecification[] | FillLayerSpecification[] | BackgroundLayerSpecification[] = [];
       if (tileMap.styleURL && tileMap.styleURL.startsWith('style://')) {
         layerStyles = await getStyleFromLocal(tileMap);
@@ -426,64 +434,148 @@ export default function HomeScreen() {
         if (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles')) {
           layerStyles = await getDefaultStyle(tileMap);
         } else {
-          return;
+          return [];
         }
       }
-
-      layerStyles.forEach(
+      //レイヤのIDをtileMapのIDとインデックスで設定
+      //スタイルの透過設定とレイヤの透過設定を統合
+      const updatedLayers = layerStyles.map(
         (layerStyle: LineLayerSpecification | FillLayerSpecification | BackgroundLayerSpecification, index: number) => {
-          layerStyle.id = `${tileMap.id}_${index}`;
-          if (layerStyle.type !== 'background' && layerStyle.source) {
-            layerStyle.source = `${tileMap.id}`;
+          const newLayerStyle = { ...layerStyle };
+          newLayerStyle.id = `${tileMap.id}_${index}`;
+          if (newLayerStyle.type !== 'background' && newLayerStyle.source) {
+            newLayerStyle.source = `${tileMap.id}`;
           }
 
-          if (layerStyle.type === 'fill' && layerStyle.paint) {
-            if (layerStyle.paint['fill-opacity'] && typeof layerStyle.paint['fill-opacity'] === 'number') {
-              layerStyle.paint['fill-opacity'] = layerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
+          if (newLayerStyle.type === 'fill' && newLayerStyle.paint) {
+            if (newLayerStyle.paint['fill-opacity'] && typeof newLayerStyle.paint['fill-opacity'] === 'number') {
+              newLayerStyle.paint['fill-opacity'] = newLayerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
             } else {
-              layerStyle.paint['fill-opacity'] = 1 - tileMap.transparency;
+              newLayerStyle.paint['fill-opacity'] = 1 - tileMap.transparency;
             }
-          } else if (layerStyle.type === 'background' && layerStyle.paint) {
-            if (layerStyle.paint['background-opacity'] && typeof layerStyle.paint['background-opacity'] === 'number') {
-              layerStyle.paint['background-opacity'] =
-                layerStyle.paint['background-opacity'] * (1 - tileMap.transparency);
+          } else if (newLayerStyle.type === 'background' && newLayerStyle.paint) {
+            if (
+              newLayerStyle.paint['background-opacity'] &&
+              typeof newLayerStyle.paint['background-opacity'] === 'number'
+            ) {
+              newLayerStyle.paint['background-opacity'] =
+                newLayerStyle.paint['background-opacity'] * (1 - tileMap.transparency);
             } else {
-              layerStyle.paint['background-opacity'] = 1 - tileMap.transparency;
+              newLayerStyle.paint['background-opacity'] = 1 - tileMap.transparency;
             }
           }
-          map.addLayer(layerStyle);
+          return newLayerStyle;
         }
       );
+      return updatedLayers;
     },
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mapViewRef.current]
+    [getStyleFromLocal, getStyleFromURL]
   );
 
+  /**
+   * タイルマップから適切なレイヤー定義を生成する統一インターフェース
+   * ベクタータイルとラスタータイルを自動判別して処理
+   * @param tileMap 対象のタイルマップ
+   * @returns レイヤー定義（単一または配列）またはnull
+   */
+  const getTileMapLayers = useCallback(
+    async (tileMap: TileMapType): Promise<AnyLayer | AnyLayer[] | null> => {
+      // 非表示またはグループの場合はスキップ
+      if (!tileMap.visible || tileMap.isGroup) {
+        return null;
+      }
+
+      // ベクタータイルの判定と処理
+      const isVectorTile =
+        tileMap.url &&
+        (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf')) &&
+        tileMap.isVector;
+
+      if (isVectorTile) {
+        return await getVectorLayers(tileMap);
+      }
+
+      // ラスタータイルの処理
+      return getRasterLayer(tileMap);
+    },
+    [getRasterLayer, getVectorLayers]
+  );
+
+  // ========== 動的レイヤー管理 ==========
+
+  /**
+   * マップに動的にレイヤーを追加・更新する
+   * 既存レイヤーを削除してから新規レイヤーを追加
+   */
+  const addDynamicLayers = useCallback(async () => {
+    if (!mapViewRef.current) return;
+    const map = (mapViewRef.current as MapRef).getMap();
+    if (!map) return;
+
+    // Remove all existing dynamic layers (both raster and vector)
+    const style = map.getStyle();
+    if (style && style.layers) {
+      const dynamicLayerIds = style.layers
+        .filter((layer) => {
+          if (layer.id.includes('_') && tileMaps.some((tm) => layer.id.startsWith(tm.id + '_'))) {
+            return true;
+          }
+          // Remove all tilemap-related layers (including standard/satellite)
+          return tileMaps.some((tm) => layer.id === tm.id || layer.id === 'satellite' || layer.id === 'standard');
+        })
+        .map((layer) => layer.id);
+
+      // Remove layers in reverse order to avoid dependency issues
+      dynamicLayerIds.reverse().forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          try {
+            map.removeLayer(layerId);
+          } catch (e) {
+            //console.warn(`Failed to remove layer ${layerId}:`, e);
+          }
+        }
+      });
+    }
+
+    // 全レイヤーを逆順で処理（表示順序を正しくするため）
+    const layersPromise = tileMaps
+      .slice(0)
+      .reverse()
+      .map((tileMap: TileMapType) => getTileMapLayers(tileMap));
+
+    const layersResult = await Promise.all(layersPromise);
+    const dynamicLayers = layersResult.flat().filter((layer): layer is AnyLayer => !!layer);
+
+    // 各レイヤーをマップに追加
+    dynamicLayers.forEach((layer: AnyLayer) => {
+      if (!map.getLayer(layer.id)) {
+        try {
+          map.addLayer(layer);
+        } catch (e) {
+          //console.warn(`Failed to add layer ${layer.id}:`, e);
+        }
+      }
+    });
+  }, [tileMaps, getTileMapLayers, mapViewRef]);
+
+  // ========== Hooks ==========
+
+  // PMTilesのURL更新（起動時）
   useEffect(() => {
     (async () => {
-      //起動時にpmtilesのURLを更新
       await updatePmtilesURL();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // タイルマップ変更時のレイヤー更新
   useEffect(() => {
     (async () => {
-      for (const tileMap of tileMaps) {
-        try {
-          if (
-            tileMap.url &&
-            (tileMap.url.startsWith('pmtiles://') || tileMap.url.includes('.pmtiles') || tileMap.url.includes('.pbf'))
-          ) {
-            if (tileMap.isVector) await updateVectorStyle(tileMap);
-          }
-        } catch (e) {
-          console.log(e);
-        }
+      if (mapViewRef.current) {
+        await addDynamicLayers();
       }
     })();
-  }, [tileMaps, updateVectorStyle, updatePmtilesURL]);
+  }, [tileMaps, addDynamicLayers, mapViewRef]);
 
   useEffect(() => {
     if (isPointRecordType(selectedRecord?.record)) return;
@@ -525,19 +617,45 @@ export default function HomeScreen() {
 
   const rasterdem = maptilerdem;
 
-  const onMapLoad = (evt: any) => {
-    //最初のロードだけ呼ばれる
-    const map = evt.target;
-    map.touchPitch.enable();
-    if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
+  // ========== マップイベントハンドラー ==========
 
-    //二回目以降の設定
-    map.on('style.load', function () {
-      if (!map.getSource('rasterdem')) map.addSource('rasterdem', rasterdem);
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
-    });
-  };
+  /**
+   * マップ初回ロード時の処理
+   * 地形データソースの設定とレイヤーの初期化
+   */
+  const onMapLoad = useCallback(
+    async (evt: any) => {
+      const map = evt.target;
+      map.touchPitch.enable();
 
+      // 地形データソースの追加
+      if (!map.getSource('rasterdem')) {
+        map.addSource('rasterdem', rasterdem);
+      }
+
+      // 初回ロード時にレイヤーを追加
+      await addDynamicLayers();
+
+      // スタイル変更時の処理（二回目以降）
+      map.on('style.load', async function () {
+        if (!map.getSource('rasterdem')) {
+          map.addSource('rasterdem', rasterdem);
+        }
+        map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
+
+        // スタイル変更時にもレイヤーを再追加
+        await addDynamicLayers();
+      });
+    },
+    [addDynamicLayers, rasterdem]
+  );
+
+  // ========== マップスタイル定義 ==========
+
+  /**
+   * MapLibre GLのスタイル定義を生成
+   * ソースのみを定義し、レイヤーは動的に追加
+   */
   const mapStyle = useMemo(() => {
     const sources = tileMaps
       .slice(0)
@@ -631,60 +749,13 @@ export default function HomeScreen() {
         }
       }, {});
 
-    const layers_: AnyLayer[] = tileMaps
-      .slice(0)
-      .reverse()
-      .map((tileMap: TileMapType) => {
-        if (tileMap.visible && !tileMap.isGroup) {
-          if (
-            tileMap.url &&
-            (tileMap.url.startsWith('pmtiles://') ||
-              tileMap.url.includes('.pmtiles') ||
-              tileMap.url.includes('.pbf')) &&
-            tileMap.isVector
-          ) {
-            return null;
-          } else if (tileMap.url) {
-            return {
-              id: tileMap.id,
-              type: 'raster',
-              source: tileMap.id,
-              minzoom: tileMap.minimumZ,
-              maxzoom: 24,
-              paint: { 'raster-opacity': 1 - (tileMap.transparency !== undefined ? tileMap.transparency : 0) },
-            } as AnyLayer;
-          } else if (tileMap.id === 'hybrid') {
-            return {
-              id: 'satellite',
-              type: 'raster',
-              source: 'satellite',
-              minzoom: 0,
-              maxzoom: 24,
-              paint: { 'raster-opacity': 1 },
-            };
-          } else if (tileMap.id === 'standard') {
-            return {
-              id: 'standard',
-              type: 'raster',
-              source: 'standard',
-              minzoom: 0,
-              maxzoom: 24,
-              paint: { 'raster-opacity': 1 },
-            };
-          }
-        } else {
-          return null;
-        }
-      })
-      .filter((v): v is AnyLayer => !!v);
-
     return {
       version: 8,
       glyphs: 'https://map.ecoris.info/glyphs/{fontstack}/{range}.pbf',
       //glyphs: 'https://gsi-cyberjapan.github.io/optimal_bvmap/glyphs/{fontstack}/{range}.pbf',
       //sprite: 'https://gsi-cyberjapan.github.io/optimal_bvmap/sprite/std',
       sources: { ...sources, rasterdem: rasterdem },
-      layers: [...layers_],
+      layers: [],
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
