@@ -20,28 +20,17 @@ index cc44531..e37b068 100644
 +  implementation 'com.google.protobuf:protobuf-javalite:3.21.11'
 +  implementation 'com.google.code.gson:gson:2.8.8'
  }
-diff --git a/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/results.bin b/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/results.bin
+diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/results.bin b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/results.bin
 new file mode 100644
 index 0000000..0d259dd
 --- /dev/null
-+++ b/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/results.bin
++++ b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/results.bin
 @@ -0,0 +1 @@
 +o/classes
-diff --git a/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/transformed/classes/classes_dex/classes.dex
+diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..0deeaa6
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/326bde6337dea15ae7ae4fc2c1d159e8/transformed/classes/classes_dex/classes.dex differ
-diff --git a/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/results.bin b/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/results.bin
-new file mode 100644
-index 0000000..0d259dd
---- /dev/null
-+++ b/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/results.bin
-@@ -0,0 +1 @@
-+o/classes
-diff --git a/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/transformed/classes/classes_dex/classes.dex
-new file mode 100644
-index 0000000..92da881
-Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/822af5966e48971504ec49a4b999953c/transformed/classes/classes_dex/classes.dex differ
+index 0000000..e1c9da6
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
 index 0000000..845e2d9
@@ -121,7 +110,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..9c3d407
+index 0000000..844fa00
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -132,11 +121,11 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..c63758f
+index 0000000..0d54ec7
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Wed Dec 11 19:05:13 JST 2024
++#Thu May 08 17:56:43 JST 2025
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..a3bedc4
@@ -420,7 +409,7 @@ index 0000000..0d0d78c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..60e5086
+index 0000000..a3d058b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class
 new file mode 100644
@@ -436,11 +425,11 @@ index 0000000..0a1067e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..b64ddc3
+index 0000000..daf8cd1
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class
 new file mode 100644
-index 0000000..dce82ce
+index 0000000..80066b7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class
 new file mode 100644
@@ -703,7 +692,7 @@ index 0000000..0637a08
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..86b0bae
+index 0000000..8fad59e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -845,7 +834,7 @@ index 0000000..1c86d8e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..1ce0dcb
+index 0000000..47c9669
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
 new file mode 100644
@@ -1200,10 +1189,10 @@ index 0000000..fa156d6
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..d546924
+index 0000000..3faff7b
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1241 @@
+@@ -0,0 +1,1301 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Metadata;
@@ -1803,34 +1792,94 @@ index 0000000..d546924
 +    return new PolygonData(path, centerX, centerY);
 +  }
 +
++  private String evaluateExpression(List<?> expression, Map<String, String> attributes) {
++    if (expression == null || expression.isEmpty()) {
++      return "";
++    }
++    
++    String operator = (String) expression.get(0);
++    
++    if ("get".equals(operator) && expression.size() >= 2) {
++      // ["get", "field_name"]
++      String fieldName = (String) expression.get(1);
++      return attributes.getOrDefault(fieldName, "");
++    } else if ("slice".equals(operator) && expression.size() >= 4) {
++      // ["slice", string_expression, start, end]
++      String sourceValue;
++      Object sourceExpr = expression.get(1);
++      if (sourceExpr instanceof String) {
++        sourceValue = (String) sourceExpr;
++      } else if (sourceExpr instanceof List) {
++        sourceValue = evaluateExpression((List<?>) sourceExpr, attributes);
++      } else {
++        sourceValue = "";
++      }
++      
++      try {
++        int start = ((Number) expression.get(2)).intValue();
++        int end = ((Number) expression.get(3)).intValue();
++        
++        if (start < 0) start = 0;
++        if (end > sourceValue.length()) end = sourceValue.length();
++        if (start > end) return "";
++        
++        return sourceValue.substring(start, end);
++      } catch (Exception e) {
++        return "";
++      }
++    }
++    
++    return "";
++  }
++  
 +  private boolean checkFilter(List<?> filter, Map<String, String> attributes) {
 +    if (filter == null) return true;
 +    if (filter.size() == 3) {
 +      //System.out.println("##filter: " + filter);
 +      String op = (String) filter.get(0);
-+      String key = (String) filter.get(1);
-+      String value = (String) filter.get(2);
-+      String attributeValue = attributes.getOrDefault(key, "");
++      
++      // Evaluate the left operand (could be a string key or an expression)
++      Object leftOperand = filter.get(1);
++      String leftValue;
++      if (leftOperand instanceof String) {
++        leftValue = attributes.getOrDefault((String) leftOperand, "");
++      } else if (leftOperand instanceof List) {
++        leftValue = evaluateExpression((List<?>) leftOperand, attributes);
++      } else {
++        leftValue = "";
++      }
++      
++      // Evaluate the right operand
++      Object rightOperand = filter.get(2);
++      String rightValue;
++      if (rightOperand instanceof String) {
++        rightValue = (String) rightOperand;
++      } else if (rightOperand instanceof List) {
++        rightValue = evaluateExpression((List<?>) rightOperand, attributes);
++      } else {
++        rightValue = String.valueOf(rightOperand);
++      }
++      
 +      if ("==".equals(op)) {
-+        return value.equals(attributeValue);
++        return leftValue.equals(rightValue);
 +      } else if ("!=".equals(op)) {
-+        return !value.equals(attributeValue);
++        return !leftValue.equals(rightValue);
 +      } else if (">".equals(op)) {
-+        return Float.parseFloat(attributeValue) > Float.parseFloat(value);
++        return Float.parseFloat(leftValue) > Float.parseFloat(rightValue);
 +      } else if (">=".equals(op)) {
-+        return Float.parseFloat(attributeValue) >= Float.parseFloat(value);
++        return Float.parseFloat(leftValue) >= Float.parseFloat(rightValue);
 +      } else if ("<".equals(op)) {
-+        return Float.parseFloat(attributeValue) < Float.parseFloat(value);
++        return Float.parseFloat(leftValue) < Float.parseFloat(rightValue);
 +      } else if ("<=".equals(op)) {
-+        return Float.parseFloat(attributeValue) <= Float.parseFloat(value);
++        return Float.parseFloat(leftValue) <= Float.parseFloat(rightValue);
 +      } else if ("in".equals(op)) {
-+        return value.contains(attributeValue);
++        return rightValue.contains(leftValue);
 +      } else if ("!in".equals(op)) {
-+        return !value.contains(attributeValue);
++        return !rightValue.contains(leftValue);
 +      } else if ("has".equals(op)) {
-+        return !attributeValue.isEmpty();
++        return !leftValue.isEmpty();
 +      } else if ("!has".equals(op)) {
-+        return attributeValue.isEmpty();
++        return leftValue.isEmpty();
 +      }
 +    }
 +    return false;
@@ -10319,7 +10368,7 @@ index cfcac70..5d0e5fc 100644
    NSMutableArray<UIView *> *_reactSubviews;
    MKCoordinateRegion _initialRegion;
    MKCoordinateRegion _region;
-@@ -93,8 +98,10 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -93,8 +98,10 @@ - (instancetype)initWithMapId:(NSString *)mapId
      _overlays = [NSMutableArray array];
      _initialCamera = nil;
      _cameraProp = nil;
@@ -10332,7 +10381,7 @@ index cfcac70..5d0e5fc 100644
      _initialRegionSet = false;
      _initialCameraSet = false;
      _didLayoutSubviews = false;
-@@ -120,9 +127,7 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -120,9 +127,7 @@ - (instancetype) init {
  }
  
  - (void)dealloc {
@@ -10343,7 +10392,7 @@ index cfcac70..5d0e5fc 100644
  }
  
  - (id)eventFromCoordinate:(CLLocationCoordinate2D)coordinate {
-@@ -130,52 +135,58 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -130,52 +135,58 @@ - (id)eventFromCoordinate:(CLLocationCoordinate2D)coordinate {
    CGPoint touchPoint = [self.projection pointForCoordinate:coordinate];
  
    return @{
@@ -10423,7 +10472,7 @@ index cfcac70..5d0e5fc 100644
      heatmap.heatmap.map = self;
      [self.heatmaps addObject:heatmap];
    } else {
-@@ -184,46 +195,49 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -184,46 +195,49 @@ - (void)insertReactSubview:(id<RCTComponent>)subview atIndex:(NSInteger)atIndex
        [self insertReactSubview:(UIView *)childSubviews[i] atIndex:atIndex];
      }
    }
@@ -10486,7 +10535,7 @@ index cfcac70..5d0e5fc 100644
      heatmap.heatmap.map = nil;
      [self.heatmaps removeObject:heatmap];
    } else {
-@@ -335,22 +349,26 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -335,22 +349,26 @@ - (void)didPrepareMap {
  }
  
  - (void)mapViewDidFinishTileRendering {
@@ -10523,7 +10572,7 @@ index cfcac70..5d0e5fc 100644
  
    // TODO: not sure why this is necessary
    [self setSelectedMarker:marker];
-@@ -361,62 +379,80 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -361,62 +379,80 @@ - (BOOL)didTapMarker:(GMSMarker *)marker {
  - (void)didTapPolyline:(GMSOverlay *)polyline {
    AIRGMSPolyline *airPolyline = (AIRGMSPolyline *)polyline;
  
@@ -10635,7 +10684,7 @@ index cfcac70..5d0e5fc 100644
  }
  
  - (void)setMapPadding:(UIEdgeInsets)mapPadding {
-@@ -427,35 +463,29 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -427,35 +463,29 @@ - (UIEdgeInsets)mapPadding {
    return self.padding;
  }
  
@@ -10688,7 +10737,7 @@ index cfcac70..5d0e5fc 100644
    }
  }
  
-@@ -475,8 +505,10 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -475,8 +505,10 @@ - (BOOL)zoomEnabled {
    return self.settings.zoomGestures;
  }
  
@@ -10701,7 +10750,7 @@ index cfcac70..5d0e5fc 100644
  }
  
  - (BOOL)scrollDuringRotateOrZoomEnabled {
-@@ -484,11 +516,11 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -484,11 +516,11 @@ - (BOOL)scrollDuringRotateOrZoomEnabled {
  }
  
  - (void)setZoomTapEnabled:(BOOL)zoomTapEnabled {
@@ -10715,7 +10764,7 @@ index cfcac70..5d0e5fc 100644
  }
  
  - (void)setRotateEnabled:(BOOL)rotateEnabled {
-@@ -530,7 +562,8 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -530,7 +562,8 @@ - (void)setShowsCompass:(BOOL)showsCompass {
  - (void)setCustomMapStyleString:(NSString *)customMapStyleString {
    NSError *error;
  
@@ -10725,7 +10774,7 @@ index cfcac70..5d0e5fc 100644
  
    if (!style) {
      NSLog(@"The style definition could not be loaded: %@", error);
-@@ -560,11 +593,11 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -560,11 +593,11 @@ - (BOOL)showsMyLocationButton {
  }
  
  - (void)setMinZoomLevel:(CGFloat)minZoomLevel {
@@ -10739,7 +10788,7 @@ index cfcac70..5d0e5fc 100644
  }
  
  - (void)setShowsIndoors:(BOOL)showsIndoors {
-@@ -891,7 +924,8 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -891,7 +924,8 @@ + (NSString *)GetIconUrl:(GMUPlacemark *) marker parser:(GMUKMLParser *) parser
  
    return marker.style.iconUrl;
  #else
@@ -10749,7 +10798,7 @@ index cfcac70..5d0e5fc 100644
  #endif
  }
  
-@@ -917,13 +951,14 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -917,13 +951,14 @@ - (void)setKmlSrc:(NSString *)kmlUrl {
    [parser parse];
  
    NSUInteger index = 0;
@@ -10767,7 +10816,7 @@ index cfcac70..5d0e5fc 100644
      if (!marker.bridge) {
        marker.bridge = _bridge;
      }
-@@ -936,84 +971,86 @@ id regionAsJSON(MKCoordinateRegion region) {
+@@ -936,84 +971,86 @@ - (void)setKmlSrc:(NSString *)kmlUrl {
      marker.layer.backgroundColor = [UIColor clearColor].CGColor;
      marker.layer.position = CGPointZero;
  
@@ -11239,10 +11288,10 @@ index 0000000..49710a5
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..f6159f6
+index 0000000..a94b80d
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1204 @@
+@@ -0,0 +1,1265 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -11865,6 +11914,48 @@ index 0000000..f6159f6
 +  return nil;
 +}
 +
++- (NSString *)evaluateExpression:(NSArray *)expression
++                      attributes:(NSDictionary<NSString *, NSString *> *)attributes {
++  if (expression == nil || [expression count] == 0) {
++    return @"";
++  }
++  
++  NSString *operator = expression[0];
++  
++  if ([operator isEqualToString:@"get"] && [expression count] >= 2) {
++    // ["get", "field_name"]
++    NSString *fieldName = expression[1];
++    return attributes[fieldName] ? attributes[fieldName] : @"";
++  } else if ([operator isEqualToString:@"slice"] && [expression count] >= 4) {
++    // ["slice", string_expression, start, end]
++    NSString *sourceValue;
++    id sourceExpr = expression[1];
++    if ([sourceExpr isKindOfClass:[NSString class]]) {
++      sourceValue = (NSString *)sourceExpr;
++    } else if ([sourceExpr isKindOfClass:[NSArray class]]) {
++      sourceValue = [self evaluateExpression:(NSArray *)sourceExpr attributes:attributes];
++    } else {
++      sourceValue = @"";
++    }
++    
++    @try {
++      NSInteger start = [expression[2] integerValue];
++      NSInteger end = [expression[3] integerValue];
++      
++      if (start < 0) start = 0;
++      if (end > [sourceValue length]) end = [sourceValue length];
++      if (start > end) return @"";
++      
++      NSRange range = NSMakeRange(start, end - start);
++      return [sourceValue substringWithRange:range];
++    } @catch (NSException *exception) {
++      return @"";
++    }
++  }
++  
++  return @"";
++}
++
 +- (BOOL)checkFilter:(NSArray *)filter
 +         attributes:(NSDictionary<NSString *, NSString *> *)attributes {
 +  if (filter == nil)
@@ -11872,30 +11963,49 @@ index 0000000..f6159f6
 +  if ([filter count] == 3) {
 +    // NSLog(@"##filter: %@", filter);
 +    NSString *op = filter[0];
-+    NSString *key = filter[1];
-+    NSString *value = filter[2];
-+    NSString *attributeValue = attributes[key] ? attributes[key] : @"";
++    
++    // Evaluate the left operand (could be a string key or an expression)
++    id leftOperand = filter[1];
++    NSString *leftValue;
++    if ([leftOperand isKindOfClass:[NSString class]]) {
++      leftValue = attributes[leftOperand] ? attributes[leftOperand] : @"";
++    } else if ([leftOperand isKindOfClass:[NSArray class]]) {
++      leftValue = [self evaluateExpression:(NSArray *)leftOperand attributes:attributes];
++    } else {
++      leftValue = @"";
++    }
++    
++    // Evaluate the right operand
++    id rightOperand = filter[2];
++    NSString *rightValue;
++    if ([rightOperand isKindOfClass:[NSString class]]) {
++      rightValue = (NSString *)rightOperand;
++    } else if ([rightOperand isKindOfClass:[NSArray class]]) {
++      rightValue = [self evaluateExpression:(NSArray *)rightOperand attributes:attributes];
++    } else {
++      rightValue = [NSString stringWithFormat:@"%@", rightOperand];
++    }
 +
 +    if ([op isEqualToString:@"=="]) {
-+      return [value isEqualToString:attributeValue];
++      return [leftValue isEqualToString:rightValue];
 +    } else if ([op isEqualToString:@"!="]) {
-+      return ![value isEqualToString:attributeValue];
++      return ![leftValue isEqualToString:rightValue];
 +    } else if ([op isEqualToString:@">"]) {
-+      return [attributeValue floatValue] > [value floatValue];
++      return [leftValue floatValue] > [rightValue floatValue];
 +    } else if ([op isEqualToString:@">="]) {
-+      return [attributeValue floatValue] >= [value floatValue];
++      return [leftValue floatValue] >= [rightValue floatValue];
 +    } else if ([op isEqualToString:@"<"]) {
-+      return [attributeValue floatValue] < [value floatValue];
++      return [leftValue floatValue] < [rightValue floatValue];
 +    } else if ([op isEqualToString:@"<="]) {
-+      return [attributeValue floatValue] <= [value floatValue];
++      return [leftValue floatValue] <= [rightValue floatValue];
 +    } else if ([op isEqualToString:@"in"]) {
-+      return [value containsString:attributeValue];
++      return [rightValue containsString:leftValue];
 +    } else if ([op isEqualToString:@"!in"]) {
-+      return ![value containsString:attributeValue];
++      return ![rightValue containsString:leftValue];
 +    } else if ([op isEqualToString:@"has"]) {
-+      return attributeValue.length > 0;
++      return leftValue.length > 0;
 +    } else if ([op isEqualToString:@"!has"]) {
-+      return attributeValue.length == 0;
++      return leftValue.length == 0;
 +    }
 +  }
 +  return NO;
@@ -12460,7 +12570,7 @@ index ee501d8..6851fd9 100644
  
  @end
  
-@@ -16,17 +16,23 @@
+@@ -16,17 +16,23 @@ @implementation AIRGoogleMapUrlTileManager
  
  RCT_EXPORT_MODULE()
  
@@ -15791,7 +15901,7 @@ diff --git a/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverl
 index 63d305c..bcfdcf2 100644
 --- a/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m
 +++ b/node_modules/react-native-maps/ios/AirMaps/AIRMapUrlTileCachedOverlay.m
-@@ -12,224 +12,293 @@
+@@ -12,224 +12,293 @@ @interface AIRMapUrlTileCachedOverlay ()
  @end
  
  @implementation AIRMapUrlTileCachedOverlay {

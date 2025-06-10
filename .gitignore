@@ -37,8 +37,9 @@ android/app/.cxx/
 
 # node.js
 #
-node_modules/
-!node_modules/react-native-maps/
+node_modules/*
+#!node_modules/react-native-maps/
+
 npm-debug.log
 yarn-error.log
 
@@ -106,7 +107,7 @@ modules/react-native-gdalwarp/ios/Frameworks/
 !.yarn/sdks
 !.yarn/versions
 
-react-native-maps/
+# react-native-maps/ # Commented out to allow tracking
 
 # workflow
 ExportOptions.plist
