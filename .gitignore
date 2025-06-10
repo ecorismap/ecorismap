@@ -38,6 +38,7 @@ android/app/.cxx/
 # node.js
 #
 node_modules/
+!node_modules/react-native-maps/
 npm-debug.log
 yarn-error.log
 
