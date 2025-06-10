@@ -31,6 +31,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
   } = useDictionaryInput(table, initialValue);
 
   const handleSelectItem = (item: string) => {
+    console.log('handleSelectItem', item);
     clearOnSelect ? setQueryString('') : setQueryString(item);
     setFilteredData([]);
     setFocus(false);
@@ -71,7 +72,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
         </View>
       </View>
       {isFocused && queryString.length > 0 && (
-        <ScrollView style={styles.flatList} nestedScrollEnabled>
+        <ScrollView style={styles.flatList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
           {filteredData.map((item, index) => {
             return (
               <Pressable key={index} onPress={() => handleSelectItem(item)} style={styles.separator}>
