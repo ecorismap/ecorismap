@@ -604,7 +604,9 @@
       "failDeleteProjectPDF": "プロジェクトのPDFの削除に失敗しました",
       "failEncryptDictionary": "辞書の暗号化に失敗しました",
       "failUploadDictionary": "辞書のアップロードに失敗しました",
-      "failGetDictionary": "辞書のダウンロードに失敗しました"
+      "failGetDictionary": "辞書のダウンロードに失敗しました",
+      "failEncryptStyle": "Styleの暗号化に失敗しました",
+      "failUploadStyle": "Styleのアップロードに失敗しました。"
     }
   },
   "Account": {
@@ -738,7 +740,8 @@
       "successSaveFile": "ファイルを保存しました。",
       "successExportData": "データを保存しました。",
       "successExportMaps": "地図の設定を保存しました。",
-      "dataSizeTooLarge": "データのサイズが大きいためアップロードできません"
+      "dataSizeTooLarge": "データのサイズが大きいためアップロードできません",
+      "failDeleteFile": "プロジェクトのファイルの削除に失敗しました"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"

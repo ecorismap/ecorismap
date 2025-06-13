@@ -43,7 +43,7 @@ export {
   updateDoc,
 } from '@react-native-firebase/firestore';
 export { httpsCallable } from '@react-native-firebase/functions';
-export { ref, uploadBytes, getDownloadURL, deleteObject, listAll } from '@react-native-firebase/storage';
+export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from '@react-native-firebase/storage';
 
 export let firestore: FirebaseFirestoreTypes.Module;
 export let functions: FirebaseFunctionsTypes.Module;

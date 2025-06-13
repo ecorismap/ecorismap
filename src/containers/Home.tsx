@@ -692,7 +692,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await AlertAsync(t('Home.alert.zoomLevel'));
       return;
     }
-    downloadTiles();
+    downloadTiles(zoom);
   }, [downloadTiles, zoom]);
 
   const pressStopDownloadTiles = useCallback(() => {
@@ -1561,6 +1561,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
         }
         if (allOK) await AlertAsync(t('hooks.message.receiveFile'));
+      } else {
+        await AlertAsync(t('hooks.message.cannotGetFileSize'));
       }
     },
     [gotoMaps, importGeoFile, importPdfFile, importPmtilesFile]

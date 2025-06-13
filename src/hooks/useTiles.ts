@@ -21,7 +21,7 @@ export type UseTilesReturnType = {
   savedArea: TileRegionType[];
   downloadProgress: string;
   savedTileSize: string;
-  downloadTiles: () => Promise<void>;
+  downloadTiles: (zoom: number) => Promise<void>;
   stopDownloadTiles: () => void;
   clearTiles: (tileMap_: TileMapType) => Promise<void>;
 };
@@ -88,210 +88,209 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
     [dispatch, tileRegions]
   );
 
-  const downloadTiles = useCallback(async () => {
-    const id = addTileRegions();
-    if (tileMap === undefined || id === undefined) return;
+  const downloadTiles = useCallback(
+    async (zoom: number) => {
+      const id = addTileRegions();
+      if (tileMap === undefined || id === undefined) return;
 
-    const tileType =
-      getExt(tileMap.url) === 'pbf'
-        ? 'pbf'
-        : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
-        ? 'pmtiles'
-        : 'png';
+      const tileType =
+        getExt(tileMap.url) === 'pbf'
+          ? 'pbf'
+          : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
+          ? 'pmtiles'
+          : 'png';
 
-    const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
+      const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
+      setProgress('0');
+      setIsDownloading(true);
 
-    setProgress('0');
-    setIsDownloading(true);
-
-    //ベクタータイルの場合はmetadataとスタイルをダウンロード
-    if (tileType === 'pbf' || (tileType === 'pmtiles' && tileMap.isVector)) {
-      const folder = `${TILE_FOLDER}/${tileMap.id}`;
-      await FileSystem.makeDirectoryAsync(folder, {
-        intermediates: true,
-      });
-
-      const metadata = await pmtile?.getMetadata();
-      if (metadata !== undefined) {
-        const localLocation = `${folder}/metadata.json`;
-        await FileSystem.writeAsStringAsync(localLocation, JSON.stringify(metadata), {
-          encoding: FileSystem.EncodingType.UTF8,
+      //ベクタータイルの場合はmetadataとスタイルをダウンロード
+      if (tileType === 'pbf' || (tileType === 'pmtiles' && tileMap.isVector)) {
+        const folder = `${TILE_FOLDER}/${tileMap.id}`;
+        await FileSystem.makeDirectoryAsync(folder, {
+          intermediates: true,
         });
-        console.log('downloaded metadata.json', localLocation);
-      }
-
-      const fetchUrl = tileMap.styleURL ?? '';
-      const localLocation = `${folder}/style.json`;
-
-      await fetch(fetchUrl)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
-          }
-          return response.text();
-        })
-        .then(async (data) => {
-          await FileSystem.writeAsStringAsync(localLocation, data, {
+        const metadata = await pmtile?.getMetadata();
+        console.log('metadata', metadata);
+        if (metadata !== undefined) {
+          const localLocation = `${folder}/metadata.json`;
+          await FileSystem.writeAsStringAsync(localLocation, JSON.stringify(metadata), {
             encoding: FileSystem.EncodingType.UTF8,
           });
-          console.log('downloaded style.json', localLocation);
-        })
-        .catch(() => {
-          //console.error(error);
-        });
-    }
-
-    const minZoom = 0;
-    const maxZoom = tileType === 'png' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
-
-    const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
-
-    const BATCH_SIZE = 10;
-
-    let batch: Promise<void>[] = [];
-    let d = 0;
-    for (const tile of tiles) {
-      if (pause.current) {
-        const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-
-        if (ret) {
-          removeTileRegion(id);
-          setIsDownloading(false);
-          pause.current = false;
-          return;
-        } else {
-          pause.current = false;
         }
-      }
-      const folder = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}`;
 
-      const folderPromise = FileSystem.makeDirectoryAsync(folder, {
-        intermediates: true,
-      });
-      batch.push(folderPromise);
+        const fetchUrl = tileMap.styleURL ?? '';
+        const localLocation = `${folder}/style.json`;
 
-      if (batch.length >= BATCH_SIZE) {
-        d = d + BATCH_SIZE;
-        await Promise.all(batch);
-        batch = [];
-      }
-    }
-    await Promise.all(batch);
-    let batchDownload: any = [];
-    let errorCount = 0;
-    d = 0;
-
-    for (const tile of tiles) {
-      if (pause.current) {
-        const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
-        if (ret) {
-          removeTileRegion(id);
-          setIsDownloading(false);
-          pause.current = false;
-          return;
-        } else {
-          pause.current = false;
-        }
-      }
-
-      let tilePromise;
-      if (tileType === 'pmtiles' && tileMap.isVector && pmtile !== undefined) {
-        //console.log(tile.z, tile.x, tile.y);
-        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-        tilePromise = pmtile
-          .getZxy(tile.z, tile.x, tile.y)
-          .then(async (resp) => {
-            if (resp === undefined) return;
-            const base64String = Buffer.from(resp.data).toString('base64');
-            FileSystem.writeAsStringAsync(localLocation, base64String, {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-          })
-          .catch((e) => {
-            console.log(e);
-            //errorCount++;
-          });
-      } else if (tileType === 'pmtiles' && !tileMap.isVector && pmtile !== undefined) {
-        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.png`;
-        tilePromise = pmtile
-          .getZxy(tile.z, tile.x, tile.y)
-          .then(async (resp) => {
-            if (resp === undefined) return;
-            const base64String = Buffer.from(resp.data).toString('base64');
-            FileSystem.writeAsStringAsync(localLocation, base64String, {
-              encoding: FileSystem.EncodingType.UTF8,
-            });
-          })
-          .catch((e) => {
-            console.log(e);
-            //errorCount++;
-          });
-      } else if (tileType === 'pbf') {
-        const fetchUrl = tileMap.url
-          .replace('{z}', tile.z.toString())
-          .replace('{x}', tile.x.toString())
-          .replace('{y}', tile.y.toString());
-        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
-
-        tilePromise = fetch(fetchUrl)
+        await fetch(fetchUrl)
           .then((response) => {
             if (!response.ok) {
               throw new Error('Network response was not ok');
             }
-            return response.arrayBuffer();
+            return response.text();
           })
           .then(async (data) => {
-            const base64String = Buffer.from(data).toString('base64');
-            FileSystem.writeAsStringAsync(localLocation, base64String, {
+            await FileSystem.writeAsStringAsync(localLocation, data, {
               encoding: FileSystem.EncodingType.UTF8,
             });
           })
           .catch(() => {
-            errorCount++;
             //console.error(error);
           });
-      } else if (tileType === 'png') {
-        const fetchUrl = tileMap.url
-          .replace('{z}', tile.z.toString())
-          .replace('{x}', tile.x.toString())
-          .replace('{y}', tile.y.toString());
+      }
 
-        const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
-        //console.log(fetchUrl, localLocation);
+      const minZoom = tileType === 'png' ? 0 : zoom;
+      const maxZoom = tileType === 'png' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
 
-        tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
-          .then(({ uri, status }) => {
-            if (status !== 200) {
-              FileSystem.deleteAsync(uri);
-              //console.log('A', uri);
+      const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
+
+      const BATCH_SIZE = 10;
+
+      let batch: Promise<void>[] = [];
+      let d = 0;
+      for (const tile of tiles) {
+        if (pause.current) {
+          const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
+
+          if (ret) {
+            removeTileRegion(id);
+            setIsDownloading(false);
+            pause.current = false;
+            return;
+          } else {
+            pause.current = false;
+          }
+        }
+        const folder = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}`;
+
+        const folderPromise = FileSystem.makeDirectoryAsync(folder, {
+          intermediates: true,
+        });
+        batch.push(folderPromise);
+
+        if (batch.length >= BATCH_SIZE) {
+          d = d + BATCH_SIZE;
+          await Promise.all(batch);
+          batch = [];
+        }
+      }
+      await Promise.all(batch);
+      let batchDownload: any = [];
+      let errorCount = 0;
+      d = 0;
+
+      for (const tile of tiles) {
+        if (pause.current) {
+          const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
+          if (ret) {
+            removeTileRegion(id);
+            setIsDownloading(false);
+            pause.current = false;
+            return;
+          } else {
+            pause.current = false;
+          }
+        }
+
+        let tilePromise;
+        if (tileType === 'pmtiles' && tileMap.isVector && pmtile !== undefined) {
+          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
+          tilePromise = pmtile
+            .getZxy(tile.z, tile.x, tile.y)
+            .then(async (resp) => {
+              if (resp === undefined) return;
+              const base64String = Buffer.from(resp.data).toString('base64');
+              FileSystem.writeAsStringAsync(localLocation, base64String, {
+                encoding: FileSystem.EncodingType.UTF8,
+              });
+            })
+            .catch((e) => {
+              console.log(e);
+              //errorCount++;
+            });
+        } else if (tileType === 'pmtiles' && !tileMap.isVector && pmtile !== undefined) {
+          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.png`;
+          tilePromise = pmtile
+            .getZxy(tile.z, tile.x, tile.y)
+            .then(async (resp) => {
+              if (resp === undefined) return;
+              const base64String = Buffer.from(resp.data).toString('base64');
+              FileSystem.writeAsStringAsync(localLocation, base64String, {
+                encoding: FileSystem.EncodingType.UTF8,
+              });
+            })
+            .catch((e) => {
+              console.log(e);
+              //errorCount++;
+            });
+        } else if (tileType === 'pbf') {
+          const fetchUrl = tileMap.url
+            .replace('{z}', tile.z.toString())
+            .replace('{x}', tile.x.toString())
+            .replace('{y}', tile.y.toString());
+          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}.pbf`;
+
+          tilePromise = fetch(fetchUrl)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.arrayBuffer();
+            })
+            .then(async (data) => {
+              const base64String = Buffer.from(data).toString('base64');
+              FileSystem.writeAsStringAsync(localLocation, base64String, {
+                encoding: FileSystem.EncodingType.UTF8,
+              });
+            })
+            .catch(() => {
               errorCount++;
-            }
-          })
-          .catch(() => {
-            errorCount++;
-            //console.error(error);
-          });
-      }
+              //console.error(error);
+            });
+        } else if (tileType === 'png') {
+          const fetchUrl = tileMap.url
+            .replace('{z}', tile.z.toString())
+            .replace('{x}', tile.x.toString())
+            .replace('{y}', tile.y.toString());
 
-      batchDownload.push(tilePromise);
-      if (batchDownload.length >= BATCH_SIZE) {
-        d = d + BATCH_SIZE;
-        setProgress(((d / tiles.length) * 100).toFixed());
-        await Promise.all(batchDownload);
-        batchDownload = [];
-      }
-    }
-    await Promise.all(batch);
+          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
+          //console.log(fetchUrl, localLocation);
 
-    setIsDownloading(false);
-    //console.log('errorCoount', (errorCount / tiles.length) * 100);
-    if ((errorCount / tiles.length) * 100 > 20) {
-      //removeTileRegion(id);
-      await AlertAsync(t('hooks.alert.errorDownload'));
-      return;
-    }
-    await AlertAsync(t('hooks.alert.completeDownload'));
-  }, [addTileRegions, downloadRegion, removeTileRegion, tileMap]);
+          tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
+            .then(({ uri, status }) => {
+              if (status !== 200) {
+                FileSystem.deleteAsync(uri);
+                //console.log('A', uri);
+                errorCount++;
+              }
+            })
+            .catch(() => {
+              errorCount++;
+              //console.error(error);
+            });
+        }
+
+        batchDownload.push(tilePromise);
+        if (batchDownload.length >= BATCH_SIZE) {
+          d = d + BATCH_SIZE;
+          setProgress(((d / tiles.length) * 100).toFixed());
+          await Promise.all(batchDownload);
+          batchDownload = [];
+        }
+      }
+      await Promise.all(batch);
+
+      setIsDownloading(false);
+      //console.log('errorCoount', (errorCount / tiles.length) * 100);
+      if ((errorCount / tiles.length) * 100 > 20) {
+        //removeTileRegion(id);
+        await AlertAsync(t('hooks.alert.errorDownload'));
+        return;
+      }
+      await AlertAsync(t('hooks.alert.completeDownload'));
+    },
+    [addTileRegions, downloadRegion, removeTileRegion, tileMap]
+  );
 
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {

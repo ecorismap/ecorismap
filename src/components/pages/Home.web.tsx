@@ -467,6 +467,7 @@ export default function HomeScreen() {
           return newLayerStyle;
         }
       );
+
       return updatedLayers;
     },
     [getStyleFromLocal, getStyleFromURL]

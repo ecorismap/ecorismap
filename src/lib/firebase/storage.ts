@@ -279,3 +279,76 @@ export const deleteAllProjectStorageData = async (projectIds: string[]) => {
   }
   return { isOK: true, message: '' };
 };
+
+export const uploadStyle = async (projectId: string, tileMapId: string) => {
+  try {
+    const styleData = (await db.pmtiles.get(tileMapId))?.style;
+    if (styleData === undefined) {
+      return { isOK: false, message: t('firebase.message.failUploadStyle'), url: null, key: null };
+    }
+    const styleUri = `data:application/json;charset=utf-8,${encodeURIComponent(styleData)}`;
+
+    const { encdata, key } = await encFile(styleUri);
+    if (encdata === undefined || key === undefined) {
+      return { isOK: false, message: t('firebase.message.failEncryptStyle'), url: null, key: null };
+    }
+    const storageRef = ref(storage, `projects/${projectId}/STYLE/${tileMapId}`);
+    await uploadBytes(storageRef, encdata as Blob);
+    const url = await getDownloadURL(storageRef);
+    return { isOK: true, message: '', url: 'style://' + url, key };
+  } catch (error) {
+    console.error('uploadStyle Error:', error);
+    return { isOK: false, message: t('firebase.message.failUploadStyle'), url: null, key: null };
+  }
+};
+
+export const downloadStyle = async (url: string, key: string) => {
+  try {
+    if (Platform.OS === 'web') {
+      const response = await fetch(url);
+      if (response.status !== 200) {
+        return { isOK: false };
+      } else {
+        const blob = await response.blob();
+        const { decdata } = await decFile(blob, key);
+        if (decdata === undefined) {
+          return { isOK: false };
+        }
+        const json = await decdata.text();
+        return { isOK: true, styleJson: json };
+      }
+    } else {
+      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp_style.json');
+      if (status !== 200) {
+        await FileSystem.deleteAsync(uri);
+        return { isOK: false };
+      } else {
+        const { decUri } = await decFileRN(uri, key);
+        if (decUri === undefined) {
+          await FileSystem.deleteAsync(uri);
+          return { isOK: false };
+        }
+        return { isOK: true, styleJson: 'file://' + decUri };
+      }
+    }
+  } catch (error) {
+    console.error('downloadStyle Error:', error);
+    return { isOK: false };
+  }
+};
+
+export const deleteProjectStyle = async (projectId: string, excludeItems: string[]) => {
+  try {
+    const styleFolderRef = ref(storage, `projects/${projectId}/STYLE`);
+    const listResult = await listAll(styleFolderRef);
+    await Promise.all(
+      listResult.items.map((itemRef) =>
+        excludeItems.includes(itemRef.name) ? Promise.resolve() : deleteObject(itemRef)
+      )
+    );
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.error('deleteProjectStyle Error:', error);
+    return { isOK: false, message: t('hooks.message.failDeleteFile') };
+  }
+};

@@ -15,6 +15,13 @@ service firebase.storage {
         && isValidFileSize(request.resource);
       allow delete: if isSignedIn()
     }
+    match /projects/{projectId}/STYLE/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidContentType(request.resource)
+        && isValidFileSize(request.resource);
+      allow delete: if isSignedIn()
+    }
     match /projects/{projectId}/DICTIONARY/{layerId}/{allPaths=**} {
       allow read: if isSignedIn();
       allow create: if isSignedIn()
@@ -33,7 +40,7 @@ service firebase.storage {
   }
  
   function isValidContentType(data) {
-    return data.contentType in ['image/png',"image/jpeg","application/pdf","application/x-sqlite3"];
+    return data.contentType in ['image/png',"image/jpeg","application/pdf","application/x-sqlite3","application/json"];
   }
 
   function isValidFileSize(data) {

@@ -14726,10 +14726,10 @@ index 0000000..4e6dab3
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
 new file mode 100644
-index 0000000..fc86934
+index 0000000..acac68b
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/StyleManager.m
-@@ -0,0 +1,367 @@
+@@ -0,0 +1,368 @@
 +#import "StyleManager.h"
 +#import <Foundation/Foundation.h>
 +
@@ -14784,6 +14784,7 @@ index 0000000..fc86934
 +  NSString *style = [NSString stringWithContentsOfFile:_localPath
 +                                              encoding:NSUTF8StringEncoding
 +                                                 error:&error];
++  //NSLog(@"##!style: %@", style);
 +  if (_offlineMode) {
 +    // オフラインモードの場合、ローカルにスタイルがない場合はデフォルトのスタイルを使用
 +    if (!style || error) {
@@ -14814,10 +14815,10 @@ index 0000000..fc86934
 +    } else {
 +      // オンラインでスタイルのダウンロードに失敗した場合は、ローカルのスタイルがあればそれを使用。なければデフォルトのスタイルを使用。
 +      if (!style || error) {
-+        // NSLog(@"Failed to load style JSON");
++        //NSLog(@"Failed to load style JSON");
 +        _styleLayers = @[];
++        return;
 +      }
-+      return;
 +    }
 +  }
 +
@@ -14834,7 +14835,7 @@ index 0000000..fc86934
 +
 +  // パースが失敗した場合はデフォルトのスタイルを使用
 +  if (error) {
-+    // NSLog(@"JSON parsing error: %@", [error localizedDescription]);
++    NSLog(@"JSON parsing error: %@", [error localizedDescription]);
 +    _styleLayers = @[];
 +  } else if (![parsedStyleLayers isKindOfClass:[NSDictionary class]]) {
 +    // NSLog(@"parsedStyleLayers: %@", parsedStyleLayers);

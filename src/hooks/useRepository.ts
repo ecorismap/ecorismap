@@ -9,7 +9,7 @@ import {
   RegionType,
   TileMapType,
 } from '../types';
-import { PHOTO_FOLDER } from '../constants/AppConstants';
+import { PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -28,6 +28,8 @@ import { Platform } from 'react-native';
 import { t } from '../i18n/config';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
+import { db } from '../utils/db';
+import * as FileSystem from 'expo-file-system';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{
@@ -520,6 +522,14 @@ export const useRepository = (): UseRepositoryReturnType & {
           } else {
             uploadedTileMaps.push({ ...tileMap, url, encryptKey: key });
           }
+        } else if (Platform.OS === 'web' && tileMap.styleURL?.startsWith('style://')) {
+          const { isOK, message, url, key } = await projectStorage.uploadStyle(projectId, tileMap.id);
+          if (!isOK || url === null) {
+            await AlertAsync(message);
+            uploadedTileMaps.push(tileMap);
+          } else {
+            uploadedTileMaps.push({ ...tileMap, styleURL: url, encryptKey: key });
+          }
         } else if (tileMap.url.includes('blob:')) {
           //ローカルのPMTilesはアップロードしない
         } else {
@@ -572,6 +582,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       // 変更後のレイヤ設定をアップロード前に作成
       const excludeItems = tileMaps.map((tileMap) => tileMap.id);
       await projectStorage.deleteProjectPDF(project_.id, excludeItems);
+      await projectStorage.deleteProjectStyle(project_.id, excludeItems);
       const updatedTileMaps = await uploadTileMaps(project_.id);
       const updatedLayers = await uploadDictionary(project_.id);
       // permission変更があればサーバーデータも一括更新
@@ -685,6 +696,34 @@ export const useRepository = (): UseRepositoryReturnType & {
     }
   }, []);
 
+  const downloadStyle = useCallback(async (projectId: string, tileMaps_: TileMapType[]) => {
+    for (const tileMap of tileMaps_) {
+      if (tileMap.styleURL === undefined || tileMap.encryptKey === undefined) continue;
+      const url = tileMap.styleURL.startsWith('style://') ? tileMap.styleURL.replace('style://', '') : tileMap.styleURL;
+      const { isOK, styleJson } = await projectStorage.downloadStyle(url, tileMap.encryptKey);
+      if (!isOK || !styleJson) {
+        //メッセージは出ないようにする
+        //await AlertAsync(message);
+        continue;
+      }
+      try {
+        // console.log('importStyleFile', uri, name, id);
+        if (Platform.OS === 'web') {
+          db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: styleJson });
+        } else {
+          const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
+          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
+          await FileSystem.copyAsync({ from: styleJson, to: styleUri });
+        }
+
+        return { isOK: true, message: '' };
+      } catch (e: any) {
+        console.log(e);
+        return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
+      }
+    }
+  }, []);
+
   const downloadProjectSettings = useCallback(
     async (project: ProjectType) => {
       //データを最初に削除
@@ -694,10 +733,11 @@ export const useRepository = (): UseRepositoryReturnType & {
         return { isOK: false, message, region: undefined };
       }
       //console.log(Object.keys(settings));
-      const { layers: layers_, tileMaps: tileMaps_, ...settings } = projectSettings;
-      await downloadDictionaries(project.id, layers_);
+      const { layers: layersFromSettings, tileMaps: tileMapsFromSettings, ...settings } = projectSettings;
+      await downloadDictionaries(project.id, layersFromSettings);
+      await downloadStyle(project.id, tileMapsFromSettings);
       //COMMONのactivateをfalseにする。
-      const updatedLayers = layers_.map((l) => {
+      const updatedLayers = layersFromSettings.map((l) => {
         if (l.permission === 'COMMON') {
           return { ...l, activate: false };
         } else {
@@ -713,11 +753,11 @@ export const useRepository = (): UseRepositoryReturnType & {
       } else {
         dispatch(setLayersAction(updatedLayers));
       }
-      dispatch(setTileMapsAction(tileMaps_));
+      dispatch(setTileMapsAction(tileMapsFromSettings));
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
     },
-    [dispatch, downloadDictionaries]
+    [dispatch, downloadDictionaries, downloadStyle]
   );
 
   const downloadPhoto = useCallback(

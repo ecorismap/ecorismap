@@ -529,16 +529,15 @@ export const useMaps = (): UseMapsReturnType => {
   const importStyleFile = useCallback(async (uri: string, name: string, tileMap: TileMapType) => {
     try {
       // console.log('importStyleFile', uri, name, id);
-      const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       if (Platform.OS === 'web') {
-        //console.log('importStyleFile', jsonStrings);
+        const jsonStrings = decodeUri(uri);
         db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: jsonStrings });
         setEditedMap({ ...tileMap, styleURL: 'style://' + name });
       } else {
         const styleUri = `${TILE_FOLDER}/${tileMap.id}/style.json`;
         await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${tileMap.id}`, { intermediates: true });
         await FileSystem.copyAsync({ from: uri, to: styleUri });
-        setEditedMap({ ...tileMap, styleURL: styleUri });
+        setEditedMap({ ...tileMap, styleURL: 'style://style.json' });
       }
 
       return { isOK: true, message: '' };
