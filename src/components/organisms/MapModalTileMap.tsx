@@ -272,7 +272,11 @@ export const MapModalTileMap = React.memo(() => {
             <View style={styles.modalButtonContainer}>
               <Pressable
                 style={styles.modalOKCancelButton}
-                onPress={() => (checkInputs() ? pressEditMapOK(tileMap()) : null)}
+                onPress={() => {
+                  if (checkInputs()) {
+                    pressEditMapOK(tileMap());
+                  }
+                }}
               >
                 <Text>OK</Text>
               </Pressable>
