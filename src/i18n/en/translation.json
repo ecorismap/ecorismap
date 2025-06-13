@@ -241,7 +241,9 @@
       "failDeleteProjectPDF": "Failed to delete project PDF",
       "failEncryptDictionary": "Dictionary encryption failed",
       "failUploadDictionary": "Failed to upload dictionary",
-      "failGetDictionary": "Failed to download dictionary"
+      "failGetDictionary": "Failed to download dictionary",
+      "failEncryptStyle": "Style encryption failed",
+      "failUploadStyle": "Failed to upload Style."
     }
   },
   "Settings": {
@@ -511,7 +513,8 @@
     "alert": {
       "completeDownload": "The map download is complete.",
       "pleaseActivate": "Please check your email and activate.",
-      "errorDownload": "The map has been downloaded, but some parts may not have been downloaded."
+      "errorDownload": "The map has been downloaded, but some parts may not have been downloaded.",
+      "failDownload": "Download failed"
     },
     "message": {
       "pleaseLogin": "Please login",
@@ -583,7 +586,8 @@
       "successSaveFile": "File saved.",
       "successExportData": "Your data has been saved.",
       "successExportMaps": "Map settings have been saved.",
-      "dataSizeTooLarge": "Cannot upload data due to large size"
+      "dataSizeTooLarge": "Cannot upload data due to large size",
+      "failDeleteFile": "Failed to delete files in the project"
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish."

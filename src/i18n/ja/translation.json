@@ -668,7 +668,8 @@
     "alert": {
       "completeDownload": "地図のダウンロードが完了しました。",
       "pleaseActivate": "メールを確認して、アクティベートしてください。",
-      "errorDownload": "地図のダウンロードが完了しましたが、一部ダウンロードできていない可能性があります。"
+      "errorDownload": "地図のダウンロードが完了しましたが、一部ダウンロードできていない可能性があります。",
+      "failDownload": "ダウンロードに失敗しました"
     },
     "message": {
       "pleaseLogin": "ログインし直してください。",

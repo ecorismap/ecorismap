@@ -110,15 +110,23 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
         await FileSystem.makeDirectoryAsync(folder, {
           intermediates: true,
         });
-        const metadata = await pmtile?.getMetadata();
-        console.log('metadata', metadata);
-        if (metadata !== undefined) {
-          const localLocation = `${folder}/metadata.json`;
-          await FileSystem.writeAsStringAsync(localLocation, JSON.stringify(metadata), {
-            encoding: FileSystem.EncodingType.UTF8,
-          });
+        if (pmtile === undefined) {
+          await AlertAsync(t('hooks.alert.failDownload'));
+          setIsDownloading(false);
+          return;
         }
-
+        try {
+          const metadata = await pmtile.getMetadata();
+          //console.log('metadata', metadata);
+          if (metadata !== undefined) {
+            const localLocation = `${folder}/metadata.json`;
+            await FileSystem.writeAsStringAsync(localLocation, JSON.stringify(metadata), {
+              encoding: FileSystem.EncodingType.UTF8,
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching metadata:', error);
+        }
         const fetchUrl = tileMap.styleURL ?? '';
         const localLocation = `${folder}/style.json`;
 
