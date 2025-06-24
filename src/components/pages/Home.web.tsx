@@ -415,6 +415,44 @@ export default function HomeScreen() {
   }, []);
 
   /**
+   * ヒルシェードレイヤーの定義を生成
+   * @param tileMap 対象のタイルマップ
+   * @returns ヒルシェードレイヤー定義
+   */
+  const getHillshadeLayer = useCallback((tileMap: TileMapType): AnyLayer | AnyLayer[] => {
+    // transparencyが未定義の場合は0（不透明）をデフォルトとする
+    const transparency = tileMap.transparency ?? 0;
+    const opacity = 1 - transparency;
+
+    // グレースケールの陰影図として設定（透明度を適用）
+    const shadowColor = `rgba(0, 0, 0, ${opacity})`; // 黒
+    const highlightColor = `rgba(255, 255, 255, ${opacity})`; // 白
+    const accentColor = `rgba(0, 0, 0, ${opacity})`; // 黒
+
+    // 背景レイヤーとヒルシェードレイヤーの2つを返す
+    return [
+      // ヒルシェードレイヤー
+      {
+        id: `${tileMap.id}_0`,
+        type: 'hillshade' as const,
+        source: tileMap.id,
+        minzoom: tileMap.minimumZ || 2,
+        maxzoom: tileMap.maximumZ || 17,
+        layout: {
+          visibility: 'visible' as const,
+        },
+        paint: {
+          'hillshade-shadow-color': shadowColor,
+          'hillshade-highlight-color': highlightColor,
+          'hillshade-accent-color': accentColor,
+          'hillshade-exaggeration': 0.8,
+          'hillshade-illumination-anchor': 'viewport' as const,
+        },
+      } as AnyLayer,
+    ];
+  }, []);
+
+  /**
    * ベクタータイル用のレイヤー定義を生成（非同期処理）
    * スタイル情報を取得し、透過度を適用して返す
    * @param tileMap 対象のタイルマップ
@@ -486,6 +524,11 @@ export default function HomeScreen() {
         return null;
       }
 
+      // ヒルシェードタイルの判定と処理
+      if (tileMap.url && tileMap.url.startsWith('hillshade://')) {
+        return getHillshadeLayer(tileMap);
+      }
+
       // ベクタータイルの判定と処理
       const isVectorTile =
         tileMap.url &&
@@ -499,7 +542,7 @@ export default function HomeScreen() {
       // ラスタータイルの処理
       return getRasterLayer(tileMap);
     },
-    [getRasterLayer, getVectorLayers]
+    [getRasterLayer, getVectorLayers, getHillshadeLayer]
   );
 
   // ========== 動的レイヤー管理 ==========
@@ -699,6 +742,19 @@ export default function HomeScreen() {
                 maxzoom: tileMap.maximumZ,
                 scheme: 'xyz',
                 tileSize: 256,
+                attribution: tileMap.attribution,
+              },
+            };
+          } else if (tileMap.url.startsWith('hillshade://')) {
+            return {
+              ...result,
+              [tileMap.id]: {
+                type: 'raster-dem' as const,
+                tiles: [tileMap.url.replace('hillshade://', '')],
+                tileSize: tileMap.tileSize || 256,
+                minzoom: tileMap.minimumZ || 2,
+                maxzoom: tileMap.maximumZ || 14,
+                encoding: 'terrarium' as const,
                 attribution: tileMap.attribution,
               },
             };
