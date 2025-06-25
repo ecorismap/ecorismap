@@ -98,6 +98,8 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           ? 'pbf'
           : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
           ? 'pmtiles'
+          : tileMap.url.startsWith('hillshade://') || tileMap.url.startsWith('hillshade-terrarium://')
+          ? 'hillshade'
           : 'png';
 
       const pmtile = tileType === 'pmtiles' ? new pmtiles.PMTiles(tileMap.url.replace('pmtiles://', '')) : undefined;
@@ -147,8 +149,11 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           });
       }
 
-      const minZoom = tileType === 'png' ? 0 : zoom;
-      const maxZoom = tileType === 'png' || !tileMap.isVector ? Math.min(tileMap.overzoomThreshold, 16) : 18;
+      const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
+      const maxZoom =
+        tileType === 'png' || tileType === 'hillshade' || !tileMap.isVector
+          ? Math.min(tileMap.overzoomThreshold, 16)
+          : 18;
 
       const tiles = tileGridForRegion(downloadRegion, minZoom, maxZoom);
 
@@ -269,6 +274,28 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
               if (status !== 200) {
                 FileSystem.deleteAsync(uri);
                 //console.log('A', uri);
+                errorCount++;
+              }
+            })
+            .catch(() => {
+              errorCount++;
+              //console.error(error);
+            });
+        } else if (tileType === 'hillshade') {
+          // hillshadeの場合は元のDEMタイルURLを構築
+          const cleanUrl = tileMap.url.replace('hillshade://', '');
+          const fetchUrl = cleanUrl
+            .replace('{z}', tile.z.toString())
+            .replace('{x}', tile.x.toString())
+            .replace('{y}', tile.y.toString());
+
+          const localLocation = `${TILE_FOLDER}/${tileMap.id}/${tile.z}/${tile.x}/${tile.y}`;
+          //console.log('Hillshade download:', fetchUrl, localLocation);
+
+          tilePromise = FileSystem.downloadAsync(fetchUrl, localLocation)
+            .then(({ uri, status }) => {
+              if (status !== 200) {
+                FileSystem.deleteAsync(uri);
                 errorCount++;
               }
             })

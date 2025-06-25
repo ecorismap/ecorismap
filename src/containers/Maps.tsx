@@ -67,7 +67,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
       const protocol = item.url.split(':')[0];
-      if (protocol === 'http' || protocol === 'https' || protocol === 'pmtiles' || protocol === 'pdf') {
+      if (
+        protocol === 'http' ||
+        protocol === 'https' ||
+        protocol === 'pmtiles' ||
+        protocol === 'pdf' ||
+        protocol === 'hillshade'
+      ) {
         const ext = getExt(item.url)?.toLowerCase();
         if (ext === 'pdf' || item.url.startsWith('pdf://')) {
           setIsLoading(true);
