@@ -782,7 +782,7 @@ index 0000000..6ee5789
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..7b4a208
+index 0000000..2ac5086
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 @@ -0,0 +1,421 @@
@@ -813,8 +813,8 @@ index 0000000..7b4a208
 +  private WeakReference<GoogleMap> googleMapRef; // メモリリーク防止のためWeakReference使用
 +  private int lastQuantizedBearing = 0; // 前回の量子化された回転角度
 +  private float lastActualBearing = 0; // 前回の実際の回転角度（ヒステリシス用）
-+  private static final float HYSTERESIS_THRESHOLD = 45.0f; // ヒステリシス閾値（45度）
-+  private static final float QUANTIZATION_UNIT = 90.0f; // 量子化単位（90度）
++  private static final float HYSTERESIS_THRESHOLD = 90.0f; // ヒステリシス閾値（90度）
++  private static final float QUANTIZATION_UNIT = 180.0f; // 量子化単位（180度）
 +  
 +  // ヒルシェードタイルのキャッシュ（キー: "x,y,zoom,bearing"）
 +  private final LruCache<String, byte[]> hillshadeCache;
