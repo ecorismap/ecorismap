@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..b3393c7
+index 0000000..914e57e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
@@ -110,7 +110,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..4d3441b
+index 0000000..7253335
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -297,11 +297,11 @@ index 0000000..e402cb2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapCircleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class
 new file mode 100644
-index 0000000..80d1ea0
+index 0000000..7598246
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class
 new file mode 100644
-index 0000000..588e646
+index 0000000..6ab9425
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapFeature.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapFeature.class
 new file mode 100644
@@ -716,7 +716,7 @@ index 0000000..0637a08
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..5188a1e
+index 0000000..c3c9d46
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -750,11 +750,11 @@ index 0000000..9f52191
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider$1.class.uniqueId5 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider$1.class.uniqueId5
 new file mode 100644
-index 0000000..daec809
+index 0000000..7598246
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider$1.class.uniqueId5 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4
 new file mode 100644
-index 0000000..0e4064e
+index 0000000..1e00f95
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile$1.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile$1.class.uniqueId1
 new file mode 100644
@@ -778,14 +778,14 @@ index 0000000..4cdd1e6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile.class.uniqueId3 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..6ee5789
+index 0000000..4f2ec0f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..2ac5086
+index 0000000..7c56d29
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,421 @@
+@@ -0,0 +1,439 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -927,35 +927,32 @@ index 0000000..2ac5086
 +  
 +  /**
 +   * 現在の地図の回転角度を取得（量子化済み）
-+   * @return 15度単位で量子化された回転角度
++   * @return 180度単位で量子化された回転角度
 +   */
 +  private int getQuantizedBearing() {
-+    // GoogleMapから直接現在の回転角度を取得を試みる
++    // 前回更新された量子化角度を返すだけ
++    // 実際の更新はupdateBearing()が呼ばれた時のみ行う
++    return lastQuantizedBearing;
++  }
++  
++  /**
++   * 現在の地図の回転角度をチェックして必要なら更新
++   * 外部（MapViewなど）から定期的に呼び出される想定
++   */
++  public void checkAndUpdateBearing() {
 +    if (googleMapRef != null) {
 +      GoogleMap googleMap = googleMapRef.get();
 +      if (googleMap != null) {
 +        try {
 +          CameraPosition position = googleMap.getCameraPosition();
 +          if (position != null) {
-+            // 90度単位で量子化
-+            int newBearing = Math.round(position.bearing / QUANTIZATION_UNIT) * (int)QUANTIZATION_UNIT;
-+            
-+            // 前回と異なる場合は更新
-+            if (newBearing != lastQuantizedBearing) {
-+              Log.d(TAG, "Bearing detected change from " + lastQuantizedBearing + " to " + newBearing);
-+              updateBearing(position.bearing);
-+            }
-+            
-+            return newBearing;
++            updateBearing(position.bearing);
 +          }
 +        } catch (Exception e) {
 +          Log.e(TAG, "Error getting camera position", e);
 +        }
 +      }
 +    }
-+    
-+    // GoogleMapが利用できない場合は前回の値を返す
-+    return lastQuantizedBearing;
 +  }
 +  
 +  @Override
@@ -1084,9 +1081,30 @@ index 0000000..2ac5086
 +            continue;
 +          }
 +          
-+          // 右と下の標高値を取得
-+          float rh = (x < width - 1) ? elevations[y][x + 1] : h; // 右
-+          float bh = (y < height - 1) ? elevations[y + 1][x] : h; // 下
++          // 右と下の標高値を取得（エッジ処理改善）
++          float rh, bh;
++          
++          // 右の標高値
++          if (x < width - 1) {
++            rh = elevations[y][x + 1];
++          } else if (x > 0) {
++            // 右端の場合：左側の勾配を外挿
++            rh = h - (elevations[y][x - 1] - h);
++          } else {
++            // 左上隅の場合
++            rh = h;
++          }
++          
++          // 下の標高値
++          if (y < height - 1) {
++            bh = elevations[y + 1][x];
++          } else if (y > 0) {
++            // 下端の場合：上側の勾配を外挿
++            bh = h - (elevations[y - 1][x] - h);
++          } else {
++            // 左上隅の場合
++            bh = h;
++          }
 +          
 +          // 標高差を計算（layer-hillshadeと同じ）
 +          float hx = (rh != NO_DATA_VALUE) ? (h - rh) : 0.0f;
