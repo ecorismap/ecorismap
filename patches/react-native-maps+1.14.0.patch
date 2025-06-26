@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..6aaa082
+index 0000000..b3393c7
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
@@ -110,7 +110,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..32028c3
+index 0000000..4d3441b
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -297,11 +297,11 @@ index 0000000..e402cb2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapCircleManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class
 new file mode 100644
-index 0000000..daec809
+index 0000000..80d1ea0
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider$1.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class
 new file mode 100644
-index 0000000..0e4064e
+index 0000000..588e646
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapDEMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapFeature.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapFeature.class
 new file mode 100644
@@ -716,7 +716,7 @@ index 0000000..0637a08
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..4ee1828
+index 0000000..5188a1e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -754,7 +754,7 @@ index 0000000..daec809
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider$1.class.uniqueId5 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4
 new file mode 100644
-index 0000000..e9a05d2
+index 0000000..0e4064e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapDEMTileProvider.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile$1.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile$1.class.uniqueId1
 new file mode 100644
@@ -778,14 +778,14 @@ index 0000000..4cdd1e6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapUrlTile.class.uniqueId3 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..7d496d0
+index 0000000..6ee5789
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..d102414
+index 0000000..a68b4fa
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,392 @@
+@@ -0,0 +1,420 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -812,6 +812,8 @@ index 0000000..d102414
 +  private String encodingType = "mapbox"; // "mapbox" or "terrarium"
 +  private WeakReference<GoogleMap> googleMapRef; // メモリリーク防止のためWeakReference使用
 +  private int lastQuantizedBearing = 0; // 前回の量子化された回転角度
++  private float lastActualBearing = 0; // 前回の実際の回転角度（ヒステリシス用）
++  private static final float HYSTERESIS_THRESHOLD = 5.0f; // ヒステリシス閾値（度）
 +  
 +  // ヒルシェードタイルのキャッシュ（キー: "x,y,zoom,bearing"）
 +  private final LruCache<String, byte[]> hillshadeCache;
@@ -883,16 +885,42 @@ index 0000000..d102414
 +   * @param bearing 新しい回転角度
 +   */
 +  public void updateBearing(float bearing) {
++    // ヒステリシスチェック：前回の実際の角度から十分に変化したかを確認
++    float bearingDiff = Math.abs(bearing - lastActualBearing);
++    
++    // 360度境界を跨ぐ場合の処理
++    if (bearingDiff > 180) {
++      bearingDiff = 360 - bearingDiff;
++    }
++    
++    // ヒステリシス閾値を超えていない場合は更新しない
++    if (bearingDiff < HYSTERESIS_THRESHOLD) {
++      return;
++    }
++    
++    // 実際の角度を更新
++    lastActualBearing = bearing;
++    
++    // 量子化
 +    int newQuantizedBearing = Math.round(bearing / 15.0f) * 15;
++    
++    // 量子化された値が変わった場合のみ処理
 +    if (newQuantizedBearing != lastQuantizedBearing) {
-+      Log.d(TAG, "Bearing updated from " + lastQuantizedBearing + " to " + newQuantizedBearing);
-+      lastQuantizedBearing = newQuantizedBearing;
++      Log.d(TAG, String.format("Bearing updated from %d to %d (actual: %.1f, diff: %.1f)", 
++                               lastQuantizedBearing, newQuantizedBearing, bearing, bearingDiff));
 +      
 +      // 45度以上の変化があった場合はキャッシュをクリア
-+      if (Math.abs(newQuantizedBearing - lastQuantizedBearing) >= 45) {
++      int quantizedDiff = Math.abs(newQuantizedBearing - lastQuantizedBearing);
++      if (quantizedDiff > 180) {
++        quantizedDiff = 360 - quantizedDiff;
++      }
++      
++      if (quantizedDiff >= 45) {
 +        Log.d(TAG, "Large rotation detected, clearing cache");
 +        hillshadeCache.evictAll();
 +      }
++      
++      lastQuantizedBearing = newQuantizedBearing;
 +    }
 +  }
 +  
