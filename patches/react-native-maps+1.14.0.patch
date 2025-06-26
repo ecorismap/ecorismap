@@ -782,10 +782,10 @@ index 0000000..6ee5789
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..a68b4fa
+index 0000000..7b4a208
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,420 @@
+@@ -0,0 +1,421 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -813,7 +813,8 @@ index 0000000..a68b4fa
 +  private WeakReference<GoogleMap> googleMapRef; // メモリリーク防止のためWeakReference使用
 +  private int lastQuantizedBearing = 0; // 前回の量子化された回転角度
 +  private float lastActualBearing = 0; // 前回の実際の回転角度（ヒステリシス用）
-+  private static final float HYSTERESIS_THRESHOLD = 5.0f; // ヒステリシス閾値（度）
++  private static final float HYSTERESIS_THRESHOLD = 45.0f; // ヒステリシス閾値（45度）
++  private static final float QUANTIZATION_UNIT = 90.0f; // 量子化単位（90度）
 +  
 +  // ヒルシェードタイルのキャッシュ（キー: "x,y,zoom,bearing"）
 +  private final LruCache<String, byte[]> hillshadeCache;
@@ -901,8 +902,8 @@ index 0000000..a68b4fa
 +    // 実際の角度を更新
 +    lastActualBearing = bearing;
 +    
-+    // 量子化
-+    int newQuantizedBearing = Math.round(bearing / 15.0f) * 15;
++    // 量子化（90度単位）
++    int newQuantizedBearing = Math.round(bearing / QUANTIZATION_UNIT) * (int)QUANTIZATION_UNIT;
 +    
 +    // 量子化された値が変わった場合のみ処理
 +    if (newQuantizedBearing != lastQuantizedBearing) {
@@ -936,8 +937,8 @@ index 0000000..a68b4fa
 +        try {
 +          CameraPosition position = googleMap.getCameraPosition();
 +          if (position != null) {
-+            // 15度単位で量子化
-+            int newBearing = Math.round(position.bearing / 15.0f) * 15;
++            // 90度単位で量子化
++            int newBearing = Math.round(position.bearing / QUANTIZATION_UNIT) * (int)QUANTIZATION_UNIT;
 +            
 +            // 前回と異なる場合は更新
 +            if (newBearing != lastQuantizedBearing) {
