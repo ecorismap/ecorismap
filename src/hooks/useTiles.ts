@@ -98,7 +98,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           ? 'pbf'
           : getExt(tileMap.url) === 'pmtiles' || tileMap.url.startsWith('pmtiles://')
           ? 'pmtiles'
-          : tileMap.url.startsWith('hillshade://') || tileMap.url.startsWith('hillshade-terrarium://')
+          : tileMap.url.startsWith('hillshade://')
           ? 'hillshade'
           : 'png';
 
