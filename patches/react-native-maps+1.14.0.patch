@@ -782,10 +782,10 @@ index 0000000..30837cf
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
-index 0000000..0df45a4
+index 0000000..6da8001
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
-@@ -0,0 +1,463 @@
+@@ -0,0 +1,444 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -809,7 +809,6 @@ index 0000000..0df45a4
 +public class MapDEMTileProvider extends MapTileProvider {
 +  
 +  private static final String TAG = "MapDEMTileProvider";
-+  private String encodingType = "mapbox"; // "mapbox" or "terrarium"
 +  private WeakReference<GoogleMap> googleMapRef; // メモリリーク防止のためWeakReference使用
 +  private int lastQuantizedBearing = 0; // 前回の量子化された回転角度
 +  private float lastActualBearing = 0; // 前回の実際の回転角度（ヒステリシス用）
@@ -837,16 +836,7 @@ index 0000000..0df45a4
 +    super(tileSizet, doubleTileSize, 
 +          cleanUrlTemplate(urlTemplate), 
 +          maximumZ, maximumNativeZ, minimumZ, flipY, tileCachePath, tileCacheMaxAge, offlineMode, context, customMode);
-+    
-+    // URLからエンコーディングタイプを判定
-+    if (urlTemplate.startsWith("hillshade-terrarium://")) {
-+      this.encodingType = "terrarium";
-+      Log.d(TAG, "Using Terrarium encoding for DEM tiles");
-+    } else {
-+      this.encodingType = "mapbox";
-+      Log.d(TAG, "Using Mapbox Terrain RGB encoding for DEM tiles");
-+    }
-+    
++        
 +    // キャッシュの初期化（最大50MBのメモリを使用）
 +    final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
 +    final int cacheSize = Math.min(maxMemory / 8, 50 * 1024); // 最大50MB
@@ -866,9 +856,7 @@ index 0000000..0df45a4
 +  private static String cleanUrlTemplate(String urlTemplate) {
 +    if (urlTemplate.startsWith("hillshade://")) {
 +      return urlTemplate.substring("hillshade://".length());
-+    } else if (urlTemplate.startsWith("hillshade-terrarium://")) {
-+      return urlTemplate.substring("hillshade-terrarium://".length());
-+    }
++    } 
 +    return urlTemplate;
 +  }
 +  
@@ -1149,10 +1137,7 @@ index 0000000..0df45a4
 +   * @return 標高（メートル）
 +   */
 +  private float decodeElevation(int r, int g, int b) {
-+    if (encodingType.equals("terrarium")) {
-+      // Terrarium encoding: elevation = (R * 256 + G + B / 256) - 32768
-+      return (float) ((r * 256.0 + g + b / 256.0) - 32768.0);
-+    } else {
++
 +      // GSI標準エンコーディング: x = 2^16 * R + 2^8 * G + B
 +      float x = r * 65536.0f + g * 256.0f + b;
 +      
@@ -1170,7 +1155,7 @@ index 0000000..0df45a4
 +      }
 +      
 +      return h;
-+    }
++    
 +  }
 +  
 +  /**
@@ -1239,14 +1224,10 @@ index 0000000..0df45a4
 +    String cleanedUrl = urlTemplate;
 +    if (urlTemplate.startsWith("hillshade://")) {
 +      cleanedUrl = urlTemplate.substring("hillshade://".length());
-+      this.encodingType = "mapbox";
-+    } else if (urlTemplate.startsWith("hillshade-terrarium://")) {
-+      cleanedUrl = urlTemplate.substring("hillshade-terrarium://".length());
-+      this.encodingType = "terrarium";
-+    }
++    } 
 +    
 +    super.setUrlTemplate(cleanedUrl);
-+    Log.d(TAG, "URL template updated: " + cleanedUrl + ", encoding: " + encodingType);
++    Log.d(TAG, "URL template updated: " + cleanedUrl);
 +  }
 +}
 \ No newline at end of file

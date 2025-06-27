@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, Platform, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
@@ -62,6 +62,9 @@ import { useViewportBounds } from '../../hooks/useViewportBounds';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
+
+  // Local state for direction line visibility
+  const [showDirectionLine, setShowDirectionLine] = useState(false);
 
   // TileManagementContext
   const {
@@ -196,6 +199,10 @@ export default function HomeScreen() {
     },
   });
   //console.log('Home');
+  const toggleDirectionLine = useCallback(() => {
+    setShowDirectionLine((prev) => !prev);
+  }, []);
+
   const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
@@ -396,6 +403,8 @@ export default function HomeScreen() {
                 azimuth={azimuth}
                 headingUp={headingUp}
                 distance={trackLog.distance}
+                onPress={toggleDirectionLine}
+                showDirectionLine={showDirectionLine}
               />
             )}
             {/* 表示を正しく更新するには順番とzIndexが重要 */}
