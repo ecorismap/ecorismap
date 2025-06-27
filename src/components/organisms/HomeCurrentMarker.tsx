@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Polyline } from 'react-native-maps';
@@ -14,8 +14,8 @@ interface Props {
 }
 
 const areEqual = (prevProps: Props, nextProps: Props) => {
-  // Compare azimuth with a tolerance of 3 degrees
-  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > 3;
+  // Compare azimuth with a smaller tolerance for smoother rotation
+  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > 0.5;
   const locationChanged =
     prevProps.currentLocation.latitude !== nextProps.currentLocation.latitude ||
     prevProps.currentLocation.longitude !== nextProps.currentLocation.longitude;
@@ -38,13 +38,6 @@ export const CurrentMarker = React.memo((props: Props) => {
 
   // State to force marker redraw
   const markerRef = useRef(null);
-
-  useEffect(() => {
-    if (markerRef.current) {
-      //@ts-ignore
-      markerRef.current.redraw();
-    }
-  }, [markerAngle]);
 
   // Calculate line coordinates for Polyline
   const lineCoordinates = useMemo(() => {
@@ -102,7 +95,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         }}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={false}
+        tracksViewChanges={true}
         onPress={onPress}
       >
         <View
