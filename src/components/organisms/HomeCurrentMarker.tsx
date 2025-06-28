@@ -14,18 +14,15 @@ interface Props {
 }
 
 const areEqual = (prevProps: Props, nextProps: Props) => {
-  // Compare azimuth with a smaller tolerance for smoother rotation
-  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > 0.5;
+  // Only prevent re-render if location and key props haven't changed
+  // Allow all azimuth changes to pass through for smooth rotation
   const locationChanged =
     prevProps.currentLocation.latitude !== nextProps.currentLocation.latitude ||
     prevProps.currentLocation.longitude !== nextProps.currentLocation.longitude;
   const headingUpChanged = prevProps.headingUp !== nextProps.headingUp;
   const showDirectionLineChanged = prevProps.showDirectionLine !== nextProps.showDirectionLine;
 
-  // Don't check mapBounds changes as they change frequently
-  // We only care about azimuth, location, headingUp, and showDirectionLine for re-rendering
-
-  return !azimuthChanged && !locationChanged && !headingUpChanged && !showDirectionLineChanged;
+  return !locationChanged && !headingUpChanged && !showDirectionLineChanged;
 };
 
 export const CurrentMarker = React.memo((props: Props) => {
@@ -43,19 +40,8 @@ export const CurrentMarker = React.memo((props: Props) => {
   const lineCoordinates = useMemo(() => {
     if (!showDirectionLine) return [];
 
-    // Important: Start from the arrow tip, not the marker center
-    // The arrow tip is 24 pixels above the center in the 50x50 SVG
-    // Need to calculate this offset in degrees based on current map zoom
-    // This is a rough approximation - adjust as needed
-    const tipOffset = 0.00015;
-
+    // Now the marker anchor is at the arrow tip, so we start from the current location
     const angleRad = ((90 - markerAngle) * Math.PI) / 180;
-
-    // Calculate the arrow tip position
-    const startLat = currentLocation.latitude + tipOffset * Math.sin(angleRad);
-    const startLon =
-      currentLocation.longitude +
-      (tipOffset * Math.cos(angleRad)) / Math.cos((currentLocation.latitude * Math.PI) / 180);
 
     // Calculate the end point (far away)
     const distance = 10; // 10 degrees
@@ -66,8 +52,8 @@ export const CurrentMarker = React.memo((props: Props) => {
 
     return [
       {
-        latitude: startLat,
-        longitude: startLon,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
       },
       {
         latitude: endLat,
@@ -94,8 +80,8 @@ export const CurrentMarker = React.memo((props: Props) => {
           longitude: currentLocation.longitude,
         }}
         anchor={{ x: 0.5, y: 0.5 }}
-        style={{ zIndex: 1001 }}
-        tracksViewChanges={true}
+        style={{ zIndex: 1001, overflow: 'visible' }}
+        tracksViewChanges={false}
         onPress={onPress}
       >
         <View
@@ -103,11 +89,14 @@ export const CurrentMarker = React.memo((props: Props) => {
             transform: [{ rotate: `${markerAngle}deg` }],
             alignItems: 'center',
             justifyContent: 'center',
+            width: 80,
+            height: 80,
+            overflow: 'visible',
           }}
         >
-          <Svg height="50" width="50" viewBox="0 0 50 50">
+          <Svg height="80" width="80" viewBox="0 0 80 80">
             <G stroke="white" strokeWidth="2" strokeLinejoin="round">
-              <Path d="M25 1 L40 33 L25 25 L10 33 Z" fill={fillColor} />
+              <Path d="M40 40 L55 72 L40 64 L25 72 Z" fill={fillColor} />
             </G>
           </Svg>
         </View>
