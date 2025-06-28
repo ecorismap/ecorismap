@@ -40,8 +40,9 @@ export const CurrentMarker = React.memo((props: Props) => {
   const lineCoordinates = useMemo(() => {
     if (!showDirectionLine) return [];
 
-    // Now the marker anchor is at the arrow tip, so we start from the current location
-    const angleRad = ((90 - markerAngle) * Math.PI) / 180;
+    // Always use the actual azimuth for the line direction
+    // The line represents the actual heading direction, not the marker rotation
+    const angleRad = ((90 - azimuth) * Math.PI) / 180;
 
     // Calculate the end point (far away)
     const distance = 10; // 10 degrees
@@ -60,7 +61,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         longitude: endLon,
       },
     ];
-  }, [currentLocation, markerAngle, showDirectionLine]);
+  }, [currentLocation, azimuth, showDirectionLine]);
 
   return (
     <>
@@ -81,7 +82,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         }}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001, overflow: 'visible' }}
-        tracksViewChanges={false}
+        tracksViewChanges={true}
         onPress={onPress}
       >
         <View
