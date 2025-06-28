@@ -290,17 +290,38 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       if (foregroundStatus !== 'granted') return;
       if (headingUp_) {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
+
+        let lastHeading = 0;
+        let lastUpdateTime = 0;
+
         headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-          Platform.OS === 'ios'
-            ? (mapViewRef as MapView).setCamera({
-                heading: Math.abs((-1.0 * pos.trueHeading) % 360),
-              })
-            : (mapViewRef as MapView).animateCamera(
-                {
-                  heading: Math.abs((-1.0 * pos.trueHeading) % 360),
-                },
-                { duration: 300 }
-              );
+          const newHeading = Math.abs((-1.0 * pos.trueHeading) % 360);
+          const currentTime = Date.now();
+
+          // 角度の変化が小さい場合はアニメーションをスキップ
+          const headingDiff = Math.abs(newHeading - lastHeading);
+          if (headingDiff < 2 && headingDiff > 0) {
+            setAzimuth(pos.trueHeading);
+            return;
+          }
+
+          // 最小更新間隔を設定（ミリ秒）
+          const minUpdateInterval = 100;
+          if (currentTime - lastUpdateTime < minUpdateInterval) {
+            setAzimuth(pos.trueHeading);
+            return;
+          }
+
+          lastHeading = newHeading;
+          lastUpdateTime = currentTime;
+
+          (mapViewRef as MapView).animateCamera(
+            {
+              heading: newHeading,
+            },
+            { duration: 200 }
+          );
+
           setAzimuth(pos.trueHeading);
         });
       } else {
@@ -309,9 +330,12 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           setAzimuth(pos.trueHeading);
         });
 
-        (mapViewRef as MapView).animateCamera({
-          heading: 0,
-        });
+        (mapViewRef as MapView).animateCamera(
+          {
+            heading: 0,
+          },
+          { duration: 500 }
+        );
       }
       setHeadingUp(headingUp_);
     },

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Polyline } from 'react-native-maps';
@@ -14,35 +14,89 @@ interface Props {
 }
 
 const areEqual = (prevProps: Props, nextProps: Props) => {
-  // Only prevent re-render if location and key props haven't changed
-  // Allow all azimuth changes to pass through for smooth rotation
+  // Balance between performance and smooth rotation
+  const azimuthThreshold = 2.0; // Increased to reduce jitter from hand movement
+  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > azimuthThreshold;
+
+  // Add location threshold to reduce GPS jitter
+  const locationThreshold = 0.000005; // Approximately 0.5 meters
   const locationChanged =
-    prevProps.currentLocation.latitude !== nextProps.currentLocation.latitude ||
-    prevProps.currentLocation.longitude !== nextProps.currentLocation.longitude;
+    Math.abs(prevProps.currentLocation.latitude - nextProps.currentLocation.latitude) > locationThreshold ||
+    Math.abs(prevProps.currentLocation.longitude - nextProps.currentLocation.longitude) > locationThreshold;
+
   const headingUpChanged = prevProps.headingUp !== nextProps.headingUp;
   const showDirectionLineChanged = prevProps.showDirectionLine !== nextProps.showDirectionLine;
 
-  return !locationChanged && !headingUpChanged && !showDirectionLineChanged;
+  // Re-render if any significant change occurred
+  return !azimuthChanged && !locationChanged && !headingUpChanged && !showDirectionLineChanged;
 };
 
 export const CurrentMarker = React.memo((props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
   const accuracy = currentLocation.accuracy ?? 0;
-  const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
-  const markerAngle = useMemo(() => {
-    return headingUp ? 0 : azimuth;
-  }, [azimuth, headingUp]);
+  const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900' : '#ff0000';
 
-  // State to force marker redraw
-  const markerRef = useRef(null);
+  // Low-pass filter to smooth azimuth values
+  const filteredAzimuthRef = useRef(azimuth);
+  const [filteredAzimuth, setFilteredAzimuth] = useState(azimuth);
+  const ALPHA = 0.2; // Lower value for more smoothing to reduce hand shake
+
+  // Track when marker needs visual updates
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // Apply low-pass filter with angle wrapping
+    let delta = azimuth - filteredAzimuthRef.current;
+
+    // Handle angle wrapping (e.g., 359 to 1 should be +2, not -358)
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    const newFilteredValue = filteredAzimuthRef.current + ALPHA * delta;
+
+    // Normalize to 0-360 range
+    const normalizedValue = ((newFilteredValue % 360) + 360) % 360;
+
+    filteredAzimuthRef.current = normalizedValue;
+    setFilteredAzimuth(normalizedValue);
+
+    // Enable updates when angle changes
+    setTracksViewChanges(true);
+
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current);
+    }
+
+    // Disable updates after a short delay to prevent blinking
+    updateTimerRef.current = setTimeout(() => {
+      setTracksViewChanges(false);
+    }, 100);
+  }, [azimuth]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+      }
+    };
+  }, []);
+
+  const markerAngle = useMemo(() => {
+    return headingUp ? 0 : filteredAzimuth;
+  }, [headingUp, filteredAzimuth]);
 
   // Calculate line coordinates for Polyline
   const lineCoordinates = useMemo(() => {
     if (!showDirectionLine) return [];
 
-    // Always use the actual azimuth for the line direction
-    // The line represents the actual heading direction, not the marker rotation
-    const angleRad = ((90 - azimuth) * Math.PI) / 180;
+    // When headingUp is true, the map rotates by azimuth degrees
+    // So the line should point in the azimuth direction (geographic)
+    // which will appear as pointing up on the rotated map
+    const lineAngle = headingUp ? filteredAzimuth : markerAngle;
+    const angleRad = ((90 - lineAngle) * Math.PI) / 180;
 
     // Calculate the end point (far away)
     const distance = 10; // 10 degrees
@@ -61,18 +115,15 @@ export const CurrentMarker = React.memo((props: Props) => {
         longitude: endLon,
       },
     ];
-  }, [currentLocation, azimuth, showDirectionLine]);
+  }, [currentLocation, markerAngle, showDirectionLine, headingUp, filteredAzimuth]);
+
+  // State to force marker redraw
+  const markerRef = useRef(null);
 
   return (
     <>
       {showDirectionLine && lineCoordinates.length > 0 && (
-        <Polyline
-          coordinates={lineCoordinates}
-          strokeColor="#FF0000"
-          strokeWidth={2}
-          lineDashPattern={[10, 5]}
-          zIndex={1000}
-        />
+        <Polyline coordinates={lineCoordinates} strokeColor="#000000" strokeWidth={1} zIndex={1000} />
       )}
       <Marker
         ref={markerRef}
@@ -81,8 +132,8 @@ export const CurrentMarker = React.memo((props: Props) => {
           longitude: currentLocation.longitude,
         }}
         anchor={{ x: 0.5, y: 0.5 }}
-        style={{ zIndex: 1001, overflow: 'visible' }}
-        tracksViewChanges={true}
+        style={{ zIndex: 1001 }}
+        tracksViewChanges={tracksViewChanges}
         onPress={onPress}
       >
         <View
