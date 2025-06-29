@@ -243,7 +243,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
-  } = useLocation(mapViewRef.current);
+  } = useLocation(mapViewRef);
   //現在位置の共有関連
   const { uploadLocation } = useSyncLocation(projectId);
 

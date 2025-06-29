@@ -70,7 +70,7 @@ export type UseLocationReturnType = {
   confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
 };
 
-export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationReturnType => {
+export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef | null>): UseLocationReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
@@ -205,8 +205,8 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
     // console.log('moveCurrentPosition3', location);
     if (location === null) return;
     setCurrentLocation(location.coords);
-    if (mapViewRef === null || !isMapView(mapViewRef)) return;
-    mapViewRef.animateCamera(
+    if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
+    mapViewRef.current.animateCamera(
       {
         center: location.coords,
       },
@@ -226,7 +226,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       } else if (gpsState_ === 'follow') {
         await moveCurrentPosition();
         updateGpsPosition.current = (pos: Location.LocationObject) => {
-          (mapViewRef as MapView).animateCamera(
+          (mapViewRef.current as MapView).animateCamera(
             {
               center: {
                 latitude: pos.coords.latitude,
@@ -247,7 +247,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
       setGpsState(gpsState_);
     },
-    [mapViewRef, moveCurrentPosition, projectId, startGPS, stopGPS, dataUser]
+    [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS, mapViewRef]
   );
 
   const saveTrackSegmentRef = useRef<() => Promise<void>>(() => Promise.resolve());
@@ -285,7 +285,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
 
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean) => {
-      if (mapViewRef === null) return;
+      if (mapViewRef.current === null) return;
       const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') return;
       if (headingUp_) {
@@ -315,7 +315,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           lastHeading = newHeading;
           lastUpdateTime = currentTime;
 
-          (mapViewRef as MapView).animateCamera(
+          (mapViewRef.current as MapView).animateCamera(
             {
               heading: newHeading,
             },
@@ -330,7 +330,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
           setAzimuth(pos.trueHeading);
         });
 
-        (mapViewRef as MapView).animateCamera(
+        (mapViewRef.current as MapView).animateCamera(
           {
             heading: 0,
           },
@@ -367,7 +367,7 @@ export const useLocation = (mapViewRef: MapView | MapRef | null): UseLocationRet
       }
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
-        (mapViewRef as MapView).animateCamera(
+        (mapViewRef.current as MapView).animateCamera(
           {
             center: {
               latitude: currentCoords.latitude,
