@@ -29,6 +29,15 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   AlertAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock mapView.current to avoid null reference errors
+const mockMapView = {
+  animateCamera: jest.fn(),
+  setCamera: jest.fn(),
+};
+
+// Create a mock ref object
+const createMockMapRef = () => ({ current: null });
+
 const mockLocation = Location as jest.Mocked<typeof Location>;
 
 // Create a test store
@@ -98,7 +107,8 @@ describe('useLocation', () => {
   });
 
   it('should initialize with default values', () => {
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     expect(result.current.currentLocation).toBeNull();
     expect(result.current.gpsState).toBe('off');
@@ -108,7 +118,8 @@ describe('useLocation', () => {
   });
 
   it('should request location permission', async () => {
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     let permissionStatus;
     await act(async () => {
@@ -120,7 +131,8 @@ describe('useLocation', () => {
   });
 
   it('should toggle GPS state', async () => {
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     await act(async () => {
       await result.current.toggleGPS('show');
@@ -133,7 +145,8 @@ describe('useLocation', () => {
   it('should toggle tracking state', async () => {
     mockLocation.startLocationUpdatesAsync.mockResolvedValue();
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = { current: mockMapView as any };
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     await act(async () => {
       await result.current.toggleTracking('on');
@@ -146,7 +159,8 @@ describe('useLocation', () => {
     mockLocation.stopLocationUpdatesAsync.mockResolvedValue();
     mockLocation.hasStartedLocationUpdatesAsync.mockResolvedValue(true);
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     await act(async () => {
       await result.current.toggleTracking('off');
@@ -170,7 +184,8 @@ describe('useLocation', () => {
       },
     });
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     let saveResult: { isOK: boolean; message: string } | undefined;
     await act(async () => {
@@ -194,7 +209,8 @@ describe('useLocation', () => {
       },
     });
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     // checkUnsavedTrackLog calls ConfirmAsync internally, but since it's not mocked properly,
     // we'll just check that the function exists and can be called
@@ -221,7 +237,8 @@ describe('useLocation', () => {
       },
     });
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     await act(async () => {
       await result.current.saveTrackSegment();
@@ -256,7 +273,8 @@ describe('useLocation', () => {
       expires: 'never',
     });
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     let permissionStatus;
     await act(async () => {
@@ -273,7 +291,8 @@ describe('useLocation', () => {
     // Set up the mock to reject after being called
     mockLocation.watchPositionAsync.mockRejectedValueOnce(new Error('Location error'));
 
-    const { result } = renderHook(() => useLocation(null), { wrapper });
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     // The important thing is that the hook initializes without crashing
     expect(result.current.gpsState).toBe('off');
