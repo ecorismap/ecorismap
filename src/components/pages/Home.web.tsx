@@ -590,11 +590,13 @@ export default function HomeScreen() {
     const layersResult = await Promise.all(layersPromise);
     const dynamicLayers = layersResult.flat().filter((layer): layer is AnyLayer => !!layer);
 
-    // 各レイヤーをマップに追加
+    // 各レイヤーをマップに追加（features-placeholderの前に挿入）
     dynamicLayers.forEach((layer: AnyLayer) => {
       if (!map.getLayer(layer.id)) {
         try {
-          map.addLayer(layer);
+          // features-placeholderレイヤーの前に挿入することで、
+          // フィーチャーレイヤー（ライン、ポイント、ポリゴン）の下に配置される
+          map.addLayer(layer, 'features-placeholder');
         } catch (e) {
           //console.warn(`Failed to add layer ${layer.id}:`, e);
         }
@@ -812,7 +814,13 @@ export default function HomeScreen() {
       //glyphs: 'https://gsi-cyberjapan.github.io/optimal_bvmap/glyphs/{fontstack}/{range}.pbf',
       //sprite: 'https://gsi-cyberjapan.github.io/optimal_bvmap/sprite/std',
       sources: { ...sources, rasterdem: rasterdem },
-      layers: [],
+      layers: [
+        {
+          id: 'features-placeholder',
+          type: 'background',
+          paint: { 'background-opacity': 0 },
+        },
+      ],
       sky: skyStyle,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
