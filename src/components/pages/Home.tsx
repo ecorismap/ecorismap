@@ -402,7 +402,6 @@ export default function HomeScreen() {
                 currentLocation={currentLocation}
                 azimuth={azimuth}
                 headingUp={headingUp}
-                distance={trackLog.distance}
                 onPress={toggleDirectionLine}
                 showDirectionLine={showDirectionLine}
               />

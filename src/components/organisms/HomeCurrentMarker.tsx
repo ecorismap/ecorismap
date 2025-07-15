@@ -8,7 +8,6 @@ interface Props {
   currentLocation: LocationType;
   azimuth: number;
   headingUp: boolean;
-  distance: number;
   onPress?: () => void;
   showDirectionLine?: boolean;
 }
@@ -41,9 +40,8 @@ export const CurrentMarker = React.memo((props: Props) => {
   const [filteredAzimuth, setFilteredAzimuth] = useState(azimuth);
   const ALPHA = 0.2; // Lower value for more smoothing to reduce hand shake
 
-  // Track when marker needs visual updates
-  const [tracksViewChanges, setTracksViewChanges] = useState(true);
-  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Marker reference for manual redraw
+  const markerRef = useRef<any>(null);
 
   useEffect(() => {
     // Apply low-pass filter with angle wrapping
@@ -60,33 +58,18 @@ export const CurrentMarker = React.memo((props: Props) => {
 
     filteredAzimuthRef.current = normalizedValue;
     setFilteredAzimuth(normalizedValue);
-
-    // Enable updates when angle changes
-    setTracksViewChanges(true);
-
-    // Clear existing timer
-    if (updateTimerRef.current) {
-      clearTimeout(updateTimerRef.current);
-    }
-
-    // Disable updates after a short delay to prevent blinking
-    updateTimerRef.current = setTimeout(() => {
-      setTracksViewChanges(false);
-    }, 100);
   }, [azimuth]);
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (updateTimerRef.current) {
-        clearTimeout(updateTimerRef.current);
-      }
-    };
-  }, []);
 
   const markerAngle = useMemo(() => {
     return headingUp ? 0 : filteredAzimuth;
   }, [headingUp, filteredAzimuth]);
+
+  // Manually redraw marker when markerAngle or fillColor changes
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.redraw();
+    }
+  }, [markerAngle, fillColor]);
 
   // Calculate line coordinates for Polyline
   const lineCoordinates = useMemo(() => {
@@ -99,11 +82,11 @@ export const CurrentMarker = React.memo((props: Props) => {
     const angleRad = ((90 - lineAngle) * Math.PI) / 180;
 
     // Calculate the end point (far away)
-    const distance = 10; // 10 degrees
-    const endLat = currentLocation.latitude + distance * Math.sin(angleRad);
+    const lineDistance = 10; // 10 degrees
+    const endLat = currentLocation.latitude + lineDistance * Math.sin(angleRad);
     const endLon =
       currentLocation.longitude +
-      (distance * Math.cos(angleRad)) / Math.cos((currentLocation.latitude * Math.PI) / 180);
+      (lineDistance * Math.cos(angleRad)) / Math.cos((currentLocation.latitude * Math.PI) / 180);
 
     return [
       {
@@ -116,9 +99,6 @@ export const CurrentMarker = React.memo((props: Props) => {
       },
     ];
   }, [currentLocation, markerAngle, showDirectionLine, headingUp, filteredAzimuth]);
-
-  // State to force marker redraw
-  const markerRef = useRef(null);
 
   return (
     <>
@@ -133,7 +113,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         }}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={tracksViewChanges}
+        tracksViewChanges={false}
         onPress={onPress}
       >
         <View
