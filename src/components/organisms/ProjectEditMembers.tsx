@@ -46,21 +46,18 @@ export const ProjectEditMembers = (props: Props) => {
         />
       </View>
 
-      {visibleMinus ? (
-        <View style={[styles.td, { flex: 1 }]}>
-          <Button
-            style={{
-              backgroundColor: COLOR.DARKRED,
-              padding: 0,
-            }}
-            name="minus"
-            size={14}
-            onPress={pressDeleteMember}
-          />
-        </View>
-      ) : (
-        <View style={[styles.td, { flex: 1 }]} />
-      )}
+      <View style={[styles.td, { flex: 1 }]}>
+        <Button
+          style={{
+            backgroundColor: visibleMinus ? COLOR.DARKRED : COLOR.GRAY2,
+            padding: 0,
+          }}
+          disabled={!visibleMinus}
+          name="minus"
+          size={14}
+          onPress={pressDeleteMember}
+        />
+      </View>
     </View>
   );
 };
