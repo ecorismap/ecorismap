@@ -22,7 +22,6 @@ import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
-import { TRACK } from '../constants/AppConstants';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
 
@@ -66,7 +65,6 @@ export type UseLocationReturnType = {
     isOK: boolean;
     message: string;
   }>;
-  saveTrackSegment: () => Promise<void>; // 自動保存用
   confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
 };
 
@@ -93,7 +91,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedPointCountRef = useRef<number>(0);
   const trackStartTimeRef = useRef<number>(0);
 
   const gpsAccuracyOption = useMemo(() => {
@@ -250,8 +247,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
     [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS, mapViewRef]
   );
 
-  const saveTrackSegmentRef = useRef<() => Promise<void>>(() => Promise.resolve());
-
   const toggleTracking = useCallback(
     async (trackingState_: TrackingStateType) => {
       //Tracking Stateの変更後の処理
@@ -261,7 +256,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
         await moveCurrentPosition();
         dispatch(clearTrackLogAction());
         trackStartTimeRef.current = Date.now();
-        lastSavedPointCountRef.current = 0;
         await startTracking();
 
         // 自動保存タイマーの停止（ポイント数ベースに移行）
@@ -359,13 +353,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
       const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
 
-      // ポイント数ベースの自動保存チェック
-      const totalPoints = trackLog.track.length + result.newLocations.length;
-      if (totalPoints - lastSavedPointCountRef.current >= TRACK.AUTO_SAVE_POINTS) {
-        saveTrackSegmentRef.current();
-        lastSavedPointCountRef.current = totalPoints;
-      }
-
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef.current as MapView).animateCamera(
           {
@@ -394,45 +381,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
     dispatch(clearTrackLogAction());
     return { isOK: true, message: '' };
   }, [addTrackRecord, dispatch, trackLog.track]);
-
-  const saveTrackSegment = useCallback(async () => {
-    try {
-      // セグメントをtrackレイヤーに保存
-      const cleanupedLine = cleanupLine(trackLog.track);
-      const ret = addTrackRecord(cleanupedLine);
-
-      if (ret.isOK) {
-        // cleanupedLineの最後の点を取得
-        const lastCleanupedPoint = cleanupedLine[cleanupedLine.length - 1];
-
-        // 保存成功後、最後の点を残して新しいトラックを開始
-        dispatch(clearTrackLogAction());
-
-        // cleanupedLineの最後の点を新しいトラックの開始点として追加
-        if (lastCleanupedPoint) {
-          const startPoint: LocationType = lastCleanupedPoint;
-
-          dispatch(
-            appendTrackLogAction({
-              newLocations: [startPoint],
-              additionalDistance: 0,
-              lastTimeStamp: startPoint.timestamp || Date.now(),
-            })
-          );
-        }
-
-        trackStartTimeRef.current = Date.now();
-        lastSavedPointCountRef.current = 1; // 新しいトラックの開始点
-      }
-    } catch (error) {
-      // エラーハンドリング
-    }
-  }, [addTrackRecord, dispatch, trackLog.track]);
-
-  // saveTrackSegmentRefに関数を設定
-  useEffect(() => {
-    saveTrackSegmentRef.current = saveTrackSegment;
-  }, [saveTrackSegment]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {
@@ -535,7 +483,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
     toggleHeadingUp,
     checkUnsavedTrackLog,
     saveTrackLog,
-    saveTrackSegment,
     confirmLocationPermission,
   } as const;
 };

@@ -220,35 +220,6 @@ describe('useLocation', () => {
     // we'll skip the actual execution for now
   });
 
-  it('should save track segment automatically', async () => {
-    // Set up track log with minimum points for segment save
-    const locations = Array.from({ length: 150 }, (_, i) => ({
-      latitude: 35.0 + i * 0.001,
-      longitude: 135.0 + i * 0.001,
-      timestamp: Date.now() + i * 1000,
-    }));
-
-    store.dispatch({
-      type: 'trackLog/appendTrackLogAction',
-      payload: {
-        newLocations: locations,
-        additionalDistance: 10.0,
-        lastTimeStamp: Date.now() + 150000,
-      },
-    });
-
-    const mockRef = createMockMapRef();
-    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
-
-    await act(async () => {
-      await result.current.saveTrackSegment();
-    });
-
-    // Check that the track was cleared after saving
-    const state = store.getState();
-    expect(state.trackLog.track).toHaveLength(0);
-  });
-
   it('should toggle heading up', async () => {
     const mockMapRef = {
       setCamera: jest.fn(),
