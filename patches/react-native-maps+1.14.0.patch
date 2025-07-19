@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..4448c61
+index 0000000..3000231
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
@@ -110,7 +110,7 @@ index 0000000..9e26dfe
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..a6203cf
+index 0000000..77421fc
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -121,11 +121,11 @@ new file mode 100644
 index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
-index 0000000..ae49809
+index 0000000..ddb580a
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 @@ -0,0 +1 @@
-+#Wed Jun 25 05:49:18 JST 2025
++#Fri Jul 18 17:32:02 JST 2025
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/merger.xml
 new file mode 100644
 index 0000000..a3bedc4
@@ -417,27 +417,27 @@ index 0000000..0d0d78c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..a3d058b
+index 0000000..8ed0559
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class
 new file mode 100644
-index 0000000..3960e5c
+index 0000000..0378af8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class
 new file mode 100644
-index 0000000..0fb6420
+index 0000000..529aa7c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PointData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class
 new file mode 100644
-index 0000000..0a1067e
+index 0000000..2c2b9f4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..daf8cd1
+index 0000000..698e134
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class
 new file mode 100644
-index 0000000..80066b7
+index 0000000..3f6d67f
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class
 new file mode 100644
@@ -716,7 +716,7 @@ index 0000000..0637a08
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..18b81e0
+index 0000000..d92ad02
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -748,9 +748,117 @@ index 0000000..9f52191
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
 +	android:minSdkVersion
 +		INJECTED from /Users/mizutani/prg/ecorismap/ecorismap/node_modules/react-native-maps/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTile.class.uniqueId3 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTile.class.uniqueId3
+new file mode 100644
+index 0000000..d299c2d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTile.class.uniqueId3 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21
+new file mode 100644
+index 0000000..0d0d78c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18
+new file mode 100644
+index 0000000..a3d058b
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25
+new file mode 100644
+index 0000000..3960e5c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0
+new file mode 100644
+index 0000000..0fb6420
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26
+new file mode 100644
+index 0000000..0a1067e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13
+new file mode 100644
+index 0000000..daf8cd1
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1
+new file mode 100644
+index 0000000..80066b7
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7
+new file mode 100644
+index 0000000..4c5b056
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId15 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId15
+new file mode 100644
+index 0000000..fa610c0
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$10.class.uniqueId15 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId5 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId5
+new file mode 100644
+index 0000000..7b20697
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$11.class.uniqueId5 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId8 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId8
+new file mode 100644
+index 0000000..5b7e4b0
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$12.class.uniqueId8 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22
+new file mode 100644
+index 0000000..28d4cf4
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$13.class.uniqueId22 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10
+new file mode 100644
+index 0000000..c19ae87
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$14.class.uniqueId10 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19
+new file mode 100644
+index 0000000..c240953
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$15.class.uniqueId19 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId2 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId2
+new file mode 100644
+index 0000000..2492baa
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$16.class.uniqueId2 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId11 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId11
+new file mode 100644
+index 0000000..83c4b58
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$17.class.uniqueId11 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24
+new file mode 100644
+index 0000000..510d918
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$2.class.uniqueId24 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14
+new file mode 100644
+index 0000000..ecea029
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$3.class.uniqueId14 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId16 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId16
+new file mode 100644
+index 0000000..9d50aeb
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$4.class.uniqueId16 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId6 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId6
+new file mode 100644
+index 0000000..8ab568c
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$5.class.uniqueId6 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId9 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId9
+new file mode 100644
+index 0000000..5195e1a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$6.class.uniqueId9 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20
+new file mode 100644
+index 0000000..108343d
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$7.class.uniqueId20 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12
+new file mode 100644
+index 0000000..ac81330
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$8.class.uniqueId12 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17
+new file mode 100644
+index 0000000..9081178
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$9.class.uniqueId17 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23
+new file mode 100644
+index 0000000..45cca25
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView.class.uniqueId23 differ
+diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4
+new file mode 100644
+index 0000000..1c86d8e
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..195c9b7
+index 0000000..0a28094
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
@@ -1556,10 +1664,10 @@ index 0000000..fa156d6
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..3faff7b
+index 0000000..c695a96
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1301 @@
+@@ -0,0 +1,1377 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Metadata;
@@ -1917,8 +2025,9 @@ index 0000000..3faff7b
 +  private HashMap<String, Integer> colorMapping = new HashMap<>();
 +
 +  // getColorToUse メソッドの定義
-+  public int getColorToUse(Map<String, String> attributes, String key) {
-+    String valueToUse = attributes.containsKey(key) ? (String) attributes.get(key) : "";
++  public int getColorToUse(Map<String, Object> attributes, String key) {
++    Object attrValue = attributes.get(key);
++    String valueToUse = attrValue != null ? String.valueOf(attrValue) : "";
 +
 +    // すでに colorMapping で色が割り当てられている場合は、その色を使う
 +    if (colorMapping.containsKey(valueToUse)) {
@@ -1944,31 +2053,43 @@ index 0000000..3faff7b
 +    return randomColor;
 +  }
 +
-+  public HashMap<String, String> getFeatureAttributes(VectorTile.Tile.Layer layer, VectorTile.Tile.Feature feature) {
-+    HashMap<String, String> attributeDict = new HashMap<>();
++  public Map<String, Object> getFeatureAttributes(VectorTile.Tile.Layer layer, VectorTile.Tile.Feature feature) {
++    Map<String, Object> attributeDict = new HashMap<>();
 +    List<Integer> tagsArray = feature.getTagsList();
 +    int tagsCount = tagsArray.size();
 +
-+    for (int i = 0; i < tagsCount; i += 2) {
-+      int keyIndex = tagsArray.get(i);
-+      int valueIndex = tagsArray.get(i + 1);
++    try {
++      for (int i = 0; i < tagsCount; i += 2) {
++        if (i + 1 >= tagsCount) break; // 範囲チェック
++        
++        int keyIndex = tagsArray.get(i);
++        int valueIndex = tagsArray.get(i + 1);
++        
++        if (keyIndex >= layer.getKeysCount() || valueIndex >= layer.getValuesCount()) {
++          continue; // 無効なインデックスをスキップ
++        }
 +
-+      String key = layer.getKeys(keyIndex);
-+      VectorTile.Tile.Value valueObj = layer.getValues(valueIndex);
-+      String valueStr = "";
++        String key = layer.getKeys(keyIndex);
++        VectorTile.Tile.Value valueObj = layer.getValues(valueIndex);
 +
-+      if (valueObj.hasStringValue()) {
-+        valueStr = valueObj.getStringValue();
-+      } else if (valueObj.hasIntValue()) {
-+        valueStr = String.valueOf(valueObj.getIntValue());
-+      } else if (valueObj.hasFloatValue()) {
-+        valueStr = String.valueOf(valueObj.getFloatValue());
-+      } else if (valueObj.hasDoubleValue()) {
-+        valueStr = String.format("%.1f", valueObj.getDoubleValue()); // 小数点以下2桁
++        // 型に応じて適切なオブジェクトを設定（文字列変換せずに元の型を保持）
++        if (valueObj.hasStringValue()) {
++          attributeDict.put(key, valueObj.getStringValue());
++        } else if (valueObj.hasIntValue()) {
++          attributeDict.put(key, valueObj.getIntValue());
++        } else if (valueObj.hasFloatValue()) {
++          attributeDict.put(key, valueObj.getFloatValue());
++        } else if (valueObj.hasDoubleValue()) {
++          attributeDict.put(key, valueObj.getDoubleValue());
++        } else if (valueObj.hasBoolValue()) {
++          attributeDict.put(key, valueObj.getBoolValue());
++        } else {
++          // その他の型の場合は空文字列を設定
++          attributeDict.put(key, "");
++        }
 +      }
-+      // 他の型についても同様に処理
-+
-+      attributeDict.put(key, valueStr);
++    } catch (Exception e) {
++      Log.e("MapPMTileProvider", "Error in getFeatureAttributes: " + e.getMessage());
 +    }
 +
 +    return attributeDict;
@@ -2159,7 +2280,7 @@ index 0000000..3faff7b
 +    return new PolygonData(path, centerX, centerY);
 +  }
 +
-+  private String evaluateExpression(List<?> expression, Map<String, String> attributes) {
++  private String evaluateExpression(List<?> expression, Map<String, Object> attributes) {
 +    if (expression == null || expression.isEmpty()) {
 +      return "";
 +    }
@@ -2169,7 +2290,8 @@ index 0000000..3faff7b
 +    if ("get".equals(operator) && expression.size() >= 2) {
 +      // ["get", "field_name"]
 +      String fieldName = (String) expression.get(1);
-+      return attributes.getOrDefault(fieldName, "");
++      Object value = attributes.get(fieldName);
++      return value != null ? String.valueOf(value) : "";
 +    } else if ("slice".equals(operator) && expression.size() >= 4) {
 +      // ["slice", string_expression, start, end]
 +      String sourceValue;
@@ -2199,7 +2321,7 @@ index 0000000..3faff7b
 +    return "";
 +  }
 +  
-+  private boolean checkFilter(List<?> filter, Map<String, String> attributes) {
++  private boolean checkFilter(List<?> filter, Map<String, Object> attributes) {
 +    if (filter == null) return true;
 +    if (filter.size() == 3) {
 +      //System.out.println("##filter: " + filter);
@@ -2209,7 +2331,8 @@ index 0000000..3faff7b
 +      Object leftOperand = filter.get(1);
 +      String leftValue;
 +      if (leftOperand instanceof String) {
-+        leftValue = attributes.getOrDefault((String) leftOperand, "");
++        Object value = attributes.get((String) leftOperand);
++        leftValue = value != null ? String.valueOf(value) : "";
 +      } else if (leftOperand instanceof List) {
 +        leftValue = evaluateExpression((List<?>) leftOperand, attributes);
 +      } else {
@@ -2252,22 +2375,66 @@ index 0000000..3faff7b
 +    return false;
 +  }
 +
-+  private String computeDynamicColor(List<?> colors, Map<String, String> attributes) {
-+    if (colors.size() > 0 && "match".equals(colors.get(0))) {
-+      List<?> conditions = colors.subList(2, colors.size() - 1);
-+      List<?> getFieldList = (List<?>) colors.get(1);
-+      String field = (String) getFieldList.get(1);
-+      String value = attributes.getOrDefault(field, "");
-+      String defaultColor = (String) colors.get(colors.size() - 1);
++  private String computeDynamicColor(List<?> colors, Map<String, Object> attributes) {
++    try {
++      if (colors.size() > 0 && colors.get(0) instanceof String && "match".equals(colors.get(0))) {
++        // match式の最小構成をチェック（["match", expression, ...cases, default]）
++        if (colors.size() < 4) {
++          Log.w("MapPMTileProvider", "Invalid match expression: insufficient arguments");
++          return null;
++        }
++        
++        // 条件の数が正しいかチェック（expression + (key-value pairs) + default）
++        if ((colors.size() - 3) % 2 != 0) {
++          Log.w("MapPMTileProvider", "Invalid match expression: mismatched key-value pairs");
++          return null;
++        }
++        
++        List<?> conditions = colors.subList(2, colors.size() - 1);
++        
++        // フィールド値の取得
++        Object value = null;
++        if (colors.get(1) instanceof List<?>) {
++          List<?> getFieldList = (List<?>) colors.get(1);
++          if (getFieldList.size() >= 2 && "get".equals(getFieldList.get(0))) {
++            String field = (String) getFieldList.get(1);
++            value = attributes.get(field);
++          }
++        }
++        
++        Object defaultColor = colors.get(colors.size() - 1);
 +
-+      for (int i = 0; i < conditions.size(); i += 2) {
-+        String key = (String) conditions.get(i);
-+        if (key.equals(value)) {
-+          return (String) conditions.get(i + 1);
++        for (int i = 0; i < conditions.size(); i += 2) {
++          Object key = conditions.get(i);
++          Object colorValue = conditions.get(i + 1);
++          boolean matches = false;
++          
++          // 数値型の比較
++          if (key instanceof Number && value instanceof Number) {
++            matches = ((Number) key).doubleValue() == ((Number) value).doubleValue();
++          }
++          // 文字列型の比較
++          else if (key instanceof String && value instanceof String) {
++            matches = key.equals(value);
++          }
++          // 型が異なる場合は文字列として比較
++          else if (key != null && value != null) {
++            matches = String.valueOf(key).equals(String.valueOf(value));
++          }
++          
++          if (matches && colorValue instanceof String) {
++            return (String) colorValue;
++          }
++        }
++        
++        if (defaultColor instanceof String) {
++          return (String) defaultColor;
 +        }
 +      }
-+      return defaultColor;
++    } catch (Exception e) {
++      Log.e("MapPMTileProvider", "Error in computeDynamicColor: " + e.getMessage());
 +    }
++    
 +    return null;
 +  }
 +
@@ -2280,7 +2447,7 @@ index 0000000..3faff7b
 +
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof List<?>)) return;
-+        Map<String, String> attributes = feature.attributes;
++        Map<String, Object> attributes = feature.attributes;
 +        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        String circleColor = "#ff0000";
 +        if (styleLayer.paint.circleColor instanceof String) {
@@ -2298,14 +2465,18 @@ index 0000000..3faff7b
 +        if (styleLayer.paint.circleStrokeColor != null && styleLayer.paint.circleStrokeColor instanceof String) {
 +          outlineColor = (String) styleLayer.paint.circleStrokeColor;
 +        }
-+        float strokeWidth = (Float) styleLayer.paint.circleStrokeWidth == null
-+          ? 0
-+          : styleLayer.paint.circleStrokeWidth * 2;
++        float strokeWidth = 0; // デフォルト値
++        if (styleLayer.paint.circleStrokeWidth != null) {
++          strokeWidth = ((Number) styleLayer.paint.circleStrokeWidth).floatValue() * 2;
++        }
 +        circleOutlinePaint.setColor(Color.parseColor(outlineColor));
 +        circleOutlinePaint.setStyle(Paint.Style.STROKE);
 +        circleOutlinePaint.setStrokeWidth(strokeWidth); // アウトラインの太さ
 +
-+        float circleRadius = (Float) styleLayer.paint.circleRadius == null ? 10 : styleLayer.paint.circleRadius * 2;
++        float circleRadius = 10; // デフォルト値
++        if (styleLayer.paint.circleRadius != null) {
++          circleRadius = ((Number) styleLayer.paint.circleRadius).floatValue() * 2;
++        }
 +        List<PointData> points = (List<PointData>) feature.geometry;
 +        for (PointData point : points) {
 +          float scaledX = point.x;
@@ -2318,7 +2489,7 @@ index 0000000..3faff7b
 +      //System.out.println("!!applyStyle: " + source.name);
 +      Paint linePaint = new Paint();
 +      for (FeatureData feature : source.features) {
-+        Map<String, String> attributes = feature.attributes;
++        Map<String, Object> attributes = feature.attributes;
 +        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        Path path;
 +        if (feature.geometry instanceof LineData) {
@@ -2340,7 +2511,10 @@ index 0000000..3faff7b
 +            lineColor = dynamicColor;
 +          }
 +        }
-+        float lineWidth = (Float) styleLayer.paint.lineWidth == null ? 1 : styleLayer.paint.lineWidth;
++        float lineWidth = 1; // デフォルト値
++        if (styleLayer.paint.lineWidth != null) {
++          lineWidth = ((Number) styleLayer.paint.lineWidth).floatValue();
++        }
 +
 +        linePaint.setColor(Color.parseColor(lineColor));
 +        linePaint.setStyle(Paint.Style.STROKE);
@@ -2353,7 +2527,7 @@ index 0000000..3faff7b
 +      for (FeatureData feature : source.features) {
 +        if (!(feature.geometry instanceof PolygonData)) return;
 +        PolygonData polygon = (PolygonData) feature.geometry;
-+        Map<String, String> attributes = feature.attributes;
++        Map<String, Object> attributes = feature.attributes;
 +        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        String fillColor = "#ffffffff";
 +        if (styleLayer.paint.fillColor instanceof String) {
@@ -2367,7 +2541,10 @@ index 0000000..3faff7b
 +
 +        fillPaint.setColor(Color.parseColor(fillColor));
 +
-+        float fillOpacity = (Float) styleLayer.paint.fillOpacity == null ? 1f : styleLayer.paint.fillOpacity;
++        float fillOpacity = 1f; // デフォルト値
++        if (styleLayer.paint.fillOpacity != null) {
++          fillOpacity = ((Number) styleLayer.paint.fillOpacity).floatValue();
++        }
 +        fillPaint.setAlpha((int) (fillOpacity * 255)); // Set fill opacity for fillPaint only, after setting the color
 +
 +        fillPaint.setStyle(Paint.Style.FILL);
@@ -2390,7 +2567,7 @@ index 0000000..3faff7b
 +      Paint textFillPaint = new Paint();
 +
 +      for (FeatureData feature : source.features) {
-+        Map<String, String> attributes = feature.attributes;
++        Map<String, Object> attributes = feature.attributes;
 +        if (!checkFilter((List<?>) styleLayer.filter, attributes)) continue;
 +        float X = 0;
 +        float Y = 0;
@@ -2408,16 +2585,23 @@ index 0000000..3faff7b
 +          Y = polygon.centerY;
 +        }
 +
-+        int labelSize = (Integer) styleLayer.layout.textSize == null ? 16 : styleLayer.layout.textSize;
++        int labelSize = 16; // デフォルト値
++        if (styleLayer.layout.textSize != null) {
++          labelSize = ((Number) styleLayer.layout.textSize).intValue();
++        }
 +        String labelHaloColor = styleLayer.paint.textHaloColor != null &&
 +          styleLayer.paint.textHaloColor instanceof String
 +          ? styleLayer.paint.textHaloColor
 +          : "#FFFFFF";
 +
-+        float labelHaloWidth = (Float) styleLayer.paint.textHaloWidth == null ? 0 : styleLayer.paint.textHaloWidth;
++        float labelHaloWidth = 0; // デフォルト値
++        if (styleLayer.paint.textHaloWidth != null) {
++          labelHaloWidth = ((Number) styleLayer.paint.textHaloWidth).floatValue();
++        }
 +        String labelField = styleLayer.layout.textField.get(1);
 +        if (attributes == null) continue;
-+        String label = attributes.getOrDefault(labelField, "");
++        Object labelValue = attributes.get(labelField);
++        String label = labelValue != null ? String.valueOf(labelValue) : "";
 +
 +        String labelColor = "#000000";
 +        if (styleLayer.paint.textColor instanceof String) {
@@ -2483,10 +2667,10 @@ index 0000000..3faff7b
 +
 +  public class FeatureData {
 +
-+    public Map<String, String> attributes;
++    public Map<String, Object> attributes;
 +    public Object geometry;
 +
-+    public FeatureData(Map<String, String> attributes, Object geometry) {
++    public FeatureData(Map<String, Object> attributes, Object geometry) {
 +      this.attributes = attributes;
 +      this.geometry = geometry;
 +    }
@@ -2538,7 +2722,7 @@ index 0000000..3faff7b
 +          float layerExtent = layer.getExtent();
 +          List<FeatureData> features = new ArrayList<>();
 +          for (VectorTile.Tile.Feature feature : layer.getFeaturesList()) {
-+            Map<String, String> attributes = getFeatureAttributes(layer, feature);
++            Map<String, Object> attributes = getFeatureAttributes(layer, feature);
 +            Object geometry = null;
 +            if (feature.getType() == VectorTile.Tile.GeomType.POINT) {
 +              geometry = createMultiPointData(feature.getGeometryList(), layerExtent);
@@ -12443,10 +12627,10 @@ index 0000000..49710a5
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..a94b80d
+index 0000000..a2415aa
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1265 @@
+@@ -0,0 +1,1332 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -12787,7 +12971,7 @@ index 0000000..a94b80d
 +}
 +
 +- (CGContextRef)createTransparentImageContext {
-+  // 透明な256x256の画像を生成. 1はscale factor.
++  // 透明な512x512の画像を生成. 1はscale factor.
 +  UIGraphicsBeginImageContextWithOptions(CGSizeMake(512, 512), NO, 1);
 +  CGContextRef context = UIGraphicsGetCurrentContext();
 +
@@ -12798,32 +12982,53 @@ index 0000000..a94b80d
 +NSDictionary *getFeatureAttributes(Tile_Layer *layer, Tile_Feature *feature) {
 +  NSMutableDictionary *attributeDict = [NSMutableDictionary dictionary];
 +  NSUInteger tagsCount = feature.tagsArray_Count;
-+  for (NSUInteger i = 0; i < tagsCount; i += 2) {
-+    NSUInteger keyIndex = [feature.tagsArray valueAtIndex:i];
-+    NSUInteger valueIndex = [feature.tagsArray valueAtIndex:i + 1];
++  
++  @try {
++    for (NSUInteger i = 0; i < tagsCount; i += 2) {
++      if (i + 1 >= tagsCount) break; // 範囲チェック
++      
++      NSUInteger keyIndex = [feature.tagsArray valueAtIndex:i];
++      NSUInteger valueIndex = [feature.tagsArray valueAtIndex:i + 1];
++      
++      if (keyIndex >= layer.keysArray_Count || valueIndex >= layer.valuesArray_Count) {
++        continue; // 無効なインデックスをスキップ
++      }
 +
-+    NSString *key = layer.keysArray[keyIndex];
-+    Tile_Value *valueObj = layer.valuesArray[valueIndex];
-+    NSString *valueStr = @"";
-+    if (valueObj.hasStringValue) {
-+      valueStr = valueObj.stringValue;
-+    } else if (valueObj.hasIntValue) {
-+      valueStr = [NSString stringWithFormat:@"%lld", valueObj.intValue];
-+    } else if (valueObj.hasFloatValue) {
-+      valueStr = [NSString stringWithFormat:@"%.1f", valueObj.floatValue];
-+    } else if (valueObj.hasDoubleValue) {
-+      valueStr = [NSString stringWithFormat:@"%.1f", valueObj.doubleValue];
++      NSString *key = layer.keysArray[keyIndex];
++      Tile_Value *valueObj = layer.valuesArray[valueIndex];
++      
++      // 型に応じて適切なオブジェクトを設定（文字列変換せずに元の型を保持）
++      if (valueObj.hasStringValue) {
++        [attributeDict setObject:valueObj.stringValue forKey:key];
++      } else if (valueObj.hasIntValue) {
++        [attributeDict setObject:@(valueObj.intValue) forKey:key];
++      } else if (valueObj.hasFloatValue) {
++        [attributeDict setObject:@(valueObj.floatValue) forKey:key];
++      } else if (valueObj.hasDoubleValue) {
++        [attributeDict setObject:@(valueObj.doubleValue) forKey:key];
++      } else if (valueObj.hasBoolValue) {
++        [attributeDict setObject:@(valueObj.boolValue) forKey:key];
++      } else {
++        // その他の型の場合は空文字列を設定
++        [attributeDict setObject:@"" forKey:key];
++      }
 +    }
-+    // 他の型についても同様に処理
-+
-+    [attributeDict setObject:valueStr forKey:key];
++  } @catch (NSException *exception) {
++    NSLog(@"Error in getFeatureAttributes: %@", exception.reason);
 +  }
++  
 +  return attributeDict;
 +}
 +
 +// getValueToUse 関数の定義
 +NSString *getLabelToUse(NSDictionary *attributes, NSString *key) {
-+  return attributes[key] ?: @""; // デフォルト値として空文字列を使用
++  id value = attributes[key];
++  if ([value isKindOfClass:[NSString class]]) {
++    return value;
++  } else if ([value isKindOfClass:[NSNumber class]]) {
++    return [value stringValue];
++  }
++  return @""; // デフォルト値として空文字列を使用
 +}
 +
 +NSMutableDictionary *colorMapping;
@@ -13050,22 +13255,67 @@ index 0000000..a94b80d
 +
 +- (NSString *)computeDynamicColor:(NSArray *)colors
 +                       attributes:(NSDictionary *)attributes {
-+  if (colors.count > 0 && [colors[0] isEqualToString:@"match"]) {
-+    NSArray *conditions =
-+        [colors subarrayWithRange:NSMakeRange(2, colors.count - 3)];
-+    NSArray *getFieldList = colors[1];
-+    NSString *field = getFieldList[1];
-+    NSString *value = attributes[field] ? attributes[field] : @"";
-+    NSString *defaultColor = colors.lastObject;
++  @try {
++    if (colors.count > 0 && [colors[0] isKindOfClass:[NSString class]] && [colors[0] isEqualToString:@"match"]) {
++      // match式の最小構成をチェック（["match", expression, ...cases, default]）
++      if (colors.count < 4) {
++        NSLog(@"Invalid match expression: insufficient arguments");
++        return nil;
++      }
++      
++      // 条件の数が正しいかチェック（expression + (key-value pairs) + default）
++      if ((colors.count - 3) % 2 != 0) {
++        NSLog(@"Invalid match expression: mismatched key-value pairs");
++        return nil;
++      }
++      
++      NSArray *conditions = [colors subarrayWithRange:NSMakeRange(2, colors.count - 3)];
++      
++      // フィールド値の取得
++      id value = nil;
++      if ([colors[1] isKindOfClass:[NSArray class]]) {
++        NSArray *getFieldList = colors[1];
++        if (getFieldList.count >= 2 && [getFieldList[0] isEqualToString:@"get"]) {
++          NSString *field = getFieldList[1];
++          value = attributes[field];
++        }
++      }
++      
++      NSString *defaultColor = colors.lastObject;
 +
-+    for (int i = 0; i < conditions.count; i += 2) {
-+      NSString *key = conditions[i];
-+      if ([key isEqualToString:value]) {
-+        return conditions[i + 1];
++      for (int i = 0; i < conditions.count; i += 2) {
++        id key = conditions[i];
++        id colorValue = conditions[i + 1];
++        BOOL matches = NO;
++        
++        // 両方が数値の場合
++        if ([key isKindOfClass:[NSNumber class]] && [value isKindOfClass:[NSNumber class]]) {
++          matches = [key isEqualToNumber:value];
++        }
++        // 両方が文字列の場合
++        else if ([key isKindOfClass:[NSString class]] && [value isKindOfClass:[NSString class]]) {
++          matches = [key isEqualToString:value];
++        }
++        // 型が混在している場合は文字列として比較
++        else if (key != nil && value != nil) {
++          NSString *keyStr = [NSString stringWithFormat:@"%@", key];
++          NSString *valueStr = [NSString stringWithFormat:@"%@", value];
++          matches = [keyStr isEqualToString:valueStr];
++        }
++        
++        if (matches && [colorValue isKindOfClass:[NSString class]]) {
++          return colorValue;
++        }
++      }
++      
++      if ([defaultColor isKindOfClass:[NSString class]]) {
++        return defaultColor;
 +      }
 +    }
-+    return defaultColor;
++  } @catch (NSException *exception) {
++    NSLog(@"Error in computeDynamicColor: %@", exception.reason);
 +  }
++  
 +  return nil;
 +}
 +
@@ -13310,9 +13560,10 @@ index 0000000..a94b80d
 +
 +      UIColor *fillColor = [UIColor colorWithHexString:fillColorString];
 +
-+      CGFloat fillOpacity = paint[@"fill-opacity"]
-+                                ? [paint[@"fill-opacity"] floatValue]
-+                                : 1.0; // Default fill opacity is 1
++      CGFloat fillOpacity = 1.0; // Default fill opacity is 1
++      if (paint[@"fill-opacity"] != nil && paint[@"fill-opacity"] != [NSNull null]) {
++        fillOpacity = [paint[@"fill-opacity"] floatValue];
++      }
 +
 +      CGContextRef context = UIGraphicsGetCurrentContext();
 +
@@ -15773,7 +16024,7 @@ index 0000000..7a5b940
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h
 new file mode 100644
-index 0000000..9bbdcc7
+index 0000000..9148cf1
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.h
 @@ -0,0 +1,10 @@
@@ -15781,25 +16032,24 @@ index 0000000..9bbdcc7
 +
 +@interface FeatureData : NSObject
 +
-+@property(nonatomic, strong) NSDictionary<NSString *, NSString *> *attributes;
++@property(nonatomic, strong) NSDictionary *attributes;
 +@property(nonatomic, strong) id geometry;
 +
-+- (instancetype)initWithAttributes:(NSDictionary<NSString *, NSString *> *)attributes geometry:(id)geometry;
++- (instancetype)initWithAttributes:(NSDictionary *)attributes geometry:(id)geometry;
 +
 +@end
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m
 new file mode 100644
-index 0000000..7a2eb28
+index 0000000..5ecf6fc
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/VectorTile/FeatureData.m
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,15 @@
 +#import "FeatureData.h"
 +
 +@implementation FeatureData
 +
-+- (instancetype)initWithAttributes:
-+                    (NSDictionary<NSString *, NSString *> *)attributes
++- (instancetype)initWithAttributes:(NSDictionary *)attributes
 +                          geometry:(id)geometry {
 +  self = [super init];
 +  if (self) {
