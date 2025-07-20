@@ -20,28 +20,12 @@
       <data android:scheme="https"/>
     </intent>
   </queries>
-  <application
-    android:name=".MainApplication"
-    android:label="@string/app_name"
-    android:icon="@mipmap/ic_launcher"
-    android:roundIcon="@mipmap/ic_launcher_round"
-    android:allowBackup="false"
-    android:theme="@style/AppTheme"
-    android:usesCleartextTraffic="true"
-  >
+  <application android:name=".MainApplication" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:allowBackup="false" android:theme="@style/AppTheme" android:usesCleartextTraffic="true" android:largeHeap="true">
     <meta-data android:name="expo.modules.notifications.default_notification_color" android:resource="@color/notification_icon_color"/>
     <meta-data android:name="expo.modules.notifications.default_notification_icon" android:resource="@drawable/notification_icon"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATE_URL" android:value="YOUR-APP-URL-HERE"/>
     <meta-data android:name="expo.modules.updates.EXPO_SDK_VERSION" android:value="YOUR-APP-SDK-VERSION-HERE"/>
-    <activity
-      android:name=".MainActivity"
-      android:label="@string/app_name"
-      android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-      android:launchMode="singleTask"
-      android:windowSoftInputMode="adjustPan"
-      android:theme="@style/Theme.App.SplashScreen"
-      android:exported="true"
-    >
+    <activity android:name=".MainActivity" android:label="@string/app_name" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustPan" android:theme="@style/Theme.App.SplashScreen" android:exported="true">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
@@ -52,7 +36,7 @@
         <data android:mimeType="application/octet-stream" />
         <data android:mimeType="text/csv" />
         <data android:host="*" />
-        <data android:pathPattern=".*\\.geojson" />   
+        <data android:pathPattern=".*\\.geojson" />
         <data android:pathPattern=".*\\.gpx" />
         <data android:pathPattern=".*\\.csv" />
       </intent-filter>
@@ -73,8 +57,6 @@
     <activity android:name="com.facebook.react.devsupport.DevSettingsActivity"/>
     <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}"/>
     <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-    <meta-data
-      android:name="firebase_performance_logcat_enabled"
-      android:value="true" />
+    <meta-data android:name="firebase_performance_logcat_enabled" android:value="true" />
   </application>
 </manifest>
