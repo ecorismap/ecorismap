@@ -107,16 +107,19 @@ export default function MapContainer({ navigation }: Props_Maps) {
       //pmTilesの場合、boundaryを取得して保存する
       if (newTileMap.url.includes('pmtiles')) {
         const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
-        if (Platform.OS === 'web') {
-          await db.pmtiles.update(newTileMap.id, {
-            boundary: JSON.stringify(boundary),
-          });
-        } else {
-          await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${newTileMap.id}`, {
-            intermediates: true,
-          });
-          const boundaryUri = `${TILE_FOLDER}/${newTileMap.id}/boundary.json`;
-          await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
+        // boundaryが取得できた場合のみ保存処理を行う
+        if (boundary) {
+          if (Platform.OS === 'web') {
+            await db.pmtiles.update(newTileMap.id, {
+              boundary: JSON.stringify(boundary),
+            });
+          } else {
+            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${newTileMap.id}`, {
+              intermediates: true,
+            });
+            const boundaryUri = `${TILE_FOLDER}/${newTileMap.id}/boundary.json`;
+            await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
+          }
         }
 
         //newTileMap.overzoomThreshold = header ? header.maxZoom : 16;
