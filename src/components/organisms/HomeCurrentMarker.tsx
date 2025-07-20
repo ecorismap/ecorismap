@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Platform } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Polyline } from 'react-native-maps';
 import { LocationType } from '../../types';
@@ -113,7 +113,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         }}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={false}
+        tracksViewChanges={Platform.OS === 'ios' ? true : false}
         onPress={onPress}
       >
         <View
