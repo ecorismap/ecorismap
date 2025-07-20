@@ -29,7 +29,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..3000231
+index 0000000..9145fee
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/.transforms/2f398fa146c85afae99e8b5a12023d69/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java b/node_modules/react-native-maps/android/build/generated/source/buildConfig/debug/com/rnmaps/maps/BuildConfig.java
 new file mode 100644
@@ -88,6 +88,10 @@ index 0000000..578d892
 +  "elementType": "File"
 +}
 \ No newline at end of file
+diff --git a/node_modules/react-native-maps/android/build/intermediates/aar_main_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/aar_main_jar/debug/classes.jar
+new file mode 100644
+index 0000000..6781b05
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/aar_main_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/aar_metadata/debug/aar-metadata.properties b/node_modules/react-native-maps/android/build/intermediates/aar_metadata/debug/aar-metadata.properties
 new file mode 100644
 index 0000000..1211b1e
@@ -108,9 +112,12 @@ index 0000000..9e26dfe
 @@ -0,0 +1 @@
 +{}
 \ No newline at end of file
+diff --git a/node_modules/react-native-maps/android/build/intermediates/annotations_typedef_file/debug/typedefs.txt b/node_modules/react-native-maps/android/build/intermediates/annotations_typedef_file/debug/typedefs.txt
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..77421fc
+index 0000000..450425c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/compile_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar b/node_modules/react-native-maps/android/build/intermediates/compile_r_class_jar/debug/R.jar
 new file mode 100644
@@ -119,6 +126,10 @@ Binary files /dev/null and b/node_modules/react-native-maps/android/build/interm
 diff --git a/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt b/node_modules/react-native-maps/android/build/intermediates/compile_symbol_list/debug/R.txt
 new file mode 100644
 index 0000000..e69de29
+diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state b/node_modules/react-native-maps/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state
+new file mode 100644
+index 0000000..1c983fc
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-maps/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
 index 0000000..ddb580a
@@ -417,7 +428,7 @@ index 0000000..0d0d78c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileManager.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class
 new file mode 100644
-index 0000000..8ed0559
+index 0000000..1cb7bc2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$FeatureData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$LineData.class
 new file mode 100644
@@ -433,11 +444,11 @@ index 0000000..2c2b9f4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$PolygonData.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class
 new file mode 100644
-index 0000000..698e134
+index 0000000..effbeca
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider$VectorSource.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class
 new file mode 100644
-index 0000000..3f6d67f
+index 0000000..e0ed279
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPMTileProvider.class differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class b/node_modules/react-native-maps/android/build/intermediates/javac/debug/classes/com/rnmaps/maps/MapPolygon.class
 new file mode 100644
@@ -692,6 +703,10 @@ index 0000000..6c2d1a9
 +5    <uses-sdk android:minSdkVersion="23" />
 +6
 +7</manifest>
+diff --git a/node_modules/react-native-maps/android/build/intermediates/merged_java_res/debug/feature-react-native-maps.jar b/node_modules/react-native-maps/android/build/intermediates/merged_java_res/debug/feature-react-native-maps.jar
+new file mode 100644
+index 0000000..15cb0ec
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/merged_java_res/debug/feature-react-native-maps.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml b/node_modules/react-native-maps/android/build/intermediates/merged_manifest/debug/AndroidManifest.xml
 new file mode 100644
 index 0000000..43b609f
@@ -716,7 +731,7 @@ index 0000000..0637a08
 \ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar
 new file mode 100644
-index 0000000..d92ad02
+index 0000000..e947de6
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/intermediates/runtime_library_classes_jar/debug/classes.jar differ
 diff --git a/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 new file mode 100644
@@ -725,6 +740,10 @@ index 0000000..d2faa16
 +++ b/node_modules/react-native-maps/android/build/intermediates/symbol_list_with_package_name/debug/package-aware-r.txt
 @@ -0,0 +1 @@
 +com.rnmaps.maps
+diff --git a/node_modules/react-native-maps/android/build/outputs/aar/react-native-maps-debug.aar b/node_modules/react-native-maps/android/build/outputs/aar/react-native-maps-debug.aar
+new file mode 100644
+index 0000000..421079a
+Binary files /dev/null and b/node_modules/react-native-maps/android/build/outputs/aar/react-native-maps-debug.aar differ
 diff --git a/node_modules/react-native-maps/android/build/outputs/logs/manifest-merger-debug-report.txt b/node_modules/react-native-maps/android/build/outputs/logs/manifest-merger-debug-report.txt
 new file mode 100644
 index 0000000..9f52191
@@ -758,27 +777,27 @@ index 0000000..0d0d78c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileManager.class.uniqueId21 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18
 new file mode 100644
-index 0000000..a3d058b
+index 0000000..9f27526
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$FeatureData.class.uniqueId18 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25
 new file mode 100644
-index 0000000..3960e5c
+index 0000000..0378af8
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$LineData.class.uniqueId25 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0
 new file mode 100644
-index 0000000..0fb6420
+index 0000000..529aa7c
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PointData.class.uniqueId0 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26
 new file mode 100644
-index 0000000..0a1067e
+index 0000000..2c2b9f4
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$PolygonData.class.uniqueId26 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13
 new file mode 100644
-index 0000000..daf8cd1
+index 0000000..ee4bfb9
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider$VectorSource.class.uniqueId13 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1
 new file mode 100644
-index 0000000..80066b7
+index 0000000..9b2b557
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapPMTileProvider.class.uniqueId1 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7 b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapView$1.class.uniqueId7
 new file mode 100644
@@ -858,7 +877,7 @@ index 0000000..1c86d8e
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/MapsPackage.class.uniqueId4 differ
 diff --git a/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..0a28094
+index 0000000..ac04ec2
 Binary files /dev/null and b/node_modules/react-native-maps/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
@@ -1664,10 +1683,10 @@ index 0000000..fa156d6
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
 new file mode 100644
-index 0000000..c695a96
+index 0000000..f861cbb
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
-@@ -0,0 +1,1377 @@
+@@ -0,0 +1,1447 @@
 +package com.rnmaps.maps;
 +
 +import PMTiles.Metadata;
@@ -2322,57 +2341,127 @@ index 0000000..c695a96
 +  }
 +  
 +  private boolean checkFilter(List<?> filter, Map<String, Object> attributes) {
-+    if (filter == null) return true;
++    if (filter == null || filter.isEmpty()) return true;
++    
++    String op = (String) filter.get(0);
++    
++    // Handle logical operators
++    if ("all".equals(op)) {
++      // All conditions must be true
++      for (int i = 1; i < filter.size(); i++) {
++        if (filter.get(i) instanceof List) {
++          if (!checkFilter((List<?>) filter.get(i), attributes)) {
++            return false;
++          }
++        }
++      }
++      return true;
++    } else if ("any".equals(op)) {
++      // At least one condition must be true
++      for (int i = 1; i < filter.size(); i++) {
++        if (filter.get(i) instanceof List) {
++          if (checkFilter((List<?>) filter.get(i), attributes)) {
++            return true;
++          }
++        }
++      }
++      return false;
++    } else if ("none".equals(op)) {
++      // No condition must be true
++      for (int i = 1; i < filter.size(); i++) {
++        if (filter.get(i) instanceof List) {
++          if (checkFilter((List<?>) filter.get(i), attributes)) {
++            return false;
++          }
++        }
++      }
++      return true;
++    }
++    
++    // Handle comparison operators
 +    if (filter.size() == 3) {
 +      //System.out.println("##filter: " + filter);
-+      String op = (String) filter.get(0);
 +      
 +      // Evaluate the left operand (could be a string key or an expression)
 +      Object leftOperand = filter.get(1);
-+      String leftValue;
++      Object leftValue;
 +      if (leftOperand instanceof String) {
-+        Object value = attributes.get((String) leftOperand);
-+        leftValue = value != null ? String.valueOf(value) : "";
++        leftValue = attributes.get((String) leftOperand);
 +      } else if (leftOperand instanceof List) {
 +        leftValue = evaluateExpression((List<?>) leftOperand, attributes);
 +      } else {
-+        leftValue = "";
++        leftValue = leftOperand;
 +      }
 +      
 +      // Evaluate the right operand
 +      Object rightOperand = filter.get(2);
-+      String rightValue;
-+      if (rightOperand instanceof String) {
-+        rightValue = (String) rightOperand;
++      Object rightValue;
++      if (rightOperand instanceof String && attributes.containsKey(rightOperand)) {
++        rightValue = attributes.get((String) rightOperand);
 +      } else if (rightOperand instanceof List) {
 +        rightValue = evaluateExpression((List<?>) rightOperand, attributes);
 +      } else {
-+        rightValue = String.valueOf(rightOperand);
++        rightValue = rightOperand;
 +      }
 +      
++      // Handle null values
++      if (leftValue == null) leftValue = "";
++      if (rightValue == null) rightValue = "";
++      
 +      if ("==".equals(op)) {
-+        return leftValue.equals(rightValue);
++        // Handle numeric comparison
++        if (leftValue instanceof Number && rightValue instanceof Number) {
++          return ((Number) leftValue).doubleValue() == ((Number) rightValue).doubleValue();
++        }
++        return String.valueOf(leftValue).equals(String.valueOf(rightValue));
 +      } else if ("!=".equals(op)) {
-+        return !leftValue.equals(rightValue);
++        if (leftValue instanceof Number && rightValue instanceof Number) {
++          return ((Number) leftValue).doubleValue() != ((Number) rightValue).doubleValue();
++        }
++        return !String.valueOf(leftValue).equals(String.valueOf(rightValue));
 +      } else if (">".equals(op)) {
-+        return Float.parseFloat(leftValue) > Float.parseFloat(rightValue);
++        return compareNumeric(leftValue, rightValue) > 0;
 +      } else if (">=".equals(op)) {
-+        return Float.parseFloat(leftValue) >= Float.parseFloat(rightValue);
++        return compareNumeric(leftValue, rightValue) >= 0;
 +      } else if ("<".equals(op)) {
-+        return Float.parseFloat(leftValue) < Float.parseFloat(rightValue);
++        return compareNumeric(leftValue, rightValue) < 0;
 +      } else if ("<=".equals(op)) {
-+        return Float.parseFloat(leftValue) <= Float.parseFloat(rightValue);
++        return compareNumeric(leftValue, rightValue) <= 0;
 +      } else if ("in".equals(op)) {
-+        return rightValue.contains(leftValue);
++        return String.valueOf(rightValue).contains(String.valueOf(leftValue));
 +      } else if ("!in".equals(op)) {
-+        return !rightValue.contains(leftValue);
++        return !String.valueOf(rightValue).contains(String.valueOf(leftValue));
 +      } else if ("has".equals(op)) {
-+        return !leftValue.isEmpty();
++        return !String.valueOf(leftValue).isEmpty();
 +      } else if ("!has".equals(op)) {
-+        return leftValue.isEmpty();
++        return String.valueOf(leftValue).isEmpty();
 +      }
 +    }
 +    return false;
++  }
++  
++  private double compareNumeric(Object left, Object right) {
++    try {
++      double leftNum;
++      double rightNum;
++      
++      if (left instanceof Number) {
++        leftNum = ((Number) left).doubleValue();
++      } else {
++        leftNum = Double.parseDouble(String.valueOf(left));
++      }
++      
++      if (right instanceof Number) {
++        rightNum = ((Number) right).doubleValue();
++      } else {
++        rightNum = Double.parseDouble(String.valueOf(right));
++      }
++      
++      return leftNum - rightNum;
++    } catch (NumberFormatException e) {
++      // If conversion fails, fall back to string comparison
++      return String.valueOf(left).compareTo(String.valueOf(right));
++    }
 +  }
 +
 +  private String computeDynamicColor(List<?> colors, Map<String, Object> attributes) {
@@ -12627,10 +12716,10 @@ index 0000000..49710a5
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
 new file mode 100644
-index 0000000..a2415aa
+index 0000000..f8c64fa
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapPMTileOverlay.m
-@@ -0,0 +1,1332 @@
+@@ -0,0 +1,1413 @@
 +//
 +//  AIRGoogleMapPMTile.m
 +//
@@ -13319,8 +13408,8 @@ index 0000000..a2415aa
 +  return nil;
 +}
 +
-+- (NSString *)evaluateExpression:(NSArray *)expression
-+                      attributes:(NSDictionary<NSString *, NSString *> *)attributes {
++- (id)evaluateExpression:(NSArray *)expression
++                      attributes:(NSDictionary *)attributes {
 +  if (expression == nil || [expression count] == 0) {
 +    return @"";
 +  }
@@ -13330,7 +13419,8 @@ index 0000000..a2415aa
 +  if ([operator isEqualToString:@"get"] && [expression count] >= 2) {
 +    // ["get", "field_name"]
 +    NSString *fieldName = expression[1];
-+    return attributes[fieldName] ? attributes[fieldName] : @"";
++    id value = attributes[fieldName];
++    return value ? value : @"";
 +  } else if ([operator isEqualToString:@"slice"] && [expression count] >= 4) {
 +    // ["slice", string_expression, start, end]
 +    NSString *sourceValue;
@@ -13338,7 +13428,8 @@ index 0000000..a2415aa
 +    if ([sourceExpr isKindOfClass:[NSString class]]) {
 +      sourceValue = (NSString *)sourceExpr;
 +    } else if ([sourceExpr isKindOfClass:[NSArray class]]) {
-+      sourceValue = [self evaluateExpression:(NSArray *)sourceExpr attributes:attributes];
++      id result = [self evaluateExpression:(NSArray *)sourceExpr attributes:attributes];
++      sourceValue = [NSString stringWithFormat:@"%@", result];
 +    } else {
 +      sourceValue = @"";
 +    }
@@ -13362,58 +13453,137 @@ index 0000000..a2415aa
 +}
 +
 +- (BOOL)checkFilter:(NSArray *)filter
-+         attributes:(NSDictionary<NSString *, NSString *> *)attributes {
-+  if (filter == nil)
++         attributes:(NSDictionary *)attributes {
++  if (filter == nil || [filter count] == 0)
 +    return YES;
++  
++  NSString *op = filter[0];
++  
++  // Handle logical operators
++  if ([op isEqualToString:@"all"]) {
++    // All conditions must be true
++    for (NSUInteger i = 1; i < [filter count]; i++) {
++      if ([filter[i] isKindOfClass:[NSArray class]]) {
++        if (![self checkFilter:filter[i] attributes:attributes]) {
++          return NO;
++        }
++      }
++    }
++    return YES;
++  } else if ([op isEqualToString:@"any"]) {
++    // At least one condition must be true
++    for (NSUInteger i = 1; i < [filter count]; i++) {
++      if ([filter[i] isKindOfClass:[NSArray class]]) {
++        if ([self checkFilter:filter[i] attributes:attributes]) {
++          return YES;
++        }
++      }
++    }
++    return NO;
++  } else if ([op isEqualToString:@"none"]) {
++    // No condition must be true
++    for (NSUInteger i = 1; i < [filter count]; i++) {
++      if ([filter[i] isKindOfClass:[NSArray class]]) {
++        if ([self checkFilter:filter[i] attributes:attributes]) {
++          return NO;
++        }
++      }
++    }
++    return YES;
++  }
++  
++  // Handle comparison operators
 +  if ([filter count] == 3) {
 +    // NSLog(@"##filter: %@", filter);
-+    NSString *op = filter[0];
 +    
 +    // Evaluate the left operand (could be a string key or an expression)
 +    id leftOperand = filter[1];
-+    NSString *leftValue;
++    id leftValue;
 +    if ([leftOperand isKindOfClass:[NSString class]]) {
-+      leftValue = attributes[leftOperand] ? attributes[leftOperand] : @"";
++      leftValue = attributes[leftOperand];
 +    } else if ([leftOperand isKindOfClass:[NSArray class]]) {
 +      leftValue = [self evaluateExpression:(NSArray *)leftOperand attributes:attributes];
 +    } else {
-+      leftValue = @"";
++      leftValue = leftOperand;
 +    }
 +    
 +    // Evaluate the right operand
 +    id rightOperand = filter[2];
-+    NSString *rightValue;
-+    if ([rightOperand isKindOfClass:[NSString class]]) {
-+      rightValue = (NSString *)rightOperand;
++    id rightValue;
++    if ([rightOperand isKindOfClass:[NSString class]] && attributes[rightOperand]) {
++      rightValue = attributes[rightOperand];
 +    } else if ([rightOperand isKindOfClass:[NSArray class]]) {
 +      rightValue = [self evaluateExpression:(NSArray *)rightOperand attributes:attributes];
 +    } else {
-+      rightValue = [NSString stringWithFormat:@"%@", rightOperand];
++      rightValue = rightOperand;
 +    }
++    
++    // Handle null values
++    if (leftValue == nil || leftValue == [NSNull null]) leftValue = @"";
++    if (rightValue == nil || rightValue == [NSNull null]) rightValue = @"";
 +
 +    if ([op isEqualToString:@"=="]) {
-+      return [leftValue isEqualToString:rightValue];
++      // Handle numeric comparison
++      if ([leftValue isKindOfClass:[NSNumber class]] && [rightValue isKindOfClass:[NSNumber class]]) {
++        return [leftValue isEqual:rightValue];
++      }
++      return [[NSString stringWithFormat:@"%@", leftValue] isEqualToString:[NSString stringWithFormat:@"%@", rightValue]];
 +    } else if ([op isEqualToString:@"!="]) {
-+      return ![leftValue isEqualToString:rightValue];
++      if ([leftValue isKindOfClass:[NSNumber class]] && [rightValue isKindOfClass:[NSNumber class]]) {
++        return ![leftValue isEqual:rightValue];
++      }
++      return ![[NSString stringWithFormat:@"%@", leftValue] isEqualToString:[NSString stringWithFormat:@"%@", rightValue]];
 +    } else if ([op isEqualToString:@">"]) {
-+      return [leftValue floatValue] > [rightValue floatValue];
++      return [self compareNumeric:leftValue with:rightValue] > 0;
 +    } else if ([op isEqualToString:@">="]) {
-+      return [leftValue floatValue] >= [rightValue floatValue];
++      return [self compareNumeric:leftValue with:rightValue] >= 0;
 +    } else if ([op isEqualToString:@"<"]) {
-+      return [leftValue floatValue] < [rightValue floatValue];
++      return [self compareNumeric:leftValue with:rightValue] < 0;
 +    } else if ([op isEqualToString:@"<="]) {
-+      return [leftValue floatValue] <= [rightValue floatValue];
++      return [self compareNumeric:leftValue with:rightValue] <= 0;
 +    } else if ([op isEqualToString:@"in"]) {
-+      return [rightValue containsString:leftValue];
++      NSString *leftStr = [NSString stringWithFormat:@"%@", leftValue];
++      NSString *rightStr = [NSString stringWithFormat:@"%@", rightValue];
++      return [rightStr containsString:leftStr];
 +    } else if ([op isEqualToString:@"!in"]) {
-+      return ![rightValue containsString:leftValue];
++      NSString *leftStr = [NSString stringWithFormat:@"%@", leftValue];
++      NSString *rightStr = [NSString stringWithFormat:@"%@", rightValue];
++      return ![rightStr containsString:leftStr];
 +    } else if ([op isEqualToString:@"has"]) {
-+      return leftValue.length > 0;
++      NSString *leftStr = [NSString stringWithFormat:@"%@", leftValue];
++      return leftStr.length > 0;
 +    } else if ([op isEqualToString:@"!has"]) {
-+      return leftValue.length == 0;
++      NSString *leftStr = [NSString stringWithFormat:@"%@", leftValue];
++      return leftStr.length == 0;
 +    }
 +  }
 +  return NO;
++}
++
++- (double)compareNumeric:(id)left with:(id)right {
++  @try {
++    double leftNum;
++    double rightNum;
++    
++    if ([left isKindOfClass:[NSNumber class]]) {
++      leftNum = [left doubleValue];
++    } else {
++      leftNum = [[NSString stringWithFormat:@"%@", left] doubleValue];
++    }
++    
++    if ([right isKindOfClass:[NSNumber class]]) {
++      rightNum = [right doubleValue];
++    } else {
++      rightNum = [[NSString stringWithFormat:@"%@", right] doubleValue];
++    }
++    
++    return leftNum - rightNum;
++  } @catch (NSException *exception) {
++    // If conversion fails, fall back to string comparison
++    NSString *leftStr = [NSString stringWithFormat:@"%@", left];
++    NSString *rightStr = [NSString stringWithFormat:@"%@", right];
++    return [leftStr compare:rightStr];
++  }
 +}
 +
 +- (void)applyStyleToContext:(CGContextRef)context
