@@ -700,6 +700,9 @@ export const useMaps = (): UseMapsReturnType => {
   const getPmtilesBoundary = useCallback(
     async (url: string): Promise<{ header: pmtiles.Header | undefined; boundary: boundaryType | undefined }> => {
       try {
+        if (Platform.OS !== 'web') {
+          return { header: undefined, boundary: undefined };
+        }
         const pmtile = new pmtiles.PMTiles(url.replace('pmtiles://', ''));
         const header = await pmtile.getHeader();
         return {
