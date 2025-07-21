@@ -106,6 +106,14 @@ export default function MapContainer({ navigation }: Props_Maps) {
     async (newTileMap: TileMapType) => {
       //pmTilesの場合、boundaryを取得して保存する
       if (newTileMap.url.includes('pmtiles')) {
+        //urlが変更された場合、boundaryとcacheを削除する
+        if (editedMap?.url !== newTileMap.url || editedMap?.styleURL !== newTileMap.styleURL) {
+          if (Platform.OS === 'web') {
+            await db.pmtiles.delete(newTileMap.id);
+          } else {
+            await FileSystem.deleteAsync(`${TILE_FOLDER}/${newTileMap.id}`, { idempotent: true });
+          }
+        }
         const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
         // boundaryが取得できた場合のみ保存処理を行う
         if (boundary) {
@@ -126,17 +134,10 @@ export default function MapContainer({ navigation }: Props_Maps) {
         newTileMap.minimumZ = header ? header.minZoom : 4;
         newTileMap.maximumZ = header ? header.maxZoom : 16;
       }
-      //urlが変更された場合、boundaryとcacheを削除する
-      if (editedMap?.url !== newTileMap.url) {
-        if (Platform.OS === 'web') {
-          await db.pmtiles.delete(newTileMap.id);
-        } else {
-          await FileSystem.deleteAsync(`${TILE_FOLDER}/${newTileMap.id}`, { idempotent: true });
-        }
-      }
+
       saveMap(newTileMap);
     },
-    [editedMap?.url, getPmtilesBoundary, saveMap]
+    [editedMap?.styleURL, editedMap?.url, getPmtilesBoundary, saveMap]
   );
 
   const pressEditMapCancel = useCallback(() => {
