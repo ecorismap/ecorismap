@@ -486,7 +486,10 @@ export default function HomeScreen() {
           }
 
           if (newLayerStyle.type === 'fill' && newLayerStyle.paint) {
-            if (newLayerStyle.paint['fill-opacity'] !== undefined && typeof newLayerStyle.paint['fill-opacity'] === 'number') {
+            if (
+              newLayerStyle.paint['fill-opacity'] !== undefined &&
+              typeof newLayerStyle.paint['fill-opacity'] === 'number'
+            ) {
               newLayerStyle.paint['fill-opacity'] = newLayerStyle.paint['fill-opacity'] * (1 - tileMap.transparency);
             } else {
               newLayerStyle.paint['fill-opacity'] = 1 - tileMap.transparency;
