@@ -386,6 +386,13 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
       const currentCoords = result.newLocations[result.newLocations.length - 1];
       setCurrentLocation(currentCoords);
 
+      // フォアグラウンド時はexistingDataをクリア（重複データ蓄積を防ぐ）
+      if (RNAppState.currentState === 'active') {
+        AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY).catch((error) => {
+          console.error('Failed to clear background track log during foreground update:', error);
+        });
+      }
+
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef.current as MapView).animateCamera(
           {
