@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { updateTrackLog, calculateTrackStatistics } from '../utils/Location';
+import { updateTrackLog, calculateTrackStatistics, getLineLength } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -24,6 +24,9 @@ import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const BACKGROUND_TRACKLOG_KEY = '@ecorismap/background_tracklog';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -42,8 +45,31 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   //console.log('[tracking]', 'Received new locations', locations);
 
   try {
-    // have to add it sequentially, parses/serializes existing JSON
-    //const checkedLocations = await checkAndStoreLocations(locations);
+    // AsyncStorageに位置情報を保存
+    const existingDataStr = await AsyncStorage.getItem(BACKGROUND_TRACKLOG_KEY);
+    const existingData = existingDataStr ? JSON.parse(existingDataStr) : { locations: [], lastTimeStamp: 0 };
+
+    // 新しい位置情報を追加
+    const newLocationTypes = locations.map((loc) => ({
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      altitude: loc.coords.altitude,
+      accuracy: loc.coords.accuracy,
+      speed: loc.coords.speed,
+      heading: loc.coords.heading,
+      timestamp: loc.timestamp,
+    }));
+
+    existingData.locations.push(...newLocationTypes);
+    existingData.lastTimeStamp = locations[locations.length - 1].timestamp || 0;
+
+    // 保存（最大10000ポイントまで保持）
+    if (existingData.locations.length > 10000) {
+      existingData.locations = existingData.locations.slice(-10000);
+    }
+
+    await AsyncStorage.setItem(BACKGROUND_TRACKLOG_KEY, JSON.stringify(existingData));
+
     //killされていなければ更新イベントが発生する
     locationEventsEmitter.emit('update', locations);
   } catch (error) {
@@ -271,6 +297,13 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
           clearInterval(autoSaveTimerRef.current);
           autoSaveTimerRef.current = null;
         }
+
+        // AsyncStorageをクリア
+        try {
+          await AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY);
+        } catch (error) {
+          console.error('Failed to clear background track log:', error);
+        }
       }
       setTrackingState(trackingState_);
     },
@@ -379,6 +412,14 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
     }
 
     dispatch(clearTrackLogAction());
+
+    // AsyncStorageをクリア
+    try {
+      await AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY);
+    } catch (error) {
+      console.error('Failed to clear background track log:', error);
+    }
+
     return { isOK: true, message: '' };
   }, [addTrackRecord, dispatch, trackLog.track]);
 
@@ -413,6 +454,48 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
 
       const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
       if (hasStarted) {
+        // バックグラウンドタスクが実行中の場合、AsyncStorageから位置情報を復元
+        try {
+          const savedDataStr = await AsyncStorage.getItem(BACKGROUND_TRACKLOG_KEY);
+          if (savedDataStr) {
+            const savedData = JSON.parse(savedDataStr);
+            if (savedData.locations && savedData.locations.length > 0) {
+              // 現在のtrackLogに保存された位置情報を追加
+              const locationsToAdd = savedData.locations.filter(
+                (loc: LocationType) => loc.timestamp! > trackLog.lastTimeStamp
+              );
+
+              if (locationsToAdd.length > 0) {
+                // 統計情報を計算
+                const allLocations = [...trackLog.track, ...locationsToAdd];
+                const newDistance = trackLog.distance + getLineLength(locationsToAdd);
+                const statistics = calculateTrackStatistics(
+                  allLocations,
+                  newDistance,
+                  trackStartTimeRef.current || allLocations[0]?.timestamp || Date.now()
+                );
+
+                dispatch(
+                  appendTrackLogAction({
+                    newLocations: locationsToAdd,
+                    additionalDistance: getLineLength(locationsToAdd),
+                    lastTimeStamp: locationsToAdd[locationsToAdd.length - 1].timestamp || 0,
+                    statistics,
+                  })
+                );
+
+                // トラッキング状態を更新
+                setTrackingState('on');
+                trackStartTimeRef.current = allLocations[0]?.timestamp || Date.now();
+              }
+            }
+            // AsyncStorageをクリア
+            await AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY);
+          }
+        } catch (error) {
+          console.error('Failed to restore background track log:', error);
+        }
+
         //再起動時にトラックを止める
         await stopTracking();
       }
@@ -439,7 +522,7 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [trackLog, dispatch]);
 
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
