@@ -13,6 +13,7 @@ import {
 } from '../types';
 import * as turf from '@turf/helpers';
 import simplify from '@turf/simplify';
+import area from '@turf/area';
 import { COLOR, FUNC_LOGIN } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
@@ -943,8 +944,28 @@ function createGeometryFromLineStringGeoJson(coordinates: Position[] | undefined
 function createGeometryFromPolygonGeoJson(coordinates: Position[][]) {
   if (coordinates === undefined) return { coords: undefined, holes: undefined, centroid: undefined };
   const polygon = turf.polygon(coordinates);
+
+  // ポリゴンの面積を計算（平方キロメートル単位）
+  const polygonArea = area(polygon) / 1000000; // 平方メートルから平方キロメートルに変換
+
+  // 面積に応じてtoleranceを動的に計算
+  // 小さなポリゴン（< 0.01 km²）: 0.000001
+  // 中程度のポリゴン（0.01 - 1 km²）: 0.00001
+  // 大きなポリゴン（1 - 100 km²）: 0.0001
+  // 非常に大きなポリゴン（> 100 km²）: 0.001
+  let tolerance: number;
+  if (polygonArea < 0.01) {
+    tolerance = 0.000001;
+  } else if (polygonArea < 1) {
+    tolerance = 0.00001;
+  } else if (polygonArea < 100) {
+    tolerance = 0.0001;
+  } else {
+    tolerance = 0.001;
+  }
+
   const simplified = simplify(polygon, {
-    tolerance: 0.00001,
+    tolerance: tolerance,
     highQuality: true,
   });
   //console.log(simplified);
