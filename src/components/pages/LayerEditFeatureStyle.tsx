@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
@@ -44,38 +44,43 @@ export default function LayerEditFeatureStyleScreen() {
   } = useContext(LayerEditFeatureStyleContext);
   const navigation = useNavigation();
 
-  const headerLeftButton = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton
-        {...props_}
-        labelVisible={true}
-        label={t('LayerEdit.navigation.title')}
-        labelStyle={{ fontSize: 11 }}
-        onPress={gotoBack}
-      />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton
+            {...props_}
+            labelVisible={true}
+            label={t('LayerEdit.navigation.title')}
+            labelStyle={{ fontSize: 11 }}
+            onPress={gotoBack}
+            style={{ marginLeft: 10 }}
+          />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('LayerEditFeatureStyle.navigation.title')}</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
+          {isStyleChangeOnly && (
+            <HeaderRightButton
+              name={LAYEREDIT_BTN.SAVE}
+              onPress={saveColorStyle}
+              backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+              disabled={!isEdited}
+            />
+          )}
+        </View>
+      </View>
     ),
-    [gotoBack]
-  );
-
-  const headerRightButton = useCallback(
-    () =>
-      isStyleChangeOnly ? (
-        <HeaderRightButton
-          name={LAYEREDIT_BTN.SAVE}
-          onPress={saveColorStyle}
-          backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!isEdited}
-        />
-      ) : null,
-    [isEdited, isStyleChangeOnly, saveColorStyle]
+    [gotoBack, isEdited, isStyleChangeOnly, saveColorStyle]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
-      headerRight: () => headerRightButton(),
+      header: customHeader,
     });
-  }, [headerLeftButton, headerRightButton, navigation]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>

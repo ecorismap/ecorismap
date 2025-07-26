@@ -14,19 +14,27 @@ export default function MapListScreen() {
   const { isLoading, gotoBack } = useContext(MapListContext);
   const navigation = useNavigation();
 
-  const headerLeftButton = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoBack} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoBack} style={{ marginLeft: 10 }} />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('MapList.navigation.title')}</Text>
+        </View>
+        <View style={{ flex: 1 }} />
+      </View>
     ),
     [gotoBack]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
-      headerBackTitle: t('common.back'),
+      header: customHeader,
     });
-  }, [headerLeftButton, navigation]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>

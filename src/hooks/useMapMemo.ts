@@ -1,4 +1,4 @@
-import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowStyleType, LineRecordType, MapMemoToolType, PenWidthType } from '../types';
 import { useWindow } from './useWindow';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
@@ -49,7 +49,7 @@ export type UseMapMemoReturnType = {
   currentPenWidth: PenWidthType;
   penColor: string;
   penWidth: number;
-  mapMemoEditingLine: MutableRefObject<Position[]>;
+  mapMemoEditingLine: RefObject<Position[]>;
   editableMapMemo: boolean;
   isPencilModeActive: boolean;
   isUndoable: boolean;

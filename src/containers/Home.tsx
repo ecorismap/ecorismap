@@ -1848,7 +1848,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     ]
   );
 
-  // SVGDrawingContextの値（MutableRefObjectがあるためメモ化しない）
+  // SVGDrawingContextの値（RefObjectがあるためメモ化しない）
   const svgDrawingContextValue = {
     // Drawing tools SVG data
     drawLine,

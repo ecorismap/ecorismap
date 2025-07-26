@@ -98,7 +98,7 @@ export type UseLocationReturnType = {
   confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
 };
 
-export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef | null>): UseLocationReturnType => {
+export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);

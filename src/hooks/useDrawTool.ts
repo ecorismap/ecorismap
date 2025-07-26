@@ -1,4 +1,4 @@
-import { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
+import { Dispatch, RefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { GestureResponderEvent, Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import MapView from 'react-native-maps';
@@ -62,9 +62,9 @@ export type UseDrawToolReturnType = {
   isEditingDraw: boolean;
   isEditingObject: boolean;
   isSelectedDraw: boolean;
-  drawLine: React.MutableRefObject<DrawLineType[]>;
-  editingLineXY: React.MutableRefObject<Position[]>;
-  selectLine: React.MutableRefObject<Position[]>;
+  drawLine: React.RefObject<DrawLineType[]>;
+  editingLineXY: React.RefObject<Position[]>;
+  selectLine: React.RefObject<Position[]>;
   currentDrawTool: DrawToolType;
   currentPointTool: PointToolType;
   currentLineTool: LineToolType;
@@ -73,7 +73,7 @@ export type UseDrawToolReturnType = {
   isDrawLineVisible: boolean;
   visibleInfoPicker: boolean;
   currentInfoTool: InfoToolType;
-  isPencilTouch: MutableRefObject<boolean | undefined>;
+  isPencilTouch: RefObject<boolean | undefined>;
   isPinch: boolean;
   isTerrainActive: boolean;
   isModalInfoToolHidden: boolean;

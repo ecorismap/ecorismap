@@ -3,8 +3,10 @@ import React from 'react';
 import { LogBox, Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Routes from './routes';
 import { persistor, store } from './store';
+import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
 
 const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter', 'Possible'];
 
@@ -30,10 +32,15 @@ if (__DEV__ && Platform.OS !== 'web') {
 
 export default function App() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <Routes />
-      </PersistGate>
-    </Provider>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <>
+            <Routes />
+            <StatusBarOverlay />
+          </>
+        </PersistGate>
+      </Provider>
+    </SafeAreaProvider>
   );
 }

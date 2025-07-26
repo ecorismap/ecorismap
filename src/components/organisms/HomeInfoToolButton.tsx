@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,7 +20,7 @@ export const HomeInfoToolButton = React.memo(() => {
       left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
-      top: Platform.OS === 'ios' && !isLandscape ? 260 : 240,
+      top: insets.top + (isLandscape ? 230 : 240),
       // zIndex: 101,
     },
 

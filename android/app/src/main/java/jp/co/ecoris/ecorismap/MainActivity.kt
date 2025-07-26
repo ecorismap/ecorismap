@@ -119,7 +119,7 @@ class MainActivity : ReactActivity() {
         val packageManager = packageManager
         val packageName = packageName
         val packageInfo = packageManager.getPackageInfo(packageName, 0)
-        val dataDir = packageInfo.applicationInfo.dataDir
+        val dataDir = packageInfo.applicationInfo?.dataDir ?: return
 
         val filePath = "$dataDir/cache/$name"
         inputStreamToFile(inputStream, filePath)

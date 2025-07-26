@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { COLOR, MAPMEMOTOOL, STAMP, BRUSH, ERASER } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
@@ -39,7 +39,7 @@ export const HomeMapMemoTools = React.memo(() => {
       left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
-      top: Platform.OS === 'ios' ? 360 : 330,
+      top: insets.top + 340,
       // zIndex: 101,
     },
 

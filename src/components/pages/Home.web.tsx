@@ -193,13 +193,15 @@ export default function HomeScreen() {
   //console.log('Home');
   const headerGotoMapsButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
+      //@ts-ignore
+      <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} />
     ),
     [gotoMaps]
   );
   const headerGotoHomeButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} />
+      //@ts-ignore
+      <HeaderBackButton {...props_} labelVisible={true} onPress={gotoHome} />
     ),
     [gotoHome]
   );
@@ -871,7 +873,7 @@ export default function HomeScreen() {
               <Map
                 //@ts-ignore
                 mapLib={maplibregl}
-                ref={mapViewRef as React.MutableRefObject<MapRef>}
+                ref={mapViewRef as React.RefObject<MapRef>}
                 {...mapRegion}
                 style={{ width: '100%', height: '100%' }}
                 //@ts-ignore

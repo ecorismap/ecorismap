@@ -2,12 +2,12 @@ import React, { createContext } from 'react';
 import { Position } from 'geojson';
 import { DrawLineType } from '../types';
 
-// SVG描画専用のコンテキスト（MutableRefObjectを含むため、メモ化しない）
+// SVG描画専用のコンテキスト（RefObjectを含むため、メモ化しない）
 export interface SVGDrawingContextType {
   // Drawing tools SVG data
-  drawLine: React.MutableRefObject<DrawLineType[]>;
-  editingLine: React.MutableRefObject<Position[]>;
-  selectLine: React.MutableRefObject<Position[]>;
+  drawLine: React.RefObject<DrawLineType[]>;
+  editingLine: React.RefObject<Position[]>;
+  selectLine: React.RefObject<Position[]>;
 
   // MapMemo SVG data
   mapMemoEditingLine: Position[];

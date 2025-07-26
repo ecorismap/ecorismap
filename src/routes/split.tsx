@@ -22,9 +22,12 @@ export default function SplitScreen() {
       screenOptions={{
         headerBackTitleVisible: false,
         headerShadowVisible: false,
-        //headerTintColor: 'white',
-        headerStyle: { backgroundColor: COLOR.MAIN },
-        headerTitleStyle: { fontSize: 16 },
+        headerStyle: {
+          backgroundColor: COLOR.MAIN,
+        },
+        headerTitleStyle: {
+          fontSize: 16,
+        },
         headerTitleAlign: 'center',
         animation: 'none',
       }}

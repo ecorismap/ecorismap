@@ -81,29 +81,36 @@ export const DataEditTimeRange = (props: Props) => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
+          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
+              // @ts-ignore
               <TimePicker
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
                 ampm={false}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'date' && (
+              // @ts-ignore
               <DatePicker
                 inputFormat={LocalizedDateFormatForWeb}
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'datetime' && (
+              // @ts-ignore
               <DateTimePicker
                 inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
@@ -114,29 +121,36 @@ export const DataEditTimeRange = (props: Props) => {
         </View>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
+          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
+              // @ts-ignore
               <TimePicker
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
                 ampm={false}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'date' && (
+              // @ts-ignore
               <DatePicker
                 inputFormat={LocalizedDateFormatForWeb}
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'datetime' && (
+              // @ts-ignore
               <DateTimePicker
                 inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}

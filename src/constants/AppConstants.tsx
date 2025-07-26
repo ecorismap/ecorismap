@@ -48,6 +48,7 @@ export const COLOR = {
   BLACK: '#000',
   CAROUSEL_BACKGROUND: 'rgba(1, 1, 1, 0.1)',
   TRACK: '#0000FFee',
+  STATUS_BAR_OVERLAY: 'rgba(0, 0, 0, 0.3)',
 };
 
 export const TILE_FOLDER = `${FileSystem.documentDirectory}tiles`;

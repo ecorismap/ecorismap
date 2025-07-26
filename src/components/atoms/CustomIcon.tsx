@@ -8,7 +8,7 @@ interface CustomIconProps {
 }
 
 // カスタムアイコンを管理するオブジェクト
-const ICON_MAP: Record<string, (size: number, color?: string) => JSX.Element> = {
+const ICON_MAP: Record<string, (size: number, color?: string) => React.ReactNode> = {
   'kougeki-custom': (size, color) => (
     <Svg width={size} height={size} viewBox="0 0 180 320" fill="none">
       <Path d="M80 0V180M80 180V320" stroke={color || 'white'} strokeWidth="20" />
@@ -87,9 +87,12 @@ export const isCustomIcon = (name: string): boolean => {
   return Object.prototype.hasOwnProperty.call(ICON_MAP, name);
 };
 
-const CustomIcon: React.FC<CustomIconProps> = ({ name, size, color }) => {
+const CustomIcon = React.memo(({ name, size, color }: CustomIconProps) => {
   const IconComponent = ICON_MAP[name];
-  return IconComponent ? IconComponent(size, color) : null;
-};
+  if (!IconComponent) return null;
+  return <>{IconComponent(size, color)}</>;
+});
+
+CustomIcon.displayName = 'CustomIcon';
 
 export default CustomIcon;

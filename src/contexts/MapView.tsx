@@ -4,7 +4,7 @@ import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { LocationStateType } from '../types';
 
 export interface MapViewContextType {
-  mapViewRef: React.MutableRefObject<MapView | MapRef | null>;
+  mapViewRef: React.RefObject<MapView | MapRef | null>;
   mapType: string;
   zoom: number;
   zoomDecimal: number;

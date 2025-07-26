@@ -205,6 +205,7 @@ export const LayersTable = React.memo(() => {
   const keyExtractor = useCallback((item: LayerType) => item.id, []);
 
   return (
+    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
     <DraggableFlatList<LayerType>
       data={filterdLayers}
       keyExtractor={keyExtractor}

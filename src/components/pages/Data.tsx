@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, Text } from 'react-native';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
@@ -11,36 +11,43 @@ import { DataContext } from '../../contexts/Data';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { t } from '../../i18n/config';
+import { COLOR } from '../../constants/AppConstants';
 
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, isChecked, gotoBack, addDataByDictinary } = useContext(DataContext);
+  const { layer, gotoBack, addDataByDictinary } = useContext(DataContext);
 
   const navigation = useNavigation();
 
-  const headerLeftButton = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton
-        {...props_}
-        labelVisible={true}
-        label={t('Layers.navigation.title')}
-        labelStyle={{ fontSize: 11 }}
-        onPress={gotoBack}
-      />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton
+            {...props_}
+            labelVisible={true}
+            label={t('Layers.navigation.title')}
+            labelStyle={{ fontSize: 11 }}
+            onPress={gotoBack}
+            style={{ marginLeft: 10 }}
+          />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: layer.name.length > 13 ? 10 : 15 }}>{layer.name}</Text>
+        </View>
+        <View style={{ flex: 1 }} />
+      </View>
     ),
-    [gotoBack]
+    [gotoBack, layer.name]
   );
 
   useEffect(() => {
     navigation.setOptions({
-      title: layer.name,
-      headerTitleStyle: {
-        fontSize: layer.name.length > 13 ? 10 : 15,
-      },
-      headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
+      header: customHeader,
     });
-  }, [gotoBack, headerLeftButton, isChecked, layer.name, navigation]);
+  }, [customHeader, navigation]);
 
   // useEffect(() => {
   //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;

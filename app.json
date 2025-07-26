@@ -5,12 +5,6 @@
     "version": "1.0.0",
     "assetBundlePatterns": [
       "**/*"
-    ],
-    "ios": {
-      "bundleIdentifier": "jp.co.ecoris.ecorismap"
-    },
-    "plugins": [
-      "expo-localization"
     ]
   }
 }

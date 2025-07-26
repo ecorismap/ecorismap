@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, Platform } from 'react-native';
+import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 
 import { COLOR } from '../../constants/AppConstants';
-import { useWindow } from '../../hooks/useWindow';
 
 interface Props {
   onPress: () => void;
@@ -12,13 +12,13 @@ interface Props {
 
 const HomeProjectLabel = React.memo(function HomeProjectLabel(props: Props) {
   const { name, onPress } = props;
-  const { isLandscape } = useWindow();
+  const insets = useSafeAreaInsets();
   return (
     <Pressable
       style={{
         alignSelf: 'center',
         position: 'absolute',
-        top: Platform.OS === 'ios' && !isLandscape ? 55 : 20,
+        top: insets.top + 10,
         padding: 5,
         backgroundColor: COLOR.ALFAWHITE,
         borderRadius: 5,

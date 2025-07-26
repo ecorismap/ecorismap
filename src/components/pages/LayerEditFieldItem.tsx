@@ -39,32 +39,38 @@ export default function LayerEditFieldItemScreen() {
   } = useContext(LayerEditFieldItemContext);
   const navigation = useNavigation();
   const editable = true;
-  const headerLeftButton = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton
-        {...props_}
-        labelVisible={true}
-        label={t('LayerEdit.navigation.title')}
-        labelStyle={{ fontSize: 11 }}
-        onPress={gotoBack}
-      />
-    ),
-    [gotoBack]
-  );
-  const headerRightButton = useCallback(() => {
-    return (
-      <View style={styles.headerRight}>
-        <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton
+            {...props_}
+            labelVisible={true}
+            label={t('LayerEdit.navigation.title')}
+            labelStyle={{ fontSize: 11 }}
+            onPress={gotoBack}
+            style={{ marginLeft: 10 }}
+          />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('LayerEditFieldItem.navigation.title')}</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
+          {itemFormat === 'STRING_DICTIONARY' && (
+            <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
+          )}
+        </View>
       </View>
-    );
-  }, [pressImportDictionary]);
+    ),
+    [gotoBack, itemFormat, pressImportDictionary]
+  );
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
-      headerRight: () => (itemFormat === 'STRING_DICTIONARY' ? headerRightButton() : null),
+      header: customHeader,
     });
-  }, [headerLeftButton, headerRightButton, itemFormat, navigation]);
+  }, [customHeader, navigation]);
 
   if (itemFormat === 'STRING_DICTIONARY') {
     return (
@@ -305,13 +311,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
   },
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
-  },
-
   input: {
     backgroundColor: COLOR.GRAY0,
     borderRadius: 5,

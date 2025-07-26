@@ -150,7 +150,8 @@ export const MapTable = React.memo(() => {
   const keyExtractor = useCallback((item: any) => item.id, []);
 
   return (
-    <DraggableFlatList
+    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
+    <DraggableFlatList<any>
       data={filterdMaps}
       keyExtractor={keyExtractor}
       renderItem={renderItem}

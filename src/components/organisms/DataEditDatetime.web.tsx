@@ -54,30 +54,37 @@ export const DataEditDatetime = (props: Props) => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
+          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
+              // @ts-ignore
               <TimePicker
                 value={dateValue}
                 onChange={onDateChange}
                 ampm={false}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'date' && (
+              // @ts-ignore
               <DatePicker
                 inputFormat={LocalizedDateFormatForWeb}
                 value={dateValue}
                 onChange={onDateChange}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}
             {mode === 'datetime' && (
+              // @ts-ignore
               <DateTimePicker
                 disableMaskedInput
                 inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue}
                 onChange={onDateChange}
+                // @ts-ignore
                 renderInput={(params) => <TextField size="small" {...params} />}
               />
             )}

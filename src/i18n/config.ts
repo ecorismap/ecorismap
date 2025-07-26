@@ -1,4 +1,4 @@
-import * as Localization from 'expo-localization';
+import { getLocales } from 'expo-localization';
 import { default as i18n } from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import translation_en from './en/translation.json';
@@ -13,9 +13,12 @@ export const resources = {
   },
 } as const;
 
+const locales = getLocales();
+const deviceLanguage = locales[0]?.languageTag || 'en';
+
 i18n.use(initReactI18next).init({
   compatibilityJSON: 'v3',
-  lng: Localization.locale,
+  lng: deviceLanguage,
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false,

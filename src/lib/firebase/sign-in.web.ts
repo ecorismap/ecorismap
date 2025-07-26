@@ -15,7 +15,7 @@ import { t } from '../../i18n/config';
 
 export const initFirebaseAuth = () => {
   return new Promise((resolve) => {
-    const unsubscribe = onAuthStateChanged(auth, (user: import('firebase/auth').User | null) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       resolve(user);
       unsubscribe();
     });

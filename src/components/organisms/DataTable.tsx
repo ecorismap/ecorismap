@@ -206,7 +206,8 @@ export const DataTable = React.memo(() => {
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
   return sortedRecordSet.length !== 0 ? (
-    <DraggableFlatList
+    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
+    <DraggableFlatList<RecordType>
       // eslint-disable-next-line react/no-unstable-nested-components
       ListHeaderComponent={() => (
         <DataTitle

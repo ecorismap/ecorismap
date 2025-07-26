@@ -116,12 +116,18 @@ const Button = React.memo((props: Props) => {
   }, []);
 
   const renderIcon = () => {
-    const iconComponent = isCustomIcon(name) ? (
-      <CustomIcon name={name} size={size} color={color} />
-    ) : (
-      <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} selectable={undefined} />
+    if (isCustomIcon(name)) {
+      return (
+        <View style={{ bottom: labelText ? 6 : 0 }}>
+          <CustomIcon name={name} size={size} color={color} />
+        </View>
+      );
+    }
+    return (
+      <View style={{ bottom: labelText ? 6 : 0 }}>
+        <MaterialCommunityIcons name={name} size={size} color={color || COLOR.WHITE} selectable={undefined} />
+      </View>
     );
-    return <View style={{ bottom: labelText ? 6 : 0 }}>{iconComponent}</View>;
   };
 
   return (

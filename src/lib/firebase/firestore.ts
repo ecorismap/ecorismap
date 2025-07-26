@@ -35,6 +35,7 @@ import {
   writeBatch,
 } from './firebase';
 import { t } from '../../i18n/config';
+import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 export const getUidByEmail = async (email: string) => {
   try {
@@ -65,17 +66,19 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     } else {
       q = query(collection(firestore, 'projects'), where('membersUid', 'array-contains', uid));
     }
-    const querySnapshot = await getDocsFromServer(q);
-    const result = querySnapshot.docs.map(async (doc) => {
-      const { encdata, ownerUid, encryptedAt, license, storage, ...others } = doc.data() as ProjectFS;
-      const data = await dec(toDate(encryptedAt), encdata, ownerUid, doc.id);
+    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
+      await getDocsFromServer(q);
+    //const querySnapshot = await getDocsFromServer(q);
+    const result = querySnapshot.docs.map(async (docSnapshot) => {
+      const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
+      const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
       if (data === undefined) {
         return undefined;
       } else {
         //ToDO 2022.6.24以降に作成したプロジェクトは、functionsでstorage,licenseを設定するのでundefineにはならないはず。
         //古いプロジェクトがなくなったらコードとProjectFSのtypeを変更すること
         return {
-          id: doc.id,
+          id: docSnapshot.id,
           ownerUid,
           storage: storage ?? { count: 0 },
           license: license ?? 'Free',
@@ -172,16 +175,18 @@ export const deleteAllData = async (projectId: string) => {
     // 1. サブコレクション 'data' への参照を取得
     const dataCol = collection(firestore, 'projects', projectId, 'data');
     // 2. 全ドキュメントを取得
-    const querySnapshot = await getDocs(dataCol);
+    const querySnapshot: FirebaseFirestoreTypes.DocumentData = await getDocs(dataCol);
     if (querySnapshot.empty) {
       return { isOK: true, message: '' };
     }
 
     // 3. バッチを作成して一括削除
     const batch = writeBatch(firestore);
-    querySnapshot.docs.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
+    querySnapshot.docs.forEach(
+      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+        batch.delete(docSnap.ref);
+      }
+    );
     await batch.commit();
 
     return { isOK: true, message: '' };
@@ -226,9 +231,11 @@ export const deleteData = async (
 
     // バッチ処理で一括削除
     const batch = writeBatch(firestore);
-    snapshot.docs.forEach((docSnap) => {
-      batch.delete(docSnap.ref);
-    });
+    snapshot.docs.forEach(
+      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+        batch.delete(docSnap.ref);
+      }
+    );
     await batch.commit();
 
     return { isOK: true, message: '' };
@@ -439,9 +446,11 @@ export const deleteExistingData = async (
   const snapshot = await getDocs(q);
 
   // 5. バッチに削除操作を登録
-  snapshot.docs.forEach((docSnap) => {
-    batch.delete(docSnap.ref);
-  });
+  snapshot.docs.forEach(
+    (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+      batch.delete(docSnap.ref);
+    }
+  );
 
   // 6. 一括コミットで削除を実行
   await batch.commit();
@@ -545,7 +554,12 @@ export const downloadPublicData = async (projectId: string, { excludeUserId }: {
     // 4. excludeUserId があれば対象外ユーザーのドキュメントをフィルタリング
     let docs = projectDataSet.docs;
     if (excludeUserId) {
-      docs = docs.filter((docSnap) => docSnap.data().userId !== excludeUserId);
+      docs = docs.filter(
+        (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+          const data = docSnap.data() as DataFS;
+          return data.userId !== excludeUserId;
+        }
+      );
     }
 
     // 5. フィルタ後の docs 配列をユーティリティ関数に渡す
@@ -703,9 +717,11 @@ export const updateLayerDataPermission = async (
 
     // 3. バッチ作成＆更新操作を登録
     const batch = writeBatch(firestore);
-    snapshot.docs.forEach((docSnap) => {
-      batch.update(docSnap.ref, { permission: newPermission });
-    });
+    snapshot.docs.forEach(
+      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+        batch.update(docSnap.ref, { permission: newPermission });
+      }
+    );
 
     // 4. 一括コミットで更新を実行
     await batch.commit();

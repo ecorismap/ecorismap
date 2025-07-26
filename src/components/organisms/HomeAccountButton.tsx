@@ -1,17 +1,17 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { View, Image, StyleSheet, Platform, Text } from 'react-native';
+import { View, Image, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SelectionalButton } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
 import { AppStateContext } from '../../contexts/AppState';
 import { ProjectContext } from '../../contexts/Project';
-import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 export const HomeAccountButton = React.memo(() => {
   const { user } = useContext(AppStateContext);
   const { gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(ProjectContext);
-  const { isLandscape } = useWindow();
+  const insets = useSafeAreaInsets();
   const [valid, setValid] = useState(true);
 
   const initial = useMemo(() => {
@@ -32,7 +32,7 @@ export const HomeAccountButton = React.memo(() => {
       marginHorizontal: 0,
       position: 'absolute',
       right: 9,
-      top: Platform.OS === 'ios' && !isLandscape ? 40 : 20,
+      top: insets.top + 10,
       zIndex: 101,
     },
     icon: {

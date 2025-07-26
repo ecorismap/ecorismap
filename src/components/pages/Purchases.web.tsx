@@ -7,7 +7,7 @@ import { License, Price, Product } from '../../types';
 import { Loading } from '../molecules/Loading';
 import { Feather } from '@expo/vector-icons';
 import { t } from '../../i18n/config';
-import * as Localization from 'expo-localization';
+import { getLocales } from 'expo-localization';
 import { Pressable } from '../atoms/Pressable';
 
 interface Props {
@@ -113,7 +113,7 @@ const ProductPage = (props: ProductPage_Props) => {
                     {t('common.user')}
                   </Text>
                   {prices.map(({ priceId, price }) => (
-                    <Text key={priceId}>{`${new Intl.NumberFormat(Localization.locale, {
+                    <Text key={priceId}>{`${new Intl.NumberFormat(getLocales()[0]?.languageTag || 'en', {
                       style: 'currency',
                       currency: price.currency,
                       currencyDisplay: 'name',
@@ -229,7 +229,7 @@ const CustomerPage = (props: CustomerPage_Props) => {
                   {t('common.user')}
                 </Text>
                 {prices.map(({ priceId, price }) => (
-                  <Text key={priceId}>{`${new Intl.NumberFormat(Localization.locale, {
+                  <Text key={priceId}>{`${new Intl.NumberFormat(getLocales()[0]?.languageTag || 'en', {
                     style: 'currency',
                     currency: price.currency,
                     currencyDisplay: 'name',

@@ -101,19 +101,31 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
   const getProductData = useCallback(async () => {
     const q = query(collection(firestore, 'products'), where('active', '==', true), orderBy('metadata.no'));
     const querySnapshot = await getDocs(q);
-    const data = querySnapshot.docs.map(async (productDoc) => {
-      const product = productDoc.data() as Product;
-      //エラーで読み込まれないときは、orderByのためのインデックスが作成されていない。
-      //デベロッパーコンソールにindex作成のリンクが出力されているのでクリック。
-      const pricesRef = collection(productDoc.ref, 'prices');
-      const pricesQuery = query(pricesRef, where('active', '==', true));
-      const priceSnap = await getDocs(pricesQuery);
-      const prices = priceSnap.docs.map((priceDoc) => ({
-        priceId: priceDoc.id,
-        price: priceDoc.data() as Price,
-      }));
-      return { product, prices };
-    });
+    interface ProductWithPrices {
+      product: Product;
+      prices: PriceInfo[];
+    }
+
+    interface PriceInfo {
+      priceId: string;
+      price: Price;
+    }
+
+    const data: Promise<ProductWithPrices>[] = querySnapshot.docs.map(
+      async (productDoc: any): Promise<ProductWithPrices> => {
+        const product: Product = productDoc.data() as Product;
+        //エラーで読み込まれないときは、orderByのためのインデックスが作成されていない。
+        //デベロッパーコンソールにindex作成のリンクが出力されているのでクリック。
+        const pricesRef = collection(productDoc.ref, 'prices');
+        const pricesQuery = query(pricesRef, where('active', '==', true));
+        const priceSnap = await getDocs(pricesQuery);
+        const prices: PriceInfo[] = priceSnap.docs.map((priceDoc: any) => ({
+          priceId: priceDoc.id,
+          price: priceDoc.data() as Price,
+        }));
+        return { product, prices };
+      }
+    );
     setProducts(await Promise.all(data));
   }, []);
 

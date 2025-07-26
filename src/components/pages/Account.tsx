@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, TextInput, Text, StyleSheet, Image, SafeAreaView } from 'react-native';
+import { View, TextInput, Text, StyleSheet, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { AccountContext } from '../../contexts/Account';
@@ -31,6 +32,7 @@ export default function Account() {
     pressClose,
   } = useContext(AccountContext);
 
+  const insets = useSafeAreaInsets();
   const [displayName, setDisplayName] = useState(user.displayName ? user.displayName : '');
   const [photoURL, setPhotoURL] = useState(user.photoURL ? user.photoURL : '');
   const [email, setEmail] = useState('');
@@ -122,11 +124,12 @@ export default function Account() {
   }, [accountFormState]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View
         style={{
           alignSelf: 'flex-end',
           margin: 10,
+          marginTop: insets.top + 10,
           elevation: 5,
           zIndex: 5,
         }}
@@ -293,6 +296,6 @@ export default function Account() {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

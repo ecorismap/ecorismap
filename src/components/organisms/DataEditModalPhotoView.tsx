@@ -32,6 +32,7 @@ export const DataEditModalPhotoView = () => {
           </View>
         </View>
         {photo.hasLocal && photo.uri ? (
+          // @ts-ignore - react-native-image-zoom-viewer is not compatible with React 19 types
           <ImageViewer imageUrls={[{ url: photo.uri }]} onCancel={pressClosePhoto} renderIndicator={() => <View />} />
         ) : (
           <View style={styles.modalCenteredView}>

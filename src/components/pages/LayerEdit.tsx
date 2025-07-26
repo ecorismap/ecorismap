@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
@@ -21,39 +21,42 @@ export default function LayerEditScreen() {
   const navigation = useNavigation();
   const { isClosedProject } = usePermission();
 
-  const headerLeftButton = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton
-        {...props_}
-        labelVisible={true}
-        label={t('Layers.navigation.title')}
-        labelStyle={{ fontSize: 11 }}
-        onPress={gotoBack}
-      />
-    ),
-    [gotoBack]
-  );
-
-  const headerRightButton = useCallback(() => {
-    return (
-      <View style={styles.headerRight}>
-        <Button
-          name={LAYEREDIT_BTN.SAVE}
-          onPress={pressSaveLayer}
-          backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!isEdited}
-          labelText={t('LayerEdit.label.save')}
-        />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton
+            {...props_}
+            labelVisible={true}
+            label={t('Layers.navigation.title')}
+            labelStyle={{ fontSize: 11 }}
+            onPress={gotoBack}
+            style={{ marginLeft: 10 }}
+          />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('LayerEdit.navigation.title')}</Text>
+        </View>
+        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
+          <Button
+            name={LAYEREDIT_BTN.SAVE}
+            onPress={pressSaveLayer}
+            backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+            disabled={!isEdited}
+            labelText={t('LayerEdit.label.save')}
+          />
+        </View>
       </View>
-    );
-  }, [isEdited, pressSaveLayer]);
+    ),
+    [gotoBack, isEdited, pressSaveLayer]
+  );
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props_),
-      headerRight: () => headerRightButton(),
+      header: customHeader,
     });
-  }, [headerLeftButton, headerRightButton, navigation]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
@@ -81,11 +84,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
   },
 });

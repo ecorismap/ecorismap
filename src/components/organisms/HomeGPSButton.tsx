@@ -1,5 +1,5 @@
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '../atoms';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
@@ -22,7 +22,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         marginHorizontal: 0,
         left: 9 + insets.left,
         position: 'absolute',
-        top: Platform.OS === 'ios' && !isLandscape ? 207 : 180,
+        top: insets.top + (isLandscape ? 170 : 187),
         // zIndex: 101,
         // elevation: 101,
       }}

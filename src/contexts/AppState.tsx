@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import BottomSheet from '@gorhom/bottom-sheet';
+import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
 
 export interface AppStateContextType {
   // General app states
@@ -21,7 +21,7 @@ export interface AppStateContextType {
   gotoHome: () => void;
 
   // Other
-  bottomSheetRef: React.RefObject<BottomSheet>;
+  bottomSheetRef: React.RefObject<BottomSheetMethods | null>;
   onCloseBottomSheet: () => Promise<void>;
   updatePmtilesURL: () => Promise<void>;
 }
@@ -41,7 +41,7 @@ export const AppStateContext = createContext<AppStateContextType>({
   gotoSettings: () => {},
   gotoLayers: () => {},
   gotoHome: () => {},
-  bottomSheetRef: React.createRef<BottomSheet>(),
+  bottomSheetRef: React.createRef<BottomSheetMethods>(),
   onCloseBottomSheet: async () => {},
   updatePmtilesURL: async () => {},
 });

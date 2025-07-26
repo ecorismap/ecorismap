@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { Platform, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '../atoms';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
-import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
@@ -21,7 +20,6 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
 export const HomeCompassButton = React.memo((props: Props) => {
   //console.log('render Compass');
   const { azimuth, headingUp, onPressCompass } = props;
-  const { isLandscape } = useWindow();
   const insets = useSafeAreaInsets();
   const compassAngle = useMemo(() => {
     return headingUp ? 360 - azimuth : 0;
@@ -34,7 +32,7 @@ export const HomeCompassButton = React.memo((props: Props) => {
         marginHorizontal: 0,
         left: 9 + insets.left,
         position: 'absolute',
-        top: Platform.OS === 'ios' && !isLandscape ? 40 : 20,
+        top: insets.top + 10,
         transform: [{ rotate: `${compassAngle}deg` }],
         // zIndex: 101,
         // elevation: 101,

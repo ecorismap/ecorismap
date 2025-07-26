@@ -16,7 +16,6 @@ dayjs.extend(LocalizedFormat);
 dayjs.extend(customParseFormat);
 dayjs.locale(languageCode ?? 'ja');
 dayjs.extend(localeData);
-//console.log(Localization.locale, dayjs().format('L'));
 
 export const LocalizedDateFormatForWeb =
   Platform.OS === 'web' ? dayjs().localeData().longDateFormat('L').replaceAll('Y', 'y').replaceAll('D', 'd') : '';

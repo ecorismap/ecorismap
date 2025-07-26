@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
 
 import { Button } from '../atoms';
@@ -57,7 +57,7 @@ export const HomeDrawTools = React.memo(() => {
       left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
-      top: Platform.OS === 'ios' ? 360 : 330,
+      top: insets.top + 340,
       // zIndex: 101,
     },
   });

@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { FUNC_LOGIN, SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
+import { View, StyleSheet, Platform, Text } from 'react-native';
+import { FUNC_LOGIN, SETTINGS_BTN, VERSION, COLOR } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
@@ -32,13 +32,20 @@ export default function Settings() {
 
   const navigation = useNavigation();
 
-  const headerLeftButton = useCallback(() => <></>, []);
+  const customHeader = useCallback(
+    () => (
+      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <Text style={{ fontSize: 16 }}>{t('Settings.navigation.title')}</Text>
+      </View>
+    ),
+    []
+  );
 
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: () => headerLeftButton(),
+      header: customHeader,
     });
-  }, [headerLeftButton, navigation]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>

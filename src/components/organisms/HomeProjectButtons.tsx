@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectContext } from '../../contexts/Project';
 import { Button } from '../atoms';
@@ -18,6 +19,18 @@ export const HomeProjectButtons = React.memo(() => {
     pressSaveProjectSetting,
     pressDiscardProjectSetting,
   } = useContext(ProjectContext);
+  const insets = useSafeAreaInsets();
+
+  const styles = StyleSheet.create({
+    buttonContainer: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      position: 'absolute',
+      top: insets.top + 60,
+      zIndex: 100,
+    },
+  });
+
   //console.log('HomeButton');
   return (
     <View style={styles.buttonContainer}>
@@ -91,14 +104,4 @@ export const HomeProjectButtons = React.memo(() => {
       )}
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  buttonContainer: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 90 : 60,
-    zIndex: 100,
-  },
 });

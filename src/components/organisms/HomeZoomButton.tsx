@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Text, Platform } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
@@ -29,7 +29,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
       justifyContent: 'space-between',
       left: left + insets.left,
       position: 'absolute',
-      top: Platform.OS === 'ios' && !isLandscape ? 90 : 70,
+      top: insets.top + (isLandscape ? 60 : 70),
       width: 36,
       // zIndex: 100,
     },

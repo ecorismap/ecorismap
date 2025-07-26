@@ -48,9 +48,9 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomePopup } from '../organisms/HomePopup';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import Animated, { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
@@ -152,7 +152,7 @@ export default function HomeScreen() {
   const trackLog = useSelector((state: RootState) => state.trackLog);
   const { bounds } = useViewportBounds(mapRegion);
 
-  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 : 0), [downloadMode, exportPDFMode]);
+  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 + insets.top : 0), [downloadMode, exportPDFMode, insets.top]);
 
   const scrollEnabled = useMemo(
     () =>
@@ -203,18 +203,6 @@ export default function HomeScreen() {
     setShowDirectionLine((prev) => !prev);
   }, []);
 
-  const headerGotoMapsButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
-    ),
-    [gotoMaps]
-  );
-  const headerGotoHomeButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} />
-    ),
-    [gotoHome]
-  );
   const headerRightButton = useCallback(() => {
     if (isDownloading) {
       return (
@@ -313,21 +301,67 @@ export default function HomeScreen() {
     );
   }, [isEditingRecord, onCloseBottomSheet]);
 
+  const customHeaderDownload = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <View style={{ 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        height: 56 + insets.top, 
+        paddingTop: insets.top,
+        backgroundColor: COLOR.MAIN 
+      }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} style={{ marginLeft: 10 }} />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('Home.navigation.download', '地図のダウンロード')}</Text>
+        </View>
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 10 }}>
+          {headerRightButton()}
+        </View>
+      </View>
+    ),
+    [gotoMaps, headerRightButton, insets.top]
+  );
+
+  const customHeaderPDF = useCallback(
+    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
+      <View style={{ 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        height: 56 + insets.top, 
+        paddingTop: insets.top,
+        backgroundColor: COLOR.MAIN 
+      }}>
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
+          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoHome} style={{ marginLeft: 10 }} />
+        </View>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 16 }}>{t('Home.navigation.exportPDF', 'PDF')}</Text>
+        </View>
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 10 }}>
+          {headerRightButton()}
+        </View>
+      </View>
+    ),
+    [gotoHome, headerRightButton, insets.top]
+  );
+
   useEffect(() => {
     //console.log('#useeffect3');
     if (downloadMode) {
       navigation.setOptions({
-        title: t('Home.navigation.download', '地図のダウンロード'),
         headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
-        headerRight: () => headerRightButton(),
+        header: customHeaderDownload,
       });
     } else if (exportPDFMode) {
       navigation.setOptions({
-        title: t('Home.navigation.exportPDF', 'PDF'),
         headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoHomeButton(props_),
-        headerRight: () => headerRightButton(),
+        header: customHeaderPDF,
       });
     } else {
       navigation.setOptions({ headerShown: false });
@@ -336,6 +370,8 @@ export default function HomeScreen() {
   }, [
     downloadMode,
     exportPDFMode,
+    customHeaderDownload,
+    customHeaderPDF,
     isDownloading,
     downloadProgress,
     savedTileSize,
@@ -377,7 +413,7 @@ export default function HomeScreen() {
           {isDrawLineVisible && <SvgView />}
 
           <MapView
-            ref={mapViewRef as React.MutableRefObject<MapView>}
+            ref={mapViewRef as React.RefObject<MapView>}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={mapRegion}

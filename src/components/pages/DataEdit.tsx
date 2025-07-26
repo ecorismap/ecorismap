@@ -54,10 +54,11 @@ export default function DataEditScreen() {
 
   const navigation = useNavigation();
   const layers = useSelector((state: RootState) => state.layers);
-  const headerForDevice = useCallback(
+  const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', justifyContent: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
         <View style={{ flex: 1, justifyContent: 'center' }}>
+          {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
             labelVisible={true}
@@ -109,6 +110,7 @@ export default function DataEditScreen() {
   const headerLeftButton = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row' }}>
+        {/* @ts-ignore */}
         <HeaderBackButton {...props_} onPress={gotoBack} />
       </View>
     ),
@@ -131,9 +133,9 @@ export default function DataEditScreen() {
 
   useEffect(() => {
     navigation.setOptions({
-      header: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerForDevice(props),
+      header: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => customHeader(props),
     });
-  }, [headerLeftButton, headerForDevice, headerRightButton, headerTitleButton, navigation]);
+  }, [headerLeftButton, customHeader, headerRightButton, headerTitleButton, navigation]);
   //console.log(layer.name);
   return (
     <KeyboardAvoidingView style={styles.container} behavior={'padding'}>
