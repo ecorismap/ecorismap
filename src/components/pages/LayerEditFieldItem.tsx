@@ -42,7 +42,7 @@ export default function LayerEditFieldItemScreen() {
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
@@ -53,10 +53,10 @@ export default function LayerEditFieldItemScreen() {
             style={{ marginLeft: 10 }}
           />
         </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('LayerEditFieldItem.navigation.title')}</Text>
         </View>
-        <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
+        <View style={{ flex: 1.5, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
           {itemFormat === 'STRING_DICTIONARY' && (
             <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
           )}

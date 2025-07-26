@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, Platform, Text } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
-import HeaderRightButton from '../molecules/HeaderRightButton';
+import { Button } from '../atoms';
 import { MapButtons } from '../organisms/MapButttons';
 import { MapTable } from '../organisms/MapTable';
 import { useNavigation } from '@react-navigation/native';
@@ -17,15 +17,26 @@ export default function MapScreen() {
 
   const customHeader = useCallback(
     () => (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <View style={{ flex: 1, justifyContent: 'center', paddingLeft: 13 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
+        <View
+          style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', flexDirection: 'row', paddingLeft: 10 }}
+        >
           {Platform.OS !== 'web' && (
-            <HeaderRightButton
+            <Button
               name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
               backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
               onPress={pressToggleOnline}
               labelText={isOffline ? t('Maps.label.offline') : t('Maps.label.online')}
               size={20}
+              borderRadius={50}
             />
           )}
         </View>

@@ -22,8 +22,16 @@ export default function DataScreen() {
 
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
+        <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
@@ -34,10 +42,10 @@ export default function DataScreen() {
             style={{ marginLeft: 10 }}
           />
         </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: layer.name.length > 13 ? 10 : 15 }}>{layer.name}</Text>
         </View>
-        <View style={{ flex: 1 }} />
+        <View style={{ flex: 1.5 }} />
       </View>
     ),
     [gotoBack, layer.name]

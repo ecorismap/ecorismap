@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HOME_BTN, COLOR, HOME_FEATURE_BTN } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
@@ -17,9 +18,10 @@ export const HomeButtons = React.memo(() => {
   const { trackingState, pressTracking } = useContext(LocationTrackingContext);
 
   const { isLandscape } = useWindow();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer}>
+    <View style={[isLandscape ? styles.buttonContainerLandscape : styles.buttonContainer, { bottom: insets.bottom }]}>
       <View style={{ marginHorizontal: 9 }}>
         <Button name={HOME_BTN.MAPS} onPress={gotoMaps} backgroundColor={COLOR.BLUE} labelText={t('Home.label.maps')} />
       </View>
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: 35,
+    marginVertical: 15,
     position: 'absolute',
     // zIndex: 0,
   },

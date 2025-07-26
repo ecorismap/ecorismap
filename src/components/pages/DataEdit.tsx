@@ -56,8 +56,8 @@ export default function DataEditScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', justifyContent: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+        <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
@@ -65,10 +65,10 @@ export default function DataEditScreen() {
             label={t('Data.navigation.title')}
             labelStyle={{ fontSize: 11 }}
             onPress={gotoBack}
-            style={{ width: 80, marginLeft: 20 }}
+            style={{ marginLeft: 10 }}
           />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           {maxRecordNumber > 0 && (
             <DataEditRecordSelector
               recordNumber={recordNumber}
@@ -77,7 +77,7 @@ export default function DataEditScreen() {
             />
           )}
         </View>
-        <View style={{ flexDirection: 'row', flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', flex: 1.5, justifyContent: 'flex-end', alignItems: 'center' }}>
           <View style={{ marginRight: 13 }}>
             <Button
               name={DATAEDIT_BTN.SAVE}

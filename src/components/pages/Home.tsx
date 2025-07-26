@@ -152,7 +152,10 @@ export default function HomeScreen() {
   const trackLog = useSelector((state: RootState) => state.trackLog);
   const { bounds } = useViewportBounds(mapRegion);
 
-  const navigationHeaderHeight = useMemo(() => (downloadMode || exportPDFMode ? 56 + insets.top : 0), [downloadMode, exportPDFMode, insets.top]);
+  const navigationHeaderHeight = useMemo(
+    () => (downloadMode || exportPDFMode ? 56 + insets.top : 0),
+    [downloadMode, exportPDFMode, insets.top]
+  );
 
   const scrollEnabled = useMemo(
     () =>
@@ -303,22 +306,32 @@ export default function HomeScreen() {
 
   const customHeaderDownload = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        height: 56 + insets.top, 
-        paddingTop: insets.top,
-        backgroundColor: COLOR.MAIN 
-      }}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 56 + insets.top,
+          paddingTop: insets.top,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
+        <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} style={{ marginLeft: 10 }} />
         </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Home.navigation.download', '地図のダウンロード')}</Text>
         </View>
-        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 10 }}>
+        <View
+          style={{
+            flex: 1.5,
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            paddingRight: 10,
+          }}
+        >
           {headerRightButton()}
         </View>
       </View>
@@ -328,22 +341,32 @@ export default function HomeScreen() {
 
   const customHeaderPDF = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ 
-        flexDirection: 'row', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        height: 56 + insets.top, 
-        paddingTop: insets.top,
-        backgroundColor: COLOR.MAIN 
-      }}>
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 56 + insets.top,
+          paddingTop: insets.top,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
+        <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton {...props_} labelVisible={true} onPress={gotoHome} style={{ marginLeft: 10 }} />
         </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Home.navigation.exportPDF', 'PDF')}</Text>
         </View>
-        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 10 }}>
+        <View
+          style={{
+            flex: 1.5,
+            flexDirection: 'row',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            paddingRight: 10,
+          }}
+        >
           {headerRightButton()}
         </View>
       </View>
@@ -576,7 +599,7 @@ export default function HomeScreen() {
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
           {mapRegion && (
-            <View style={isLandscape ? styles.scaleBarLandscape : styles.scaleBar}>
+            <View style={[isLandscape ? styles.scaleBarLandscape : styles.scaleBar, { bottom: 60 + insets.bottom }]}>
               <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
             </View>
           )}
@@ -593,7 +616,7 @@ export default function HomeScreen() {
           <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
           <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
 
-          {<HomeAttributionText bottom={8} attribution={attribution} />}
+          {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
