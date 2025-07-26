@@ -7198,14 +7198,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-async-storage/async-storage@npm:1.23.1":
-  version: 1.23.1
-  resolution: "@react-native-async-storage/async-storage@npm:1.23.1"
+"@react-native-async-storage/async-storage@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@react-native-async-storage/async-storage@npm:2.2.0"
   dependencies:
     merge-options: ^3.0.4
   peerDependencies:
-    react-native: ^0.0.0-0 || >=0.60 <1.0
-  checksum: 7096546ed4a5faf1f6e0425e2e15713575f1a7493a04524da386ff35c3844b57b8fd20544fad4157b4a61e048b10235f2f06124f262da5b327edc74fbc31e02b
+    react-native: ^0.0.0-0 || >=0.65 <1.0
+  checksum: efbb9c801fb7eecfad1568d6a5e9d247db420b8ba8f1789d5b783e679432567a53cf54c7e7b5e6f315276f33d1df297253549e0cefef2e683539df346d2a1f2d
   languageName: node
   linkType: hard
 
@@ -15503,7 +15503,7 @@ __metadata:
     "@mui/material": ^5.16.1
     "@mui/styled-engine-sc": ^6.0.0-alpha.18
     "@mui/x-date-pickers": 5.0.19
-    "@react-native-async-storage/async-storage": 1.23.1
+    "@react-native-async-storage/async-storage": ^2.2.0
     "@react-native-community/cli": 18.0.0
     "@react-native-community/cli-platform-android": 18.0.0
     "@react-native-community/cli-platform-ios": 18.0.0
@@ -15578,7 +15578,7 @@ __metadata:
     expo-image-picker: ~16.1.4
     expo-linear-gradient: ~14.1.5
     expo-localization: ~16.1.6
-    expo-location: ~18.1.6
+    expo-location: ^18.1.6
     expo-media-library: ~17.1.7
     expo-notifications: ~0.31.4
     expo-print: ~14.1.4
@@ -15636,7 +15636,7 @@ __metadata:
     react-native-image-zoom-viewer: ^3.0.1
     react-native-japanese-text-analyzer: ^0.1.3
     react-native-keychain: ^8.1.2
-    react-native-maps: 1.20.1
+    react-native-maps: 1.14.0
     react-native-modal-selector: ^2.1.2
     react-native-reanimated: ~3.17.4
     react-native-safe-area-context: ^5.4.0
@@ -16760,7 +16760,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-location@npm:~18.1.6":
+"expo-location@npm:^18.1.6":
   version: 18.1.6
   resolution: "expo-location@npm:18.1.6"
   peerDependencies:
@@ -25808,9 +25808,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-maps@npm:1.20.1":
-  version: 1.20.1
-  resolution: "react-native-maps@npm:1.20.1"
+"react-native-maps@npm:1.14.0":
+  version: 1.14.0
+  resolution: "react-native-maps@npm:1.14.0"
   dependencies:
     "@types/geojson": ^7946.0.13
   peerDependencies:
@@ -25820,7 +25820,7 @@ __metadata:
   peerDependenciesMeta:
     react-native-web:
       optional: true
-  checksum: 3451f2cb98a0cfcac973d73d8a5bd8bc3673490ca1b3c85f6bd54110028201a7cbbcffbac56ccb931acb31e02bca8aac5805269bc13e94d93bfef868035074a7
+  checksum: 2fcbd3c191e0cd6146b1d4df20344475ff42a69c75f471045416e3e9beb081dacbfe70d9a266cc3f9293d30319ef59469acad67f5145cb8134ebf8f464fd0fc4
   languageName: node
   linkType: hard
 
