@@ -5715,9 +5715,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gorhom/bottom-sheet@npm:^5.1.4":
-  version: 5.1.4
-  resolution: "@gorhom/bottom-sheet@npm:5.1.4"
+"@gorhom/bottom-sheet@npm:^5.1.6":
+  version: 5.1.6
+  resolution: "@gorhom/bottom-sheet@npm:5.1.6"
   dependencies:
     "@gorhom/portal": 1.0.14
     invariant: ^2.2.4
@@ -5733,7 +5733,7 @@ __metadata:
       optional: true
     "@types/react-native":
       optional: true
-  checksum: 661c89e43c84b2b5452fb5b7eb185bdb5368507d541253009fe915356a5d3983a74cca7a6e6ae3580d13b61f86f79a261f120ef93aaf8f5a0ad0243b098099e0
+  checksum: 7217501a8688a560b2d7be673ba51edeb4489e13184e7510706ce2b3e52c225cbc254922de23ac40fdd18f1df5a7c41b3ec20ac0700a55314fad0ed8a7b19a26
   languageName: node
   linkType: hard
 
@@ -15496,7 +15496,7 @@ __metadata:
     "@emotion/styled": ^11.11.5
     "@expo/webpack-config": ~19.0.1
     "@firebase/rules-unit-testing": ^3.0.4
-    "@gorhom/bottom-sheet": ^5.1.4
+    "@gorhom/bottom-sheet": ^5.1.6
     "@mapbox/geojsonhint": ^3.1.1
     "@mapbox/vector-tile": ^1.3.1
     "@mui/lab": ^5.0.0-alpha.172
