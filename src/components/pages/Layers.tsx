@@ -15,7 +15,15 @@ export default function LayerScreen() {
 
   const customHeader = useCallback(
     () => (
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
         <Text style={{ fontSize: 16 }}>{t('Layers.navigation.title')}</Text>
       </View>
     ),

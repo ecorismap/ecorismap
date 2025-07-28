@@ -49,5 +49,9 @@ module.exports = async function (env, argv) {
     http: false,
   };
 
+  // mainFields の設定を追加
+  // https://github.com/gorhom/react-native-bottom-sheet/issues/2278
+  config.resolve.mainFields = ['browser', 'main', 'module'];
+
   return config;
 };
