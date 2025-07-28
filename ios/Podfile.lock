@@ -3287,7 +3287,7 @@ PODS:
     - React-perflogger (= 0.79.5)
     - React-utils (= 0.79.5)
   - RecaptchaInterop (101.0.0)
-  - RNCAsyncStorage (2.2.0):
+  - RNCAsyncStorage (2.1.2):
     - React-Core
   - RNCPicker (2.11.1):
     - React-Core
@@ -3318,7 +3318,7 @@ PODS:
     - RNFBApp
   - RNFS (2.20.0):
     - React-Core
-  - RNGestureHandler (2.27.2):
+  - RNGestureHandler (2.24.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3468,7 +3468,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (4.13.1):
+  - RNScreens (4.11.1):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -4094,7 +4094,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 542dbcd3d677ed7c4fe69e28b7c492998f48c9db
   ReactCommon: 1aa48867a0fc71a2b4f9e8a1529f5673648354f3
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RNCAsyncStorage: b44e8a4e798c3e1f56bffccd0f591f674fb9198f
+  RNCAsyncStorage: b9f5f78da5d16a853fe3dc22e8268d932fc45a83
   RNCPicker: da0f1c9411208c1ca52bc98383db54a06e0a3862
   RNDeviceInfo: 900bd20e1fd3bfd894e7384cc4a83880c0341bd3
   RNFBApp: 90cf0209fb8f0460ab069a7de857d7ec851c8476
@@ -4104,10 +4104,10 @@ SPEC CHECKSUMS:
   RNFBFunctions: 6aeaed674404212f5c796e417ac009db9dece5cc
   RNFBStorage: d535dbe7de6ba96d7f74979d31c1e11e2b538727
   RNFS: 89de7d7f4c0f6bafa05343c578f61118c8282ed8
-  RNGestureHandler: dbe2e0fcdaeb5b869267beb5431861160aeee185
+  RNGestureHandler: e960beba92f592ee4a03b20aa4931806d0f16b06
   RNKeychain: bbe2f6d5cc008920324acb49ef86ccc03d3b38e4
   RNReanimated: 8442cd220122765de7d858946846a7513e40fe04
-  RNScreens: 48d705e4f7a2e66c08cf552a4c57714d4a44d6f9
+  RNScreens: 7f9d84a9901679dbb435592612d5ac57a044adce
   RNSVG: ab84f2de7dd4f2c86d01825b8a65e0ef712fc36b
   RNVectorIcons: ca479c473e490faca0eeaea9477b89bb42ea41b4
   RNVirgilCrypto: b5f0996b90493a0ba0b40fd22b2be66b6d911d98
@@ -4123,6 +4123,6 @@ SPEC CHECKSUMS:
   VSCCrypto: e2c8df89e0dc348c2713554f6a2c8864e1cf412d
   Yoga: bfcce202dba74007f8974ee9c5f903a9a286c445
 
-PODFILE CHECKSUM: 3c165cddddc73e1a9b57278c074a4ae351379cf0
+PODFILE CHECKSUM: 814f21c4b1166fc371cc3efded57289516b5e68a
 
 COCOAPODS: 1.16.2
