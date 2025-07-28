@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
@@ -25,6 +26,7 @@ export default function Projects() {
     gotoBack,
   } = useContext(ProjectsContext);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
@@ -34,16 +36,36 @@ export default function Projects() {
     [gotoBack]
   );
 
+  const customHeader = useCallback(
+    () => (
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 56 + insets.top,
+          backgroundColor: COLOR.MAIN,
+          paddingHorizontal: 10,
+          paddingTop: insets.top,
+        }}
+      >
+        {headerLeftButton({} as HeaderBackButtonProps)}
+        <Text style={{ fontSize: 16 }}>{t('Projects.navigation.title')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+    ),
+    [headerLeftButton, insets.top]
+  );
+
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-      headerBackTitle: 'Back',
+      header: customHeader,
     });
-  }, [headerLeftButton, navigation]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: 80 + insets.bottom }}>
         <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', height: 45 }}>
             <View style={[styles.th, { flex: 3, width: 180 }]}>
@@ -134,7 +156,6 @@ export default function Projects() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   td: {
     alignItems: 'flex-start',

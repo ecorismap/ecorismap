@@ -1,5 +1,6 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { ProjectEditButtons } from '../organisms/ProjectEditButtons';
@@ -33,11 +34,11 @@ export default function ProjectEditScreen() {
     gotoBack,
   } = useContext(ProjectEditContext);
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const styles = StyleSheet.create({
     container: {
       backgroundColor: COLOR.MAIN,
       flex: 1,
-      justifyContent: 'flex-end',
     },
   });
   const [emails, setEmails] = useState('');
@@ -67,17 +68,36 @@ export default function ProjectEditScreen() {
     [isEdited, isNew, isOwnerAdmin, pressSaveProject]
   );
 
+  const customHeader = useCallback(
+    () => (
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 56 + insets.top,
+          backgroundColor: COLOR.MAIN,
+          paddingHorizontal: 10,
+          paddingTop: insets.top,
+        }}
+      >
+        {headerLeftButton({} as HeaderBackButtonProps)}
+        <Text style={{ fontSize: 16 }}>{t('ProjectEdit.navigation.title')}</Text>
+        {headerRightButton()}
+      </View>
+    ),
+    [headerLeftButton, headerRightButton, insets.top]
+  );
+
   useEffect(() => {
     navigation.setOptions({
-      headerLeft: (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerLeftButton(props),
-      headerBackTitle: t('common.back'),
-      headerRight: () => headerRightButton(),
+      header: customHeader,
     });
-  }, [headerLeftButton, headerRightButton, isEdited, isNew, isOwnerAdmin, navigation, pressSaveProject]);
+  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <ScrollView style={{ flex: 1, marginBottom: 80 + insets.bottom }}>
         <EditString
           name={t('common.projectName')}
           value={project.name}

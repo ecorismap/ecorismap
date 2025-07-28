@@ -1,5 +1,6 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLOR, PROJECTEDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
@@ -24,9 +25,10 @@ export const ProjectEditButtons = React.memo((props: Props) => {
     onPressExportProject,
     onPressSettingProject,
   } = props;
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.buttonContainer}>
+    <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
       {!isNew && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
@@ -76,10 +78,12 @@ export const ProjectEditButtons = React.memo((props: Props) => {
 const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'flex-end',
-    elevation: 101,
+    alignSelf: 'center',
+    bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 35,
+    justifyContent: 'center',
+    marginVertical: 15,
+    position: 'absolute',
     zIndex: 101,
   },
 });
