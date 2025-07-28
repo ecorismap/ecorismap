@@ -15579,7 +15579,7 @@ __metadata:
     expo-linear-gradient: ~14.1.5
     expo-localization: ~16.1.6
     expo-location: ^18.1.6
-    expo-media-library: ~17.1.7
+    expo-media-library: ^17.1.7
     expo-notifications: ~0.31.4
     expo-print: ~14.1.4
     expo-sharing: ~13.1.5
@@ -15641,7 +15641,7 @@ __metadata:
     react-native-reanimated: ~3.17.4
     react-native-safe-area-context: ^5.4.0
     react-native-scale-bar: ^1.0.6
-    react-native-screens: ~4.11.1
+    react-native-screens: ^4.13.1
     react-native-svg: 15.11.2
     react-native-vector-icons: ^10.1.0
     react-native-virgil-crypto: 0.6.3
@@ -16769,7 +16769,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expo-media-library@npm:~17.1.7":
+"expo-media-library@npm:^17.1.7":
   version: 17.1.7
   resolution: "expo-media-library@npm:17.1.7"
   peerDependencies:
@@ -25577,11 +25577,11 @@ __metadata:
   linkType: hard
 
 "react-freeze@npm:^1.0.0":
-  version: 1.0.3
-  resolution: "react-freeze@npm:1.0.3"
+  version: 1.0.4
+  resolution: "react-freeze@npm:1.0.4"
   peerDependencies:
     react: ">=17.0.0"
-  checksum: 4258eabdbbf74aaebc38ad1fd7cfdc1984d2a844a2247b39a341c55c1beb02d5e855e6473ec5683205a52b2251d0f7dffa07cd8100f402dd2698af88b932d946
+  checksum: 6b4d93209dff04a1f25d9f8e0c56a9a8a80e7889e8e8267299f34449c7e41a9ab90cad24569d03dd7173b56b7496576dba68f71f1d4e5c8be72f0633023668bc
   languageName: node
   linkType: hard
 
@@ -25781,7 +25781,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-is-edge-to-edge@npm:^1.1.6, react-native-is-edge-to-edge@npm:^1.1.7":
+"react-native-is-edge-to-edge@npm:^1.1.6, react-native-is-edge-to-edge@npm:^1.2.1":
   version: 1.2.1
   resolution: "react-native-is-edge-to-edge@npm:1.2.1"
   peerDependencies:
@@ -25876,17 +25876,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-screens@npm:~4.11.1":
-  version: 4.11.1
-  resolution: "react-native-screens@npm:4.11.1"
+"react-native-screens@npm:^4.13.1":
+  version: 4.13.1
+  resolution: "react-native-screens@npm:4.13.1"
   dependencies:
     react-freeze: ^1.0.0
-    react-native-is-edge-to-edge: ^1.1.7
+    react-native-is-edge-to-edge: ^1.2.1
     warn-once: ^0.1.0
   peerDependencies:
     react: "*"
     react-native: "*"
-  checksum: 22d3c302ef90a1cb20eed8c130b32e53d49288a19eba844f506a5e38342ef2add0d4f7a2ff5501cc05052aef6bf7f180db26a067b01f70f3cc12d3e1497329d6
+  checksum: 1beafec354c3a6bccfde1f9058961d5c9218492f1c68cf5b2bd454d157d4cf1e9047992570927dbcd97893e1e1c990563e4d034fe0d8700479ce2d37e037fe58
   languageName: node
   linkType: hard
 
