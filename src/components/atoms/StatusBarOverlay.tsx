@@ -6,8 +6,8 @@ import { COLOR } from '../../constants/AppConstants';
 export const StatusBarOverlay: React.FC = () => {
   const insets = useSafeAreaInsets();
 
-  // Webまたはステータスバーの高さが0の場合は表示しない
-  if (Platform.OS === 'web' || insets.top === 0) {
+  // Web、iOS、またはステータスバーの高さが0の場合は表示しない
+  if (Platform.OS === 'web' || Platform.OS === 'ios' || insets.top === 0) {
     return null;
   }
 
