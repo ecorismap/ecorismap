@@ -7,9 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		5148FE922C88131B003BA6C4 /* lbfgs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5148FE5A2C88131B003BA6C4 /* lbfgs.cpp */; };
 		5148FE932C88131B003BA6C4 /* mecab-dict-gen.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5148FE5B2C88131B003BA6C4 /* mecab-dict-gen.cpp */; };
@@ -52,6 +50,7 @@
 		51995D62298DDEF5003CA87F /* Maps.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51995D61298DDEF5003CA87F /* Maps.plist */; };
 		51A700792CA0FCCA00383A9C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 51A700782CA0FCCA00383A9C /* GoogleService-Info.plist */; };
 		5E0528AD7307C2E581B39C06 /* Pods_ecorismap.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B6CB7959AD417E15C74399D2 /* Pods_ecorismap.framework */; };
+		60FC377E6FC13B1CD2D69A4C /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0264138AE672E8C8CB2F3D99 /* AppDelegate.swift */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F4C272C060857E9E7EAD986B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 82093E89AF6E931136014CA4 /* PrivacyInfo.xcprivacy */; };
@@ -59,12 +58,10 @@
 
 /* Begin PBXFileReference section */
 		008F07F21AC5B25A0029DE68 /* main.jsbundle */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = main.jsbundle; sourceTree = "<group>"; };
+		0264138AE672E8C8CB2F3D99 /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ecorismap/AppDelegate.swift; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* ecorismap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ecorismap.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FAF1A68108700A75B9A /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppDelegate.h; path = ecorismap/AppDelegate.h; sourceTree = "<group>"; };
-		13B07FB01A68108700A75B9A /* AppDelegate.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = AppDelegate.mm; path = ecorismap/AppDelegate.mm; sourceTree = "<group>"; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ecorismap/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ecorismap/Info.plist; sourceTree = "<group>"; };
-		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ecorismap/main.m; sourceTree = "<group>"; };
 		513EA2F329DFB77C008975C2 /* ecorismap.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = ecorismap.entitlements; path = ecorismap/ecorismap.entitlements; sourceTree = "<group>"; };
 		5148FE582C88131B003BA6C4 /* scoped_ptr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scoped_ptr.h; sourceTree = "<group>"; };
 		5148FE592C88131B003BA6C4 /* ucstable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ucstable.h; sourceTree = "<group>"; };
@@ -166,13 +163,11 @@
 				5148FE572C88131A003BA6C4 /* mecab */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				008F07F21AC5B25A0029DE68 /* main.jsbundle */,
-				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
-				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
-				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				82093E89AF6E931136014CA4 /* PrivacyInfo.xcprivacy */,
+				0264138AE672E8C8CB2F3D99 /* AppDelegate.swift */,
 			);
 			name = ecorismap;
 			sourceTree = "<group>";
@@ -995,9 +990,7 @@
 				5148FE9C2C88131B003BA6C4 /* char_property.cpp in Sources */,
 				5148FEAC2C88131B003BA6C4 /* dictionary.cpp in Sources */,
 				5148FEA72C88131B003BA6C4 /* mecab-system-eval.cpp in Sources */,
-				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				5148FEAD2C88131B003BA6C4 /* writer.cpp in Sources */,
-				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				5148FE9A2C88131B003BA6C4 /* mecab-cost-train.cpp in Sources */,
 				5148FEA92C88131B003BA6C4 /* iconv_utils.cpp in Sources */,
 				5148FE972C88131B003BA6C4 /* utils.cpp in Sources */,
@@ -1017,6 +1010,7 @@
 				5148FEA32C88131B003BA6C4 /* param.cpp in Sources */,
 				5148FEA52C88131B003BA6C4 /* connector.cpp in Sources */,
 				5148FEA82C88131B003BA6C4 /* mecab-dict-index.cpp in Sources */,
+				60FC377E6FC13B1CD2D69A4C /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

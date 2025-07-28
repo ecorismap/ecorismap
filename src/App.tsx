@@ -25,10 +25,12 @@ if (__DEV__ && Platform.OS !== 'web') {
       }
     };
 
+  /* eslint-disable no-console */
   console.log = withoutIgnored(console.log);
   console.info = withoutIgnored(console.info);
   console.warn = withoutIgnored(console.warn);
   console.error = withoutIgnored(console.error);
+  /* eslint-enable no-console */
 }
 
 export default function App() {
