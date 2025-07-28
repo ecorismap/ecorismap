@@ -77,13 +77,11 @@ export const ProjectEditButtons = React.memo((props: Props) => {
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    alignItems: 'flex-end',
-    alignSelf: 'center',
+    alignItems: 'flex-start',
     bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     marginVertical: 15,
-    position: 'absolute',
     zIndex: 101,
   },
 });

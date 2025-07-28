@@ -97,7 +97,7 @@ export default function ProjectEditScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{ flex: 1, marginBottom: 80 + insets.bottom }}>
+      <ScrollView style={{ flex: 1, marginBottom: insets.bottom }}>
         <EditString
           name={t('common.projectName')}
           value={project.name}

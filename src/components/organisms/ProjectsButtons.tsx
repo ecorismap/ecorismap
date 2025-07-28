@@ -25,13 +25,10 @@ export const ProjectsButtons = (props: Props) => {
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    alignItems: 'flex-end',
-    alignSelf: 'center',
+    alignItems: 'flex-start',
     bottom: 0,
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 15,
-    position: 'absolute',
-    width: '60%',
+    justifyContent: 'space-between',
+    margin: 20,
   },
 });

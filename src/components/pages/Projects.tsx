@@ -65,7 +65,7 @@ export default function Projects() {
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: 80 + insets.bottom }}>
+      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: insets.bottom }}>
         <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', height: 45 }}>
             <View style={[styles.th, { flex: 3, width: 180 }]}>
