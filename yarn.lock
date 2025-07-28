@@ -15580,6 +15580,7 @@ __metadata:
     expo-localization: ~16.1.6
     expo-location: ^18.1.6
     expo-media-library: ^17.1.7
+    expo-navigation-bar: ^4.2.7
     expo-notifications: ~0.31.4
     expo-print: ~14.1.4
     expo-sharing: ~13.1.5
@@ -16802,6 +16803,22 @@ __metadata:
   dependencies:
     invariant: ^2.2.4
   checksum: 7a405f20f0bc056c7409be6d00bf9ad5203cb461301b1ecf0a03380138965ea4fa8e1e2456035a2ea3cb6adb44eac3b40cb2e3a5328a4b91054911982029ad15
+  languageName: node
+  linkType: hard
+
+"expo-navigation-bar@npm:^4.2.7":
+  version: 4.2.7
+  resolution: "expo-navigation-bar@npm:4.2.7"
+  dependencies:
+    "@react-native/normalize-colors": 0.79.5
+    debug: ^4.3.2
+    react-native-edge-to-edge: 1.6.0
+    react-native-is-edge-to-edge: ^1.1.6
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 542db5d639585fb5537c02a8b23cdb78e0df3ef7586078fbf1616351774cba7d9f62a7e6d4a0b1cb33ae935c73f553319ca978cb913eb0afe7fd668b14f5e0ce
   languageName: node
   linkType: hard
 

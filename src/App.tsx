@@ -1,9 +1,10 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LogBox, Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
@@ -31,6 +32,14 @@ if (__DEV__ && Platform.OS !== 'web') {
 }
 
 export default function App() {
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      // Android の NavigationBar の設定
+      NavigationBar.setBackgroundColorAsync('#00000000');
+      NavigationBar.setButtonStyleAsync('light'); // ボタンを白に
+    }
+  }, []);
+
   return (
     <SafeAreaProvider>
       <Provider store={store}>

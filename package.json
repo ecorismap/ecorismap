@@ -135,6 +135,7 @@
     "expo-localization": "~16.1.6",
     "expo-location": "^18.1.6",
     "expo-media-library": "^17.1.7",
+    "expo-navigation-bar": "^4.2.7",
     "expo-notifications": "~0.31.4",
     "expo-print": "~14.1.4",
     "expo-sharing": "~13.1.5",
