@@ -3,16 +3,16 @@ import { useCallback, useState } from 'react';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { LocationStateType, LocationType, TrackingStateType } from '../types';
+import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { updateTrackLog, calculateTrackStatistics } from '../utils/Location';
+import { checkAndStoreLocations, clearStoredLocations, getStoredLocations } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { RootState } from '../store';
 import { isMapView } from '../utils/Map';
 import { t } from '../i18n/config';
-import { LocationObject, LocationSubscription } from 'expo-location';
+import { LocationSubscription } from 'expo-location';
 import { TASK } from '../constants/AppConstants';
 import { AppState as RNAppState, Platform } from 'react-native';
 import { EventEmitter } from 'fbemitter';
@@ -24,7 +24,6 @@ import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -32,50 +31,23 @@ const openSettings = () => {
   });
 };
 
-const BACKGROUND_TRACKLOG_KEY = '@ecorismap/background_tracklog';
 const locationEventsEmitter = new EventEmitter();
 
 TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   if (event.error) {
-    return; // バックグラウンドタスクエラー
+    return console.error('[tracking]', 'Something went wrong within the background location task...', event.error);
   }
 
   const locations = (event.data as any).locations as Location.LocationObject[];
   //console.log('[tracking]', 'Received new locations', locations);
 
   try {
-    // フォアグラウンド状態かチェック
-    if (RNAppState.currentState === 'active') {
-      // フォアグラウンド時は直接イベント発行
-      locationEventsEmitter.emit('update', locations);
-    } else {
-      // バックグラウンド時はAsyncStorageに保存
-      try {
-        const existingDataStr = await AsyncStorage.getItem(BACKGROUND_TRACKLOG_KEY);
-        const existingData = existingDataStr ? JSON.parse(existingDataStr) : { locations: [] };
-
-        // 軽量化：必要最小限のフィールドのみ保存
-        const lightweightLocations = locations.map((loc) => ({
-          latitude: loc.coords.latitude,
-          longitude: loc.coords.longitude,
-          altitude: loc.coords.altitude,
-          accuracy: loc.coords.accuracy,
-          timestamp: loc.timestamp,
-        }));
-
-        const allLocations = [...(existingData.locations || []), ...lightweightLocations];
-
-        await AsyncStorage.setItem(
-          BACKGROUND_TRACKLOG_KEY,
-          JSON.stringify({
-            locations: allLocations,
-            lastUpdate: Date.now(),
-          })
-        );
-      } catch (storageError) {
-        //console.log('[tracking]', 'Failed to save to AsyncStorage:', storageError);
-      }
-    }
+    // AsyncStorageに保存されているトラックログをチェックして、必要な位置情報を取得
+    // バックグラウンドの場合は、AsyncStorageにログがたまる。
+    // フォアグラグラウンドの場合は、一旦AsyncStorageに保存するが、updateですぐにクリアされる
+    const checkedLocations = await checkAndStoreLocations(locations);
+    //killされていなければ更新イベントが発生する
+    locationEventsEmitter.emit('update', checkedLocations);
   } catch (error) {
     //console.log('[tracking]', 'Something went wrong when saving a new location...', error);
   }
@@ -120,8 +92,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const trackStartTimeRef = useRef<number>(0);
 
   const gpsAccuracyOption = useMemo(() => {
     // トラック記録中は固定設定を使用
@@ -195,9 +165,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
           headingSubscriber.current = undefined;
         }
       }
-
-      // トラッキング停止時にAsyncStorageをクリア
-      await AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY);
     } catch (e) {
       // エラーハンドリング
     } finally {
@@ -287,27 +254,13 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
       //console.log('!!!!wakeup', trackingState);
       if (trackingState_ === 'on') {
         await moveCurrentPosition();
-        dispatch(clearTrackLogAction());
-        trackStartTimeRef.current = Date.now();
         await startTracking();
-
-        // 自動保存タイマーの停止（ポイント数ベースに移行）
-        if (autoSaveTimerRef.current) {
-          clearInterval(autoSaveTimerRef.current);
-          autoSaveTimerRef.current = null;
-        }
       } else if (trackingState_ === 'off') {
         await stopTracking();
-
-        // 自動保存タイマーの停止
-        if (autoSaveTimerRef.current) {
-          clearInterval(autoSaveTimerRef.current);
-          autoSaveTimerRef.current = null;
-        }
       }
       setTrackingState(trackingState_);
     },
-    [dispatch, moveCurrentPosition, startTracking, stopTracking]
+    [moveCurrentPosition, startTracking, stopTracking]
   );
 
   const toggleHeadingUp = useCallback(
@@ -370,21 +323,10 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
   );
 
   const updateTrackLogEvent = useCallback(
-    (locations: LocationObject[]) => {
-      const result = updateTrackLog(locations, trackLog);
-      if (result.newLocations.length === 0) return;
+    async (data: TrackLogType) => {
+      if (data.track.length === 0) return;
 
-      // 統計情報を計算
-      const statistics = calculateTrackStatistics(
-        [...trackLog.track, ...result.newLocations],
-        trackLog.distance + result.additionalDistance,
-        trackStartTimeRef.current
-      );
-
-      dispatch(appendTrackLogAction({ ...result, statistics }));
-
-      const currentCoords = result.newLocations[result.newLocations.length - 1];
-      setCurrentLocation(currentCoords);
+      const currentCoords = data.track[data.track.length - 1];
 
       if (gpsState === 'follow' || RNAppState.currentState === 'background') {
         (mapViewRef.current as MapView).animateCamera(
@@ -397,23 +339,40 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
           { duration: 5 }
         );
       }
+      setCurrentLocation(currentCoords);
+      dispatch(appendTrackLogAction(data));
+      //フォアグラウンドの状態でdispatchできたら、AsyncStorageをクリアする
+      await clearStoredLocations();
     },
-    [dispatch, gpsState, mapViewRef, trackLog]
+    [dispatch, gpsState, mapViewRef]
   );
 
+  // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
     if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
-
+    //もしAsyncStorageにデータが保存されていたらトラックログに追加する。killのタイミングでAsyncStoreageにデータが残る場合があるかもしれないので
+    const storedLocations = await getStoredLocations();
+    if (
+      storedLocations.track.length > 0 &&
+      storedLocations.track[0].timestamp &&
+      storedLocations.track[0].timestamp > trackLog.lastTimeStamp
+    ) {
+      trackLog.track = [...trackLog.track, ...storedLocations.track];
+      trackLog.distance += storedLocations.distance;
+      trackLog.lastTimeStamp = storedLocations.lastTimeStamp;
+    }
     const cleanupedLine = cleanupLine(trackLog.track);
     const ret = addTrackRecord(cleanupedLine);
     if (!ret.isOK) {
       return { isOK: ret.isOK, message: ret.message };
     }
-
+    // トラックログをクリアする
     dispatch(clearTrackLogAction());
+    // AsyncStorageのトラックログをクリアする
+    await clearStoredLocations();
     return { isOK: true, message: '' };
-  }, [addTrackRecord, dispatch, trackLog.track]);
+  }, [addTrackRecord, dispatch, trackLog]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {
@@ -423,6 +382,7 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
         if (!ret.isOK) return ret;
       } else {
         dispatch(clearTrackLogAction());
+        await clearStoredLocations();
       }
     }
     return { isOK: true, message: '' };
@@ -462,11 +422,6 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
         }
       });
 
-      // AsyncStorageをクリア
-      AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY).catch(() => {
-        // エラーは無視
-      });
-
       if (gpsSubscriber.current !== undefined) {
         gpsSubscriber.current.remove();
         gpsSubscriber.current = undefined;
@@ -484,55 +439,17 @@ export const useLocation = (mapViewRef: React.MutableRefObject<MapView | MapRef 
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         //console.log('App has come to the foreground!');
 
-        // フォアグラウンド復帰時にAsyncStorageから位置情報を復元
         if (trackingState === 'on') {
-          try {
-            const savedDataStr = await AsyncStorage.getItem(BACKGROUND_TRACKLOG_KEY);
-            if (savedDataStr) {
-              const savedData = JSON.parse(savedDataStr);
-              if (savedData.locations && savedData.locations.length > 0) {
-                // 軽量データを元の形式に変換
-                const convertedLocations = savedData.locations.map((loc: any) => ({
-                  coords: {
-                    latitude: loc.latitude,
-                    longitude: loc.longitude,
-                    altitude: loc.altitude,
-                    accuracy: loc.accuracy,
-                    heading: null,
-                    speed: null,
-                    altitudeAccuracy: null,
-                  },
-                  timestamp: loc.timestamp,
-                }));
-
-                // 簡素化：小分けして処理（但し間隔は短く）
-                const batchSize = 50; // 50個ずつ処理
-
-                for (let i = 0; i < convertedLocations.length; i += batchSize) {
-                  const batch = convertedLocations.slice(i, i + batchSize);
-                  // 短い間隔で処理
-                  setTimeout(() => {
-                    locationEventsEmitter.emit('update', batch);
-                  }, (i / batchSize) * 10); // 10ms間隔
-                }
-
-                // AsyncStorageをクリア
-                await AsyncStorage.removeItem(BACKGROUND_TRACKLOG_KEY);
-              }
+          if (gpsState === 'show' || gpsState === 'follow') {
+            if (headingSubscriber.current === undefined) {
+              //console.log('add heading');
+              headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+                setAzimuth(pos.trueHeading);
+              });
             }
-          } catch (error) {
-            //console.log('Failed to restore background track log:', error);
           }
         }
 
-        if (gpsState === 'show' || gpsState === 'follow') {
-          if (headingSubscriber.current === undefined) {
-            //console.log('add heading');
-            headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
-              setAzimuth(pos.trueHeading);
-            });
-          }
-        }
         if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         //console.log('App has come to the background!');

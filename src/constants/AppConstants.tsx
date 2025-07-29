@@ -59,9 +59,9 @@ export const TASK = {
   FETCH_LOCATION: 'FETCH_LOCATION',
 };
 
-export const TRACK = {
-  AUTO_SAVE_POINTS: 100, // 100ポイントごとの自動保存
-};
+export const STORAGE = {
+  TRACKLOG: 'TRACKLOG',
+} as const;
 
 export const ROLETYPE = {
   MEMBER: t('constants.roletype.member'),

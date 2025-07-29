@@ -15,7 +15,8 @@
     ],
     "testPathIgnorePatterns": [
       "src/__tests__/resources/.*",
-      "src/lib/__tests__/firebase/.*"
+      "src/lib/__tests__/firebase/.*",
+      "maplibre-native/.*"
     ],
     "moduleFileExtensions": [
       "ts",

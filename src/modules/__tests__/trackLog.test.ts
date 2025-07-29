@@ -4,7 +4,7 @@ import trackLogReducer, {
   appendTrackLogAction,
   clearTrackLogAction,
 } from '../trackLog';
-import { LocationType, TrackLogType, TrackStatisticsType } from '../../types';
+import { LocationType, TrackLogType } from '../../types';
 
 describe('trackLog reducer', () => {
   const sampleLocation: LocationType = {
@@ -18,15 +18,6 @@ describe('trackLog reducer', () => {
     timestamp: Date.now(),
   };
 
-  const sampleStatistics: TrackStatisticsType = {
-    duration: 3600000, // 1 hour
-    movingTime: 3000000, // 50 minutes
-    averageSpeed: 25,
-    maxSpeed: 40,
-    pauseCount: 2,
-    elevationGain: 150,
-  };
-
   it('should return the initial state', () => {
     expect(trackLogReducer(undefined, { type: 'unknown' })).toEqual(tracLogInitialState);
   });
@@ -36,8 +27,6 @@ describe('trackLog reducer', () => {
       distance: 10.5,
       track: [sampleLocation],
       lastTimeStamp: Date.now(),
-      segments: [],
-      statistics: sampleStatistics,
     };
 
     const actual = trackLogReducer(tracLogInitialState, updateTrackLogAction(newTrackLog));
@@ -49,8 +38,6 @@ describe('trackLog reducer', () => {
       distance: 5.0,
       track: [sampleLocation],
       lastTimeStamp: Date.now() - 1000,
-      segments: [],
-      statistics: tracLogInitialState.statistics,
     };
 
     const newLocation: LocationType = {
@@ -60,11 +47,10 @@ describe('trackLog reducer', () => {
       timestamp: Date.now(),
     };
 
-    const payload = {
-      newLocations: [newLocation],
-      additionalDistance: 2.5,
-      lastTimeStamp: Date.now(),
-      statistics: sampleStatistics,
+    const payload: TrackLogType = {
+      track: [newLocation],
+      distance: 2.5,
+      lastTimeStamp: newLocation.timestamp || Date.now(),
     };
 
     const actual = trackLogReducer(initialState, appendTrackLogAction(payload));
@@ -73,36 +59,6 @@ describe('trackLog reducer', () => {
     expect(actual.track).toHaveLength(2);
     expect(actual.track[1]).toEqual(newLocation);
     expect(actual.lastTimeStamp).toBe(payload.lastTimeStamp);
-    expect(actual.statistics).toEqual(sampleStatistics);
-  });
-
-  it('should handle appendTrackLogAction without statistics', () => {
-    const initialState: TrackLogType = {
-      distance: 5.0,
-      track: [sampleLocation],
-      lastTimeStamp: Date.now() - 1000,
-      segments: [],
-      statistics: sampleStatistics,
-    };
-
-    const newLocation: LocationType = {
-      ...sampleLocation,
-      latitude: 35.01,
-      longitude: 135.01,
-      timestamp: Date.now(),
-    };
-
-    const payload = {
-      newLocations: [newLocation],
-      additionalDistance: 2.5,
-      lastTimeStamp: Date.now(),
-    };
-
-    const actual = trackLogReducer(initialState, appendTrackLogAction(payload));
-
-    expect(actual.distance).toBe(7.5);
-    expect(actual.track).toHaveLength(2);
-    expect(actual.statistics).toEqual(sampleStatistics); // Should keep existing statistics
   });
 
   it('should handle clearTrackLogAction', () => {
@@ -110,16 +66,6 @@ describe('trackLog reducer', () => {
       distance: 15.5,
       track: [sampleLocation, { ...sampleLocation, latitude: 35.01 }],
       lastTimeStamp: Date.now(),
-      segments: [
-        {
-          id: 'segment-1',
-          startTime: Date.now() - 3600000,
-          endTime: Date.now(),
-          distance: 10.0,
-          pointCount: 100,
-        },
-      ],
-      statistics: sampleStatistics,
     };
 
     const actual = trackLogReducer(stateWithData, clearTrackLogAction());
@@ -127,14 +73,6 @@ describe('trackLog reducer', () => {
     expect(actual.distance).toBe(0);
     expect(actual.track).toHaveLength(0);
     expect(actual.lastTimeStamp).toBe(0);
-    expect(actual.segments).toHaveLength(0);
-    expect(actual.statistics).toEqual({
-      duration: 0,
-      movingTime: 0,
-      averageSpeed: 0,
-      maxSpeed: 0,
-      pauseCount: 0,
-    });
   });
 
   it('should handle multiple appendTrackLogAction calls', () => {
@@ -149,9 +87,9 @@ describe('trackLog reducer', () => {
     state = trackLogReducer(
       state,
       appendTrackLogAction({
-        newLocations: [firstLocation],
-        additionalDistance: 2.0,
-        lastTimeStamp: Date.now(),
+        track: [firstLocation],
+        distance: 2.0,
+        lastTimeStamp: firstLocation.timestamp || Date.now(),
       })
     );
 
@@ -169,16 +107,14 @@ describe('trackLog reducer', () => {
     state = trackLogReducer(
       state,
       appendTrackLogAction({
-        newLocations: [secondLocation],
-        additionalDistance: 3.0,
-        lastTimeStamp: Date.now() + 1000,
-        statistics: sampleStatistics,
+        track: [secondLocation],
+        distance: 3.0,
+        lastTimeStamp: secondLocation.timestamp || Date.now() + 1000,
       })
     );
 
     expect(state.distance).toBe(5.0);
     expect(state.track).toHaveLength(2);
-    expect(state.statistics).toEqual(sampleStatistics);
   });
 
   it('should handle edge cases for appendTrackLogAction', () => {
@@ -186,8 +122,8 @@ describe('trackLog reducer', () => {
     const actual = trackLogReducer(
       tracLogInitialState,
       appendTrackLogAction({
-        newLocations: [],
-        additionalDistance: 0,
+        track: [],
+        distance: 0,
         lastTimeStamp: Date.now(),
       })
     );
@@ -204,10 +140,9 @@ describe('trackLog reducer', () => {
     state = trackLogReducer(
       state,
       appendTrackLogAction({
-        newLocations: [sampleLocation],
-        additionalDistance: 5.0,
-        lastTimeStamp: Date.now(),
-        statistics: sampleStatistics,
+        track: [sampleLocation],
+        distance: 5.0,
+        lastTimeStamp: sampleLocation.timestamp || Date.now(),
       })
     );
 
@@ -218,12 +153,8 @@ describe('trackLog reducer', () => {
     expect(state).toHaveProperty('distance');
     expect(state).toHaveProperty('track');
     expect(state).toHaveProperty('lastTimeStamp');
-    expect(state).toHaveProperty('segments');
-    expect(state).toHaveProperty('statistics');
-    expect(state.statistics).toHaveProperty('duration');
-    expect(state.statistics).toHaveProperty('movingTime');
-    expect(state.statistics).toHaveProperty('averageSpeed');
-    expect(state.statistics).toHaveProperty('maxSpeed');
-    expect(state.statistics).toHaveProperty('pauseCount');
+    expect(state.distance).toBe(0);
+    expect(state.track).toHaveLength(0);
+    expect(state.lastTimeStamp).toBe(0);
   });
 });
