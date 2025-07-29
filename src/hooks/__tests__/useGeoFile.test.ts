@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { useGeoFile } from '../useGeoFile';
 import { UserType } from '../../types';
 //@ts-ignore
-import Base64 from 'Base64';
+//import Base64 from 'Base64';
 import { Buffer } from 'buffer';
 
 let mockDispatch = jest.fn();
