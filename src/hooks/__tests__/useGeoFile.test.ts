@@ -3,6 +3,7 @@ import { useGeoFile } from '../useGeoFile';
 import { UserType } from '../../types';
 //@ts-ignore
 import Base64 from 'Base64';
+import { Buffer } from 'buffer';
 
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();
@@ -13,6 +14,15 @@ jest.mock('react-redux', () => ({
 }));
 
 jest.mock('ulid', () => ({ ulid: () => '123456789' }));
+
+// Mock expo-file-system
+jest.mock('expo-file-system', () => ({
+  readAsStringAsync: jest.fn(() => Promise.resolve('')),
+}));
+
+// Set Platform.OS to 'web' for this test
+const { Platform } = require('react-native');
+Platform.OS = 'web';
 
 const user: UserType = {
   uid: '0',
@@ -27,11 +37,6 @@ describe('useGeoFile', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
     mockSelector = jest.fn().mockReturnValueOnce(projectId).mockReturnValueOnce(user);
-    jest.mock('react-native/Libraries/Utilities/Platform', () => {
-      const Platform = jest.requireActual('react-native/Libraries/Utilities/Platform');
-      Platform.OS = 'web';
-      return Platform;
-    });
   });
 
   afterEach(() => {
@@ -56,7 +61,9 @@ describe('useGeoFile', () => {
       ],
     };
 
-    const uri = Base64.btoa(JSON.stringify(geojsonData));
+    const jsonString = JSON.stringify(geojsonData);
+    const base64String = Buffer.from(jsonString).toString('base64');
+    const uri = `data:application/json;base64,${base64String}`;
     const { result } = renderHook(() => useGeoFile());
     let ret;
     await act(async () => {

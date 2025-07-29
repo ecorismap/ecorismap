@@ -175,11 +175,11 @@ describe('useLocation', () => {
     store.dispatch({
       type: 'trackLog/appendTrackLogAction',
       payload: {
-        newLocations: [
+        track: [
           { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
           { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
         ],
-        additionalDistance: 1.0,
+        distance: 1.0,
         lastTimeStamp: Date.now() + 1000,
       },
     });
@@ -200,11 +200,11 @@ describe('useLocation', () => {
     store.dispatch({
       type: 'trackLog/appendTrackLogAction',
       payload: {
-        newLocations: [
+        track: [
           { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
           { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
         ],
-        additionalDistance: 1.0,
+        distance: 1.0,
         lastTimeStamp: Date.now() + 1000,
       },
     });

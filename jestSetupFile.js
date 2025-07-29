@@ -1,4 +1,8 @@
 import { jest } from '@jest/globals';
+import { Buffer } from 'buffer';
+
+// Make Buffer available globally  
+global.Buffer = Buffer;
 
 // Mock LogBox before importing react-native
 jest.mock('react-native', () => {
@@ -6,6 +10,12 @@ jest.mock('react-native', () => {
   RN.LogBox = {
     ignoreLogs: jest.fn(),
     ignoreAllLogs: jest.fn(),
+  };
+  // Set Platform.OS to 'ios' by default, but allow tests to override
+  RN.Platform = {
+    ...RN.Platform,
+    OS: 'ios',
+    select: jest.fn((obj) => obj[RN.Platform.OS] || obj.default),
   };
   return RN;
 });
@@ -38,6 +48,18 @@ jest.mock('i18next', () => ({
 
 jest.mock('uuid', () => ({
   v4: () => 'uuid',
+}));
+
+// Mock Base64
+jest.mock('Base64', () => ({
+  btoa: (str) => {
+    const Buffer = require('buffer').Buffer;
+    return Buffer.from(str).toString('base64');
+  },
+  atob: (str) => {
+    const Buffer = require('buffer').Buffer;
+    return Buffer.from(str, 'base64').toString();
+  },
 }));
 
 // Mock react-native-reanimated
@@ -79,6 +101,19 @@ jest.mock('react-native-gesture-handler', () => {
     Directions: {},
   };
 });
+
+// Mock expo-task-manager
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn(() => Promise.resolve(false)),
+  registerTaskAsync: jest.fn(() => Promise.resolve()),
+  unregisterTaskAsync: jest.fn(() => Promise.resolve()),
+  getTaskOptionsAsync: jest.fn(() => Promise.resolve({})),
+  getRegisteredTasksAsync: jest.fn(() => Promise.resolve([])),
+  unregisterAllTasksAsync: jest.fn(() => Promise.resolve()),
+  isTaskDefined: jest.fn(() => false),
+  isAvailableAsync: jest.fn(() => Promise.resolve(true)),
+}));
 
 // Mock @gorhom/bottom-sheet
 jest.mock('@gorhom/bottom-sheet', () => {
@@ -140,26 +175,6 @@ jest.mock('react-native-device-info', () => ({
   hasNotch: jest.fn(() => false),
   hasDynamicIsland: jest.fn(() => false),
   isPinOrFingerprintSet: jest.fn(() => Promise.resolve(false)),
-}));
-
-// Mock @react-native-voice/voice
-jest.mock('@react-native-voice/voice', () => ({
-  __esModule: true,
-  default: {
-    onSpeechStart: jest.fn(),
-    onSpeechEnd: jest.fn(),
-    onSpeechResults: jest.fn(),
-    onSpeechError: jest.fn(),
-    onSpeechPartialResults: jest.fn(),
-    onSpeechVolumeChanged: jest.fn(),
-    start: jest.fn(() => Promise.resolve()),
-    stop: jest.fn(() => Promise.resolve()),
-    cancel: jest.fn(() => Promise.resolve()),
-    destroy: jest.fn(() => Promise.resolve()),
-    isAvailable: jest.fn(() => Promise.resolve(true)),
-    isRecognizing: jest.fn(() => Promise.resolve(false)),
-    removeAllListeners: jest.fn(),
-  },
 }));
 
 // Mock react-native-fs
