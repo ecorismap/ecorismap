@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as wanakana from 'wanakana';
 // import Voice from '@react-native-voice/voice';
-import { tokenize } from 'react-native-japanese-text-analyzer';
+//import { tokenize } from 'react-native-japanese-text-analyzer';
 import levenshtein from 'fast-levenshtein';
-import _ from 'lodash';
+//import _ from 'lodash';
 
-import { LogBox, Platform } from 'react-native';
+import { LogBox } from 'react-native';
 import { Alert } from '../components/atoms/Alert';
 import { t } from 'i18next';
 import { getDatabase } from '../utils/SQLite';
