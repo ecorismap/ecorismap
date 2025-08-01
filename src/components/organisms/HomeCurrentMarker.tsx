@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
 import { View, Platform } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
-import { Marker, Polyline } from 'react-native-maps';
+import { Marker, Polyline, Circle } from 'react-native-maps';
 import { LocationType } from '../../types';
 
 interface Props {
@@ -33,7 +33,7 @@ const areEqual = (prevProps: Props, nextProps: Props) => {
 export const CurrentMarker = React.memo((props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
   const accuracy = currentLocation.accuracy ?? 0;
-  const fillColor = accuracy > 30 ? '#bbbbbb' : accuracy > 15 ? '#ff9900' : '#ff0000';
+  const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
 
   // Low-pass filter to smooth azimuth values
   const filteredAzimuthRef = useRef(azimuth);
@@ -100,8 +100,22 @@ export const CurrentMarker = React.memo((props: Props) => {
     ];
   }, [currentLocation, markerAngle, showDirectionLine, headingUp, filteredAzimuth]);
 
+
   return (
     <>
+      {accuracy > 0 && (
+        <Circle
+          center={{
+            latitude: currentLocation.latitude,
+            longitude: currentLocation.longitude,
+          }}
+          radius={accuracy}
+          fillColor={fillColor.replace('aa', '33')} // More transparent fill
+          strokeColor={fillColor}
+          strokeWidth={1}
+          zIndex={999}
+        />
+      )}
       {showDirectionLine && lineCoordinates.length > 0 && (
         <Polyline coordinates={lineCoordinates} strokeColor="#000000" strokeWidth={1} zIndex={1000} />
       )}
@@ -111,19 +125,18 @@ export const CurrentMarker = React.memo((props: Props) => {
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
         }}
+        rotation={markerAngle}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={Platform.OS === 'ios' ? true : false}
+        tracksViewChanges={Platform.OS === 'ios' ? false : false}
         onPress={onPress}
       >
         <View
           style={{
-            transform: [{ rotate: `${markerAngle}deg` }],
             alignItems: 'center',
             justifyContent: 'center',
             width: 80,
             height: 80,
-            overflow: 'visible',
           }}
         >
           <Svg height="80" width="80" viewBox="0 0 80 80">
