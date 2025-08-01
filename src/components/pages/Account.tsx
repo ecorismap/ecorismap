@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, TextInput, Text, StyleSheet, Image } from 'react-native';
+import { View, TextInput, Text, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
@@ -124,7 +124,11 @@ export default function Account() {
   }, [accountFormState]);
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+    >
       <View
         style={{
           alignSelf: 'flex-end',
@@ -137,7 +141,11 @@ export default function Account() {
         <Button name="window-close" backgroundColor={COLOR.GRAY1} onPress={pressClose} />
       </View>
 
-      <View style={styles.modalCenteredView}>
+      <ScrollView 
+        contentContainerStyle={styles.modalCenteredView}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.modalFrameView}>
           <Image style={{ width: 60, height: 60 }} source={require('../../assets/icon.png')} />
           <Text style={styles.modalTitle}>{'EcorisMap'}</Text>
@@ -295,7 +303,7 @@ export default function Account() {
             </Pressable>
           </View>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
