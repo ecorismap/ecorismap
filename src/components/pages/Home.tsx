@@ -599,7 +599,7 @@ export default function HomeScreen() {
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
           {mapRegion && (
-            <View style={[isLandscape ? styles.scaleBarLandscape : styles.scaleBar, { bottom: 60 + insets.bottom }]}>
+            <View style={[isLandscape ? styles.scaleBarLandscape : styles.scaleBar, { bottom: 65 + insets.bottom }]}>
               <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
             </View>
           )}
