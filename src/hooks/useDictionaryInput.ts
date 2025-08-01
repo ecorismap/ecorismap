@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as wanakana from 'wanakana';
-// import Voice from '@react-native-voice/voice';
-//import { tokenize } from 'react-native-japanese-text-analyzer';
+import Voice from '@react-native-voice/voice';
+import { tokenize } from 'react-native-japanese-text-analyzer';
 import levenshtein from 'fast-levenshtein';
-//import _ from 'lodash';
+import _ from 'lodash';
 
-import { LogBox } from 'react-native';
+import { LogBox, Platform } from 'react-native';
 import { Alert } from '../components/atoms/Alert';
 import { t } from 'i18next';
 import { getDatabase } from '../utils/SQLite';
@@ -101,60 +101,55 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
     setQueryString(initialValue);
   }, [initialValue]);
 
-  // Voice機能は一時的に無効化
-  // useEffect(() => {
-  //   if (Platform.OS === 'web') return;
-  //   Voice.onSpeechResults = _.debounce(async (e: any) => {
-  //     const voiceInput = e.value[0];
-  //     const result = await tokenize(voiceInput);
-  //     if (result.length === 0) return;
-  //     const katakanaOutput = result
-  //       .map((item) => {
-  //         return item.pronunciation === '*' || item.pronunciation === '' ? item.surface_form : item.reading;
-  //       })
-  //       .join('')
-  //       .replace(/\s+/g, '')
-  //       .toLowerCase();
-  //     // 関数内で最新のステートを参照するために、ref を利用します。
-  //     const formattedQuery = wanakana.toKatakana(katakanaOutput);
-  //     queryData(formattedQuery);
-  //     setQueryString(katakanaOutput);
-  //     await stopListening();
-  //     //Voice.destroy().then(Voice.removeAllListeners);
-  //   }, 400);
-  //   return () => {
-  //     Voice.destroy().then(Voice.removeAllListeners);
-  //   };
-  // }, [queryData]); // この useEffect は最初のマウント時のみ実行します。
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    Voice.onSpeechResults = _.debounce(async (e: any) => {
+      const voiceInput = e.value[0];
+      const result = await tokenize(voiceInput);
+      if (result.length === 0) return;
+      const katakanaOutput = result
+        .map((item) => {
+          return item.pronunciation === '*' || item.pronunciation === '' ? item.surface_form : item.reading;
+        })
+        .join('')
+        .replace(/\s+/g, '')
+        .toLowerCase();
+      // 関数内で最新のステートを参照するために、ref を利用します。
+      const formattedQuery = wanakana.toKatakana(katakanaOutput);
+      queryData(formattedQuery);
+      setQueryString(katakanaOutput);
+      await stopListening();
+      //Voice.destroy().then(Voice.removeAllListeners);
+    }, 400);
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, [queryData]); // この useEffect は最初のマウント時のみ実行します。
 
   const startListening = async () => {
-    // Voice機能は一時的に無効化
-    Alert.alert('', t('common.notSupported'));
-    return;
-    // if (Platform.OS === 'web') {
-    //   Alert.alert('', t('common.notSupported'));
-    //   return;
-    // }
-    // setIsListening(true);
-    // setQueryString('');
-    // try {
-    //   await Voice.start('ja-JP');
-    // } catch (e) {
-    //   // eslint-disable-next-line no-console
-    //   console.error(e);
-    // }
-    // //setTimeout(async () => await stopListening(), 5000);
+    if (Platform.OS === 'web') {
+      Alert.alert('', t('common.notSupported'));
+      return;
+    }
+    setIsListening(true);
+    setQueryString('');
+    try {
+      await Voice.start('ja-JP');
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+    //setTimeout(async () => await stopListening(), 5000);
   };
 
   const stopListening = async () => {
     setIsListening(false);
-    // Voice機能は一時的に無効化
-    // try {
-    //   await Voice.stop();
-    // } catch (e) {
-    //   // eslint-disable-next-line no-console
-    //   console.error(e);
-    // }
+    try {
+      await Voice.stop();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
   };
 
   return {
