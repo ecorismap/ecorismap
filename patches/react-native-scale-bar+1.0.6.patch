@@ -1,35 +1,48 @@
 diff --git a/node_modules/react-native-scale-bar/src/HorizontalLine.js b/node_modules/react-native-scale-bar/src/HorizontalLine.js
-index 827bbee..b28b5a3 100644
+index 827bbee..e238298 100644
 --- a/node_modules/react-native-scale-bar/src/HorizontalLine.js
 +++ b/node_modules/react-native-scale-bar/src/HorizontalLine.js
-@@ -14,16 +14,29 @@ type Props = {
+@@ -14,16 +14,42 @@ type Props = {
  export default class HorizontalLine extends Component<Props> {
    render() {
      return (
 +      <>
-+      
++      {/* Multiple white outline layers */}
++      {[
++        { x: -1, y: -1 },
++        { x: 1, y: -1 },
++        { x: -1, y: 1 },
++        { x: 1, y: 1 },
++        { x: 0, y: -1 },
++        { x: 0, y: 1 },
++      ].map((offset, index) => (
++        <View
++          key={index}
++          style={{
++            bottom: this.props.padding_bottom + offset.y,
++            left: this.props.padding_left + offset.x,
++            width: this.props.length,
++            position: "absolute",
++            height: LINE_SIZE,
++            backgroundColor: "#FFFFFF",
++            zIndex: 1
++          }}
++        />
++      ))}
++      {/* Black line on top - extended to the right to cover junction */}
        <View
          style={{
            bottom: this.props.padding_bottom,
            left: this.props.padding_left,
-           width: this.props.length,
--          position: "absolute",
--          height: LINE_SIZE,
-+          position: "relative",
-+          height: LINE_SIZE+1,
-           backgroundColor: LINE_COLOR
+-          width: this.props.length,
++          width: this.props.length + 1,
+           position: "absolute",
+           height: LINE_SIZE,
+-          backgroundColor: LINE_COLOR
++          backgroundColor: LINE_COLOR,
++          zIndex: 3
          }}
        />
-+      <View
-+      style={{
-+        bottom: this.props.padding_bottom+2,
-+        left: this.props.padding_left,
-+        width: this.props.length-1,
-+        position: "relative",
-+        height: LINE_SIZE,
-+        backgroundColor: "#FFFFFF55"
-+      }}
-+    />
 +    </>
      );
    }
@@ -48,12 +61,15 @@ index 93323f9..95f9df2 100644
  import {
    TILE_SIZE_METERS_AT_0_ZOOM,
 diff --git a/node_modules/react-native-scale-bar/src/ScaleBarView.js b/node_modules/react-native-scale-bar/src/ScaleBarView.js
-index 670a6e9..b043c89 100644
+index 670a6e9..6d7eedb 100644
 --- a/node_modules/react-native-scale-bar/src/ScaleBarView.js
 +++ b/node_modules/react-native-scale-bar/src/ScaleBarView.js
-@@ -23,16 +23,16 @@ export default class ScaleBarView extends Component<Props> {
+@@ -21,18 +21,18 @@ type Props = {
+ export default class ScaleBarView extends Component<Props> {
+   render() {
      return (
-       <View>
+-      <View>
++      <View style={{ overflow: 'visible', width: this.props.lengthMeter + 20, paddingRight: 10 }}>
          <ScaleText
 -          padding_bottom={this.props.padding_bottom + 1}
 +          padding_bottom={this.props.padding_bottom + 5}
@@ -100,31 +116,58 @@ index 670a6e9..b043c89 100644
      );
    }
 diff --git a/node_modules/react-native-scale-bar/src/ScaleText.js b/node_modules/react-native-scale-bar/src/ScaleText.js
-index a04dbfd..8493ba7 100644
+index a04dbfd..64d9ebd 100644
 --- a/node_modules/react-native-scale-bar/src/ScaleText.js
 +++ b/node_modules/react-native-scale-bar/src/ScaleText.js
-@@ -21,8 +21,14 @@ export default class ScaleText extends Component<Props> {
+@@ -16,13 +16,40 @@ export default class ScaleText extends Component<Props> {
+         style={{
+           position: "absolute",
+           bottom: this.props.padding_bottom,
+-          left: this.props.padding_left + 3
++          left: this.props.padding_left + 6
+         }}
        >
++        {/* Multiple white outline layers for stronger effect */}
++        {[
++          { x: -1, y: -1 },
++          { x: 1, y: -1 },
++          { x: -1, y: 1 },
++          { x: 1, y: 1 },
++          { x: 0, y: -1.5 },
++          { x: 0, y: 1.5 },
++          { x: -1.5, y: 0 },
++          { x: 1.5, y: 0 },
++        ].map((offset, index) => (
++          <Text
++            key={index}
++            style={{
++              fontSize: 14,
++              color: "#FFFFFF",
++              fontWeight: "900",
++              position: "absolute",
++              left: offset.x,
++              top: offset.y
++            }}
++          >
++            {this.props.text}
++          </Text>
++        ))}
++        {/* Black text (foreground) */}
          <Text
            style={{
 -            fontSize: 10,
 -            color: "black"
-+            fontSize: 12,
++            fontSize: 14,
 +            color: "black",
-+            textShadowOffset: {
-+              width: 1,
-+              height: 1
-+            },
-+            textShadowColor: "#FFFFFF",
-+            textShadowRadius: 1
++            fontWeight: "bold"
            }}
          >
            {this.props.text}
 diff --git a/node_modules/react-native-scale-bar/src/VerticalLine.js b/node_modules/react-native-scale-bar/src/VerticalLine.js
-index a9c56ca..8f2d3b0 100644
+index a9c56ca..0ce950e 100644
 --- a/node_modules/react-native-scale-bar/src/VerticalLine.js
 +++ b/node_modules/react-native-scale-bar/src/VerticalLine.js
-@@ -8,22 +8,49 @@ import { LINE_SIZE, LINE_COLOR } from "./constants";
+@@ -8,12 +8,37 @@ import { LINE_SIZE, LINE_COLOR } from "./constants";
  type Props = {
    padding_left: number,
    padding_bottom: number,
@@ -137,54 +180,55 @@ index a9c56ca..8f2d3b0 100644
    render() {
      return (
 +      <>
-+      {this.props.position==="right"&&
-+      <View
-+      style={{
-+        bottom: this.props.padding_bottom+2,
-+        left: this.props.padding_left-2,
-+        height: this.props.length-3,
-+        position: "absolute",
-+        width: LINE_SIZE+0.5,
-+        backgroundColor: "#FFFFFF55"
-+      }}
-+    />
-+  }
++      {/* Multiple white outline layers */}
++      {[
++        { x: -1, y: -1 },
++        { x: 1, y: -1 },
++        { x: -1, y: 1 },
++        { x: 1, y: 1 },
++        { x: -1, y: 0 },
++        { x: 1, y: 0 },
++      ].map((offset, index) => (
++        <View
++          key={index}
++          style={{
++            bottom: this.props.padding_bottom + offset.y,
++            left: this.props.padding_left + offset.x,
++            height: this.props.length,
++            position: "absolute",
++            width: LINE_SIZE,
++            backgroundColor: "#FFFFFF",
++            zIndex: 1
++          }}
++        />
++      ))}
++      {/* Black line on top */}
        <View
          style={{
            bottom: this.props.padding_bottom,
-           left: this.props.padding_left,
+@@ -21,9 +46,11 @@ export default class VerticalLine extends Component<Props> {
            height: this.props.length,
            position: "absolute",
--          width: LINE_SIZE,
-+          width: LINE_SIZE+1,
-           backgroundColor: LINE_COLOR
+           width: LINE_SIZE,
+-          backgroundColor: LINE_COLOR
++          backgroundColor: LINE_COLOR,
++          zIndex: 2
          }}
        />
-+      {this.props.position==="left"&&
-+      <View
-+      style={{
-+        bottom: this.props.padding_bottom+2,
-+        left: this.props.padding_left+2,
-+        height: this.props.length-3,
-+        position: "absolute",
-+        width: LINE_SIZE+0.5,
-+        backgroundColor: "#FFFFFF55"
-+      }}
-+    />
-+  }
 +    </>
      );
    }
  }
 diff --git a/node_modules/react-native-scale-bar/src/constants.js b/node_modules/react-native-scale-bar/src/constants.js
-index 675c7df..72c1c32 100644
+index 675c7df..f44f1df 100644
 --- a/node_modules/react-native-scale-bar/src/constants.js
 +++ b/node_modules/react-native-scale-bar/src/constants.js
 @@ -1,7 +1,7 @@
- export const LINE_SIZE = 1;
+-export const LINE_SIZE = 1;
 -export const LINE_COLOR = "rgba(10, 10, 10, 1)";
 -export const LIMIT_SIZE = 5;
 -export const SCALE_SCREEN_RATIO = 0.45;
++export const LINE_SIZE = 2;
 +export const LINE_COLOR = "rgba(10, 10, 10, 0.6)";
 +export const LIMIT_SIZE = 7;
 +export const SCALE_SCREEN_RATIO = 0.33;
