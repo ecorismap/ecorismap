@@ -116,15 +116,16 @@ index 670a6e9..6d7eedb 100644
      );
    }
 diff --git a/node_modules/react-native-scale-bar/src/ScaleText.js b/node_modules/react-native-scale-bar/src/ScaleText.js
-index a04dbfd..64d9ebd 100644
+index a04dbfd..48d9330 100644
 --- a/node_modules/react-native-scale-bar/src/ScaleText.js
 +++ b/node_modules/react-native-scale-bar/src/ScaleText.js
-@@ -16,13 +16,40 @@ export default class ScaleText extends Component<Props> {
+@@ -16,13 +16,43 @@ export default class ScaleText extends Component<Props> {
          style={{
            position: "absolute",
            bottom: this.props.padding_bottom,
 -          left: this.props.padding_left + 3
-+          left: this.props.padding_left + 6
++          left: this.props.padding_left + 6,
++          width: 200
          }}
        >
 +        {/* Multiple white outline layers for stronger effect */}
@@ -140,6 +141,7 @@ index a04dbfd..64d9ebd 100644
 +        ].map((offset, index) => (
 +          <Text
 +            key={index}
++            numberOfLines={1}
 +            style={{
 +              fontSize: 14,
 +              color: "#FFFFFF",
@@ -154,6 +156,7 @@ index a04dbfd..64d9ebd 100644
 +        ))}
 +        {/* Black text (foreground) */}
          <Text
++          numberOfLines={1}
            style={{
 -            fontSize: 10,
 -            color: "black"
