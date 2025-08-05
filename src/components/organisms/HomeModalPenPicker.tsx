@@ -197,7 +197,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={penWidth === 'PEN_THIN' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setPenWidth('PEN_THIN')}
-                    labelText="細"
+                    labelText={t('Home.penPicker.thin')}
                     size={22}
                   />
                 </View>
@@ -208,7 +208,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={penWidth === 'PEN_MEDIUM' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setPenWidth('PEN_MEDIUM')}
-                    labelText="中"
+                    labelText={t('Home.penPicker.medium')}
                     size={22}
                   />
                 </View>
@@ -219,7 +219,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={penWidth === 'PEN_THICK' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setPenWidth('PEN_THICK')}
-                    labelText="太"
+                    labelText={t('Home.penPicker.thick')}
                     size={22}
                   />
                 </View>
@@ -233,7 +233,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={!straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setStraightStyle(false)}
-                    labelText="曲線"
+                    labelText={t('Home.penPicker.curve')}
                     size={22}
                   />
                 </View>
@@ -244,7 +244,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={straightStyle ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setStraightStyle(true)}
-                    labelText="直線"
+                    labelText={t('Home.penPicker.straight')}
                     size={22}
                   />
                 </View>
@@ -258,7 +258,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={arrowStyle_ === 'NONE' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setArrowStyle('NONE')}
-                    labelText="なし"
+                    labelText={t('Home.penPicker.none')}
                     size={22}
                   />
                 </View>
@@ -269,7 +269,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={arrowStyle_ === 'ARROW_END' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setArrowStyle('ARROW_END')}
-                    labelText="終端"
+                    labelText={t('Home.penPicker.end')}
                     size={22}
                   />
                 </View>
@@ -280,7 +280,7 @@ export const HomeModalPenPicker = React.memo((props: Props) => {
                     backgroundColor={arrowStyle_ === 'ARROW_BOTH' ? COLOR.ALFARED : COLOR.ALFABLUE}
                     borderRadius={10}
                     onPress={() => setArrowStyle('ARROW_BOTH')}
-                    labelText="両側"
+                    labelText={t('Home.penPicker.bothSides')}
                     size={22}
                   />
                 </View>

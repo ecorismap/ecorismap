@@ -198,14 +198,14 @@
     "selectPen": "select pen",
     "selectBrush": "select brush",
     "strokeWidth": "Thickness",
-    "arrow": "arrow",
+    "arrow": "Arrow",
     "selectEraser": "Select eraser",
     "accuracyAndBattery": "Accuracy and Battery",
     "selectPenEraser": "erase everything",
     "selectBrushEraser": "Erase the brush",
     "selectStampEraser": "Delete stamps",
     "snapWithLine": "snap to line",
-    "straight_curve": "kinds",
+    "straight_curve": "Kinds",
     "common": "common",
     "selectPointInfo": "points only",
     "selectLineInfo": "line only",
@@ -642,6 +642,16 @@
       "infoTool": {
         "checkbox": "No longer shown. Hold to redisplay."
       }
+    },
+    "penPicker": {
+      "thin": "Thin",
+      "medium": "Medium",
+      "thick": "Thick",
+      "curve": "Curve",
+      "straight": "Straight",
+      "none": "None",
+      "end": "End",
+      "bothSides": "Both"
     },
     "label": {
       "maps": "maps",
