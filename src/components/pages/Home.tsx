@@ -318,7 +318,7 @@ export default function HomeScreen() {
       >
         <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} style={{ marginLeft: 10 }} />
+          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} style={{ marginLeft: 10 }} />
         </View>
         <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Home.navigation.download', '地図のダウンロード')}</Text>
@@ -353,7 +353,7 @@ export default function HomeScreen() {
       >
         <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoHome} style={{ marginLeft: 10 }} />
+          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} style={{ marginLeft: 10 }} />
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Home.navigation.exportPDF', 'PDF')}</Text>

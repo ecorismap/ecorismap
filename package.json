@@ -264,7 +264,7 @@
     "typescript": "~5.8.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "packageManager": "yarn@3.6.4",
   "expo": {

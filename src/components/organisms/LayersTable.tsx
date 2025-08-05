@@ -107,12 +107,12 @@ export const LayersTable = React.memo(() => {
           </View>
 
           <Pressable
-            style={[styles.td, { flex: 5, width: 150 }]}
+            style={[styles.td, { flex: 5, width: 150, height: 60 }]}
             onLongPress={drag}
             disabled={isActive}
             onPress={() => item.type !== 'LAYERGROUP' && gotoData(item)}
           >
-            <Text style={styles.nameText} numberOfLines={2} adjustsFontSizeToFit>
+            <Text style={styles.nameText} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5}>
               {item.name}
             </Text>
             {item.type !== 'LAYERGROUP' && (
