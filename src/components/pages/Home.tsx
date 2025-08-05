@@ -297,7 +297,7 @@ export default function HomeScreen() {
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 33 }}>×</Text>
+            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 25 }}>×</Text>
           </Pressable>
         )}
       </View>
@@ -320,7 +320,7 @@ export default function HomeScreen() {
           {/* @ts-ignore */}
           <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} style={{ marginLeft: 10 }} />
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Home.navigation.download', '地図のダウンロード')}</Text>
         </View>
         <View

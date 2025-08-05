@@ -39,7 +39,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
     <View style={styles.buttonContainer}>
       <MaterialCommunityIcons.Button
         //@ts-ignore
-        backgroundColor={COLOR.ALFABLUE}
+        backgroundColor={'#007bff11'}
         borderRadius={10}
         //style={{ borderColor: COLOR.WHITE, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}
@@ -50,7 +50,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
       <Text style={{ fontSize: 12, color: COLOR.WHITE }}>{zoom.toString()}</Text>
       <MaterialCommunityIcons.Button
         //@ts-ignore
-        backgroundColor={COLOR.ALFABLUE}
+        backgroundColor={'#007bff11'}
         borderRadius={10}
         //style={{ borderColor: COLOR.BLUE, borderWidth: 1 }}
         iconStyle={{ marginRight: 0 }}

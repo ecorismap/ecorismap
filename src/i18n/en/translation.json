@@ -620,7 +620,7 @@
     },
     "confirm": {
       "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
-      "deleteTiles": "Do you want to delete the downloaded map?",
+      "deleteTiles": "Do you want to clear the map cache?",
       "discard": "Do you want to discard your changes?",
       "discardLogout": "There is a project in editing. \nDo you want to discard and log out?",
       "discardProject": "Do you want to discard the changes in the project settings?",
