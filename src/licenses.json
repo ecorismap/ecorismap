@@ -1,4 +1,10 @@
 {
+  "@babel/plugin-proposal-export-namespace-from": {
+    "licenses": "MIT",
+    "repository": "https://github.com/babel/babel",
+    "licenseUrl": "https://github.com/babel/babel/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
   "@date-io/date-fns": {
     "licenses": "MIT",
     "repository": "https://github.com/dmtrKovalenko/date-io",
@@ -21,6 +27,12 @@
     "licenses": "MIT",
     "repository": "https://github.com/gorhom/react-native-bottom-sheet",
     "licenseUrl": "https://github.com/gorhom/react-native-bottom-sheet/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@mapbox/geojsonhint": {
+    "licenses": "ISC",
+    "repository": "https://github.com/mapbox/geojsonhint",
+    "licenseUrl": "https://github.com/mapbox/geojsonhint/raw/master/LICENSE",
     "parents": "ecorismap"
   },
   "@mapbox/vector-tile": {
@@ -71,16 +83,64 @@
     "licenseUrl": "https://github.com/callstack/react-native-image-editor/raw/master/LICENSE",
     "parents": "ecorismap"
   },
+  "@react-native-community/netinfo": {
+    "licenses": "MIT",
+    "repository": "https://github.com/react-native-netinfo/react-native-netinfo",
+    "licenseUrl": "https://github.com/react-native-netinfo/react-native-netinfo/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
   "@react-native-community/slider": {
     "licenses": "MIT",
     "repository": "https://github.com/callstack/react-native-slider",
     "licenseUrl": "https://github.com/callstack/react-native-slider",
     "parents": "ecorismap"
   },
+  "@react-native-firebase/app-check": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/app-check",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/app-check/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-firebase/app": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/app",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/app/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-firebase/auth": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/auth",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/auth/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-firebase/firestore": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/firestore",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/firestore/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-firebase/functions": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/functions",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/functions/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-firebase/storage": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/invertase/react-native-firebase/tree/main/packages/storage",
+    "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/storage/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
   "@react-native-picker/picker": {
     "licenses": "MIT",
     "repository": "https://github.com/react-native-picker/picker",
     "licenseUrl": "https://github.com/react-native-picker/picker/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@react-native-voice/voice": {
+    "licenses": "MIT",
+    "repository": "https://github.com/react-native-voice/voice",
+    "licenseUrl": "https://github.com/react-native-voice/voice/raw/master/LICENSE",
     "parents": "ecorismap"
   },
   "@react-navigation/elements": {
@@ -113,28 +173,52 @@
     "licenseUrl": "https://github.com/reduxjs/redux-toolkit/raw/master/LICENSE",
     "parents": "ecorismap"
   },
+  "@sqlite.org/sqlite-wasm": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/sqlite/sqlite-wasm",
+    "licenseUrl": "https://github.com/sqlite/sqlite-wasm",
+    "parents": "ecorismap"
+  },
+  "@stripe/react-stripe-js": {
+    "licenses": "MIT",
+    "repository": "https://github.com/stripe/react-stripe-js",
+    "licenseUrl": "https://github.com/stripe/react-stripe-js/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@stripe/stripe-js": {
+    "licenses": "MIT",
+    "repository": "github:stripe/stripe-js",
+    "licenseUrl": "github:stripe/stripe-js",
+    "parents": "ecorismap"
+  },
   "@tmcw/togeojson": {
     "licenses": "BSD-2-Clause",
     "repository": "https://github.com/placemark/togeojson",
     "licenseUrl": "https://github.com/placemark/togeojson/raw/master/LICENSE",
     "parents": "ecorismap"
   },
-  "@turf/boolean-valid": {
-    "licenses": "MIT",
-    "repository": "https://github.com/Turfjs/turf",
-    "licenseUrl": "https://github.com/Turfjs/turf/raw/master/LICENSE",
-    "parents": "ecorismap"
-  },
-  "@turf/line-distance": {
-    "licenses": "MIT",
-    "repository": "https://github.com/Turfjs/turf",
-    "licenseUrl": "https://github.com/Turfjs/turf/raw/master/LICENSE",
-    "parents": "ecorismap"
-  },
   "@turf/turf": {
     "licenses": "MIT",
     "repository": "https://github.com/Turfjs/turf",
     "licenseUrl": "https://github.com/Turfjs/turf/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "@virgilsecurity/e3kit-browser": {
+    "licenses": "BSD-3-Clause",
+    "repository": "https://github.com/VirgilSecurity/virgil-e3kit-js/tree/master/packages/e3kit-browser",
+    "licenseUrl": "https://github.com/VirgilSecurity/virgil-e3kit-js/tree/master/packages/e3kit-browser",
+    "parents": "ecorismap"
+  },
+  "@virgilsecurity/e3kit-native": {
+    "licenses": "BSD-3-Clause",
+    "repository": "https://github.com/VirgilSecurity/virgil-e3kit-js/tree/master/packages/e3kit-native",
+    "licenseUrl": "https://github.com/VirgilSecurity/virgil-e3kit-js/tree/master/packages/e3kit-native",
+    "parents": "ecorismap"
+  },
+  "@xmldom/xmldom": {
+    "licenses": "MIT",
+    "repository": "https://github.com/xmldom/xmldom",
+    "licenseUrl": "https://github.com/xmldom/xmldom/raw/master/LICENSE",
     "parents": "ecorismap"
   },
   "Base64": {
@@ -215,6 +299,12 @@
     "licenseUrl": "https://github.com/expo/expo",
     "parents": "ecorismap"
   },
+  "expo-navigation-bar": {
+    "licenses": "MIT",
+    "repository": "https://github.com/expo/expo",
+    "licenseUrl": "https://github.com/expo/expo",
+    "parents": "ecorismap"
+  },
   "expo-notifications": {
     "licenses": "MIT",
     "repository": "https://github.com/expo/expo",
@@ -239,6 +329,12 @@
     "licenseUrl": "https://github.com/expo/expo",
     "parents": "ecorismap"
   },
+  "expo-sqlite": {
+    "licenses": "MIT",
+    "repository": "https://github.com/expo/expo",
+    "licenseUrl": "https://github.com/expo/expo",
+    "parents": "ecorismap"
+  },
   "expo-status-bar": {
     "licenses": "MIT",
     "repository": "https://github.com/expo/expo",
@@ -255,6 +351,12 @@
     "licenses": "MIT",
     "repository": "https://github.com/expo/expo",
     "licenseUrl": "https://github.com/expo/expo",
+    "parents": "ecorismap"
+  },
+  "fast-levenshtein": {
+    "licenses": "MIT",
+    "repository": "https://github.com/hiddentao/fast-levenshtein",
+    "licenseUrl": "https://github.com/hiddentao/fast-levenshtein/raw/master/LICENSE.md",
     "parents": "ecorismap"
   },
   "fast-png": {
@@ -279,6 +381,18 @@
     "licenses": "MIT",
     "repository": "https://github.com/eligrey/FileSaver.js",
     "licenseUrl": "https://github.com/eligrey/FileSaver.js/raw/master/LICENSE.md",
+    "parents": "ecorismap"
+  },
+  "firebase": {
+    "licenses": "Apache-2.0",
+    "repository": "https://github.com/firebase/firebase-js-sdk",
+    "licenseUrl": "https://github.com/firebase/firebase-js-sdk",
+    "parents": "ecorismap"
+  },
+  "firestore-size": {
+    "licenses": "MIT",
+    "repository": "https://github.com/alekslario/firestore-size",
+    "licenseUrl": "https://github.com/alekslario/firestore-size/raw/master/LICENSE",
     "parents": "ecorismap"
   },
   "fit-curve": {
@@ -332,6 +446,12 @@
     "licenses": "BSD-3-Clause",
     "repository": "https://github.com/maplibre/maplibre-gl-js",
     "licenseUrl": "https://github.com/maplibre/maplibre-gl-js/raw/master/LICENSE.txt",
+    "parents": "ecorismap"
+  },
+  "object-sizeof": {
+    "licenses": "MIT",
+    "repository": "https://github.com/miktam/sizeof",
+    "licenseUrl": "https://github.com/miktam/sizeof/raw/master/LICENSE.md",
     "parents": "ecorismap"
   },
   "pako": {
@@ -429,6 +549,24 @@
     "licenseUrl": "https://github.com/LinusU/react-native-get-random-values/raw/master/LICENSE",
     "parents": "ecorismap"
   },
+  "react-native-image-zoom-viewer": {
+    "licenses": "MIT",
+    "repository": "https://github.com/ascoders/react-native-image-viewer",
+    "licenseUrl": "https://github.com/ascoders/react-native-image-viewer/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "react-native-japanese-text-analyzer": {
+    "licenses": "MIT",
+    "repository": "https://github.com/swkidd/react-native-japanese-text-analyzer",
+    "licenseUrl": "https://github.com/swkidd/react-native-japanese-text-analyzer/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "react-native-keychain": {
+    "licenses": "MIT",
+    "repository": "https://github.com/oblador/react-native-keychain",
+    "licenseUrl": "https://github.com/oblador/react-native-keychain/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
   "react-native-maps": {
     "licenses": "MIT",
     "repository": "https://github.com/react-native-maps/react-native-maps",
@@ -475,6 +613,12 @@
     "licenses": "MIT",
     "repository": "https://github.com/oblador/react-native-vector-icons",
     "licenseUrl": "https://github.com/oblador/react-native-vector-icons/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
+  "react-native-virgil-crypto": {
+    "licenses": "BSD-3-Clause",
+    "repository": "https://github.com/VirgilSecurity/react-native-virgil-crypto",
+    "licenseUrl": "https://github.com/VirgilSecurity/react-native-virgil-crypto/raw/master/LICENSE",
     "parents": "ecorismap"
   },
   "react-native-web": {
@@ -543,16 +687,16 @@
     "licenseUrl": "https://github.com/ulid/javascript/raw/master/LICENSE",
     "parents": "ecorismap"
   },
+  "wanakana": {
+    "licenses": "MIT",
+    "repository": "git@github.com/WaniKani/WanaKana",
+    "licenseUrl": "git@github.com/WaniKani/WanaKana/raw/master/LICENSE",
+    "parents": "ecorismap"
+  },
   "xmlbuilder": {
     "licenses": "MIT",
     "repository": "https://github.com/oozcitak/xmlbuilder-js",
     "licenseUrl": "https://github.com/oozcitak/xmlbuilder-js/raw/master/LICENSE",
-    "parents": "ecorismap"
-  },
-  "xmldom": {
-    "licenses": "MIT",
-    "repository": "https://github.com/xmldom/xmldom",
-    "licenseUrl": "https://github.com/xmldom/xmldom/raw/master/LICENSE",
     "parents": "ecorismap"
   }
 }

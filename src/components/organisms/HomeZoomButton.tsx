@@ -22,7 +22,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
   const styles = StyleSheet.create({
     buttonContainer: {
       alignItems: 'center',
-      backgroundColor: COLOR.ALFABLUE2,
+      backgroundColor: COLOR.ALFABLUE,
       borderRadius: 10,
       // elevation: 100,
       height: 95,
