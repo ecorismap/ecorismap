@@ -2940,7 +2940,7 @@ PODS:
     - React-Core
   - react-native-safe-area-context (5.4.0):
     - React-Core
-  - react-native-slider (4.5.6):
+  - react-native-slider (4.5.7):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -4066,7 +4066,7 @@ SPEC CHECKSUMS:
   react-native-maps: deb2adbdf309b622f15055b72b8742054929c740
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-safe-area-context: 9d72abf6d8473da73033b597090a80b709c0b2f1
-  react-native-slider: 9e9ab1e601041d94cbdb826b534c1f6331ded01e
+  react-native-slider: e695ce8d13049eb245f89df938fb8128b70e9191
   react-native-voice: 908a0eba96c8c3d643e4f98b7232c6557d0a6f9c
   React-NativeModulesApple: 0f1cdafa0517926f47ff74dbd92a1c9bb767cc69
   React-oscompat: 0592889a9fcf0eacb205532028e4a364e22907dd
