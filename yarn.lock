@@ -7459,7 +7459,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-community/netinfo@npm:11.4.1":
+"@react-native-community/netinfo@npm:^11.4.1":
   version: 11.4.1
   resolution: "@react-native-community/netinfo@npm:11.4.1"
   peerDependencies:
@@ -15571,7 +15571,7 @@ __metadata:
     "@react-native-community/cli-platform-ios": 18.0.0
     "@react-native-community/hooks": ^3.0.0
     "@react-native-community/image-editor": ^4.2.0
-    "@react-native-community/netinfo": 11.4.1
+    "@react-native-community/netinfo": ^11.4.1
     "@react-native-community/slider": ^4.5.7
     "@react-native-firebase/app": ^22.4.0
     "@react-native-firebase/app-check": ^22.4.0
@@ -15691,7 +15691,7 @@ __metadata:
     react-map-gl: ^7.1.7
     react-native: 0.79.5
     react-native-date-picker: ^4.2.13
-    react-native-device-info: ^11.1.0
+    react-native-device-info: ^14.0.4
     react-native-draggable-flatlist: 4.0.3
     react-native-fs: ^2.20.0
     react-native-gdalwarp: "link:./modules/react-native-gdalwarp"
@@ -25764,12 +25764,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-device-info@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "react-native-device-info@npm:11.1.0"
+"react-native-device-info@npm:^14.0.4":
+  version: 14.0.4
+  resolution: "react-native-device-info@npm:14.0.4"
   peerDependencies:
     react-native: "*"
-  checksum: 272cab82573933a1f3a9bc394b82a387ccbdf9fbef131fc1f04b8ff78b36f581931b5c643f5aa278f28577cbc320ef2ac588cafdb73292e9b0cf4427d54c44ce
+  checksum: aa839dbe7df1246a4b5f9bcfeb3d4cc4be585f13a0d3ff6a03f57a0c2cfe7590291ac292dda4c51fd8765f94c870857676463e8e2f1660b057f3ae2b4335db29
   languageName: node
   linkType: hard
 
