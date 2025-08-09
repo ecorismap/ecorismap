@@ -239,11 +239,11 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
   // }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    (async () => await getProductData())();
-    (async () => await getPortalLink())();
-    checkPurchased();
-    setIsLoading(false);
+    // setIsLoading(true);
+    // (async () => await getProductData())();
+    // (async () => await getPortalLink())();
+    // checkPurchased();
+    // setIsLoading(false);
   }, [checkPurchased, getPortalLink, getProductData]);
 
   return {

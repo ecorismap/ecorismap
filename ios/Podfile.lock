@@ -3293,7 +3293,7 @@ PODS:
     - React-Core
   - RNCPicker (2.11.1):
     - React-Core
-  - RNDeviceInfo (11.1.0):
+  - RNDeviceInfo (14.0.4):
     - React-Core
   - RNFBApp (22.4.0):
     - Firebase/CoreOnly (= 11.15.0)
@@ -4102,7 +4102,7 @@ SPEC CHECKSUMS:
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNCAsyncStorage: b9f5f78da5d16a853fe3dc22e8268d932fc45a83
   RNCPicker: da0f1c9411208c1ca52bc98383db54a06e0a3862
-  RNDeviceInfo: 900bd20e1fd3bfd894e7384cc4a83880c0341bd3
+  RNDeviceInfo: d863506092aef7e7af3a1c350c913d867d795047
   RNFBApp: 90cf0209fb8f0460ab069a7de857d7ec851c8476
   RNFBAppCheck: 8e66a3ee711f899750e6aaed919639ac21b67a74
   RNFBAuth: 7a28922f8ae64c5079211ca7af299c9842206839

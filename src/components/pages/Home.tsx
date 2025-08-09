@@ -297,7 +297,7 @@ export default function HomeScreen() {
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 35, color: COLOR.GRAY4, lineHeight: 25 }}>×</Text>
+            <Text style={{ fontSize: 30, color: COLOR.GRAY4, lineHeight: 30 }}>×</Text>
           </Pressable>
         )}
       </View>

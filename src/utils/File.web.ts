@@ -36,14 +36,23 @@ export const exportGeoFile = async (
     if (folder == null) return;
     for (const d of exportData) {
       const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
-      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
-        //console.log(d.data);
-        const res = await fetch(d.data);
-        const blob = await res.blob();
-        const imageData = new File([blob], sanitize(d.name));
-        folder.file(`${folderName}${sanitize(d.name)}`, imageData, { base64: true });
-      } else {
-        folder.file(`${folderName}${sanitize(d.name)}`, d.data);
+      try {
+        if (d.type === 'PHOTO' || d.type === 'SQLITE') {
+          // Skip local files that cannot be accessed from web
+          if (d.data.startsWith('file://')) {
+            console.warn('Skipping local file:', d.name);
+            continue;
+          }
+          const res = await fetch(d.data);
+          const blob = await res.blob();
+          const imageData = new File([blob], sanitize(d.name));
+          folder.file(`${folderName}${sanitize(d.name)}`, imageData, { base64: true });
+        } else {
+          folder.file(`${folderName}${sanitize(d.name)}`, d.data);
+        }
+      } catch (error) {
+        console.warn(`Failed to process file ${d.name}:`, error);
+        // Continue processing other files even if one fails
       }
     }
 
