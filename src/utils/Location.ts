@@ -59,12 +59,12 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
   //LocationTaskConsumer.javaで同様の対処されているが、対処が不十分(getLastLocationの処理が原因？）とiOSにはその処理が入っていない
   const newLocations = locations
     .map((location) => toLocationType(location))
-    .filter((v) => v.timestamp! > lastTimeStamp!);
-  //ログの取り始めは、精度が悪いので、精度が30m以下になるまでは破棄する
-  //console.log('newLocations', newLocations);
-  if (lastTimeStamp === 0 && newLocations.length > 0 && newLocations[0].accuracy && newLocations[0].accuracy > 30) return [];
+    .filter((v) => v.timestamp! > lastTimeStamp!)
+    // 精度が30mを超えるポイントはすべて除外（最初のポイントだけでなく全ポイントに適用）
+    .filter((v) => !v.accuracy || v.accuracy <= 30);
+  
   return newLocations;
-};
+};;
 
 export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {
   if (!d) return false;
