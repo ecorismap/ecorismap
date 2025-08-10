@@ -307,7 +307,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       fileNameBase: string,
       option?: { settingsOnly?: boolean; exportDictionary?: boolean; folder?: string; exportPhoto?: boolean }
     ) => {
-      const exportData: { data: string; name: string; type: ExportType; folder: string }[] = [];
+      const exportData: { data: string; name: string; type: ExportType; folder: string; url?: string | null; key?: string | null }[] = [];
       const exportFolder = option?.folder ?? '';
       //LayerSetting
       const layerSetting = JSON.stringify(targetLayer);
@@ -370,8 +370,19 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           photoFields.forEach(({ name }) => {
             const photos = field[name] as PhotoType[];
             for (const photo of photos) {
-              if (photo.uri) {
-                exportData.push({ data: photo.uri, name: photo.name, type: 'PHOTO', folder: exportFolder });
+              // 写真データが存在する場合のみエクスポート
+              if (photo.uri || photo.url) {
+                // ローカルファイルがある場合はそれを使用、ない場合は空文字列
+                // Firebase URLとキーは別途渡す
+                exportData.push({ 
+                  data: photo.uri || '', 
+                  name: photo.name, 
+                  type: 'PHOTO', 
+                  folder: exportFolder,
+                  // Firebase URLとキーを追加（ローカルがない場合のフォールバック用）
+                  url: photo.url,
+                  key: photo.key 
+                });
               }
             }
           });

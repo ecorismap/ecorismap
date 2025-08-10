@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import sanitize from 'sanitize-filename';
 import { ExportType } from '../types';
 import { Buffer } from 'buffer';
+import { fetchPhoto } from '../lib/firebase/storage';
 // //@ts-ignore
 // import Base64 from 'Base64';
 // import jschardet from 'jschardet';
@@ -25,6 +26,8 @@ export const exportGeoFile = async (
     name: string;
     folder: string;
     type: ExportType;
+    url?: string | null;
+    key?: string | null;
   }[],
   exportFileName: string,
   ext: string
@@ -38,15 +41,61 @@ export const exportGeoFile = async (
       const folderName = sanitize(d.folder) === '' ? '' : sanitize(d.folder) + '/';
       try {
         if (d.type === 'PHOTO' || d.type === 'SQLITE') {
-          // Skip local files that cannot be accessed from web
-          if (d.data.startsWith('file://')) {
-            console.warn('Skipping local file:', d.name);
-            continue;
+          let blob: Blob | undefined;
+          
+          // 写真の場合の処理
+          if (d.type === 'PHOTO') {
+            // ローカルデータが有効なURLかチェック
+            let hasValidLocalData = false;
+            if (d.data && d.data !== '') {
+              // blob:, data:, http/httpsで始まる場合は有効なURL
+              if (d.data.startsWith('blob:') || d.data.startsWith('data:') || d.data.startsWith('http')) {
+                try {
+                  const res = await fetch(d.data);
+                  blob = await res.blob();
+                  hasValidLocalData = true;
+                } catch (e) {
+                  console.log(`Failed to fetch local data: ${d.data}, trying Firebase Storage`);
+                  hasValidLocalData = false;
+                }
+              }
+            }
+            
+            // ローカルデータがない場合、Firebase Storageから取得
+            if (!hasValidLocalData && d.url && d.key) {
+              const result = await fetchPhoto(d.url, d.key);
+              if (result.isOK && result.data) {
+                // fetchPhotoはObjectURLを返すので、それをblobに変換
+                const res = await fetch(result.data);
+                blob = await res.blob();
+              } else {
+                console.warn(`Failed to fetch photo ${d.name}:`, result.message);
+                continue; // この写真をスキップ
+              }
+            }
+            
+            // どちらの方法でも取得できなかった場合
+            if (!blob) {
+              console.warn(`Could not fetch photo ${d.name}`);
+              continue;
+            }
+          } else if (d.type === 'SQLITE') {
+            // SQLiteファイルの場合
+            if (d.data && d.data !== '') {
+              try {
+                const res = await fetch(d.data);
+                blob = await res.blob();
+              } catch (e) {
+                console.warn(`Failed to fetch SQLite file ${d.name}:`, e);
+                continue;
+              }
+            }
           }
-          const res = await fetch(d.data);
-          const blob = await res.blob();
-          const imageData = new File([blob], sanitize(d.name));
-          folder.file(`${folderName}${sanitize(d.name)}`, imageData, { base64: true });
+          
+          if (blob) {
+            const imageData = new File([blob], sanitize(d.name));
+            folder.file(`${folderName}${sanitize(d.name)}`, imageData, { base64: true });
+          }
         } else {
           folder.file(`${folderName}${sanitize(d.name)}`, d.data);
         }

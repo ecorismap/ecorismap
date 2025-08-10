@@ -7,6 +7,7 @@ import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
+import { fetchPhoto } from '../lib/firebase/storage';
 
 export const exportGeoFile = async (
   exportData: {
@@ -14,6 +15,8 @@ export const exportGeoFile = async (
     name: string;
     folder: string;
     type: ExportType;
+    url?: string | null;
+    key?: string | null;
   }[],
   exportFileName: string,
   ext: 'zip' | 'ecorismap'
@@ -30,7 +33,57 @@ export const exportGeoFile = async (
       const folder = sanitize(d.folder) === '' ? '.' : sanitize(d.folder);
       await RNFS.mkdir(`${sourcePath}/${folder}`);
       if (d.type === 'PHOTO' || d.type === 'SQLITE') {
-        await RNFS.copyFile(d.data, `${sourcePath}/${folder}/${sanitize(d.name)}`);
+        console.log(d);
+        
+        // ローカルファイルが存在するかチェック
+        let fileToSave = d.data;
+        
+        // 写真の場合の処理
+        if (d.type === 'PHOTO') {
+          // ローカルファイルが存在するかチェック
+          if (d.data && d.data !== '') {
+            try {
+              const exists = await RNFS.exists(d.data);
+              if (!exists) {
+                console.log(`Local file not found: ${d.data}, trying to fetch from Firebase`);
+                fileToSave = ''; // ローカルファイルが存在しない
+              }
+            } catch (e) {
+              fileToSave = ''; // エラーの場合も存在しないとみなす
+            }
+          }
+          
+          // ローカルファイルがない場合、Firebase Storageから取得
+          if (!fileToSave && d.url && d.key) {
+            const result = await fetchPhoto(d.url, d.key);
+            if (result.isOK && result.data) {
+              fileToSave = result.data;
+            } else {
+              console.warn(`Failed to fetch photo ${d.name}:`, result.message);
+              continue; // この写真をスキップ
+            }
+          }
+        }
+        
+        // ファイルが存在することを確認してからコピー
+        if (fileToSave && fileToSave !== '') {
+          try {
+            await RNFS.copyFile(fileToSave, `${sourcePath}/${folder}/${sanitize(d.name)}`);
+          } catch (error) {
+            console.warn(`Failed to copy file ${d.name}:`, error);
+            // Firebase Storageから再度取得を試みる
+            if (d.type === 'PHOTO' && d.url && d.key) {
+              const result = await fetchPhoto(d.url, d.key);
+              if (result.isOK && result.data) {
+                try {
+                  await RNFS.copyFile(result.data, `${sourcePath}/${folder}/${sanitize(d.name)}`);
+                } catch (retryError) {
+                  console.warn(`Failed to copy file after retry ${d.name}:`, retryError);
+                }
+              }
+            }
+          }
+        }
       } else {
         await RNFS.writeFile(`${sourcePath}/${folder}/${sanitize(d.name)}`, d.data, 'utf8');
       }
