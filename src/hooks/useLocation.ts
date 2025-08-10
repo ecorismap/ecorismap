@@ -23,6 +23,7 @@ import { useRecord } from './useRecord';
 import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
+import { splitTrackLog, estimateTrackLogSize } from '../utils/TrackLogSplitter';
 import { Linking } from 'react-native';
 
 const openSettings = () => {
@@ -340,11 +341,32 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         );
       }
       setCurrentLocation(currentCoords);
+      
+      // Reduxストアに追加
       dispatch(appendTrackLogAction(data));
-      //フォアグラウンドの状態でdispatchできたら、AsyncStorageをクリアする
-      await clearStoredLocations();
+      
+      // フォアグラウンドでも定期的にAsyncStorageにバックアップ
+      // 現在のトラックログのサイズを確認
+      const currentTrackLog = trackLog;
+      const totalPoints = currentTrackLog.track.length + data.track.length;
+      
+      // 1000ポイントごとにAsyncStorageにもバックアップ（クラッシュ対策）
+      if (totalPoints % 1000 === 0) {
+        console.log(`Backing up ${totalPoints} track points to AsyncStorage`);
+        await storeLocations({
+          track: [...currentTrackLog.track, ...data.track],
+          distance: currentTrackLog.distance + data.distance,
+          lastTimeStamp: data.lastTimeStamp,
+        });
+      } else if (RNAppState.currentState === 'background') {
+        // バックグラウンドの場合は常にAsyncStorageを更新
+        // （既存の動作を維持）
+      } else {
+        // フォアグラウンドで1000ポイント未満の場合はAsyncStorageをクリア
+        await clearStoredLocations();
+      }
     },
-    [dispatch, gpsState, mapViewRef]
+    [dispatch, gpsState, mapViewRef, trackLog]
   );
 
   // トラックログをトラック用のレコードに追加する
@@ -363,10 +385,31 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       trackLog.lastTimeStamp = storedLocations.lastTimeStamp;
     }
     const cleanupedLine = cleanupLine(trackLog.track);
-    const ret = addTrackRecord(cleanupedLine);
-    if (!ret.isOK) {
-      return { isOK: ret.isOK, message: ret.message };
+    
+    // データサイズを推定
+    const estimatedSizeMB = estimateTrackLogSize(cleanupedLine);
+    console.log(`Track log size: ${estimatedSizeMB.toFixed(2)} MB, ${cleanupedLine.length} points`);
+    
+    // 1.5MBを超える場合は分割して保存
+    if (estimatedSizeMB > 1.5) {
+      console.log('Large track log detected, splitting into segments...');
+      const segments = splitTrackLog(cleanupedLine, 3000); // 3000ポイントずつに分割
+      
+      for (let i = 0; i < segments.length; i++) {
+        const segmentRet = addTrackRecord(segments[i]);
+        if (!segmentRet.isOK) {
+          return { isOK: false, message: `Failed to save segment ${i + 1}/${segments.length}: ${segmentRet.message}` };
+        }
+        console.log(`Saved track segment ${i + 1}/${segments.length}`);
+      }
+    } else {
+      // 通常サイズの場合は一括保存
+      const ret = addTrackRecord(cleanupedLine);
+      if (!ret.isOK) {
+        return { isOK: ret.isOK, message: ret.message };
+      }
     }
+    
     // トラックログをクリアする
     dispatch(clearTrackLogAction());
     // AsyncStorageのトラックログをクリアする
