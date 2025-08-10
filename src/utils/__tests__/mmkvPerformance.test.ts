@@ -18,6 +18,28 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn(() => Promise.resolve()),
 }));
 
+// mmkvStorageのモック
+jest.mock('../mmkvStorage', () => ({
+  trackLogMMKV: {
+    setTrackLog: jest.fn(),
+    getTrackLog: jest.fn(),
+    clearTrackLog: jest.fn(),
+    getSize: jest.fn(() => 0),
+  },
+  storage: {
+    set: jest.fn(),
+    getString: jest.fn(),
+    delete: jest.fn(),
+    clearAll: jest.fn(),
+    getAllKeys: jest.fn(() => []),
+  },
+  reduxMMKVStorage: {
+    setItem: jest.fn(() => Promise.resolve(true)),
+    getItem: jest.fn(() => Promise.resolve(null)),
+    removeItem: jest.fn(() => Promise.resolve()),
+  },
+}));
+
 describe('MMKV vs AsyncStorage Performance Comparison', () => {
   // ダミーのトラックログデータを生成
   const generateTrackPoints = (count: number): LocationType[] => {
