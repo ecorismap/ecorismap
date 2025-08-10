@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { checkAndStoreLocations, clearStoredLocations, getStoredLocations } from '../utils/Location';
+import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -352,7 +352,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       
       // 1000ポイントごとにAsyncStorageにもバックアップ（クラッシュ対策）
       if (totalPoints % 1000 === 0) {
-        console.log(`Backing up ${totalPoints} track points to AsyncStorage`);
+        // console.log(`Backing up ${totalPoints} track points to AsyncStorage`);
         await storeLocations({
           track: [...currentTrackLog.track, ...data.track],
           distance: currentTrackLog.distance + data.distance,

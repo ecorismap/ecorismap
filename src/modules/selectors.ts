@@ -3,7 +3,7 @@ import { RootState } from '../store';
 import { DataType, LineDataType, PointDataType, PolygonDataType, RecordType } from '../types';
 
 export const selectNonDeletedDataSet = createSelector(
-  (state: RootState) => state.dataSet,
+  (state: RootState) => state.dataSet || [],
   (dataSet) =>
     dataSet.map((group) => ({
       ...group,
@@ -13,19 +13,19 @@ export const selectNonDeletedDataSet = createSelector(
 
 // メモ化されたセレクターを作成
 export const selectDataSetForLayer = createSelector(
-  (state: RootState) => state.dataSet,
+  (state: RootState) => state.dataSet || [],
   (state: RootState, layerId: string) => layerId,
   (dataSet, layerId) => dataSet.filter((d) => d.layerId === layerId)
 );
 
 export const selectDataSet = createSelector(
-  (state: RootState) => state.dataSet,
+  (state: RootState) => state.dataSet || [],
   (_: RootState, layerId: string) => layerId,
   (dataSet, layerId) => dataSet.filter((d) => d.layerId === layerId)
 );
 
 export const selectIsNewLayer = createSelector(
-  (state: RootState) => state.layers,
+  (state: RootState) => state.layers || [],
   (_: RootState, layerId: string) => layerId,
   (layers, layerId) => layers.every((d) => d.id !== layerId)
 );
@@ -33,8 +33,8 @@ export const selectIsNewLayer = createSelector(
 // variadic オーバーロードを使う
 const makeSelectDataByLayerType = (layerType: string) =>
   createSelector(
-    (state: RootState) => state.dataSet, // 第一引数
-    (state: RootState) => state.layers, // 第二引数
+    (state: RootState) => state.dataSet || [], // 第一引数
+    (state: RootState) => state.layers || [], // 第二引数
     (dataSet, layers): DataType[] =>
       layers
         .filter((l) => l.type === layerType)

@@ -3,6 +3,7 @@ import { STORAGE } from '../constants/AppConstants';
 import { LocationType, TrackLogType } from '../types';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
+import { trackLogMMKV } from './mmkvStorage';
 
 // チャンクサイズ: 1MB以下に設定（安全マージンを含む）
 const CHUNK_SIZE_LIMIT = 900 * 1024; // 900KB
@@ -52,7 +53,7 @@ export const storeLocationsChunked = async (data: TrackLogType): Promise<void> =
       lastTimeStamp: data.lastTimeStamp,
     }));
   } catch (error) {
-    console.error('Failed to store chunked locations:', error);
+    // console.error('Failed to store chunked locations:', error);
     throw error;
   }
 };
@@ -90,7 +91,7 @@ export const getStoredLocationsChunked = async (): Promise<TrackLogType> => {
       lastTimeStamp: metadata.lastTimeStamp,
     };
   } catch (error) {
-    console.error('Failed to get chunked locations:', error);
+    // console.error('Failed to get chunked locations:', error);
     return { track: [], distance: 0, lastTimeStamp: 0 };
   }
 };
@@ -115,23 +116,45 @@ export const clearStoredLocationsChunked = async (): Promise<void> => {
       await AsyncStorage.removeItem(METADATA_KEY);
     }
   } catch (error) {
-    console.error('Failed to clear chunked locations:', error);
+    // console.error('Failed to clear chunked locations:', error);
   }
 };
 
-// 既存の関数（互換性のため残す）
-export const storeLocations = async (data: TrackLogType) => {
-  // チャンク分割版を使用
-  await storeLocationsChunked(data);
+// MMKVを使用する新しい実装（既存のインターフェースを維持）
+export const storeLocations = async (data: TrackLogType): Promise<void> => {
+  try {
+    // MMKVは大容量データも効率的に処理可能
+    trackLogMMKV.setTrackLog(data);
+  } catch (error) {
+    // console.error('Failed to store locations in MMKV:', error);
+    // フォールバック: チャンク分割版を使用
+    await storeLocationsChunked(data);
+  }
 };
 
-export const clearStoredLocations = async () => {
-  // チャンク分割版を使用
-  await clearStoredLocationsChunked();
+export const clearStoredLocations = async (): Promise<void> => {
+  try {
+    trackLogMMKV.clearTrackLog();
+    // 空のデータを設定（互換性のため）
+    trackLogMMKV.setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
+  } catch (error) {
+    // console.error('Failed to clear locations in MMKV:', error);
+    // フォールバック: チャンク分割版を使用
+    await clearStoredLocationsChunked();
+  }
 };
 
 export const getStoredLocations = async (): Promise<TrackLogType> => {
-  // チャンク分割版を使用
+  try {
+    const data = trackLogMMKV.getTrackLog();
+    if (data !== null) {
+      return data;
+    }
+  } catch (error) {
+    // console.error('Failed to get locations from MMKV:', error);
+  }
+  
+  // フォールバック: チャンク分割版を使用
   return getStoredLocationsChunked();
 };
 

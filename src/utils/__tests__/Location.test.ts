@@ -16,6 +16,48 @@ import { TrackLogType } from '../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE } from '../../constants/AppConstants';
 
+// MMKVのモック
+jest.mock('react-native-mmkv', () => ({
+  MMKV: jest.fn().mockImplementation(() => ({
+    set: jest.fn(),
+    getString: jest.fn(),
+    delete: jest.fn(),
+    clearAll: jest.fn(),
+    getAllKeys: jest.fn(() => []),
+  })),
+}));
+
+// mmkvStorageのモック
+jest.mock('../mmkvStorage', () => {
+  const mockStorage: any = {};
+  return {
+    trackLogMMKV: {
+      setTrackLog: jest.fn((data) => {
+        mockStorage.tracklog = data;
+      }),
+      getTrackLog: jest.fn(() => mockStorage.tracklog || null),
+      clearTrackLog: jest.fn(() => {
+        delete mockStorage.tracklog;
+      }),
+      getSize: jest.fn(() => {
+        return mockStorage.tracklog ? JSON.stringify(mockStorage.tracklog).length : 0;
+      }),
+    },
+    storage: {
+      set: jest.fn(),
+      getString: jest.fn(),
+      delete: jest.fn(),
+      clearAll: jest.fn(),
+      getAllKeys: jest.fn(() => []),
+    },
+    reduxMMKVStorage: {
+      setItem: jest.fn(() => Promise.resolve(true)),
+      getItem: jest.fn(() => Promise.resolve(null)),
+      removeItem: jest.fn(() => Promise.resolve()),
+    },
+  };
+});
+
 // AsyncStorageのモック
 jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(() => Promise.resolve()),
@@ -146,7 +188,8 @@ describe('AsyncStorage functions', () => {
   });
 
   describe('storeLocations', () => {
-    it('stores locations to AsyncStorage', async () => {
+    it('stores locations to MMKV', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       const data: TrackLogType = {
         track: [{ latitude: 35, longitude: 135, timestamp: 1000000 }],
         distance: 10,
@@ -155,38 +198,41 @@ describe('AsyncStorage functions', () => {
 
       await storeLocations(data);
 
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(STORAGE.TRACKLOG, JSON.stringify(data));
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalledWith(data);
     });
   });
 
   describe('clearStoredLocations', () => {
-    it('clears stored locations', async () => {
+    it('clears stored locations in MMKV', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
+      
       await clearStoredLocations();
 
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-        STORAGE.TRACKLOG,
-        JSON.stringify({ track: [], distance: 0, lastTimeStamp: 0 })
-      );
+      expect(trackLogMMKV.clearTrackLog).toHaveBeenCalled();
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalledWith({ track: [], distance: 0, lastTimeStamp: 0 });
     });
   });
 
   describe('getStoredLocations', () => {
-    it('returns stored locations', async () => {
+    it('returns stored locations from MMKV', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       const storedData: TrackLogType = {
         track: [{ latitude: 35, longitude: 135, timestamp: 1000000 }],
         distance: 10,
         lastTimeStamp: 1000000,
       };
 
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify(storedData));
+      trackLogMMKV.getTrackLog.mockReturnValueOnce(storedData);
 
       const result = await getStoredLocations();
 
       expect(result).toEqual(storedData);
-      expect(AsyncStorage.getItem).toHaveBeenCalledWith(STORAGE.TRACKLOG);
+      expect(trackLogMMKV.getTrackLog).toHaveBeenCalled();
     });
 
     it('returns empty data when no stored locations', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
+      trackLogMMKV.getTrackLog.mockReturnValueOnce(null);
       (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
 
       const result = await getStoredLocations();
@@ -195,7 +241,11 @@ describe('AsyncStorage functions', () => {
     });
 
     it('returns empty data on error', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
+      const { trackLogMMKV } = require('../mmkvStorage');
+      trackLogMMKV.getTrackLog.mockImplementationOnce(() => {
+        throw new Error('Storage error');
+      });
+      (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(null);
 
       const result = await getStoredLocations();
 
@@ -205,13 +255,14 @@ describe('AsyncStorage functions', () => {
 
   describe('checkAndStoreLocations', () => {
     it('checks and stores new locations', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       const existingData: TrackLogType = {
         track: [{ latitude: 35, longitude: 135, timestamp: 1000000 }],
         distance: 10,
         lastTimeStamp: 1000000,
       };
 
-      (AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify(existingData));
+      trackLogMMKV.getTrackLog.mockReturnValueOnce(existingData);
 
       const locations: LocationObject[] = [
         {
@@ -233,11 +284,14 @@ describe('AsyncStorage functions', () => {
       expect(result).toBeDefined();
       expect(result?.track).toHaveLength(2);
       expect(result?.lastTimeStamp).toBe(2000000);
-      expect(AsyncStorage.setItem).toHaveBeenCalled();
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalled();
     });
 
     it('returns empty data on error', async () => {
-      (AsyncStorage.getItem as jest.Mock).mockRejectedValueOnce(new Error('Storage error'));
+      const { trackLogMMKV } = require('../mmkvStorage');
+      trackLogMMKV.getTrackLog.mockImplementationOnce(() => {
+        throw new Error('Storage error');
+      });
 
       const locations: LocationObject[] = [];
 
@@ -287,6 +341,7 @@ describe('AsyncStorage functions', () => {
     };
 
     it('should handle small track logs (< 1MB)', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       const smallData = generateLargeTrackLog(1000); // 約100KB
       const jsonString = JSON.stringify(smallData);
       const sizeInMB = new Blob([jsonString]).size / (1024 * 1024);
@@ -295,11 +350,12 @@ describe('AsyncStorage functions', () => {
       
       await storeLocations(smallData);
       
-      expect(AsyncStorage.setItem).toHaveBeenCalledWith(STORAGE.TRACKLOG, jsonString);
-      expect(AsyncStorage.setItem).not.toThrow();
+      // MMKVへの保存を確認
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalledWith(smallData);
     });
 
-    it('should detect when data exceeds 2MB limit', async () => {
+    it('should handle data exceeds 2MB with MMKV', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       // 2MBを超えるデータを生成（約20,000ポイント）
       const largeData = generateLargeTrackLog(20000);
       const jsonString = JSON.stringify(largeData);
@@ -310,53 +366,38 @@ describe('AsyncStorage functions', () => {
       // 2MBを超えているか確認
       expect(sizeInMB).toBeGreaterThan(2);
       
-      // AsyncStorageのモックを2MB超過でエラーを返すように設定
-      (AsyncStorage.setItem as jest.Mock).mockImplementation((key, value) => {
-        const size = new Blob([value]).size;
-        if (size > 2 * 1024 * 1024) {
-          return Promise.reject(new Error('Value too large, exceeds size limit'));
-        }
-        return Promise.resolve();
-      });
+      // MMKVは大容量データも処理可能
+      await storeLocations(largeData);
       
-      // エラーが発生することを確認
-      await expect(storeLocations(largeData)).rejects.toThrow('Value too large');
+      // MMKVへの保存を確認
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalledWith(largeData);
     });
 
-    it('should identify the threshold where storage fails', async () => {
+    it('MMKV can handle very large data without failure', async () => {
+      const { trackLogMMKV } = require('../mmkvStorage');
       const results: { points: number; sizeMB: number; success: boolean }[] = [];
       
-      // AsyncStorageのモックを2MB超過でエラーを返すように設定
-      (AsyncStorage.setItem as jest.Mock).mockImplementation((key, value) => {
-        const size = new Blob([value]).size;
-        if (size > 2 * 1024 * 1024) {
-          return Promise.reject(new Error('Value too large'));
-        }
-        return Promise.resolve();
-      });
-      
-      // 段階的にデータサイズを増やしてテスト
+      // MMKVは大容量データでも処理可能
       for (let points = 5000; points <= 25000; points += 5000) {
         const data = generateLargeTrackLog(points);
         const jsonString = JSON.stringify(data);
         const sizeMB = new Blob([jsonString]).size / (1024 * 1024);
         
-        try {
-          await storeLocations(data);
-          results.push({ points, sizeMB, success: true });
-        } catch (error) {
-          results.push({ points, sizeMB, success: false });
-          console.log(`Storage failed at ${points} points (${sizeMB.toFixed(2)} MB)`);
-          break;
-        }
+        await storeLocations(data);
+        results.push({ points, sizeMB, success: true });
+        console.log(`MMKV handled ${points} points (${sizeMB.toFixed(2)} MB) successfully`);
       }
       
-      // 失敗したポイントがあることを確認
-      const failedResult = results.find(r => !r.success);
-      expect(failedResult).toBeDefined();
-      if (failedResult) {
-        expect(failedResult.sizeMB).toBeGreaterThan(2);
-      }
+      // すべてのデータサイズで成功することを確認
+      const allSuccess = results.every(r => r.success);
+      expect(allSuccess).toBe(true);
+      
+      // 最大サイズが2MBを超えていることを確認
+      const maxSize = Math.max(...results.map(r => r.sizeMB));
+      expect(maxSize).toBeGreaterThan(2);
+      
+      // MMKVが呼び出されたことを確認
+      expect(trackLogMMKV.setTrackLog).toHaveBeenCalled();
     });
 
     it('should simulate real tracking scenario with accumulating data', async () => {

@@ -1,7 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
 import reducer from './modules/';
 import { persistStore, persistReducer, createTransform } from 'redux-persist';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+import { reduxMMKVStorage } from './utils/mmkvStorage';
 import { TrackLogType } from './types';
 
 // trackLogの大容量データを安全に保存するトランスフォーム
@@ -13,7 +14,7 @@ const trackLogTransform = createTransform(
       
       // 5000ポイント（約1MB）を超える場合
       if (trackLength > 5000) {
-        console.log(`Large trackLog detected: ${trackLength} points. Storing metadata only in Redux Persist.`);
+        // console.log(`Large trackLog detected: ${trackLength} points. Storing metadata only in Redux Persist.`);
         
         // メタデータのみ保存（実データはAsyncStorageのチャンク保存を使用）
         return {
@@ -32,23 +33,23 @@ const trackLogTransform = createTransform(
     if (key === 'trackLog' && outboundState?.isLargeData) {
       // 大容量データの場合、AsyncStorageから復元
       // ※起動時にcheckUnsavedTrackLogで処理されるため、ここでは最小限の処理
-      console.log(`Large trackLog detected on restore: ${outboundState.trackLength} points`);
+      // console.log(`Large trackLog detected on restore: ${outboundState.trackLength} points`);
     }
     return outboundState;
   },
   { whitelist: ['trackLog'] }
 );
 
-const persistConfig = {
+const persistConfig: any = {
   key: 'root',
-  storage: AsyncStorage,
+  storage: reduxMMKVStorage, // MMKVを使用
   transforms: [trackLogTransform],
   // trackLogも永続化するが、transformで容量制御
 };
 
 const persistedReducer = persistReducer(persistConfig, reducer);
 export const store = configureStore({
-  reducer: persistedReducer,
+  reducer: persistedReducer as any,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       immutableCheck: false,
@@ -56,4 +57,6 @@ export const store = configureStore({
     }),
 });
 export const persistor = persistStore(store);
-export type RootState = ReturnType<typeof store.getState>;
+
+// RootStateの型を明示的に定義して、undefinedを防ぐ
+export type RootState = ReturnType<typeof reducer>;
