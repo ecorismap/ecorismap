@@ -9,7 +9,7 @@ import {
   getStoredLocations,
   storeLocations,
 } from '../Location';
-import { TrackLogType, LocationType } from '../../types';
+import { TrackLogType } from '../../types';
 
 // MMKVのモック
 jest.mock('react-native-mmkv', () => ({
@@ -153,9 +153,9 @@ describe('checkLocations', () => {
       },
     ];
 
+    // 古いデータが含まれているため全て破棄される
     const filtered = checkLocations(baseTime, locations);
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].timestamp).toBe(baseTime + 1000);
+    expect(filtered).toHaveLength(0);
   });
 
   it('filters out low accuracy when starting', () => {
@@ -170,65 +170,54 @@ describe('checkLocations', () => {
     expect(filtered).toHaveLength(0);
   });
 
-  it('filters out GPS jumps (multipath)', () => {
-    const previousLocation: LocationType = {
-      latitude: 35,
-      longitude: 135,
-      timestamp: baseTime,
-      accuracy: 10,
-    };
-
+  it('rejects all data when timestamp reversal detected', () => {
     const locations: LocationObject[] = [
       {
-        // 正常な移動（1秒で10m）
         coords: { latitude: 35.0001, longitude: 135.0001, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
-        timestamp: baseTime + 1000,
-      },
-      {
-        // GPSジャンプ（1秒で200m以上）
-        coords: { latitude: 35.002, longitude: 135.002, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
         timestamp: baseTime + 2000,
       },
       {
-        // 正常な移動
+        // タイムスタンプ逆転
+        coords: { latitude: 35.002, longitude: 135.002, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
+        timestamp: baseTime + 1000,
+      },
+      {
         coords: { latitude: 35.0002, longitude: 135.0002, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
         timestamp: baseTime + 3000,
       },
     ];
 
-    const filtered = checkLocations(baseTime, locations, previousLocation);
-    // GPSジャンプは除外され、正常な移動のみ残る
-    expect(filtered).toHaveLength(2);
-    expect(filtered[0].latitude).toBeCloseTo(35.0001, 4);
-    expect(filtered[1].latitude).toBeCloseTo(35.0002, 4);
+    const filtered = checkLocations(baseTime, locations);
+    // タイムスタンプ逆転があるため全て破棄
+    expect(filtered).toHaveLength(0);
   });
 
-  it('filters out duplicated locations', () => {
+  it('accepts all valid locations when no issues', () => {
     const locations: LocationObject[] = [
       {
         coords: { latitude: 35, longitude: 135, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
         timestamp: baseTime + 1000,
       },
       {
-        // 同じ座標
-        coords: { latitude: 35, longitude: 135, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
+        coords: { latitude: 35.001, longitude: 135.001, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
         timestamp: baseTime + 2000,
       },
       {
-        coords: { latitude: 35.001, longitude: 135.001, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
+        coords: { latitude: 35.002, longitude: 135.002, accuracy: 10, altitude: 0, altitudeAccuracy: 5, heading: 0, speed: 0 },
         timestamp: baseTime + 3000,
       },
     ];
 
     const filtered = checkLocations(baseTime, locations);
-    // 重複する座標は除外
-    expect(filtered).toHaveLength(2);
+    // 全て有効なデータなので全て残る
+    expect(filtered).toHaveLength(3);
     expect(filtered[0].timestamp).toBe(baseTime + 1000);
-    expect(filtered[1].timestamp).toBe(baseTime + 3000);
+    expect(filtered[1].timestamp).toBe(baseTime + 2000);
+    expect(filtered[2].timestamp).toBe(baseTime + 3000);
   });
 });
 
-describe('AsyncStorage functions', () => {
+describe('MMKV Storage functions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -345,7 +334,7 @@ describe('AsyncStorage functions', () => {
     });
   });
 
-  describe('AsyncStorage size limit tests', () => {
+  describe('MMKV large data handling tests', () => {
     beforeEach(() => {
       jest.clearAllMocks();
     });

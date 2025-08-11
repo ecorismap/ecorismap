@@ -24,7 +24,7 @@ export const reduxMMKVStorage: Storage = {
   },
 };
 
-// AsyncStorageと同じインターフェースを提供（Web用）
+// sessionStorageベースのストレージインターフェース（Web用）
 export const MMKVAsyncStorageCompat = {
   setItem: async (key: string, value: string): Promise<void> => {
     if (webStorage) {

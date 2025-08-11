@@ -344,7 +344,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // Reduxストアに追加
       dispatch(appendTrackLogAction(data));
 
-      // フォアグラウンドでも定期的にAsyncStorageにバックアップ
+      // フォアグラウンドでも定期的にMMKVにバックアップ
       // 現在のトラックログのサイズを確認
       const currentTrackLog = trackLog;
       const totalPoints = currentTrackLog.track.length + data.track.length;

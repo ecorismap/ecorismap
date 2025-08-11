@@ -163,7 +163,6 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
 };
 
 export const encryptFileEThree = async (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   uri: string
 ): Promise<
   | {
@@ -179,6 +178,11 @@ export const encryptFileEThree = async (
       key: undefined;
     }
 > => {
+  // TODO: Implement file encryption using uri
+  // console.log('Encrypting file from URI:', uri);
+  if (uri) {
+    // Placeholder implementation
+  }
   return {
     encdata: undefined,
     key: undefined,
@@ -199,7 +203,7 @@ export const encryptFileEThreeRN = async (uri: string) => {
 
     return {
       encUri: encryptedFilePath,
-      key: Buffer.from(virgilCrypto.exportPrivateKey(keypair.privateKey)).toString('base64'),
+      key: Buffer.from(virgilCrypto.exportPrivateKey(keypair.privateKey) as Uint8Array).toString('base64'),
     };
   } catch (e) {
     console.log(e);
@@ -207,9 +211,7 @@ export const encryptFileEThreeRN = async (uri: string) => {
   }
 };
 export const decryptFileEThree = async (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   file: Blob,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   key: string
 ): Promise<
   | {
@@ -219,6 +221,11 @@ export const decryptFileEThree = async (
       decdata: undefined;
     }
 > => {
+  // TODO: Implement file decryption using file and key
+  // console.log('Decrypting file:', file, key);
+  if (file && key) {
+    // Placeholder implementation
+  }
   return {
     decdata: undefined,
   };

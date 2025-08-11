@@ -29,7 +29,7 @@ export const reduxMMKVStorage: Storage = {
   },
 };
 
-// AsyncStorageと同じインターフェースを提供（移行を容易にするため）
+// MMKVベースのストレージインターフェース
 export const MMKVAsyncStorageCompat = {
   setItem: async (key: string, value: string): Promise<void> => {
     try {

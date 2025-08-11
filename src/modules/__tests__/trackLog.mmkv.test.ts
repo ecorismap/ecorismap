@@ -26,16 +26,25 @@ jest.mock('../../utils/mmkvStorage', () => ({
 
 describe('Redux Persist with MMKV for large trackLog data', () => {
   let persistor: any;
+  let store: any;
   
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
   });
   
-  afterEach(() => {
+  afterEach(async () => {
     if (persistor) {
       persistor.pause();
+      await persistor.purge();
+      await persistor.flush();
       persistor = null;
     }
+    if (store) {
+      store = null;
+    }
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   // 大量のGPSデータを生成する関数
@@ -80,7 +89,7 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
 
     const persistedReducer = persistReducer(persistConfig, trackLogReducer);
 
-    const store = configureStore({
+    store = configureStore({
       reducer: persistedReducer,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
@@ -94,8 +103,9 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
     const smallData = generateLargeTrackLog(1000);
     store.dispatch(appendTrackLogAction(smallData));
 
-    // 永続化を待つ
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // 永続化を待つ（fakeTimersを使用）
+    jest.runAllTimers();
+    await Promise.resolve();
 
     // MMKVへの保存を確認
     expect(reduxMMKVStorage.setItem).toHaveBeenCalled();
@@ -104,9 +114,6 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
     const jsonString = JSON.stringify(smallData);
     const sizeInMB = new Blob([jsonString]).size / (1024 * 1024);
     expect(sizeInMB).toBeLessThan(1);
-
-    // クリーンアップ
-    persistor.pause();
   });
 
   it('should handle large trackLog data exceeding 2MB with MMKV', async () => {
@@ -117,7 +124,7 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
 
     const persistedReducer = persistReducer(persistConfig, trackLogReducer);
 
-    const store = configureStore({
+    store = configureStore({
       reducer: persistedReducer,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
@@ -138,14 +145,12 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
     // MMKVなら問題なく保存できる
     store.dispatch(appendTrackLogAction(largeData));
 
-    // 永続化を待つ
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // 永続化を待つ（fakeTimersを使用）
+    jest.runAllTimers();
+    await Promise.resolve();
 
     // MMKVへの保存を確認（エラーなし）
     expect(reduxMMKVStorage.setItem).toHaveBeenCalled();
-
-    // クリーンアップ
-    persistor.pause();
   });
 
   it('should handle very large data (>5MB) with MMKV', async () => {
@@ -156,7 +161,7 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
 
     const persistedReducer = persistReducer(persistConfig, trackLogReducer);
 
-    const store = configureStore({
+    store = configureStore({
       reducer: persistedReducer,
       middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
@@ -177,13 +182,11 @@ describe('Redux Persist with MMKV for large trackLog data', () => {
     // MMKVなら問題なく保存できる
     store.dispatch(appendTrackLogAction(veryLargeData));
 
-    // 永続化を待つ
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // 永続化を待つ（fakeTimersを使用）
+    jest.runAllTimers();
+    await Promise.resolve();
 
     // MMKVへの保存を確認（エラーなし）
     expect(reduxMMKVStorage.setItem).toHaveBeenCalled();
-
-    // クリーンアップ
-    persistor.pause();
   });
 });
