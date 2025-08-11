@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
+import { checkAndStoreLocations, clearStoredLocations, getStoredLocations } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -344,28 +344,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // Reduxストアに追加
       dispatch(appendTrackLogAction(data));
 
-      // フォアグラウンドでも定期的にMMKVにバックアップ
-      // 現在のトラックログのサイズを確認
-      const currentTrackLog = trackLog;
-      const totalPoints = currentTrackLog.track.length + data.track.length;
-
-      // 1000ポイントごとにMMKVにもバックアップ（クラッシュ対策）
-      if (totalPoints % 1000 === 0) {
-        // console.log(`Backing up ${totalPoints} track points to MMKV`);
-        storeLocations({
-          track: [...currentTrackLog.track, ...data.track],
-          distance: currentTrackLog.distance + data.distance,
-          lastTimeStamp: data.lastTimeStamp,
-        });
-      } else if (RNAppState.currentState === 'background') {
-        // バックグラウンドの場合は常にMMKVを更新
-        // （既存の動作を維持）
-      } else {
-        // フォアグラウンドで1000ポイント未満の場合はMMKVをクリア
+      // フォアグラウンドの場合のみMMKVをクリア
+      // バックグラウンドの場合は、checkAndStoreLocationsで既に保存済みなので何もしない
+      if (RNAppState.currentState !== 'background') {
+        // フォアグラウンドではMMKVをクリア（Reduxストアがメイン）
         clearStoredLocations();
       }
+      // バックグラウンドの場合、データは既にcheckAndStoreLocationsで
+      // MMKVに保存されているので、ここでは何もしない
     },
-    [dispatch, gpsState, mapViewRef, trackLog]
+    [dispatch, gpsState, mapViewRef]  // trackLogを削除
   );
 
   // トラックログをトラック用のレコードに追加する
