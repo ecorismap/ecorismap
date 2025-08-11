@@ -35,6 +35,25 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   ]),
 }));
 
+// Mock MMKV storage
+jest.mock('../../utils/mmkvStorage', () => ({
+  storage: {
+    getAllKeys: jest.fn(() => ['key1', 'key2']),
+    getString: jest.fn((key) => {
+      if (key === 'key1') return 'value1';
+      if (key === 'key2') return 'value2';
+      return null;
+    }),
+  },
+  trackLogStorage: {
+    getAllKeys: jest.fn(() => ['trackKey1']),
+    getString: jest.fn((key) => {
+      if (key === 'trackKey1') return 'trackValue1';
+      return null;
+    }),
+  },
+}));
+
 jest.mock('../usePermission', () => ({
   usePermission: () => ({
     isRunningProject: false,
