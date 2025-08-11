@@ -23,9 +23,9 @@ import { addRecordsAction, updateRecordsAction } from '../modules/dataSet';
 
 import { calcCentroid, calcLineMidPoint } from '../utils/Coords';
 import { usePermission } from './usePermission';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { selectLineDataSet, selectPointDataSet, selectPolygonDataSet } from '../modules/selectors';
 import { addLayerAction, layersInitialState } from '../modules/layers';
+import { storage, trackLogStorage } from '../utils/mmkvStorage';
 
 export type UseRecordReturnType = {
   dataUser: UserType;
@@ -309,21 +309,37 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const calculateStorageSize = useCallback(async () => {
-    const keys = await AsyncStorage.getAllKeys();
-    const stores = await AsyncStorage.multiGet(keys);
-
-    let totalSize = 0;
-    stores.map((_, i, store) => {
-      const key = store[i][0];
-      const value = store[i][1];
-      const currentSize = key.length + value!.length;
-      totalSize += currentSize;
-      //console.log(key, currentSize / 1024 / 1024);
-    });
-    //bytesをMBに変換
-    totalSize = totalSize / 1024 / 1024;
-    //console.log('Total size in MBytes:', totalSize);
-    return totalSize;
+    try {
+      let totalSize = 0;
+      
+      // メインストレージのサイズを計算
+      const mainKeys = storage.getAllKeys();
+      mainKeys.forEach((key) => {
+        const value = storage.getString(key);
+        if (value) {
+          // キーと値の両方のサイズを加算
+          totalSize += key.length + value.length;
+        }
+      });
+      
+      // トラックログストレージのサイズを計算
+      const trackLogKeys = trackLogStorage.getAllKeys();
+      trackLogKeys.forEach((key) => {
+        const value = trackLogStorage.getString(key);
+        if (value) {
+          totalSize += key.length + value.length;
+        }
+      });
+      
+      // bytesをMBに変換
+      const sizeInMB = totalSize / 1024 / 1024;
+      // console.log('Total MMKV storage size:', sizeInMB.toFixed(2), 'MB');
+      
+      return sizeInMB;
+    } catch (error) {
+      // console.error('Failed to calculate storage size:', error);
+      return 0;
+    }
   }, []);
 
   const setIsEditingRecord = useCallback(

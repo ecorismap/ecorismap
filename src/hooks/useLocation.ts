@@ -5,7 +5,7 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
-import { checkAndStoreLocations, clearStoredLocations, getStoredLocations } from '../utils/Location';
+import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -23,7 +23,6 @@ import { useRecord } from './useRecord';
 import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
-import { splitTrackLog, estimateTrackLogSize } from '../utils/TrackLogSplitter';
 import { Linking } from 'react-native';
 
 const openSettings = () => {
@@ -43,10 +42,10 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
   //console.log('[tracking]', 'Received new locations', locations);
 
   try {
-    // AsyncStorageに保存されているトラックログをチェックして、必要な位置情報を取得
-    // バックグラウンドの場合は、AsyncStorageにログがたまる。
-    // フォアグラグラウンドの場合は、一旦AsyncStorageに保存するが、updateですぐにクリアされる
-    const checkedLocations = await checkAndStoreLocations(locations);
+    // MMKVに保存されているトラックログをチェックして、必要な位置情報を取得
+    // バックグラウンドの場合は、MMKVにログがたまる。
+    // フォアグラウンドの場合は、一旦MMKVに保存するが、updateですぐにクリアされる
+    const checkedLocations = checkAndStoreLocations(locations);
     //killされていなければ更新イベントが発生する
     locationEventsEmitter.emit('update', checkedLocations);
   } catch (error) {
@@ -341,29 +340,29 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         );
       }
       setCurrentLocation(currentCoords);
-      
+
       // Reduxストアに追加
       dispatch(appendTrackLogAction(data));
-      
-      // フォアグラウンドでも定期的にAsyncStorageにバックアップ
+
+      // フォアグラウンドでも定期的にMMKVにバックアップ
       // 現在のトラックログのサイズを確認
       const currentTrackLog = trackLog;
       const totalPoints = currentTrackLog.track.length + data.track.length;
-      
-      // 1000ポイントごとにAsyncStorageにもバックアップ（クラッシュ対策）
+
+      // 1000ポイントごとにMMKVにもバックアップ（クラッシュ対策）
       if (totalPoints % 1000 === 0) {
-        console.log(`Backing up ${totalPoints} track points to AsyncStorage`);
-        await storeLocations({
+        // console.log(`Backing up ${totalPoints} track points to MMKV`);
+        storeLocations({
           track: [...currentTrackLog.track, ...data.track],
           distance: currentTrackLog.distance + data.distance,
           lastTimeStamp: data.lastTimeStamp,
         });
       } else if (RNAppState.currentState === 'background') {
-        // バックグラウンドの場合は常にAsyncStorageを更新
+        // バックグラウンドの場合は常にMMKVを更新
         // （既存の動作を維持）
       } else {
-        // フォアグラウンドで1000ポイント未満の場合はAsyncStorageをクリア
-        await clearStoredLocations();
+        // フォアグラウンドで1000ポイント未満の場合はMMKVをクリア
+        clearStoredLocations();
       }
     },
     [dispatch, gpsState, mapViewRef, trackLog]
@@ -373,8 +372,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const saveTrackLog = useCallback(async () => {
     if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
-    //もしAsyncStorageにデータが保存されていたらトラックログに追加する。killのタイミングでAsyncStoreageにデータが残る場合があるかもしれないので
-    const storedLocations = await getStoredLocations();
+    //もしMMKVにデータが保存されていたらトラックログに追加する。killのタイミングでMMKVにデータが残る場合があるかもしれないので
+    const storedLocations = getStoredLocations();
     if (
       storedLocations.track.length > 0 &&
       storedLocations.track[0].timestamp &&
@@ -385,35 +384,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       trackLog.lastTimeStamp = storedLocations.lastTimeStamp;
     }
     const cleanupedLine = cleanupLine(trackLog.track);
-    
-    // データサイズを推定
-    const estimatedSizeMB = estimateTrackLogSize(cleanupedLine);
-    console.log(`Track log size: ${estimatedSizeMB.toFixed(2)} MB, ${cleanupedLine.length} points`);
-    
-    // 1.5MBを超える場合は分割して保存
-    if (estimatedSizeMB > 1.5) {
-      console.log('Large track log detected, splitting into segments...');
-      const segments = splitTrackLog(cleanupedLine, 3000); // 3000ポイントずつに分割
-      
-      for (let i = 0; i < segments.length; i++) {
-        const segmentRet = addTrackRecord(segments[i]);
-        if (!segmentRet.isOK) {
-          return { isOK: false, message: `Failed to save segment ${i + 1}/${segments.length}: ${segmentRet.message}` };
-        }
-        console.log(`Saved track segment ${i + 1}/${segments.length}`);
-      }
-    } else {
-      // 通常サイズの場合は一括保存
-      const ret = addTrackRecord(cleanupedLine);
-      if (!ret.isOK) {
-        return { isOK: ret.isOK, message: ret.message };
-      }
+
+    // MMKVには2MB制限がないため、分割不要で一括保存
+    const ret = addTrackRecord(cleanupedLine);
+    if (!ret.isOK) {
+      return { isOK: ret.isOK, message: ret.message };
     }
-    
+
     // トラックログをクリアする
     dispatch(clearTrackLogAction());
-    // AsyncStorageのトラックログをクリアする
-    await clearStoredLocations();
+    // MMKVのトラックログをクリアする
+    clearStoredLocations();
     return { isOK: true, message: '' };
   }, [addTrackRecord, dispatch, trackLog]);
 
@@ -425,7 +406,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (!ret.isOK) return ret;
       } else {
         dispatch(clearTrackLogAction());
-        await clearStoredLocations();
+        clearStoredLocations();
       }
     }
     return { isOK: true, message: '' };

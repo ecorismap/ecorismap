@@ -1,3 +1,70 @@
+// Firebaseのモック（最初に定義する必要がある）
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(() => ({})),
+  signInWithEmailAndPassword: jest.fn(),
+  createUserWithEmailAndPassword: jest.fn(),
+  sendEmailVerification: jest.fn(),
+  signOut: jest.fn(),
+  onAuthStateChanged: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
+}));
+
+jest.mock('firebase/firestore', () => ({
+  getFirestore: jest.fn(() => ({})),
+  collection: jest.fn(),
+  doc: jest.fn(),
+  getDoc: jest.fn(),
+  setDoc: jest.fn(),
+  updateDoc: jest.fn(),
+  deleteDoc: jest.fn(),
+  query: jest.fn(),
+  where: jest.fn(),
+  orderBy: jest.fn(),
+  limit: jest.fn(),
+  getDocs: jest.fn(),
+  onSnapshot: jest.fn(),
+  serverTimestamp: jest.fn(),
+}));
+
+jest.mock('firebase/storage', () => ({
+  getStorage: jest.fn(() => ({})),
+  ref: jest.fn(),
+  uploadBytes: jest.fn(),
+  getDownloadURL: jest.fn(),
+  deleteObject: jest.fn(),
+}));
+
+jest.mock('firebase/app-check', () => ({
+  initializeAppCheck: jest.fn(),
+  ReCaptchaV3Provider: jest.fn(),
+  ReCaptchaEnterpriseProvider: jest.fn(),
+}));
+
+jest.mock('firebase/app', () => ({
+  getApp: jest.fn(() => ({})),
+  initializeApp: jest.fn(() => ({})),
+}));
+
+jest.mock('firebase/functions', () => ({
+  getFunctions: jest.fn(() => ({})),
+  httpsCallable: jest.fn(),
+}));
+
+jest.mock('../../lib/firebase/firebase', () => ({
+  auth: {},
+  db: {},
+  storage: {},
+  firestore: {},
+  functions: {},
+  initialize: jest.fn(),
+}));
+
+jest.mock('../../lib/firebase/storage', () => ({
+  uploadPhoto: jest.fn(),
+  downloadFile: jest.fn(),
+  deletePhoto: jest.fn(),
+}));
+
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useGeoFile } from '../useGeoFile';
 import { UserType } from '../../types';

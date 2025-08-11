@@ -922,11 +922,16 @@ export function smoothLine(line: LocationType[], windowSize: number): LocationTy
   const lastIndex = line.length - 1;
 
   return line.map((point, index, array) => {
-    // 始点・終点はそのまま返す
+    // 始点・終点はそのまま返す（timestampも含めて）
     if (index === 0 || index === lastIndex) {
       return {
         latitude: point.latitude,
         longitude: point.longitude,
+        timestamp: point.timestamp, // timestampを保持
+        ...(point.altitude !== undefined && { altitude: point.altitude }),
+        ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+        ...(point.speed !== undefined && { speed: point.speed }),
+        ...(point.heading !== undefined && { heading: point.heading }),
       };
     }
 
@@ -941,6 +946,11 @@ export function smoothLine(line: LocationType[], windowSize: number): LocationTy
     return {
       latitude: avgLat,
       longitude: avgLon,
+      timestamp: point.timestamp, // 元のtimestampを保持
+      ...(point.altitude !== undefined && { altitude: point.altitude }),
+      ...(point.accuracy !== undefined && { accuracy: point.accuracy }),
+      ...(point.speed !== undefined && { speed: point.speed }),
+      ...(point.heading !== undefined && { heading: point.heading }),
     };
   });
 }
@@ -953,10 +963,35 @@ export const cleanupLine = (line: LocationType[]): LocationType[] => {
   const lineString = turf.lineString(smoothedLine.map((point) => [point.longitude, point.latitude]));
 
   const simplifiedLine = turf.simplify(lineString, { tolerance: 0.000001, highQuality: true });
-  const newTrack = simplifiedLine.geometry.coordinates.map((coord) => ({
-    longitude: coord[0],
-    latitude: coord[1],
-  }));
+  
+  // 簡略化された座標に対して、最も近い元の点のtimestampとその他のプロパティを復元
+  const newTrack = simplifiedLine.geometry.coordinates.map((coord) => {
+    // 最も近い元の点を見つける
+    let minDistance = Infinity;
+    let closestPoint = smoothedLine[0];
+    
+    for (const point of smoothedLine) {
+      const distance = Math.sqrt(
+        Math.pow(coord[0] - point.longitude, 2) + 
+        Math.pow(coord[1] - point.latitude, 2)
+      );
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPoint = point;
+      }
+    }
+    
+    // 元の点のプロパティを含めて返す
+    return {
+      longitude: coord[0],
+      latitude: coord[1],
+      timestamp: closestPoint.timestamp, // timestampを復元
+      ...(closestPoint.altitude !== undefined && { altitude: closestPoint.altitude }),
+      ...(closestPoint.accuracy !== undefined && { accuracy: closestPoint.accuracy }),
+      ...(closestPoint.speed !== undefined && { speed: closestPoint.speed }),
+      ...(closestPoint.heading !== undefined && { heading: closestPoint.heading }),
+    };
+  });
   return newTrack;
 };
 

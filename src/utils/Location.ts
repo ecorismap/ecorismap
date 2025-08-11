@@ -1,144 +1,39 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE } from '../constants/AppConstants';
 import { LocationType, TrackLogType } from '../types';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
+import { trackLogMMKV } from './mmkvStorage';
 
-// チャンクサイズ: 1MB以下に設定（安全マージンを含む）
-const CHUNK_SIZE_LIMIT = 900 * 1024; // 900KB
-const CHUNK_KEY_PREFIX = 'TRACKLOG_CHUNK_';
-const METADATA_KEY = 'TRACKLOG_METADATA';
-
-// チャンク分割して保存する新しい関数
-export const storeLocationsChunked = async (data: TrackLogType): Promise<void> => {
-  try {
-    // 既存のチャンクをクリア
-    await clearStoredLocationsChunked();
-    
-    // データをJSON文字列化
-    const jsonString = JSON.stringify(data);
-    const totalSize = new Blob([jsonString]).size;
-    
-    // チャンクサイズ以下の場合は単一保存
-    if (totalSize <= CHUNK_SIZE_LIMIT) {
-      await AsyncStorage.setItem(STORAGE.TRACKLOG, jsonString);
-      return;
-    }
-    
-    // チャンク分割が必要な場合
-    const chunks: string[] = [];
-    const trackPoints = data.track;
-    const pointsPerChunk = Math.ceil(trackPoints.length * CHUNK_SIZE_LIMIT / totalSize);
-    
-    let chunkIndex = 0;
-    for (let i = 0; i < trackPoints.length; i += pointsPerChunk) {
-      const chunkData: TrackLogType = {
-        track: trackPoints.slice(i, i + pointsPerChunk),
-        distance: i === 0 ? data.distance : 0, // 距離は最初のチャンクにのみ保存
-        lastTimeStamp: i + pointsPerChunk >= trackPoints.length ? data.lastTimeStamp : 0,
-      };
-      
-      const chunkKey = `${CHUNK_KEY_PREFIX}${chunkIndex}`;
-      await AsyncStorage.setItem(chunkKey, JSON.stringify(chunkData));
-      chunks.push(chunkKey);
-      chunkIndex++;
-    }
-    
-    // メタデータを保存
-    await AsyncStorage.setItem(METADATA_KEY, JSON.stringify({
-      chunks,
-      totalPoints: trackPoints.length,
-      distance: data.distance,
-      lastTimeStamp: data.lastTimeStamp,
-    }));
-  } catch (error) {
-    console.error('Failed to store chunked locations:', error);
-    throw error;
-  }
+// MMKVを使用したシンプルな実装（チャンク処理不要）
+export const storeLocations = (data: TrackLogType): void => {
+  // MMKVは大容量データも効率的に処理可能（2MB制限なし）
+  trackLogMMKV.setTrackLog(data);
 };
 
-// チャンクを結合して取得する新しい関数
-export const getStoredLocationsChunked = async (): Promise<TrackLogType> => {
-  try {
-    // まず通常のキーをチェック
-    const singleData = await AsyncStorage.getItem(STORAGE.TRACKLOG);
-    if (singleData) {
-      return JSON.parse(singleData) as TrackLogType;
-    }
-    
-    // メタデータをチェック
-    const metadataString = await AsyncStorage.getItem(METADATA_KEY);
-    if (!metadataString) {
-      return { track: [], distance: 0, lastTimeStamp: 0 };
-    }
-    
-    const metadata = JSON.parse(metadataString);
-    const allTracks: LocationType[] = [];
-    
-    // 各チャンクを読み込んで結合
-    for (const chunkKey of metadata.chunks) {
-      const chunkData = await AsyncStorage.getItem(chunkKey);
-      if (chunkData) {
-        const chunk = JSON.parse(chunkData) as TrackLogType;
-        allTracks.push(...chunk.track);
-      }
-    }
-    
-    return {
-      track: allTracks,
-      distance: metadata.distance,
-      lastTimeStamp: metadata.lastTimeStamp,
-    };
-  } catch (error) {
-    console.error('Failed to get chunked locations:', error);
-    return { track: [], distance: 0, lastTimeStamp: 0 };
-  }
+export const clearStoredLocations = (): void => {
+  trackLogMMKV.clearTrackLog();
+  // 空のデータを設定（互換性のため）
+  trackLogMMKV.setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
 };
 
-// チャンクを全て削除する新しい関数
-export const clearStoredLocationsChunked = async (): Promise<void> => {
+export const getStoredLocations = (): TrackLogType => {
   try {
-    // 通常のキーを削除
-    await AsyncStorage.removeItem(STORAGE.TRACKLOG);
-    
-    // メタデータを取得
-    const metadataString = await AsyncStorage.getItem(METADATA_KEY);
-    if (metadataString) {
-      const metadata = JSON.parse(metadataString);
-      
-      // 各チャンクを削除
-      for (const chunkKey of metadata.chunks) {
-        await AsyncStorage.removeItem(chunkKey);
-      }
-      
-      // メタデータを削除
-      await AsyncStorage.removeItem(METADATA_KEY);
+    const data = trackLogMMKV.getTrackLog();
+    if (data !== null) {
+      return data;
     }
   } catch (error) {
-    console.error('Failed to clear chunked locations:', error);
+    // エラーが発生した場合は空のトラックログを返す
+    // console.error('Failed to get stored locations:', error);
   }
+  // データが存在しない場合は空のトラックログを返す
+  return { track: [], distance: 0, lastTimeStamp: 0 };
 };
 
-// 既存の関数（互換性のため残す）
-export const storeLocations = async (data: TrackLogType) => {
-  // チャンク分割版を使用
-  await storeLocationsChunked(data);
-};
-
-export const clearStoredLocations = async () => {
-  // チャンク分割版を使用
-  await clearStoredLocationsChunked();
-};
-
-export const getStoredLocations = async (): Promise<TrackLogType> => {
-  // チャンク分割版を使用
-  return getStoredLocationsChunked();
-};
-
-export const checkAndStoreLocations = async (locations: LocationObject[]): Promise<TrackLogType> => {
+export const checkAndStoreLocations = (locations: LocationObject[]): TrackLogType => {
   try {
-    //AsyncStorageから保存されているトラックログを取得して、現在の位置情報と結合する
-    const { distance, track, lastTimeStamp } = await getStoredLocations();
+    //MMKVから保存されているトラックログを取得して、現在の位置情報と結合する
+    const { distance, track, lastTimeStamp } = getStoredLocations();
+
     const checkedLocations = checkLocations(lastTimeStamp, locations);
 
     const updatedTrackLog = [...track, ...checkedLocations];
@@ -155,27 +50,44 @@ export const checkAndStoreLocations = async (locations: LocationObject[]): Promi
       distance: updatedDistance,
       track: updatedTrackLog,
     };
-    await storeLocations(updatedLocations);
+    storeLocations(updatedLocations);
     return updatedLocations;
   } catch (e) {
     return { track: [], distance: 0, lastTimeStamp: 0 };
   }
 };
 
+// toLocationType関数を先に定義（checkLocationsで使用するため）
+export const toLocationType = (locationObject: LocationObject): LocationType => {
+  //# Todo altitude to ele by proj4js
+  return { ...locationObject.coords, timestamp: locationObject.timestamp };
+};
+
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
-  //console.log(savedLocation);
   if (locations.length === 0) return [];
 
-  //同じ場所が繰り返して配信されることがあるので、最後の時間以前のデータは破棄する。
-  //LocationTaskConsumer.javaで同様の対処されているが、対処が不十分(getLastLocationの処理が原因？）とiOSにはその処理が入っていない
-  const newLocations = locations
-    .map((location) => toLocationType(location))
-    .filter((v) => v.timestamp! > lastTimeStamp!)
-    // 精度が30mを超えるポイントはすべて除外（最初のポイントだけでなく全ポイントに適用）
-    .filter((v) => !v.accuracy || v.accuracy <= 30);
+  // 1. まず変換
+  const convertedLocations = locations.map((location) => toLocationType(location));
   
-  return newLocations;
-};;
+  // 2. タイムスタンプ逆転チェック - 逆転があれば全データを破棄
+  for (let i = 1; i < convertedLocations.length; i++) {
+    if (convertedLocations[i].timestamp! <= convertedLocations[i - 1].timestamp!) {
+      return [];
+    }
+  }
+  
+  // 3. 最初のデータがlastTimeStampより古ければ全て破棄（逆転チェック済みなので最初だけ確認すればOK）
+  if (convertedLocations[0].timestamp! <= lastTimeStamp) {
+    return [];
+  }
+
+  // 4. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
+  if (lastTimeStamp === 0) {
+    return convertedLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
+  }
+
+  return convertedLocations;
+};
 
 export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {
   if (!d) return false;
@@ -195,9 +107,4 @@ export const getLineLength = (locations: LocationType[]) => {
   } else {
     return 0;
   }
-};
-
-export const toLocationType = (locationObject: LocationObject): LocationType => {
-  //# Todo altitude to ele by proj4js
-  return { ...locationObject.coords, timestamp: locationObject.timestamp };
 };
