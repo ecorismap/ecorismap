@@ -37,6 +37,10 @@ jest.mock('../mmkvStorage', () => {
       getSize: jest.fn(() => {
         return mockStorage.tracklog ? JSON.stringify(mockStorage.tracklog).length : 0;
       }),
+      setCurrentLocation: jest.fn((location) => {
+        mockStorage.currentLocation = location;
+      }),
+      getCurrentLocation: jest.fn(() => mockStorage.currentLocation || null),
     },
     storage: {
       set: jest.fn(),
@@ -312,15 +316,13 @@ describe('MMKV Storage functions', () => {
         },
       ];
 
-      const result = checkAndStoreLocations(locations);
+      checkAndStoreLocations(locations);
 
-      expect(result).toBeDefined();
-      expect(result?.track).toHaveLength(2);
-      expect(result?.lastTimeStamp).toBe(2000000);
       expect(trackLogMMKV.setTrackLog).toHaveBeenCalled();
+      expect(trackLogMMKV.setCurrentLocation).toHaveBeenCalled();
     });
 
-    it('returns empty data on error', () => {
+    it('handles errors gracefully', () => {
       const { trackLogMMKV } = require('../mmkvStorage');
       trackLogMMKV.getTrackLog.mockImplementationOnce(() => {
         throw new Error('Storage error');
@@ -328,9 +330,8 @@ describe('MMKV Storage functions', () => {
 
       const locations: LocationObject[] = [];
 
-      const result = checkAndStoreLocations(locations);
-
-      expect(result).toEqual({ track: [], distance: 0, lastTimeStamp: 0 });
+      // Should not throw
+      expect(() => checkAndStoreLocations(locations)).not.toThrow();
     });
   });
 

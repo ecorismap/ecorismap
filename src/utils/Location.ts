@@ -13,6 +13,8 @@ export const clearStoredLocations = (): void => {
   trackLogMMKV.clearTrackLog();
   // 空のデータを設定（互換性のため）
   trackLogMMKV.setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
+  // 現在地もクリア
+  trackLogMMKV.setCurrentLocation(null);
 };
 
 export const getStoredLocations = (): TrackLogType => {
@@ -29,31 +31,31 @@ export const getStoredLocations = (): TrackLogType => {
   return { track: [], distance: 0, lastTimeStamp: 0 };
 };
 
-export const checkAndStoreLocations = (locations: LocationObject[]): TrackLogType => {
-  try {
-    //MMKVから保存されているトラックログを取得して、現在の位置情報と結合する
-    const { distance, track, lastTimeStamp } = getStoredLocations();
+export const checkAndStoreLocations = (locations: LocationObject[]): void => {
+  //MMKVから保存されているトラックログを取得して、現在の位置情報と結合する
+  const { distance, track, lastTimeStamp } = getStoredLocations();
 
-    const checkedLocations = checkLocations(lastTimeStamp, locations);
+  const checkedLocations = checkLocations(lastTimeStamp, locations);
 
-    const updatedTrackLog = [...track, ...checkedLocations];
-    const updatedDistance =
-      distance +
-      (track.length === 0
-        ? getLineLength(checkedLocations)
-        : getLineLength([track[track.length - 1], ...checkedLocations]));
-    const updatedLastTimeStamp =
-      updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
+  const updatedTrackLog = [...track, ...checkedLocations];
+  const updatedDistance =
+    distance +
+    (track.length === 0
+      ? getLineLength(checkedLocations)
+      : getLineLength([track[track.length - 1], ...checkedLocations]));
+  const updatedLastTimeStamp =
+    updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
 
-    const updatedLocations = {
-      lastTimeStamp: updatedLastTimeStamp,
-      distance: updatedDistance,
-      track: updatedTrackLog,
-    };
-    storeLocations(updatedLocations);
-    return updatedLocations;
-  } catch (e) {
-    return { track: [], distance: 0, lastTimeStamp: 0 };
+  const updatedLocations = {
+    lastTimeStamp: updatedLastTimeStamp,
+    distance: updatedDistance,
+    track: updatedTrackLog,
+  };
+  storeLocations(updatedLocations);
+  
+  // 現在地を別途保存（最新の位置情報のみ）
+  if (updatedTrackLog.length > 0) {
+    trackLogMMKV.setCurrentLocation(updatedTrackLog[updatedTrackLog.length - 1]);
   }
 };
 
@@ -68,14 +70,14 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
 
   // 1. まず変換
   const convertedLocations = locations.map((location) => toLocationType(location));
-  
+
   // 2. タイムスタンプ逆転チェック - 逆転があれば全データを破棄
   for (let i = 1; i < convertedLocations.length; i++) {
     if (convertedLocations[i].timestamp! <= convertedLocations[i - 1].timestamp!) {
       return [];
     }
   }
-  
+
   // 3. 最初のデータがlastTimeStampより古ければ全て破棄（逆転チェック済みなので最初だけ確認すればOK）
   if (convertedLocations[0].timestamp! <= lastTimeStamp) {
     return [];

@@ -4,8 +4,9 @@ import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import { checkAndStoreLocations, clearStoredLocations, getStoredLocations } from '../utils/Location';
+import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
@@ -20,7 +21,6 @@ import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
-import { appendTrackLogAction, clearTrackLogAction } from '../modules/trackLog';
 import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
@@ -43,11 +43,10 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
 
   try {
     // MMKVに保存されているトラックログをチェックして、必要な位置情報を取得
-    // バックグラウンドの場合は、MMKVにログがたまる。
-    // フォアグラウンドの場合は、一旦MMKVに保存するが、updateですぐにクリアされる
-    const checkedLocations = checkAndStoreLocations(locations);
-    //killされていなければ更新イベントが発生する
-    locationEventsEmitter.emit('update', checkedLocations);
+    // バックグラウンドの場合もフォアグラウンドの場合も、MMKVにログを保持し続ける
+    checkAndStoreLocations(locations);
+    // データは渡さず、イベントのみ発火（受信側で直接MMKVから読み込む）
+    locationEventsEmitter.emit('update');
   } catch (error) {
     //console.log('[tracking]', 'Something went wrong when saving a new location...', error);
   }
@@ -59,6 +58,7 @@ export type UseLocationReturnType = {
   trackingState: TrackingStateType;
   headingUp: boolean;
   azimuth: number;
+  trackLog: TrackLogType;
   toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
@@ -71,7 +71,6 @@ export type UseLocationReturnType = {
 };
 
 export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
-  const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const dataUser = useMemo(
@@ -79,7 +78,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     [projectId, user]
   );
 
-  const trackLog = useSelector((state: RootState) => state.trackLog);
+  // MMKVから直接トラックログを取得して管理（Reduxは使用しない）
+  const [trackLog, setTrackLog] = useState<TrackLogType>(() => getStoredLocations());
   const { addTrackRecord } = useRecord();
   const [azimuth, setAzimuth] = useState(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
@@ -322,55 +322,35 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     [mapViewRef]
   );
 
-  const updateTrackLogEvent = useCallback(
-    async (data: TrackLogType) => {
-      if (data.track.length === 0) return;
+  const updateCurrentLocationFromTracking = useCallback(async () => {
+    // トラッキング中の現在地更新とトラックログ更新
+    const currentCoords = trackLogMMKV.getCurrentLocation();
+    
+    if (!currentCoords) return;
 
-      const currentCoords = data.track[data.track.length - 1];
-
-      if (gpsState === 'follow' || RNAppState.currentState === 'background') {
-        (mapViewRef.current as MapView).animateCamera(
-          {
-            center: {
-              latitude: currentCoords.latitude,
-              longitude: currentCoords.longitude,
-            },
+    if (gpsState === 'follow' || RNAppState.currentState === 'background') {
+      (mapViewRef.current as MapView).animateCamera(
+        {
+          center: {
+            latitude: currentCoords.latitude,
+            longitude: currentCoords.longitude,
           },
-          { duration: 5 }
-        );
-      }
-      setCurrentLocation(currentCoords);
-
-      // Reduxストアに追加
-      dispatch(appendTrackLogAction(data));
-
-      // フォアグラウンドの場合のみMMKVをクリア
-      // バックグラウンドの場合は、checkAndStoreLocationsで既に保存済みなので何もしない
-      if (RNAppState.currentState !== 'background') {
-        // フォアグラウンドではMMKVをクリア（Reduxストアがメイン）
-        clearStoredLocations();
-      }
-      // バックグラウンドの場合、データは既にcheckAndStoreLocationsで
-      // MMKVに保存されているので、ここでは何もしない
-    },
-    [dispatch, gpsState, mapViewRef]  // trackLogを削除
-  );
+        },
+        { duration: 5 }
+      );
+    }
+    setCurrentLocation(currentCoords);
+    
+    // トラックログも更新（描画のため）
+    setTrackLog(getStoredLocations());
+  }, [gpsState, mapViewRef]);
 
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
+    // stateのtrackLogは既にMMKVと同期済み
     if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
-    //もしMMKVにデータが保存されていたらトラックログに追加する。killのタイミングでMMKVにデータが残る場合があるかもしれないので
-    const storedLocations = getStoredLocations();
-    if (
-      storedLocations.track.length > 0 &&
-      storedLocations.track[0].timestamp &&
-      storedLocations.track[0].timestamp > trackLog.lastTimeStamp
-    ) {
-      trackLog.track = [...trackLog.track, ...storedLocations.track];
-      trackLog.distance += storedLocations.distance;
-      trackLog.lastTimeStamp = storedLocations.lastTimeStamp;
-    }
+    
     const cleanupedLine = cleanupLine(trackLog.track);
 
     // MMKVには2MB制限がないため、分割不要で一括保存
@@ -379,12 +359,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       return { isOK: ret.isOK, message: ret.message };
     }
 
-    // トラックログをクリアする
-    dispatch(clearTrackLogAction());
-    // MMKVのトラックログをクリアする
+    // MMKVのトラックログをクリア
     clearStoredLocations();
+    // stateも更新
+    setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
     return { isOK: true, message: '' };
-  }, [addTrackRecord, dispatch, trackLog]);
+  }, [addTrackRecord, trackLog]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     if (trackLog.track.length > 1) {
@@ -393,22 +373,25 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const ret = await saveTrackLog();
         if (!ret.isOK) return ret;
       } else {
-        dispatch(clearTrackLogAction());
+        // MMKVのトラックログのみクリアする（Reduxは使用しない）
         clearStoredLocations();
+        // stateも更新
+        setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
       }
     }
     return { isOK: true, message: '' };
-  }, [dispatch, saveTrackLog, trackLog.track.length]);
+  }, [saveTrackLog, trackLog.track.length]);
 
   useEffect(() => {
     // console.log('#define locationEventsEmitter update function');
 
-    const eventSubscription = locationEventsEmitter.addListener('update', updateTrackLogEvent);
+    const eventSubscription = locationEventsEmitter.addListener('update', updateCurrentLocationFromTracking);
     return () => {
       // console.log('clean locationEventsEmitter');
       eventSubscription && eventSubscription.remove();
     };
-  }, [updateTrackLogEvent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -487,6 +470,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     trackingState,
     headingUp,
     azimuth,
+    trackLog,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,

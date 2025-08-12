@@ -237,6 +237,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     trackingState,
     headingUp,
     azimuth,
+    trackLog,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
@@ -1788,6 +1789,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const locationTrackingContextValue = useMemo(
     () => ({
       trackingState,
+      trackLog,
       memberLocations,
       pressTracking,
       pressSyncPosition,
@@ -1799,6 +1801,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }),
     [
       trackingState,
+      trackLog,
       memberLocations,
       pressTracking,
       pressSyncPosition,
