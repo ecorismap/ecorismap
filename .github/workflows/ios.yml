@@ -8,10 +8,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: 'yarn'
 
       - name: Create Maps.plist
@@ -87,14 +87,7 @@ jobs:
 
       - name: Upload IPA to App Store Connect
         run: |
-          xcrun xcodebuild -exportArchive \
-                           -archivePath ecorismap.xcarchive \
-                           -exportOptionsPlist ExportOptions.plist \
-                           -exportPath app.ipa \
-                           -allowProvisioningUpdates
-          
-      - name: Clean up keychain
-        if: always()
-        run: |
-          security delete-keychain build.keychain || true
-          rm -f certificate.p12 || true
+          xcrun altool --upload-app -f app.ipa/ecorismap.ipa \
+                       -u ${{ secrets.APPLE_ID }} \
+                       -p ${{ secrets.APP_SPECIFIC_PASSWORD }} \
+                       --type ios
