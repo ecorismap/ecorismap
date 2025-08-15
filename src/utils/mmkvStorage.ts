@@ -121,6 +121,30 @@ export const trackLogMMKV = {
     const jsonString = trackLogStorage.getString('tracklog');
     return jsonString ? jsonString.length : 0;
   },
+  
+  // 現在地のみを保存・取得するメソッド
+  setCurrentLocation: (location: any | null): void => {
+    try {
+      if (location) {
+        trackLogStorage.set('current-location', JSON.stringify(location));
+      } else {
+        trackLogStorage.delete('current-location');
+      }
+    } catch (error) {
+      // console.error('Failed to save current location:', error);
+      throw error;
+    }
+  },
+  
+  getCurrentLocation: (): any | null => {
+    try {
+      const jsonString = trackLogStorage.getString('current-location');
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      // console.error('Failed to get current location:', error);
+      return null;
+    }
+  },
 };
 
 // データマイグレーション用ユーティリティ

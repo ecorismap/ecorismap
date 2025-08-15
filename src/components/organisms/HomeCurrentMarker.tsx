@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { LocationType } from '../../types';
@@ -40,8 +40,28 @@ export const CurrentMarker = React.memo((props: Props) => {
   const [filteredAzimuth, setFilteredAzimuth] = useState(azimuth);
   const ALPHA = 0.2; // Lower value for more smoothing to reduce hand shake
 
-  // Marker reference for manual redraw
+  // Marker reference (将来拡張用 / redraw は行わない)
   const markerRef = useRef<any>(null);
+
+  // --- 一時的 tracksViewChanges 制御: 外観(色)変化時のみ再キャプチャ ---
+  const [trackViewChanges, setTrackViewChanges] = useState(true); // 初回は true でキャプチャ
+  const prevFillColorRef = useRef(fillColor);
+
+  // 色が変わった (精度リング色も含む) 場合に一時的に true
+  useEffect(() => {
+    if (prevFillColorRef.current !== fillColor) {
+      prevFillColorRef.current = fillColor;
+      setTrackViewChanges(true);
+    }
+  }, [fillColor]);
+
+  // true にした後 350ms で false へ戻しキャッシュ利用
+  useEffect(() => {
+    if (trackViewChanges) {
+      const id = setTimeout(() => setTrackViewChanges(false), 350);
+      return () => clearTimeout(id);
+    }
+  }, [trackViewChanges]);
 
   useEffect(() => {
     // Apply low-pass filter with angle wrapping
@@ -50,6 +70,9 @@ export const CurrentMarker = React.memo((props: Props) => {
     // Handle angle wrapping (e.g., 359 to 1 should be +2, not -358)
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
+
+    // 微小揺れは無視して不要な再レンダー抑制
+    if (Math.abs(delta) < 0.05) return;
 
     const newFilteredValue = filteredAzimuthRef.current + ALPHA * delta;
 
@@ -64,12 +87,7 @@ export const CurrentMarker = React.memo((props: Props) => {
     return headingUp ? 0 : filteredAzimuth;
   }, [headingUp, filteredAzimuth]);
 
-  // Manually redraw marker when markerAngle or fillColor changes
-  useEffect(() => {
-    if (markerRef.current) {
-      markerRef.current.redraw();
-    }
-  }, [markerAngle, fillColor]);
+  // redraw() は使用しない (iOS での初動ちらつき軽減)
 
   // Calculate line coordinates for Polyline
   const lineCoordinates = useMemo(() => {
@@ -100,7 +118,6 @@ export const CurrentMarker = React.memo((props: Props) => {
     ];
   }, [currentLocation, markerAngle, showDirectionLine, headingUp, filteredAzimuth]);
 
-
   return (
     <>
       {accuracy > 0 && (
@@ -128,7 +145,7 @@ export const CurrentMarker = React.memo((props: Props) => {
         rotation={markerAngle}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={Platform.OS === 'ios' ? false : false}
+        tracksViewChanges={trackViewChanges}
         onPress={onPress}
       >
         <View

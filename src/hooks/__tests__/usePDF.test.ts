@@ -14,7 +14,7 @@ jest.mock('../../i18n/config', () => ({
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { usePDF } from '../usePDF';
 import dataSetReducer from '../../modules/dataSet';
@@ -23,7 +23,6 @@ import userReducer from '../../modules/user';
 import settingsReducer, { settingsInitialState } from '../../modules/settings';
 import projectsReducer from '../../modules/projects';
 import tileMapsReducer from '../../modules/tileMaps';
-import trackLogReducer from '../../modules/trackLog';
 
 // Mock dependencies
 jest.mock('expo-print', () => ({
@@ -68,15 +67,14 @@ jest.mock('../../utils/Tile', () => ({
 // Create test store
 const createTestStore = () => {
   return configureStore({
-    reducer: {
+    reducer: combineReducers({
       dataSet: dataSetReducer,
       layers: layersReducer,
       user: userReducer,
       settings: settingsReducer,
       projects: projectsReducer,
       tileMaps: tileMapsReducer,
-      trackLog: trackLogReducer,
-    },
+    }),
     preloadedState: {
       dataSet: [],
       layers: [],

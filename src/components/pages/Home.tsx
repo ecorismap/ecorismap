@@ -139,7 +139,7 @@ export default function HomeScreen() {
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
-  const { trackingState, memberLocations, editPositionMode, editPositionLayer, editPositionRecord } =
+  const { trackingState, trackLog, memberLocations, editPositionMode, editPositionLayer, editPositionRecord } =
     useContext(LocationTrackingContext);
 
   // ProjectContext
@@ -149,7 +149,6 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
-  const trackLog = useSelector((state: RootState) => state.trackLog);
   const { bounds } = useViewportBounds(mapRegion);
 
   const navigationHeaderHeight = useMemo(

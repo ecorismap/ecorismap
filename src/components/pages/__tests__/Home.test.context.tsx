@@ -91,6 +91,7 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
 // Mock implementation for LocationTrackingContext
 export const mockLocationTrackingContextValue: LocationTrackingContextType = {
   trackingState: 'off',
+  trackLog: { track: [], distance: 0, lastTimeStamp: 0 },
   memberLocations: [],
   pressTracking: jest.fn(),
   pressSyncPosition: jest.fn(),

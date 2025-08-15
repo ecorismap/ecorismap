@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import React from 'react';
 import { useData } from '../useData';
 import { RecordType, LayerType, DataType } from '../../types';
@@ -10,7 +10,6 @@ import userReducer from '../../modules/user';
 import settingsReducer from '../../modules/settings';
 import projectsReducer from '../../modules/projects';
 import tileMapsReducer from '../../modules/tileMaps';
-import trackLogReducer from '../../modules/trackLog';
 import { settingsInitialState } from '../../modules/settings';
 
 // Mock dependencies
@@ -124,15 +123,14 @@ const sampleDataSet: DataType = {
 // Create test store
 const createTestStore = () => {
   return configureStore({
-    reducer: {
+    reducer: combineReducers({
       dataSet: dataSetReducer,
       layers: layersReducer,
       user: userReducer,
       settings: settingsReducer,
       projects: projectsReducer,
       tileMaps: tileMapsReducer,
-      trackLog: trackLogReducer,
-    },
+    }),
     preloadedState: {
       dataSet: [sampleDataSet],
       layers: [sampleLayer],
@@ -213,15 +211,14 @@ describe('useData', () => {
   it('should handle empty data', () => {
     // Create store with empty data
     const emptyStore = configureStore({
-      reducer: {
+      reducer: combineReducers({
         dataSet: dataSetReducer,
         layers: layersReducer,
         user: userReducer,
         settings: settingsReducer,
         projects: projectsReducer,
         tileMaps: tileMapsReducer,
-        trackLog: trackLogReducer,
-      },
+        }),
       preloadedState: {
         dataSet: [],
         layers: [sampleLayer], // Keep layer for valid hook call
@@ -425,15 +422,14 @@ describe('useData', () => {
     };
 
     const mapMemoStore = configureStore({
-      reducer: {
+      reducer: combineReducers({
         dataSet: dataSetReducer,
         layers: layersReducer,
         user: userReducer,
         settings: settingsReducer,
         projects: projectsReducer,
         tileMaps: tileMapsReducer,
-        trackLog: trackLogReducer,
-      },
+        }),
       preloadedState: {
         dataSet: [mapMemoDataSet],
         layers: [sampleLayer],

@@ -4,7 +4,6 @@ import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
 import { useLocation } from '../useLocation';
 import * as Location from 'expo-location';
-import trackLogReducer from '../../modules/trackLog';
 
 // Mock dependencies
 jest.mock('expo-location');
@@ -23,6 +22,26 @@ jest.mock('../../utils/Account', () => ({
 }));
 jest.mock('../../utils/Project', () => ({
   hasOpened: jest.fn().mockReturnValue(false),
+}));
+
+// Mock MMKV storage
+const mockTrackLog: any = {
+  track: [],
+  distance: 0,
+  lastTimeStamp: 0,
+};
+
+jest.mock('../../utils/Location', () => ({
+  getStoredLocations: jest.fn(() => mockTrackLog),
+  clearStoredLocations: jest.fn(),
+  checkAndStoreLocations: jest.fn(),
+}));
+
+jest.mock('../../utils/mmkvStorage', () => ({
+  trackLogMMKV: {
+    getCurrentLocation: jest.fn(() => null),
+    setCurrentLocation: jest.fn(),
+  },
 }));
 jest.mock('../../components/molecules/AlertAsync', () => ({
   ConfirmAsync: jest.fn().mockResolvedValue(false),
@@ -44,7 +63,6 @@ const mockLocation = Location as jest.Mocked<typeof Location>;
 const createTestStore = () => {
   return configureStore({
     reducer: {
-      trackLog: trackLogReducer,
       settings: (state = { projectId: undefined, gpsAccuracy: 'HIGH' }) => state,
       user: (state = { uid: 'test-user', displayName: 'Test User' }) => state,
     },
@@ -171,18 +189,13 @@ describe('useLocation', () => {
   });
 
   it('should save track log', async () => {
-    // Set up track log with some data
-    store.dispatch({
-      type: 'trackLog/appendTrackLogAction',
-      payload: {
-        track: [
-          { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
-          { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
-        ],
-        distance: 1.0,
-        lastTimeStamp: Date.now() + 1000,
-      },
-    });
+    // Set up mock track log data
+    mockTrackLog.track = [
+      { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
+      { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
+    ];
+    mockTrackLog.distance = 1.0;
+    mockTrackLog.lastTimeStamp = Date.now() + 1000;
 
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
@@ -196,18 +209,13 @@ describe('useLocation', () => {
   });
 
   it('should check unsaved track log', async () => {
-    // Set up track log with some data
-    store.dispatch({
-      type: 'trackLog/appendTrackLogAction',
-      payload: {
-        track: [
-          { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
-          { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
-        ],
-        distance: 1.0,
-        lastTimeStamp: Date.now() + 1000,
-      },
-    });
+    // Set up mock track log data
+    mockTrackLog.track = [
+      { latitude: 35.0, longitude: 135.0, timestamp: Date.now() },
+      { latitude: 35.01, longitude: 135.01, timestamp: Date.now() + 1000 },
+    ];
+    mockTrackLog.distance = 1.0;
+    mockTrackLog.lastTimeStamp = Date.now() + 1000;
 
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
