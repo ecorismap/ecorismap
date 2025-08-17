@@ -44,7 +44,6 @@ import {
   getSnappedPositionWithLine,
   isClosedPolygon,
   isNearWithPlot,
-  isWithinPolygon,
   modifyLine,
   simplify,
   smoothingByBezier,
@@ -323,7 +322,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (features.length > 0) {
         isSelectedDraw.current = true;
         // unselectRecord();
-        undoLine.current.push({ index: -1, latlon: [], action: 'NEW' });
         selectLine.current = [];
       } else {
         resetDrawTools();
@@ -415,23 +413,20 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const trySelectObjectAtPosition = useCallback(
     (pXY: Position) => {
+      // まずdrawLineをクリアしてから選択されたフィーチャーを追加
+      resetDrawTools();
       convertFeatureToDrawLine(pXY);
-      const index = drawLine.current.findIndex((line) => {
-        if (line.xy.length === 0) return false;
-
-        if (featureButton === 'LINE') {
-          return checkDistanceFromLine(pXY, line.xy).isNear;
-        }
-        if (featureButton === 'POLYGON') {
-          return isWithinPolygon(pXY, line.xy);
-        }
-      });
-      if (index === -1) return false;
-
+      
+      // 選択されたフィーチャーが存在するかチェック
+      if (drawLine.current.length === 0) return false;
+      
+      // 最初の（そして唯一の）フィーチャーを選択
+      const index = 0;
+      
       changeToEditingObject(index, featureButton);
       return true;
     },
-    [changeToEditingObject, convertFeatureToDrawLine, featureButton]
+    [changeToEditingObject, convertFeatureToDrawLine, featureButton, resetDrawTools]
   );
 
   const editStartNewPlotObject = useCallback(
