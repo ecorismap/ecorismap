@@ -339,10 +339,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         deltaToZoom(windowWidth_, {
           latitudeDelta: bounds.north - bounds.south,
           longitudeDelta: bounds.east - bounds.west,
-        }).zoom - 1;
+        }).zoom;
       const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
       const featureWidth = bounds.east - bounds.west;
-      const delta = featureWidth * 2 ** (tempZoom - jumpZoom - 1);
+      const delta = featureWidth * 2 ** (tempZoom - jumpZoom);
       jumpRegion = {
         latitude: (isLandscape_ ? 0 : -delta / 4) + (bounds.north + bounds.south) / 2,
         longitude: (isLandscape_ ? delta / 4 : 0) + (bounds.east + bounds.west) / 2,
@@ -411,7 +411,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     try {
       await Linking.openURL(url);
     } catch (error) {
-      console.error('地図を開く際にエラーが発生しました:', error);
+      // 地図を開く際にエラーが発生しました
     }
   }, [targetLayer.type, targetRecord.coords, targetRecord.field]);
 

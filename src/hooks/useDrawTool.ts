@@ -109,6 +109,7 @@ export type UseDrawToolReturnType = {
     layer?: LayerType;
   };
   undoDraw: () => true | undefined;
+  finishEditObject: () => boolean;
   selectSingleFeature: (event: GestureResponderEvent) =>
     | {
         layer: undefined;
@@ -401,6 +402,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       changeToEditingObject(0, layer.type as FeatureButtonType);
       isEditingDraw.current = true;
+      refreshDrawLine.current = true;
       setRedraw(ulid());
     },
     [
@@ -570,6 +572,48 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     mapSize,
     mapViewRef,
     isEditingObject,
+  ]);
+
+  const finishEditObject = useCallback(() => {
+    if (!isEditingObject.current) return false;
+    const index = editingObjectIndex.current;
+    if (index === -1) return false;
+    
+    const lineXY = drawLine.current[index].xy;
+    
+    // 最小ポイント数のチェック
+    if (currentDrawTool === 'PLOT_LINE' && lineXY.length < 2) return false;
+    if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
+
+    undoLine.current.push({
+      index: index,
+      latlon: drawLine.current[index].latlon,
+      action: 'FINISH',
+    });
+    
+    // ポリゴンの場合は閉じる
+    if (currentDrawTool === 'PLOT_POLYGON' && lineXY[0] !== lineXY[lineXY.length - 1]) {
+      lineXY.push(lineXY[0]);
+    }
+    
+    drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+    drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
+    editingObjectIndex.current = -1;
+    isEditingObject.current = false;
+    editingLineXY.current = [];
+    editingNodeState.current = 'NONE';
+    editingNodeIndex.current = -1;
+    setRedraw(ulid());
+    return true;
+  }, [
+    currentDrawTool,
+    drawLine,
+    editingObjectIndex,
+    isEditingObject,
+    mapRegion,
+    mapSize,
+    mapViewRef,
+    undoLine,
   ]);
 
   const updateNodePosition = useCallback(() => {
@@ -979,7 +1023,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const showDrawLine = useCallback(() => {
     //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
     refreshDrawLine.current = true;
-    if (drawLine.current.length === 0) setDrawLineVisible(true);
+    setDrawLineVisible(true);
   }, []);
 
   const deleteDraw = useCallback(() => {
@@ -1246,6 +1290,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) };
       });
       setDrawLineVisible(true);
+      // 座標再計算後はフラグをリセット
+      refreshDrawLine.current = false;
     }
   }, [isDrawLineVisible, mapRegion, mapSize, mapViewRef]);
 
@@ -1271,6 +1317,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     isInfoToolActive,
     deleteDraw,
     undoDraw,
+    finishEditObject,
     savePoint,
     saveLine,
     savePolygon,

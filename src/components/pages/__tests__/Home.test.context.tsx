@@ -74,6 +74,8 @@ export const mockDrawingToolsContextValue: DrawingToolsContextType = {
   pressUndoDraw: jest.fn().mockResolvedValue(undefined),
   pressSaveDraw: jest.fn().mockResolvedValue(undefined),
   pressDeleteDraw: jest.fn().mockResolvedValue(undefined),
+  finishEditObject: jest.fn(() => false),
+  resetDrawTools: jest.fn(),
 
   // Backward compatibility
   isEditingDraw: false,

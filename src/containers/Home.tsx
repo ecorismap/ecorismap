@@ -158,6 +158,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     savePolygon,
     deleteDraw,
     undoDraw,
+    finishEditObject,
     selectSingleFeature,
     showDrawLine,
     hideDrawLine,
@@ -631,7 +632,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (value === 'MOVE') {
           if (currentDrawTool === value) {
             if (isEditingDraw || isSelectedDraw) return;
-            setDrawTool('NONE');
+            // MOVEツールを非アクティブにする場合、元の編集ツールに戻す
+            if (isEditingObject) {
+              if (featureButton === 'LINE') {
+                setDrawTool(currentLineTool);
+              } else if (featureButton === 'POLYGON') {
+                setDrawTool(currentPolygonTool);
+              } else {
+                setDrawTool('NONE');
+              }
+            } else {
+              setDrawTool('NONE');
+            }
           } else {
             setDrawTool(value);
           }
@@ -643,9 +655,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       activePointLayer,
       activePolygonLayer,
       currentDrawTool,
+      currentLineTool,
+      currentPolygonTool,
       featureButton,
       finishEditPosition,
       isEditingDraw,
+      isEditingObject,
       isSelectedDraw,
       resetDrawTools,
       route.params?.mode,
@@ -1434,6 +1449,32 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [handlePanResponderGrant, handlePanResponderMove, handlePanResponderRelease]
   );
 
+  // editPosition用の遅延実行状態
+  const [pendingEditPosition, setPendingEditPosition] = useState<{
+    layer: LayerType;
+    record: RecordType;
+    featureType: FeatureButtonType;
+  } | null>(null);
+
+  // pendingEditPositionが設定されたら、mapRegion更新後に実行
+  useEffect(() => {
+    if (pendingEditPosition) {
+      const { layer, record, featureType } = pendingEditPosition;
+      // 少し遅延を入れて確実にmapRegionが更新されてから実行
+      const timer = setTimeout(() => {
+        if (featureType === 'POINT') {
+          selectRecord(layer.id, record);
+        } else if (featureType === 'LINE' || featureType === 'POLYGON') {
+          selectObjectByFeature(layer, record);
+          setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+        }
+        setPendingEditPosition(null);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [pendingEditPosition, mapRegion, selectRecord, selectObjectByFeature, setDrawTool, currentLineTool, currentPolygonTool]);
+
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
 
@@ -1471,17 +1512,29 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else if (route.params?.mode === 'editPosition') {
         if (route.params?.layer === undefined || route.params?.record === undefined) return;
 
+        const layer = route.params.layer;
+        const record = route.params.record;
+        const featureType = layer.type as FeatureButtonType;
+        const jumpTo = route.params.jumpTo;
+        
+        // UI準備
         setTimeout(() => bottomSheetRef.current?.close(), 300);
-        const featureType = route.params.layer.type as FeatureButtonType;
         selectFeatureButton(featureType);
         setInfoToolActive(false);
-        changeMapRegion(route.params.jumpTo, true);
-
-        if (featureType === 'POINT') {
-          selectRecord(route.params.layer.id, route.params.record);
-        } else if (featureType === 'LINE' || featureType === 'POLYGON') {
-          selectObjectByFeature(route.params.layer, route.params.record);
-          setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+        
+        // まずマップを移動
+        if (jumpTo) {
+          changeMapRegion(jumpTo, true);
+          // mapRegion更新後に編集モードを開始するため、pendingEditPositionを設定
+          setPendingEditPosition({ layer, record, featureType });
+        } else {
+          // jumpToがない場合はすぐに編集モードを開始
+          if (featureType === 'POINT') {
+            selectRecord(layer.id, record);
+          } else if (featureType === 'LINE' || featureType === 'POLYGON') {
+            selectObjectByFeature(layer, record);
+            setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+          }
         }
       }
     } else if (route.params?.previous === 'Maps') {
@@ -1725,6 +1778,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressUndoDraw,
       pressSaveDraw,
       pressDeleteDraw,
+      finishEditObject,
+      resetDrawTools,
 
       // Backward compatibility (to be deprecated gradually)
       isEditingDraw,
@@ -1758,6 +1813,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       pressUndoDraw,
       pressSaveDraw,
       pressDeleteDraw,
+      finishEditObject,
+      resetDrawTools,
     ]
   );
 

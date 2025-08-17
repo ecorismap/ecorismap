@@ -32,11 +32,15 @@ export const SvgView = React.memo(() => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.current.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
+          // 最初のポイントを強調表示（編集モード時）
+          const isFirstPointHighlighted = properties.includes('EDIT') && 
+            (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON');
+          
           const startStyle =
             currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
               ? ''
               : properties.includes('EDIT')
-              ? `url(#add)`
+              ? isFirstPointHighlighted ? `url(#firstPoint)` : `url(#add)`
               : isEditingObject
               ? ''
               : `url(#delete)`;
@@ -152,6 +156,20 @@ const LineDefs = () => {
           orient="0"
         >
           <Circle cx="5" cy="5" r="3" fill="yellow" stroke="black" strokeWidth="1" />
+        </Marker>
+
+        <Marker
+          id="firstPoint"
+          viewBox="0 0 10 10"
+          refX="5"
+          refY="5"
+          //@ts-ignore
+          markerUnits="strokeWidth"
+          markerWidth={20 * OS_ASPECT_RATIO}
+          markerHeight={20 * OS_ASPECT_RATIO}
+          orient="0"
+        >
+          <Circle cx="5" cy="5" r="4" fill={COLOR.BLUE} stroke="white" strokeWidth="1.5" />
         </Marker>
 
         <Marker

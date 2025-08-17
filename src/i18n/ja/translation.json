@@ -166,7 +166,9 @@
     "notSupported": "web版ではマイクは使用できません",
     "none": "（なし）",
     "userName": "User",
-    "move": "上下"
+    "move": "上下",
+    "finish": "編集確定",
+    "cancel": "キャンセル"
   },
   "Home": {
     "confirm": {
