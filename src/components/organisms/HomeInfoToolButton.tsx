@@ -20,7 +20,7 @@ export const HomeInfoToolButton = React.memo(() => {
       left: 9 + insets.left,
       marginHorizontal: 0,
       position: 'absolute',
-      top: insets.top + (isLandscape ? 230 : 240),
+      top: insets.top + (isLandscape ? 240 : 250),
       // zIndex: 101,
     },
 

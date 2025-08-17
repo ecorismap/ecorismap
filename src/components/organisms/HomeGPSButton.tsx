@@ -22,7 +22,7 @@ export const HomeGPSButton = React.memo((props: Props) => {
         marginHorizontal: 0,
         left: 9 + insets.left,
         position: 'absolute',
-        top: insets.top + (isLandscape ? 170 : 187),
+        top: insets.top + (isLandscape ? 180 : 190),
         // zIndex: 101,
         // elevation: 101,
       }}

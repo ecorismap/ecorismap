@@ -30,7 +30,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
       left: left + insets.left,
       position: 'absolute',
       top: insets.top + (isLandscape ? 60 : 70),
-      width: 36,
+      width: 38,
       // zIndex: 100,
     },
   });
