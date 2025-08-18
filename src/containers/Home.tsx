@@ -1468,12 +1468,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         if (featureType === 'POINT') {
           selectRecord(layer.id, record);
         } else if (featureType === 'LINE' || featureType === 'POLYGON') {
-          selectObjectByFeature(layer, record);
+          // DataEditからの編集時は座標を再計算
+          selectObjectByFeature(layer, record, true);
           setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
         }
         setPendingEditPosition(null);
       }, 100);
-
+      
       return () => clearTimeout(timer);
     }
   }, [
@@ -1532,18 +1533,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         selectFeatureButton(featureType);
         setInfoToolActive(false);
-
+        
         // まずマップを移動
         if (jumpTo) {
           changeMapRegion(jumpTo, true);
           // mapRegion更新後に編集モードを開始するため、pendingEditPositionを設定
           setPendingEditPosition({ layer, record, featureType });
         } else {
-          // jumpToがない場合はすぐに編集モードを開始
+          // jumpToがない場合はすぐに編集モードを開始（座標再計算なし）
           if (featureType === 'POINT') {
             selectRecord(layer.id, record);
           } else if (featureType === 'LINE' || featureType === 'POLYGON') {
-            selectObjectByFeature(layer, record);
+            selectObjectByFeature(layer, record, false);
             setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
           }
         }

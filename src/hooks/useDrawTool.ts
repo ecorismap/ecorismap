@@ -140,7 +140,7 @@ export type UseDrawToolReturnType = {
   handleReleaseFreehand: () => void;
   handleReleasePlotPoint: () => void;
   handleReleasePlotLinePolygon: () => boolean;
-  selectObjectByFeature: (layer: LayerType, feature: RecordType) => void;
+  selectObjectByFeature: (layer: LayerType, feature: RecordType, shouldRefreshCoordinates?: boolean) => void;
   handleGrantSplitLine: (pXY: Position) => void;
   checkSplitLine: (pXY: Position) => boolean;
   setIsModalInfoToolHidden: (value: boolean) => void;
@@ -392,7 +392,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   );
 
   const selectObjectByFeature = useCallback(
-    (layer: LayerType, feature: RecordType) => {
+    (layer: LayerType, feature: RecordType, shouldRefreshCoordinates = false) => {
       if (layer.type === 'POINT') {
         convertPointFeatureToDrawLine(layer.id, [feature as PointRecordType]);
       } else if (layer.type === 'LINE') {
@@ -402,7 +402,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
       changeToEditingObject(0, layer.type as FeatureButtonType);
       isEditingDraw.current = true;
-      refreshDrawLine.current = true;
+      // DataEditからの編集時のみ座標を再計算
+      if (shouldRefreshCoordinates) {
+        refreshDrawLine.current = true;
+      }
       setRedraw(ulid());
     },
     [
@@ -1023,7 +1026,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const showDrawLine = useCallback(() => {
     //useEffectでdrawLineを更新してから表示する。この時点ではまだ座標が更新されていないため。
     refreshDrawLine.current = true;
-    setDrawLineVisible(true);
+    if (drawLine.current.length === 0) setDrawLineVisible(true);
   }, []);
 
   const deleteDraw = useCallback(() => {
