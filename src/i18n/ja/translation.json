@@ -167,8 +167,8 @@
     "none": "（なし）",
     "userName": "User",
     "move": "上下",
-    "finish": "編集確定",
-    "cancel": "キャンセル"
+    "finish": "確定",
+    "cancel": "取消"
   },
   "Home": {
     "confirm": {
