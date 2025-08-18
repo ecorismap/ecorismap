@@ -693,6 +693,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     //console.log(isOK, message, layer, recordSet);
     setDrawTool('NONE');
+    if (route.params?.mode === 'editPosition') {
+      navigation.setParams({ mode: undefined });
+    }
     if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
       bottomSheetRef.current?.snapToIndex(2);
       navigation.navigate('DataEdit', {
@@ -701,7 +704,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
-  }, [featureButton, navigation, saveLine, savePolygon, setDrawTool]);
+  }, [featureButton, navigation, route.params?.mode, saveLine, savePolygon, setDrawTool]);
 
   const pressDownloadTiles = useCallback(async () => {
     if (zoom < 11) {
@@ -1470,10 +1473,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
         setPendingEditPosition(null);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [pendingEditPosition, mapRegion, selectRecord, selectObjectByFeature, setDrawTool, currentLineTool, currentPolygonTool]);
+  }, [
+    pendingEditPosition,
+    mapRegion,
+    selectRecord,
+    selectObjectByFeature,
+    setDrawTool,
+    currentLineTool,
+    currentPolygonTool,
+  ]);
 
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
@@ -1516,12 +1527,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         const record = route.params.record;
         const featureType = layer.type as FeatureButtonType;
         const jumpTo = route.params.jumpTo;
-        
+
         // UI準備
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         selectFeatureButton(featureType);
         setInfoToolActive(false);
-        
+
         // まずマップを移動
         if (jumpTo) {
           changeMapRegion(jumpTo, true);
