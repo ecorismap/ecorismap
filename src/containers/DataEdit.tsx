@@ -335,11 +335,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (!isLocationTypeArray(targetRecord_.coords)) return jumpRegion;
       const coords = targetRecord_.coords;
       const bounds = boundingBoxFromCoords(coords);
-      const tempZoom =
-        deltaToZoom(windowWidth_, {
-          latitudeDelta: bounds.north - bounds.south,
-          longitudeDelta: bounds.east - bounds.west,
-        }).zoom;
+      const tempZoom = deltaToZoom(windowWidth_, {
+        latitudeDelta: bounds.north - bounds.south,
+        longitudeDelta: bounds.east - bounds.west,
+      }).zoom;
       const jumpZoom = tempZoom > 20 ? 20 : tempZoom;
       const featureWidth = bounds.east - bounds.west;
       const delta = featureWidth * 2 ** (tempZoom - jumpZoom);
@@ -538,7 +537,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     windowWidth,
   ]);
 
-  const pressAddReferenceDataByDictinary = useCallback(
+  const pressAddReferenceDataByDictionary = useCallback(
     (
       referenceLayer: LayerType,
       addRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType,
@@ -583,7 +582,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       pressDeleteData,
       pressCopyData,
       pressAddReferenceData,
-      pressAddReferenceDataByDictinary,
+      pressAddReferenceDataByDictionary,
       pressEditPosition,
       pressJumpToData,
       gotoGoogleMaps,
@@ -605,7 +604,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       isEditable,
       onChangeRecord,
       pressAddReferenceData,
-      pressAddReferenceDataByDictinary,
+      pressAddReferenceDataByDictionary,
       pressClosePhoto,
       pressCopyData,
       pressDeleteData,

@@ -123,7 +123,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     });
   }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer]);
 
-  const addDataByDictinary = useCallback(
+  const addDataByDictionary = useCallback(
     async (fieldId: string, value: string) => {
       const checkResult = checkRecordEditable(route.params.targetLayer);
 
@@ -179,7 +179,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       changeCheckedAll,
       changeVisible,
       changeVisibleAll,
-      addDataByDictinary,
+      addDataByDictionary,
       pressAddData,
       pressDeleteData,
       pressExportData,
@@ -203,7 +203,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       changeCheckedAll,
       changeVisible,
       changeVisibleAll,
-      addDataByDictinary,
+      addDataByDictionary,
       pressAddData,
       pressDeleteData,
       pressExportData,

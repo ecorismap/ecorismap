@@ -31,7 +31,7 @@ interface DataEditContextType {
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] }
   ) => void;
-  pressAddReferenceDataByDictinary: (
+  pressAddReferenceDataByDictionary: (
     referenceLayer: LayerType,
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] },

@@ -16,7 +16,7 @@ import { COLOR } from '../../constants/AppConstants';
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, gotoBack, addDataByDictinary } = useContext(DataContext);
+  const { layer, gotoBack, addDataByDictionary } = useContext(DataContext);
 
   const navigation = useNavigation();
 
@@ -77,7 +77,7 @@ export default function DataScreen() {
           <DictionaryTextInput
             initialValue=""
             table={`_${layer.id}_${layer.dictionaryFieldId}`}
-            handleSelect={(text: string) => addDataByDictinary(layer.dictionaryFieldId!, text)}
+            handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
             clearOnSelect
           />
         </View>

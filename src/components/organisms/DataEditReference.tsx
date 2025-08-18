@@ -26,7 +26,7 @@ interface Props {
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] }
   ) => void;
-  pressAddReferenceDataByDictinary: (
+  pressAddReferenceDataByDictionary: (
     referenceLayer: LayerType,
     addRecord: () => RecordType,
     fields: { [key: string]: string | number | PhotoType[] },
@@ -36,7 +36,7 @@ interface Props {
 
 export const DataEditReference = (props: Props) => {
   const { data } = useContext(DataEditContext);
-  const { name, list, refLayer, onPress, pressAddReferenceData, pressAddReferenceDataByDictinary } = props;
+  const { name, list, refLayer, onPress, pressAddReferenceData, pressAddReferenceDataByDictionary } = props;
 
   const refField = useMemo(
     () =>
@@ -109,7 +109,7 @@ export const DataEditReference = (props: Props) => {
               initialValue=""
               table={`_${refLayer.id}_${refLayer.dictionaryFieldId}`}
               handleSelect={(text: string) =>
-                pressAddReferenceDataByDictinary(refLayer, addDefaultRecord, fields, text)
+                pressAddReferenceDataByDictionary(refLayer, addDefaultRecord, fields, text)
               }
               clearOnSelect
             />

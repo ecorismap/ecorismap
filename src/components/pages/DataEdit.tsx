@@ -47,7 +47,7 @@ export default function DataEditScreen() {
     submitField,
     onChangeRecord,
     pressAddReferenceData,
-    pressAddReferenceDataByDictinary,
+    pressAddReferenceDataByDictionary,
     gotoBack,
     gotoReferenceData,
   } = useContext(DataEditContext);
@@ -56,7 +56,15 @@ export default function DataEditScreen() {
   const layers = useSelector((state: RootState) => state.layers);
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
         <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton
@@ -313,7 +321,7 @@ export default function DataEditScreen() {
                     refLayer={refLayer}
                     onPress={gotoReferenceData}
                     pressAddReferenceData={pressAddReferenceData}
-                    pressAddReferenceDataByDictinary={pressAddReferenceDataByDictinary}
+                    pressAddReferenceDataByDictionary={pressAddReferenceDataByDictionary}
                   />
                 )
               );
