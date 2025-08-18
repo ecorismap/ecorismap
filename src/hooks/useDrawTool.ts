@@ -899,6 +899,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       return { isOK: false, message: t('hooks.message.invalidPolygon'), layer: undefined, recordSet: undefined };
     }
     const { isOK, message, layer, recordSet } = getEditableLayerAndRecordSetWithCheck('POLYGON');
+    // console.log('🔍 savePolygon - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
     if (!isOK || layer === undefined || recordSet === undefined) {
       return { isOK: false, message, layer: undefined, recordSet: undefined };
     }

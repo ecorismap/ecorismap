@@ -39,11 +39,14 @@ export type UseDataReturnType = {
 };
 
 export const useData = (layerId: string): UseDataReturnType => {
+  // console.log('🔍 useData called with layerId:', layerId);
   const dispatch = useDispatch();
   const targetLayer = useSelector((state: RootState) => state.layers.find((l) => l.id === layerId)!, shallowEqual);
+  // console.log('🔍 targetLayer:', targetLayer?.name, 'type:', targetLayer?.type);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
   const route = useRoute();
+  // console.log('🔍 route.params:', route.params);
   const { isSettingProject } = useProject();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
   const [checkList, setCheckList] = useState<CheckListItem[]>([]);
@@ -70,8 +73,8 @@ export const useData = (layerId: string): UseDataReturnType => {
   );
 
   const isEditable = useMemo(
-    () => isSettingProject || targetLayer.permission !== 'COMMON',
-    [isSettingProject, targetLayer.permission]
+    () => isSettingProject || targetLayer?.permission !== 'COMMON',
+    [isSettingProject, targetLayer?.permission]
   );
 
   const changeOrder = useCallback(

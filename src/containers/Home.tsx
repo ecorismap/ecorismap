@@ -691,7 +691,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       Alert.alert('', message);
       return;
     }
-    //console.log(isOK, message, layer, recordSet);
+    // console.log('🔍 pressSaveDraw - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
     setDrawTool('NONE');
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });
