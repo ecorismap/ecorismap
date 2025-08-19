@@ -192,13 +192,13 @@ export default function Projects() {
                     height: 45,
                     flexDirection: 'row',
                   }}
-                  onPress={() => gotoProject(index)}
+                  onPress={() => gotoProject(item.id)}
                 >
                   <View style={[styles.td, { flex: 3, width: 180 }]}>
                     <Text
                       adjustsFontSizeToFit={true}
                       numberOfLines={2}
-                      onPress={() => gotoProject(index)}
+                      onPress={() => gotoProject(item.id)}
                       testID={`project-${index}`}
                     >
                       {item.name}

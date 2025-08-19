@@ -48,8 +48,11 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, [navigation]);
 
   const gotoProject = useCallback(
-    (index: number) => {
-      navigation.navigate('ProjectEdit', { previous: 'Projects', project: projects[index], isNew: false });
+    (projectId: string) => {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        navigation.navigate('ProjectEdit', { previous: 'Projects', project, isNew: false });
+      }
     },
     [navigation, projects]
   );
@@ -66,16 +69,17 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, [fetchProjects]);
 
   const onPressGotoProject = useCallback(
-    async (index: number) => {
+    async (projectId: string) => {
       //暗号化パスワードのチェック。今は煩雑なのでオフにしている
       if (true || Platform.OS === 'web') {
-        gotoProject(index);
+        gotoProject(projectId);
       } else {
+        const index = projects.findIndex(p => p.id === projectId);
         setProjectIndex(index);
         setIsEncryptPasswordModalOpen(true);
       }
     },
-    [gotoProject]
+    [gotoProject, projects]
   );
 
   const pressEncryptPasswordOK = useCallback(
@@ -87,7 +91,10 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         await AlertAsync(t('hooks.message.encryptKeyFailed'));
         return;
       }
-      gotoProject(projectIndex);
+      const project = projects[projectIndex];
+      if (project) {
+        gotoProject(project.id);
+      }
     },
     [cleanupEncryptKey, gotoProject, projectIndex, restoreEncryptKey]
   );

@@ -10,7 +10,7 @@ interface ProjectsContextType {
   pressEncryptPasswordCancel: () => void;
   onReloadProjects: () => void;
   pressAddProject: () => void;
-  gotoProject: (index: number) => void;
+  gotoProject: (projectId: string) => void;
   gotoBack: () => void;
 }
 export const ProjectsContext = createContext({} as ProjectsContextType);
