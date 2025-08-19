@@ -144,6 +144,18 @@ export default function Projects() {
                 <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
               )}
             </Pressable>
+            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
+              <Text>{`${t('common.updatedAt')}`}</Text>
+              {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
+              )}
+              {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
+              )}
+            </Pressable>
+            <View style={[styles.th, { flex: 2, width: 100 }]}>
+              <Text>{`${t('common.owner')}`}</Text>
+            </View>
             <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
               <Text>{`${t('common.usage')}`}</Text>
               {sortField === 'storage' && sortOrder === 'ASCENDING' && (
@@ -160,18 +172,6 @@ export default function Projects() {
               )}
               {sortField === 'license' && sortOrder === 'DESCENDING' && (
                 <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
-              )}
-            </Pressable>
-            <View style={[styles.th, { flex: 2, width: 100 }]}>
-              <Text>{`${t('common.owner')}`}</Text>
-            </View>
-            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
-              <Text>{`${t('common.updatedAt')}`}</Text>
-              {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
-              )}
-              {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
               )}
             </Pressable>
           </View>
@@ -207,14 +207,15 @@ export default function Projects() {
                       {item.abstract}
                     </Text>
                   </View>
-                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
-                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
-                    </Text>
-                  </View>
                   <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.license ?? 'Free'}
+                      {item.settingsEncryptedAt ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-'}
                     </Text>
                   </View>
                   <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
@@ -227,15 +228,14 @@ export default function Projects() {
                       />
                     )}
                   </View>
+                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                      {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
+                    </Text>
+                  </View>
                   <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.settingsEncryptedAt ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : '-'}
+                      {item.license ?? 'Free'}
                     </Text>
                   </View>
                 </Pressable>
