@@ -75,6 +75,8 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
       if (data === undefined) {
         return undefined;
       } else {
+        // settings/defaultのencryptedAtを取得
+        const settingsEncryptedAt = await getSettingsUpdatedAt(docSnapshot.id);
         //ToDO 2022.6.24以降に作成したプロジェクトは、functionsでstorage,licenseを設定するのでundefineにはならないはず。
         //古いプロジェクトがなくなったらコードとProjectFSのtypeを変更すること
         return {
@@ -83,6 +85,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           storage: storage ?? { count: 0 },
           license: license ?? 'Free',
           encryptedAt: toDate(encryptedAt),
+          settingsEncryptedAt,
           ...data,
           ...others,
         } as ProjectType;

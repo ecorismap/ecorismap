@@ -73,11 +73,9 @@ export default function Projects() {
           bValue = b.license || '';
           break;
         case 'encryptedAt':
-          aValue = a.encryptedAt ? new Date(a.encryptedAt).getTime() : 0;
-          bValue = b.encryptedAt ? new Date(b.encryptedAt).getTime() : 0;
+          aValue = a.settingsEncryptedAt ? new Date(a.settingsEncryptedAt).getTime() : 0;
+          bValue = b.settingsEncryptedAt ? new Date(b.settingsEncryptedAt).getTime() : 0;
           break;
-        default:
-          return 0;
       }
       
       if (aValue < bValue) return sortOrder === 'ASCENDING' ? -1 : 1;
@@ -231,10 +229,12 @@ export default function Projects() {
                   </View>
                   <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.encryptedAt ? new Date(item.encryptedAt).toLocaleDateString('ja-JP', {
+                      {item.settingsEncryptedAt ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
                         year: 'numeric',
                         month: '2-digit',
-                        day: '2-digit'
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
                       }) : '-'}
                     </Text>
                   </View>
