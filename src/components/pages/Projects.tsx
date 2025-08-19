@@ -1,5 +1,6 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
@@ -11,6 +12,9 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
 import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptPassword';
+
+type SortField = 'name' | 'abstract' | 'storage' | 'license' | 'encryptedAt';
+type SortOrder = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
 export default function Projects() {
   const {
@@ -27,6 +31,62 @@ export default function Projects() {
   } = useContext(ProjectsContext);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('ASCENDING');
+  
+  const handleSort = useCallback((field: SortField) => {
+    if (field === sortField) {
+      setSortOrder(
+        sortOrder === 'UNSORTED' ? 'DESCENDING' : 
+        sortOrder === 'DESCENDING' ? 'ASCENDING' : 
+        'UNSORTED'
+      );
+    } else {
+      setSortField(field);
+      setSortOrder('DESCENDING');
+    }
+  }, [sortField, sortOrder]);
+  
+  const sortedProjects = useMemo(() => {
+    if (sortOrder === 'UNSORTED') return projects;
+    
+    const sorted = [...projects].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (sortField) {
+        case 'name':
+          aValue = a.name;
+          bValue = b.name;
+          break;
+        case 'abstract':
+          aValue = a.abstract;
+          bValue = b.abstract;
+          break;
+        case 'storage':
+          aValue = a.storage?.count || 0;
+          bValue = b.storage?.count || 0;
+          break;
+        case 'license':
+          aValue = a.license || '';
+          bValue = b.license || '';
+          break;
+        case 'encryptedAt':
+          aValue = a.encryptedAt ? new Date(a.encryptedAt).getTime() : 0;
+          bValue = b.encryptedAt ? new Date(b.encryptedAt).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortOrder === 'ASCENDING' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'ASCENDING' ? 1 : -1;
+      return 0;
+    });
+    
+    return sorted;
+  }, [projects, sortField, sortOrder]);
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
@@ -68,32 +128,62 @@ export default function Projects() {
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: insets.bottom }}>
         <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
           <View style={{ flexDirection: 'row', height: 45 }}>
-            <View style={[styles.th, { flex: 3, width: 180 }]}>
+            <Pressable style={[styles.th, { flex: 3, width: 180 }]} onPress={() => handleSort('name')}>
               <Text>{`${t('common.projectName')}`}</Text>
-            </View>
-            <View style={[styles.th, { flex: 2, width: 120 }]}>
+              {sortField === 'name' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+              )}
+              {sortField === 'name' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+              )}
+            </Pressable>
+            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('abstract')}>
               <Text>{`${t('common.overview')}`}</Text>
-            </View>
-            <View style={[styles.th, { flex: 2, width: 120 }]}>
+              {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+              )}
+              {sortField === 'abstract' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+              )}
+            </Pressable>
+            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
               <Text>{`${t('common.usage')}`}</Text>
-            </View>
-            <View style={[styles.th, { flex: 2, width: 120 }]}>
+              {sortField === 'storage' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color="black" />
+              )}
+              {sortField === 'storage' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-numeric-descending" size={16} color="black" />
+              )}
+            </Pressable>
+            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('license')}>
               <Text>{`${t('common.license')}`}</Text>
-            </View>
+              {sortField === 'license' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+              )}
+              {sortField === 'license' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+              )}
+            </Pressable>
             <View style={[styles.th, { flex: 2, width: 100 }]}>
               <Text>{`${t('common.owner')}`}</Text>
             </View>
-            <View style={[styles.th, { flex: 2, width: 120 }]}>
+            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
               <Text>{`${t('common.updatedAt')}`}</Text>
-            </View>
+              {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
+                <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
+              )}
+              {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
+                <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
+              )}
+            </Pressable>
           </View>
           {isLoading ? (
             <Loading visible={isLoading} text="" />
           ) : (
             <FlatList
-              initialNumToRender={projects.length}
-              data={projects}
-              extraData={projects}
+              initialNumToRender={sortedProjects.length}
+              data={sortedProjects}
+              extraData={sortedProjects}
               renderItem={({ item, index }) => (
                 <Pressable
                   key={index}
