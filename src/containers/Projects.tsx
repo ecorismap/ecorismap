@@ -96,7 +96,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         gotoProject(project.id);
       }
     },
-    [cleanupEncryptKey, gotoProject, projectIndex, restoreEncryptKey]
+    [cleanupEncryptKey, gotoProject, projectIndex, projects, restoreEncryptKey]
   );
 
   const pressEncryptPasswordCancel = useCallback(() => {
