@@ -289,6 +289,7 @@ export interface ProjectType {
   abstract: string;
   storage: { count: number };
   license: License;
+  encryptedAt?: Date;
   // Grouping properties
   isGroup?: boolean;
   groupId?: string;

@@ -82,6 +82,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           ownerUid,
           storage: storage ?? { count: 0 },
           license: license ?? 'Free',
+          encryptedAt: toDate(encryptedAt),
           ...data,
           ...others,
         } as ProjectType;

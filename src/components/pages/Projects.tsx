@@ -83,6 +83,9 @@ export default function Projects() {
             <View style={[styles.th, { flex: 2, width: 100 }]}>
               <Text>{`${t('common.owner')}`}</Text>
             </View>
+            <View style={[styles.th, { flex: 2, width: 120 }]}>
+              <Text>{`${t('common.updatedAt')}`}</Text>
+            </View>
           </View>
           {isLoading ? (
             <Loading visible={isLoading} text="" />
@@ -135,6 +138,15 @@ export default function Projects() {
                         style={{ backgroundColor: COLOR.MAIN }}
                       />
                     )}
+                  </View>
+                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
+                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                      {item.encryptedAt ? new Date(item.encryptedAt).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      }) : '-'}
+                    </Text>
                   </View>
                 </Pressable>
               )}
