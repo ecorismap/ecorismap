@@ -66,17 +66,23 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     } else {
       q = query(collection(firestore, 'projects'), where('membersUid', 'array-contains', uid));
     }
-    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
+    
+    // 常にサーバーから最新データを取得（プロジェクト一覧は最新情報が重要）
+    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> = 
       await getDocsFromServer(q);
-    //const querySnapshot = await getDocsFromServer(q);
-    const result = querySnapshot.docs.map(async (docSnapshot) => {
+    
+    // バッチ処理で設定の更新日時を取得（並列処理）
+    const settingsPromises = querySnapshot.docs.map(docSnapshot => getSettingsUpdatedAt(docSnapshot.id));
+    const settingsResults = await Promise.all(settingsPromises);
+    
+    const result = querySnapshot.docs.map(async (docSnapshot, index) => {
       const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
       if (data === undefined) {
         return undefined;
       } else {
-        // settings/defaultのencryptedAtを取得
-        const settingsEncryptedAt = await getSettingsUpdatedAt(docSnapshot.id);
+        // 事前に取得した設定の更新日時を使用
+        const settingsEncryptedAt = settingsResults[index];
         //ToDO 2022.6.24以降に作成したプロジェクトは、functionsでstorage,licenseを設定するのでundefineにはならないはず。
         //古いプロジェクトがなくなったらコードとProjectFSのtypeを変更すること
         return {
@@ -101,7 +107,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     console.log(error);
     throw new Error(t('common.message.failGetProjects'));
   }
-};
+};;
 
 export const addProject = async (project: ProjectType) => {
   try {
