@@ -135,12 +135,12 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record]);
-  
+
   // Reduxストアのデータが更新された際に緯度経度を更新
   useEffect(() => {
     if (route.name !== 'DataEdit') return;
     if (!targetRecord || !targetRecord.id) return;
-    
+
     // Reduxストアから最新のレコードを取得
     const updatedRecord = allUserRecordSet.find((d) => d.id === targetRecord.id);
     if (updatedRecord && layer.type === 'POINT') {

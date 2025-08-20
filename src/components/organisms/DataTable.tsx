@@ -128,7 +128,7 @@ const DataRow = React.memo(
 
     // itemの全フィールドを比較（深い比較）
     const isItemEqual = JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item);
-    
+
     return (
       isItemEqual &&
       prevProps.isActive === nextProps.isActive &&
