@@ -179,15 +179,35 @@ export function changeLayerId(layer: LayerType) {
   newLayer.expanded = undefined;
   newLayer.sortedName = undefined;
   newLayer.sortedOrder = undefined;
+  
+  // dictionaryFieldIdの初期化
+  let newDictionaryFieldId: string | undefined;
+  const oldDictionaryFieldId = newLayer.dictionaryFieldId;
   newLayer.dictionaryFieldId = undefined;
 
   const fieldIdMap: { [key: string]: string } = {};
   newLayer.field.forEach((f) => {
     const newId = ulid();
     fieldIdMap[f.id] = newId;
+    
+    // 元のdictionaryFieldIdと一致する場合は、新しいIDを記録
+    if (oldDictionaryFieldId === f.id) {
+      newDictionaryFieldId = newId;
+    }
+    
     f.id = newId;
-    f.useDictionaryAdd = false; //辞書追加を無効にする.すでに他のレイヤで有効になっている場合があるため
+    // useDictionaryAddは元の値を保持する（削除）
   });
+  
+  // useDictionaryAddがtrueのフィールドがある場合、そのIDをdictionaryFieldIdに設定
+  const dictionaryField = newLayer.field.find((f) => f.useDictionaryAdd);
+  if (dictionaryField) {
+    newLayer.dictionaryFieldId = dictionaryField.id;
+  } else if (newDictionaryFieldId) {
+    // 元のdictionaryFieldIdがあった場合は、新しいIDに更新
+    newLayer.dictionaryFieldId = newDictionaryFieldId;
+  }
+  
   //新旧のレイヤーIDの対応と、新旧のフィールドIDの対応を保存する
   return {
     layer: newLayer,

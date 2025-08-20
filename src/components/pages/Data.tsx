@@ -42,8 +42,10 @@ export default function DataScreen() {
             style={{ marginLeft: 10 }}
           />
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: layer.name.length > 13 ? 10 : 15 }}>{layer.name}</Text>
+        <View style={{ minWidth: 200, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text numberOfLines={1} adjustsFontSizeToFit>
+            {layer.name}
+          </Text>
         </View>
         <View style={{ flex: 1.5 }} />
       </View>

@@ -68,7 +68,8 @@ export const LayersTable = React.memo(() => {
                 color={COLOR.GRAY4}
               />
             ) : (
-              (isSettingProject || (item.permission !== 'COMMON' && item.id !== 'track')) && (
+              (isSettingProject || item.permission !== 'COMMON') &&
+              item.id !== 'track' && (
                 <Button
                   name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
                   onPress={() => changeActiveLayer(item)}
