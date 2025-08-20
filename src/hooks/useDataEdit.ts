@@ -135,6 +135,24 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record]);
+  
+  // Reduxストアのデータが更新された際に緯度経度を更新
+  useEffect(() => {
+    if (route.name !== 'DataEdit') return;
+    if (!targetRecord || !targetRecord.id) return;
+    
+    // Reduxストアから最新のレコードを取得
+    const updatedRecord = allUserRecordSet.find((d) => d.id === targetRecord.id);
+    if (updatedRecord && layer.type === 'POINT') {
+      const newLatLon = isLocationType(updatedRecord.coords) ? toLatLonDMS(updatedRecord.coords) : LatLonDMSTemplate;
+      // 緯度経度が変更されている場合のみ更新
+      if (JSON.stringify(newLatLon) !== JSON.stringify(latlon)) {
+        setLatLon(newLatLon);
+        setTargetRecord(updatedRecord);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allUserRecordSet]);
 
   const changeRecord = useCallback(
     (value: number) => {

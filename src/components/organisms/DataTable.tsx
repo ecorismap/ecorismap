@@ -121,14 +121,16 @@ const DataRow = React.memo(
     );
   },
   (prevProps, nextProps) => {
-    // カスタム比較関数で不要な再レンダリングを防ぐ
+    // カスタム比較関数: trueを返すと再レンダリングをスキップ
     const prevIndex = prevProps.getIndex();
     const nextIndex = nextProps.getIndex();
     if (prevIndex === undefined || nextIndex === undefined) return false;
 
+    // itemの全フィールドを比較（深い比較）
+    const isItemEqual = JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item);
+    
     return (
-      prevProps.item.id === nextProps.item.id &&
-      prevProps.item.visible === nextProps.item.visible &&
+      isItemEqual &&
       prevProps.isActive === nextProps.isActive &&
       prevProps.checkList[prevIndex]?.checked === nextProps.checkList[nextIndex]?.checked
     );

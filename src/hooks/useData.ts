@@ -205,7 +205,8 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   useEffect(() => {
     if (targetLayer === undefined) return;
-    if (route.name !== 'Data' && route.name !== 'DataEdit') return;
+    // Data画面でのみ実行する（DataEdit画面では実行しない）
+    if (route.name !== 'Data') return;
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allUserRecordSet, route.name, targetLayer]);
