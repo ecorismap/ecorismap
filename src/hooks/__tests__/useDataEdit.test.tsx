@@ -7,7 +7,7 @@ import dataSetReducer, { updateRecordsAction } from '../../modules/dataSet';
 import layersReducer from '../../modules/layers';
 import settingsReducer from '../../modules/settings';
 import userReducer from '../../modules/user';
-import { RecordType, LayerType, LocationType } from '../../types';
+import { RecordType, LayerType } from '../../types';
 import { isLocationType } from '../../utils/General';
 
 // モックナビゲーション

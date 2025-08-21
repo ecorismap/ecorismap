@@ -64,7 +64,6 @@ export const DataEditReference = (props: Props) => {
       .filter((d) => d.field._group === undefined || d.field._group === '')
       .reverse();
   }, [sortedRecordSet, primaryKey, refField]);
-
   const fields = useMemo(() => {
     return refField.reduce((obj, f, index) => {
       //@ts-ignore

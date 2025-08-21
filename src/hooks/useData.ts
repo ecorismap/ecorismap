@@ -13,7 +13,6 @@ import {
 import { ulid } from 'ulid';
 import { getDefaultField, sortData, SortOrderType } from '../utils/Data';
 
-import { useRoute } from '@react-navigation/native';
 import { updateLayerAction } from '../modules/layers';
 import { selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { deleteRecordPhotos } from '../utils/Photo';
@@ -45,7 +44,6 @@ export const useData = (layerId: string): UseDataReturnType => {
   // console.log('🔍 targetLayer:', targetLayer?.name, 'type:', targetLayer?.type);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
-  const route = useRoute();
   // console.log('🔍 route.params:', route.params);
   const { isSettingProject } = useProject();
   const [sortedRecordSet, setSortedRecordSet] = useState<RecordType[]>([]);
@@ -205,11 +203,10 @@ export const useData = (layerId: string): UseDataReturnType => {
 
   useEffect(() => {
     if (targetLayer === undefined) return;
-    // Data画面でのみ実行する（DataEdit画面では実行しない）
-    if (route.name !== 'Data') return;
+    // すべての画面で初期化を実行（DataEdit画面でREFERENCEフィールドが動作するように）
     changeOrder(targetLayer.sortedName || '', targetLayer.sortedOrder || 'UNSORTED');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUserRecordSet, route.name, targetLayer]);
+  }, [allUserRecordSet, targetLayer]);
 
   return {
     sortedRecordSet,

@@ -9,13 +9,6 @@ import settingsReducer from '../../modules/settings';
 import userReducer from '../../modules/user';
 import { RecordType, LayerType } from '../../types';
 
-// モックナビゲーション
-jest.mock('@react-navigation/native', () => ({
-  useRoute: () => ({
-    name: 'Data',
-    params: {},
-  }),
-}));
 
 jest.mock('../useProject', () => ({
   useProject: () => ({
@@ -129,6 +122,289 @@ const createMockRecord = (id: string, name: string, value: number): RecordType =
 });
 
 describe('useData', () => {
+  describe('REFERENCEフィールドでのデータ取得', () => {
+    it('参照レイヤーのデータが正しく初期化される', () => {
+      // 参照レイヤー用のデータを準備
+      const refLayerRecords: RecordType[] = [
+        {
+          id: 'ref1',
+          userId: 'user1',
+          displayName: 'Test User',
+          visible: true,
+          redraw: false,
+          coords: { latitude: 35.6762, longitude: 139.6503 },
+          field: {
+            refName: 'Reference Item 1',
+            refValue: 100,
+          },
+          updatedAt: Date.now(),
+        },
+        {
+          id: 'ref2',
+          userId: 'user1',
+          displayName: 'Test User',
+          visible: true,
+          redraw: false,
+          coords: { latitude: 35.6763, longitude: 139.6504 },
+          field: {
+            refName: 'Reference Item 2',
+            refValue: 200,
+          },
+          updatedAt: Date.now(),
+        },
+      ];
+
+      const store = configureStore({
+        reducer: {
+          dataSet: dataSetReducer,
+          layers: layersReducer,
+          settings: settingsReducer,
+          user: userReducer,
+        },
+        preloadedState: {
+          dataSet: [
+            {
+              layerId: 'mainLayer',
+              userId: 'user1',
+              data: [],
+            },
+            {
+              layerId: 'refLayer',
+              userId: 'user1',
+              data: refLayerRecords,
+            },
+          ],
+          layers: [
+            {
+              id: 'mainLayer',
+              name: 'Main Layer',
+              type: 'POINT',
+              permission: 'PRIVATE',
+              field: [
+                { id: 'field1', name: 'Name', format: 'STRING' },
+                {
+                  id: 'field2',
+                  name: 'Reference',
+                  format: 'REFERENCE',
+                  list: [
+                    { value: 'refLayer', isOther: false, customFieldValue: '' },
+                    { value: 'refName', isOther: false, customFieldValue: '' },
+                    { value: '_id', isOther: false, customFieldValue: '' },
+                  ],
+                },
+              ],
+              active: true,
+            } as LayerType,
+            {
+              id: 'refLayer',
+              name: 'Reference Layer',
+              type: 'POINT',
+              permission: 'PRIVATE',
+              field: [
+                { id: 'refField1', name: 'refName', format: 'STRING' },
+                { id: 'refField2', name: 'refValue', format: 'DECIMAL' },
+              ],
+              active: true,
+              sortedOrder: 'UNSORTED',
+              sortedName: '',
+            } as LayerType,
+          ],
+          settings: {
+            tutrials: {
+              POINTTOOL_PLOT_POINT: true,
+              POINTTOOL_ADD_LOCATION_POINT: true,
+              LINETOOL_PLOT_LINE: true,
+              LINETOOL_FREEHAND_LINE: true,
+              POLYGONTOOL_PLOT_POLYGON: true,
+              POLYGONTOOL_FREEHAND_POLYGON: true,
+              SELECTIONTOOL: true,
+              INFOTOOL: true,
+              LAYERS_BTN_IMPORT: true,
+              HOME_BTN_GPS: true,
+              HOME_BTN_TRACK: true,
+              MAPS_BTN_ONLINE: true,
+              MAPS_BTN_OFFLINE: true,
+              PENCILMODE: true,
+            },
+            updatedAt: '',
+            role: undefined,
+            mapType: 'standard' as const,
+            mapRegion: {
+              latitude: 0,
+              longitude: 0,
+              latitudeDelta: 0,
+              longitudeDelta: 0,
+              zoom: 0,
+            },
+            isSettingProject: false,
+            isSynced: false,
+            isOffline: false,
+            tileRegions: [],
+            projectId: 'project1',
+            projectName: undefined,
+            projectRegion: {
+              latitude: 0,
+              longitude: 0,
+              latitudeDelta: 0,
+              longitudeDelta: 0,
+              zoom: 0,
+            },
+            memberLocation: [],
+            isEditingRecord: false,
+            selectedRecord: undefined,
+            plugins: {},
+            mapListURL: '',
+            mapList: [],
+            gpsAccuracy: 'HIGH' as const,
+            agreedTermsVersion: '',
+            isModalInfoToolHidden: false,
+            isModalMapMemoToolHidden: false,
+            currentInfoTool: 'ALL_INFO' as const,
+          },
+          user: {
+            uid: 'user1',
+            email: 'test@example.com',
+            displayName: 'Test User',
+            photoURL: null,
+            emailVerified: true,
+          },
+        },
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <Provider store={store}>{children}</Provider>
+      );
+
+      // 参照レイヤーのデータを取得
+      const { result } = renderHook(() => useData('refLayer'), { wrapper });
+
+      // sortedRecordSetが正しく初期化されていることを確認
+      // これが空配列になってしまうバグを検出できる
+      expect(result.current.sortedRecordSet).toHaveLength(2);
+      expect(result.current.sortedRecordSet[0].id).toBe('ref1');
+      expect(result.current.sortedRecordSet[1].id).toBe('ref2');
+      expect(result.current.sortedRecordSet[0].field.refName).toBe('Reference Item 1');
+      expect(result.current.sortedRecordSet[1].field.refValue).toBe(200);
+    });
+
+    it('参照レイヤーで新しいレコードを追加できる', () => {
+      const store = configureStore({
+        reducer: {
+          dataSet: dataSetReducer,
+          layers: layersReducer,
+          settings: settingsReducer,
+          user: userReducer,
+        },
+        preloadedState: {
+          dataSet: [
+            {
+              layerId: 'refLayer',
+              userId: 'user1',
+              data: [],
+            },
+          ],
+          layers: [
+            {
+              id: 'refLayer',
+              name: 'Reference Layer',
+              type: 'POINT',
+              permission: 'PRIVATE',
+              field: [
+                { id: 'refField1', name: 'refName', format: 'STRING' },
+                { id: 'refField2', name: 'refValue', format: 'DECIMAL' },
+              ],
+              active: true,
+              sortedOrder: 'UNSORTED',
+              sortedName: '',
+            } as LayerType,
+          ],
+          settings: {
+            tutrials: {
+              POINTTOOL_PLOT_POINT: true,
+              POINTTOOL_ADD_LOCATION_POINT: true,
+              LINETOOL_PLOT_LINE: true,
+              LINETOOL_FREEHAND_LINE: true,
+              POLYGONTOOL_PLOT_POLYGON: true,
+              POLYGONTOOL_FREEHAND_POLYGON: true,
+              SELECTIONTOOL: true,
+              INFOTOOL: true,
+              LAYERS_BTN_IMPORT: true,
+              HOME_BTN_GPS: true,
+              HOME_BTN_TRACK: true,
+              MAPS_BTN_ONLINE: true,
+              MAPS_BTN_OFFLINE: true,
+              PENCILMODE: true,
+            },
+            updatedAt: '',
+            role: undefined,
+            mapType: 'standard' as const,
+            mapRegion: {
+              latitude: 0,
+              longitude: 0,
+              latitudeDelta: 0,
+              longitudeDelta: 0,
+              zoom: 0,
+            },
+            isSettingProject: false,
+            isSynced: false,
+            isOffline: false,
+            tileRegions: [],
+            projectId: 'project1',
+            projectName: undefined,
+            projectRegion: {
+              latitude: 0,
+              longitude: 0,
+              latitudeDelta: 0,
+              longitudeDelta: 0,
+              zoom: 0,
+            },
+            memberLocation: [],
+            isEditingRecord: false,
+            selectedRecord: undefined,
+            plugins: {},
+            mapListURL: '',
+            mapList: [],
+            gpsAccuracy: 'HIGH' as const,
+            agreedTermsVersion: '',
+            isModalInfoToolHidden: false,
+            isModalMapMemoToolHidden: false,
+            currentInfoTool: 'ALL_INFO' as const,
+          },
+          user: {
+            uid: 'user1',
+            email: 'test@example.com',
+            displayName: 'Test User',
+            photoURL: null,
+            emailVerified: true,
+          },
+        },
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <Provider store={store}>{children}</Provider>
+      );
+
+      const { result } = renderHook(() => useData('refLayer'), { wrapper });
+
+      // 初期状態は空
+      expect(result.current.sortedRecordSet).toHaveLength(0);
+
+      // addDefaultRecordで新しい参照レコードを追加
+      let newRecord: RecordType | undefined;
+      act(() => {
+        newRecord = result.current.addDefaultRecord({
+          refName: 'New Reference',
+          refValue: 300,
+        });
+      });
+
+      // レコードが追加されたことを確認
+      expect(newRecord).toBeDefined();
+      expect(newRecord?.field.refName).toBe('New Reference');
+      expect(newRecord?.field.refValue).toBe(300);
+    });
+  });
+
   describe('Reduxストアの更新が反映される', () => {
     it('updateRecordsActionでレコードが更新された時、sortedRecordSetも更新される', () => {
       const initialRecord = createMockRecord('record1', 'Initial Name', 100);
