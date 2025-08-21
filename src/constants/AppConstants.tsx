@@ -3,8 +3,8 @@ import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.4.5';
-export const FUNC_LOGIN = true;
-export const FUNC_PROJECT = true;
+export const FUNC_LOGIN = false;
+export const FUNC_PROJECT = false;
 export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
 export const FUNC_ENCRYPTION = true;
@@ -12,7 +12,7 @@ export const FUNC_CREATE_PROJECT_BY_MOBILE = false;
 
 export const CURRENT_TERMS_VERSION = '2024-08-16';
 export const PLUGIN = {
-  HISYOUTOOL: true,
+  HISYOUTOOL: false,
 };
 export const COLOR = {
   MAIN: '#f2f2f2',
