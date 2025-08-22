@@ -85,10 +85,10 @@ export default function App() {
   }, []);
 
   const handleMigrationComplete = () => {
-    // 移行完了後、アプリをリロード
-    persistor.purge().then(() => {
-      persistor.persist();
-    });
+    // 移行完了後、ダイアログを閉じる
+    setShowMigrationDialog(false);
+    // データは既にMMKVに移行されているので、そのまま使用可能
+    // purgeするとデータが消えてしまうので、何もしない
   };
 
   return (

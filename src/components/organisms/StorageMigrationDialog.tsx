@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButton: {
-    backgroundColor: COLOR.MAIN,
+    backgroundColor: COLOR.BLUE,
   },
   primaryButtonText: {
     color: COLORS.white,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   secondaryButton: {
     backgroundColor: COLORS.background,
