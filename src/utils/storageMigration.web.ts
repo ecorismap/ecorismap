@@ -57,7 +57,7 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
 /**
  * Web版では実装不要
  */
-export const migrateToMMKV = async (options: {
+export const migrateToMMKV = async (_options: {
   backup: boolean;
   clearOldData: boolean;
 }): Promise<MigrationResult> => {

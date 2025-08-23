@@ -7,11 +7,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  Switch,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
-import { StorageInfo, formatDataSize, migrateToMMKV, skipMigration, postponeMigration } from '../../utils/storageMigration';
+import { StorageInfo, formatDataSize, skipMigration, postponeMigration } from '../../utils/storageMigration';
 
 interface StorageMigrationDialogProps {
   visible: boolean;
@@ -27,46 +26,34 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
   onMigrationComplete,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [createBackup, setCreateBackup] = useState(true);
-  const [clearOldData, setClearOldData] = useState(false);
   const [progress, setProgress] = useState('');
 
   const handleMigrate = async () => {
-    // データ移行前の確認ダイアログを表示
-    Alert.alert(
-      '移行前の確認',
-      '移行を実行すると、現在のデータが古いデータで上書きされる可能性があります。\n\n安全のため、移行前に現在のデータをエクスポートすることを推奨します。',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '理解して続行',
-          style: 'destructive',
-          onPress: () => performMigration(),
-        },
-      ]
-    );
+    performMigration();
   };
 
   const performMigration = async () => {
     setIsProcessing(true);
-    setProgress('移行処理を開始しています...');
+    setProgress('データをエクスポートしています...');
 
     try {
-      const result = await migrateToMMKV({
-        backup: createBackup,
-        clearOldData: clearOldData,
-      });
+      // エクスポートのみ実行（自動移行はしない）
+      const { exportAsyncStorageData } = require('../../utils/storageMigration');
+      const backupPath = await exportAsyncStorageData();
 
-      if (result.success) {
-        setProgress('移行が完了しました');
+      if (backupPath) {
+        setProgress('エクスポートが完了しました');
         
         Alert.alert(
-          '移行完了',
-          result.message + (result.backupPath ? '\n\nバックアップファイルが保存されました' : ''),
+          'エクスポート完了',
+          '以前のデータをエクスポートしました。\n\n設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。',
           [
             {
               text: 'OK',
               onPress: () => {
+                // エクスポート後は移行完了フラグを設定
+                const { storage } = require('../../utils/mmkvStorage');
+                storage.set('migration_completed_v2', 'true');
                 onMigrationComplete();
                 onClose();
               },
@@ -74,13 +61,13 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
           ]
         );
       } else {
-        throw new Error(result.message);
+        throw new Error('エクスポートに失敗しました');
       }
     } catch (error) {
       setProgress('');
       Alert.alert(
         'エラー',
-        `移行中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
+        `エクスポート中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
         [{ text: 'OK' }]
       );
     } finally {
@@ -142,48 +129,15 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
 
             <Text style={styles.description}>
               アプリのストレージシステムが更新されました。
-              以前のデータを新しいシステムに移行することができます。
+              以前のデータをエクスポートして、新しいシステムで使用できます。
             </Text>
 
-            <View style={styles.warningBox}>
-              <MaterialIcons name="warning" size={20} color={COLORS.warningText} />
-              <Text style={styles.warningText}>
-                注意: 移行により現在のデータが上書きされる可能性があります。
-                安全のため、移行前に設定画面から現在のデータをエクスポートすることを推奨します。
+            <View style={styles.infoBox}>
+              <MaterialIcons name="info" size={20} color={COLOR.BLUE} />
+              <Text style={styles.infoText}>
+                エクスポート後、設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。
               </Text>
             </View>
-
-            {!isProcessing && (
-              <>
-                <View style={styles.optionSection}>
-                  <View style={styles.option}>
-                    <Text style={styles.optionText}>バックアップを作成</Text>
-                    <Switch
-                      value={createBackup}
-                      onValueChange={setCreateBackup}
-                      trackColor={{ false: '#767577', true: COLOR.MAIN }}
-                    />
-                  </View>
-                  <Text style={styles.optionDescription}>
-                    移行前にデータのバックアップファイル（.ecorismap形式）を作成します
-                  </Text>
-                </View>
-
-                <View style={styles.optionSection}>
-                  <View style={styles.option}>
-                    <Text style={styles.optionText}>古いデータを削除</Text>
-                    <Switch
-                      value={clearOldData}
-                      onValueChange={setClearOldData}
-                      trackColor={{ false: '#767577', true: COLOR.MAIN }}
-                    />
-                  </View>
-                  <Text style={styles.optionDescription}>
-                    移行後に古いストレージのデータを削除します
-                  </Text>
-                </View>
-              </>
-            )}
 
             {isProcessing && (
               <View style={styles.progressSection}>
@@ -199,7 +153,7 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
                 style={[styles.button, styles.primaryButton]}
                 onPress={handleMigrate}
               >
-                <Text style={styles.primaryButtonText}>データを移行する</Text>
+                <Text style={styles.primaryButtonText}>データをエクスポート</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -232,8 +186,8 @@ const COLORS = {
   background: '#f0f0f0',
   border: '#ddd',
   transparent: 'transparent',
-  warningBg: '#FFF3CD',
-  warningText: '#856404',
+  infoBg: '#E3F2FD',
+  infoText: '#1565C0',
 };
 
 const styles = StyleSheet.create({
@@ -285,25 +239,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
-  optionSection: {
-    marginBottom: 15,
-  },
-  option: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  optionText: {
-    fontSize: 15,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  optionDescription: {
-    fontSize: 12,
-    color: COLORS.textTertiary,
-    marginLeft: 5,
-  },
   progressSection: {
     alignItems: 'center',
     paddingVertical: 30,
@@ -347,16 +282,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'underline',
   },
-  warningBox: {
-    backgroundColor: COLORS.warningBg,
+  infoBox: {
+    backgroundColor: COLORS.infoBg,
     borderRadius: 8,
     padding: 12,
     marginVertical: 10,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-  warningText: {
-    color: COLORS.warningText,
+  infoText: {
+    color: COLORS.infoText,
     fontSize: 13,
     marginLeft: 8,
     flex: 1,

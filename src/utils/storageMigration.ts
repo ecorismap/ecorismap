@@ -56,7 +56,7 @@ export const checkAsyncStorageData = async (): Promise<StorageInfo> => {
       keys: relevantKeys,
     };
   } catch (error) {
-    console.error('Error checking AsyncStorage data:', error);
+    // Error checking AsyncStorage data
     return {
       hasData: false,
       dataSize: 0,
@@ -111,29 +111,68 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
       throw new Error('No data to export');
     }
 
-    const exportData: Record<string, any> = {};
-    
-    // persist:rootのデータを取得
-    for (const key of storageInfo.keys) {
-      const value = await AsyncStorage.getItem(key);
-      if (value) {
-        exportData[key] = value;
-      }
+    // persist:rootのデータを取得してパース
+    const persistRootValue = await AsyncStorage.getItem('persist:root');
+    if (!persistRootValue) {
+      throw new Error('No persist:root data found');
     }
 
-    // メタデータを追加
-    const exportPackage = {
-      version: '1.0',
-      exportDate: new Date().toISOString(),
-      dataSize: storageInfo.dataSize,
-      keys: storageInfo.keys,
-      data: exportData,
-      type: 'AsyncStorage_Backup',
-    };
+    const persistRoot = JSON.parse(persistRootValue);
+    
+    // 各reducerのデータをパース
+    const exportPackage: any = {};
+    
+    // dataSetをパース
+    if (persistRoot.dataSet) {
+      try {
+        exportPackage.dataSet = JSON.parse(persistRoot.dataSet);
+      } catch (e) {
+        // Failed to parse dataSet
+        exportPackage.dataSet = [];
+      }
+    } else {
+      exportPackage.dataSet = [];
+    }
+    
+    // layersをパース
+    if (persistRoot.layers) {
+      try {
+        exportPackage.layers = JSON.parse(persistRoot.layers);
+      } catch (e) {
+        // Failed to parse layers
+        exportPackage.layers = [];
+      }
+    } else {
+      exportPackage.layers = [];
+    }
+    
+    // settingsをパース
+    if (persistRoot.settings) {
+      try {
+        exportPackage.settings = JSON.parse(persistRoot.settings);
+      } catch (e) {
+        // Failed to parse settings
+        exportPackage.settings = {};
+      }
+    } else {
+      exportPackage.settings = {};
+    }
+    
+    // tileMapsをパース（mapsとして）
+    if (persistRoot.tileMaps) {
+      try {
+        exportPackage.maps = JSON.parse(persistRoot.tileMaps);
+      } catch (e) {
+        // Failed to parse tileMaps
+        exportPackage.maps = [];
+      }
+    } else {
+      exportPackage.maps = [];
+    }
 
     const jsonString = JSON.stringify(exportPackage, null, 2);
-    const timestamp = new Date().getTime();
-    const fileName = `AsyncStorage_backup_${timestamp}`;
+    const time = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+    const fileName = `local_${time}`;
     
     // ecorismap形式でエクスポート
     if (RNFS) {
@@ -145,8 +184,8 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         await RNFS.mkdir(`${RNFS.CachesDirectoryPath}/export`);
         await RNFS.mkdir(sourcePath);
         
-        // バックアップデータをlocal.jsonとして保存
-        await RNFS.writeFile(`${sourcePath}/asyncstorage_backup.json`, jsonString, 'utf8');
+        // データをlocal.jsonとして保存（generateEcorisMapDataと同じ形式）
+        await RNFS.writeFile(`${sourcePath}/local.json`, jsonString, 'utf8');
         
         // ZIP圧縮
         const zipPath = await zip(sourcePath, targetPath);
@@ -161,7 +200,7 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
           return zipPath;
         }
       } catch (error) {
-        console.error('Error creating ecorismap backup:', error);
+        // Error creating ecorismap backup
         
         // フォールバック: 単純なJSONファイルとして保存
         const fallbackFileName = `${fileName}.json`;
@@ -182,7 +221,7 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
 
     return null;
   } catch (error) {
-    console.error('Error exporting AsyncStorage data:', error);
+    // Error exporting AsyncStorage data
     throw error;
   }
 };
@@ -220,7 +259,7 @@ export const migrateToMMKV = async (options: {
       try {
         backupPath = await exportAsyncStorageData();
       } catch (backupError) {
-        console.warn('Backup failed, but continuing with migration:', backupError);
+        // Backup failed, but continuing with migration
       }
     }
 
@@ -250,7 +289,7 @@ export const migrateToMMKV = async (options: {
           await AsyncStorage.removeItem(key);
         }
       } catch (clearError) {
-        console.warn('Failed to clear old data:', clearError);
+        // Failed to clear old data
       }
     }
 
@@ -260,7 +299,7 @@ export const migrateToMMKV = async (options: {
       backupPath: backupPath || undefined,
     };
   } catch (error) {
-    console.error('Migration failed:', error);
+    // Migration failed
     return {
       success: false,
       message: 'Migration failed',

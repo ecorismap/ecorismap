@@ -8,12 +8,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
-import {
-  checkAsyncStorageData,
-  isMigrationCompleted,
-  isMigrationSkipped,
-  StorageInfo,
-} from './utils/storageMigration';
+import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 
 const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter', 'Possible'];
 
@@ -39,10 +34,8 @@ if (__DEV__ && Platform.OS !== 'web') {
   /* eslint-enable no-console */
 }
 
-// 動的インポート用のコンポーネント
-const StorageMigrationDialog = Platform.OS !== 'web' 
-  ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog
-  : null;
+const StorageMigrationDialog =
+  Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;
 
 export default function App() {
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
@@ -50,27 +43,22 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // Android の NavigationBar の設定
       NavigationBar.setBackgroundColorAsync('#00000000');
-      NavigationBar.setButtonStyleAsync('light'); // ボタンを白に
+      NavigationBar.setButtonStyleAsync('light');
     }
   }, []);
 
   useEffect(() => {
-    // ストレージ移行チェック（モバイル版のみ）
     const checkMigration = async () => {
-      // Web版では実行しない
       if (Platform.OS === 'web') {
         return;
       }
 
       try {
-        // 既に移行済みまたはスキップ済みの場合
         if (isMigrationCompleted() || isMigrationSkipped()) {
           return;
         }
 
-        // AsyncStorageにデータがあるか確認
         const info = await checkAsyncStorageData();
         if (info.hasData) {
           setStorageInfo(info);
@@ -85,10 +73,7 @@ export default function App() {
   }, []);
 
   const handleMigrationComplete = () => {
-    // 移行完了後、ダイアログを閉じる
     setShowMigrationDialog(false);
-    // データは既にMMKVに移行されているので、そのまま使用可能
-    // purgeするとデータが消えてしまうので、何もしない
   };
 
   return (
