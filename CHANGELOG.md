@@ -1,4 +1,17 @@
 # Change Log
+## [0.4.6] - 2025-8-23
+- Support export previous storage system data
+
+- 旧ストレージのデータのエクスポートに対応
+
+
+## [0.4.5] - 2025-8-22
+- Revamped internal storage
+- Fixed tracking log bug
+
+- 内部ストレージを刷新
+- トラッキングログのバグを修正
+
 ## [0.4.3] - 2025-8-5
 - Add dictionary input functionality
 - Fix the eraser bug in map memos
@@ -146,8 +159,9 @@
 ## [0.1.9] - 2022-11-13
 - App Release.
 
-
-[0.4.3]: https://github.com/ecorismap/ecorismap/compare/0d9d02a29c54c21277cffa2ef8173144c993ad6a...HEAD
+[0.4.6]: https://github.com/ecorismap/ecorismap/compare/6196449453febecc5eb2adcc21be183db21d73b8...HEAD
+[0.4.5]: https://github.com/ecorismap/ecorismap/compare/27e5e0da2bfe9c67ae496efda7a9dbe8ff7d2b12...6196449453febecc5eb2adcc21be183db21d73b8
+[0.4.3]: https://github.com/ecorismap/ecorismap/compare/7ca59c7d5e9678397af39bd4eda43a7c9e83f4e8...27e5e0da2bfe9c67ae496efda7a9dbe8ff7d2b12
 [0.4.1]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...0d9d02a29c54c21277cffa2ef8173144c993ad6a
 [0.4.0]: https://github.com/ecorismap/ecorismap/compare/12f64c2289ebf291339f453d4cba33920120ae9a...d3538ad56fd23f6b3293c54706576d57856356eb
 [0.3.13]: https://github.com/ecorismap/ecorismap/compare/80638642cfe69f9fa27464d8e6deb58bbcd698d0...12f64c2289ebf291339f453d4cba33920120ae9a
