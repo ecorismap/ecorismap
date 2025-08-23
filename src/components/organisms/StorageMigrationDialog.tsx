@@ -11,6 +11,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { StorageInfo, formatDataSize, skipMigration, postponeMigration } from '../../utils/storageMigration';
+import { t } from '../../i18n/config';
 
 interface StorageMigrationDialogProps {
   visible: boolean;
@@ -34,7 +35,7 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
 
   const performMigration = async () => {
     setIsProcessing(true);
-    setProgress('データをエクスポートしています...');
+    setProgress(t('storageMigration.exportProgress'));
 
     try {
       // エクスポートのみ実行（自動移行はしない）
@@ -42,14 +43,14 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
       const backupPath = await exportAsyncStorageData();
 
       if (backupPath) {
-        setProgress('エクスポートが完了しました');
+        setProgress(t('storageMigration.exportComplete'));
         
         Alert.alert(
-          'エクスポート完了',
-          '以前のデータをエクスポートしました。\n\n設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。',
+          t('storageMigration.exportCompleteTitle'),
+          t('storageMigration.exportCompleteMessage'),
           [
             {
-              text: 'OK',
+              text: t('storageMigration.okButton'),
               onPress: () => {
                 // エクスポート後は移行完了フラグを設定
                 const { storage } = require('../../utils/mmkvStorage');
@@ -61,14 +62,14 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
           ]
         );
       } else {
-        throw new Error('エクスポートに失敗しました');
+        throw new Error(t('storageMigration.exportFailed'));
       }
     } catch (error) {
       setProgress('');
       Alert.alert(
-        'エラー',
-        `エクスポート中にエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
-        [{ text: 'OK' }]
+        t('storageMigration.exportErrorTitle'),
+        t('storageMigration.exportError', { error: error instanceof Error ? error.message : 'Unknown error' }),
+        [{ text: t('storageMigration.okButton') }]
       );
     } finally {
       setIsProcessing(false);
@@ -77,12 +78,12 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
 
   const handleSkip = () => {
     Alert.alert(
-      '確認',
-      '以前のデータをスキップして新規として開始しますか？\n\n注意: 以前のデータは復元できなくなる可能性があります。',
+      t('storageMigration.skipConfirmTitle'),
+      t('storageMigration.skipConfirmMessage'),
       [
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t('storageMigration.cancelButton'), style: 'cancel' },
         {
-          text: 'スキップ',
+          text: t('storageMigration.skipConfirmButton'),
           style: 'destructive',
           onPress: () => {
             skipMigration();
@@ -96,9 +97,9 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
   const handlePostpone = () => {
     postponeMigration();
     Alert.alert(
-      '後で確認',
-      '次回アプリ起動時に再度確認します。',
-      [{ text: 'OK', onPress: onClose }]
+      t('storageMigration.postponeTitle'),
+      t('storageMigration.postponeMessage'),
+      [{ text: t('storageMigration.okButton'), onPress: onClose }]
     );
   };
 
@@ -113,24 +114,23 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
         <View style={styles.container}>
           <View style={styles.header}>
             <MaterialIcons name="storage" size={32} color={COLOR.MAIN} />
-            <Text style={styles.title}>以前のデータが見つかりました</Text>
+            <Text style={styles.title}>{t('storageMigration.title')}</Text>
           </View>
 
           <View style={styles.content}>
             <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>データサイズ:</Text>
+              <Text style={styles.infoLabel}>{t('storageMigration.dataSize')}</Text>
               <Text style={styles.infoValue}>{formatDataSize(storageInfo.dataSize)}</Text>
             </View>
 
             <Text style={styles.description}>
-              アプリのストレージシステムが更新されました。
-              以前のデータをエクスポートして、新しいシステムで使用できます。
+              {t('storageMigration.description')}
             </Text>
 
             <View style={styles.infoBox}>
               <MaterialIcons name="info" size={20} color={COLOR.BLUE} />
               <Text style={styles.infoText}>
-                エクスポート後、設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。
+                {t('storageMigration.infoText')}
               </Text>
             </View>
 
@@ -148,21 +148,21 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
                 style={[styles.button, styles.primaryButton]}
                 onPress={handleMigrate}
               >
-                <Text style={styles.primaryButtonText}>データをエクスポート</Text>
+                <Text style={styles.primaryButtonText}>{t('storageMigration.exportButton')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.button, styles.secondaryButton]}
                 onPress={handlePostpone}
               >
-                <Text style={styles.secondaryButtonText}>後で確認</Text>
+                <Text style={styles.secondaryButtonText}>{t('storageMigration.postponeButton')}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.button, styles.skipButton]}
                 onPress={handleSkip}
               >
-                <Text style={styles.skipButtonText}>新規として開始</Text>
+                <Text style={styles.skipButtonText}>{t('storageMigration.skipButton')}</Text>
               </TouchableOpacity>
             </View>
           )}
