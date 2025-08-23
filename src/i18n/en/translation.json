@@ -794,5 +794,28 @@
     "applyThis": "Apply This Data",
     "bulkSelf": "Prioritize Mine for Remaining",
     "bulkLatest": "Prioritize Latest for Remaining"
+  },
+  "storageMigration": {
+    "title": "Previous Data Found",
+    "dataSize": "Data Size:",
+    "description": "The app's storage system has been updated. You can export your previous data to use with the new system.",
+    "infoText": "After exporting, you can import the saved file by selecting 'Import' from the 'Data' tab in Settings.",
+    "exportButton": "Export Data",
+    "postponeButton": "Check Later",
+    "skipButton": "Start as New",
+    "exportProgress": "Exporting data...",
+    "exportComplete": "Export completed",
+    "exportCompleteTitle": "Export Complete",
+    "exportCompleteMessage": "Your previous data has been exported.\n\nYou can import the saved file by selecting 'Import' from the 'Data' tab in Settings.",
+    "exportError": "An error occurred during export: {{error}}",
+    "exportErrorTitle": "Error",
+    "skipConfirmTitle": "Confirmation",
+    "skipConfirmMessage": "Do you want to skip the previous data and start as new?\n\nNote: You may not be able to restore the previous data.",
+    "skipConfirmButton": "Skip",
+    "postponeTitle": "Check Later",
+    "postponeMessage": "You will be asked again next time you launch the app.",
+    "cancelButton": "Cancel",
+    "okButton": "OK",
+    "exportFailed": "Export failed"
   }
 }

@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LogBox, Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -8,6 +8,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
+import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
 
 const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter', 'Possible'];
 
@@ -33,14 +34,47 @@ if (__DEV__ && Platform.OS !== 'web') {
   /* eslint-enable no-console */
 }
 
+const StorageMigrationDialog =
+  Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;
+
 export default function App() {
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+
   useEffect(() => {
     if (Platform.OS === 'android') {
-      // Android の NavigationBar の設定
       NavigationBar.setBackgroundColorAsync('#00000000');
-      NavigationBar.setButtonStyleAsync('light'); // ボタンを白に
+      NavigationBar.setButtonStyleAsync('light');
     }
   }, []);
+
+  useEffect(() => {
+    const checkMigration = async () => {
+      if (Platform.OS === 'web') {
+        return;
+      }
+
+      try {
+        if (isMigrationCompleted() || isMigrationSkipped()) {
+          return;
+        }
+
+        const info = await checkAsyncStorageData();
+        if (info.hasData) {
+          setStorageInfo(info);
+          setShowMigrationDialog(true);
+        }
+      } catch (error) {
+        // Migration check failed
+      }
+    };
+
+    checkMigration();
+  }, []);
+
+  const handleMigrationComplete = () => {
+    setShowMigrationDialog(false);
+  };
 
   return (
     <SafeAreaProvider>
@@ -49,6 +83,14 @@ export default function App() {
           <>
             <Routes />
             <StatusBarOverlay />
+            {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
+              <StorageMigrationDialog
+                visible={showMigrationDialog}
+                storageInfo={storageInfo}
+                onClose={() => setShowMigrationDialog(false)}
+                onMigrationComplete={handleMigrationComplete}
+              />
+            )}
           </>
         </PersistGate>
       </Provider>

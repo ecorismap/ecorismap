@@ -794,5 +794,28 @@
     "applyThis": "このデータを採用",
     "bulkSelf": "残りは自分優先",
     "bulkLatest": "残りは最新優先"
+  },
+  "storageMigration": {
+    "title": "以前のデータが見つかりました",
+    "dataSize": "データサイズ:",
+    "description": "アプリのストレージシステムが更新されました。以前のデータをエクスポートして、新しいシステムで使用できます。",
+    "infoText": "エクスポート後、設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。",
+    "exportButton": "データをエクスポート",
+    "postponeButton": "後で確認",
+    "skipButton": "新規として開始",
+    "exportProgress": "データをエクスポートしています...",
+    "exportComplete": "エクスポートが完了しました",
+    "exportCompleteTitle": "エクスポート完了",
+    "exportCompleteMessage": "以前のデータをエクスポートしました。\n\n設定画面の「データ」タブから「インポート」を選択して、保存したファイルを読み込むことができます。",
+    "exportError": "エクスポート中にエラーが発生しました: {{error}}",
+    "exportErrorTitle": "エラー",
+    "skipConfirmTitle": "確認",
+    "skipConfirmMessage": "以前のデータをスキップして新規として開始しますか？\n\n注意: 以前のデータは復元できなくなる可能性があります。",
+    "skipConfirmButton": "スキップ",
+    "postponeTitle": "後で確認",
+    "postponeMessage": "次回アプリ起動時に再度確認します。",
+    "cancelButton": "キャンセル",
+    "okButton": "OK",
+    "exportFailed": "エクスポートに失敗しました"
   }
 }
