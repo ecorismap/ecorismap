@@ -122,11 +122,6 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
               <Text style={styles.infoValue}>{formatDataSize(storageInfo.dataSize)}</Text>
             </View>
 
-            <View style={styles.infoSection}>
-              <Text style={styles.infoLabel}>データ項目数:</Text>
-              <Text style={styles.infoValue}>{storageInfo.keys.length} 項目</Text>
-            </View>
-
             <Text style={styles.description}>
               アプリのストレージシステムが更新されました。
               以前のデータをエクスポートして、新しいシステムで使用できます。
