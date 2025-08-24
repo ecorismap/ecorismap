@@ -12,6 +12,12 @@ import MockDate from 'mockdate';
 jest.mock('ulid', () => ({ ulid: () => '1234' }));
 MockDate.set('2000-01-01');
 
+// Mock FUNC_LOGIN to be true for these tests
+jest.mock('../../constants/AppConstants', () => ({
+  ...jest.requireActual('../../constants/AppConstants'),
+  FUNC_LOGIN: true,
+}));
+
 describe('gpx2Data', () => {
   it('return data from gpx', () => {
     expect(gpx2Data(track_gpx, 'LINE', 'test.gpx', '34-56', 'user1')).toStrictEqual({

@@ -98,19 +98,6 @@ const createTestStore = () => {
       },
       projects: [],
       tileMaps: [],
-      trackLog: {
-        distance: 0,
-        track: [],
-        lastTimeStamp: 0,
-        segments: [],
-        statistics: {
-          duration: 0,
-          movingTime: 0,
-          averageSpeed: 0,
-          maxSpeed: 0,
-          pauseCount: 0,
-        },
-      },
     },
   });
 };

@@ -53,7 +53,7 @@ const mockLayer: LayerType = {
   active: true,
 } as LayerType;
 
-const createMockRecord = (id: string, name: string, value: number): RecordType => ({
+const createMockRecord = (id: string, name: string, value: number, updatedAt?: number): RecordType => ({
   id,
   userId: 'user1',
   displayName: 'Test User',
@@ -64,7 +64,7 @@ const createMockRecord = (id: string, name: string, value: number): RecordType =
     Name: name, // フィールド名を大文字に変更（mockLayerのfieldと一致させる）
     Value: value, // フィールド名を大文字に変更（mockLayerのfieldと一致させる）
   },
-  updatedAt: Date.now(),
+  updatedAt: updatedAt ?? Date.now(),
 });
 
 const mockContextValue = {
@@ -356,7 +356,8 @@ describe('DataTable', () => {
     });
 
     it('浅い比較と深い比較の動作の違いを確認', () => {
-      const record = createMockRecord('record1', 'Initial Name', 100);
+      const fixedTime = 1234567890;
+      const record = createMockRecord('record1', 'Initial Name', 100, fixedTime);
       
       // 浅い比較版のテスト
       const { rerender: rerenderShallow, getByText: getByTextShallow } = render(
@@ -368,7 +369,7 @@ describe('DataTable', () => {
       expect(getByTextShallow('Initial Name')).toBeTruthy();
 
       // 同じIDだがフィールドが異なる新しいオブジェクト
-      const updatedRecord = createMockRecord('record1', 'Updated Name', 200);
+      const updatedRecord = createMockRecord('record1', 'Updated Name', 200, fixedTime + 1);
       
       rerenderShallow(<TestMemoComponentShallow item={updatedRecord} />);
 
@@ -383,7 +384,7 @@ describe('DataTable', () => {
       expect(getByTextShallow('2')).toBeTruthy();
 
       // 深い比較版のテスト
-      const record2 = createMockRecord('record2', 'Initial Name', 100);
+      const record2 = createMockRecord('record2', 'Initial Name', 100, fixedTime);
       const { rerender: rerenderDeep, getByText: getByTextDeep } = render(
         <TestMemoComponentDeep item={record2} />
       );
@@ -392,7 +393,7 @@ describe('DataTable', () => {
       expect(getByTextDeep('1')).toBeTruthy();
 
       // 同じIDだがフィールドが異なる新しいオブジェクト
-      const updatedRecord2 = createMockRecord('record2', 'Updated Name', 200);
+      const updatedRecord2 = createMockRecord('record2', 'Updated Name', 200, fixedTime + 1);
       
       rerenderDeep(<TestMemoComponentDeep item={updatedRecord2} />);
 
@@ -405,11 +406,11 @@ describe('DataTable', () => {
       // 深い比較では内容が同じなので再レンダリングされない（回数は2のまま）
       expect(getByTextDeep('2')).toBeTruthy();
 
-      // 同じ内容の新しいオブジェクトで再レンダリング
-      const sameContentRecord = createMockRecord('record2', 'Updated Name', 200);
+      // 同じ内容の新しいオブジェクト（updatedAtも同じ）
+      const sameContentRecord = createMockRecord('record2', 'Updated Name', 200, fixedTime + 1);
       rerenderDeep(<TestMemoComponentDeep item={sameContentRecord} />);
       
-      // 深い比較では内容が同じなので再レンダリングされない（回数は2のまま）
+      // 深い比較では内容が完全に同じなので再レンダリングされない（回数は2のまま）
       expect(getByTextDeep('2')).toBeTruthy();
     });
   });
