@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
@@ -49,11 +49,6 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   AlertAsync: jest.fn(),
 }));
 
-// Mock mapView.current to avoid null reference errors
-const mockMapView = {
-  animateCamera: jest.fn(),
-  setCamera: jest.fn(),
-};
 
 // Create a mock ref object
 const createMockMapRef = () => ({ current: null });
