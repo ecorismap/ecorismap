@@ -44,6 +44,8 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
 
       if (backupPath) {
         setProgress(t('storageMigration.exportComplete'));
+        // 処理完了後すぐにisProcessingをfalseに設定
+        setIsProcessing(false);
         
         Alert.alert(
           t('storageMigration.exportCompleteTitle'),
@@ -66,13 +68,12 @@ export const StorageMigrationDialog: React.FC<StorageMigrationDialogProps> = ({
       }
     } catch (error) {
       setProgress('');
+      setIsProcessing(false);
       Alert.alert(
         t('storageMigration.exportErrorTitle'),
         t('storageMigration.exportError', { error: error instanceof Error ? error.message : 'Unknown error' }),
         [{ text: t('storageMigration.okButton') }]
       );
-    } finally {
-      setIsProcessing(false);
     }
   };
 
