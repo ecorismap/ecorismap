@@ -325,7 +325,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const updateCurrentLocationFromTracking = useCallback(async () => {
     // トラッキング中の現在地更新とトラックログ更新
     const currentCoords = trackLogMMKV.getCurrentLocation();
-    
+
     if (!currentCoords) return;
 
     if (gpsState === 'follow' || RNAppState.currentState === 'background') {
@@ -340,7 +340,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       );
     }
     setCurrentLocation(currentCoords);
-    
+
     // トラックログも更新（描画のため）
     setTrackLog(getStoredLocations());
   }, [gpsState, mapViewRef]);
@@ -350,7 +350,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     // stateのtrackLogは既にMMKVと同期済み
     if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
     if (trackLog.track.length < 2) return { isOK: true, message: '' };
-    
+
     const cleanupedLine = cleanupLine(trackLog.track);
 
     // MMKVには2MB制限がないため、分割不要で一括保存
@@ -390,8 +390,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // console.log('clean locationEventsEmitter');
       eventSubscription && eventSubscription.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [updateCurrentLocationFromTracking]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
