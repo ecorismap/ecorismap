@@ -4,8 +4,8 @@ export const line_record: RecordType[] = [
   {
     centroid: { latitude: 42.4984620698, longitude: 139.8529901728 },
     coords: [
-      { latitude: 42.498248918, longitude: 139.8534992896, ele: 100, timestamp: 1612225718000 },
-      { latitude: 42.4982588924, longitude: 139.853411112, ele: undefined, timestamp: undefined },
+      { latitude: 42.498248918, longitude: 139.8534992896, altitude: 100, timestamp: 1612225718000 },
+      { latitude: 42.4982588924, longitude: 139.853411112, altitude: undefined, timestamp: undefined },
       { latitude: 42.4982816912, longitude: 139.8532861378 },
       { latitude: 42.4983156379, longitude: 139.853064185 },
       { latitude: 42.4984620698, longitude: 139.8529901728 },
@@ -40,7 +40,7 @@ export const expectedLineGpx = `<?xml version="1.0" encoding="UTF-8"?>
 
 export const point_record: RecordType[] = [
   {
-    coords: { latitude: 38.24715800176878, longitude: 140.71658064854364, ele: 100 },
+    coords: { latitude: 38.24715800176878, longitude: 140.71658064854364, altitude: 100 },
     field: { name: 'St.1', time: '2020-01-01T09:28:38+09:00', cmt: '', photo: [] },
     id: '1234',
     visible: true,
@@ -49,7 +49,7 @@ export const point_record: RecordType[] = [
     redraw: false,
   },
   {
-    coords: { latitude: 38.24101016421964, longitude: 140.71548306286388, ele: undefined },
+    coords: { latitude: 38.24101016421964, longitude: 140.71548306286388, altitude: undefined },
     field: {
       name: 'St.3',
       time: '5時',

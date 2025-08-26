@@ -61,7 +61,7 @@ export const checkAndStoreLocations = (locations: LocationObject[]): void => {
 
 // toLocationType関数を先に定義（checkLocationsで使用するため）
 export const toLocationType = (locationObject: LocationObject): LocationType => {
-  //# Todo altitude to ele by proj4js
+  // coordsには既にaltitude, altitudeAccuracyが含まれているので、そのまま使用
   return { ...locationObject.coords, timestamp: locationObject.timestamp };
 };
 

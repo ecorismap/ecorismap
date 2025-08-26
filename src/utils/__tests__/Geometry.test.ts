@@ -49,8 +49,8 @@ describe('gpx2Data', () => {
         {
           centroid: { latitude: 42.49825390520844, longitude: 139.85345520080352 },
           coords: [
-            { ele: 141.93, latitude: 42.498248918, longitude: 139.8534992896, timestamp: 1612225718000 },
-            { ele: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
+            { altitude: 141.93, latitude: 42.498248918, longitude: 139.8534992896, timestamp: 1612225718000 },
+            { altitude: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
           ],
           displayName: 'user1',
           field: { cmt: '', name: 'test', time: '2020-01-01T09:28:38+09:00' },
@@ -73,8 +73,8 @@ describe('gpx2Data', () => {
     expect(checkValue).toStrictEqual([
       {
         coords: [
-          { ele: 141.93, latitude: 42.498248918, longitude: 139.8534992896, timestamp: 1612225718000 },
-          { ele: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
+          { altitude: 141.93, latitude: 42.498248918, longitude: 139.8534992896, timestamp: 1612225718000 },
+          { altitude: 127.99, latitude: 42.4982588924, longitude: 139.853411112, timestamp: 1612225720000 },
         ],
         field: { cmt: '', name: 'test', time: '2020-01-01T09:28:38+09:00' },
       },
@@ -87,8 +87,8 @@ describe('gpx2Data', () => {
     expect(checkValue).toStrictEqual([
       {
         coords: [
-          { ele: undefined, latitude: 0, longitude: 139.8534992896, timestamp: undefined },
-          { ele: undefined, latitude: 0, longitude: 139.853411112, timestamp: undefined },
+          { altitude: undefined, latitude: 0, longitude: 139.8534992896, timestamp: undefined },
+          { altitude: undefined, latitude: 0, longitude: 139.853411112, timestamp: undefined },
         ],
         field: { cmt: '', name: '', time: '' },
       },
@@ -101,11 +101,11 @@ describe('gpx2Data', () => {
     const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
     expect(checkValue).toStrictEqual([
       {
-        coords: { ele: 376.451477, latitude: 38.196045763864404, longitude: 140.88482022285461 },
+        coords: { altitude: 376.451477, latitude: 38.196045763864404, longitude: 140.88482022285461 },
         field: { cmt: 'コメント', name: 'test1', time: '2022-10-07T13:50:04+09:00' },
       },
       {
-        coords: { ele: 376.451477, latitude: 38.19628422496845, longitude: 140.88485810905695 },
+        coords: { altitude: 376.451477, latitude: 38.19628422496845, longitude: 140.88485810905695 },
         field: { cmt: '', name: 'test2', time: '2022-10-07T13:50:04+09:00' },
       },
     ]);
@@ -117,15 +117,15 @@ it('return  point from invalid gpx', () => {
   const checkValue = data!.recordSet.map(({ coords, field }) => ({ coords, field }));
   expect(checkValue).toStrictEqual([
     {
-      coords: { ele: undefined, latitude: 38.196045763864404, longitude: 140.88482022285461 },
+      coords: { altitude: undefined, latitude: 38.196045763864404, longitude: 140.88482022285461 },
       field: { cmt: '', name: 'test', time: '' },
     },
     {
-      coords: { ele: undefined, latitude: 0, longitude: 140.88485810905695 },
+      coords: { altitude: undefined, latitude: 0, longitude: 140.88485810905695 },
       field: { cmt: '', name: '', time: '' },
     },
     {
-      coords: { ele: undefined, latitude: 0, longitude: 0 },
+      coords: { altitude: undefined, latitude: 0, longitude: 0 },
       field: { cmt: '', name: '', time: '2000-01-01T09:00:00+09:00' },
     },
   ]);

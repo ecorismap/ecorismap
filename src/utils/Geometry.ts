@@ -234,7 +234,7 @@ export const gpx2Data = (
             coords: {
               latitude: latIsOK ? Number(lat as string) : 0,
               longitude: lonIsOK ? Number(lon as string) : 0,
-              ele: ele,
+              altitude: ele,
             },
             field: {
               name: d.name ? d.name : '',
@@ -265,7 +265,7 @@ export const gpx2Data = (
                   latitude: latIsOK ? Number(lat as string) : 0,
                   longitude: lonIsOK ? Number(lon as string) : 0,
                   timestamp: trkpt.time !== undefined && time.isValid() ? time.valueOf() : undefined,
-                  ele: ele,
+                  altitude: ele,
                 };
               })
             )
@@ -717,7 +717,9 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
 
           wpt.ele('name', point.field.name);
           wpt.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
-          if (point.coords.ele) wpt.ele('ele', point.coords.ele);
+          if (point.coords.altitude !== null && point.coords.altitude !== undefined) {
+            wpt.ele('ele', point.coords.altitude);
+          }
           wpt.ele('cmt', point.field.cmt);
         }
       });
@@ -737,7 +739,9 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
             //console.log(dayjs.unix(coord.timestamp!).toISOString());
             const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
             coord.timestamp && trkpt.ele('time', dayjs(coord.timestamp).toISOString());
-            coord.ele && trkpt.ele('ele', coord.ele);
+            if (coord.altitude !== null && coord.altitude !== undefined) {
+              trkpt.ele('ele', coord.altitude);
+            }
           });
         }
       });
