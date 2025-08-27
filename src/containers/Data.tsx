@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useContext } from 'react';
 import { LayerType, RecordType } from '../types';
 import Data from '../components/pages/Data';
 import { shallowEqual, useSelector } from 'react-redux';
@@ -15,11 +15,15 @@ import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
 import { useRecord } from '../hooks/useRecord';
 import { useLayers } from '../hooks/useLayers';
+import { MapViewContext } from '../contexts/MapView';
 
 export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(route.params.targetLayer);
+
+  // MapViewContextから現在地とGPS状態を取得
+  const { currentLocation, gpsState } = useContext(MapViewContext);
 
   const {
     sortedRecordSet,
@@ -115,13 +119,15 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
     }
 
-    const addedData = addDefaultRecord();
+    // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
+    const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
+    const addedData = addDefaultRecord(undefined, locationToUse);
     navigation.navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
       targetLayer: layer,
     });
-  }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer]);
+  }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer, gpsState, currentLocation]);
 
   const addDataByDictionary = useCallback(
     async (fieldId: string, value: string) => {
@@ -142,9 +148,12 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
       const fieldName = route.params.targetLayer.field.find((f) => f.id === fieldId)?.name;
       if (!fieldName) return;
-      addDefaultRecord({ [fieldName]: value });
+      
+      // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
+      const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
+      addDefaultRecord({ [fieldName]: value }, locationToUse);
     },
-    [addDefaultRecord, changeActiveLayer, checkRecordEditable, route.params.targetLayer]
+    [addDefaultRecord, changeActiveLayer, checkRecordEditable, route.params.targetLayer, gpsState, currentLocation]
   );
   const gotoDataEdit = useCallback(
     (index: number) => {

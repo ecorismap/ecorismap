@@ -32,7 +32,10 @@ export type UseDataReturnType = {
   changeChecked: (index: number, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;
   changeOrder: (colname: string, order: SortOrderType) => void;
-  addDefaultRecord: (fields?: { [key: string]: string | number | PhotoType[] }) => RecordType;
+  addDefaultRecord: (
+    fields?: { [key: string]: string | number | PhotoType[] },
+    currentLocation?: { latitude: number; longitude: number; altitude?: number }
+  ) => RecordType;
   deleteRecords: () => void;
   updateRecordSetOrder: (sortedRecordSet_: RecordType[]) => void;
 };
@@ -156,10 +159,23 @@ export const useData = (layerId: string): UseDataReturnType => {
   );
 
   const addDefaultRecord = useCallback(
-    (fields?: { [key: string]: string | number | PhotoType[] }) => {
+    (
+      fields?: { [key: string]: string | number | PhotoType[] },
+      currentLocation?: { latitude: number; longitude: number; altitude?: number }
+    ) => {
       const id = ulid();
       const ownRecordSet = sortedRecordSet.filter((d) => d.userId === dataUser.uid);
       const field = getDefaultField(targetLayer, ownRecordSet, id);
+
+      // GPS座標を使用する場合
+      let coords;
+      if (currentLocation && targetLayer.type === 'POINT') {
+        coords = {
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          altitude: currentLocation.altitude,
+        };
+      }
 
       const newData: RecordType = {
         id: id,
@@ -167,7 +183,7 @@ export const useData = (layerId: string): UseDataReturnType => {
         displayName: dataUser.displayName,
         visible: true,
         redraw: false,
-        coords: undefined,
+        coords: coords,
         field: { ...field, ...fields },
         updatedAt: Date.now(),
       };
