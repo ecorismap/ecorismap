@@ -446,7 +446,8 @@
     },
     "label": {
       "reloadProjects": "reload",
-      "createProject": "create"
+      "createProject": "create",
+      "noFavorites": "No favorite projects"
     }
   },
   "ProjectEdit": {

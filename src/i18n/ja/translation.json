@@ -401,7 +401,8 @@
     },
     "label": {
       "createProject": "作成",
-      "reloadProjects": "更新"
+      "reloadProjects": "更新",
+      "noFavorites": "お気に入りプロジェクトがありません"
     }
   },
   "ProjectEdit": {

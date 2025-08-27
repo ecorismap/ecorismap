@@ -6,11 +6,15 @@ interface ProjectsContextType {
   user: UserType;
   isLoading: boolean;
   isEncryptPasswordModalOpen: boolean;
+  favoriteProjectIds: string[];
+  showOnlyFavorites: boolean;
   pressEncryptPasswordOK: (value: string) => void;
   pressEncryptPasswordCancel: () => void;
   onReloadProjects: () => void;
   pressAddProject: () => void;
   gotoProject: (projectId: string) => void;
   gotoBack: () => void;
+  toggleFavorite: (projectId: string) => void;
+  toggleShowOnlyFavorites: () => void;
 }
 export const ProjectsContext = createContext({} as ProjectsContextType);

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction } from '../modules/projects';
+import { toggleFavorite as toggleFavoriteAction, setShowOnlyFavorites as setShowOnlyFavoritesAction } from '../modules/favoriteProjects';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
@@ -12,18 +13,24 @@ export type UseProjectsReturnType = {
   user: UserType;
   isLoading: boolean;
   projects: ProjectType[];
+  favoriteProjectIds: string[];
+  showOnlyFavorites: boolean;
   ownerProjectsCount: () => number;
   fetchProjects: () => Promise<{
     isOK: boolean;
     message: string;
   }>;
   generateProject: () => ProjectType;
+  toggleFavorite: (projectId: string) => void;
+  toggleShowOnlyFavorites: () => void;
 };
 
 export const useProjects = (): UseProjectsReturnType => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user);
   const projects = useSelector((state: RootState) => state.projects);
+  const favoriteProjectIds = useSelector((state: RootState) => state.favoriteProjects?.projectIds || []);
+  const showOnlyFavorites = useSelector((state: RootState) => state.favoriteProjects?.showOnlyFavorites || false);
   const [isLoading, setIsLoading] = useState(false);
 
   const ownerProjectsCount = useCallback(() => {
@@ -73,5 +80,13 @@ export const useProjects = (): UseProjectsReturnType => {
     }
   }, [dispatch, user]);
 
-  return { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } as const;
+  const toggleFavorite = useCallback((projectId: string) => {
+    dispatch(toggleFavoriteAction(projectId));
+  }, [dispatch]);
+
+  const toggleShowOnlyFavorites = useCallback(() => {
+    dispatch(setShowOnlyFavoritesAction(!showOnlyFavorites));
+  }, [dispatch, showOnlyFavorites]);
+
+  return { user, isLoading, projects, favoriteProjectIds, showOnlyFavorites, ownerProjectsCount, fetchProjects, generateProject, toggleFavorite, toggleShowOnlyFavorites } as const;
 };

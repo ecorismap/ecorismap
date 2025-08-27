@@ -16,7 +16,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
   const [projectIndex, setProjectIndex] = useState(0);
   const { isSettingProject } = usePermission();
-  const { user, isLoading, projects, ownerProjectsCount, fetchProjects, generateProject } = useProjects();
+  const { user, isLoading, projects, favoriteProjectIds, showOnlyFavorites, ownerProjectsCount, fetchProjects, generateProject, toggleFavorite, toggleShowOnlyFavorites } = useProjects();
   const { customerLicense } = usePurchasesWeb();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
@@ -119,12 +119,16 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
         user,
         isLoading,
         isEncryptPasswordModalOpen,
+        favoriteProjectIds,
+        showOnlyFavorites,
         pressEncryptPasswordOK,
         pressEncryptPasswordCancel,
         onReloadProjects: reloadProjects,
         gotoProject: onPressGotoProject,
         pressAddProject,
         gotoBack,
+        toggleFavorite,
+        toggleShowOnlyFavorites,
       }}
     >
       <Projects />

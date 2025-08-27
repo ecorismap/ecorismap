@@ -7,7 +7,6 @@ import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
 import { useNavigation } from '@react-navigation/native';
 import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { Button } from '../atoms';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
@@ -22,39 +21,49 @@ export default function Projects() {
     user,
     isLoading,
     isEncryptPasswordModalOpen,
+    favoriteProjectIds,
+    showOnlyFavorites,
     pressEncryptPasswordOK,
     pressEncryptPasswordCancel,
     onReloadProjects,
     pressAddProject,
     gotoProject,
     gotoBack,
+    toggleFavorite,
+    toggleShowOnlyFavorites,
   } = useContext(ProjectsContext);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  
+
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('ASCENDING');
-  
-  const handleSort = useCallback((field: SortField) => {
-    if (field === sortField) {
-      setSortOrder(
-        sortOrder === 'UNSORTED' ? 'DESCENDING' : 
-        sortOrder === 'DESCENDING' ? 'ASCENDING' : 
-        'UNSORTED'
-      );
-    } else {
-      setSortField(field);
-      setSortOrder('DESCENDING');
+
+  const handleSort = useCallback(
+    (field: SortField) => {
+      if (field === sortField) {
+        setSortOrder(sortOrder === 'UNSORTED' ? 'DESCENDING' : sortOrder === 'DESCENDING' ? 'ASCENDING' : 'UNSORTED');
+      } else {
+        setSortField(field);
+        setSortOrder('DESCENDING');
+      }
+    },
+    [sortField, sortOrder]
+  );
+
+  const filteredProjects = useMemo(() => {
+    if (showOnlyFavorites) {
+      return projects.filter((p) => favoriteProjectIds.includes(p.id));
     }
-  }, [sortField, sortOrder]);
-  
+    return projects;
+  }, [projects, showOnlyFavorites, favoriteProjectIds]);
+
   const sortedProjects = useMemo(() => {
-    if (sortOrder === 'UNSORTED') return projects;
-    
-    const sorted = [...projects].sort((a, b) => {
+    if (sortOrder === 'UNSORTED') return filteredProjects;
+
+    const sorted = [...filteredProjects].sort((a, b) => {
       let aValue: any;
       let bValue: any;
-      
+
       switch (sortField) {
         case 'name':
           aValue = a.name;
@@ -77,14 +86,14 @@ export default function Projects() {
           bValue = b.settingsEncryptedAt ? new Date(b.settingsEncryptedAt).getTime() : 0;
           break;
       }
-      
+
       if (aValue < bValue) return sortOrder === 'ASCENDING' ? -1 : 1;
       if (aValue > bValue) return sortOrder === 'ASCENDING' ? 1 : -1;
       return 0;
     });
-    
+
     return sorted;
-  }, [projects, sortField, sortOrder]);
+  }, [filteredProjects, sortField, sortOrder]);
 
   const headerLeftButton = useCallback(
     (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
@@ -125,8 +134,23 @@ export default function Projects() {
     <View style={styles.container}>
       <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: insets.bottom }}>
         <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
+          {showOnlyFavorites && favoriteProjectIds.length === 0 && (
+            <View style={{ padding: 20, alignItems: 'flex-start' }}>
+              <Text style={{ color: COLOR.GRAY4, fontSize: 14 }}>{t('Projects.label.noFavorites')}</Text>
+            </View>
+          )}
           <View style={{ flexDirection: 'row', height: 45 }}>
-            <Pressable style={[styles.th, { flex: 3, width: 180 }]} onPress={() => handleSort('name')}>
+            <Pressable 
+              style={[styles.th, { width: 40 }]}
+              onPress={toggleShowOnlyFavorites}
+            >
+              <MaterialCommunityIcons 
+                name={showOnlyFavorites ? 'star' : 'star-outline'} 
+                size={20} 
+                color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4} 
+              />
+            </Pressable>
+            <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>
               <Text>{`${t('common.projectName')}`}</Text>
               {sortField === 'name' && sortOrder === 'ASCENDING' && (
                 <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
@@ -192,7 +216,17 @@ export default function Projects() {
                   }}
                   onPress={() => gotoProject(item.id)}
                 >
-                  <View style={[styles.td, { flex: 3, width: 180 }]}>
+                  <Pressable
+                    style={[styles.td, { width: 40, alignItems: 'center' }]}
+                    onPress={() => toggleFavorite(item.id)}
+                  >
+                    <MaterialCommunityIcons
+                      name={favoriteProjectIds.includes(item.id) ? 'star' : 'star-outline'}
+                      size={20}
+                      color={favoriteProjectIds.includes(item.id) ? '#FFD700' : COLOR.GRAY4}
+                    />
+                  </Pressable>
+                  <View style={[styles.td, { flex: 3, width: 140 }]}>
                     <Text
                       adjustsFontSizeToFit={true}
                       numberOfLines={2}
@@ -209,23 +243,20 @@ export default function Projects() {
                   </View>
                   <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
                     <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.settingsEncryptedAt ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : '-'}
+                      {item.settingsEncryptedAt
+                        ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '-'}
                     </Text>
                   </View>
                   <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
                     {item.ownerUid === user.uid && (
-                      <Button
-                        name={'star'}
-                        onPress={() => null}
-                        color={COLOR.GRAY4}
-                        style={{ backgroundColor: COLOR.MAIN }}
-                      />
+                      <MaterialCommunityIcons name="crown" size={18} color={COLOR.GRAY4} />
                     )}
                   </View>
                   <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
@@ -267,7 +298,7 @@ const styles = StyleSheet.create({
     //flexDirection: 'row',
     height: 45,
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     paddingVertical: 0,
     //borderRightWidth: 1,
   },
