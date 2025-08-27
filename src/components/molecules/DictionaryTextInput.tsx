@@ -61,7 +61,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
           <MaterialCommunityIcons.Button
             borderRadius={50}
             iconStyle={{ marginRight: 0 }}
-            size={20}
+            size={30}
             backgroundColor={isListening ? 'red' : 'blue'}
             name={'microphone'}
             onPress={() => {
