@@ -178,6 +178,56 @@ Firebase Hosting is used to host the web version of the application.
 
 For detailed setup and deployment instructions, see [website/README.md](../website/README.md).
 
+## Environment Configuration Management
+
+This project supports both development and production Firebase environments. Configuration files are managed separately and can be switched using simple commands.
+
+### Setting up environment files
+
+1. Place your Firebase configuration files in the project root:
+   ```
+   # Android
+   google-services.json.development
+   google-services.json.production
+   
+   # iOS  
+   GoogleService-Info.plist.development
+   GoogleService-Info.plist.production
+   
+   # Web
+   APIKeys.ts.development
+   APIKeys.ts.production
+   ```
+
+2. Switch between environments:
+   ```bash
+   yarn firebase:dev   # Switch to development environment
+   yarn firebase:prod  # Switch to production environment
+   ```
+
+   This command will automatically copy the appropriate configuration files to:
+   - `android/app/google-services.json`
+   - `ios/ecorismap/GoogleService-Info.plist`
+   - `src/constants/APIKeys.ts`
+
+**Important:** All environment-specific configuration files and backups are gitignored to prevent accidental commits of sensitive data.
+
+### App Check Debug Mode (Web)
+
+For local development, the web application automatically enables App Check debug mode when:
+- Running in development environment (`NODE_ENV === 'development'`)
+- Accessing from localhost
+- Using Firebase emulators
+
+When debug mode is enabled:
+1. Open browser console to see the debug token
+2. Copy the token (format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`)
+3. Register it in Firebase Console:
+   - Go to App Check → Your app → Manage → Debug tokens
+   - Add the token from your console
+
+This allows App Check to work properly during local development.
+
 ## License
 This software is released under the MIT License, see LICENSE.
 

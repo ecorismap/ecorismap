@@ -165,7 +165,6 @@ export const FUNC_LOGIN = true;  // ログイン機能を有効化
 4. 表示される設定をコピーしてsrc/constants/APIKeys.tsに追加
 
 
-
 ### 3. Firebase Functionsのセットアップ
 
 Firebase Functionsはサーバーサイド機能を提供し、Virgil E3Kitを使用したエンドツーエンド暗号化に必須です。
@@ -178,7 +177,57 @@ Firebase HostingはWeb版アプリケーションをホスティングするた�
 
 詳細な設定、デプロイ手順については、[website/README.ja.md](../website/README.ja.md)を参照してください。
 
+---
 
+## 環境設定の管理
+
+このプロジェクトでは開発環境と本番環境のFirebase設定を分けて管理できます。設定ファイルは環境ごとに分離され、シンプルなコマンドで切り替えることができます。
+
+### 環境ファイルの設定方法
+
+1. Firebase設定ファイルをプロジェクトルートに配置：
+   ```
+   # Android
+   google-services.json.development
+   google-services.json.production
+   
+   # iOS  
+   GoogleService-Info.plist.development
+   GoogleService-Info.plist.production
+   
+   # Web
+   APIKeys.ts.development
+   APIKeys.ts.production
+   ```
+
+2. 環境の切り替えコマンド：
+   ```bash
+   yarn firebase:dev   # 開発環境に切り替え
+   yarn firebase:prod  # 本番環境に切り替え
+   ```
+
+   このコマンドにより、自動的に適切な設定ファイルが以下の場所にコピーされます：
+   - `android/app/google-services.json`
+   - `ios/ecorismap/GoogleService-Info.plist`
+   - `src/constants/APIKeys.ts`
+
+**重要：** すべての環境別設定ファイルとバックアップは`.gitignore`に登録されており、機密データが誤ってコミットされることを防いでいます。
+
+### App Checkデバッグモード（Web）
+
+ローカル開発時、以下の条件でWebアプリケーションは自動的にApp Checkデバッグモードを有効化します：
+- 開発環境で実行している場合（`NODE_ENV === 'development'`）
+- localhostからアクセスしている場合
+- Firebaseエミュレータを使用している場合
+
+デバッグモードが有効な場合の設定手順：
+1. ブラウザコンソールを開いてデバッグトークンを確認
+2. トークンをコピー（形式: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`）
+3. Firebase Consoleに登録：
+   - App Check → 対象アプリ → 管理 → デバッグトークン
+   - コンソールから取得したトークンを追加
+
+これにより、ローカル開発中もApp Checkが正常に動作するようになります。
 
 ## ライセンス
 このソフトウェアはMITライセンスの下でリリースされています。LICENSEを参照してください。

@@ -83,13 +83,20 @@ firebase.json
 #secret key include
 local.properties
 android/app/google-services.json
+ios/ecorismap/GoogleService-Info.plist
 GoogleService-Info.plist
 GoogleService-Info.plist.development
 GoogleService-Info.plist.production
 google-services.json.development
 google-services.json.production
 Maps.plist
+src/constants/APIKeys.ts
 APIKeys.ts
+APIKeys.ts.development
+APIKeys.ts.production
+APIKeys.ts.backup
+google-services.json.backup
+GoogleService-Info.plist.backup
 
 #exclude template from ignore
 !/template/*
