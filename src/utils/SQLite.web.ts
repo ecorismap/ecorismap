@@ -22,11 +22,10 @@ interface SQLiteDatabase {
 
 class WebSQLiteDatabase implements SQLiteDatabase {
   private db: any;
-  private dbName: string;
   private static sqlite3: any;
 
-  constructor(dbName: string) {
-    this.dbName = dbName;
+  constructor(_dbName: string) {
+    // dbNameは使用しない（sql.js-httpvifsではメモリDBを使用）
   }
 
   private static async initSqlite() {
@@ -253,7 +252,11 @@ export async function exportDatabase(layerId: string) {
     const db = await getDatabase();
     const binaryArray = await db.exportDatabaseForLayer(layerId);
     // Blobオブジェクトを作成
-    const blob = new Blob([binaryArray], { type: 'application/x-sqlite3' });
+    // ArrayBufferに確実に変換
+    const arrayBuffer = binaryArray.buffer instanceof ArrayBuffer 
+      ? binaryArray.buffer.slice(binaryArray.byteOffset, binaryArray.byteOffset + binaryArray.byteLength)
+      : new ArrayBuffer(0);
+    const blob = new Blob([arrayBuffer], { type: 'application/x-sqlite3' });
     // // ダウンロードリンクを作成
     const url = URL.createObjectURL(blob);
     return url;
