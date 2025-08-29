@@ -11,6 +11,7 @@ import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/fun
 import { getStorage, FirebaseStorageTypes } from '@react-native-firebase/storage';
 
 import { FUNC_LOGIN } from '../../constants/AppConstants';
+import { Alert } from 'react-native';
 
 export {
   //@ts-ignore
@@ -56,7 +57,7 @@ const initialize = async (isEmulating = false) => {
   // @ts-ignore
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
-
+  Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
@@ -64,7 +65,7 @@ const initialize = async (isEmulating = false) => {
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
     apple: {
-      provider: __DEV__ ? 'debug' : 'appAttestWithDeviceCheckFallback',
+      provider: __DEV__ ? 'debug' : 'appAttest',
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
   });
@@ -75,10 +76,10 @@ const initialize = async (isEmulating = false) => {
   try {
     const { token } = await getToken(appCheck, true);
     if (token.length > 0) {
-      console.log('AppCheck verification passed');
+      Alert.alert('AppCheck verification passed');
     }
   } catch (error) {
-    console.log('AppCheck verification failed');
+    Alert.alert('AppCheck verification failed');
     console.log(error);
   }
   if (isEmulating) {
