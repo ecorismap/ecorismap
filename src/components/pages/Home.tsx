@@ -598,23 +598,35 @@ export default function HomeScreen() {
             {exportPDFMode && <PDFArea pdfArea={pdfArea} />}
           </MapView>
           {mapRegion && (
-            <View style={[isLandscape ? styles.scaleBarLandscape : styles.scaleBar, { bottom: 65 + insets.bottom }]}>
+            <View
+              style={[
+                isLandscape ? styles.scaleBarLandscape : styles.scaleBar,
+                { bottom: downloadMode || exportPDFMode ? 40 : 65 + insets.bottom },
+              ]}
+            >
               <ScaleBar zoom={zoomDecimal - 1} latitude={mapRegion.latitude} left={0} bottom={0} />
             </View>
           )}
 
-          <HomeZoomButton zoom={zoom} left={10} zoomIn={pressZoomIn} zoomOut={pressZoomOut} />
+          <HomeZoomButton
+            zoom={zoom}
+            left={10}
+            zoomIn={pressZoomIn}
+            zoomOut={pressZoomOut}
+            showHeader={downloadMode || exportPDFMode}
+          />
 
           {isShowingProjectButtons && <HomeProjectButtons />}
           {projectName === undefined || downloadMode ? null : (
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}
 
-          {!FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
+          {downloadMode || exportPDFMode || !FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
 
-          <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
-          <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />
-
+          {!(downloadMode || exportPDFMode) && (
+            <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />
+          )}
+          {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />}
           {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (

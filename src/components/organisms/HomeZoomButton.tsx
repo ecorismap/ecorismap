@@ -2,7 +2,6 @@ import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HOME_BTN, COLOR } from '../../constants/AppConstants';
-import { useWindow } from '../../hooks/useWindow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
@@ -11,12 +10,12 @@ interface Props {
   left: number;
   zoomIn: () => void;
   zoomOut: () => void;
+  showHeader?: boolean;
 }
 
 export const HomeZoomButton = React.memo((props: Props) => {
   //console.log('render ZoomButton');
-  const { zoom, left, zoomIn, zoomOut } = props;
-  const { isLandscape } = useWindow();
+  const { zoom, left, zoomIn, zoomOut, showHeader = false } = props;
   const insets = useSafeAreaInsets();
 
   const styles = StyleSheet.create({
@@ -29,7 +28,7 @@ export const HomeZoomButton = React.memo((props: Props) => {
       justifyContent: 'space-between',
       left: left + insets.left,
       position: 'absolute',
-      top: insets.top + (isLandscape ? 60 : 70),
+      top: showHeader ? 10 : insets.top + 70,
       width: 38,
       // zIndex: 100,
     },
