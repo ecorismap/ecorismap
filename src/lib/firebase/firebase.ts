@@ -1,6 +1,6 @@
 import { getApp } from '@react-native-firebase/app';
 
-import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider, getToken } from '@react-native-firebase/app-check';
+import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider } from '@react-native-firebase/app-check';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';
@@ -65,17 +65,8 @@ const initialize = async (isEmulating = false) => {
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
   });
-  const appCheck = await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+  await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
 
-  try {
-    const { token } = await getToken(appCheck, true);
-    if (token.length > 0) {
-      //Alert.alert('AppCheck verification passed');
-    }
-  } catch (error) {
-    //Alert.alert('AppCheck verification failed', error.message);
-    console.log(error);
-  }
   if (isEmulating) {
     auth.useEmulator('http://localhost:9099');
     functions.useEmulator('localhost', 5001);
