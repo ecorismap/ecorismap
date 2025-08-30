@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import { MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../../utils/mockGpsHelper';
+import { MockGpsConfig } from '../../utils/mockGpsHelper';
+import { COLOR } from '../../constants/AppConstants';
 
 interface MockGpsControllerProps {
   useMockGps: boolean;
@@ -8,11 +9,7 @@ interface MockGpsControllerProps {
   mockGpsProgress?: { current: number; total: number; percentage: number };
 }
 
-export const MockGpsController: React.FC<MockGpsControllerProps> = ({
-  useMockGps,
-  toggleMockGps,
-  mockGpsProgress,
-}) => {
+export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps, toggleMockGps, mockGpsProgress }) => {
   const [selectedScenario, setSelectedScenario] = useState<MockGpsConfig['scenario']>('longTrack');
   const [pointCount, setPointCount] = useState(5000);
   const [speed, setSpeed] = useState(10);
@@ -89,10 +86,7 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({
           {scenarios.map((scenario) => (
             <TouchableOpacity
               key={scenario.value}
-              style={[
-                styles.scenarioItem,
-                selectedScenario === scenario.value && styles.selectedScenario,
-              ]}
+              style={[styles.scenarioItem, selectedScenario === scenario.value && styles.selectedScenario]}
               onPress={() => setSelectedScenario(scenario.value)}
             >
               <Text style={styles.scenarioLabel}>{scenario.label}</Text>
@@ -123,16 +117,10 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({
           <View style={styles.inputSection}>
             <Text style={styles.inputLabel}>速度: {speed} m/s</Text>
             <View style={styles.buttonGroup}>
-              <TouchableOpacity
-                style={styles.adjustButton}
-                onPress={() => setSpeed(Math.max(1, speed - 5))}
-              >
+              <TouchableOpacity style={styles.adjustButton} onPress={() => setSpeed(Math.max(1, speed - 5))}>
                 <Text>-5</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.adjustButton}
-                onPress={() => setSpeed(Math.min(50, speed + 5))}
-              >
+              <TouchableOpacity style={styles.adjustButton} onPress={() => setSpeed(Math.min(50, speed + 5))}>
                 <Text>+5</Text>
               </TouchableOpacity>
             </View>
@@ -164,16 +152,9 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({
             進行状況: {mockGpsProgress.current} / {mockGpsProgress.total}
           </Text>
           <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${mockGpsProgress.percentage}%` },
-              ]}
-            />
+            <View style={[styles.progressFill, { width: `${mockGpsProgress.percentage}%` }]} />
           </View>
-          <Text style={styles.progressPercentage}>
-            {mockGpsProgress.percentage.toFixed(1)}%
-          </Text>
+          <Text style={styles.progressPercentage}>{mockGpsProgress.percentage.toFixed(1)}%</Text>
         </View>
       )}
     </View>
@@ -182,11 +163,11 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLOR.GRAY0,
     borderRadius: 10,
     padding: 15,
     margin: 10,
-    shadowColor: '#000',
+    shadowColor: COLOR.BLACK,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -201,19 +182,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLOR.GRAY4,
   },
   toggleButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLOR.DARKGREEN,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 5,
   },
   activeButton: {
-    backgroundColor: '#f44336',
+    backgroundColor: COLOR.RED,
   },
   buttonText: {
-    color: 'white',
+    color: COLOR.WHITE,
     fontWeight: 'bold',
   },
   settings: {
@@ -223,28 +204,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#666',
+    color: COLOR.GRAY3,
   },
   scenarioItem: {
-    backgroundColor: 'white',
+    backgroundColor: COLOR.WHITE,
     padding: 10,
     marginBottom: 5,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLOR.GRAY1,
   },
   selectedScenario: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#e8f5e9',
+    borderColor: COLOR.DARKGREEN,
+    backgroundColor: COLOR.GRAY0,
   },
   scenarioLabel: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLOR.GRAY4,
   },
   scenarioDescription: {
     fontSize: 12,
-    color: '#666',
+    color: COLOR.GRAY3,
     marginTop: 2,
   },
   inputSection: {
@@ -252,7 +233,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    color: '#333',
+    color: COLOR.GRAY4,
     marginBottom: 5,
   },
   buttonGroup: {
@@ -260,35 +241,36 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   adjustButton: {
-    backgroundColor: 'white',
+    backgroundColor: COLOR.WHITE,
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLOR.GRAY1,
   },
   progress: {
     marginTop: 15,
   },
   progressText: {
     fontSize: 12,
-    color: '#666',
+    color: COLOR.GRAY3,
     marginBottom: 5,
   },
   progressBar: {
     height: 20,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: COLOR.GRAY1,
     borderRadius: 10,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLOR.DARKGREEN,
   },
   progressPercentage: {
     fontSize: 12,
-    color: '#666',
+    color: COLOR.GRAY3,
     marginTop: 5,
     textAlign: 'center',
   },
 });
+
