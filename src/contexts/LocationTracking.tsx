@@ -12,6 +12,10 @@ export interface LocationTrackingContextType {
   editPositionLayer: LayerType | undefined;
   editPositionRecord: RecordType | undefined;
   finishEditPosition: () => void;
+  // 擬似GPS関連（開発用）
+  useMockGps?: boolean;
+  toggleMockGps?: (enabled: boolean, config?: any) => Promise<void>;
+  mockGpsProgress?: { current: number; total: number; percentage: number };
 }
 
 export const LocationTrackingContext = React.createContext<LocationTrackingContextType>(

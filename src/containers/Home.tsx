@@ -245,6 +245,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
+    // 擬似GPS関連を追加
+    useMockGps,
+    toggleMockGps,
+    mockGpsProgress,
   } = useLocation(mapViewRef);
   //現在位置の共有関連
   const { uploadLocation } = useSyncLocation(projectId);
@@ -1884,6 +1888,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       editPositionLayer: route.params?.layer,
       editPositionRecord: route.params?.record,
       finishEditPosition,
+      // 擬似GPS関連を追加
+      useMockGps,
+      toggleMockGps,
+      mockGpsProgress,
     }),
     [
       trackingState,
@@ -1896,6 +1904,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       route.params?.layer,
       route.params?.record,
       finishEditPosition,
+      useMockGps,
+      toggleMockGps,
+      mockGpsProgress,
     ]
   );
 

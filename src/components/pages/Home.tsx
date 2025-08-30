@@ -59,6 +59,8 @@ import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { Pressable } from '../atoms/Pressable';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
+import { MockGpsController } from '../organisms/MockGpsController';
+import { USE_MOCK_GPS } from '../../constants/AppConstants';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -140,8 +142,18 @@ export default function HomeScreen() {
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
-  const { trackingState, trackLog, memberLocations, editPositionMode, editPositionLayer, editPositionRecord } =
-    useContext(LocationTrackingContext);
+  const { 
+    trackingState, 
+    trackLog, 
+    memberLocations, 
+    editPositionMode, 
+    editPositionLayer, 
+    editPositionRecord,
+    // 擬似GPS関連
+    useMockGps,
+    toggleMockGps,
+    mockGpsProgress,
+  } = useContext(LocationTrackingContext);
 
   // ProjectContext
   const { projectName, isSynced, isShowingProjectButtons, pressProjectLabel } = useContext(ProjectContext);
@@ -648,6 +660,17 @@ export default function HomeScreen() {
           )}
         </View>
       </View>
+
+      {/* 開発用: 擬似GPSコントローラー */}
+      {USE_MOCK_GPS && __DEV__ && useMockGps !== undefined && toggleMockGps && (
+        <View style={{ position: 'absolute', top: 100, right: 10, zIndex: 999 }}>
+          <MockGpsController
+            useMockGps={useMockGps}
+            toggleMockGps={toggleMockGps}
+            mockGpsProgress={mockGpsProgress}
+          />
+        </View>
+      )}
 
       <BottomSheet
         ref={bottomSheetRef}
