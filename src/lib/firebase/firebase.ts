@@ -1,17 +1,13 @@
 import { getApp } from '@react-native-firebase/app';
 
-import getAppCheck, {
-  initializeAppCheck,
-  ReactNativeFirebaseAppCheckProvider,
-  getToken,
-} from '@react-native-firebase/app-check';
+import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider, getToken } from '@react-native-firebase/app-check';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';
 import { getStorage, FirebaseStorageTypes } from '@react-native-firebase/storage';
 
 import { FUNC_LOGIN } from '../../constants/AppConstants';
-import { Alert } from 'react-native';
+//import { Alert } from 'react-native';
 
 export {
   //@ts-ignore
@@ -57,7 +53,7 @@ const initialize = async (isEmulating = false) => {
   // @ts-ignore
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
-  Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
+  //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
@@ -69,17 +65,15 @@ const initialize = async (isEmulating = false) => {
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
   });
-  const appCheck = getAppCheck(getApp());
-  // // @ts-ignore
-  await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
-  // // `appCheckInstance` is the saved return value from initializeAppCheck
+  const appCheck = await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+
   try {
     const { token } = await getToken(appCheck, true);
     if (token.length > 0) {
-      Alert.alert('AppCheck verification passed');
+      //Alert.alert('AppCheck verification passed');
     }
   } catch (error) {
-    Alert.alert('AppCheck verification failed');
+    //Alert.alert('AppCheck verification failed', error.message);
     console.log(error);
   }
   if (isEmulating) {
@@ -92,5 +86,7 @@ const initialize = async (isEmulating = false) => {
 
 if (FUNC_LOGIN) {
   const isEmulating = false;
-  initialize(isEmulating);
+  (async () => {
+    await initialize(isEmulating);
+  })();
 }
