@@ -15,8 +15,6 @@ export const PLUGIN = {
   HISYOUTOOL: true,
 };
 
-// 開発用設定
-export const USE_MOCK_GPS = false;  // true: 擬似GPSを使用（UIも表示）, false: 実際のGPSを使用
 export const COLOR = {
   MAIN: '#f2f2f2',
   GRAY0: '#f9f9f9',

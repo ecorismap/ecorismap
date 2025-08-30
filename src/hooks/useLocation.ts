@@ -25,7 +25,6 @@ import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
 import { MockGpsGenerator, MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../utils/mockGpsHelper';
-import { USE_MOCK_GPS } from '../constants/AppConstants';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -100,7 +99,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
 
   // 擬似GPS用の設定とインスタンス
-  const [useMockGps, setUseMockGps] = useState(USE_MOCK_GPS);
+  const [useMockGps, setUseMockGps] = useState(false);  // 常にfalseから開始
   const mockGpsRef = useRef<MockGpsGenerator | null>(null);
 
   const gpsAccuracyOption = useMemo(() => {
@@ -145,14 +144,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       if (useMockGps) {
         // 擬似GPSを使用
-        // 既存のインスタンスがあれば停止
-        if (mockGpsRef.current) {
-          mockGpsRef.current.stop();
-          mockGpsRef.current = null;
+        // 既存のインスタンスがなければデフォルト設定で作成
+        if (!mockGpsRef.current) {
+          mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
         }
-        
-        // 新しいインスタンスを作成
-        mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
         
         gpsSubscriber.current = {
           remove: () => {
@@ -224,14 +219,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const startTracking = useCallback(async () => {
     if (useMockGps) {
       // 擬似GPSでトラッキング
-      // 既存のインスタンスがあれば停止
-      if (mockGpsRef.current) {
-        mockGpsRef.current.stop();
-        mockGpsRef.current = null;
+      // 既存のインスタンスがなければデフォルト設定で作成
+      if (!mockGpsRef.current) {
+        mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
       }
-      
-      // 新しいインスタンスを作成
-      mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
       
       mockGpsRef.current.start((pos) => {
         // トラックログに追加

@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Platform, Text } from 'react-native';
+import { StyleSheet, View, Platform, Text, TouchableOpacity } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
@@ -60,13 +60,14 @@ import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { Pressable } from '../atoms/Pressable';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { MockGpsController } from '../organisms/MockGpsController';
-import { USE_MOCK_GPS } from '../../constants/AppConstants';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
 
   // Local state for direction line visibility
   const [showDirectionLine, setShowDirectionLine] = useState(false);
+  // Local state for mock GPS panel visibility
+  const [showMockGpsPanel, setShowMockGpsPanel] = useState(false);
 
   // TileManagementContext
   const {
@@ -661,11 +662,35 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* 開発用: 擬似GPSパネル表示ボタン */}
+      {__DEV__ && toggleMockGps && (
+        <View style={{ position: 'absolute', bottom: 120, right: 20, zIndex: 998 }}>
+          <TouchableOpacity
+            style={{
+              backgroundColor: showMockGpsPanel ? COLOR.BLUE : COLOR.GRAY2,
+              borderRadius: 25,
+              width: 50,
+              height: 50,
+              justifyContent: 'center',
+              alignItems: 'center',
+              shadowColor: COLOR.BLACK,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+            }}
+            onPress={() => setShowMockGpsPanel(!showMockGpsPanel)}
+          >
+            <Text style={{ fontSize: 24 }}>🔧</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* 開発用: 擬似GPSコントローラー */}
-      {USE_MOCK_GPS && __DEV__ && useMockGps !== undefined && toggleMockGps && (
+      {showMockGpsPanel && __DEV__ && toggleMockGps && (
         <View style={{ position: 'absolute', top: 100, right: 10, zIndex: 999 }}>
           <MockGpsController
-            useMockGps={useMockGps}
+            useMockGps={useMockGps || false}
             toggleMockGps={toggleMockGps}
             mockGpsProgress={mockGpsProgress}
           />

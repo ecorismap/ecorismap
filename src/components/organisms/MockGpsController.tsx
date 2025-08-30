@@ -14,6 +14,7 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
   const [pointCount, setPointCount] = useState(5000);
   const [speed, setSpeed] = useState(10);
   const [updateInterval, setUpdateInterval] = useState(500);
+  const [speedPreset, setSpeedPreset] = useState<'normal' | 'fast' | 'superfast'>('normal');
 
   const scenarios: { value: MockGpsConfig['scenario']; label: string; description: string }[] = [
     { value: 'circle', label: '円形', description: '円形の軌跡を生成' },
@@ -22,6 +23,21 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
     { value: 'random', label: 'ランダム', description: 'ランダムな動きを生成' },
     { value: 'static', label: '静止', description: '同じ場所に留まる' },
   ];
+
+  const speedPresets = [
+    { value: 'normal' as const, label: '通常', speed: 10, interval: 500, description: '約42分' },
+    { value: 'fast' as const, label: '高速', speed: 50, interval: 100, description: '約8分' },
+    { value: 'superfast' as const, label: '超高速', speed: 100, interval: 20, description: '約2分' },
+  ];
+
+  const handleSpeedPresetChange = (preset: 'normal' | 'fast' | 'superfast') => {
+    const selected = speedPresets.find(p => p.value === preset);
+    if (selected) {
+      setSpeedPreset(preset);
+      setSpeed(selected.speed);
+      setUpdateInterval(selected.interval);
+    }
+  };
 
   const handleToggleMockGps = async () => {
     if (!useMockGps) {
@@ -82,6 +98,28 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
 
       {!useMockGps && (
         <ScrollView style={styles.settings}>
+          <Text style={styles.sectionTitle}>速度プリセット</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 }}>
+            {speedPresets.map((preset) => (
+              <TouchableOpacity
+                key={preset.value}
+                style={[
+                  styles.presetButton,
+                  speedPreset === preset.value && styles.selectedPresetButton,
+                ]}
+                onPress={() => handleSpeedPresetChange(preset.value)}
+              >
+                <Text style={[
+                  styles.presetButtonText,
+                  speedPreset === preset.value && styles.selectedPresetButtonText,
+                ]}>
+                  {preset.label}
+                </Text>
+                <Text style={styles.presetDescription}>{preset.description}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <Text style={styles.sectionTitle}>シナリオ選択</Text>
           {scenarios.map((scenario) => (
             <TouchableOpacity
@@ -271,6 +309,33 @@ const styles = StyleSheet.create({
     color: COLOR.GRAY3,
     marginTop: 5,
     textAlign: 'center',
+  },
+  presetButton: {
+    backgroundColor: COLOR.WHITE,
+    padding: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: COLOR.GRAY1,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  selectedPresetButton: {
+    backgroundColor: COLOR.BLUE,
+    borderColor: COLOR.BLUE,
+  },
+  presetButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLOR.GRAY4,
+  },
+  selectedPresetButtonText: {
+    color: COLOR.WHITE,
+  },
+  presetDescription: {
+    fontSize: 10,
+    color: COLOR.GRAY3,
+    marginTop: 2,
   },
 });
 
