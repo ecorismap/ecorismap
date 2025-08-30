@@ -9,6 +9,17 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import { fetchPhoto } from '../lib/firebase/storage';
 
+/**
+ * ファイルパスのUnicode正規化を行う関数
+ * iOSではNFC（合成済み文字）に統一し、Windowsとの互換性を保つ
+ * @param path ファイルパス
+ * @returns 正規化されたファイルパス
+ */
+export function normalizeFilePath(path: string): string {
+  // iOSの場合のみNFCに正規化（Androidは通常問題なし）
+  return Platform.OS === 'ios' ? path.normalize('NFC') : path;
+}
+
 export const exportGeoFile = async (
   exportData: {
     data: string;
@@ -68,7 +79,8 @@ export const exportGeoFile = async (
         // ファイルが存在することを確認してからコピー
         if (fileToSave && fileToSave !== '') {
           try {
-            await RNFS.copyFile(fileToSave, `${sourcePath}/${folder}/${sanitize(d.name)}`);
+            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+            await RNFS.copyFile(fileToSave, destPath);
           } catch (error) {
             console.warn(`Failed to copy file ${d.name}:`, error);
             // Firebase Storageから再度取得を試みる
@@ -76,7 +88,8 @@ export const exportGeoFile = async (
               const result = await fetchPhoto(d.url, d.key);
               if (result.isOK && result.data) {
                 try {
-                  await RNFS.copyFile(result.data, `${sourcePath}/${folder}/${sanitize(d.name)}`);
+                  const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+                  await RNFS.copyFile(result.data, destPath);
                 } catch (retryError) {
                   console.warn(`Failed to copy file after retry ${d.name}:`, retryError);
                 }
@@ -85,13 +98,17 @@ export const exportGeoFile = async (
           }
         }
       } else {
-        await RNFS.writeFile(`${sourcePath}/${folder}/${sanitize(d.name)}`, d.data, 'utf8');
+        const filePath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+        await RNFS.writeFile(filePath, d.data, 'utf8');
       }
     }
 
     //ファイルを出力フォルダに書き出し
 
-    const path = await zip(sourcePath, targetPath);
+    // Unicode正規化を適用してからZIPファイルを作成
+    const normalizedSourcePath = normalizeFilePath(sourcePath);
+    const normalizedTargetPath = normalizeFilePath(targetPath);
+    const path = await zip(normalizedSourcePath, normalizedTargetPath);
     if (path !== undefined) {
       await exportFileFromUri(path, `${fileName}.${ext}`);
       await RNFS.unlink(sourcePath);

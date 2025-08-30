@@ -3,7 +3,7 @@ import { storage } from './mmkvStorage';
 import * as Sharing from 'expo-sharing';
 import * as RNFS from 'react-native-fs';
 import { zip } from 'react-native-zip-archive';
-import { exportFileFromUri } from './File';
+import { exportFileFromUri, normalizeFilePath } from './File';
 
 export interface MigrationResult {
   success: boolean;
@@ -185,10 +185,13 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         await RNFS.mkdir(sourcePath);
         
         // データをlocal.jsonとして保存（generateEcorisMapDataと同じ形式）
-        await RNFS.writeFile(`${sourcePath}/local.json`, jsonString, 'utf8');
+        const localJsonPath = normalizeFilePath(`${sourcePath}/local.json`);
+        await RNFS.writeFile(localJsonPath, jsonString, 'utf8');
         
-        // ZIP圧縮
-        const zipPath = await zip(sourcePath, targetPath);
+        // Unicode正規化を適用してからZIP圧縮
+        const normalizedSourcePath = normalizeFilePath(sourcePath);
+        const normalizedTargetPath = normalizeFilePath(targetPath);
+        const zipPath = await zip(normalizedSourcePath, normalizedTargetPath);
         if (zipPath !== undefined) {
           // ファイルを共有
           await exportFileFromUri(zipPath, `${fileName}.ecorismap`);
