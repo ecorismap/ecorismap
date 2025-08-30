@@ -636,7 +636,8 @@
       "download": "Do you want to retrieve updated data?",
       "upload": "Do you want to send data?",
       "reOpenProject": "Would you like to open a project? \nData from the current project that you have not saved will be discarded.",
-      "downloadAllUserData": "Do you also download private data from other members as an administrator?"
+      "downloadAllUserData": "Do you also download private data from other members as an administrator?",
+      "addLocationPoint": "Add a point at the current location?"
     },
     "navigation": {
       "download": "Map download",

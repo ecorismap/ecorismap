@@ -186,7 +186,8 @@
       "download": "更新されたデータを取得しますか？",
       "upload": "データを送信しますか？",
       "track_start": "トラックの記録を開始しますか？",
-      "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？"
+      "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
+      "addLocationPoint": "現在地にポイントを追加しますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",

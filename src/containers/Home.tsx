@@ -554,6 +554,67 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     navigation.setParams({ mode: undefined });
   }, [navigation, selectFeatureButton]);
 
+  const addLocationPoint = useCallback(async () => {
+    if (Platform.OS === 'web') {
+      await AlertAsync(t('Home.alert.gpsWeb'));
+      return;
+    }
+    if (gpsState === 'off' && trackingState === 'off') {
+      await AlertAsync(t('Home.alert.gps'));
+      return;
+    }
+
+    // 確認アラートを表示
+    const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
+    if (!ret) {
+      return;
+    }
+
+    const { isOK, message, layer, record } = await addCurrentPoint();
+    if (!isOK || layer === undefined || record === undefined) {
+      await AlertAsync(message);
+    } else {
+      bottomSheetRef.current?.snapToIndex(2);
+
+      navigation.navigate('DataEdit', {
+        previous: 'Data',
+        targetData: record,
+        targetLayer: layer,
+      });
+    }
+  }, [addCurrentPoint, gpsState, navigation, trackingState]);
+
+  const addLocationPointInEditPosition = useCallback(
+    async (layer: LayerType, record: RecordType) => {
+      if (Platform.OS === 'web') {
+        await AlertAsync(t('Home.alert.gpsWeb'));
+        return;
+      }
+      
+      // 確認アラートを表示
+      const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
+      if (!ret) {
+        return;
+      }
+      
+      const point = await getCurrentPoint();
+      if (point === undefined) return;
+      updatePointPosition(layer, record, point);
+      finishEditPosition();
+    },
+    [finishEditPosition, getCurrentPoint, updatePointPosition]
+  );
+
+  const handleAddLocationPoint = useCallback(async () => {
+    if (route.params?.mode === 'editPosition') {
+      const { layer, record } = route.params;
+      if (layer === undefined || record === undefined) return;
+      await addLocationPointInEditPosition(layer, record);
+    } else {
+      await addLocationPoint();
+    }
+  }, [addLocationPoint, addLocationPointInEditPosition, route.params]);
+
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
       setInfoToolActive(false);
@@ -574,6 +635,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             if (activePointLayer === undefined) {
               await AlertAsync(t('Home.alert.cannotEdit'));
               return;
+            }
+            
+            // ADD_LOCATION_POINTの場合は即座に確認アラートを表示してポイントを追加
+            if (value === 'ADD_LOCATION_POINT') {
+              await handleAddLocationPoint();
+              return; // ツールを有効にしない
             }
             //await runTutrial(`POINTTOOL_${value}`);
           } else if (isLineTool(value)) {
@@ -660,6 +727,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentPolygonTool,
       featureButton,
       finishEditPosition,
+      handleAddLocationPoint,
       isEditingDraw,
       isEditingObject,
       isSelectedDraw,
@@ -1122,55 +1190,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
   );
 
-  const addLocationPoint = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      await AlertAsync(t('Home.alert.gpsWeb'));
-      return;
-    }
-    if (gpsState === 'off' && trackingState === 'off') {
-      await AlertAsync(t('Home.alert.gps'));
-      return;
-    }
-
-    const { isOK, message, layer, record } = await addCurrentPoint();
-    if (!isOK || layer === undefined || record === undefined) {
-      await AlertAsync(message);
-    } else {
-      bottomSheetRef.current?.snapToIndex(2);
-
-      navigation.navigate('DataEdit', {
-        previous: 'Data',
-        targetData: record,
-        targetLayer: layer,
-      });
-    }
-    selectDrawTool(currentDrawTool);
-  }, [addCurrentPoint, currentDrawTool, gpsState, navigation, selectDrawTool, trackingState]);
-
-  const addLocationPointInEditPosition = useCallback(
-    async (layer: LayerType, record: RecordType) => {
-      if (Platform.OS === 'web') {
-        await AlertAsync(t('Home.alert.gpsWeb'));
-        return;
-      }
-      const point = await getCurrentPoint();
-      if (point === undefined) return;
-      updatePointPosition(layer, record, point);
-      finishEditPosition();
-    },
-    [finishEditPosition, getCurrentPoint, updatePointPosition]
-  );
-
-  const handleAddLocationPoint = useCallback(async () => {
-    if (route.params?.mode === 'editPosition') {
-      const { layer, record } = route.params;
-      if (layer === undefined || record === undefined) return;
-      await addLocationPointInEditPosition(layer, record);
-    } else {
-      await addLocationPoint();
-    }
-  }, [addLocationPoint, addLocationPointInEditPosition, route.params]);
-
   const handlePanResponderGrant = useCallback(
     async (event: GestureResponderEvent) => {
       //@ts-ignore
@@ -1185,8 +1204,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setIsPinch(true);
       } else if (isInfoToolActive) {
         await getInfoOfFeature(event);
-      } else if (currentDrawTool === 'ADD_LOCATION_POINT') {
-        await handleAddLocationPoint();
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
       } else if (currentDrawTool === 'SPLIT_LINE') {
@@ -1246,7 +1263,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       finishEditPosition,
       getInfoOfFeature,
       getPXY,
-      handleAddLocationPoint,
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
