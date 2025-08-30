@@ -160,6 +160,7 @@ export const mockSVGDrawingContextValue: SVGDrawingContextType = {
 // Mock implementation for TileManagementContext
 export const mockTileManagementContextValue: TileManagementContextType = {
   downloadMode: false,
+  downloadTileMapName: '',
   tileMaps: [],
   savedTileSize: '0',
   isDownloading: false,

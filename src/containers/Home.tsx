@@ -316,6 +316,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   );
 
   const downloadMode = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
+  const downloadTileMapName = useMemo(() => route.params?.tileMap?.name || '', [route.params?.tileMap]);
   const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
 
   /******************************* */
@@ -1936,6 +1937,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const tileManagementContextValue = useMemo(
     () => ({
       downloadMode,
+      downloadTileMapName,
       tileMaps,
       savedTileSize,
       isDownloading,
@@ -1948,6 +1950,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }),
     [
       downloadMode,
+      downloadTileMapName,
       tileMaps,
       savedTileSize,
       isDownloading,

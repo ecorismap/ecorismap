@@ -4,6 +4,7 @@ import { TileMapType } from '../types';
 export interface TileManagementContextType {
   // Tile download related
   downloadMode: boolean;
+  downloadTileMapName: string;
   tileMaps: TileMapType[];
   savedTileSize: string;
   isDownloading: boolean;
@@ -27,6 +28,7 @@ export interface TileManagementContextType {
 
 export const TileManagementContext = createContext<TileManagementContextType>({
   downloadMode: false,
+  downloadTileMapName: '',
   tileMaps: [],
   savedTileSize: '0',
   isDownloading: false,

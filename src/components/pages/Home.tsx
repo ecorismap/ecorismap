@@ -69,6 +69,7 @@ export default function HomeScreen() {
   // TileManagementContext
   const {
     downloadMode,
+    downloadTileMapName,
     tileMaps,
     savedTileSize,
     isDownloading,
@@ -320,7 +321,7 @@ export default function HomeScreen() {
           <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} style={{ marginLeft: 10 }} />
         </View>
         <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('Home.navigation.download', '地図のダウンロード')}</Text>
+          <Text style={{ fontSize: 16 }}>{downloadTileMapName || t('Home.navigation.download', '地図のダウンロード')}</Text>
         </View>
         <View
           style={{
@@ -335,7 +336,7 @@ export default function HomeScreen() {
         </View>
       </View>
     ),
-    [gotoMaps, headerRightButton, insets.top]
+    [gotoMaps, headerRightButton, insets.top, downloadTileMapName]
   );
 
   const customHeaderPDF = useCallback(
