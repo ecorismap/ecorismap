@@ -145,6 +145,55 @@ export const trackLogMMKV = {
       return null;
     }
   },
+  
+  // チャンク操作用メソッド
+  setChunk: (key: string, data: any): void => {
+    try {
+      trackLogStorage.set(key, JSON.stringify(data));
+    } catch (error) {
+      // console.error(`Failed to save chunk ${key}:`, error);
+      throw error;
+    }
+  },
+  
+  getChunk: (key: string): any | null => {
+    try {
+      const jsonString = trackLogStorage.getString(key);
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      // console.error(`Failed to get chunk ${key}:`, error);
+      return null;
+    }
+  },
+  
+  removeChunk: (key: string): void => {
+    try {
+      trackLogStorage.delete(key);
+    } catch (error) {
+      // console.error(`Failed to remove chunk ${key}:`, error);
+      throw error;
+    }
+  },
+  
+  // メタデータ操作
+  setMetadata: (metadata: any): void => {
+    try {
+      trackLogStorage.set('track_metadata', JSON.stringify(metadata));
+    } catch (error) {
+      // console.error('Failed to save metadata:', error);
+      throw error;
+    }
+  },
+  
+  getMetadata: (): any | null => {
+    try {
+      const jsonString = trackLogStorage.getString('track_metadata');
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      // console.error('Failed to get metadata:', error);
+      return null;
+    }
+  },
 };
 
 // データマイグレーション用ユーティリティ

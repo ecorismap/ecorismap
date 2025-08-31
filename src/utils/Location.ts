@@ -1,7 +1,19 @@
 import { LocationType, TrackLogType } from '../types';
-import { LocationObject } from 'expo-location';
+import { LocationObject, LocationObjectCoords } from 'expo-location';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
+
+// チャンク管理用の定数
+export const CHUNK_SIZE = 500;
+export const DISPLAY_BUFFER_SIZE = 500;
+
+// チャンク管理用のタイプ
+export interface TrackChunkMetadata {
+  totalChunks: number;
+  totalPoints: number;
+  lastChunkIndex: number;
+  lastTimeStamp: number;
+}
 
 // MMKVを使用したシンプルな実装（チャンク処理不要）
 export const storeLocations = (data: TrackLogType): void => {
@@ -109,4 +121,57 @@ export const getLineLength = (locations: LocationType[]) => {
   } else {
     return 0;
   }
+};
+
+// チャンク保存関数
+export const saveTrackChunk = (chunkIndex: number, points: LocationObjectCoords[]): void => {
+  trackLogMMKV.setChunk(`track_chunk_${chunkIndex}`, points);
+};
+
+// チャンク読み込み関数
+export const getTrackChunk = (chunkIndex: number): LocationObjectCoords[] => {
+  return trackLogMMKV.getChunk(`track_chunk_${chunkIndex}`) || [];
+};
+
+// メタデータ管理
+export const getTrackMetadata = (): TrackChunkMetadata => {
+  return trackLogMMKV.getMetadata() || {
+    totalChunks: 0,
+    totalPoints: 0,
+    lastChunkIndex: 0,
+    lastTimeStamp: 0
+  };
+};
+
+export const saveTrackMetadata = (metadata: TrackChunkMetadata): void => {
+  trackLogMMKV.setMetadata(metadata);
+};
+
+// 全チャンクを結合して取得（エクスポート用）
+export const getAllTrackPoints = (): LocationObjectCoords[] => {
+  const metadata = getTrackMetadata();
+  const allPoints: LocationObjectCoords[] = [];
+  
+  for (let i = 0; i <= metadata.lastChunkIndex; i++) {
+    const chunk = getTrackChunk(i);
+    allPoints.push(...chunk);
+  }
+  
+  return allPoints;
+};
+
+// チャンクデータをクリア
+export const clearAllChunks = (): void => {
+  const metadata = getTrackMetadata();
+  
+  for (let i = 0; i <= metadata.lastChunkIndex; i++) {
+    trackLogMMKV.removeChunk(`track_chunk_${i}`);
+  }
+  
+  saveTrackMetadata({
+    totalChunks: 0,
+    totalPoints: 0,
+    lastChunkIndex: 0,
+    lastTimeStamp: 0
+  });
 };

@@ -5,7 +5,19 @@ import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
 import { shallowEqual, useSelector } from 'react-redux';
-import { checkAndStoreLocations, clearStoredLocations, getStoredLocations, storeLocations } from '../utils/Location';
+import { 
+  checkAndStoreLocations, 
+  getStoredLocations,
+  CHUNK_SIZE,
+  DISPLAY_BUFFER_SIZE,
+  saveTrackChunk,
+  getTrackChunk,
+  getTrackMetadata,
+  saveTrackMetadata,
+  getAllTrackPoints,
+  clearAllChunks,
+  type TrackChunkMetadata
+} from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
 import * as projectStore from '../lib/firebase/firestore';
@@ -25,6 +37,7 @@ import { cleanupLine } from '../utils/Coords';
 import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
 import { MockGpsGenerator, MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../utils/mockGpsHelper';
+import { logMemoryUsage, logObjectSize, logChunkStats, PerformanceTimer } from '../utils/memoryMonitor';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -101,6 +114,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   // 擬似GPS用の設定とインスタンス
   const [useMockGps, setUseMockGps] = useState(false);  // 常にfalseから開始
   const mockGpsRef = useRef<MockGpsGenerator | null>(null);
+  
+  // チャンク管理用のref
+  const currentChunkRef = useRef<Location.LocationObjectCoords[]>([]);
+  const currentChunkIndexRef = useRef<number>(0);
+  const displayBufferRef = useRef<Location.LocationObjectCoords[]>([]);
+  const trackMetadataRef = useRef<TrackChunkMetadata>(getTrackMetadata());
+  const lastUIUpdateRef = useRef<number>(0);  // UI更新のスロットリング用
+  const pendingUIUpdateRef = useRef<boolean>(false);  // UI更新の重複防止用
+  
+  // 保存済みチャンクのキャッシュ（毎回読み込まないため）
+  const savedChunksCacheRef = useRef<Location.LocationObjectCoords[][]>([]);
+  const lastLoadedChunkIndex = useRef<number>(-1);
 
   const gpsAccuracyOption = useMemo(() => {
     // トラック記録中は固定設定を使用
@@ -195,6 +220,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const stopTracking = useCallback(async () => {
     try {
+      // 最後のチャンクを保存
+      if (currentChunkRef.current.length > 0) {
+        saveTrackChunk(currentChunkIndexRef.current, currentChunkRef.current);
+        saveTrackMetadata(trackMetadataRef.current);
+        console.log(`Saved final chunk ${currentChunkIndexRef.current} with ${currentChunkRef.current.length} points`);
+        console.log(`Total saved: ${trackMetadataRef.current.totalPoints} points in ${trackMetadataRef.current.totalChunks + 1} chunks`);
+      }
+      
       if (!useMockGps && await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION)) {
         await Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
 
@@ -226,6 +259,73 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, [projectId, dataUser, useMockGps]);
 
   const startTracking = useCallback(async () => {
+    // メタデータを初期化または復元
+    trackMetadataRef.current = getTrackMetadata();
+    currentChunkIndexRef.current = trackMetadataRef.current.lastChunkIndex;
+    
+    // 最新チャンクを読み込み
+    if (trackMetadataRef.current.totalPoints > 0) {
+      currentChunkRef.current = getTrackChunk(currentChunkIndexRef.current) || [];
+      // 表示用バッファに最新ポイントをロード（全チャンクを読み込まないように修正）
+      // 最後の1-2チャンクから最新500ポイントを取得
+      displayBufferRef.current = [];
+      
+      // 現在のチャンクから取得
+      displayBufferRef.current = [...currentChunkRef.current];
+      
+      // 足りない場合は前のチャンクから補充
+      if (displayBufferRef.current.length < DISPLAY_BUFFER_SIZE && currentChunkIndexRef.current > 0) {
+        const prevChunk = getTrackChunk(currentChunkIndexRef.current - 1);
+        if (prevChunk) {
+          const needed = DISPLAY_BUFFER_SIZE - displayBufferRef.current.length;
+          const startIdx = Math.max(0, prevChunk.length - needed);
+          displayBufferRef.current = [...prevChunk.slice(startIdx), ...displayBufferRef.current];
+        }
+      }
+      
+      console.log(`[Startup] Loaded displayBuffer with ${displayBufferRef.current.length} points (max 2 chunks)`);
+      
+      // 保存済みチャンクを取得（一時的に無効化）
+      console.log(`[Startup] Skipping chunk loading (disabled for debugging)`);
+      // const startupTimer = new PerformanceTimer('Startup');
+      // 
+      // savedChunksCacheRef.current = [];
+      // for (let i = 0; i < currentChunkIndexRef.current; i++) {
+      //   const chunk = getTrackChunk(i);
+      //   if (chunk && chunk.length > 0) {
+      //     savedChunksCacheRef.current.push(chunk);
+      //   }
+      // }
+      // lastLoadedChunkIndex.current = currentChunkIndexRef.current - 1;
+      // 
+      // startupTimer.log(`Loaded ${savedChunksCacheRef.current.length} chunks`);
+      // logObjectSize('Startup savedChunks', savedChunksCacheRef.current);
+      logMemoryUsage('After startup (no chunk load)');
+      
+      // 起動時のsetTrackLogを一時的にコメントアウト（無限ループ防止）
+      // setTrackLog({
+      //   track: [...displayBufferRef.current],
+      //   distance: 0, // 後で計算
+      //   lastTimeStamp: trackMetadataRef.current.lastTimeStamp,
+      //   // savedChunks: [...savedChunksCacheRef.current],
+      //   // currentChunk: [...currentChunkRef.current]
+      // });
+    } else {
+      // 初回起動時は空から開始
+      currentChunkRef.current = [];
+      displayBufferRef.current = [];
+      savedChunksCacheRef.current = [];
+      lastLoadedChunkIndex.current = -1;
+      // 起動時のsetTrackLogを一時的にコメントアウト（無限ループ防止）
+      // setTrackLog({
+      //   track: [],
+      //   distance: 0,
+      //   lastTimeStamp: 0,
+      //   // savedChunks: [],
+      //   // currentChunk: []
+      // });
+    }
+    
     if (useMockGps) {
       // 擬似GPSでトラッキング
       // 既存のインスタンスがなければデフォルト設定で作成
@@ -245,34 +345,118 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         };
       }
       
-      // start()は内部で既に動作中かチェックして適切に処理する
+      // 新しいコールバック処理（チャンクベース）
       mockGpsRef.current.start((pos) => {
-        // トラックログに追加
         const coords = pos.coords;
-        const newTrackLog = getStoredLocations();
-        const newTrack = [...(newTrackLog.track || []), coords];
         
-        // トラックログを更新（距離は後で計算）
-        const updatedTrackLog = {
-          track: newTrack,
-          distance: newTrackLog.distance, // 距離計算は省略（保存時に再計算）
-          lastTimeStamp: pos.timestamp
-        };
+        // 1. 現在のチャンクに追加
+        currentChunkRef.current.push(coords);
         
-        storeLocations(updatedTrackLog);
-        setTrackLog(updatedTrackLog);
+        // 2. 表示用バッファを更新（内部的に管理、コピーは作らない）
+        displayBufferRef.current.push(coords);
+        if (displayBufferRef.current.length > DISPLAY_BUFFER_SIZE) {
+          displayBufferRef.current.shift();
+        }
         
-        // 現在位置も更新
+        // 3. メタデータを更新
+        trackMetadataRef.current.totalPoints++;
+        trackMetadataRef.current.lastTimeStamp = pos.timestamp;
+        
+        // デバッグ: 100ポイントごとにメモリ状態を詳細確認
+        if (trackMetadataRef.current.totalPoints % 100 === 0) {
+          console.log(`[Debug] Point ${trackMetadataRef.current.totalPoints}:`);
+          console.log(`  - currentChunk length: ${currentChunkRef.current.length}`);
+          console.log(`  - displayBuffer length: ${displayBufferRef.current.length}`);
+          console.log(`  - savedChunksCache length: ${savedChunksCacheRef.current.length}`);
+          
+          // オブジェクトの参照を確認
+          const currentChunkSize = JSON.stringify(currentChunkRef.current).length;
+          const displayBufferSize = JSON.stringify(displayBufferRef.current).length;
+          console.log(`  - currentChunk size: ${(currentChunkSize / 1024).toFixed(2)}KB`);
+          console.log(`  - displayBuffer size: ${(displayBufferSize / 1024).toFixed(2)}KB`);
+        }
+        
+        // 4. チャンクが満杯になったら保存
+        if (currentChunkRef.current.length >= CHUNK_SIZE) {
+          // 現在のチャンクを保存
+          saveTrackChunk(currentChunkIndexRef.current, currentChunkRef.current);
+          
+          // メタデータを更新
+          currentChunkIndexRef.current++;
+          trackMetadataRef.current.lastChunkIndex = currentChunkIndexRef.current;
+          trackMetadataRef.current.totalChunks++;
+          saveTrackMetadata(trackMetadataRef.current);
+          
+          // 保存したチャンクをキャッシュに追加（メモリ問題のため完全削除）
+          // const savedChunk = [...currentChunkRef.current];
+          // savedChunksCacheRef.current.push(savedChunk);
+          // lastLoadedChunkIndex.current = currentChunkIndexRef.current - 1;
+          
+          console.log(`[ChunkSave] Chunk saved to MMKV only (no memory cache)`);
+          
+          // 新しいチャンクを開始
+          currentChunkRef.current = [];
+          
+          console.log(`[ChunkSave] Saved chunk ${currentChunkIndexRef.current - 1}, starting new chunk ${currentChunkIndexRef.current}`);
+          // console.log(`[Cache] Added to cache, now has ${savedChunksCacheRef.current.length} chunks`);
+          logChunkStats(
+            currentChunkIndexRef.current,
+            0,
+            trackMetadataRef.current.totalChunks,
+            trackMetadataRef.current.totalPoints
+          );
+          logMemoryUsage('After chunk save');
+        }
+        
+        // 5. 現在位置を更新（常に更新）
         updateGpsPosition.current(pos);
         
-        // プログレス表示
+        // 6. UIを更新（setTimeoutでバッチング - より安全）
+        const now = Date.now();
+        const timeSinceLastUpdate = now - lastUIUpdateRef.current;
+        
+        // 最小更新間隔（200ms）を設定して、Maximum update depth exceededを防ぐ
+        const MIN_UPDATE_INTERVAL = 200; // 200ms = 秒間5回まで（最も安全）
+        
+        if (timeSinceLastUpdate >= MIN_UPDATE_INTERVAL && !pendingUIUpdateRef.current) {
+          lastUIUpdateRef.current = now;
+          pendingUIUpdateRef.current = true;
+          
+          // setTimeoutを使用して次のイベントループで実行
+          setTimeout(() => {
+            // フラグを先にリセット（重要）
+            pendingUIUpdateRef.current = false;
+            
+            // トラックログを更新（リアルタイム表示）
+            setTrackLog({
+              track: [...displayBufferRef.current], // 互換性のため残す
+              distance: 0,
+              lastTimeStamp: pos.timestamp,
+              // チャンク情報のみ提供（データは含まない）
+              savedChunks: [], // 空配列（メモリ節約）
+              currentChunk: [...currentChunkRef.current],
+              savedChunkCount: currentChunkIndexRef.current // 保存済みチャンク数
+            });
+            
+            // ログ出力
+            logObjectSize('displayBuffer', displayBufferRef.current);
+            logObjectSize('currentChunk', currentChunkRef.current);
+            logMemoryUsage('After UI update');
+          }, 0);
+        }
+        
+        // 7. プログレス表示
         const progress = mockGpsRef.current ? mockGpsRef.current.getProgress() : null;
         if (progress && progress.current % 100 === 0) {
-          console.log(`Mock GPS Progress: ${progress.current}/${progress.total} (${progress.percentage.toFixed(1)}%)`);
+          console.log(`[Progress] ${progress.current}/${progress.total} (${progress.percentage.toFixed(1)}%)`);
+          console.log(`[Stats] Total points: ${trackMetadataRef.current.totalPoints}, Chunks: ${trackMetadataRef.current.totalChunks}`);
+          console.log(`[Buffer] Current chunk: ${currentChunkRef.current.length}, Display: ${displayBufferRef.current.length}`);
+          console.log(`[Info] savedChunksCache disabled, using only displayBuffer`);
+          logMemoryUsage(`Progress ${progress.percentage.toFixed(0)}%`);
         }
       });
       
-      console.log('Started mock GPS tracking');
+      console.log('Started mock GPS tracking with chunk system');
     } else {
       // 実際のGPSでトラッキング
       if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
@@ -294,7 +478,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, useMockGps]);;;
+  }, [gpsAccuracyOption, useMockGps]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');
@@ -450,34 +634,74 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
-    // stateのtrackLogは既にMMKVと同期済み
-    if (!isLocationTypeArray(trackLog.track)) return { isOK: false, message: 'Invalid track log' };
-    if (trackLog.track.length < 2) return { isOK: true, message: '' };
-
-    const cleanupedLine = cleanupLine(trackLog.track);
-
-    // MMKVには2MB制限がないため、分割不要で一括保存
+    // 最後のチャンクを保存
+    if (currentChunkRef.current.length > 0) {
+      saveTrackChunk(currentChunkIndexRef.current, currentChunkRef.current);
+      saveTrackMetadata(trackMetadataRef.current);
+    }
+    
+    // 全チャンクを結合
+    const allPoints = getAllTrackPoints();
+    
+    if (!isLocationTypeArray(allPoints)) return { isOK: false, message: 'Invalid track log' };
+    if (allPoints.length < 2) return { isOK: true, message: '' };
+    
+    const cleanupedLine = cleanupLine(allPoints);
+    
+    // レコードに追加
     const ret = addTrackRecord(cleanupedLine);
     if (!ret.isOK) {
       return { isOK: ret.isOK, message: ret.message };
     }
-
-    // MMKVのトラックログをクリア
-    clearStoredLocations();
-    // stateも更新
+    
+    // チャンクデータをクリア
+    clearAllChunks();
+    
+    // リセット
+    currentChunkRef.current = [];
+    currentChunkIndexRef.current = 0;
+    displayBufferRef.current = [];
+    savedChunksCacheRef.current = [];
+    lastLoadedChunkIndex.current = -1;
+    trackMetadataRef.current = {
+      totalChunks: 0,
+      totalPoints: 0,
+      lastChunkIndex: 0,
+      lastTimeStamp: 0
+    };
+    
+    // UIもクリア
     setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
+    
+    console.log(`Saved track with ${allPoints.length} points`);
+    
     return { isOK: true, message: '' };
-  }, [addTrackRecord, trackLog]);
+  }, [addTrackRecord]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
-    if (trackLog.track.length > 1) {
+    // チャンクまたは表示バッファにデータがある場合
+    const hasData = trackMetadataRef.current.totalPoints > 0 || currentChunkRef.current.length > 0 || trackLog.track.length > 1;
+    
+    if (hasData) {
       const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
       if (ans) {
         const ret = await saveTrackLog();
         if (!ret.isOK) return ret;
       } else {
-        // MMKVのトラックログのみクリアする（Reduxは使用しない）
-        clearStoredLocations();
+        // チャンクデータをクリア
+        clearAllChunks();
+        
+        // リセット
+        currentChunkRef.current = [];
+        currentChunkIndexRef.current = 0;
+        displayBufferRef.current = [];
+        trackMetadataRef.current = {
+          totalChunks: 0,
+          totalPoints: 0,
+          lastChunkIndex: 0,
+          lastTimeStamp: 0
+        };
+        
         // stateも更新
         setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
       }
