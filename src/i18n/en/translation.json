@@ -437,6 +437,9 @@
       "export": "export",
       "offline": "offline",
       "online": "online"
+    },
+    "alert": {
+      "cannotDownloadOnWeb": "Cannot be used on the web version"
     }
   },
   "Projects": {

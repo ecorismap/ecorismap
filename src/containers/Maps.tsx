@@ -66,6 +66,10 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
+      if (Platform.OS === 'web') {
+        AlertAsync(t('Maps.alert.cannotDownloadOnWeb'));
+        return;
+      }
       const protocol = item.url.split(':')[0];
       if (
         protocol === 'http' ||

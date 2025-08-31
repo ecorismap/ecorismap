@@ -994,13 +994,6 @@ export default function HomeScreen() {
 
           {!FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
 
-          {isShowingProjectButtons && <HomeProjectButtons />}
-          {projectName === undefined || downloadMode ? null : (
-            <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
-          )}
-
-          {!FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
-
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}

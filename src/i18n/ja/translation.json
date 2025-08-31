@@ -453,6 +453,9 @@
       "export": "ｴｸｽﾎﾟｰﾄ",
       "offline": "ｵﾌﾗｲﾝ",
       "online": "ｵﾝﾗｲﾝ"
+    },
+    "alert": {
+      "cannotDownloadOnWeb": "Web版では使用できません"
     }
   },
   "MapList": {
