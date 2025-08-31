@@ -594,13 +594,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.gpsWeb'));
         return;
       }
-      
+
       // 確認アラートを表示
       const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
       if (!ret) {
         return;
       }
-      
+
       const point = await getCurrentPoint();
       if (point === undefined) return;
       updatePointPosition(layer, record, point);
@@ -640,7 +640,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               await AlertAsync(t('Home.alert.cannotEdit'));
               return;
             }
-            
+
             // ADD_LOCATION_POINTの場合は即座に確認アラートを表示してポイントを追加
             if (value === 'ADD_LOCATION_POINT') {
               await handleAddLocationPoint();
@@ -1495,7 +1495,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
         setPendingEditPosition(null);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
   }, [
@@ -1512,13 +1512,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
 
     // console.log('jump', route.params?.jumpTo);
-    // console.log('previous', route.params?.previous);
+    //console.log('previous', route.params?.previous);
     // console.log('tileMap', route.params?.tileMap);
     //console.log('mode', route.params?.mode);
 
     if (route.params?.previous === 'Home') {
       //プロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
+      setTimeout(() => bottomSheetRef.current?.close(), 500);
     } else if (route.params?.previous === 'Settings') {
       //ecorismapを読み込んだときにプロジェクトのホームにジャンプする場合
       changeMapRegion(route.params.jumpTo, true);
@@ -1554,7 +1555,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         setTimeout(() => bottomSheetRef.current?.close(), 300);
         selectFeatureButton(featureType);
         setInfoToolActive(false);
-        
+
         // まずマップを移動
         if (jumpTo) {
           changeMapRegion(jumpTo, true);

@@ -635,8 +635,8 @@ export default function HomeScreen() {
             showHeader={downloadMode || exportPDFMode}
           />
 
-          {isShowingProjectButtons && <HomeProjectButtons />}
-          {projectName === undefined || downloadMode ? null : (
+          {!downloadMode && !exportPDFMode && isShowingProjectButtons && <HomeProjectButtons />}
+          {projectName === undefined || downloadMode || exportPDFMode ? null : (
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}
 
