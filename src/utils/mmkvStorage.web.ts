@@ -101,6 +101,83 @@ export const trackLogMMKV = {
     const jsonString = webStorage.getItem('tracklog');
     return jsonString ? jsonString.length : 0;
   },
+  
+  // 現在地のみを保存・取得するメソッド
+  setCurrentLocation: (location: any | null): void => {
+    try {
+      if (webStorage) {
+        if (location) {
+          webStorage.setItem('current-location', JSON.stringify(location));
+        } else {
+          webStorage.removeItem('current-location');
+        }
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  getCurrentLocation: (): any | null => {
+    try {
+      if (!webStorage) return null;
+      const jsonString = webStorage.getItem('current-location');
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      return null;
+    }
+  },
+  
+  // チャンク操作用メソッド
+  setChunk: (key: string, data: any): void => {
+    try {
+      if (webStorage) {
+        webStorage.setItem(key, JSON.stringify(data));
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  getChunk: (key: string): any | null => {
+    try {
+      if (!webStorage) return null;
+      const jsonString = webStorage.getItem(key);
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      return null;
+    }
+  },
+  
+  removeChunk: (key: string): void => {
+    try {
+      if (webStorage) {
+        webStorage.removeItem(key);
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  // メタデータ操作
+  setMetadata: (metadata: any): void => {
+    try {
+      if (webStorage) {
+        webStorage.setItem('track_metadata', JSON.stringify(metadata));
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  getMetadata: (): any | null => {
+    try {
+      if (!webStorage) return null;
+      const jsonString = webStorage.getItem('track_metadata');
+      return jsonString ? JSON.parse(jsonString) : null;
+    } catch (error) {
+      return null;
+    }
+  },
 };
 
 // データマイグレーション用ユーティリティ（Web用）
