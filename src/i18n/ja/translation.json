@@ -137,6 +137,8 @@
     "gps_settings": "GPSの設定",
     "accuracy": {},
     "gps_settings_alert": "GPSの起動時に設定が反映されます。",
+    "mockGPSSettings": "擬似GPS設定",
+    "showMockGPSButton": "擬似GPSパネルボタンを表示",
     "processing": "処理中...",
     "selectStamp": "スタンプを選択",
     "selectPen": "ペンを選択",

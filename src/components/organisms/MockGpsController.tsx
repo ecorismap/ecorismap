@@ -31,7 +31,7 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
   ];
 
   const handleSpeedPresetChange = (preset: 'normal' | 'fast' | 'superfast') => {
-    const selected = speedPresets.find(p => p.value === preset);
+    const selected = speedPresets.find((p) => p.value === preset);
     if (selected) {
       setSpeedPreset(preset);
       setSpeed(selected.speed);
@@ -80,10 +80,6 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
     }
   };
 
-  if (__DEV__ !== true) {
-    return null; // 開発モードでない場合は表示しない
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -103,16 +99,12 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
             {speedPresets.map((preset) => (
               <TouchableOpacity
                 key={preset.value}
-                style={[
-                  styles.presetButton,
-                  speedPreset === preset.value && styles.selectedPresetButton,
-                ]}
+                style={[styles.presetButton, speedPreset === preset.value && styles.selectedPresetButton]}
                 onPress={() => handleSpeedPresetChange(preset.value)}
               >
-                <Text style={[
-                  styles.presetButtonText,
-                  speedPreset === preset.value && styles.selectedPresetButtonText,
-                ]}>
+                <Text
+                  style={[styles.presetButtonText, speedPreset === preset.value && styles.selectedPresetButtonText]}
+                >
                   {preset.label}
                 </Text>
                 <Text style={styles.presetDescription}>{preset.description}</Text>
@@ -338,4 +330,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
-

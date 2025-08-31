@@ -64,6 +64,9 @@ import { MockGpsController } from '../organisms/MockGpsController';
 export default function HomeScreen() {
   //console.log('render HomeScreen');
 
+  // Redux state
+  const showMockGPSButton = useSelector((state: RootState) => state.settings.showMockGPSButton);
+
   // Local state for direction line visibility
   const [showDirectionLine, setShowDirectionLine] = useState(false);
   // Local state for mock GPS panel visibility
@@ -143,12 +146,12 @@ export default function HomeScreen() {
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
-  const { 
-    trackingState, 
-    trackLog, 
-    memberLocations, 
-    editPositionMode, 
-    editPositionLayer, 
+  const {
+    trackingState,
+    trackLog,
+    memberLocations,
+    editPositionMode,
+    editPositionLayer,
     editPositionRecord,
     // 擬似GPS関連
     useMockGps,
@@ -334,7 +337,9 @@ export default function HomeScreen() {
           <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} style={{ marginLeft: 10 }} />
         </View>
         <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{downloadTileMapName || t('Home.navigation.download', '地図のダウンロード')}</Text>
+          <Text style={{ fontSize: 16 }}>
+            {downloadTileMapName || t('Home.navigation.download', '地図のダウンロード')}
+          </Text>
         </View>
         <View
           style={{
@@ -663,7 +668,7 @@ export default function HomeScreen() {
       </View>
 
       {/* 開発用: 擬似GPSパネル表示ボタン */}
-      {__DEV__ && toggleMockGps && (
+      {toggleMockGps && showMockGPSButton && (
         <View style={{ position: 'absolute', bottom: 120, right: 20, zIndex: 998 }}>
           <TouchableOpacity
             style={{
@@ -687,7 +692,7 @@ export default function HomeScreen() {
       )}
 
       {/* 開発用: 擬似GPSコントローラー */}
-      {showMockGpsPanel && __DEV__ && toggleMockGps && (
+      {showMockGpsPanel && toggleMockGps && (
         <View style={{ position: 'absolute', top: 100, right: 10, zIndex: 999 }}>
           <MockGpsController
             useMockGps={useMockGps || false}

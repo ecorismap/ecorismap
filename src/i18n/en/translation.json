@@ -194,6 +194,8 @@
     "gps_settings": "GPS settings",
     "accuracy": {},
     "gps_settings_alert": "The settings will be reflected when GPS starts up.",
+    "mockGPSSettings": "Mock GPS Settings",
+    "showMockGPSButton": "Show Mock GPS Panel Button",
     "processing": "processing...",
     "selectStamp": "select stamp",
     "selectPen": "select pen",

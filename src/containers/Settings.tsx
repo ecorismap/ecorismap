@@ -29,6 +29,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const dataSet = useSelector(selectNonDeletedDataSet);
   const maps = useSelector((state: RootState) => state.tileMaps);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
+  const showMockGPSButton = useSelector((state: RootState) => state.settings.showMockGPSButton);
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
 
@@ -180,8 +181,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   }, []);
 
   const pressGPSSettingsOK = useCallback(
-    (value: GpsAccuracyType) => {
-      dispatch(editSettingsAction({ gpsAccuracy: value }));
+    (value: GpsAccuracyType, showMockGPSButtonValue: boolean) => {
+      dispatch(editSettingsAction({ gpsAccuracy: value, showMockGPSButton: showMockGPSButtonValue }));
       setIsGPSSettingsOpen(false);
     },
     [dispatch]
@@ -229,6 +230,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       <SettingsModalGPS
         visible={isGPSSettingsOpen}
         gpsAccuracy={gpsAccuracy}
+        showMockGPSButton={showMockGPSButton}
         pressOK={pressGPSSettingsOK}
         pressCancel={pressGPSSettingsCancel}
       />

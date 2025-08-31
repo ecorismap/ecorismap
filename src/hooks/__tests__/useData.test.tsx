@@ -95,6 +95,7 @@ const createTestStore = (initialData: RecordType[] = []) => {
         isModalInfoToolHidden: false,
         isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
+        showMockGPSButton: false,
       },
       user: {
         uid: 'user1',
@@ -260,6 +261,7 @@ describe('useData', () => {
             isModalInfoToolHidden: false,
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
+            showMockGPSButton: false,
           },
           user: {
             uid: 'user1',
@@ -369,6 +371,7 @@ describe('useData', () => {
             isModalInfoToolHidden: false,
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
+            showMockGPSButton: false,
           },
           user: {
             uid: 'user1',

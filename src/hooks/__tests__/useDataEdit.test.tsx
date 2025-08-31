@@ -110,6 +110,7 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
         isModalInfoToolHidden: false,
         isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
+        showMockGPSButton: false,
       },
       user: {
         uid: 'user1',

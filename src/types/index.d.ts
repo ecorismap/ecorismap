@@ -345,6 +345,7 @@ export interface SettingsType {
   isModalInfoToolHidden: boolean;
   isModalMapMemoToolHidden: boolean;
   currentInfoTool: InfoToolType;
+  showMockGPSButton: boolean;
 }
 
 export interface RegionType {
