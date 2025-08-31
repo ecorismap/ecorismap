@@ -158,6 +158,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         };
         
+        // start()は内部で既に動作中かチェックして適切に処理する
         mockGpsRef.current.start((pos) => {
           updateGpsPosition.current(pos);
         });
@@ -201,9 +202,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           headingSubscriber.current.remove();
           headingSubscriber.current = undefined;
         }
-      } else if (useMockGps && mockGpsRef.current) {
-        mockGpsRef.current.stop();
-        mockGpsRef.current = null; // インスタンスも削除
+      } else if (useMockGps) {
+        // 擬似GPSの停止
+        if (mockGpsRef.current) {
+          mockGpsRef.current.stop();
+          mockGpsRef.current = null; // インスタンスも削除
+        }
+        // GPSサブスクライバーもクリア
+        if (gpsSubscriber.current !== undefined) {
+          gpsSubscriber.current.remove();
+          gpsSubscriber.current = undefined;
+        }
         console.log('Stopped mock GPS tracking');
       }
     } catch (e) {
@@ -224,6 +233,19 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
       }
       
+      // GPSサブスクライバーも設定（GPS状態の管理のため）
+      if (gpsSubscriber.current === undefined) {
+        gpsSubscriber.current = {
+          remove: () => {
+            if (mockGpsRef.current) {
+              mockGpsRef.current.stop();
+              mockGpsRef.current = null;
+            }
+          }
+        };
+      }
+      
+      // start()は内部で既に動作中かチェックして適切に処理する
       mockGpsRef.current.start((pos) => {
         // トラックログに追加
         const coords = pos.coords;
@@ -272,7 +294,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, useMockGps]);
+  }, [gpsAccuracyOption, useMockGps]);;;
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');

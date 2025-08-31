@@ -19,7 +19,7 @@ export interface MockGpsConfig {
 
 export class MockGpsGenerator {
   private config: MockGpsConfig;
-  private currentIndex: number = 0;
+  private currentIndex: number = -1;
   private timeElapsed: number = 0;
   private points: Location.LocationObjectCoords[] = [];
   private intervalId: NodeJS.Timeout | null = null;
@@ -177,11 +177,21 @@ export class MockGpsGenerator {
       return;
     }
 
-    this.locationCallback = callback;
-    this.currentIndex = 0;
-    this.timeElapsed = 0;
+    // 既に動作中の場合はコールバックだけ更新
+    if (this.intervalId) {
+      console.log('Mock GPS already running, updating callback only');
+      this.locationCallback = callback;
+      return;
+    }
 
-    console.log(`Starting mock GPS: ${this.config.scenario} scenario with ${this.points.length} points`);
+    this.locationCallback = callback;
+    // 初回起動時のみインデックスをリセット
+    if (this.currentIndex === -1) {
+      this.currentIndex = 0;
+      this.timeElapsed = 0;
+    }
+
+    console.log(`Starting mock GPS: ${this.config.scenario} scenario with ${this.points.length} points from index ${this.currentIndex}`);
 
     this.intervalId = setInterval(() => {
       if (this.currentIndex >= this.points.length) {
@@ -214,8 +224,10 @@ export class MockGpsGenerator {
   }
 
   getCurrentLocation(): Location.LocationObject | null {
-    if (this.currentIndex < this.points.length) {
-      const point = this.points[this.currentIndex];
+    // まだ開始していない場合は最初の位置を返す
+    const index = this.currentIndex === -1 ? 0 : this.currentIndex;
+    if (index < this.points.length) {
+      const point = this.points[index];
       return {
         coords: point,
         timestamp: Date.now(),
@@ -226,10 +238,11 @@ export class MockGpsGenerator {
   }
 
   getProgress(): { current: number; total: number; percentage: number } {
+    const index = this.currentIndex === -1 ? 0 : this.currentIndex;
     return {
-      current: this.currentIndex,
+      current: index,
       total: this.points.length,
-      percentage: (this.currentIndex / this.points.length) * 100,
+      percentage: (index / this.points.length) * 100,
     };
   }
 }
