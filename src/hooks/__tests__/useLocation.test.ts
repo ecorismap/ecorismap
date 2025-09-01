@@ -36,6 +36,27 @@ jest.mock('../../utils/Location', () => ({
   getStoredLocations: jest.fn(() => mockTrackLog),
   clearStoredLocations: jest.fn(),
   checkAndStoreLocations: jest.fn(),
+  CHUNK_SIZE: 1000,
+  DISPLAY_BUFFER_SIZE: 500,
+  saveTrackChunk: jest.fn(),
+  getTrackChunk: jest.fn(() => []),
+  getTrackMetadata: jest.fn(() => ({
+    totalChunks: 0,
+    totalPoints: 0,
+    lastChunkIndex: 0,
+    lastTimeStamp: 0,
+  })),
+  saveTrackMetadata: jest.fn(),
+  getAllTrackPoints: jest.fn(() => []),
+  clearAllChunks: jest.fn(),
+  getDisplayBuffer: jest.fn(() => []),
+  getCurrentChunkInfo: jest.fn(() => ({
+    currentChunkIndex: 0,
+    currentChunkSize: 0,
+    displayBufferSize: 0,
+  })),
+  initializeChunkState: jest.fn(),
+  addLocationsToChunks: jest.fn(),
 }));
 
 jest.mock('../../utils/mmkvStorage', () => ({
@@ -47,6 +68,41 @@ jest.mock('../../utils/mmkvStorage', () => ({
 jest.mock('../../components/molecules/AlertAsync', () => ({
   ConfirmAsync: jest.fn(),
   AlertAsync: jest.fn(),
+}));
+
+jest.mock('../../utils/mockGpsHelper', () => ({
+  MockGpsGenerator: jest.fn().mockImplementation(() => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    getCurrentLocation: jest.fn(() => ({
+      coords: {
+        latitude: 35.6812,
+        longitude: 139.7671,
+        altitude: 0,
+        accuracy: 10,
+        altitudeAccuracy: 10,
+        heading: 0,
+        speed: 0,
+      },
+      timestamp: Date.now(),
+    })),
+    getProgress: jest.fn(() => ({
+      current: 0,
+      total: 100,
+      percentage: 0,
+    })),
+  })),
+  LONG_TRACK_TEST_CONFIG: {
+    points: [],
+    interval: 1000,
+    loop: false,
+  },
+}));
+
+jest.mock('../../utils/memoryMonitor', () => ({
+  logMemoryUsage: jest.fn(),
+  logObjectSize: jest.fn(),
+  logChunkStats: jest.fn(),
 }));
 
 

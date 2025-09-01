@@ -148,7 +148,7 @@ export default function HomeScreen() {
   // LocationTrackingContext
   const {
     trackingState,
-    trackLog,
+    trackMetadata,
     memberLocations,
     editPositionMode,
     editPositionLayer,
@@ -506,7 +506,7 @@ export default function HomeScreen() {
               );
             })}
 
-            <TrackLog data={trackLog} />
+            <TrackLog metadata={trackMetadata} />
             {lineDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
               if (!layer?.visible) return null;

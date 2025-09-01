@@ -67,15 +67,20 @@ export interface DataType {
   data: RecordType[];
 }
 
+export interface TrackMetadataType {
+  distance: number;
+  lastTimeStamp: number;
+  savedChunkCount: number;
+  currentChunkSize: number;
+  totalPoints: number;
+  currentLocation?: { latitude: number; longitude: number };
+}
+
+// Deprecated - for backward compatibility only
 export interface TrackLogType {
   track: LocationType[];
   distance: number;
   lastTimeStamp: number;
-  // For chunk-based display
-  savedChunks?: LocationType[][];
-  currentChunk?: LocationType[];
-  // Chunk metadata for on-demand loading
-  savedChunkCount?: number;
 }
 export interface ProjectDataType extends DataType {
   userId: string;

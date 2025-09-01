@@ -1,9 +1,9 @@
 import React from 'react';
-import { TrackingStateType, MemberLocationType, LayerType, RecordType, TrackLogType } from '../types';
+import { TrackingStateType, MemberLocationType, LayerType, RecordType, TrackMetadataType } from '../types';
 
 export interface LocationTrackingContextType {
   trackingState: TrackingStateType;
-  trackLog: TrackLogType;
+  trackMetadata: TrackMetadataType;
   memberLocations: MemberLocationType[];
   pressTracking: () => void;
   pressSyncPosition: () => void;

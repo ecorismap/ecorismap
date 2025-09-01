@@ -13,12 +13,14 @@ export interface TrackChunkMetadata {
   totalPoints: number;
   lastChunkIndex: number;
   lastTimeStamp: number;
+  currentDistance: number; // 現在のチャンクの距離を追加
 }
 
-// MMKVを使用したシンプルな実装（チャンク処理不要）
-export const storeLocations = (data: TrackLogType): void => {
-  // MMKVは大容量データも効率的に処理可能（2MB制限なし）
-  trackLogMMKV.setTrackLog(data);
+// storeLocationsは互換性のため残す（実際には使用しない）
+export const storeLocations = (_data: TrackLogType): void => {
+  // チャンクシステムに移行したため、この関数は使用しない
+  // 互換性のためにログを出力
+  console.warn('storeLocations is deprecated. Data is now managed by chunk system.');
 };
 
 export const clearStoredLocations = (): void => {
@@ -30,44 +32,35 @@ export const clearStoredLocations = (): void => {
 };
 
 export const getStoredLocations = (): TrackLogType => {
-  try {
-    const data = trackLogMMKV.getTrackLog();
-    if (data !== null) {
-      return data;
-    }
-  } catch (error) {
-    // エラーが発生した場合は空のトラックログを返す
-    // console.error('Failed to get stored locations:', error);
-  }
-  // データが存在しない場合は空のトラックログを返す
-  return { track: [], distance: 0, lastTimeStamp: 0 };
+  // チャンクシステムから直接表示データを取得
+  const metadata = getTrackMetadata();
+
+  // 現在のチャンクが表示データそのもの（最大500点）
+  const track = [...currentChunk];
+
+  return {
+    track,
+    distance: metadata.currentDistance, // メタデータから距離を取得
+    lastTimeStamp: metadata.lastTimeStamp,
+  };
 };
 
 export const checkAndStoreLocations = (locations: LocationObject[]): void => {
-  //MMKVから保存されているトラックログを取得して、現在の位置情報と結合する
-  const { distance, track, lastTimeStamp } = getStoredLocations();
+  // メタデータから最終タイムスタンプを取得
+  const metadata = getTrackMetadata();
 
-  const checkedLocations = checkLocations(lastTimeStamp, locations);
+  // 位置情報の検証とフィルタリング
+  const checkedLocations = checkLocations(metadata.lastTimeStamp, locations);
 
-  const updatedTrackLog = [...track, ...checkedLocations];
-  const updatedDistance =
-    distance +
-    (track.length === 0
-      ? getLineLength(checkedLocations)
-      : getLineLength([track[track.length - 1], ...checkedLocations]));
-  const updatedLastTimeStamp =
-    updatedTrackLog.length === 0 ? 0 : updatedTrackLog[updatedTrackLog.length - 1].timestamp ?? 0;
+  if (checkedLocations.length > 0) {
+    // チャンクシステムに追加（これが唯一のデータ保存）
+    addLocationsToChunks(checkedLocations);
 
-  const updatedLocations = {
-    lastTimeStamp: updatedLastTimeStamp,
-    distance: updatedDistance,
-    track: updatedTrackLog,
-  };
-  storeLocations(updatedLocations);
-  
-  // 現在地を別途保存（最新の位置情報のみ）
-  if (updatedTrackLog.length > 0) {
-    trackLogMMKV.setCurrentLocation(updatedTrackLog[updatedTrackLog.length - 1]);
+    // 現在地を別途保存（互換性のため）
+    const displayData = getDisplayBuffer();
+    if (displayData.length > 0) {
+      trackLogMMKV.setCurrentLocation(displayData[displayData.length - 1]);
+    }
   }
 };
 
@@ -80,6 +73,9 @@ export const toLocationType = (locationObject: LocationObject): LocationType => 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
   if (locations.length === 0) return [];
 
+  const currentTime = Date.now();
+  const MAX_TIME_DIFF = 5 * 60 * 1000; // 5分以上古いデータは破棄
+
   // 1. まず変換
   const convertedLocations = locations.map((location) => toLocationType(location));
 
@@ -90,17 +86,25 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
     }
   }
 
-  // 3. 最初のデータがlastTimeStampより古ければ全て破棄（逆転チェック済みなので最初だけ確認すればOK）
-  if (convertedLocations[0].timestamp! <= lastTimeStamp) {
-    return [];
-  }
+  // 3. lastTimeStampより新しいデータのみをフィルタリング
+  let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
 
-  // 4. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
+  // 4. 現在時刻から大きく離れた古いデータを除外
+  filteredLocations = filteredLocations.filter((location) => {
+    const timeDiff = currentTime - location.timestamp!;
+    if (timeDiff > MAX_TIME_DIFF) {
+      console.warn(`Skipping old location data: ${timeDiff / 1000 / 60} minutes old`);
+      return false;
+    }
+    return true;
+  });
+
+  // 5. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
   if (lastTimeStamp === 0) {
-    return convertedLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
+    return filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
   }
 
-  return convertedLocations;
+  return filteredLocations;
 };
 
 export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {
@@ -123,6 +127,93 @@ export const getLineLength = (locations: LocationType[]) => {
   }
 };
 
+// チャンク管理用の内部状態（保存と表示を統一）
+let currentChunk: LocationObjectCoords[] = []; // 最大500点、保存と表示を兼ねる
+let currentChunkIndex = 0;
+
+// チャンク状態の初期化
+export const initializeChunkState = (): void => {
+  const metadata = getTrackMetadata();
+  currentChunkIndex = metadata.lastChunkIndex;
+
+  // 既存のチャンクがある場合は読み込み（これが表示データも兼ねる）
+  if (metadata.totalPoints > 0) {
+    currentChunk = getTrackChunk(currentChunkIndex) || [];
+  } else {
+    currentChunk = [];
+  }
+};
+
+// LocationTypeをLocationObjectCoordsに変換
+const toLocationObjectCoords = (location: LocationType): LocationObjectCoords => {
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    altitude: location.altitude ?? null,
+    accuracy: location.accuracy ?? null,
+    altitudeAccuracy: location.altitudeAccuracy ?? null,
+    heading: location.heading ?? null,
+    speed: location.speed ?? null,
+  };
+};
+
+// チャンクシステムに位置情報を追加
+export const addLocationsToChunks = (locations: LocationType[]): void => {
+  const metadata = getTrackMetadata();
+  let totalPointsAdded = 0;
+
+  for (const location of locations) {
+    const coords = toLocationObjectCoords(location);
+
+    // 現在のチャンクに追加（保存と表示を兼ねる）
+    currentChunk.push(coords);
+    totalPointsAdded++;
+
+    // チャンクが満杯（500点）になったら保存して新しいチャンクへ
+    if (currentChunk.length >= CHUNK_SIZE) {
+      saveTrackChunk(currentChunkIndex, currentChunk);
+
+      // メタデータを更新
+      currentChunkIndex++;
+      metadata.lastChunkIndex = currentChunkIndex;
+      metadata.totalChunks++;
+
+      console.log(`[ChunkSystem] Saved chunk ${currentChunkIndex - 1} with ${CHUNK_SIZE} points`);
+
+      // 新しいチャンクを開始
+      currentChunk = [];
+    }
+  }
+
+  // 距離を計算（現在のチャンクの距離）
+  const currentDistance = currentChunk.length >= 2 ? getLineLength(currentChunk) : 0;
+
+  // メタデータを更新
+  metadata.totalPoints += totalPointsAdded;
+  metadata.lastTimeStamp = locations[locations.length - 1]?.timestamp || Date.now();
+  metadata.currentDistance = currentDistance; // 距離を保存
+  saveTrackMetadata(metadata);
+
+  // 現在のチャンクを常に保存（表示用データとして使用される）
+  if (currentChunk.length > 0) {
+    saveTrackChunk(currentChunkIndex, currentChunk);
+  }
+};
+
+// 表示用バッファを取得（currentChunkそのものが表示データ）
+export const getDisplayBuffer = (): LocationObjectCoords[] => {
+  return [...currentChunk];
+};
+
+// 現在のチャンク情報を取得（デバッグ用）
+export const getCurrentChunkInfo = () => {
+  return {
+    currentChunkIndex,
+    currentChunkSize: currentChunk.length,
+    displayBufferSize: currentChunk.length, // 統一されたので同じ値
+  };
+};
+
 // チャンク保存関数
 export const saveTrackChunk = (chunkIndex: number, points: LocationObjectCoords[]): void => {
   trackLogMMKV.setChunk(`track_chunk_${chunkIndex}`, points);
@@ -135,12 +226,15 @@ export const getTrackChunk = (chunkIndex: number): LocationObjectCoords[] => {
 
 // メタデータ管理
 export const getTrackMetadata = (): TrackChunkMetadata => {
-  return trackLogMMKV.getMetadata() || {
-    totalChunks: 0,
-    totalPoints: 0,
-    lastChunkIndex: 0,
-    lastTimeStamp: 0
-  };
+  return (
+    trackLogMMKV.getMetadata() || {
+      totalChunks: 0,
+      totalPoints: 0,
+      lastChunkIndex: 0,
+      lastTimeStamp: 0,
+      currentDistance: 0,
+    }
+  );
 };
 
 export const saveTrackMetadata = (metadata: TrackChunkMetadata): void => {
@@ -151,27 +245,32 @@ export const saveTrackMetadata = (metadata: TrackChunkMetadata): void => {
 export const getAllTrackPoints = (): LocationObjectCoords[] => {
   const metadata = getTrackMetadata();
   const allPoints: LocationObjectCoords[] = [];
-  
+
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     const chunk = getTrackChunk(i);
     allPoints.push(...chunk);
   }
-  
+
   return allPoints;
 };
 
 // チャンクデータをクリア
 export const clearAllChunks = (): void => {
   const metadata = getTrackMetadata();
-  
+
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     trackLogMMKV.removeChunk(`track_chunk_${i}`);
   }
-  
+
   saveTrackMetadata({
     totalChunks: 0,
     totalPoints: 0,
     lastChunkIndex: 0,
-    lastTimeStamp: 0
+    lastTimeStamp: 0,
+    currentDistance: 0,
   });
+
+  // 内部状態もリセット
+  currentChunk = [];
+  currentChunkIndex = 0;
 };

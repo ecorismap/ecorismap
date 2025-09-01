@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useCallback, useState } from 'react';
-import * as Location from 'expo-location';
+import * as ExpoLocation from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
-import { LocationStateType, LocationType, TrackingStateType, TrackLogType } from '../types';
+import { LocationStateType, LocationType, TrackingStateType, TrackMetadataType } from '../types';
 import { shallowEqual, useSelector } from 'react-redux';
 import {
   checkAndStoreLocations,
-  getStoredLocations,
+  clearStoredLocations,
   CHUNK_SIZE,
   DISPLAY_BUFFER_SIZE,
   saveTrackChunk,
@@ -16,6 +16,8 @@ import {
   saveTrackMetadata,
   getAllTrackPoints,
   clearAllChunks,
+  getCurrentChunkInfo,
+  initializeChunkState,
   type TrackChunkMetadata,
 } from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
@@ -52,7 +54,7 @@ TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
     return console.error('[tracking]', 'Something went wrong within the background location task...', event.error);
   }
 
-  const locations = (event.data as any).locations as Location.LocationObject[];
+  const locations = (event.data as any).locations as ExpoLocation.LocationObject[];
   //console.log('[tracking]', 'Received new locations', locations);
 
   try {
@@ -72,7 +74,7 @@ export type UseLocationReturnType = {
   trackingState: TrackingStateType;
   headingUp: boolean;
   azimuth: number;
-  trackLog: TrackLogType;
+  trackMetadata: TrackMetadataType;
   toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
@@ -81,7 +83,7 @@ export type UseLocationReturnType = {
     isOK: boolean;
     message: string;
   }>;
-  confirmLocationPermission: () => Promise<Location.PermissionStatus.GRANTED | undefined>;
+  confirmLocationPermission: () => Promise<ExpoLocation.PermissionStatus.GRANTED | undefined>;
   // 擬似GPS関連
   useMockGps: boolean;
   toggleMockGps: (enabled: boolean, config?: MockGpsConfig) => Promise<void>;
@@ -97,13 +99,23 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   );
 
   // MMKVから直接トラックログを取得して管理（Reduxは使用しない）
-  const [trackLog, setTrackLog] = useState<TrackLogType>(() => getStoredLocations());
+  const [trackMetadata, setTrackMetadata] = useState<TrackMetadataType>(() => {
+    const metadata = getTrackMetadata();
+    const chunkInfo = getCurrentChunkInfo();
+    return {
+      distance: metadata.currentDistance,
+      lastTimeStamp: metadata.lastTimeStamp,
+      savedChunkCount: chunkInfo.currentChunkIndex,
+      currentChunkSize: chunkInfo.currentChunkSize,
+      totalPoints: metadata.totalPoints,
+    };
+  });
   const { addTrackRecord } = useRecord();
   const [azimuth, setAzimuth] = useState(0);
   const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
   const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
 
-  const updateGpsPosition = useRef<(pos: Location.LocationObject) => void>(() => null);
+  const updateGpsPosition = useRef<(pos: ExpoLocation.LocationObject) => void>(() => null);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
@@ -116,28 +128,28 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const mockGpsRef = useRef<MockGpsGenerator | null>(null);
 
   // チャンク管理用のref
-  const currentChunkRef = useRef<Location.LocationObjectCoords[]>([]);
+  const currentChunkRef = useRef<ExpoLocation.LocationObjectCoords[]>([]);
   const currentChunkIndexRef = useRef<number>(0);
-  const displayBufferRef = useRef<Location.LocationObjectCoords[]>([]);
+  const displayBufferRef = useRef<ExpoLocation.LocationObjectCoords[]>([]);
   const trackMetadataRef = useRef<TrackChunkMetadata>(getTrackMetadata());
   const lastUIUpdateRef = useRef<number>(0); // UI更新のスロットリング用
   const pendingUIUpdateRef = useRef<boolean>(false); // UI更新の重複防止用
 
   // 保存済みチャンクのキャッシュ（毎回読み込まないため）
-  const savedChunksCacheRef = useRef<Location.LocationObjectCoords[][]>([]);
+  const savedChunksCacheRef = useRef<ExpoLocation.LocationObjectCoords[][]>([]);
   const lastLoadedChunkIndex = useRef<number>(-1);
 
   const gpsAccuracyOption = useMemo(() => {
     // トラック記録中は固定設定を使用
     switch (gpsAccuracy) {
       case 'HIGH':
-        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
+        return { accuracy: ExpoLocation.Accuracy.Highest, distanceInterval: 2 };
       case 'MEDIUM':
-        return { accuracy: Location.Accuracy.High, distanceInterval: 10 };
+        return { accuracy: ExpoLocation.Accuracy.High, distanceInterval: 10 };
       case 'LOW':
-        return { accuracy: Location.Accuracy.Balanced };
+        return { accuracy: ExpoLocation.Accuracy.Balanced };
       default:
-        return { accuracy: Location.Accuracy.Highest, distanceInterval: 2 };
+        return { accuracy: ExpoLocation.Accuracy.Highest, distanceInterval: 2 };
     }
   }, [gpsAccuracy]);
 
@@ -151,14 +163,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           return;
         }
       }
-      const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+      const { status: foregroundStatus } = await ExpoLocation.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));
         openSettings();
         return;
       }
 
-      return 'granted' as Location.PermissionStatus.GRANTED;
+      return 'granted' as ExpoLocation.PermissionStatus.GRANTED;
     } catch (e: any) {
       // エラーハンドリング
     }
@@ -166,7 +178,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const startGPS = useCallback(async () => {
     //GPSもトラッキングもOFFの場合
-    if (gpsSubscriber.current === undefined && !(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+    if (gpsSubscriber.current === undefined && !(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
       if (useMockGps) {
         // 擬似GPSを使用
         // 既存のインスタンスがなければデフォルト設定で作成
@@ -191,13 +203,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         console.log('Started mock GPS');
       } else {
         // 実際のGPSを使用
-        gpsSubscriber.current = await Location.watchPositionAsync(gpsAccuracyOption, (pos) => {
+        gpsSubscriber.current = await ExpoLocation.watchPositionAsync(gpsAccuracyOption, (pos) => {
           updateGpsPosition.current(pos);
         });
       }
     }
     if (headingSubscriber.current === undefined && !useMockGps) {
-      headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+      headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
         setAzimuth(pos.trueHeading);
       });
     }
@@ -232,8 +244,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         );
       }
 
-      if (!useMockGps && (await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-        await Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+      if (!useMockGps && (await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+        await ExpoLocation.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
 
         if (headingSubscriber.current !== undefined) {
           headingSubscriber.current.remove();
@@ -263,7 +275,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, [projectId, dataUser, useMockGps]);
 
   const startTracking = useCallback(async () => {
-    // メタデータを初期化または復元
+    // 通常のGPSトラッキングの場合、チャンクシステムを初期化
+    if (!useMockGps) {
+      clearStoredLocations();
+      initializeChunkState(); // チャンク管理の内部状態を初期化
+    }
+    
+    // メタデータを初期化または復元（擬似GPS用）
     trackMetadataRef.current = getTrackMetadata();
     currentChunkIndexRef.current = trackMetadataRef.current.lastChunkIndex;
 
@@ -306,8 +324,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // logObjectSize('Startup savedChunks', savedChunksCacheRef.current);
       logMemoryUsage('After startup (no chunk load)');
 
-      // 起動時のsetTrackLogを一時的にコメントアウト（無限ループ防止）
-      // setTrackLog({
+      // 起動時のsetTrackMetadataを一時的にコメントアウト（無限ループ防止）
+      // setTrackMetadata({
       //   track: [...displayBufferRef.current],
       //   distance: 0, // 後で計算
       //   lastTimeStamp: trackMetadataRef.current.lastTimeStamp,
@@ -320,8 +338,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       displayBufferRef.current = [];
       savedChunksCacheRef.current = [];
       lastLoadedChunkIndex.current = -1;
-      // 起動時のsetTrackLogを一時的にコメントアウト（無限ループ防止）
-      // setTrackLog({
+      // 起動時のsetTrackMetadataを一時的にコメントアウト（無限ループ防止）
+      // setTrackMetadata({
       //   track: [],
       //   distance: 0,
       //   lastTimeStamp: 0,
@@ -436,14 +454,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             pendingUIUpdateRef.current = false;
 
             // トラックログを更新（リアルタイム表示）
-            setTrackLog({
-              track: [...displayBufferRef.current], // 互換性のため残す
-              distance: 0,
+            const metadata = getTrackMetadata();
+            const chunkInfo = getCurrentChunkInfo();
+            setTrackMetadata({
+              distance: metadata.currentDistance,
               lastTimeStamp: pos.timestamp,
-              // チャンク情報のみ提供（データは含まない）
-              savedChunks: [], // 空配列（メモリ節約）
-              currentChunk: [...currentChunkRef.current],
-              savedChunkCount: currentChunkIndexRef.current, // 保存済みチャンク数
+              savedChunkCount: chunkInfo.currentChunkIndex,
+              currentChunkSize: chunkInfo.currentChunkSize,
+              totalPoints: metadata.totalPoints,
             });
 
             // ログ出力
@@ -471,8 +489,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       console.log('Started mock GPS tracking with chunk system');
     } else {
       // 実際のGPSでトラッキング
-      if (!(await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-        await Location.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
+      if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+        await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
           ...gpsAccuracyOption,
           pausesUpdatesAutomatically: false,
           showsBackgroundLocationIndicator: true,
@@ -486,7 +504,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     }
 
     if (headingSubscriber.current === undefined && !useMockGps) {
-      headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+      headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
         setAzimuth(pos.trueHeading);
       });
     }
@@ -498,7 +516,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     const location =
       useMockGps && mockGpsRef.current
         ? mockGpsRef.current.getCurrentLocation()
-        : await Location.getLastKnownPositionAsync();
+        : await ExpoLocation.getLastKnownPositionAsync();
     // console.log('moveCurrentPosition3', location);
     if (location === null) return;
     setCurrentLocation(location.coords);
@@ -522,7 +540,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       } else if (gpsState_ === 'follow') {
         await moveCurrentPosition();
-        updateGpsPosition.current = (pos: Location.LocationObject) => {
+        updateGpsPosition.current = (pos: ExpoLocation.LocationObject) => {
           (mapViewRef.current as MapView).animateCamera(
             {
               center: {
@@ -536,7 +554,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         };
         await startGPS();
       } else if (gpsState_ === 'show') {
-        updateGpsPosition.current = (pos: Location.LocationObject) => {
+        updateGpsPosition.current = (pos: ExpoLocation.LocationObject) => {
           setCurrentLocation(pos.coords);
         };
         await startGPS();
@@ -566,7 +584,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean) => {
       if (mapViewRef.current === null) return;
-      const { status: foregroundStatus } = await Location.getForegroundPermissionsAsync();
+      const { status: foregroundStatus } = await ExpoLocation.getForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') return;
       if (headingUp_) {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
@@ -574,7 +592,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         let lastHeading = 0;
         let lastUpdateTime = 0;
 
-        headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
           const newHeading = Math.abs((-1.0 * pos.trueHeading) % 360);
           const currentTime = Date.now();
 
@@ -606,7 +624,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         });
       } else {
         if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
-        headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
           setAzimuth(pos.trueHeading);
         });
 
@@ -623,27 +641,44 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   );
 
   const updateCurrentLocationFromTracking = useCallback(async () => {
-    // トラッキング中の現在地更新とトラックログ更新
-    const currentCoords = trackLogMMKV.getCurrentLocation();
-
-    if (!currentCoords) return;
-
+    // チャンク処理はcheckAndStoreLocationsで完了済み
+    // ここではメタデータ更新のみを行う
+    
+    // 現在地を取得（MMKVから直接）
+    const latestCoords = trackLogMMKV.getCurrentLocation();
+    
+    if (!latestCoords) return;
+    
+    // 通常のGPSトラッキングの場合、メタデータを更新
+    if (trackingState === 'on' && !useMockGps) {
+      const chunkInfo = getCurrentChunkInfo();
+      const metadata = getTrackMetadata();
+      
+      // メタデータを更新（現在地を含める）
+      setTrackMetadata({
+        distance: metadata.currentDistance,
+        lastTimeStamp: metadata.lastTimeStamp,
+        savedChunkCount: chunkInfo.currentChunkIndex,
+        currentChunkSize: chunkInfo.currentChunkSize,
+        totalPoints: metadata.totalPoints,
+        currentLocation: latestCoords,
+      });
+    }
+    
+    // 現在位置の更新
     if (gpsState === 'follow' || RNAppState.currentState === 'background') {
       (mapViewRef.current as MapView).animateCamera(
         {
           center: {
-            latitude: currentCoords.latitude,
-            longitude: currentCoords.longitude,
+            latitude: latestCoords.latitude,
+            longitude: latestCoords.longitude,
           },
         },
         { duration: 5 }
       );
     }
-    setCurrentLocation(currentCoords);
-
-    // トラックログも更新（描画のため）
-    setTrackLog(getStoredLocations());
-  }, [gpsState, mapViewRef]);
+    setCurrentLocation(latestCoords);
+  }, [gpsState, mapViewRef, trackingState, useMockGps]);;;
 
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
@@ -681,10 +716,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       totalPoints: 0,
       lastChunkIndex: 0,
       lastTimeStamp: 0,
+      currentDistance: 0,
     };
 
     // UIもクリア
-    setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
+    setTrackMetadata({ 
+      distance: 0, 
+      lastTimeStamp: 0,
+      savedChunkCount: 0,
+      currentChunkSize: 0,
+      totalPoints: 0,
+    });
 
     console.log(`Saved track with ${allPoints.length} points`);
 
@@ -694,7 +736,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const checkUnsavedTrackLog = useCallback(async () => {
     // チャンクまたは表示バッファにデータがある場合
     const hasData =
-      trackMetadataRef.current.totalPoints > 0 || currentChunkRef.current.length > 0 || trackLog.track.length > 1;
+      trackMetadataRef.current.totalPoints > 0 || currentChunkRef.current.length > 0 || trackMetadata.totalPoints > 1;
 
     if (hasData) {
       const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
@@ -714,14 +756,21 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           totalPoints: 0,
           lastChunkIndex: 0,
           lastTimeStamp: 0,
+          currentDistance: 0,
         };
 
         // stateも更新
-        setTrackLog({ track: [], distance: 0, lastTimeStamp: 0 });
+        setTrackMetadata({ 
+      distance: 0, 
+      lastTimeStamp: 0,
+      savedChunkCount: 0,
+      currentChunkSize: 0,
+      totalPoints: 0,
+    });
       }
     }
     return { isOK: true, message: '' };
-  }, [saveTrackLog, trackLog.track.length]);
+  }, [saveTrackLog, trackMetadata.totalPoints]);
 
   // 擬似GPSモード切り替え関数を追加
   const toggleMockGps = useCallback(
@@ -775,7 +824,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     (async () => {
       //kill後の起動時にログ取得中なら終了させる。なぜかエラーになるがtry catchする
 
-      const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
+      const hasStarted = await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
       if (hasStarted) {
         //再起動時にトラックを止める
         await stopTracking();
@@ -787,9 +836,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     })();
 
     return () => {
-      Location.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION).then((hasStarted) => {
+      ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION).then((hasStarted) => {
         if (hasStarted) {
-          Location.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
+          ExpoLocation.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
         }
       });
 
@@ -818,7 +867,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           if (gpsState === 'show' || gpsState === 'follow') {
             if (headingSubscriber.current === undefined && !useMockGps) {
               //console.log('add heading');
-              headingSubscriber.current = await Location.watchHeadingAsync((pos) => {
+              headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
                 setAzimuth(pos.trueHeading);
               });
             }
@@ -850,7 +899,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     trackingState,
     headingUp,
     azimuth,
-    trackLog,
+    trackMetadata,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
