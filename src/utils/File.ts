@@ -1,7 +1,7 @@
 import * as RNFS from 'react-native-fs';
 import * as Sharing from 'expo-sharing';
 import { ExportType } from '../types';
-import { zip } from 'react-native-zip-archive';
+import JSZip from 'jszip';
 import sanitize from 'sanitize-filename';
 import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
@@ -18,6 +18,59 @@ import { fetchPhoto } from '../lib/firebase/storage';
 export function normalizeFilePath(path: string): string {
   // iOSの場合のみNFCに正規化（Androidは通常問題なし）
   return Platform.OS === 'ios' ? path.normalize('NFC') : path;
+}
+
+/**
+ * JSZipを使用してZIPファイルを作成する
+ * Unicode正規化を適切に処理し、プラットフォーム間の互換性を確保
+ */
+async function createZipWithJSZip(sourcePath: string, targetPath: string): Promise<string | undefined> {
+  try {
+    const jszip = new JSZip();
+    
+    // ディレクトリ内のファイルを再帰的に追加
+    async function addFilesToZip(dirPath: string, zipFolder: JSZip | null, basePath: string) {
+      const items = await RNFS.readDir(dirPath);
+      
+      for (const item of items) {
+        const relativePath = item.path.replace(basePath + '/', '');
+        // ファイル名をNFC正規化
+        const normalizedName = relativePath.normalize('NFC');
+        
+        if (item.isFile()) {
+          // ファイルを読み込んでZIPに追加
+          const fileContent = await RNFS.readFile(item.path, 'base64');
+          if (zipFolder) {
+            zipFolder.file(normalizedName, fileContent, { base64: true });
+          } else {
+            jszip.file(normalizedName, fileContent, { base64: true });
+          }
+        } else if (item.isDirectory()) {
+          // サブディレクトリを作成して再帰的に処理
+          const subFolder = zipFolder ? zipFolder.folder(normalizedName) : jszip.folder(normalizedName);
+          await addFilesToZip(item.path, subFolder, basePath);
+        }
+      }
+    }
+    
+    // ファイルを追加
+    await addFilesToZip(sourcePath, null, sourcePath);
+    
+    // ZIPファイルを生成
+    const zipContent = await jszip.generateAsync({ 
+      type: 'base64',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 9 }
+    });
+    
+    // ZIPファイルを保存
+    await RNFS.writeFile(targetPath, zipContent, 'base64');
+    
+    return targetPath;
+  } catch (error) {
+    console.error('Error creating ZIP with JSZip:', error);
+    return undefined;
+  }
 }
 
 export const exportGeoFile = async (
@@ -105,10 +158,9 @@ export const exportGeoFile = async (
 
     //ファイルを出力フォルダに書き出し
 
-    // Unicode正規化を適用してからZIPファイルを作成
-    const normalizedSourcePath = normalizeFilePath(sourcePath);
-    const normalizedTargetPath = normalizeFilePath(targetPath);
-    const path = await zip(normalizedSourcePath, normalizedTargetPath);
+    // すべてのプラットフォームでJSZipを使用
+    const path = await createZipWithJSZip(sourcePath, targetPath);
+    
     if (path !== undefined) {
       await exportFileFromUri(path, `${fileName}.${ext}`);
       await RNFS.unlink(sourcePath);

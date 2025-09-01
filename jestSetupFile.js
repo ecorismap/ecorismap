@@ -273,19 +273,8 @@ jest.mock('react-native-scale-bar', () => {
   return View;
 });
 
-// Mock react-native-zip-archive
-jest.mock('react-native-zip-archive', () => ({
-  zip: jest.fn(() => Promise.resolve('path/to/zip')),
-  unzip: jest.fn(() => Promise.resolve()),
-  unzipAssets: jest.fn(() => Promise.resolve()),
-  subscribe: jest.fn(() => ({ remove: jest.fn() })),
-  isPasswordProtected: jest.fn(() => Promise.resolve(false)),
-  zipWithPassword: jest.fn(() => Promise.resolve('path/to/zip')),
-  unzipWithPassword: jest.fn(() => Promise.resolve()),
-  zipFolder: jest.fn(() => Promise.resolve('path/to/zip')),
-  zipFiles: jest.fn(() => Promise.resolve('path/to/zip')),
-  getUncompressedSize: jest.fn(() => Promise.resolve(1000)),
-}));
+// react-native-zip-archiveは使用しなくなったためモック削除
+// JSZipを代わりに使用
 
 
 // Mock expo-sqlite

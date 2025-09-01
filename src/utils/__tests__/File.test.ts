@@ -86,9 +86,7 @@ jest.mock('expo-sharing', () => ({
   shareAsync: jest.fn(),
 }));
 
-jest.mock('react-native-zip-archive', () => ({
-  zip: jest.fn(),
-}));
+// react-native-zip-archiveは使用しなくなったためモック削除
 
 jest.mock('expo-file-system', () => ({
   documentDirectory: 'file:///document/',

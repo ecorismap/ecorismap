@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storage } from './mmkvStorage';
 import * as Sharing from 'expo-sharing';
 import * as RNFS from 'react-native-fs';
-import { zip } from 'react-native-zip-archive';
-import { exportFileFromUri, normalizeFilePath } from './File';
+import JSZip from 'jszip';
+import { exportFileFromUri } from './File';
 
 export interface MigrationResult {
   success: boolean;
@@ -185,13 +185,25 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         await RNFS.mkdir(sourcePath);
         
         // データをlocal.jsonとして保存（generateEcorisMapDataと同じ形式）
-        const localJsonPath = normalizeFilePath(`${sourcePath}/local.json`);
-        await RNFS.writeFile(localJsonPath, jsonString, 'utf8');
+        await RNFS.writeFile(`${sourcePath}/local.json`, jsonString, 'utf8');
         
-        // Unicode正規化を適用してからZIP圧縮
-        const normalizedSourcePath = normalizeFilePath(sourcePath);
-        const normalizedTargetPath = normalizeFilePath(targetPath);
-        const zipPath = await zip(normalizedSourcePath, normalizedTargetPath);
+        // JSZipを使用してZIPファイルを作成
+        const jszip = new JSZip();
+        
+        // local.jsonを追加（ファイル名をNFC正規化）
+        const normalizedFileName = 'local.json'.normalize('NFC');
+        jszip.file(normalizedFileName, jsonString);
+        
+        // ZIPを生成
+        const zipContent = await jszip.generateAsync({
+          type: 'base64',
+          compression: 'DEFLATE',
+          compressionOptions: { level: 9 }
+        });
+        
+        // ファイルを保存
+        await RNFS.writeFile(targetPath, zipContent, 'base64');
+        const zipPath = targetPath;
         if (zipPath !== undefined) {
           // ファイルを共有
           await exportFileFromUri(zipPath, `${fileName}.ecorismap`);
