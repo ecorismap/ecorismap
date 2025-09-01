@@ -315,7 +315,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (progress && progress.current % 100 === 0) {
           console.log(`[MockGPS Progress] ${progress.current}/${progress.total} (${progress.percentage.toFixed(1)}%)`);
         }
-        
+
         // 擬似GPSが停止したかチェック（ポイント数に達した場合など）
         if (mockGpsRef.current && !mockGpsRef.current.isRunning()) {
           console.log('Mock GPS has stopped, stopping tracking...');
@@ -343,7 +343,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, useMockGps]);
+  }, [gpsAccuracyOption, stopTracking, useMockGps]);
 
   const moveCurrentPosition = useCallback(async () => {
     //console.log('moveCurrentPosition');
