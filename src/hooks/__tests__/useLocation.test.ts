@@ -55,7 +55,6 @@ jest.mock('../../utils/Location', () => ({
     currentChunkSize: 0,
     displayBufferSize: 0,
   })),
-  initializeChunkState: jest.fn(),
   addLocationsToChunks: jest.fn(),
 }));
 

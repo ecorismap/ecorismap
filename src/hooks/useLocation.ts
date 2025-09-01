@@ -12,7 +12,6 @@ import {
   getAllTrackPoints,
   clearAllChunks,
   getCurrentChunkInfo,
-  initializeChunkState,
 } from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
@@ -253,7 +252,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const startTracking = useCallback(async () => {
     // チャンクシステムを初期化（通常/擬似GPS共通）
     clearStoredLocations();
-    initializeChunkState();
 
     if (useMockGps) {
       // 擬似GPSでトラッキング
@@ -534,9 +532,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     // チャンクデータをクリア
     clearAllChunks();
 
-    // チャンクシステムを再初期化
-    initializeChunkState();
-
     // UIもクリア
     setTrackMetadata({
       distance: 0,
@@ -546,7 +541,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       totalPoints: 0,
     });
 
-    console.log(`Saved track with ${allPoints.length} points`);
+    // console.log(`Saved track with ${allPoints.length} points`);
 
     return { isOK: true, message: '' };
   }, [addTrackRecord]);
@@ -564,7 +559,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       } else {
         // チャンクデータをクリア
         clearAllChunks();
-        initializeChunkState();
 
         // stateも更新
         setTrackMetadata({
