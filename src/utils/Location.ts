@@ -169,19 +169,27 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
     currentChunk.push(coords);
     totalPointsAdded++;
 
-    // チャンクが満杯（500点）になったら保存して新しいチャンクへ
-    if (currentChunk.length >= CHUNK_SIZE) {
-      saveTrackChunk(currentChunkIndex, currentChunk);
+    // チャンクが満杯（500点＋つなぎ目1点）になったら保存して新しいチャンクへ
+    // 注意: currentChunkIndex > 0 の場合、最初の点はつなぎ目なので501点で満杯
+    const chunkSizeThreshold = currentChunkIndex > 0 ? CHUNK_SIZE + 1 : CHUNK_SIZE;
+    
+    if (currentChunk.length >= chunkSizeThreshold) {
+      // 現在のチャンクの最後の点を保持（次のチャンクのつなぎ目用）
+      const lastPointOfCurrentChunk = currentChunk[currentChunk.length - 1];
+      
+      // つなぎ目を除いてチャンクを保存（2番目以降のチャンクは最初の点を除外）
+      const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
+      saveTrackChunk(currentChunkIndex, chunkToSave);
 
       // メタデータを更新
       currentChunkIndex++;
       metadata.lastChunkIndex = currentChunkIndex;
       metadata.totalChunks++;
 
-      console.log(`[ChunkSystem] Saved chunk ${currentChunkIndex - 1} with ${CHUNK_SIZE} points`);
+      console.log(`[ChunkSystem] Saved chunk ${currentChunkIndex - 1} with ${chunkToSave.length} points`);
 
-      // 新しいチャンクを開始
-      currentChunk = [];
+      // 新しいチャンクを開始（前のチャンクの最後の点を含める）
+      currentChunk = [lastPointOfCurrentChunk];
     }
   }
 
@@ -195,8 +203,18 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
   saveTrackMetadata(metadata);
 
   // 現在のチャンクを常に保存（表示用データとして使用される）
+  // 注意: 表示時はつなぎ目を含むが、保存時は除外する
   if (currentChunk.length > 0) {
-    saveTrackChunk(currentChunkIndex, currentChunk);
+    // 2番目以降のチャンクで、つなぎ目のみの場合は保存しない
+    if (currentChunkIndex > 0 && currentChunk.length === 1) {
+      // つなぎ目の1点のみの場合は保存をスキップ
+    } else {
+      // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）
+      const chunkToSave = currentChunkIndex > 0 && currentChunk.length > 1 
+        ? currentChunk.slice(1) 
+        : currentChunk;
+      saveTrackChunk(currentChunkIndex, chunkToSave);
+    }
   }
 };
 

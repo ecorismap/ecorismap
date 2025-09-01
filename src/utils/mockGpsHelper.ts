@@ -72,11 +72,21 @@ export class MockGpsGenerator {
   }
 
   private generateLinePoints() {
-    const numPoints = 100;
+    // pointCountが設定されていればその数、なければ100ポイント生成
+    const numPoints = this.config.pointCount || 100;
     const start = this.config.center;
-    const end = this.config.endPoint || {
+    
+    // 基準となる終点（100ポイントでの距離）
+    const baseEnd = this.config.endPoint || {
       latitude: start.latitude + 0.01,
       longitude: start.longitude + 0.01,
+    };
+    
+    // ポイント数に応じて終点を延長（100ポイントが基準）
+    const distanceFactor = numPoints / 100;
+    const end = {
+      latitude: start.latitude + (baseEnd.latitude - start.latitude) * distanceFactor,
+      longitude: start.longitude + (baseEnd.longitude - start.longitude) * distanceFactor,
     };
     
     for (let i = 0; i < numPoints; i++) {
@@ -194,12 +204,36 @@ export class MockGpsGenerator {
     console.log(`Starting mock GPS: ${this.config.scenario} scenario with ${this.points.length} points from index ${this.currentIndex}`);
 
     this.intervalId = setInterval(() => {
-      if (this.currentIndex >= this.points.length) {
-        // ループする
-        this.currentIndex = 0;
+      // デバッグログ追加
+      if (this.currentIndex % 50 === 0) {
+        console.log(`[MockGPS Debug] currentIndex: ${this.currentIndex}, target: ${this.config.pointCount}, points.length: ${this.points.length}`);
       }
-
-      const point = this.points[this.currentIndex];
+      
+      // ポイント数に達したかチェック（すべてのシナリオで有効）
+      if (this.config.pointCount && this.currentIndex >= this.config.pointCount) {
+        console.log(`Reached target point count: ${this.config.pointCount} (scenario: ${this.config.scenario})`);
+        this.stop();
+        return;
+      }
+      
+      // 配列の終端に達したかチェック
+      if (this.currentIndex >= this.points.length) {
+        // 直線とlongTrackはループしない
+        if (this.config.scenario === 'line' || this.config.scenario === 'longTrack') {
+          console.log(`Reached end of points: ${this.currentIndex} (scenario: ${this.config.scenario})`);
+          this.stop();
+          return;
+        }
+        // その他のシナリオはループする
+        // この場合はモジュロ演算でインデックスを循環させる
+      }
+      
+      // 現在のインデックスを保持（ループ処理用）
+      const actualIndex = (this.config.scenario === 'circle' || this.config.scenario === 'random' || this.config.scenario === 'static') 
+        ? this.currentIndex % this.points.length 
+        : this.currentIndex;
+      
+      const point = this.points[actualIndex];
       const mockLocation: Location.LocationObject = {
         coords: point,
         timestamp: Date.now(),
@@ -210,7 +244,7 @@ export class MockGpsGenerator {
         this.locationCallback(mockLocation);
       }
 
-      this.currentIndex++;
+      this.currentIndex++;  // これは累積カウント（リセットしない）
       this.timeElapsed += this.config.updateInterval;
     }, this.config.updateInterval);
   }
@@ -239,11 +273,23 @@ export class MockGpsGenerator {
 
   getProgress(): { current: number; total: number; percentage: number } {
     const index = this.currentIndex === -1 ? 0 : this.currentIndex;
+    // totalはpointCountが設定されている場合はそれを使用、なければpoints.length
+    const total = this.config.pointCount || this.points.length;
     return {
       current: index,
-      total: this.points.length,
-      percentage: (index / this.points.length) * 100,
+      total: total,
+      percentage: (index / total) * 100,
     };
+  }
+
+  // configへの読み取り専用アクセサ
+  getConfig(): MockGpsConfig {
+    return this.config;
+  }
+  
+  // 動作中かどうかを確認
+  isRunning(): boolean {
+    return this.intervalId !== null;
   }
 }
 

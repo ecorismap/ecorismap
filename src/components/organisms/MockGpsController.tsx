@@ -11,7 +11,7 @@ interface MockGpsControllerProps {
 
 export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps, toggleMockGps, mockGpsProgress }) => {
   const [selectedScenario, setSelectedScenario] = useState<MockGpsConfig['scenario']>('longTrack');
-  const [pointCount, setPointCount] = useState(5000);
+  const [pointCount, setPointCount] = useState(200);  // デフォルトを200に変更
   const [speed, setSpeed] = useState(10);
   const [updateInterval, setUpdateInterval] = useState(500);
   const [speedPreset, setSpeedPreset] = useState<'normal' | 'fast' | 'superfast'>('normal');
@@ -51,13 +51,13 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
           longitude: 139.7671,
         },
         radius: 500,
-        pointCount: selectedScenario === 'longTrack' ? pointCount : undefined,
+        pointCount: pointCount,  // すべてのシナリオでポイント数を設定
       };
 
       Alert.alert(
         '擬似GPSを有効化',
         `${scenarios.find((s) => s.value === selectedScenario)?.label}モードで擬似GPSを開始します。\n` +
-          `ポイント数: ${selectedScenario === 'longTrack' ? pointCount : '100'}\n` +
+          `ポイント数: ${pointCount}\n` +
           `速度: ${speed} m/s\n` +
           `更新間隔: ${updateInterval} ms`,
         [
@@ -124,25 +124,23 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
             </TouchableOpacity>
           ))}
 
-          {selectedScenario === 'longTrack' && (
-            <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>ポイント数: {pointCount}</Text>
-              <View style={styles.buttonGroup}>
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setPointCount(Math.max(100, pointCount - 1000))}
-                >
-                  <Text>-1000</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.adjustButton}
-                  onPress={() => setPointCount(Math.min(50000, pointCount + 1000))}
-                >
-                  <Text>+1000</Text>
-                </TouchableOpacity>
-              </View>
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>ポイント数: {pointCount}</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity
+                style={styles.adjustButton}
+                onPress={() => setPointCount(Math.max(100, pointCount - 100))}
+              >
+                <Text>-100</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.adjustButton}
+                onPress={() => setPointCount(Math.min(50000, pointCount + 100))}
+              >
+                <Text>+100</Text>
+              </TouchableOpacity>
             </View>
-          )}
+          </View>
 
           <View style={styles.inputSection}>
             <Text style={styles.inputLabel}>速度: {speed} m/s</Text>
