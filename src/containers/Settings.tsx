@@ -52,8 +52,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     //   return;
     // }
     
-    // 写真を含めるか確認
-    const includePhoto = await ConfirmAsync(t('common.includePhoto') + '?');
+    // 写真を常に含める（確認なし）
+    const includePhoto = true;
     
     setIsLoading(true);
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
@@ -67,7 +67,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     } else {
       await AlertAsync(t('hooks.message.successSaveFile'));
     }
-  }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);
+  }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);;
 
   const pressFileOpen = useCallback(async () => {
     if (isRunningProject) {
