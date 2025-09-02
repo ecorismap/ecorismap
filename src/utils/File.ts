@@ -21,40 +21,54 @@ export function normalizeFilePath(path: string): string {
 }
 
 /**
- * JSZipを使用してZIPファイルを作成する
+ * JSZipを使用してZIPファイルを作成する（Web版と同じ方式）
+ * ファイルシステムを経由せず直接メモリ上でZIPを作成
  * Unicode正規化を適切に処理し、プラットフォーム間の互換性を確保
  */
-async function createZipWithJSZip(sourcePath: string, targetPath: string): Promise<string | undefined> {
+async function createZipWithJSZipDirect(
+  exportData: {
+    data: string;
+    name: string;
+    folder: string;
+    type: ExportType;
+  }[],
+  sourcePath: string,
+  targetPath: string
+): Promise<string | undefined> {
   try {
     const jszip = new JSZip();
     
-    // ディレクトリ内のファイルを再帰的に追加
-    async function addFilesToZip(dirPath: string, zipFolder: JSZip | null, basePath: string) {
-      const items = await RNFS.readDir(dirPath);
+    for (const d of exportData) {
+      // フォルダ名を正規化（空の場合は空文字列）
+      const folderName = sanitize(d.folder) === '' ? '' : 
+                        sanitize(d.folder).normalize('NFC') + '/';
       
-      for (const item of items) {
-        const relativePath = item.path.replace(basePath + '/', '');
-        // ファイル名をNFC正規化
-        const normalizedName = relativePath.normalize('NFC');
+      // ファイル名を正規化
+      const fileName = sanitize(d.name).normalize('NFC');
+      const fullPath = folderName + fileName;
+      
+      if (d.type === 'PHOTO' || d.type === 'SQLITE') {
+        // 実際のファイルパスを構築（exportGeoFileで作成されたもの）
+        // 空のフォルダの場合は'.'を使わない
+        const folder = sanitize(d.folder).normalize('NFC');
+        const filePath = folder === '' 
+          ? `${sourcePath}/${sanitize(d.name).normalize('NFC')}`
+          : `${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`;
         
-        if (item.isFile()) {
-          // ファイルを読み込んでZIPに追加
-          const fileContent = await RNFS.readFile(item.path, 'base64');
-          if (zipFolder) {
-            zipFolder.file(normalizedName, fileContent, { base64: true });
-          } else {
-            jszip.file(normalizedName, fileContent, { base64: true });
+        try {
+          // ファイルが存在する場合のみ追加
+          if (await RNFS.exists(filePath)) {
+            const fileContent = await RNFS.readFile(filePath, 'base64');
+            jszip.file(fullPath, fileContent, { base64: true });
           }
-        } else if (item.isDirectory()) {
-          // サブディレクトリを作成して再帰的に処理
-          const subFolder = zipFolder ? zipFolder.folder(normalizedName) : jszip.folder(normalizedName);
-          await addFilesToZip(item.path, subFolder, basePath);
+        } catch (e) {
+          console.warn(`Failed to read file for ZIP: ${filePath}`, e);
         }
+      } else {
+        // テキストデータの場合は直接追加
+        jszip.file(fullPath, d.data);
       }
     }
-    
-    // ファイルを追加
-    await addFilesToZip(sourcePath, null, sourcePath);
     
     // ZIPファイルを生成
     const zipContent = await jszip.generateAsync({ 
@@ -94,9 +108,11 @@ export const exportGeoFile = async (
     await RNFS.mkdir(sourcePath);
     //データ、写真を出力フォルダにコピー
     for (const d of exportData) {
-      // フォルダ名もUnicode正規化を適用
-      const folder = sanitize(d.folder) === '' ? '.' : sanitize(d.folder).normalize('NFC');
-      await RNFS.mkdir(`${sourcePath}/${folder}`);
+      // フォルダ名もUnicode正規化を適用（空の場合は空文字列のまま）
+      const folder = sanitize(d.folder).normalize('NFC');
+      if (folder !== '') {
+        await RNFS.mkdir(`${sourcePath}/${folder}`);
+      }
       if (d.type === 'PHOTO' || d.type === 'SQLITE') {
         console.log(d);
         
@@ -134,7 +150,9 @@ export const exportGeoFile = async (
         if (fileToSave && fileToSave !== '') {
           try {
             // ファイル名もNFC正規化
-            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
+            const destPath = folder === '' 
+              ? normalizeFilePath(`${sourcePath}/${sanitize(d.name).normalize('NFC')}`)
+              : normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
             await RNFS.copyFile(fileToSave, destPath);
           } catch (error) {
             console.warn(`Failed to copy file ${d.name}:`, error);
@@ -144,7 +162,9 @@ export const exportGeoFile = async (
               if (result.isOK && result.data) {
                 try {
                   // ファイル名もNFC正規化
-            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
+                  const destPath = folder === '' 
+                    ? normalizeFilePath(`${sourcePath}/${sanitize(d.name).normalize('NFC')}`)
+                    : normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
                   await RNFS.copyFile(result.data, destPath);
                 } catch (retryError) {
                   console.warn(`Failed to copy file after retry ${d.name}:`, retryError);
@@ -155,15 +175,17 @@ export const exportGeoFile = async (
         }
       } else {
         // ファイル名もNFC正規化
-        const filePath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
+        const filePath = folder === ''
+          ? normalizeFilePath(`${sourcePath}/${sanitize(d.name).normalize('NFC')}`)
+          : normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
         await RNFS.writeFile(filePath, d.data, 'utf8');
       }
     }
 
     //ファイルを出力フォルダに書き出し
 
-    // すべてのプラットフォームでJSZipを使用
-    const path = await createZipWithJSZip(sourcePath, targetPath);
+    // すべてのプラットフォームでJSZipを使用（Web版と同じ方式）
+    const path = await createZipWithJSZipDirect(exportData, sourcePath, targetPath);
     
     if (path !== undefined) {
       await exportFileFromUri(path, `${fileName}.${ext}`);

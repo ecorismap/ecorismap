@@ -68,7 +68,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     }
 
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `${route.params.targetLayer.name}_${time}`;
+    const fileNameBase = `data_export_${time}`;
     const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
       exportPhoto: true,
     });
