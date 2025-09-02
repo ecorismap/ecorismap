@@ -13,6 +13,8 @@ interface SettingsContextType {
   pressVersion: () => void;
   pressPDFSettingsOpen: () => void;
   pressGPSSettingsOpen: () => void;
+  pressExportDebugLog: () => void;
+  pressClearDebugLog: () => void;
 }
 
 export const SettingsContext = createContext({} as SettingsContextType);

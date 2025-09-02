@@ -22,6 +22,7 @@ import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMa
 import { editSettingsAction } from '../modules/settings';
 import { GpsAccuracyType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
+import { exportDebugLogs, clearDebugLogs } from '../utils/debugLog';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const dispatch = useDispatch();
@@ -208,6 +209,14 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     Linking.openURL(url);
   }, []);
 
+  const pressExportDebugLog = useCallback(async () => {
+    await exportDebugLogs();
+  }, []);
+
+  const pressClearDebugLog = useCallback(() => {
+    clearDebugLogs();
+  }, []);
+
   return (
     <SettingsContext.Provider
       value={{
@@ -223,6 +232,8 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         pressVersion,
         pressPDFSettingsOpen,
         pressGPSSettingsOpen,
+        pressExportDebugLog,
+        pressClearDebugLog,
       }}
     >
       <Settings />

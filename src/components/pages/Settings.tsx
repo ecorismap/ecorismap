@@ -22,6 +22,8 @@ export default function Settings() {
     pressVersion,
     pressPDFSettingsOpen,
     pressGPSSettingsOpen,
+    pressExportDebugLog,
+    pressClearDebugLog,
   } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
@@ -83,6 +85,19 @@ export default function Settings() {
 
         <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
         <TextButton name={SETTINGS_BTN.MANUAL} text={t('Settings.manual.text')} onPress={pressGotoManual} />
+        
+        {/* デバッグログ関連 */}
+        <TextButton 
+          name="EXPORT_DEBUG_LOG" 
+          text="Export Debug Log" 
+          onPress={pressExportDebugLog} 
+        />
+        <TextButton 
+          name="CLEAR_DEBUG_LOG" 
+          text="Clear Debug Log" 
+          onPress={pressClearDebugLog} 
+        />
+        
         <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} onPress={pressVersion} />
       </ScrollView>
     </View>
