@@ -94,7 +94,8 @@ export const exportGeoFile = async (
     await RNFS.mkdir(sourcePath);
     //データ、写真を出力フォルダにコピー
     for (const d of exportData) {
-      const folder = sanitize(d.folder) === '' ? '.' : sanitize(d.folder);
+      // フォルダ名もUnicode正規化を適用
+      const folder = sanitize(d.folder) === '' ? '.' : sanitize(d.folder).normalize('NFC');
       await RNFS.mkdir(`${sourcePath}/${folder}`);
       if (d.type === 'PHOTO' || d.type === 'SQLITE') {
         console.log(d);
@@ -132,7 +133,8 @@ export const exportGeoFile = async (
         // ファイルが存在することを確認してからコピー
         if (fileToSave && fileToSave !== '') {
           try {
-            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+            // ファイル名もNFC正規化
+            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
             await RNFS.copyFile(fileToSave, destPath);
           } catch (error) {
             console.warn(`Failed to copy file ${d.name}:`, error);
@@ -141,7 +143,8 @@ export const exportGeoFile = async (
               const result = await fetchPhoto(d.url, d.key);
               if (result.isOK && result.data) {
                 try {
-                  const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+                  // ファイル名もNFC正規化
+            const destPath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
                   await RNFS.copyFile(result.data, destPath);
                 } catch (retryError) {
                   console.warn(`Failed to copy file after retry ${d.name}:`, retryError);
@@ -151,7 +154,8 @@ export const exportGeoFile = async (
           }
         }
       } else {
-        const filePath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name)}`);
+        // ファイル名もNFC正規化
+        const filePath = normalizeFilePath(`${sourcePath}/${folder}/${sanitize(d.name).normalize('NFC')}`);
         await RNFS.writeFile(filePath, d.data, 'utf8');
       }
     }
