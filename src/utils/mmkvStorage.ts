@@ -203,7 +203,7 @@ export const trackLogMMKV = {
 // デバッグログ用の型定義
 export interface DebugLogEntry {
   timestamp: number;
-  type: 'location-received' | 'error' | 'locations-processed' | 'check-locations' | 'chunk-updated' | 'chunk-saved';
+  type: 'location-received' | 'error' | 'locations-processed' | 'check-locations' | 'chunk-updated' | 'chunk-saved' | 'info';
   appState: string;
   data?: any;
   error?: any;

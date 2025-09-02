@@ -144,17 +144,29 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
   }
 
   // 4. 現在時刻から大きく離れた古いデータを除外
+  // ただし、最後のデータが有効期間内なら、それより前のデータも連続したトラックとして保持
   const beforeTimeFilter = filteredLocations.length;
-  filteredLocations = filteredLocations.filter((location) => {
-    const timeDiff = currentTime - location.timestamp!;
-    if (timeDiff > MAX_TIME_DIFF) {
-      return false;
+  if (filteredLocations.length > 0) {
+    const lastLocation = filteredLocations[filteredLocations.length - 1];
+    const lastTimeDiff = currentTime - lastLocation.timestamp!;
+    
+    if (lastTimeDiff > MAX_TIME_DIFF) {
+      // 最新データが5分以上古い場合は全て破棄
+      filteredLocations = [];
+      rejectionReasons.push(`Rejected all ${beforeTimeFilter} locations - latest data is older than 5 minutes`);
+    } else {
+      // 最新データが5分以内なら、全データを保持（連続したトラックとして）
+      debugLogMMKV.addLog({
+        timestamp: Date.now(),
+        type: 'info',
+        appState: AppState.currentState,
+        data: {
+          message: 'Keeping all locations as continuous track',
+          lastTimeDiff: lastTimeDiff,
+          locationsCount: filteredLocations.length
+        }
+      });
     }
-    return true;
-  });
-  
-  if (beforeTimeFilter !== filteredLocations.length) {
-    rejectionReasons.push(`Rejected ${beforeTimeFilter - filteredLocations.length} locations older than 5 minutes`);
   }
 
   // 5. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
