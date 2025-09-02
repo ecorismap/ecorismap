@@ -70,14 +70,14 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `layer_export_${time}`;
+    const fileNameBase = `${targetLayer.name}_${time}`;
     const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, {
       settingsOnly: true,
       exportDictionary: true,
     });
-    const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
+    const isOK = await exportGeoFile(exportData, `layer_export_${time}`, 'zip');
     if (!isOK) await AlertAsync(t('hooks.message.failExport'));
-  }, [generateExportGeoData, targetLayer]);
+  }, [generateExportGeoData, targetLayer]);;
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
     navigation.navigate('LayerEditFeatureStyle', {

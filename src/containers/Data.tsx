@@ -68,17 +68,17 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     }
 
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `data_export_${time}`;
+    const fileNameBase = `${route.params.targetLayer.name}_${time}`;
     const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
       exportPhoto: true,
     });
-    const isOK = await exportGeoFile(exportData, fileNameBase, 'zip');
+    const isOK = await exportGeoFile(exportData, `data_export_${time}`, 'zip');
     if (isOK) {
       await AlertAsync(t('hooks.message.successExportData'));
     } else {
       await AlertAsync(t('hooks.message.failExport'));
     }
-  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);
+  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);;
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));

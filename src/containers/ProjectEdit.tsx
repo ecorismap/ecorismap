@@ -189,9 +189,9 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const includePhoto = true;
       const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: true });
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const exportDataName = `project_export_${time}`;
+      const exportDataName = `${targetProject.name}_${time}`;
 
-      const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
+      const isOK = await exportGeoFile(exportData, `project_export_${time}`, 'zip');
       if (!isOK) await AlertAsync(t('hooks.message.failExport'));
 
       setIsLoading(false);
@@ -199,7 +199,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [createExportSettings, fetchAllData, fetchProjectSettings, generateEcorisMapData, targetProject]);
+  }, [createExportSettings, fetchAllData, fetchProjectSettings, generateEcorisMapData, targetProject]);;
 
   const pressDeleteProject = useCallback(async () => {
     try {
