@@ -59,6 +59,139 @@ export const MMKVAsyncStorageCompat = {
   },
 };
 
+// mainストレージ（Web用）
+export const storage = {
+  set: (key: string, value: string): void => {
+    if (webStorage) {
+      webStorage.setItem(key, value);
+    }
+  },
+  
+  getString: (key: string): string | undefined => {
+    if (webStorage) {
+      const value = webStorage.getItem(key);
+      return value !== null ? value : undefined;
+    }
+    return undefined;
+  },
+  
+  getNumber: (key: string): number | undefined => {
+    if (webStorage) {
+      const value = webStorage.getItem(key);
+      return value !== null ? Number(value) : undefined;
+    }
+    return undefined;
+  },
+  
+  getBoolean: (key: string): boolean | undefined => {
+    if (webStorage) {
+      const value = webStorage.getItem(key);
+      return value !== null ? value === 'true' : undefined;
+    }
+    return undefined;
+  },
+  
+  delete: (key: string): void => {
+    if (webStorage) {
+      webStorage.removeItem(key);
+    }
+  },
+  
+  getAllKeys: (): string[] => {
+    if (webStorage) {
+      const keys = [];
+      for (let i = 0; i < webStorage.length; i++) {
+        const key = webStorage.key(i);
+        if (key) keys.push(key);
+      }
+      return keys;
+    }
+    return [];
+  },
+  
+  clearAll: (): void => {
+    if (webStorage) {
+      webStorage.clear();
+    }
+  },
+};
+
+// trackLogStorage（Web用）
+export const trackLogStorage = storage;
+
+// debugLogStorage（Web用）
+const debugLogStorage = storage;
+
+// デバッグログ用の型定義
+export interface DebugLogEntry {
+  timestamp: number;
+  type: 'location-received' | 'error' | 'locations-processed' | 'check-locations' | 'chunk-updated' | 'chunk-saved' | 'info';
+  appState: string;
+  data?: any;
+  error?: any;
+  metadata?: any;
+}
+
+// デバッグログMMKV（Web用）
+export const debugLogMMKV = {
+  addLog: (entry: DebugLogEntry): void => {
+    try {
+      const logs = debugLogMMKV.getLogs();
+      logs.push(entry);
+      // 最大1000件まで保持
+      if (logs.length > 1000) {
+        logs.shift();
+      }
+      if (webStorage) {
+        webStorage.setItem('debug-logs', JSON.stringify(logs));
+      }
+    } catch (error) {
+      console.error('Failed to add debug log:', error);
+    }
+  },
+  
+  getLogs: (): DebugLogEntry[] => {
+    try {
+      if (webStorage) {
+        const jsonString = webStorage.getItem('debug-logs');
+        return jsonString ? JSON.parse(jsonString) : [];
+      }
+      return [];
+    } catch (error) {
+      console.error('Failed to get debug logs:', error);
+      return [];
+    }
+  },
+  
+  clearLogs: (): void => {
+    try {
+      if (webStorage) {
+        webStorage.removeItem('debug-logs');
+      }
+    } catch (error) {
+      console.error('Failed to clear debug logs:', error);
+    }
+  },
+  
+  exportLogs: (): string => {
+    try {
+      const logs = debugLogMMKV.getLogs();
+      return JSON.stringify(logs, null, 2);
+    } catch (error) {
+      console.error('Failed to export debug logs:', error);
+      return '[]';
+    }
+  },
+  
+  getSize: (): number => {
+    if (webStorage) {
+      const jsonString = webStorage.getItem('debug-logs');
+      return jsonString ? jsonString.length : 0;
+    }
+    return 0;
+  }
+};
+
 // トラックログ専用のストレージ操作（Web用）
 export const trackLogMMKV = {
   setTrackLog: (data: any): void => {
