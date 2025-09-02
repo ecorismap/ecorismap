@@ -14,15 +14,14 @@ import { RootState } from '../store';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
 import { exportGeoFile } from '../utils/File';
-import sanitize from 'sanitize-filename';
 import { usePermission } from '../hooks/usePermission';
-import { SettingsModalFileSave } from '../components/organisms/SettingsModalFileSave';
 import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { editSettingsAction } from '../modules/settings';
 import { GpsAccuracyType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import { exportDebugLogs, clearDebugLogs } from '../utils/debugLog';
+import dayjs from '../i18n/dayjs';
 
 export default function SettingsContainers({ navigation }: Props_Settings) {
   const dispatch = useDispatch();
@@ -36,7 +35,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isGPSSettingsOpen, setIsGPSSettingsOpen] = useState(false);
-  const [isFileSaveOpen, setIsFileSaveOpen] = useState(false);
   const { isRunningProject } = usePermission();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -53,33 +51,23 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     //   await AlertAsync(t('hooks.message.cannotInRunningProject'));
     //   return;
     // }
-    setIsFileSaveOpen(true);
-  }, []);
-
-  const pressFileSaveCancel = useCallback(() => {
-    setIsFileSaveOpen(false);
-  }, []);
-
-  const pressFileSaveOK = useCallback(
-    async (fileName: string, includePhoto: boolean) => {
-      if (sanitize(fileName) === '') {
-        await AlertAsync(t('hooks.message.inputCorrectFilename'));
-        return;
-      }
-      setIsFileSaveOpen(false);
-      setIsLoading(true);
-      const data = { dataSet, layers, settings: createExportSettings(), maps };
-      const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
-      const isOK = await exportGeoFile(exportData, fileName, 'ecorismap');
-      setIsLoading(false);
-      if (!isOK) {
-        await AlertAsync(t('hooks.message.failSaveFile'));
-      } else {
-        await AlertAsync(t('hooks.message.successSaveFile'));
-      }
-    },
-    [createExportSettings, dataSet, generateEcorisMapData, layers, maps]
-  );
+    
+    // 写真を含めるか確認
+    const includePhoto = await ConfirmAsync(t('common.includePhoto') + '?');
+    
+    setIsLoading(true);
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const fileName = `ecorismap_${time}`;
+    const data = { dataSet, layers, settings: createExportSettings(), maps };
+    const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: false });
+    const isOK = await exportGeoFile(exportData, fileName, 'zip');
+    setIsLoading(false);
+    if (!isOK) {
+      await AlertAsync(t('hooks.message.failSaveFile'));
+    } else {
+      await AlertAsync(t('hooks.message.successSaveFile'));
+    }
+  }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);
 
   const pressFileOpen = useCallback(async () => {
     if (isRunningProject) {
@@ -93,7 +81,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (file.assets === null) return;
 
       const ext = getExt(file.assets[0].name);
-      if (!(ext?.toLowerCase() === 'ecorismap' || ext?.toLowerCase() === 'zip')) {
+      if (!(ext?.toLowerCase() === 'zip' || ext?.toLowerCase() === 'ecorismap')) {
         await AlertAsync(t('hooks.message.wrongExtension'));
         return;
       }
@@ -237,7 +225,6 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       }}
     >
       <Settings />
-      <SettingsModalFileSave visible={isFileSaveOpen} pressOK={pressFileSaveOK} pressCancel={pressFileSaveCancel} />
       <SettingsModalGPS
         visible={isGPSSettingsOpen}
         gpsAccuracy={gpsAccuracy}

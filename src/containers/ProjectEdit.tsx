@@ -191,7 +191,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
       const exportDataName = `project_export_${time}`;
 
-      const isOK = await exportGeoFile(exportData, exportDataName, 'ecorismap');
+      const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
       if (!isOK) await AlertAsync(t('hooks.message.failExport'));
 
       setIsLoading(false);
