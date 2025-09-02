@@ -107,7 +107,7 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
       setIsDownloading(true);
 
       //ベクタータイルの場合はmetadataとスタイルをダウンロード
-      if (tileType === 'pbf' || (tileType === 'pmtiles' && tileMap.isVector)) {
+      if (tileType === 'pmtiles' && tileMap.isVector) {
         const folder = `${TILE_FOLDER}/${tileMap.id}`;
         await FileSystem.makeDirectoryAsync(folder, {
           intermediates: true,
@@ -147,6 +147,33 @@ export const useTiles = (tileMap: TileMapType | undefined): UseTilesReturnType =
           .catch(() => {
             //console.error(error);
           });
+      } else if (tileType === 'pbf') {
+        // PBFタイルの場合はスタイルのみダウンロード（メタデータは不要）
+        const folder = `${TILE_FOLDER}/${tileMap.id}`;
+        await FileSystem.makeDirectoryAsync(folder, {
+          intermediates: true,
+        });
+
+        if (tileMap.styleURL) {
+          const fetchUrl = tileMap.styleURL;
+          const localLocation = `${folder}/style.json`;
+
+          await fetch(fetchUrl)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.text();
+            })
+            .then(async (data) => {
+              await FileSystem.writeAsStringAsync(localLocation, data, {
+                encoding: FileSystem.EncodingType.UTF8,
+              });
+            })
+            .catch(() => {
+              //console.error(error);
+            });
+        }
       }
 
       const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
