@@ -656,6 +656,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         //console.log('App has come to the foreground!');
 
+        // GPSがONの場合、GPSサブスクライバーを再開
+        if ((gpsState === 'show' || gpsState === 'follow') && gpsSubscriber.current === undefined) {
+          // GPSを再開
+          await startGPS();
+        }
+
         if (trackingState === 'on') {
           if (gpsState === 'show' || gpsState === 'follow') {
             if (headingSubscriber.current === undefined && !useMockGps) {
@@ -670,6 +676,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         //console.log('App has come to the background!');
+        
+        // バックグラウンド時はGPSサブスクライバーを一時停止（トラッキング中でない場合）
+        if (trackingState !== 'on' && gpsSubscriber.current !== undefined) {
+          gpsSubscriber.current.remove();
+          gpsSubscriber.current = undefined;
+        }
+        
         if (headingSubscriber.current !== undefined) {
           //console.log('remove heading');
           headingSubscriber.current.remove();
@@ -684,7 +697,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return () => {
       subscription && subscription.remove();
     };
-  }, [gpsState, headingUp, toggleHeadingUp, trackingState, useMockGps]);
+  }, [gpsState, headingUp, toggleHeadingUp, trackingState, useMockGps, startGPS]);
 
   return {
     currentLocation,
@@ -704,4 +717,4 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     toggleMockGps,
     mockGpsProgress: mockGpsRef.current?.getProgress(),
   } as const;
-};
+};;
