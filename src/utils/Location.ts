@@ -1,8 +1,8 @@
 import { LocationType, TrackLogType } from '../types';
 import { LocationObject, LocationObjectCoords } from 'expo-location';
 import * as turf from '@turf/turf';
-import { trackLogMMKV, debugLogMMKV } from './mmkvStorage';
-import { AppState } from 'react-native';
+import { trackLogMMKV } from './mmkvStorage';
+//import { AppState } from 'react-native';
 
 // チャンク管理用の定数
 export const CHUNK_SIZE = 500;
@@ -41,56 +41,56 @@ export const getStoredLocations = (): TrackLogType => {
 export const checkAndStoreLocations = (locations: LocationObject[]): void => {
   // メタデータから最終タイムスタンプを取得
   const metadata = getTrackMetadata();
-  const beforeCheck = locations.length;
-  const appState = AppState.currentState;
+  // const beforeCheck = locations.length;
+  // const appState = AppState.currentState;
 
   // デバッグログ: 受信した位置情報
-  debugLogMMKV.addLog({
-    timestamp: Date.now(),
-    type: 'location-received',
-    appState,
-    data: {
-      locationsCount: beforeCheck,
-      lastTimeStamp: metadata.lastTimeStamp,
-      currentChunkIndex: metadata.lastChunkIndex,
-      totalPoints: metadata.totalPoints,
-    },
-  });
+  // debugLogMMKV.addLog({
+  //   timestamp: Date.now(),
+  //   type: 'location-received',
+  //   appState,
+  //   data: {
+  //     locationsCount: beforeCheck,
+  //     lastTimeStamp: metadata.lastTimeStamp,
+  //     currentChunkIndex: metadata.lastChunkIndex,
+  //     totalPoints: metadata.totalPoints,
+  //   },
+  // });
 
   // 位置情報の検証とフィルタリング
   const checkedLocations = checkLocations(metadata.lastTimeStamp, locations);
 
   // デバッグログ: チェック後の結果
-  debugLogMMKV.addLog({
-    timestamp: Date.now(),
-    type: 'check-locations',
-    appState,
-    data: {
-      input: beforeCheck,
-      output: checkedLocations.length,
-      rejected: beforeCheck - checkedLocations.length,
-      lastTimeStamp: metadata.lastTimeStamp,
-    },
-  });
+  // debugLogMMKV.addLog({
+  //   timestamp: Date.now(),
+  //   type: 'check-locations',
+  //   appState,
+  //   data: {
+  //     input: beforeCheck,
+  //     output: checkedLocations.length,
+  //     rejected: beforeCheck - checkedLocations.length,
+  //     lastTimeStamp: metadata.lastTimeStamp,
+  //   },
+  // });
 
   if (checkedLocations.length > 0) {
     // チャンクシステムに追加（これが唯一のデータ保存）
     addLocationsToChunks(checkedLocations);
 
     // デバッグログ: チャンク更新後
-    const updatedMetadata = getTrackMetadata();
-    const currentChunkInfo = getCurrentChunkInfo();
-    debugLogMMKV.addLog({
-      timestamp: Date.now(),
-      type: 'chunk-updated',
-      appState,
-      data: {
-        chunkIndex: updatedMetadata.lastChunkIndex,
-        chunkSize: currentChunkInfo.currentChunkSize,
-        totalPoints: updatedMetadata.totalPoints,
-        distance: updatedMetadata.currentDistance,
-      },
-    });
+    // const updatedMetadata = getTrackMetadata();
+    // const currentChunkInfo = getCurrentChunkInfo();
+    // debugLogMMKV.addLog({
+    //   timestamp: Date.now(),
+    //   type: 'chunk-updated',
+    //   appState,
+    //   data: {
+    //     chunkIndex: updatedMetadata.lastChunkIndex,
+    //     chunkSize: currentChunkInfo.currentChunkSize,
+    //     totalPoints: updatedMetadata.totalPoints,
+    //     distance: updatedMetadata.currentDistance,
+    //   },
+    // });
 
     // 現在地を別途保存（互換性のため）
     const displayData = getDisplayBuffer();
@@ -109,9 +109,9 @@ export const toLocationType = (locationObject: LocationObject): LocationType => 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
   if (locations.length === 0) return [];
 
-  const currentTime = Date.now();
-  const MAX_TIME_DIFF = 5 * 60 * 1000; // 5分以上古いデータは破棄
-  const rejectionReasons: string[] = [];
+  // const currentTime = Date.now();
+  // const MAX_TIME_DIFF = 5 * 60 * 1000; // 5分以上古いデータは破棄
+  // const rejectionReasons: string[] = [];
 
   // 1. まず変換
   const convertedLocations = locations.map((location) => toLocationType(location));
@@ -119,31 +119,31 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
   // 2. タイムスタンプ逆転チェック - 逆転があれば全データを破棄
   for (let i = 1; i < convertedLocations.length; i++) {
     if (convertedLocations[i].timestamp! <= convertedLocations[i - 1].timestamp!) {
-      debugLogMMKV.addLog({
-        timestamp: Date.now(),
-        type: 'error',
-        appState: AppState.currentState,
-        error: 'Timestamp reversal detected',
-        data: {
-          current: convertedLocations[i].timestamp,
-          previous: convertedLocations[i - 1].timestamp,
-          index: i,
-          totalLocations: convertedLocations.length,
-        },
-      });
+      // debugLogMMKV.addLog({
+      //   timestamp: Date.now(),
+      //   type: 'error',
+      //   appState: AppState.currentState,
+      //   error: 'Timestamp reversal detected',
+      //   data: {
+      //     current: convertedLocations[i].timestamp,
+      //     previous: convertedLocations[i - 1].timestamp,
+      //     index: i,
+      //     totalLocations: convertedLocations.length,
+      //   },
+      // });
       return [];
     }
   }
 
   // 3. lastTimeStampより新しいデータのみをフィルタリング
-  const beforeLastTimestampFilter = convertedLocations.length;
+  // const beforeLastTimestampFilter = convertedLocations.length;
   let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
 
-  if (beforeLastTimestampFilter !== filteredLocations.length) {
-    rejectionReasons.push(
-      `Rejected ${beforeLastTimestampFilter - filteredLocations.length} old timestamps (before ${lastTimeStamp})`
-    );
-  }
+  // if (beforeLastTimestampFilter !== filteredLocations.length) {
+  //   rejectionReasons.push(
+  //     `Rejected ${beforeLastTimestampFilter - filteredLocations.length} old timestamps (before ${lastTimeStamp})`
+  //   );
+  // }
 
   // // 4. 現在時刻から大きく離れた古いデータを除外
   // // ただし、最後のデータが有効期間内なら、それより前のデータも連続したトラックとして保持
@@ -173,27 +173,27 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
 
   // 5. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
   if (lastTimeStamp === 0) {
-    const beforeAccuracyFilter = filteredLocations.length;
+    // const beforeAccuracyFilter = filteredLocations.length;
     filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
 
-    if (beforeAccuracyFilter !== filteredLocations.length) {
-      rejectionReasons.push(`Rejected ${beforeAccuracyFilter - filteredLocations.length} locations with poor accuracy`);
-    }
+    // if (beforeAccuracyFilter !== filteredLocations.length) {
+    //   rejectionReasons.push(`Rejected ${beforeAccuracyFilter - filteredLocations.length} locations with poor accuracy`);
+    // }
   }
 
   // デバッグログ: フィルタリング理由を記録
-  if (rejectionReasons.length > 0) {
-    debugLogMMKV.addLog({
-      timestamp: Date.now(),
-      type: 'check-locations',
-      appState: AppState.currentState,
-      data: {
-        rejectionReasons,
-        originalCount: locations.length,
-        filteredCount: filteredLocations.length,
-      },
-    });
-  }
+  // if (rejectionReasons.length > 0) {
+  //   debugLogMMKV.addLog({
+  //     timestamp: Date.now(),
+  //     type: 'check-locations',
+  //     appState: AppState.currentState,
+  //     data: {
+  //       rejectionReasons,
+  //       originalCount: locations.length,
+  //       filteredCount: filteredLocations.length,
+  //     },
+  //   });
+  // }
 
   return filteredLocations;
 };
@@ -278,16 +278,16 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
       saveTrackChunk(currentChunkIndex, chunkToSave);
 
       // デバッグログ: チャンク保存
-      debugLogMMKV.addLog({
-        timestamp: Date.now(),
-        type: 'chunk-saved',
-        appState: AppState.currentState,
-        data: {
-          chunkIndex: currentChunkIndex,
-          chunkSize: chunkToSave.length,
-          totalChunks: metadata.totalChunks + 1,
-        },
-      });
+      // debugLogMMKV.addLog({
+      //   timestamp: Date.now(),
+      //   type: 'chunk-saved',
+      //   appState: AppState.currentState,
+      //   data: {
+      //     chunkIndex: currentChunkIndex,
+      //     chunkSize: chunkToSave.length,
+      //     totalChunks: metadata.totalChunks + 1,
+      //   },
+      // });
 
       // メタデータを更新
       currentChunkIndex++;
