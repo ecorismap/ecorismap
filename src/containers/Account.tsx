@@ -89,11 +89,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!resetUserPasswordResult.isOK) return;
       setAccountMessage('');
       await AlertAsync(t('Account.alert.resetPassword'));
-      if (Platform.OS === 'web') {
-        navigation.navigate('Account', {});
-      } else {
-        navigation.navigate('Home');
-      }
+      navigation.navigate('Home');
     },
     [checkEmail, navigation, resetUserPassword, setAccountMessage]
   );
