@@ -6,6 +6,10 @@ import {
   Platform,
   PanResponderInstance,
   PanResponder,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
 } from 'react-native';
 import MapView, { MapPressEvent, Region } from 'react-native-maps';
 import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType } from '../types';
@@ -34,6 +38,7 @@ import {
   isPolygonTool,
 } from '../utils/General';
 import { t } from '../i18n/config';
+import { COLOR } from '../constants/AppConstants';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
 import { usePointTool } from '../hooks/usePointTool';
@@ -239,6 +244,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     headingUp,
     azimuth,
     trackMetadata,
+    savingTrackStatus,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,
@@ -2194,6 +2200,31 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
                               onBulkSelect={handleBulkSelect}
                             />
                           )}
+                          {savingTrackStatus.isSaving && (
+                            <View style={styles.savingIndicator}>
+                              <View style={styles.savingIndicatorContent}>
+                                <ActivityIndicator size="large" color={COLOR.PROGRESS_BAR_FILL} />
+                                <Text style={styles.savingIndicatorText}>{savingTrackStatus.message}</Text>
+                                {savingTrackStatus.phase !== '' && (
+                                  <View style={styles.progressBar}>
+                                    <View 
+                                      style={[
+                                        styles.progressBarFill,
+                                        {
+                                          width: `${
+                                            savingTrackStatus.phase === 'merging' ? 25 :
+                                            savingTrackStatus.phase === 'filtering' ? 50 :
+                                            savingTrackStatus.phase === 'cleaning' ? 75 :
+                                            savingTrackStatus.phase === 'saving' ? 90 : 0
+                                          }%`
+                                        }
+                                      ]}
+                                    />
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          )}
                         </AppStateContext.Provider>
                       </InfoToolContext.Provider>
                     </DataSelectionContext.Provider>
@@ -2207,3 +2238,51 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     </MapViewContext.Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  savingIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLOR.SAVING_OVERLAY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  savingIndicatorContent: {
+    backgroundColor: COLOR.WHITE,
+    borderRadius: 10,
+    padding: 20,
+    minWidth: 250,
+    alignItems: 'center',
+    shadowColor: COLOR.BLACK,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  savingIndicatorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: COLOR.TEXT_DARK,
+    textAlign: 'center',
+  },
+  progressBar: {
+    marginTop: 15,
+    height: 6,
+    width: 200,
+    backgroundColor: COLOR.PROGRESS_BAR_BG,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLOR.PROGRESS_BAR_FILL,
+    borderRadius: 3,
+  },
+});

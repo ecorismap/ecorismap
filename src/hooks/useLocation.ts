@@ -29,9 +29,9 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { cleanupLine } from '../utils/Coords';
-import { isLocationTypeArray } from '../utils/General';
 import { Linking } from 'react-native';
 import { MockGpsGenerator, MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../utils/mockGpsHelper';
+import { isLocationType } from '../utils/General';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -67,6 +67,11 @@ export type UseLocationReturnType = {
   headingUp: boolean;
   azimuth: number;
   trackMetadata: TrackMetadataType;
+  savingTrackStatus: {
+    isSaving: boolean;
+    phase: '' | 'merging' | 'filtering' | 'cleaning' | 'saving';
+    message: string;
+  };
   toggleHeadingUp: (headingUp_: boolean) => Promise<void>;
   toggleGPS: (gpsState: LocationStateType) => Promise<void>;
   toggleTracking: (trackingState: TrackingStateType) => Promise<void>;
@@ -114,6 +119,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
+  const [savingTrackStatus, setSavingTrackStatus] = useState<{
+    isSaving: boolean;
+    phase: '' | 'merging' | 'filtering' | 'cleaning' | 'saving';
+    message: string;
+  }>({ isSaving: false, phase: '', message: '' });
 
   // 擬似GPS用の設定とインスタンス
   const [useMockGps, setUseMockGps] = useState(false); // 常にfalseから開始
@@ -515,35 +525,83 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
-    // 全チャンクを結合
-    const allPoints = getAllTrackPoints();
+    try {
+      setSavingTrackStatus({ isSaving: true, phase: 'merging', message: 'トラックデータを結合中...' });
+      
+      // 全チャンクを結合（重い処理の可能性）
+      const allPoints = await new Promise<ReturnType<typeof getAllTrackPoints>>((resolve) => {
+        setTimeout(() => {
+          const points = getAllTrackPoints();
+          resolve(points);
+        }, 0);
+      });
 
-    if (!isLocationTypeArray(allPoints)) return { isOK: false, message: 'Invalid track log' };
-    if (allPoints.length < 2) return { isOK: true, message: '' };
+      setSavingTrackStatus({ isSaving: true, phase: 'filtering', message: 'データを検証中...' });
+      
+      // isLocationTypeを使って有効な点のみをフィルタリング
+      const validPoints = await new Promise<LocationType[]>((resolve) => {
+        setTimeout(() => {
+          const points = allPoints.filter((point) => isLocationType(point)) as LocationType[];
+          resolve(points);
+        }, 0);
+      });
+      
+      // 除外された点の数を計算
+      const invalidCount = allPoints.length - validPoints.length;
 
-    const cleanupedLine = cleanupLine(allPoints);
+      // 除外された点があれば警告メッセージを作成
+      let warningMessage = '';
+      if (invalidCount > 0) {
+        warningMessage = `${invalidCount}個の無効な位置データを除外しました。`;
+        console.warn(`saveTrackLog: ${warningMessage}`);
+      }
 
-    // レコードに追加
-    const ret = addTrackRecord(cleanupedLine);
-    if (!ret.isOK) {
-      return { isOK: ret.isOK, message: ret.message };
+      if (validPoints.length < 2) {
+        return { isOK: true, message: warningMessage || '有効なトラックデータが不足しています' };
+      }
+
+      setSavingTrackStatus({ isSaving: true, phase: 'cleaning', message: 'トラックを最適化中...' });
+
+      // cleanupLineの処理（時間がかかる可能性がある）
+      const cleanupedLine = await new Promise<LocationType[]>((resolve) => {
+        setTimeout(() => {
+          const result = cleanupLine(validPoints);
+          resolve(result);
+        }, 0);
+      });
+
+      setSavingTrackStatus({ isSaving: true, phase: 'saving', message: 'データを保存中...' });
+
+      // レコードに追加（Redux更新も重い可能性）
+      const ret = await new Promise<ReturnType<typeof addTrackRecord>>((resolve) => {
+        setTimeout(() => {
+          const result = addTrackRecord(cleanupedLine);
+          resolve(result);
+        }, 0);
+      });
+      
+      if (!ret.isOK) {
+        return { isOK: ret.isOK, message: ret.message };
+      }
+
+      // チャンクデータをクリア
+      clearAllChunks();
+
+      // UIもクリア
+      setTrackMetadata({
+        distance: 0,
+        lastTimeStamp: 0,
+        savedChunkCount: 0,
+        currentChunkSize: 0,
+        totalPoints: 0,
+      });
+
+      // console.log(`Saved track with ${allPoints.length} points`);
+
+      return { isOK: true, message: warningMessage };
+    } finally {
+      setSavingTrackStatus({ isSaving: false, phase: '', message: '' });
     }
-
-    // チャンクデータをクリア
-    clearAllChunks();
-
-    // UIもクリア
-    setTrackMetadata({
-      distance: 0,
-      lastTimeStamp: 0,
-      savedChunkCount: 0,
-      currentChunkSize: 0,
-      totalPoints: 0,
-    });
-
-    // console.log(`Saved track with ${allPoints.length} points`);
-
-    return { isOK: true, message: '' };
   }, [addTrackRecord]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
@@ -706,6 +764,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     headingUp,
     azimuth,
     trackMetadata,
+    savingTrackStatus,
     toggleGPS,
     toggleTracking,
     toggleHeadingUp,

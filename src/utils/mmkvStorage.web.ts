@@ -31,23 +31,23 @@ export const MMKVAsyncStorageCompat = {
       webStorage.setItem(key, value);
     }
   },
-  
+
   getItem: async (key: string): Promise<string | null> => {
     return webStorage ? webStorage.getItem(key) : null;
   },
-  
+
   removeItem: async (key: string): Promise<void> => {
     if (webStorage) {
       webStorage.removeItem(key);
     }
   },
-  
+
   clear: async (): Promise<void> => {
     if (webStorage) {
       webStorage.clear();
     }
   },
-  
+
   getAllKeys: async (): Promise<string[]> => {
     if (!webStorage) return [];
     const keys: string[] = [];
@@ -66,7 +66,7 @@ export const storage = {
       webStorage.setItem(key, value);
     }
   },
-  
+
   getString: (key: string): string | undefined => {
     if (webStorage) {
       const value = webStorage.getItem(key);
@@ -74,7 +74,7 @@ export const storage = {
     }
     return undefined;
   },
-  
+
   getNumber: (key: string): number | undefined => {
     if (webStorage) {
       const value = webStorage.getItem(key);
@@ -82,7 +82,7 @@ export const storage = {
     }
     return undefined;
   },
-  
+
   getBoolean: (key: string): boolean | undefined => {
     if (webStorage) {
       const value = webStorage.getItem(key);
@@ -90,13 +90,13 @@ export const storage = {
     }
     return undefined;
   },
-  
+
   delete: (key: string): void => {
     if (webStorage) {
       webStorage.removeItem(key);
     }
   },
-  
+
   getAllKeys: (): string[] => {
     if (webStorage) {
       const keys = [];
@@ -108,7 +108,7 @@ export const storage = {
     }
     return [];
   },
-  
+
   clearAll: (): void => {
     if (webStorage) {
       webStorage.clear();
@@ -120,12 +120,19 @@ export const storage = {
 export const trackLogStorage = storage;
 
 // debugLogStorage（Web用）
-const debugLogStorage = storage;
+//const debugLogStorage = storage;
 
 // デバッグログ用の型定義
 export interface DebugLogEntry {
   timestamp: number;
-  type: 'location-received' | 'error' | 'locations-processed' | 'check-locations' | 'chunk-updated' | 'chunk-saved' | 'info';
+  type:
+    | 'location-received'
+    | 'error'
+    | 'locations-processed'
+    | 'check-locations'
+    | 'chunk-updated'
+    | 'chunk-saved'
+    | 'info';
   appState: string;
   data?: any;
   error?: any;
@@ -149,7 +156,7 @@ export const debugLogMMKV = {
       console.error('Failed to add debug log:', error);
     }
   },
-  
+
   getLogs: (): DebugLogEntry[] => {
     try {
       if (webStorage) {
@@ -162,7 +169,7 @@ export const debugLogMMKV = {
       return [];
     }
   },
-  
+
   clearLogs: (): void => {
     try {
       if (webStorage) {
@@ -172,7 +179,7 @@ export const debugLogMMKV = {
       console.error('Failed to clear debug logs:', error);
     }
   },
-  
+
   exportLogs: (): string => {
     try {
       const logs = debugLogMMKV.getLogs();
@@ -182,14 +189,14 @@ export const debugLogMMKV = {
       return '[]';
     }
   },
-  
+
   getSize: (): number => {
     if (webStorage) {
       const jsonString = webStorage.getItem('debug-logs');
       return jsonString ? jsonString.length : 0;
     }
     return 0;
-  }
+  },
 };
 
 // トラックログ専用のストレージ操作（Web用）
@@ -205,7 +212,7 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   getTrackLog: (): any | null => {
     try {
       if (!webStorage) return null;
@@ -217,7 +224,7 @@ export const trackLogMMKV = {
       return null;
     }
   },
-  
+
   clearTrackLog: (): void => {
     try {
       if (webStorage) {
@@ -228,13 +235,13 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   getSize: (): number => {
     if (!webStorage) return 0;
     const jsonString = webStorage.getItem('tracklog');
     return jsonString ? jsonString.length : 0;
   },
-  
+
   // 現在地のみを保存・取得するメソッド
   setCurrentLocation: (location: any | null): void => {
     try {
@@ -249,7 +256,7 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   getCurrentLocation: (): any | null => {
     try {
       if (!webStorage) return null;
@@ -259,7 +266,7 @@ export const trackLogMMKV = {
       return null;
     }
   },
-  
+
   // チャンク操作用メソッド
   setChunk: (key: string, data: any): void => {
     try {
@@ -270,7 +277,7 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   getChunk: (key: string): any | null => {
     try {
       if (!webStorage) return null;
@@ -280,7 +287,7 @@ export const trackLogMMKV = {
       return null;
     }
   },
-  
+
   removeChunk: (key: string): void => {
     try {
       if (webStorage) {
@@ -290,7 +297,7 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   // メタデータ操作
   setMetadata: (metadata: any): void => {
     try {
@@ -301,7 +308,7 @@ export const trackLogMMKV = {
       throw error;
     }
   },
-  
+
   getMetadata: (): any | null => {
     try {
       if (!webStorage) return null;

@@ -75,8 +75,21 @@ export function toPDFCoordinate(millimeter: number) {
   return Math.round((150 * millimeter) / 25.4);
 }
 
-export function isLocationType(coords: RecordType['coords']): coords is LocationType {
-  return coords !== undefined && !Array.isArray(coords) && 'latitude' in coords && 'longitude' in coords;
+export function isLocationType(coords: unknown): coords is LocationType {
+  return (
+    coords !== undefined &&
+    coords !== null &&
+    !Array.isArray(coords) &&
+    typeof coords === 'object' &&
+    'latitude' in coords &&
+    'longitude' in coords &&
+    typeof (coords as any).latitude === 'number' &&
+    typeof (coords as any).longitude === 'number' &&
+    !isNaN((coords as any).latitude) &&
+    !isNaN((coords as any).longitude) &&
+    Math.abs((coords as any).latitude) <= 90 &&
+    Math.abs((coords as any).longitude) <= 180
+  );
 }
 
 export function isLocationTypeArray(coords: RecordType['coords']): coords is LocationType[] {
