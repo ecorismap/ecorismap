@@ -55,7 +55,7 @@ import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
 import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet from '@gorhom/bottom-sheet';
 import { ReduceMotion, useSharedValue } from 'react-native-reanimated';
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
@@ -1024,13 +1024,13 @@ export default function HomeScreen() {
         overrideReduceMotion={ReduceMotion.Always}
         style={{ marginLeft: isLandscape ? '50%' : '0%', width: isLandscape ? '50%' : '100%' }}
       >
-        <BottomSheetView
+        <View
           style={{
             flex: 1,
           }}
         >
           <SplitScreen />
-        </BottomSheetView>
+        </View>
       </BottomSheet>
     </GestureHandlerRootView>
   );

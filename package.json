@@ -91,7 +91,7 @@
     "@date-io/date-fns": "^3.0.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@gorhom/bottom-sheet": "5.1.5",
+    "@gorhom/bottom-sheet": "^5.2.5",
     "@mapbox/geojsonhint": "^3.1.1",
     "@mapbox/vector-tile": "^1.3.1",
     "@mui/lab": "^5.0.0-alpha.172",
