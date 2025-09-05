@@ -254,7 +254,7 @@ export const formattedInputs = (
       break;
     }
     case 'password': {
-      const pattern = /^[a-zA-Z0-9.?/-]{6,24}$/;
+      const pattern = /^.{6,4096}$/;
       const regMatch = value.toString().match(pattern);
       if (regMatch == null) {
         isOK = false;

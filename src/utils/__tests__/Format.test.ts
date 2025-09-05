@@ -245,6 +245,21 @@ describe('Format', () => {
         isOK: false,
         result: 'pw',
       });
+      // Test with underscore (previously not allowed, now allowed)
+      expect(formattedInputs('sat0-ken_ec0map', 'password', false)).toEqual({
+        isOK: true,
+        result: 'sat0-ken_ec0map',
+      });
+      // Test with special characters
+      expect(formattedInputs('P@ssw0rd!', 'password', false)).toEqual({
+        isOK: true,
+        result: 'P@ssw0rd!',
+      });
+      // Test minimum length (5 characters should fail)
+      expect(formattedInputs('12345', 'password', false)).toEqual({
+        isOK: false,
+        result: '12345',
+      });
     });
 
     it('formats pin correctly', () => {
