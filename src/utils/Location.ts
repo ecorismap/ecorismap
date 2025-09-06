@@ -1,5 +1,5 @@
 import { LocationType, TrackLogType } from '../types';
-import { LocationObject, LocationObjectCoords } from 'expo-location';
+import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 //import { AppState } from 'react-native';
@@ -219,7 +219,7 @@ export const getLineLength = (locations: LocationType[]) => {
 };
 
 // 現在のチャンク状態をMMKVから取得（つなぎ目付き）
-const getCurrentChunk = (): { chunk: LocationObjectCoords[]; index: number } => {
+const getCurrentChunk = (): { chunk: LocationType[]; index: number } => {
   const metadata = getTrackMetadata();
   const index = metadata.lastChunkIndex;
   let chunk = getTrackChunk(index) || [];
@@ -236,18 +236,8 @@ const getCurrentChunk = (): { chunk: LocationObjectCoords[]; index: number } => 
   return { chunk, index };
 };
 
-// LocationTypeをLocationObjectCoordsに変換
-const toLocationObjectCoords = (location: LocationType): LocationObjectCoords => {
-  return {
-    latitude: location.latitude,
-    longitude: location.longitude,
-    altitude: location.altitude ?? null,
-    accuracy: location.accuracy ?? null,
-    altitudeAccuracy: location.altitudeAccuracy ?? null,
-    heading: location.heading ?? null,
-    speed: location.speed ?? null,
-  };
-};
+// toLocationObjectCoordsは不要になったので削除
+// LocationTypeをそのまま使用する
 
 // チャンクシステムに位置情報を追加
 export const addLocationsToChunks = (locations: LocationType[]): void => {
@@ -259,10 +249,9 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
   let totalPointsAdded = 0;
 
   for (const location of locations) {
-    const coords = toLocationObjectCoords(location);
-
     // 現在のチャンクに追加（保存と表示を兼ねる）
-    currentChunk.push(coords);
+    // LocationTypeをそのまま使用
+    currentChunk.push(location);
     totalPointsAdded++;
 
     // チャンクが満杯（500点＋つなぎ目1点）になったら保存して新しいチャンクへ
@@ -322,7 +311,7 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
 };
 
 // 表示用バッファを取得（現在のチャンクを取得）
-export const getDisplayBuffer = (): LocationObjectCoords[] => {
+export const getDisplayBuffer = (): LocationType[] => {
   const { chunk } = getCurrentChunk();
   return [...chunk];
 };
@@ -338,12 +327,12 @@ export const getCurrentChunkInfo = () => {
 };
 
 // チャンク保存関数
-export const saveTrackChunk = (chunkIndex: number, points: LocationObjectCoords[]): void => {
+export const saveTrackChunk = (chunkIndex: number, points: LocationType[]): void => {
   trackLogMMKV.setChunk(`track_chunk_${chunkIndex}`, points);
 };
 
 // チャンク読み込み関数
-export const getTrackChunk = (chunkIndex: number): LocationObjectCoords[] => {
+export const getTrackChunk = (chunkIndex: number): LocationType[] => {
   return trackLogMMKV.getChunk(`track_chunk_${chunkIndex}`) || [];
 };
 
@@ -365,9 +354,9 @@ export const saveTrackMetadata = (metadata: TrackChunkMetadata): void => {
 };
 
 // 全チャンクを結合して取得（エクスポート用）
-export const getAllTrackPoints = (): LocationObjectCoords[] => {
+export const getAllTrackPoints = (): LocationType[] => {
   const metadata = getTrackMetadata();
-  const allPoints: LocationObjectCoords[] = [];
+  const allPoints: LocationType[] = [];
 
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     const chunk = getTrackChunk(i);
