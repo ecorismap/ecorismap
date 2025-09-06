@@ -11,7 +11,7 @@ interface MockGpsControllerProps {
 
 export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps, toggleMockGps, mockGpsProgress }) => {
   const [selectedScenario, setSelectedScenario] = useState<MockGpsConfig['scenario']>('longTrack');
-  const [pointCount, setPointCount] = useState(5000);  // longTrackのデフォルトは5000
+  const [pointCount, setPointCount] = useState(50000); // longTrackのデフォルトは50000
   const [speed, setSpeed] = useState(10);
   const [updateInterval, setUpdateInterval] = useState(500);
   const [speedPreset, setSpeedPreset] = useState<'normal' | 'fast' | 'superfast'>('normal');
@@ -25,9 +25,9 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
   ];
 
   const speedPresets = [
-    { value: 'normal' as const, label: '通常', speed: 10, interval: 500, description: '5000点で約42分' },
-    { value: 'fast' as const, label: '高速', speed: 50, interval: 100, description: '5000点で約8分' },
-    { value: 'superfast' as const, label: '超高速', speed: 100, interval: 20, description: '5000点で約1.7分' },
+    { value: 'normal' as const, label: '通常', speed: 10, interval: 500, description: '50000点で約7時間' },
+    { value: 'fast' as const, label: '高速', speed: 50, interval: 100, description: '50000点で約83分' },
+    { value: 'superfast' as const, label: '超高速', speed: 100, interval: 20, description: '50000点で約17分' },
   ];
 
   const handleSpeedPresetChange = (preset: 'normal' | 'fast' | 'superfast') => {
@@ -51,7 +51,7 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
           longitude: 139.7671,
         },
         radius: 500,
-        pointCount: pointCount,  // すべてのシナリオでポイント数を設定
+        pointCount: pointCount, // すべてのシナリオでポイント数を設定
       };
 
       Alert.alert(
@@ -119,9 +119,9 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
               style={[styles.scenarioItem, selectedScenario === scenario.value && styles.selectedScenario]}
               onPress={() => {
                 setSelectedScenario(scenario.value);
-                // 長い軌跡の場合は5000、それ以外は200をデフォルトに設定
+                // 長い軌跡の場合は50000、それ以外は200をデフォルトに設定
                 if (scenario.value === 'longTrack') {
-                  setPointCount(5000);
+                  setPointCount(50000);
                 } else {
                   setPointCount(200);
                 }
@@ -147,7 +147,7 @@ export const MockGpsController: React.FC<MockGpsControllerProps> = ({ useMockGps
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.adjustButton}
-                onPress={() => setPointCount(Math.min(50000, pointCount + 500))}
+                onPress={() => setPointCount(Math.min(100000, pointCount + 500))}
               >
                 <Text>+500</Text>
               </TouchableOpacity>
