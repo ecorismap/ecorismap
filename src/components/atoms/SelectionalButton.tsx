@@ -28,7 +28,9 @@ const SelectionalButton = React.memo((props: Props) => {
             const newitem = React.cloneElement(item, {
               onPress: () => {
                 setButtonOpen(false);
-                item.props.onPressCustom();
+                if (typeof item.props.onPressCustom === 'function') {
+                  item.props.onPressCustom();
+                }
               },
             });
 

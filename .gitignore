@@ -118,3 +118,5 @@ modules/react-native-gdalwarp/ios/Frameworks/
 # react-native-maps/ # Commented out to allow tracking
 
 maplibre-native/
+
+*.serena/*

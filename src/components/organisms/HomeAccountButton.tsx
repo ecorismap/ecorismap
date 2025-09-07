@@ -67,12 +67,12 @@ export const HomeAccountButton = React.memo(() => {
           <SelectionalButton selectedButton={'ACCOUNT'} direction="topToDown">
             {user.photoURL !== null && valid ? (
               //@ts-ignore
-              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
+              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
                 <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: user.photoURL }} />
               </Pressable>
             ) : (
               //@ts-ignore
-              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => null}>
+              <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
                 <View
                   style={{
                     width: 40,
