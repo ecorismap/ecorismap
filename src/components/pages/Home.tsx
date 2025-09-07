@@ -140,14 +140,8 @@ export default function HomeScreen() {
   } = useContext(PDFExportContext);
 
   // LocationTrackingContext
-  const {
-    trackingState,
-    trackMetadata,
-    memberLocations,
-    editPositionMode,
-    editPositionLayer,
-    editPositionRecord,
-  } = useContext(LocationTrackingContext);
+  const { trackingState, trackMetadata, memberLocations, editPositionMode, editPositionLayer, editPositionRecord } =
+    useContext(LocationTrackingContext);
 
   // ProjectContext
   const { projectName, isSynced, isShowingProjectButtons, pressProjectLabel } = useContext(ProjectContext);
@@ -275,7 +269,7 @@ export default function HomeScreen() {
     return (
       <View
         style={{
-          height: 25,
+          height: 40,
           justifyContent: 'center',
           alignItems: 'center',
           flexDirection: 'row',
@@ -296,14 +290,14 @@ export default function HomeScreen() {
               position: 'absolute',
               right: 0,
               top: 0,
-              width: 60,
-              height: 25,
+              width: 70,
+              height: 40,
               justifyContent: 'center',
               alignItems: 'center',
             }}
             onPress={onCloseBottomSheet}
           >
-            <Text style={{ fontSize: 30, color: COLOR.GRAY4, lineHeight: 30 }}>×</Text>
+            <Text style={{ fontSize: 40, color: COLOR.GRAY3, lineHeight: 40 }}>×</Text>
           </Pressable>
         )}
       </View>
