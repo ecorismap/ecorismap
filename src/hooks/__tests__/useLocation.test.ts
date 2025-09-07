@@ -69,13 +69,6 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   AlertAsync: jest.fn(),
 }));
 
-jest.mock('../../utils/memoryMonitor', () => ({
-  logMemoryUsage: jest.fn(),
-  logObjectSize: jest.fn(),
-  logChunkStats: jest.fn(),
-}));
-
-
 // Create a mock ref object
 const createMockMapRef = () => ({ current: null });
 
