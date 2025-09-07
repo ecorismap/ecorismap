@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR } from '../../constants/AppConstants';
@@ -23,14 +23,12 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
 
 export const CurrentTrackLog = React.memo((props: Props) => {
   // props.currentLocationは再レンダリングのトリガーとして使用（arePropsEqualで比較）
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLocation } = props;
-  
+
   // 実際のデータはMMKVから直接取得
-  // useMemoで配列参照をキャッシュ（currentLocationが変わるまで同じ参照を使用）
-  const currentChunk = useMemo(() => {
-    return getDisplayBuffer();
-  }, [currentLocation]);
+  const currentChunk = getDisplayBuffer();
 
   // データがない場合は何も表示しない
   if (!currentChunk || currentChunk.length === 0) {
