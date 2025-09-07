@@ -39,7 +39,6 @@ describe('modules/settings', () => {
     isModalInfoToolHidden: false,
     isModalMapMemoToolHidden: false,
     currentInfoTool: 'ALL_INFO',
-    showMockGPSButton: false,
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';

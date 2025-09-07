@@ -40,7 +40,6 @@ export const settingsInitialState: SettingsType = {
   isModalInfoToolHidden: false,
   isModalMapMemoToolHidden: false,
   currentInfoTool: 'ALL_INFO',
-  showMockGPSButton: false,
 };
 
 type SettingsEditType = Partial<SettingsType>;

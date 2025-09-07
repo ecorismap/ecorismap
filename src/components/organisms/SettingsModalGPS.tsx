@@ -11,20 +11,18 @@ import { GpsAccuracyType } from '../../types';
 interface Props {
   visible: boolean;
   gpsAccuracy: GpsAccuracyType;
-  showMockGPSButton: boolean;
-  pressOK: (value: GpsAccuracyType, showMockGPSButton: boolean) => void;
+  pressOK: (value: GpsAccuracyType) => void;
   pressCancel: () => void;
 }
 
 export const SettingsModalGPS = React.memo((props: Props) => {
-  const { visible, gpsAccuracy, showMockGPSButton, pressOK, pressCancel } = props;
+  const { visible, gpsAccuracy, pressOK, pressCancel } = props;
   const gpsAccuracyList = useMemo(() => Object.keys(GPS_ACCURACY), []);
   const gpsAccuracyLabels = useMemo(() => Object.values(GPS_ACCURACY), []);
   const { windowWidth } = useWindow();
   const modalWidthScale = 0.7;
 
   const [checkedIndex, setCheckedIndex] = useState(0);
-  const [mockGPSButtonChecked, setMockGPSButtonChecked] = useState(showMockGPSButton);
 
   useEffect(() => {
     const newCheckedIndex = gpsAccuracyList.findIndex((v) => v === gpsAccuracy);
@@ -32,9 +30,6 @@ export const SettingsModalGPS = React.memo((props: Props) => {
     setCheckedIndex(newCheckedIndex === -1 ? 0 : newCheckedIndex);
   }, [gpsAccuracy, gpsAccuracyList]);
 
-  useEffect(() => {
-    setMockGPSButtonChecked(showMockGPSButton);
-  }, [showMockGPSButton]);
 
   const styles = StyleSheet.create({
     alert_text: {
@@ -136,23 +131,12 @@ export const SettingsModalGPS = React.memo((props: Props) => {
                 ))}
               </View>
             </View>
-            <View style={{ borderWidth: 1, borderRadius: 5, padding: 10, marginTop: 10, height: 120 }}>
-              <Text style={styles.text}>{`${t('common.mockGPSSettings')}`}</Text>
-              <CheckBox
-                style={{ backgroundColor: COLOR.WHITE, marginTop: 10 }}
-                label={t('common.showMockGPSButton')}
-                width={300}
-                checked={mockGPSButtonChecked}
-                onCheck={() => setMockGPSButtonChecked(!mockGPSButtonChecked)}
-                radio={false}
-              />
-            </View>
             <Text style={styles.alert_text}>{`${t('common.gps_settings_alert')}`} </Text>
 
             <View style={styles.modalButtonContainer}>
               <Pressable
                 style={styles.modalOKCancelButton}
-                onPress={() => pressOK(gpsAccuracyList[checkedIndex] as GpsAccuracyType, mockGPSButtonChecked)}
+                onPress={() => pressOK(gpsAccuracyList[checkedIndex] as GpsAccuracyType)}
               >
                 <Text>OK</Text>
               </Pressable>

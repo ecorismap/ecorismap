@@ -69,35 +69,6 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   AlertAsync: jest.fn(),
 }));
 
-jest.mock('../../utils/mockGpsHelper', () => ({
-  MockGpsGenerator: jest.fn().mockImplementation(() => ({
-    start: jest.fn(),
-    stop: jest.fn(),
-    getCurrentLocation: jest.fn(() => ({
-      coords: {
-        latitude: 35.6812,
-        longitude: 139.7671,
-        altitude: 0,
-        accuracy: 10,
-        altitudeAccuracy: 10,
-        heading: 0,
-        speed: 0,
-      },
-      timestamp: Date.now(),
-    })),
-    getProgress: jest.fn(() => ({
-      current: 0,
-      total: 100,
-      percentage: 0,
-    })),
-  })),
-  LONG_TRACK_TEST_CONFIG: {
-    points: [],
-    interval: 1000,
-    loop: false,
-  },
-}));
-
 jest.mock('../../utils/memoryMonitor', () => ({
   logMemoryUsage: jest.fn(),
   logObjectSize: jest.fn(),

@@ -29,7 +29,6 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
-import { MockGpsGenerator, MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../utils/mockGpsHelper';
 import { isLocationType } from '../utils/General';
 
 const openSettings = () => {
@@ -80,10 +79,6 @@ export type UseLocationReturnType = {
     message: string;
   }>;
   confirmLocationPermission: () => Promise<ExpoLocation.PermissionStatus.GRANTED | undefined>;
-  // 擬似GPS関連
-  useMockGps: boolean;
-  toggleMockGps: (enabled: boolean, config?: MockGpsConfig) => Promise<void>;
-  mockGpsProgress?: { current: number; total: number; percentage: number };
 };
 
 export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
@@ -124,12 +119,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     message: string;
   }>({ isSaving: false, phase: '', message: '' });
 
-  // 擬似GPS用の設定とインスタンス
-  const [useMockGps, setUseMockGps] = useState(false); // 常にfalseから開始
-  const mockGpsRef = useRef<MockGpsGenerator | null>(null);
-  const mockGpsLastUpdateRef = useRef<number>(0); // バッチ処理用：最後のUI更新時刻
-
-  // 擬似GPS専用のref変数は削除（チャンク管理はLocation.tsに統一）
 
   const gpsAccuracyOption = useMemo(() => {
     // トラック記録中は固定設定を使用
@@ -174,39 +163,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       gpsSubscriber.current === undefined &&
       !(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))
     ) {
-      if (useMockGps) {
-        // 擬似GPSを使用
-        // 既存のインスタンスがなければデフォルト設定で作成
-        if (!mockGpsRef.current) {
-          mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
-        }
-
-        gpsSubscriber.current = {
-          remove: () => {
-            if (mockGpsRef.current) {
-              mockGpsRef.current.stop();
-              mockGpsRef.current = null;
-            }
-          },
-        };
-
-        // start()は内部で既に動作中かチェックして適切に処理する
-        mockGpsRef.current.start((pos) => {
-          updateGpsPosition.current(pos);
-        });
-      } else {
-        // 実際のGPSを使用
-        gpsSubscriber.current = await ExpoLocation.watchPositionAsync(gpsAccuracyOption, (pos) => {
-          updateGpsPosition.current(pos);
-        });
-      }
+      // 実際のGPSを使用
+      gpsSubscriber.current = await ExpoLocation.watchPositionAsync(gpsAccuracyOption, (pos) => {
+        updateGpsPosition.current(pos);
+      });
     }
-    if (headingSubscriber.current === undefined && !useMockGps) {
+    if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, useMockGps]);
+  }, [gpsAccuracyOption]);
 
   const stopGPS = useCallback(async () => {
     if (gpsSubscriber.current !== undefined) {
@@ -217,168 +184,59 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       headingSubscriber.current.remove();
       headingSubscriber.current = undefined;
     }
-    if (mockGpsRef.current) {
-      mockGpsRef.current.stop();
-      mockGpsRef.current = null;
-    }
   }, []);
 
   const stopTracking = useCallback(async () => {
-    console.log('[Memory] Stopping tracking, releasing memory...');
-
     try {
       // チャンクシステムは自動的に保存されるため、追加の保存処理は不要
 
-      if (!useMockGps && (await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+      if (await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION)) {
         await ExpoLocation.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
 
         if (headingSubscriber.current !== undefined) {
           headingSubscriber.current.remove();
           headingSubscriber.current = undefined;
         }
-      } else if (useMockGps) {
-        // 擬似GPSの停止
-        if (mockGpsRef.current) {
-          mockGpsRef.current.stop();
-          mockGpsRef.current = null; // インスタンスも削除
-        }
-        // バッチ処理用の変数をリセット
-        mockGpsLastUpdateRef.current = 0;
-        // GPSサブスクライバーもクリア
-        if (gpsSubscriber.current !== undefined) {
-          gpsSubscriber.current.remove();
-          gpsSubscriber.current = undefined;
-        }
       }
-
-      // メモリ解放のための追加処理
-      // 現在のチャンク情報をログ出力
-      const chunkInfo = getCurrentChunkInfo();
-      console.log(
-        `[Memory] Current chunk info before cleanup: index=${chunkInfo.currentChunkIndex}, size=${chunkInfo.currentChunkSize}`
-      );
 
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
-
-      // トラックメタデータをリセット（記録が停止したことを明示）
-      const metadata = getTrackMetadata();
-      console.log(`[Memory] Total points in memory: ${metadata.totalPoints}`);
     } catch (e) {
-      console.error('[Memory] Error during stopTracking:', e);
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
         projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
         setCurrentLocation(null);
       }
-
-      // 強制的にガベージコレクションを促す（React Nativeで可能な範囲で）
-      console.log('[Memory] Tracking stopped, memory cleanup requested');
     }
-  }, [projectId, dataUser, useMockGps]);
+  }, [projectId, dataUser]);
 
   const startTracking = useCallback(async () => {
-    // チャンクシステムを初期化（通常/擬似GPS共通）
+    // チャンクシステムを初期化
     clearStoredLocations();
 
-    if (useMockGps) {
-      // 擬似GPSでトラッキング
-      // 既存のインスタンスがなければデフォルト設定で作成
-      if (!mockGpsRef.current) {
-        mockGpsRef.current = new MockGpsGenerator(LONG_TRACK_TEST_CONFIG);
-      }
-
-      // GPSサブスクライバーも設定（GPS状態の管理のため）
-      if (gpsSubscriber.current === undefined) {
-        gpsSubscriber.current = {
-          remove: () => {
-            if (mockGpsRef.current) {
-              mockGpsRef.current.stop();
-              mockGpsRef.current = null;
-            }
-          },
-        };
-      }
-
-      // 擬似GPSのコールバック処理（通常GPSと同じ処理フローを使用）
-      mockGpsRef.current.start((pos) => {
-        // checkAndStoreLocationsを使用して通常GPSと同じ処理
-        checkAndStoreLocations([pos]);
-
-        // UI更新の動的バッチ処理
-        const now = Date.now();
-        const config = mockGpsRef.current?.getConfig();
-
-        if (config) {
-          // 更新間隔に基づいて動的に調整
-          // - 10ms以下: 500msごと（50倍の削減、2回/秒）
-          // - 50ms以下: 200msごと（4-10倍の削減、5回/秒）
-          // - 100ms以下: 100msごと（同じか削減、10回/秒）
-          // - それ以上: そのまま
-          let uiUpdateInterval: number;
-          if (config.updateInterval <= 10) {
-            uiUpdateInterval = 500; // 非常に高速な場合は500msごと（2回/秒）
-          } else if (config.updateInterval <= 50) {
-            uiUpdateInterval = 200; // 高速な場合は200msごと（5回/秒）
-          } else if (config.updateInterval <= 100) {
-            uiUpdateInterval = 100; // 中速の場合も100msごと（10回/秒）
-          } else {
-            uiUpdateInterval = config.updateInterval; // 通常速度はそのまま
-          }
-
-          // 指定された間隔が経過したらUIを更新
-          if (now - mockGpsLastUpdateRef.current >= uiUpdateInterval) {
-            // 軌跡の表示更新
-            locationEventsEmitter.emit('update');
-            // 現在地マーカーも同じタイミングで更新
-            updateGpsPosition.current(pos);
-            mockGpsLastUpdateRef.current = now;
-          }
-        }
-
-        // プログレス表示（開発用）
-        const progress = mockGpsRef.current ? mockGpsRef.current.getProgress() : null;
-        if (progress && progress.current % 100 === 0) {
-          console.log(`[MockGPS Progress] ${progress.current}/${progress.total} (${progress.percentage.toFixed(1)}%)`);
-        }
-
-        // 擬似GPSが停止したかチェック（ポイント数に達した場合など）
-        if (mockGpsRef.current && !mockGpsRef.current.isRunning()) {
-          console.log('Mock GPS has stopped, stopping tracking...');
-          stopTracking();
-        }
+    // 実際のGPSでトラッキング
+    if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+      await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
+        ...gpsAccuracyOption,
+        pausesUpdatesAutomatically: false,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: {
+          notificationTitle: 'EcorisMap',
+          notificationBody: t('hooks.notification.inTracking'),
+          killServiceOnDestroy: false,
+        },
       });
-    } else {
-      // 実際のGPSでトラッキング
-      if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-        await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
-          ...gpsAccuracyOption,
-          pausesUpdatesAutomatically: false,
-          showsBackgroundLocationIndicator: true,
-          foregroundService: {
-            notificationTitle: 'EcorisMap',
-            notificationBody: t('hooks.notification.inTracking'),
-            killServiceOnDestroy: false,
-          },
-        });
-      }
     }
 
-    if (headingSubscriber.current === undefined && !useMockGps) {
+    if (headingSubscriber.current === undefined) {
       headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
         setAzimuth(pos.trueHeading);
       });
     }
-  }, [gpsAccuracyOption, stopTracking, useMockGps]);
+  }, [gpsAccuracyOption]);
 
   const moveCurrentPosition = useCallback(async () => {
-    //console.log('moveCurrentPosition');
-    // console.log('moveCurrentPosition2');
-    const location =
-      useMockGps && mockGpsRef.current
-        ? mockGpsRef.current.getCurrentLocation()
-        : await ExpoLocation.getLastKnownPositionAsync();
-    // console.log('moveCurrentPosition3', location);
+    const location = await ExpoLocation.getLastKnownPositionAsync();
     if (location === null) return;
     setCurrentLocation(location.coords);
     if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
@@ -388,8 +246,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       },
       { duration: 5 }
     );
-    //console.log('moveCurrentPosition4', location.coords);
-  }, [mapViewRef, useMockGps]);
+  }, [mapViewRef]);
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
@@ -594,7 +451,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
 
       // チャンクデータをクリア
-      console.log('[Memory] Clearing all chunks after save...');
       clearAllChunks();
 
       // UIもクリア
@@ -608,8 +464,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       // 現在地もクリア（メモリ解放）
       setCurrentLocation(null);
-
-      console.log(`[Memory] Track saved with ${validPoints.length} points, memory cleared`);
 
       return { isOK: true, message: warningMessage };
     } finally {
@@ -644,33 +498,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return { isOK: true, message: '' };
   }, [saveTrackLog, trackMetadata.totalPoints]);
 
-  // 擬似GPSモード切り替え関数を追加
-  const toggleMockGps = useCallback(
-    async (enabled: boolean, config?: MockGpsConfig) => {
-      // 現在のGPS/トラッキングを停止
-      if (gpsState !== 'off') {
-        await toggleGPS('off');
-      }
-      if (trackingState === 'on') {
-        await toggleTracking('off');
-      }
-
-      // 既存のインスタンスを必ずクリーンアップ
-      if (mockGpsRef.current) {
-        mockGpsRef.current.stop();
-        mockGpsRef.current = null;
-      }
-
-      // 擬似GPSの設定を更新
-      setUseMockGps(enabled);
-
-      if (enabled && config) {
-        // 新しい設定でMockGpsGeneratorを作成
-        mockGpsRef.current = new MockGpsGenerator(config);
-      }
-    },
-    [gpsState, trackingState, toggleGPS, toggleTracking]
-  );
 
   useEffect(() => {
     // console.log('#define locationEventsEmitter update function');
@@ -714,10 +541,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         headingSubscriber.current.remove();
         headingSubscriber.current = undefined;
       }
-      if (mockGpsRef.current) {
-        mockGpsRef.current.stop();
-        mockGpsRef.current = null;
-      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -735,7 +558,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
         if (trackingState === 'on') {
           if (gpsState === 'show' || gpsState === 'follow') {
-            if (headingSubscriber.current === undefined && !useMockGps) {
+            if (headingSubscriber.current === undefined) {
               //console.log('add heading');
               headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
                 setAzimuth(pos.trueHeading);
@@ -768,7 +591,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return () => {
       subscription && subscription.remove();
     };
-  }, [gpsState, headingUp, toggleHeadingUp, trackingState, useMockGps, startGPS]);
+  }, [gpsState, headingUp, toggleHeadingUp, trackingState, startGPS]);
 
   return {
     currentLocation,
@@ -784,9 +607,5 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     checkUnsavedTrackLog,
     saveTrackLog,
     confirmLocationPermission,
-    // 擬似GPS関連の追加
-    useMockGps,
-    toggleMockGps,
-    mockGpsProgress: mockGpsRef.current?.getProgress(),
   } as const;
 };

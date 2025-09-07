@@ -27,7 +27,7 @@ export const expectedLineGpx = `<?xml version="1.0" encoding="UTF-8"?>
     <cmt></cmt>
     <trkseg>
       <trkpt lat="42.498248918" lon="139.8534992896">
-        <time>2021-02-02T00:28:38.000Z</time>
+        <time>2021-02-02T09:28:38Z</time>
         <ele>100</ele>
       </trkpt>
       <trkpt lat="42.4982588924" lon="139.853411112"></trkpt>
