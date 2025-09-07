@@ -3,7 +3,6 @@ import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 import { cleanupLine } from './Coords';
-//import { AppState } from 'react-native';
 
 // チャンク管理用の定数
 export const CHUNK_SIZE = 500;
@@ -42,56 +41,13 @@ export const getStoredLocations = (): TrackLogType => {
 export const checkAndStoreLocations = (locations: LocationObject[]): void => {
   // メタデータから最終タイムスタンプを取得
   const metadata = getTrackMetadata();
-  // const beforeCheck = locations.length;
-  // const appState = AppState.currentState;
-
-  // デバッグログ: 受信した位置情報
-  // debugLogMMKV.addLog({
-  //   timestamp: Date.now(),
-  //   type: 'location-received',
-  //   appState,
-  //   data: {
-  //     locationsCount: beforeCheck,
-  //     lastTimeStamp: metadata.lastTimeStamp,
-  //     currentChunkIndex: metadata.lastChunkIndex,
-  //     totalPoints: metadata.totalPoints,
-  //   },
-  // });
 
   // 位置情報の検証とフィルタリング
   const checkedLocations = checkLocations(metadata.lastTimeStamp, locations);
 
-  // デバッグログ: チェック後の結果
-  // debugLogMMKV.addLog({
-  //   timestamp: Date.now(),
-  //   type: 'check-locations',
-  //   appState,
-  //   data: {
-  //     input: beforeCheck,
-  //     output: checkedLocations.length,
-  //     rejected: beforeCheck - checkedLocations.length,
-  //     lastTimeStamp: metadata.lastTimeStamp,
-  //   },
-  // });
-
   if (checkedLocations.length > 0) {
     // チャンクシステムに追加（これが唯一のデータ保存）
     addLocationsToChunks(checkedLocations);
-
-    // デバッグログ: チャンク更新後
-    // const updatedMetadata = getTrackMetadata();
-    // const currentChunkInfo = getCurrentChunkInfo();
-    // debugLogMMKV.addLog({
-    //   timestamp: Date.now(),
-    //   type: 'chunk-updated',
-    //   appState,
-    //   data: {
-    //     chunkIndex: updatedMetadata.lastChunkIndex,
-    //     chunkSize: currentChunkInfo.currentChunkSize,
-    //     totalPoints: updatedMetadata.totalPoints,
-    //     distance: updatedMetadata.currentDistance,
-    //   },
-    // });
 
     // 現在地を別途保存（互換性のため）
     const displayData = getDisplayBuffer();
@@ -110,91 +66,23 @@ export const toLocationType = (locationObject: LocationObject): LocationType => 
 export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
   if (locations.length === 0) return [];
 
-  // const currentTime = Date.now();
-  // const MAX_TIME_DIFF = 5 * 60 * 1000; // 5分以上古いデータは破棄
-  // const rejectionReasons: string[] = [];
-
   // 1. まず変換
   const convertedLocations = locations.map((location) => toLocationType(location));
 
   // 2. タイムスタンプ逆転チェック - 逆転があれば全データを破棄
   for (let i = 1; i < convertedLocations.length; i++) {
     if (convertedLocations[i].timestamp! <= convertedLocations[i - 1].timestamp!) {
-      // debugLogMMKV.addLog({
-      //   timestamp: Date.now(),
-      //   type: 'error',
-      //   appState: AppState.currentState,
-      //   error: 'Timestamp reversal detected',
-      //   data: {
-      //     current: convertedLocations[i].timestamp,
-      //     previous: convertedLocations[i - 1].timestamp,
-      //     index: i,
-      //     totalLocations: convertedLocations.length,
-      //   },
-      // });
       return [];
     }
   }
 
   // 3. lastTimeStampより新しいデータのみをフィルタリング
-  // const beforeLastTimestampFilter = convertedLocations.length;
   let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
 
-  // if (beforeLastTimestampFilter !== filteredLocations.length) {
-  //   rejectionReasons.push(
-  //     `Rejected ${beforeLastTimestampFilter - filteredLocations.length} old timestamps (before ${lastTimeStamp})`
-  //   );
-  // }
-
-  // // 4. 現在時刻から大きく離れた古いデータを除外
-  // // ただし、最後のデータが有効期間内なら、それより前のデータも連続したトラックとして保持
-  // const beforeTimeFilter = filteredLocations.length;
-  // if (filteredLocations.length > 0) {
-  //   const lastLocation = filteredLocations[filteredLocations.length - 1];
-  //   const lastTimeDiff = currentTime - lastLocation.timestamp!;
-
-  //   if (lastTimeDiff > MAX_TIME_DIFF) {
-  //     // 最新データが5分以上古い場合は全て破棄
-  //     filteredLocations = [];
-  //     rejectionReasons.push(`Rejected all ${beforeTimeFilter} locations - latest data is older than 5 minutes`);
-  //   } else {
-  //     // 最新データが5分以内なら、全データを保持（連続したトラックとして）
-  //     debugLogMMKV.addLog({
-  //       timestamp: Date.now(),
-  //       type: 'info',
-  //       appState: AppState.currentState,
-  //       data: {
-  //         message: 'Keeping all locations as continuous track',
-  //         lastTimeDiff: lastTimeDiff,
-  //         locationsCount: filteredLocations.length
-  //       }
-  //     });
-  //   }
-  // }
-
-  // 5. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
+  // 4. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
   if (lastTimeStamp === 0) {
-    // const beforeAccuracyFilter = filteredLocations.length;
     filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
-
-    // if (beforeAccuracyFilter !== filteredLocations.length) {
-    //   rejectionReasons.push(`Rejected ${beforeAccuracyFilter - filteredLocations.length} locations with poor accuracy`);
-    // }
   }
-
-  // デバッグログ: フィルタリング理由を記録
-  // if (rejectionReasons.length > 0) {
-  //   debugLogMMKV.addLog({
-  //     timestamp: Date.now(),
-  //     type: 'check-locations',
-  //     appState: AppState.currentState,
-  //     data: {
-  //       rejectionReasons,
-  //       originalCount: locations.length,
-  //       filteredCount: filteredLocations.length,
-  //     },
-  //   });
-  // }
 
   return filteredLocations;
 };
@@ -265,15 +153,9 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
 
       // つなぎ目を除いてチャンクを保存（2番目以降のチャンクは最初の点を除外）
       const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
-      
+
       // チャンク保存時にcleanupLineを適用
-      const beforeCleanup = chunkToSave.length;
       const cleanedChunk = cleanupLine(chunkToSave);
-      const afterCleanup = cleanedChunk.length;
-      const reductionRate = ((beforeCleanup - afterCleanup) / beforeCleanup * 100).toFixed(1);
-      
-      console.log(`[Chunk ${currentChunkIndex}] cleanupLine: ${beforeCleanup} → ${afterCleanup} points (${reductionRate}% reduction)`);
-      
       saveTrackChunk(currentChunkIndex, cleanedChunk);
 
       // メタデータを更新
@@ -307,7 +189,7 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
     // 空のチャンクも保存（新しいチャンクが作成されたが、まだポイントがない場合）
     saveTrackChunk(currentChunkIndex, []);
   }
-};;
+};
 
 // 表示用バッファを取得（現在のチャンクを取得）
 // 注意: パフォーマンスのため配列の参照を直接返す（コピーしない）
@@ -360,28 +242,14 @@ export const getAllTrackPoints = (): LocationType[] => {
 
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     const chunk = getTrackChunk(i);
-    
+
     // 最後のチャンクのみcleanupLineを適用（他のチャンクは既に適用済み）
     if (i === metadata.lastChunkIndex && chunk.length > 0) {
-      const beforeCleanup = chunk.length;
       const cleanedChunk = cleanupLine(chunk);
-      const afterCleanup = cleanedChunk.length;
-      const reductionRate = ((beforeCleanup - afterCleanup) / beforeCleanup * 100).toFixed(1);
-      
-      console.log(`[Last Chunk ${i}] cleanupLine: ${beforeCleanup} → ${afterCleanup} points (${reductionRate}% reduction)`);
-      
       allPoints.push(...cleanedChunk);
     } else {
       allPoints.push(...chunk);
     }
-  }
-
-  // 全体の削減率を計算してログ出力
-  const totalOriginalPoints = metadata.totalPoints;
-  const totalCleanedPoints = allPoints.length;
-  if (totalOriginalPoints > 0) {
-    const totalReductionRate = ((totalOriginalPoints - totalCleanedPoints) / totalOriginalPoints * 100).toFixed(1);
-    console.log(`[Total Track] cleanupLine summary: ${totalOriginalPoints} → ${totalCleanedPoints} points (${totalReductionRate}% total reduction)`);
   }
 
   return allPoints;

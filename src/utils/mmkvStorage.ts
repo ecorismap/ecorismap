@@ -12,11 +12,7 @@ export const trackLogStorage = new MMKV({
   id: 'ecorismap-tracklog',
   encryptionKey: undefined,
 });
-// デバッグログ専用のMMKVインスタンス
-const debugLogStorage = new MMKV({
-  id: 'ecorismap-debug-log',
-  encryptionKey: undefined,
-});
+// デバッグログ専用のMMKVインスタンス（削除済み）
 
 // Redux Persist用のストレージアダプター
 export const reduxMMKVStorage: Storage = {
@@ -200,65 +196,7 @@ export const trackLogMMKV = {
     }
   },
 };
-// デバッグログ用の型定義
-export interface DebugLogEntry {
-  timestamp: number;
-  type: 'location-received' | 'error' | 'locations-processed' | 'check-locations' | 'chunk-updated' | 'chunk-saved' | 'info';
-  appState: string;
-  data?: any;
-  error?: any;
-  metadata?: any;
-}
-
-// デバッグログMMKV
-export const debugLogMMKV = {
-  addLog: (entry: DebugLogEntry): void => {
-    try {
-      const logs = debugLogMMKV.getLogs();
-      logs.push(entry);
-      // 最大1000件まで保持
-      if (logs.length > 1000) {
-        logs.shift();
-      }
-      debugLogStorage.set('debug-logs', JSON.stringify(logs));
-    } catch (error) {
-      console.error('Failed to add debug log:', error);
-    }
-  },
-  
-  getLogs: (): DebugLogEntry[] => {
-    try {
-      const jsonString = debugLogStorage.getString('debug-logs');
-      return jsonString ? JSON.parse(jsonString) : [];
-    } catch (error) {
-      console.error('Failed to get debug logs:', error);
-      return [];
-    }
-  },
-  
-  clearLogs: (): void => {
-    try {
-      debugLogStorage.delete('debug-logs');
-    } catch (error) {
-      console.error('Failed to clear debug logs:', error);
-    }
-  },
-  
-  exportLogs: (): string => {
-    try {
-      const logs = debugLogMMKV.getLogs();
-      return JSON.stringify(logs, null, 2);
-    } catch (error) {
-      console.error('Failed to export debug logs:', error);
-      return '[]';
-    }
-  },
-  
-  getSize: (): number => {
-    const jsonString = debugLogStorage.getString('debug-logs');
-    return jsonString ? jsonString.length : 0;
-  }
-};
+// デバッグログMMKV関連のコードは削除済み
 
 // データマイグレーション用ユーティリティ
 export const migrateFromAsyncStorage = async (AsyncStorage: any): Promise<void> => {
