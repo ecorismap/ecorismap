@@ -14,7 +14,7 @@ export const TrackLog = React.memo((props: Props) => {
 
   // メタデータのチェック
   if (metadata === undefined) return null;
-  
+
   return (
     <>
       {/* 保存済みチャンク（静的） - savedChunkCountが変わった時のみ再レンダリング */}

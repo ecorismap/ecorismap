@@ -24,6 +24,8 @@ export class MockGpsGenerator {
   private points: Location.LocationObjectCoords[] = [];
   private intervalId: NodeJS.Timeout | null = null;
   private locationCallback: ((location: Location.LocationObject) => void) | null = null;
+  private lastProgressLog: number = -1;
+  private startTimestamp: number = 0;
 
   constructor(config: MockGpsConfig) {
     this.config = config;
@@ -145,7 +147,6 @@ export class MockGpsGenerator {
       });
     }
 
-    console.log(`Generated ${numPoints} points for long track testing`);
   }
 
   private generateRandomPoints() {
@@ -182,13 +183,11 @@ export class MockGpsGenerator {
 
   start(callback: (location: Location.LocationObject) => void) {
     if (!this.config.enabled) {
-      console.log('Mock GPS is disabled');
       return;
     }
 
     // 既に動作中の場合はコールバックだけ更新
     if (this.intervalId) {
-      console.log('Mock GPS already running, updating callback only');
       this.locationCallback = callback;
       return;
     }
@@ -198,23 +197,24 @@ export class MockGpsGenerator {
     if (this.currentIndex === -1) {
       this.currentIndex = 0;
       this.timeElapsed = 0;
+      this.lastProgressLog = -1;
+      this.startTimestamp = Date.now();
     }
 
-    console.log(
-      `Starting mock GPS: ${this.config.scenario} scenario with ${this.points.length} points from index ${this.currentIndex}`
-    );
+    console.log(`[MockGPS] Started: ${this.config.scenario} scenario`);
 
     this.intervalId = setInterval(() => {
-      // デバッグログ追加
-      if (this.currentIndex % 50 === 0) {
-        console.log(
-          `[MockGPS Debug] currentIndex: ${this.currentIndex}, target: ${this.config.pointCount}, points.length: ${this.points.length}`
-        );
+      // 1%ごとに進捗をログ出力
+      const progress = this.getProgress();
+      const currentPercent = Math.floor(progress.percentage);
+      if (currentPercent > this.lastProgressLog && currentPercent % 1 === 0) {
+        console.log(`[MockGPS Progress] ${currentPercent}% (${progress.current}/${progress.total})`);
+        this.lastProgressLog = currentPercent;
       }
 
       // ポイント数に達したかチェック（すべてのシナリオで有効）
       if (this.config.pointCount && this.currentIndex >= this.config.pointCount) {
-        console.log(`Reached target point count: ${this.config.pointCount} (scenario: ${this.config.scenario})`);
+        console.log(`[MockGPS] Completed: ${this.config.pointCount} points`);
         this.stop();
         return;
       }
@@ -223,7 +223,7 @@ export class MockGpsGenerator {
       if (this.currentIndex >= this.points.length) {
         // 直線とlongTrackはループしない
         if (this.config.scenario === 'line' || this.config.scenario === 'longTrack') {
-          console.log(`Reached end of points: ${this.currentIndex} (scenario: ${this.config.scenario})`);
+          console.log(`[MockGPS] Completed: ${this.currentIndex} points`);
           this.stop();
           return;
         }
@@ -238,9 +238,10 @@ export class MockGpsGenerator {
           : this.currentIndex;
 
       const point = this.points[actualIndex];
+      // タイムスタンプを1秒ごとに進める（開始時刻 + 経過インデックス * 1000ms）
       const mockLocation: Location.LocationObject = {
         coords: point,
-        timestamp: Date.now(),
+        timestamp: this.startTimestamp + (this.currentIndex * 1000),
         mocked: true,
       };
 
@@ -257,7 +258,7 @@ export class MockGpsGenerator {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('Mock GPS stopped');
+      console.log('[MockGPS] Stopped');
     }
   }
 
@@ -266,9 +267,13 @@ export class MockGpsGenerator {
     const index = this.currentIndex === -1 ? 0 : this.currentIndex;
     if (index < this.points.length) {
       const point = this.points[index];
+      // 開始時刻が設定されていない場合は現在時刻を使用
+      const timestamp = this.startTimestamp > 0 
+        ? this.startTimestamp + (index * 1000)
+        : Date.now();
       return {
         coords: point,
-        timestamp: Date.now(),
+        timestamp: timestamp,
         mocked: true,
       };
     }
@@ -315,10 +320,10 @@ export const LONG_TRACK_TEST_CONFIG: MockGpsConfig = {
   enabled: true,
   scenario: 'longTrack',
   speed: 10, // 10 m/s (36 km/h)
-  updateInterval: 500, // 0.5秒ごと
+  updateInterval: 1000, // 1秒ごと（Androidエミュレーター互換）
   center: {
     latitude: 35.6812,
     longitude: 139.7671,
   },
-  pointCount: 50000, // 5000ポイント（約42分の軌跡）
+  pointCount: 50000, // 50000ポイント（約14時間の軌跡）
 };

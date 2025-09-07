@@ -738,7 +738,11 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
           line.coords.forEach((coord) => {
             //console.log(dayjs.unix(coord.timestamp!).toISOString());
             const trkpt = trkseg.ele('trkpt').att('lat', coord.latitude).att('lon', coord.longitude);
-            coord.timestamp && trkpt.ele('time', dayjs(coord.timestamp).toISOString());
+            // timestampをISO形式に変換（秒単位、ミリ秒部分を除外）
+            if (coord.timestamp) {
+              const timeString = dayjs(coord.timestamp).format('YYYY-MM-DDTHH:mm:ss[Z]');
+              trkpt.ele('time', timeString);
+            }
             if (coord.altitude !== null && coord.altitude !== undefined) {
               trkpt.ele('ele', coord.altitude);
             }

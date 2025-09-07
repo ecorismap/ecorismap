@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR } from '../../constants/AppConstants';
@@ -27,10 +27,13 @@ export const CurrentTrackLog = React.memo((props: Props) => {
   const { currentLocation } = props;
   
   // 実際のデータはMMKVから直接取得
-  const currentChunk = getDisplayBuffer();
+  // useMemoで配列参照をキャッシュ（currentLocationが変わるまで同じ参照を使用）
+  const currentChunk = useMemo(() => {
+    return getDisplayBuffer();
+  }, [currentLocation]);
 
   // データがない場合は何も表示しない
-  if (currentChunk.length === 0) {
+  if (!currentChunk || currentChunk.length === 0) {
     return null;
   }
 

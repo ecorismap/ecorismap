@@ -2,6 +2,7 @@ import { LocationType, TrackLogType } from '../types';
 import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
+import { cleanupLine } from './Coords';
 //import { AppState } from 'react-native';
 
 // チャンク管理用の定数
@@ -264,19 +265,16 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
 
       // つなぎ目を除いてチャンクを保存（2番目以降のチャンクは最初の点を除外）
       const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
-      saveTrackChunk(currentChunkIndex, chunkToSave);
-
-      // デバッグログ: チャンク保存
-      // debugLogMMKV.addLog({
-      //   timestamp: Date.now(),
-      //   type: 'chunk-saved',
-      //   appState: AppState.currentState,
-      //   data: {
-      //     chunkIndex: currentChunkIndex,
-      //     chunkSize: chunkToSave.length,
-      //     totalChunks: metadata.totalChunks + 1,
-      //   },
-      // });
+      
+      // チャンク保存時にcleanupLineを適用
+      const beforeCleanup = chunkToSave.length;
+      const cleanedChunk = cleanupLine(chunkToSave);
+      const afterCleanup = cleanedChunk.length;
+      const reductionRate = ((beforeCleanup - afterCleanup) / beforeCleanup * 100).toFixed(1);
+      
+      console.log(`[Chunk ${currentChunkIndex}] cleanupLine: ${beforeCleanup} → ${afterCleanup} points (${reductionRate}% reduction)`);
+      
+      saveTrackChunk(currentChunkIndex, cleanedChunk);
 
       // メタデータを更新
       currentChunkIndex++;
@@ -299,21 +297,23 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
   saveTrackMetadata(metadata);
 
   // 現在のチャンクを常に保存（表示用データとして使用される）
-  // 注意: 表示時はつなぎ目を含むが、保存時は除外する
+  // 注意: 最後のチャンクはまだ完成していないのでcleanupしない
   if (currentChunk.length > 0) {
     // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）
     const chunkToSave = currentChunkIndex > 0 && currentChunk.length > 1 ? currentChunk.slice(1) : currentChunk;
+    // 未完成のチャンクはcleanupしない（トラック保存時に処理）
     saveTrackChunk(currentChunkIndex, chunkToSave);
   } else {
     // 空のチャンクも保存（新しいチャンクが作成されたが、まだポイントがない場合）
     saveTrackChunk(currentChunkIndex, []);
   }
-};
+};;
 
 // 表示用バッファを取得（現在のチャンクを取得）
+// 注意: パフォーマンスのため配列の参照を直接返す（コピーしない）
 export const getDisplayBuffer = (): LocationType[] => {
   const { chunk } = getCurrentChunk();
-  return [...chunk];
+  return chunk; // 配列のコピーを作らず直接返す
 };
 
 // 現在のチャンク情報を取得（デバッグ用）
@@ -360,7 +360,28 @@ export const getAllTrackPoints = (): LocationType[] => {
 
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     const chunk = getTrackChunk(i);
-    allPoints.push(...chunk);
+    
+    // 最後のチャンクのみcleanupLineを適用（他のチャンクは既に適用済み）
+    if (i === metadata.lastChunkIndex && chunk.length > 0) {
+      const beforeCleanup = chunk.length;
+      const cleanedChunk = cleanupLine(chunk);
+      const afterCleanup = cleanedChunk.length;
+      const reductionRate = ((beforeCleanup - afterCleanup) / beforeCleanup * 100).toFixed(1);
+      
+      console.log(`[Last Chunk ${i}] cleanupLine: ${beforeCleanup} → ${afterCleanup} points (${reductionRate}% reduction)`);
+      
+      allPoints.push(...cleanedChunk);
+    } else {
+      allPoints.push(...chunk);
+    }
+  }
+
+  // 全体の削減率を計算してログ出力
+  const totalOriginalPoints = metadata.totalPoints;
+  const totalCleanedPoints = allPoints.length;
+  if (totalOriginalPoints > 0) {
+    const totalReductionRate = ((totalOriginalPoints - totalCleanedPoints) / totalOriginalPoints * 100).toFixed(1);
+    console.log(`[Total Track] cleanupLine summary: ${totalOriginalPoints} → ${totalCleanedPoints} points (${totalReductionRate}% total reduction)`);
   }
 
   return allPoints;

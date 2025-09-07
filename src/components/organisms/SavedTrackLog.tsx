@@ -9,6 +9,42 @@ interface Props {
   savedChunkCount: number;
 }
 
+// 個別のチャンクコンポーネント（一度レンダリングされたら変更されない）
+interface ChunkProps {
+  chunkIndex: number;
+}
+
+const TrackChunk = React.memo(({ chunkIndex }: ChunkProps) => {
+  // チャンクデータは一度読み込まれたら変わらない
+  const chunkData = useMemo(() => {
+    try {
+      const chunk = getTrackChunk(chunkIndex);
+      return chunk && chunk.length > 0 ? (chunk as LocationType[]) : null;
+    } catch (error) {
+      return null;
+    }
+  }, [chunkIndex]);
+
+  if (!chunkData) {
+    return null;
+  }
+
+  return (
+    <Polyline
+      key={`saved-track-${chunkIndex}`}
+      tappable={false}
+      coordinates={chunkData}
+      strokeColor={COLOR.TRACK}
+      strokeWidth={4}
+      lineCap="butt"
+      zIndex={100}
+    />
+  );
+}, (prevProps, nextProps) => {
+  // chunkIndexが同じなら再レンダリングしない（チャンクの内容は不変）
+  return prevProps.chunkIndex === nextProps.chunkIndex;
+});
+
 // カスタム比較関数で不要な再レンダリングを防ぐ
 const arePropsEqual = (prevProps: Props, nextProps: Props) => {
   // savedChunkCountが変わった場合のみ再レンダリング
@@ -18,48 +54,27 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
 export const SavedTrackLog = React.memo((props: Props) => {
   const { savedChunkCount } = props;
   
-  // 保存済みチャンクを結合して単一配列に（Polylineコンポーネント数を削減）
-  const combinedSavedTrack = useMemo(() => {
+  // チャンクインデックスの配列を作成（メモ化）
+  const chunkIndices = useMemo(() => {
     if (!savedChunkCount || savedChunkCount === 0) {
       return [];
     }
     
-    // 最大5チャンクを結合（2500ポイント）
-    const MAX_CHUNKS_TO_COMBINE = 5;
-    const chunksToLoad = Math.min(savedChunkCount, MAX_CHUNKS_TO_COMBINE);
-    
-    const combined: LocationType[] = [];
-    const startIndex = Math.max(0, savedChunkCount - MAX_CHUNKS_TO_COMBINE);
-    
-    // チャンクを順番に読み込んで結合
-    try {
-      for (let i = startIndex; i < startIndex + chunksToLoad; i++) {
-        const chunk = getTrackChunk(i);
-        if (chunk && chunk.length > 0) {
-          combined.push(...(chunk as LocationType[]));
-        }
-      }
-    } catch (error) {
-      return [];
-    }
-    
-    return combined;
-  }, [savedChunkCount]); // チャンク数が変わったときのみ再結合
+    // 0からsavedChunkCount-1までのインデックス配列を作成
+    return Array.from({ length: savedChunkCount }, (_, i) => i);
+  }, [savedChunkCount]);
   
   // データがない場合は何も表示しない
-  if (combinedSavedTrack.length === 0) {
+  if (chunkIndices.length === 0) {
     return null;
   }
   
+  // 各チャンクを個別のメモ化されたコンポーネントとして表示
   return (
-    <Polyline
-      key="saved-track"
-      tappable={false}
-      coordinates={combinedSavedTrack}
-      strokeColor={COLOR.TRACK}
-      strokeWidth={4}
-      lineCap="butt"
-      zIndex={100}
-    />
+    <>
+      {chunkIndices.map((index) => (
+        <TrackChunk key={`track-chunk-${index}`} chunkIndex={index} />
+      ))}
+    </>
   );
 }, arePropsEqual);

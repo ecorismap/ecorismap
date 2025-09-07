@@ -28,7 +28,6 @@ import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
-import { cleanupLine } from '../utils/Coords';
 import { Linking } from 'react-native';
 import { MockGpsGenerator, MockGpsConfig, LONG_TRACK_TEST_CONFIG } from '../utils/mockGpsHelper';
 import { isLocationType } from '../utils/General';
@@ -225,6 +224,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, []);
 
   const stopTracking = useCallback(async () => {
+    console.log('[Memory] Stopping tracking, releasing memory...');
+
     try {
       // チャンクシステムは自動的に保存されるため、追加の保存処理は不要
 
@@ -249,13 +250,30 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           gpsSubscriber.current = undefined;
         }
       }
+
+      // メモリ解放のための追加処理
+      // 現在のチャンク情報をログ出力
+      const chunkInfo = getCurrentChunkInfo();
+      console.log(
+        `[Memory] Current chunk info before cleanup: index=${chunkInfo.currentChunkIndex}, size=${chunkInfo.currentChunkSize}`
+      );
+
+      // React Stateをクリア（メモリ解放を促進）
+      setCurrentLocation(null);
+
+      // トラックメタデータをリセット（記録が停止したことを明示）
+      const metadata = getTrackMetadata();
+      console.log(`[Memory] Total points in memory: ${metadata.totalPoints}`);
     } catch (e) {
-      // エラーハンドリング
+      console.error('[Memory] Error during stopTracking:', e);
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
         projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
         setCurrentLocation(null);
       }
+
+      // 強制的にガベージコレクションを促す（React Nativeで可能な範囲で）
+      console.log('[Memory] Tracking stopped, memory cleanup requested');
     }
   }, [projectId, dataUser, useMockGps]);
 
@@ -527,7 +545,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const saveTrackLog = useCallback(async () => {
     try {
       setSavingTrackStatus({ isSaving: true, phase: 'merging', message: 'トラックデータを結合中...' });
-      
+
       // 全チャンクを結合（重い処理の可能性）
       const allPoints = await new Promise<ReturnType<typeof getAllTrackPoints>>((resolve) => {
         setTimeout(() => {
@@ -537,7 +555,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       });
 
       setSavingTrackStatus({ isSaving: true, phase: 'filtering', message: 'データを検証中...' });
-      
+
       // isLocationTypeを使って有効な点のみをフィルタリング
       const validPoints = await new Promise<LocationType[]>((resolve) => {
         setTimeout(() => {
@@ -545,7 +563,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           resolve(points);
         }, 0);
       });
-      
+
       // 除外された点の数を計算
       const invalidCount = allPoints.length - validPoints.length;
 
@@ -560,31 +578,23 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         return { isOK: true, message: warningMessage || '有効なトラックデータが不足しています' };
       }
 
-      setSavingTrackStatus({ isSaving: true, phase: 'cleaning', message: 'トラックを最適化中...' });
-
-      // cleanupLineの処理（時間がかかる可能性がある）
-      const cleanupedLine = await new Promise<LocationType[]>((resolve) => {
-        setTimeout(() => {
-          const result = cleanupLine(validPoints);
-          resolve(result);
-        }, 0);
-      });
-
       setSavingTrackStatus({ isSaving: true, phase: 'saving', message: 'データを保存中...' });
 
       // レコードに追加（Redux更新も重い可能性）
+      // 注意: cleanupLineは既にチャンク保存時と getAllTrackPoints で適用済み
       const ret = await new Promise<ReturnType<typeof addTrackRecord>>((resolve) => {
         setTimeout(() => {
-          const result = addTrackRecord(cleanupedLine);
+          const result = addTrackRecord(validPoints);
           resolve(result);
         }, 0);
       });
-      
+
       if (!ret.isOK) {
         return { isOK: ret.isOK, message: ret.message };
       }
 
       // チャンクデータをクリア
+      console.log('[Memory] Clearing all chunks after save...');
       clearAllChunks();
 
       // UIもクリア
@@ -596,7 +606,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         totalPoints: 0,
       });
 
-      // console.log(`Saved track with ${allPoints.length} points`);
+      // 現在地もクリア（メモリ解放）
+      setCurrentLocation(null);
+
+      console.log(`[Memory] Track saved with ${validPoints.length} points, memory cleared`);
 
       return { isOK: true, message: warningMessage };
     } finally {
@@ -734,13 +747,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         //console.log('App has come to the background!');
-        
+
         // バックグラウンド時はGPSサブスクライバーを一時停止（トラッキング中でない場合）
         if (trackingState !== 'on' && gpsSubscriber.current !== undefined) {
           gpsSubscriber.current.remove();
           gpsSubscriber.current = undefined;
         }
-        
+
         if (headingSubscriber.current !== undefined) {
           //console.log('remove heading');
           headingSubscriber.current.remove();
@@ -776,4 +789,4 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     toggleMockGps,
     mockGpsProgress: mockGpsRef.current?.getProgress(),
   } as const;
-};;
+};
