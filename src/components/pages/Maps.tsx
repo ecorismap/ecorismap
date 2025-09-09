@@ -8,7 +8,6 @@ import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
-import { ScrollView } from 'react-native-gesture-handler';
 
 export default function MapScreen() {
   //console.log('render Maps');
@@ -58,9 +57,9 @@ export default function MapScreen() {
   return (
     <View style={styles.container}>
       <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
-      <ScrollView>
+      <View style={{ flex: 1 }}>
         <MapTable />
-      </ScrollView>
+      </View>
       <MapButtons />
     </View>
   );
