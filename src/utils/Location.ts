@@ -154,9 +154,8 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
       // つなぎ目を除いてチャンクを保存（2番目以降のチャンクは最初の点を除外）
       const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
 
-      // チャンク保存時にcleanupLineを適用
-      const cleanedChunk = cleanupLine(chunkToSave);
-      saveTrackChunk(currentChunkIndex, cleanedChunk);
+      // チャンクを保存（cleanupはトラック保存時に実行）
+      saveTrackChunk(currentChunkIndex, chunkToSave);
 
       // メタデータを更新
       currentChunkIndex++;
@@ -242,14 +241,12 @@ export const getAllTrackPoints = (): LocationType[] => {
 
   for (let i = 0; i <= metadata.lastChunkIndex; i++) {
     const chunk = getTrackChunk(i);
+    allPoints.push(...chunk);
+  }
 
-    // 最後のチャンクのみcleanupLineを適用（他のチャンクは既に適用済み）
-    if (i === metadata.lastChunkIndex && chunk.length > 0) {
-      const cleanedChunk = cleanupLine(chunk);
-      allPoints.push(...cleanedChunk);
-    } else {
-      allPoints.push(...chunk);
-    }
+  // 全体に対してcleanupLineを適用（トラック保存時に一括処理）
+  if (allPoints.length > 0) {
+    return cleanupLine(allPoints);
   }
 
   return allPoints;

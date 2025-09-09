@@ -438,7 +438,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       setSavingTrackStatus({ isSaving: true, phase: 'saving', message: 'データを保存中...' });
 
       // レコードに追加（Redux更新も重い可能性）
-      // 注意: cleanupLineは既にチャンク保存時と getAllTrackPoints で適用済み
+      // 注意: cleanupLineは getAllTrackPoints で一括適用済み
       const ret = await new Promise<ReturnType<typeof addTrackRecord>>((resolve) => {
         setTimeout(() => {
           const result = addTrackRecord(validPoints);
