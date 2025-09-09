@@ -3549,7 +3549,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNVirgilCrypto (0.6.3):
+  - RNVirgilCrypto (0.6.4):
     - React
     - VirgilCrypto (= 5.3.0)
     - VirgilCryptoFoundation (= 0.12.0)
@@ -4152,7 +4152,7 @@ SPEC CHECKSUMS:
   RNScreens: 7f9d84a9901679dbb435592612d5ac57a044adce
   RNSVG: 3544def7b3ddc43c7ba69dade91bacf99f10ec46
   RNVectorIcons: ca479c473e490faca0eeaea9477b89bb42ea41b4
-  RNVirgilCrypto: b5f0996b90493a0ba0b40fd22b2be66b6d911d98
+  RNVirgilCrypto: c8d4cdb60b04593c89617a9ecf3f3eb223b4ac5d
   RNZipArchive: 29236989a51e92d44e0a5d4c02555426e4e4726c
   SDWebImage: f29024626962457f3470184232766516dee8dfea
   SDWebImageWebPCoder: e38c0a70396191361d60c092933e22c20d5b1380
