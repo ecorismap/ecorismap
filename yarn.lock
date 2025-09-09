@@ -10441,6 +10441,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react@npm:^18.2.6":
+  version: 18.3.24
+  resolution: "@types/react@npm:18.3.24"
+  dependencies:
+    "@types/prop-types": "*"
+    csstype: ^3.0.2
+  checksum: 852fd0430d721ceb431662ac90b6b41d6473ea55d29b5d92f7a81f4c6c397eb3b26a904fdd276fb71a5fad318d0d79cc0072867024611716bfb85e6b4907ae68
+  languageName: node
+  linkType: hard
+
 "@types/react@npm:~19.0.10":
   version: 19.0.14
   resolution: "@types/react@npm:19.0.14"
@@ -10980,6 +10990,15 @@ __metadata:
   dependencies:
     "@types/node": ^13.1.8
   checksum: 47dfb412e56f6788fd8ae33161b40ffbfcda80c7bb0ad01eb65b25de5cefd9fb65231a4e719a3853f0acb97a4fa7b9b40582b04fc7968f52a7afff7f0cdf9fa2
+  languageName: node
+  linkType: hard
+
+"@virgilsecurity/crypto-types@npm:2.0.0":
+  version: 2.0.0
+  resolution: "@virgilsecurity/crypto-types@npm:2.0.0"
+  dependencies:
+    "@types/node": ^13.1.8
+  checksum: 59648dc21e13068b85759f1b9913379ec0418581104127eaadb151d1fe69d95b3d49cd56a7b55488dfbc9c2e2a08e06cffaca97d865ee1df0b9e848b8afefaaf
   languageName: node
   linkType: hard
 
@@ -15709,7 +15728,7 @@ __metadata:
     react-native-screens: ~4.11.1
     react-native-svg: ^15.12.1
     react-native-vector-icons: ^10.1.0
-    react-native-virgil-crypto: 0.6.3
+    react-native-virgil-crypto: ^0.6.4
     react-native-web: ^0.21.0
     react-native-zip-archive: 6.1.2
     react-redux: ^9.1.2
@@ -26035,16 +26054,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-virgil-crypto@npm:0.6.3":
-  version: 0.6.3
-  resolution: "react-native-virgil-crypto@npm:0.6.3"
+"react-native-virgil-crypto@npm:^0.6.4":
+  version: 0.6.4
+  resolution: "react-native-virgil-crypto@npm:0.6.4"
   dependencies:
-    "@virgilsecurity/crypto-types": 1.1.1
+    "@types/react": ^18.2.6
+    "@virgilsecurity/crypto-types": 2.0.0
     buffer: ^6.0.3
   peerDependencies:
-    react: ^16.8.1
-    react-native: ">=0.59.0-rc.0 <1.0.x"
-  checksum: 2449245436b29b5eef058052d93c1e09cc6caca57e6abe4e89eee7bd49343768d46555d49459f69581d3fd2ef1b24f7509b02df72ee0e17ebfdd0f7112adc7e9
+    react: ^18.2.0
+    react-native: ^0.74.1
+  checksum: f3eb8698b76e75e1df697a861bd968c44b65d44c3fd160de44db0a2e714e02e0e28636c65f5cf709ba4c0032aff9374cad5fc33302fb64272d06550e2af6c5b2
   languageName: node
   linkType: hard
 

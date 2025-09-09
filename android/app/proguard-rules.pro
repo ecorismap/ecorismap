@@ -12,3 +12,13 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
+
+# Virgil Security libraries - prevent stripping
+-keep class com.virgilsecurity.** { *; }
+-dontwarn com.virgilsecurity.**
+
+# Keep native libraries
+-keep class *.so
+-keepclassmembers class * {
+    native <methods>;
+}
