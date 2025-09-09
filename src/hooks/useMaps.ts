@@ -11,7 +11,8 @@ import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMap
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
-import { blobToBase64, decodeUri } from '../utils/File.web';
+import { decodeUri } from '../utils/File.web';
+import { blobToBase64 } from '../utils/blob';
 import { convert, warpedFileType } from 'react-native-gdalwarp';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';

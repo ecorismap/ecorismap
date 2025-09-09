@@ -9,7 +9,7 @@ import {
   decryptFileEThree as decFile,
 } from '../virgilsecurity/e3kit';
 import { db } from '../../utils/db';
-import { blobToBase64 } from '../../utils/File.web';
+import { blobToBase64 } from '../../utils/blob';
 
 export const uploadDictionary = async (projectId: string, layerId: string, dictionaryData: string) => {
   try {
