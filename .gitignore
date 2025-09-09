@@ -34,6 +34,7 @@ build/
 *.keystore
 !debug.keystore
 android/app/.cxx/
+android/app/release/
 .kotlin/
 
 # node.js
