@@ -10,25 +10,7 @@ interface Props {
   showDirectionLine?: boolean;
 }
 
-const areEqual = (prevProps: Props, nextProps: Props) => {
-  // Balance between performance and smooth rotation
-  const azimuthThreshold = 2.0; // Increased to reduce jitter from hand movement
-  const azimuthChanged = Math.abs(prevProps.azimuth - nextProps.azimuth) > azimuthThreshold;
-
-  // Add location threshold to reduce GPS jitter
-  const locationThreshold = 0.000005; // Approximately 0.5 meters
-  const locationChanged =
-    Math.abs(prevProps.currentLocation.latitude - nextProps.currentLocation.latitude) > locationThreshold ||
-    Math.abs(prevProps.currentLocation.longitude - nextProps.currentLocation.longitude) > locationThreshold;
-
-  const headingUpChanged = prevProps.headingUp !== nextProps.headingUp;
-  const showDirectionLineChanged = prevProps.showDirectionLine !== nextProps.showDirectionLine;
-
-  // Re-render if any significant change occurred
-  return !azimuthChanged && !locationChanged && !headingUpChanged && !showDirectionLineChanged;
-};
-
-export const CurrentMarker = React.memo((props: Props) => {
+export const CurrentMarker = (props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
@@ -44,29 +26,6 @@ export const CurrentMarker = React.memo((props: Props) => {
   const filteredAzimuthRef = useRef(azimuth);
   const [filteredAzimuth, setFilteredAzimuth] = useState(azimuth);
   const ALPHA = 0.2; // Lower value for more smoothing to reduce hand shake
-
-  // Marker reference (将来拡張用 / redraw は行わない)
-  const markerRef = useRef<any>(null);
-
-  // --- 一時的 tracksViewChanges 制御: 外観(色)変化時のみ再キャプチャ ---
-  const [trackViewChanges, setTrackViewChanges] = useState(true); // 初回は true でキャプチャ
-  const prevFillColorRef = useRef(fillColor);
-
-  // 色が変わった (精度リング色も含む) 場合に一時的に true
-  useEffect(() => {
-    if (prevFillColorRef.current !== fillColor) {
-      prevFillColorRef.current = fillColor;
-      setTrackViewChanges(true);
-    }
-  }, [fillColor]);
-
-  // true にした後 350ms で false へ戻しキャッシュ利用
-  useEffect(() => {
-    if (trackViewChanges) {
-      const id = setTimeout(() => setTrackViewChanges(false), 350);
-      return () => clearTimeout(id);
-    }
-  }, [trackViewChanges]);
 
   useEffect(() => {
     // Apply low-pass filter with angle wrapping
@@ -142,7 +101,6 @@ export const CurrentMarker = React.memo((props: Props) => {
         <Polyline coordinates={lineCoordinates} strokeColor="#000000" strokeWidth={1} zIndex={1000} />
       )}
       <Marker
-        ref={markerRef}
         coordinate={{
           latitude: currentLocation.latitude,
           longitude: currentLocation.longitude,
@@ -155,4 +113,4 @@ export const CurrentMarker = React.memo((props: Props) => {
       />
     </>
   );
-}, areEqual);
+};
