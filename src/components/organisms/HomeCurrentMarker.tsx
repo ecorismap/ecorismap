@@ -1,6 +1,4 @@
 import React, { useMemo, useRef, useEffect, useState } from 'react';
-import { View } from 'react-native';
-import Svg, { Path, G } from 'react-native-svg';
 import { Marker, Polyline, Circle } from 'react-native-maps';
 import { LocationType } from '../../types';
 
@@ -34,6 +32,13 @@ export const CurrentMarker = React.memo((props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
+
+  // マーカー画像の選択
+  const markerImage = useMemo(() => {
+    if (accuracy > 30) return require('../../assets/marker_gray.png');
+    if (accuracy > 15) return require('../../assets/marker_orange.png');
+    return require('../../assets/marker_red.png');
+  }, [accuracy]);
 
   // Low-pass filter to smooth azimuth values
   const filteredAzimuthRef = useRef(azimuth);
@@ -145,24 +150,9 @@ export const CurrentMarker = React.memo((props: Props) => {
         rotation={markerAngle}
         anchor={{ x: 0.5, y: 0.5 }}
         style={{ zIndex: 1001 }}
-        tracksViewChanges={trackViewChanges}
         onPress={onPress}
-      >
-        <View
-          style={{
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 80,
-            height: 80,
-          }}
-        >
-          <Svg height="80" width="80" viewBox="0 0 80 80">
-            <G stroke="white" strokeWidth="2" strokeLinejoin="round">
-              <Path d="M40 40 L55 72 L40 64 L25 72 Z" fill={fillColor} />
-            </G>
-          </Svg>
-        </View>
-      </Marker>
+        image={markerImage}
+      />
     </>
   );
 }, areEqual);
