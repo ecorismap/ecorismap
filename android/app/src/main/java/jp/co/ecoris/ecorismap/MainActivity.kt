@@ -21,6 +21,13 @@ import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.InputStream
 import java.io.OutputStream
+import com.google.android.play.core.integrity.IntegrityManager;
+import com.google.android.play.core.integrity.IntegrityManagerFactory;
+import com.google.android.play.core.integrity.IntegrityServiceException;
+import com.google.android.play.core.integrity.IntegrityTokenRequest;
+import com.google.android.play.core.integrity.IntegrityTokenResponse;
+import com.google.android.play.core.integrity.model.IntegrityErrorCode;
+
 
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +43,22 @@ class MainActivity : ReactActivity() {
     ) {
       requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
+        // --- Play Integrity API の最小呼び出し ---
+        val integrityManager = IntegrityManagerFactory.create(this)
+
+        val request = IntegrityTokenRequest.builder()
+            .setNonce("任意のランダム文字列") // サーバーで検証する場合は必須
+            .build()
+
+        integrityManager.requestIntegrityToken(request)
+            .addOnSuccessListener { response: IntegrityTokenResponse ->
+                val token = response.token()
+                Log.d("IntegrityAPI", "Token: $token")
+                // 必要ならサーバーに送信
+            }
+            .addOnFailureListener { exception ->
+                Log.e("IntegrityAPI", "Failed: ${exception.message}")
+            }
   }
 
   /**
