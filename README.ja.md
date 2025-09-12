@@ -60,7 +60,7 @@ yarn install
 ### 3. GDALモジュールのセットアップ
 ```bash
 # GDALモジュールのダウンロード
-wget https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+wget https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.2/react-native-gdalwarp.zip
 unzip react-native-gdalwarp.zip
 cp -r react-native-gdalwarp modules/
 rm -rf react-native-gdalwarp react-native-gdalwarp.zip
