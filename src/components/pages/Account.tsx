@@ -61,7 +61,8 @@ export default function Account() {
     modalCenteredView: {
       alignItems: 'center',
       flex: 1,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
+      paddingTop: 10,
     },
     modalFrameView: {
       alignItems: 'center',
@@ -183,6 +184,11 @@ export default function Account() {
               placeholder="email"
               placeholderTextColor={COLOR.GRAY3}
               autoComplete={'email'}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              spellCheck={false}
               value={email}
               onChangeText={(text) => setEmail(text)}
             />
