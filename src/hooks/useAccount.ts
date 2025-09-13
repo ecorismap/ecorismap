@@ -439,7 +439,6 @@ export const useAccount = (): UseAccountReturnType => {
         }
         // E3Kit初期化は必要な時にのみ実行されるため、ここでは行わない
       } catch (error) {
-        console.error('[useAccount] Unexpected error during initialization:', error);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
