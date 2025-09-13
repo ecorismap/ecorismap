@@ -34,13 +34,16 @@ export const useProjects = (): UseProjectsReturnType => {
   const [isLoading, setIsLoading] = useState(false);
 
   const ownerProjectsCount = useCallback(() => {
-    if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
+    if (!isLoggedIn(user)) return 0;
     return projects.filter((project) => project.ownerUid === user.uid).length;
   }, [projects, user]);
 
   const generateProject = useCallback(() => {
     //ライセンスは不正防止のためadd後にfunctionsで更新するが、ひとまず入れておく。本当は、Listnerで更新した方が良い。
-    if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
+    if (!isLoggedIn(user)) {
+      // Return a dummy project or null when not logged in
+      return null as unknown as ProjectType;
+    }
     const project: ProjectType = {
       id: ulid(),
       name: '',
@@ -57,7 +60,10 @@ export const useProjects = (): UseProjectsReturnType => {
 
   const fetchProjects = useCallback(async () => {
     try {
-      if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
+      if (!isLoggedIn(user)) {
+        // Return early without throwing error when not logged in
+        return { isOK: false, message: t('hooks.message.pleaseLogin') };
+      }
       dispatch(setProjectsAction([]));
       setIsLoading(true);
       const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);

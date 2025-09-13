@@ -15,7 +15,7 @@ import { projectsInitialState, setProjectsAction } from '../modules/projects';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
-import { FUNC_LOGIN } from '../constants/AppConstants';
+import { FUNC_LOGIN, FUNC_ENCRYPTION } from '../constants/AppConstants';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 export type UseAccountReturnType = {
@@ -80,16 +80,25 @@ export const useAccount = (): UseAccountReturnType => {
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
     setIsLoading(true);
-    const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
+    let initE3kitResult: { isOK: boolean; message: string };
+    
+    if (Platform.OS === 'web') {
+      // Web版ではinitializeUserを使用
+      initE3kitResult = await e3kit.initializeUser(authUser.uid);
+    } else {
+      // モバイル版ではensureE3KitInitializedを使用
+      initE3kitResult = await e3kit.ensureE3KitInitialized(authUser.uid);
+    }
+    
     setIsLoading(false);
-    if (!initE3kitOK) {
-      if (initE3kitMessage === 'not-registered') {
+    if (!initE3kitResult.isOK) {
+      if (initE3kitResult.message === 'not-registered') {
         setAccountMessage(t('hooks.message.registEncryptPassword'));
         setAccountFormState('registEncryptPassword');
-      } else if (initE3kitMessage === 'not-localkey') {
+      } else if (initE3kitResult.message === 'not-localkey') {
         setAccountMessage(t('hooks.message.inputEncryptPassword'));
         setAccountFormState('restoreEncryptKey');
-      } else if (initE3kitMessage === 'not-backup') {
+      } else if (initE3kitResult.message === 'not-backup') {
         setAccountMessage(t('hooks.message.registEncryptPassword'));
         setAccountFormState('backupEncryptPassword');
       } else {
@@ -164,6 +173,31 @@ export const useAccount = (): UseAccountReturnType => {
           photoURL: authUser.photoURL,
         })
       );
+
+      // ログイン成功後にE3Kit初期化を試みる（エラーがあってもログインは成功とする）
+      if (FUNC_ENCRYPTION) {
+        if (Platform.OS === 'web') {
+          // Web版ではinitializeUserを使用
+          e3kit.initializeUser(authUser.uid).then((result) => {
+            if (!result.isOK) {
+              // 初期化エラーの処理が必要な場合は、ここで状態を更新
+              if (result.message === 'not-registered' || result.message === 'not-localkey' || result.message === 'not-backup') {
+                // これらのエラーは後で処理される
+              }
+            }
+          });
+        } else {
+          // モバイル版ではensureE3KitInitializedを使用
+          e3kit.ensureE3KitInitialized(authUser.uid).then((result) => {
+            if (!result.isOK) {
+              // 初期化エラーの処理が必要な場合は、ここで状態を更新
+              if (result.message === 'not-registered' || result.message === 'not-localkey' || result.message === 'not-backup') {
+                // これらのエラーは後で処理される
+              }
+            }
+          });
+        }
+      }
 
       return { isOK: true, authUser };
     },
@@ -395,37 +429,21 @@ export const useAccount = (): UseAccountReturnType => {
   );
 
   useEffect(() => {
+    // ログインしていない場合はスキップ
+    if (!isLoggedIn(user)) return;
+
     (async () => {
-      if (FUNC_LOGIN && Platform.OS === 'web') {
-        await initFirebaseAuth();
-      }
-      if (isLoggedIn(user)) {
-        const { isOK, message: initUserMessage } = await e3kit.initializeUser(user.uid);
-        if (!isOK) {
-          console.log('useAccountError:', initUserMessage);
-          //長時間ログイン状態で時間切れ？が発生する。
-          //圏外の場合、ログアウトすると再度ログインできないので以下のメッセージは表示しないようにする。
-
-          //await AlertAsync(t('hooks.message.failInitializeUser'));
-
-          //ToDo データをリセットするか？
-          // await logout();
-          // dispatch(setUserAction(createUserInitialState()));
-          // dispatch(
-          //   editSettingsAction({
-          //     role: undefined,
-          //     isSettingProject: false,
-          //     isSynced: false,
-          //     projectId: undefined,
-          //     projectName: undefined,
-          //     photosToBeDeleted: [],
-          //   })
-          // );
+      try {
+        if (FUNC_LOGIN && Platform.OS === 'web') {
+          await initFirebaseAuth();
         }
+        // E3Kit初期化は必要な時にのみ実行されるため、ここでは行わない
+      } catch (error) {
+        console.error('[useAccount] Unexpected error during initialization:', error);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user.uid]); // user.uidが変更された時のみ実行
 
   return {
     user,

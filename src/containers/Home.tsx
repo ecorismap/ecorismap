@@ -872,19 +872,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!ret) return;
     }
     if (Platform.OS === 'web') {
-      await e3kit.cleanupEncryptKey();
-      await logout();
-      navigation.navigate('Layers');
-      clearProject();
+      // 先に認証不要な画面に遷移してからログアウト処理を行う
       navigation.navigate('Account', {
         accountFormState: 'loginUserAccount',
       });
-    } else {
       await e3kit.cleanupEncryptKey();
-      await logout();
-      navigation.navigate('Layers');
       clearProject();
+      await logout();
+    } else {
+      // 先にHome画面に遷移してからログアウト処理を行う
       navigation.navigate('Home');
+      await e3kit.cleanupEncryptKey();
+      clearProject();
+      await logout();
     }
   }, [clearProject, isSettingProject, logout, navigation]);
 

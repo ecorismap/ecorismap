@@ -9,6 +9,9 @@ import { getStorage, FirebaseStorageTypes } from '@react-native-firebase/storage
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 //import { Alert } from 'react-native';
 
+let isFirebaseInitialized = false;
+let firebaseInitializationPromise: Promise<void> | null = null;
+
 export {
   //@ts-ignore
   EmailAuthProvider,
@@ -54,6 +57,7 @@ const initialize = async (isEmulating = false) => {
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
+  
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
@@ -73,11 +77,34 @@ const initialize = async (isEmulating = false) => {
     firestore.useEmulator('localhost', 8080);
     storage.useEmulator('localhost', 9199);
   }
+  
+  isFirebaseInitialized = true;
+};
+
+// Firebase初期化が完了するまで待つヘルパー関数
+export const waitForFirebaseInitialization = async (): Promise<void> => {
+  if (isFirebaseInitialized) {
+    return;
+  }
+  
+  if (firebaseInitializationPromise) {
+    await firebaseInitializationPromise;
+    return;
+  }
+  
+  // 初期化がまだ開始されていない場合は待機
+  let attempts = 0;
+  while (!isFirebaseInitialized && attempts < 50) { // 最大5秒待機
+    await new Promise(resolve => setTimeout(resolve, 100));
+    attempts++;
+  }
+  
+  if (!isFirebaseInitialized) {
+    throw new Error('Firebase initialization timeout');
+  }
 };
 
 if (FUNC_LOGIN) {
   const isEmulating = false;
-  (async () => {
-    await initialize(isEmulating);
-  })();
+  firebaseInitializationPromise = initialize(isEmulating);
 }
