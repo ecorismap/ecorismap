@@ -138,10 +138,20 @@ export const backupEncryptKey = async (backupPassword: string) => {
 export const cleanupEncryptKey = async () => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
   try {
-    await eThree.cleanup();
+    if (eThree && typeof eThree.cleanup === 'function') {
+      await eThree.cleanup();
+    }
+    // E3Kitの状態をリセット
+    eThree = undefined as any;
+    currentUserId = null;
+    isInitializing = false;
     return { isOK: true };
   } catch (e) {
-    console.log(e);
+    console.log('[cleanupEncryptKey] Error:', e);
+    // エラーが発生しても状態をリセット
+    eThree = undefined as any;
+    currentUserId = null;
+    isInitializing = false;
     return { isOK: false };
   }
 };
@@ -420,6 +430,7 @@ export const loadGroup = async (groupId: string, owner: ProjectType['ownerUid'])
     // loadGroupは既にencryptEThree/decryptEThreeから呼ばれており、
     // それらが初期化を確認しているので、ここでは eThree の存在チェックのみ
     if (!eThree) {
+      console.error('[loadGroup] E3Kit (eThree) is not initialized');
       return { isOK: false, group: undefined };
     }
     
@@ -433,6 +444,8 @@ export const loadGroup = async (groupId: string, owner: ProjectType['ownerUid'])
     }
     return { isOK: true, group };
   } catch (e: any) {
+    console.error('[loadGroup] Error loading group:', e.message || e);
+    console.error('[loadGroup] GroupId:', groupId, 'Owner:', owner);
     return { isOK: false, group: undefined };
   }
 };

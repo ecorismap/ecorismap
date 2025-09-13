@@ -871,21 +871,18 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.logout'));
       if (!ret) return;
     }
-    if (Platform.OS === 'web') {
-      // 先に認証不要な画面に遷移してからログアウト処理を行う
-      navigation.navigate('Account', {
-        accountFormState: 'loginUserAccount',
-      });
+
+    // 暗号化キーのクリーンアップ（エラーが発生しても続行）
+    try {
       await e3kit.cleanupEncryptKey();
-      clearProject();
-      await logout();
-    } else {
-      // 先にHome画面に遷移してからログアウト処理を行う
-      navigation.navigate('Home');
-      await e3kit.cleanupEncryptKey();
-      clearProject();
-      await logout();
+    } catch (error) {
+      // e3kitが初期化されていない場合などのエラーは無視
+      console.warn('Failed to cleanup encrypt key:', error);
     }
+    
+    clearProject();
+    await logout();
+    navigation.navigate('Home');
   }, [clearProject, isSettingProject, logout, navigation]);
 
   const pressZoomIn = useCallback(() => {
