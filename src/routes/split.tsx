@@ -20,7 +20,7 @@ export default function SplitScreen() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerBackTitleVisible: false,
+        headerBackButtonDisplayMode: 'minimal',
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: COLOR.MAIN,

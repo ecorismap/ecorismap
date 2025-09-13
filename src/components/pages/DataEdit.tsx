@@ -69,7 +69,6 @@ export default function DataEditScreen() {
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
-            labelVisible={true}
             label={t('Data.navigation.title')}
             labelStyle={{ fontSize: 11 }}
             onPress={gotoBack}

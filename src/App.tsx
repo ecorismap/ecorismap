@@ -4,6 +4,7 @@ import { LogBox, Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as NavigationBar from 'expo-navigation-bar';
 import Routes from './routes';
 import { persistor, store } from './store';
@@ -77,23 +78,25 @@ export default function App() {
   };
 
   return (
-    <SafeAreaProvider>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          <>
-            <Routes />
-            <StatusBarOverlay />
-            {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
-              <StorageMigrationDialog
-                visible={showMigrationDialog}
-                storageInfo={storageInfo}
-                onClose={() => setShowMigrationDialog(false)}
-                onMigrationComplete={handleMigrationComplete}
-              />
-            )}
-          </>
-        </PersistGate>
-      </Provider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <>
+              <Routes />
+              <StatusBarOverlay />
+              {Platform.OS !== 'web' && storageInfo && StorageMigrationDialog && (
+                <StorageMigrationDialog
+                  visible={showMigrationDialog}
+                  storageInfo={storageInfo}
+                  onClose={() => setShowMigrationDialog(false)}
+                  onMigrationComplete={handleMigrationComplete}
+                />
+              )}
+            </>
+          </PersistGate>
+        </Provider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

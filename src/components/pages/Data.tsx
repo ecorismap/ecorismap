@@ -35,7 +35,6 @@ export default function DataScreen() {
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
-            labelVisible={true}
             label={t('Layers.navigation.title')}
             labelStyle={{ fontSize: 11 }}
             onPress={gotoBack}

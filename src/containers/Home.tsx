@@ -2196,17 +2196,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
                                 <Text style={styles.savingIndicatorText}>{savingTrackStatus.message}</Text>
                                 {savingTrackStatus.phase !== '' && (
                                   <View style={styles.progressBar}>
-                                    <View 
+                                    <View
                                       style={[
                                         styles.progressBarFill,
                                         {
                                           width: `${
-                                            savingTrackStatus.phase === 'merging' ? 25 :
-                                            savingTrackStatus.phase === 'filtering' ? 50 :
-                                            savingTrackStatus.phase === 'cleaning' ? 75 :
-                                            savingTrackStatus.phase === 'saving' ? 90 : 0
-                                          }%`
-                                        }
+                                            savingTrackStatus.phase === 'merging'
+                                              ? 25
+                                              : savingTrackStatus.phase === 'filtering'
+                                              ? 50
+                                              : savingTrackStatus.phase === 'cleaning'
+                                              ? 75
+                                              : savingTrackStatus.phase === 'saving'
+                                              ? 90
+                                              : 0
+                                          }%`,
+                                        },
                                       ]}
                                     />
                                   </View>

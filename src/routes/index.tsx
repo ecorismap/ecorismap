@@ -42,7 +42,7 @@ export type RootStackParamList = {
     project: ProjectType;
     isNew: boolean;
   };
-  SplitScreen: undefined;
+  SplitScreen: { screen?: keyof RootStackParamList; params?: any } | undefined;
   Maps: undefined;
   MapList: undefined;
   Data: {
@@ -105,6 +105,7 @@ export default function Routes() {
       documentTitle={{
         formatter: () => `EcorisMap`,
       }}
+      navigationInChildEnabled
     >
       <Stack.Navigator
         screenOptions={{
@@ -126,7 +127,7 @@ export default function Routes() {
           component={ProjectEdit}
           options={{ title: t('ProjectEdit.navigation.title') }}
         />
-        <Stack.Screen name="SplitScreen" component={SplitScreen} options={{ title: t('Data.navigation.title') }} />
+        <Stack.Screen name="SplitScreen" component={SplitScreen} options={{}} />
       </Stack.Navigator>
     </NavigationContainer>
   );

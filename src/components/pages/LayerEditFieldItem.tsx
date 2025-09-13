@@ -54,7 +54,6 @@ export default function LayerEditFieldItemScreen() {
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
-            labelVisible={true}
             label={t('LayerEdit.navigation.title')}
             labelStyle={{ fontSize: 11 }}
             onPress={gotoBack}

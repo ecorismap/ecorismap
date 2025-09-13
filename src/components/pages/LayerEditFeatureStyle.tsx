@@ -46,12 +46,19 @@ export default function LayerEditFeatureStyleScreen() {
 
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
         <View style={{ flex: 1.5, justifyContent: 'center' }}>
           {/* @ts-ignore */}
           <HeaderBackButton
             {...props_}
-            labelVisible={true}
             label={t('LayerEdit.navigation.title')}
             labelStyle={{ fontSize: 11 }}
             onPress={gotoBack}
@@ -61,7 +68,15 @@ export default function LayerEditFeatureStyleScreen() {
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('LayerEditFeatureStyle.navigation.title')}</Text>
         </View>
-        <View style={{ flex: 1.5, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 13 }}>
+        <View
+          style={{
+            flex: 1.5,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            flexDirection: 'row',
+            paddingRight: 13,
+          }}
+        >
           {isStyleChangeOnly && (
             <HeaderRightButton
               name={LAYEREDIT_BTN.SAVE}
