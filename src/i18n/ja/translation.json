@@ -646,8 +646,8 @@
     },
     "placeholder": {
       "changePassword": "変更前のパスワード",
-      "newPassword": "変更後（半角英数6文字以上）",
-      "password": "password（半角英数6文字以上）",
+      "newPassword": "変更後（半角英数記号6文字以上）",
+      "password": "password（半角英数記号6文字以上）",
       "pin": "PIN(数字4桁)",
       "displayName": "表示名",
       "iconURL": "icon画像URL"

@@ -336,8 +336,8 @@
     },
     "placeholder": {
       "changePassword": "Password before change",
-      "newPassword": "After change (6 or more single-byte alphanumers)",
-      "password": "password (6 or more single-byte alphanumerical characters)",
+      "newPassword": "After change (6 or more alphanumeric characters and symbols)",
+      "password": "password (6 or more alphanumeric characters and symbols)",
       "pin": "PIN (4 digits)",
       "displayName": "display name",
       "iconURL": "icon image URL"
