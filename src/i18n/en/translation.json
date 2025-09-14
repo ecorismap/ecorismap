@@ -710,6 +710,9 @@
       "redo": "redo",
       "syncPosition": "share",
       "download": "DL"
+    },
+    "poi": {
+      "openInGoogleMaps": "To Google Maps"
     }
   },
   "LayerEditFeatureStyle": {

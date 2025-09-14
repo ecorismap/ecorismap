@@ -12,7 +12,7 @@ import {
   Text,
 } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType } from '../types';
+import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType, PoiInfoType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -314,6 +314,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { mapSize, mapRegion, isLandscape } = useWindow();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [poiInfo, setPoiInfo] = useState<PoiInfoType | null>(null);
   const attribution = useMemo(
     () =>
       tileMaps
@@ -405,8 +406,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       changeMapRegion(region);
       !isDrawLineVisible && showDrawLine();
       closeVectorTileInfo();
+      setPoiInfo(null);
     },
-    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine]
+    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo]
   );
 
   // const getGeologyInfo = useCallback(async (latlon: Position) => {
@@ -473,7 +475,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     if (gpsState === 'follow') {
       await toggleGPS('show');
     }
-  }, [gpsState, toggleGPS]);
+    setPoiInfo(null);
+  }, [gpsState, toggleGPS, setPoiInfo]);
 
   const togglePencilMode = useCallback(() => {
     runTutrial('PENCILMODE');
@@ -1792,6 +1795,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isDrawLineVisible,
       isTerrainActive,
       toggleTerrain,
+      poiInfo,
+      setPoiInfo,
     }),
     [
       mapViewRef,
@@ -1814,6 +1819,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isTerrainActive,
       toggleTerrain,
       isPinch,
+      poiInfo,
+      setPoiInfo,
     ]
   );
 

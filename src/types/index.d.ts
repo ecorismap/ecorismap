@@ -47,6 +47,16 @@ export interface MemberLocationType {
   coords: LocationType;
 }
 
+export interface PoiInfoType {
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
+  placeId: string;
+  name: string;
+  position?: { x: number; y: number };
+}
+
 export interface UserType {
   uid: string | undefined;
   email: string | null;

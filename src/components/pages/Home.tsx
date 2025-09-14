@@ -59,6 +59,7 @@ import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { Pressable } from '../atoms/Pressable';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
+import { HomePoiPopup } from '../organisms/HomePoiPopup';
 
 export default function HomeScreen() {
   //console.log('render HomeScreen');
@@ -121,6 +122,7 @@ export default function HomeScreen() {
     panResponder,
     isPinch,
     isDrawLineVisible,
+    setPoiInfo,
   } = useContext(MapViewContext);
 
   // DrawingToolsContext
@@ -434,6 +436,7 @@ export default function HomeScreen() {
           />
           <MapMemoView />
           <HomePopup />
+          <HomePoiPopup />
           {isDrawLineVisible && <SvgView />}
 
           <MapView
@@ -453,6 +456,18 @@ export default function HomeScreen() {
             //@ts-ignore
             mapType={mapType}
             onPanDrag={onDragMapView}
+            onPoiClick={(e) => {
+              const poi = e.nativeEvent;
+              // デバッグ用: POIイベントの内容を確認
+              // console.log('POI clicked:', poi);
+              setPoiInfo({
+                coordinate: poi.coordinate,
+                placeId: poi.placeId,
+                name: poi.name,
+                // positionが含まれていない場合は、座標から画面位置を計算する必要がある
+                position: poi.position,
+              });
+            }}
             {...panResponder.panHandlers}
           >
             {/************** Current Marker ****************** */}

@@ -78,6 +78,11 @@
 		<true/>
 		<key>LSSupportsOpeningDocumentsInPlace</key>
 		<false/>
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>comgooglemaps</string>
+			<string>googlemaps</string>
+		</array>
 		<key>NSAppTransportSecurity</key>
 		<dict>
 			<key>NSAllowsArbitraryLoads</key>

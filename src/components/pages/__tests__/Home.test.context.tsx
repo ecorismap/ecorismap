@@ -40,6 +40,8 @@ export const mockMapViewContextValue: MapViewContextType = {
   isDrawLineVisible: false,
   isTerrainActive: false,
   toggleTerrain: jest.fn(),
+  poiInfo: null,
+  setPoiInfo: jest.fn(),
 };
 
 // Mock implementation for DrawingToolsContext

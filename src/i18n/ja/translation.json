@@ -277,6 +277,9 @@
       "color": "色選択",
       "redo": "やり直す",
       "download": "取得"
+    },
+    "poi": {
+      "openInGoogleMaps": "Google Mapsへ"
     }
   },
   "AccountSettings": {
