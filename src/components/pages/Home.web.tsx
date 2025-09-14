@@ -44,7 +44,6 @@ import { ProjectContext } from '../../contexts/Project';
 import { TileManagementContext } from '../../contexts/TileManagement';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { DataSelectionContext } from '../../contexts/DataSelection';
-import { InfoToolContext } from '../../contexts/InfoTool';
 import { AppStateContext } from '../../contexts/AppState';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
@@ -53,7 +52,7 @@ import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
-import { isLineTool, isMapMemoDrawTool, isPointTool, isPolygonTool } from '../../utils/General';
+import { isMapMemoDrawTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { ReduceMotion, useSharedValue } from 'react-native-reanimated';
@@ -82,9 +81,6 @@ export default function HomeScreen() {
   // DataSelectionContext
   const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord } =
     useContext(DataSelectionContext);
-
-  // InfoToolContext
-  const { isInfoToolActive } = useContext(InfoToolContext);
 
   // AppStateContext
   const { restored, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } =
@@ -857,18 +853,7 @@ export default function HomeScreen() {
           <div {...getRootProps({ className: 'dropzone' })}>
             <input {...getInputProps()} />
 
-            <View
-              style={styles.map}
-              {...(isMapMemoDrawTool(currentMapMemoTool) ||
-              isPolygonTool(currentDrawTool) ||
-              isLineTool(currentDrawTool) ||
-              isPointTool(currentDrawTool) ||
-              currentDrawTool === 'SELECT' ||
-              currentDrawTool === 'DELETE_POINT' ||
-              isInfoToolActive
-                ? panResponder.panHandlers
-                : {})}
-            >
+            <View style={styles.map} {...panResponder.panHandlers}>
               <Map
                 //@ts-ignore
                 mapLib={maplibregl}
