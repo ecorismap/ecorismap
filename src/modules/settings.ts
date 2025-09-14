@@ -37,6 +37,7 @@ export const settingsInitialState: SettingsType = {
   mapList: [],
   gpsAccuracy: 'HIGH',
   agreedTermsVersion: '',
+  lastSeenVersion: '',
   isModalInfoToolHidden: false,
   isModalMapMemoToolHidden: false,
   currentInfoTool: 'ALL_INFO',

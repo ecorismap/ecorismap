@@ -107,6 +107,7 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
         mapList: [],
         gpsAccuracy: 'HIGH' as const,
         agreedTermsVersion: '',
+        lastSeenVersion: '',
         isModalInfoToolHidden: false,
         isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,

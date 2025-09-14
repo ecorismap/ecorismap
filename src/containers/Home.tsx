@@ -50,6 +50,7 @@ import { t } from '../i18n/config';
 import { COLOR } from '../constants/AppConstants';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
+import { HomeModalUpdateInfo } from '../components/organisms/HomeModalUpdateInfo';
 import { usePointTool } from '../hooks/usePointTool';
 import { useDrawTool } from '../hooks/useDrawTool';
 import { MapViewContext } from '../contexts/MapView';
@@ -2219,6 +2220,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
                         <AppStateContext.Provider value={appStateContextValue}>
                           <Home />
                           <HomeModalTermsOfUse />
+                          <HomeModalUpdateInfo />
                           <HomeModalPenPicker
                             modalVisible={visibleMapMemoPen}
                             currentMapMemoTool={currentMapMemoTool}

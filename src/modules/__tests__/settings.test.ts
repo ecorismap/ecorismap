@@ -36,6 +36,7 @@ describe('modules/settings', () => {
     mapList: [],
     gpsAccuracy: 'HIGH',
     agreedTermsVersion: '',
+    lastSeenVersion: '',
     isModalInfoToolHidden: false,
     isModalMapMemoToolHidden: false,
     currentInfoTool: 'ALL_INFO',

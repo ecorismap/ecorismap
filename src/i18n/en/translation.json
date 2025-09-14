@@ -229,7 +229,8 @@
     "move": "U/D",
     "EncryptPassword": "Encryption Password",
     "finish": "finish",
-    "cancel": "cancel"
+    "cancel": "cancel",
+    "ok": "OK"
   },
   "firebase": {
     "message": {
@@ -652,6 +653,19 @@
       "infoTool": {
         "checkbox": "No longer shown. Hold to redisplay."
       }
+    },
+    "updateInfo": {
+      "title": "What's New",
+      "newFeatures": "New Features",
+      "improvements": "Improvements",
+      "bugFixes": "Bug Fixes",
+      "feature1": "The selection button has been removed, allowing you to select points and lines at any time.",
+      "feature2": "You can now jump to information by clicking on the POI in Google Maps",
+      "feature3": "You can now jump to Google Maps by pressing and holding a map",
+      "improvement1": "Improved logout process",
+      "improvement2": "Updated dependencies",
+      "bugFix1": "Fixed PMTiles numeric attribute errors on iOS",
+      "bugFix2": "Various minor bug fixes"
     },
     "penPicker": {
       "thin": "Thin",

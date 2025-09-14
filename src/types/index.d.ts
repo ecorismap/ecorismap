@@ -365,6 +365,7 @@ export interface SettingsType {
   mapList: TileMapItemType[];
   gpsAccuracy: GpsAccuracyType;
   agreedTermsVersion: string;
+  lastSeenVersion: string;
   isModalInfoToolHidden: boolean;
   isModalMapMemoToolHidden: boolean;
   currentInfoTool: InfoToolType;

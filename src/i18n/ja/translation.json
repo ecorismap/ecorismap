@@ -171,7 +171,8 @@
     "userName": "User",
     "move": "上下",
     "finish": "確定",
-    "cancel": "取消"
+    "cancel": "取消",
+    "ok": "OK"
   },
   "Home": {
     "confirm": {
@@ -219,6 +220,19 @@
       "infoTool": {
         "checkbox": "次回は表示しない。ボタンを長押しで再表示します。"
       }
+    },
+    "updateInfo": {
+      "title": "更新情報",
+      "newFeatures": "新機能",
+      "improvements": "改善",
+      "bugFixes": "バグ修正",
+      "feature1": "選択ボタンを廃止して、ポイントやラインを常時選択可能にしました",
+      "feature2": "Google MapsのPOIをクリックして情報にジャンプできるようになりました",
+      "feature3": "地図を長押しで、Google Mapsへジャンプできるようになりました",
+      "improvement1": "ログアウト処理の改善",
+      "improvement2": "依存関係のアップデート",
+      "bugFix1": "iOSでPMTilesの数値属性のエラーを修正",
+      "bugFix2": "その他の細かいバグ修正"
     },
     "penPicker": {
       "thin": "細",
