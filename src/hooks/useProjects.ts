@@ -2,7 +2,10 @@ import { useCallback, useState } from 'react';
 import { ProjectType, UserType } from '../types';
 import * as projectRepository from '../lib/firebase/firestore';
 import { setProjectsAction } from '../modules/projects';
-import { toggleFavorite as toggleFavoriteAction, setShowOnlyFavorites as setShowOnlyFavoritesAction } from '../modules/favoriteProjects';
+import {
+  toggleFavorite as toggleFavoriteAction,
+  setShowOnlyFavorites as setShowOnlyFavoritesAction,
+} from '../modules/favoriteProjects';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { ulid } from 'ulid';
@@ -86,13 +89,27 @@ export const useProjects = (): UseProjectsReturnType => {
     }
   }, [dispatch, user]);
 
-  const toggleFavorite = useCallback((projectId: string) => {
-    dispatch(toggleFavoriteAction(projectId));
-  }, [dispatch]);
+  const toggleFavorite = useCallback(
+    (projectId: string) => {
+      dispatch(toggleFavoriteAction(projectId));
+    },
+    [dispatch]
+  );
 
   const toggleShowOnlyFavorites = useCallback(() => {
     dispatch(setShowOnlyFavoritesAction(!showOnlyFavorites));
   }, [dispatch, showOnlyFavorites]);
 
-  return { user, isLoading, projects, favoriteProjectIds, showOnlyFavorites, ownerProjectsCount, fetchProjects, generateProject, toggleFavorite, toggleShowOnlyFavorites } as const;
+  return {
+    user,
+    isLoading,
+    projects,
+    favoriteProjectIds,
+    showOnlyFavorites,
+    ownerProjectsCount,
+    fetchProjects,
+    generateProject,
+    toggleFavorite,
+    toggleShowOnlyFavorites,
+  } as const;
 };

@@ -11,6 +11,7 @@ import { ProjectsContext } from '../contexts/Projects';
 import { usePermission } from '../hooks/usePermission';
 import { useAccount } from '../hooks/useAccount';
 import { Platform } from 'react-native';
+import { isLoggedIn } from '../utils/Account';
 
 export default function ProjectsContainers({ navigation, route }: Props_Projects) {
   const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
@@ -104,13 +105,13 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, []);
 
   useEffect(() => {
-    if (projects.length === 0 || route.params?.reload) {
+    if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
       (async () => {
         await reloadProjects();
         navigation.setParams({ reload: undefined });
       })();
     }
-  }, [navigation, projects.length, reloadProjects, route.params?.reload]);
+  }, [navigation, projects.length, reloadProjects, route.params?.reload, user]);
 
   return (
     <ProjectsContext.Provider

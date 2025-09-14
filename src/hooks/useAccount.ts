@@ -80,16 +80,7 @@ export const useAccount = (): UseAccountReturnType => {
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
     setIsLoading(true);
-    let initE3kitResult: { isOK: boolean; message: string };
-    
-    if (Platform.OS === 'web') {
-      // Web版ではinitializeUserを使用
-      initE3kitResult = await e3kit.initializeUser(authUser.uid);
-    } else {
-      // モバイル版ではensureE3KitInitializedを使用
-      initE3kitResult = await e3kit.ensureE3KitInitialized(authUser.uid);
-    }
-    
+    const initE3kitResult = await e3kit.ensureE3KitInitialized(authUser.uid);
     setIsLoading(false);
     if (!initE3kitResult.isOK) {
       if (initE3kitResult.message === 'not-registered') {
@@ -176,27 +167,18 @@ export const useAccount = (): UseAccountReturnType => {
 
       // ログイン成功後にE3Kit初期化を試みる（エラーがあってもログインは成功とする）
       if (FUNC_ENCRYPTION) {
-        if (Platform.OS === 'web') {
-          // Web版ではinitializeUserを使用
-          e3kit.initializeUser(authUser.uid).then((result) => {
-            if (!result.isOK) {
-              // 初期化エラーの処理が必要な場合は、ここで状態を更新
-              if (result.message === 'not-registered' || result.message === 'not-localkey' || result.message === 'not-backup') {
-                // これらのエラーは後で処理される
-              }
+        e3kit.ensureE3KitInitialized(authUser.uid).then((result) => {
+          if (!result.isOK) {
+            // 初期化エラーの処理が必要な場合は、ここで状態を更新
+            if (
+              result.message === 'not-registered' ||
+              result.message === 'not-localkey' ||
+              result.message === 'not-backup'
+            ) {
+              // これらのエラーは後で処理される
             }
-          });
-        } else {
-          // モバイル版ではensureE3KitInitializedを使用
-          e3kit.ensureE3KitInitialized(authUser.uid).then((result) => {
-            if (!result.isOK) {
-              // 初期化エラーの処理が必要な場合は、ここで状態を更新
-              if (result.message === 'not-registered' || result.message === 'not-localkey' || result.message === 'not-backup') {
-                // これらのエラーは後で処理される
-              }
-            }
-          });
-        }
+          }
+        });
       }
 
       return { isOK: true, authUser };
@@ -438,8 +420,7 @@ export const useAccount = (): UseAccountReturnType => {
           await initFirebaseAuth();
         }
         // E3Kit初期化は必要な時にのみ実行されるため、ここでは行わない
-      } catch (error) {
-      }
+      } catch (error) {}
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.uid]); // user.uidが変更された時のみ実行

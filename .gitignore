@@ -120,4 +120,7 @@ modules/react-native-gdalwarp/ios/Frameworks/
 
 maplibre-native/
 
+# Pickle files
+*.pkl
+
 *.serena/*
