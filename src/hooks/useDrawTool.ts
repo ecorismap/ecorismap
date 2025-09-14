@@ -194,6 +194,15 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     findRecord,
   } = useRecord();
 
+  // 初期化時にcurrentInfoToolを'ALL_INFO'に強制設定
+  // InfoToolを非表示にしたので、互換性のためにALL_INFOに固定
+  useEffect(() => {
+    if (currentInfoTool !== 'ALL_INFO') {
+      dispatch(editSettingsAction({ currentInfoTool: 'ALL_INFO' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const convertPointFeatureToDrawLine = useCallback(
     (layerId: string, features: PointRecordType[]) => {
       features.forEach((record) => {
@@ -421,13 +430,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       // まずdrawLineをクリアしてから選択されたフィーチャーを追加
       resetDrawTools();
       convertFeatureToDrawLine(pXY);
-      
+
       // 選択されたフィーチャーが存在するかチェック
       if (drawLine.current.length === 0) return false;
-      
+
       // 最初の（そして唯一の）フィーチャーを選択
       const index = 0;
-      
+
       changeToEditingObject(index, featureButton);
       return true;
     },
@@ -581,9 +590,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     if (!isEditingObject.current) return false;
     const index = editingObjectIndex.current;
     if (index === -1) return false;
-    
+
     const lineXY = drawLine.current[index].xy;
-    
+
     // 最小ポイント数のチェック
     if (currentDrawTool === 'PLOT_LINE' && lineXY.length < 2) return false;
     if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
@@ -593,12 +602,12 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       latlon: drawLine.current[index].latlon,
       action: 'FINISH',
     });
-    
+
     // ポリゴンの場合は閉じる
     if (currentDrawTool === 'PLOT_POLYGON' && lineXY[0] !== lineXY[lineXY.length - 1]) {
       lineXY.push(lineXY[0]);
     }
-    
+
     drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
     drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
     editingObjectIndex.current = -1;
@@ -608,16 +617,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     editingNodeIndex.current = -1;
     setRedraw(ulid());
     return true;
-  }, [
-    currentDrawTool,
-    drawLine,
-    editingObjectIndex,
-    isEditingObject,
-    mapRegion,
-    mapSize,
-    mapViewRef,
-    undoLine,
-  ]);
+  }, [currentDrawTool, drawLine, editingObjectIndex, isEditingObject, mapRegion, mapSize, mapViewRef, undoLine]);
 
   const updateNodePosition = useCallback(() => {
     const index = editingObjectIndex.current;

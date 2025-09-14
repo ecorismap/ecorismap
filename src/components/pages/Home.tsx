@@ -54,7 +54,7 @@ import Animated, { useAnimatedStyle, useSharedValue, interpolate, ReduceMotion }
 import { PDFArea } from '../organisms/HomePDFArea';
 import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
-import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+// import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
 import { Pressable } from '../atoms/Pressable';
@@ -113,7 +113,6 @@ export default function HomeScreen() {
     zoom,
     zoomDecimal,
     onRegionChangeMapView,
-    onPressMapView,
     onDragMapView,
     pressZoomIn,
     pressZoomOut,
@@ -453,7 +452,6 @@ export default function HomeScreen() {
             moveOnMarkerPress={false}
             //@ts-ignore
             mapType={mapType}
-            onPress={onPressMapView}
             onPanDrag={onDragMapView}
             {...panResponder.panHandlers}
           >
@@ -631,7 +629,9 @@ export default function HomeScreen() {
           )}
           {!(downloadMode || exportPDFMode) && <HomeGPSButton gpsState={gpsState} onPressGPS={pressGPS} />}
           {<HomeAttributionText bottom={1 + insets.bottom} attribution={attribution} />}
+          {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
+          */}
           {!(downloadMode || exportPDFMode) && featureButton !== 'NONE' && featureButton !== 'MEMO' && (
             <HomeDrawTools />
           )}

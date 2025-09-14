@@ -9,7 +9,6 @@ export interface MapViewContextType {
   zoom: number;
   zoomDecimal: number;
   onRegionChangeMapView: (region: Region | ViewState, isGestureMove?: boolean) => void;
-  onPressMapView: (e: any) => void;
   onDragMapView: () => void;
   onDrop: (newPoint: any) => void;
   pressZoomIn: () => void;

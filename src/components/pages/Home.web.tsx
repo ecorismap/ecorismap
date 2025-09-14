@@ -62,7 +62,7 @@ import { HomePDFButtons } from '../organisms/HomePDFButtons';
 import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 //import Dexie from 'dexie';
 
-import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
+// import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { encode as fastPngEncode } from 'fast-png';
 import { tileToWebMercator } from '../../utils/Tile';
 import { fromBlob } from 'geotiff';
@@ -104,7 +104,6 @@ export default function HomeScreen() {
     panResponder,
     isDrawLineVisible,
     isPinch,
-    onPressMapView,
     isTerrainActive,
     toggleTerrain,
   } = useContext(MapViewContext);
@@ -883,7 +882,6 @@ export default function HomeScreen() {
                 onLoad={onMapLoad}
                 cursor={currentDrawTool === 'PLOT_POINT' ? 'crosshair' : 'auto'}
                 //interactiveLayerIds={interactiveLayerIds} //ラインだけに限定する場合
-                onClick={onPressMapView}
                 //onMouseMove={onMouseMove}
                 dragPan={
                   isPinch ||
@@ -994,7 +992,9 @@ export default function HomeScreen() {
 
           {!FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
 
+          {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}
+          */}
           {featureButton !== 'NONE' && featureButton !== 'MEMO' && <HomeDrawTools />}
           {featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}

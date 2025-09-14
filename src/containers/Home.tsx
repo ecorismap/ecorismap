@@ -11,7 +11,7 @@ import {
   StyleSheet,
   Text,
 } from 'react-native';
-import MapView, { MapPressEvent, Region } from 'react-native-maps';
+import MapView, { Region } from 'react-native-maps';
 import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -25,7 +25,7 @@ import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
-import { MapLayerMouseEvent, MapRef, ViewState } from 'react-map-gl/maplibre';
+import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import { validateStorageLicense } from '../utils/Project';
 import {
@@ -61,7 +61,7 @@ import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
 import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
-import { latLonToXY, xyArrayToLatLonObjects } from '../utils/Coords';
+import { xyArrayToLatLonObjects } from '../utils/Coords';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useNetInfo } from '@react-native-community/netinfo';
@@ -85,6 +85,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const isMapDragging = useRef(false);
+  const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
@@ -463,25 +465,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
     },
     [closeVectorTileInfo, getVectorTileInfo, getVectorTileInfoForWeb, openVectorTileInfo, zoom]
-  );
-
-  const onPressMapView = useCallback(
-    async (event: MapPressEvent | MapLayerMouseEvent) => {
-      if (isInfoToolActive || featureButton !== 'NONE') return;
-      let latlon: Position;
-      let xy: Position;
-      if (Platform.OS === 'web') {
-        const e = event as MapLayerMouseEvent;
-        xy = [e.point.x, e.point.y];
-        latlon = [e.lngLat.lng, e.lngLat.lat];
-      } else {
-        const e = event as MapPressEvent;
-        latlon = [e.nativeEvent.coordinate.longitude, e.nativeEvent.coordinate.latitude];
-        xy = latLonToXY(latlon, mapRegion, mapSize, mapViewRef.current);
-      }
-      await getInfoOfMap(latlon, xy);
-    },
-    [featureButton, getInfoOfMap, isInfoToolActive, mapRegion, mapSize]
   );
 
   const onDragMapView = useCallback(async () => {
@@ -879,7 +862,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       // e3kitが初期化されていない場合などのエラーは無視
       console.warn('Failed to cleanup encrypt key:', error);
     }
-    
+
     clearProject();
     await logout();
     navigation.navigate('Home');
@@ -1168,14 +1151,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     async (event: GestureResponderEvent) => {
       if (isEditingRecord) {
         await AlertAsync(t('Home.alert.discardChanges'));
-        return;
+        return false;
       }
 
       const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
       if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
         unselectRecord();
-        return;
+        return true; // 何も見つからなかったのでtrueを返す
       }
       selectRecord(layer.id, { ...feature });
 
@@ -1189,6 +1172,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         targetData: { ...feature },
         targetLayer: { ...layer },
       });
+      return false; // フィーチャーが見つかったのでfalseを返す
     },
     [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
   );
@@ -1205,8 +1189,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (isPencilModeActive && isPencilTouch.current === false) {
         hideDrawLine();
         setIsPinch(true);
-      } else if (isInfoToolActive) {
-        await getInfoOfFeature(event);
       } else if (currentDrawTool === 'MOVE') {
         hideDrawLine();
       } else if (currentDrawTool === 'SPLIT_LINE') {
@@ -1264,14 +1246,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentMapMemoTool,
       featureButton,
       finishEditPosition,
-      getInfoOfFeature,
       getPXY,
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
       handleGrantSplitLine,
       hideDrawLine,
-      isInfoToolActive,
       isPencilModeActive,
       isPencilTouch,
       navigation,
@@ -1287,6 +1267,26 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     (event: GestureResponderEvent, gesture) => {
       if (!event.nativeEvent.touches.length) return;
       const pXY = getPXY(event);
+
+      // 地図をドラッグしていることを検出
+      if (
+        currentDrawTool === 'NONE' &&
+        currentMapMemoTool === 'NONE' &&
+        !isPlotTool(currentDrawTool) &&
+        !isFreehandTool(currentDrawTool)
+      ) {
+        isMapDragging.current = true;
+
+        // 既存のタイムアウトをクリア
+        if (dragTimeoutRef.current) {
+          clearTimeout(dragTimeoutRef.current);
+        }
+
+        // 300ms後にドラッグ状態をリセット
+        dragTimeoutRef.current = setTimeout(() => {
+          isMapDragging.current = false;
+        }, 300);
+      }
 
       if (currentDrawTool === 'MOVE' || isPinch) {
         return;
@@ -1430,6 +1430,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         handleReleaseFreehand();
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
+      } else if (!isMapDragging.current) {
+        // 地図をドラッグしていない場合のみ情報取得
+        // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
+        const noFeatureFound = await getInfoOfFeature(event);
+        if (noFeatureFound) {
+          // フィーチャーが見つからなかった場合、getInfoOfMapを実行
+          const xy = pXY;
+          const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
+          if (latLonArray && latLonArray.length > 0) {
+            const latlon: Position = [latLonArray[0].longitude, latLonArray[0].latitude];
+            await getInfoOfMap(latlon, xy);
+          }
+        }
       }
     },
     [
@@ -1437,6 +1450,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       currentMapMemoTool,
       deleteDraw,
       finishEditPosition,
+      getInfoOfFeature,
+      getInfoOfMap,
       getPXY,
       handleReleaseDeletePoint,
       handleReleaseFreehand,
@@ -1721,6 +1736,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // クリーンアップ処理: ドラッグタイムアウトをクリア
+  useEffect(() => {
+    return () => {
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // MapViewContextの値をメモ化
   const mapViewContextValue = useMemo(
     () => ({
@@ -1729,7 +1753,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       zoom,
       zoomDecimal,
       onRegionChangeMapView,
-      onPressMapView,
       onDragMapView,
       onDrop,
       pressZoomIn,
@@ -1759,7 +1782,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       zoom,
       zoomDecimal,
       onRegionChangeMapView,
-      onPressMapView,
       onDragMapView,
       onDrop,
       pressZoomIn,

@@ -20,7 +20,6 @@ export const mockMapViewContextValue: MapViewContextType = {
   zoom: 10,
   zoomDecimal: 10.0,
   onRegionChangeMapView: jest.fn(),
-  onPressMapView: jest.fn(),
   onDragMapView: jest.fn(),
   onDrop: jest.fn(),
   pressZoomIn: jest.fn(),
