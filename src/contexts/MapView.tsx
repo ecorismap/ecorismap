@@ -1,7 +1,7 @@
 import React from 'react';
 import MapView, { Region } from 'react-native-maps';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { LocationStateType, PoiInfoType } from '../types';
+import { LocationStateType, PoiInfoType, MapLocationInfoType } from '../types';
 
 export interface MapViewContextType {
   mapViewRef: React.RefObject<MapView | MapRef | null>;
@@ -31,6 +31,8 @@ export interface MapViewContextType {
   toggleTerrain?: () => void;
   poiInfo: PoiInfoType | null;
   setPoiInfo: (poi: PoiInfoType | null) => void;
+  mapLocationInfo: MapLocationInfoType | null;
+  setMapLocationInfo: (location: MapLocationInfoType | null) => void;
 }
 
 export const MapViewContext = React.createContext<MapViewContextType>({} as MapViewContextType);

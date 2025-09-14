@@ -57,6 +57,14 @@ export interface PoiInfoType {
   position?: { x: number; y: number };
 }
 
+export interface MapLocationInfoType {
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
+  position?: { x: number; y: number };
+}
+
 export interface UserType {
   uid: string | undefined;
   email: string | null;

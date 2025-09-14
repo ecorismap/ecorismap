@@ -42,6 +42,8 @@ export const mockMapViewContextValue: MapViewContextType = {
   toggleTerrain: jest.fn(),
   poiInfo: null,
   setPoiInfo: jest.fn(),
+  mapLocationInfo: null,
+  setMapLocationInfo: jest.fn(),
 };
 
 // Mock implementation for DrawingToolsContext

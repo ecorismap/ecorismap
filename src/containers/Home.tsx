@@ -12,7 +12,16 @@ import {
   Text,
 } from 'react-native';
 import MapView, { Region } from 'react-native-maps';
-import { FeatureButtonType, DrawToolType, MapMemoToolType, LayerType, RecordType, InfoToolType, PoiInfoType } from '../types';
+import {
+  FeatureButtonType,
+  DrawToolType,
+  MapMemoToolType,
+  LayerType,
+  RecordType,
+  InfoToolType,
+  PoiInfoType,
+  MapLocationInfoType,
+} from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -88,6 +97,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const isMapDragging = useRef(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
@@ -315,6 +325,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [poiInfo, setPoiInfo] = useState<PoiInfoType | null>(null);
+  const [mapLocationInfo, setMapLocationInfo] = useState<MapLocationInfoType | null>(null);
   const attribution = useMemo(
     () =>
       tileMaps
@@ -407,8 +418,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       !isDrawLineVisible && showDrawLine();
       closeVectorTileInfo();
       setPoiInfo(null);
+      setMapLocationInfo(null);
     },
-    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo]
+    [changeMapRegion, closeVectorTileInfo, isDrawLineVisible, showDrawLine, setPoiInfo, setMapLocationInfo]
   );
 
   // const getGeologyInfo = useCallback(async (latlon: Position) => {
@@ -476,7 +488,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await toggleGPS('show');
     }
     setPoiInfo(null);
-  }, [gpsState, toggleGPS, setPoiInfo]);
+    setMapLocationInfo(null);
+  }, [gpsState, toggleGPS, setPoiInfo, setMapLocationInfo]);
 
   const togglePencilMode = useCallback(() => {
     runTutrial('PENCILMODE');
@@ -1188,9 +1201,32 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!event.nativeEvent.touches.length) return;
 
       const pXY = getPXY(event);
-      
+
       // ドラッグ開始位置を記録
       dragStartPosition.current = { x: pXY[0], y: pXY[1] };
+
+      // 長押しタイマーをクリア（既存のタイマーがある場合）
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+
+      // 長押し検出タイマーを開始（800ms）
+      if (currentDrawTool === 'NONE' && currentMapMemoTool === 'NONE' && featureButton !== 'MEMO') {
+        longPressTimerRef.current = setTimeout(async () => {
+          // 長押しが検出された場合、地図の位置でGoogle Mapsへのポップアップを表示
+          const xy = pXY;
+          const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
+          if (latLonArray && latLonArray.length > 0) {
+            setMapLocationInfo({
+              coordinate: {
+                latitude: latLonArray[0].latitude,
+                longitude: latLonArray[0].longitude,
+              },
+              position: { x: xy[0], y: xy[1] },
+            });
+          }
+        }, 800);
+      }
 
       //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
@@ -1267,6 +1303,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       savePolygon,
       setDrawTool,
       setIsPinch,
+      mapRegion,
+      mapSize,
+      setMapLocationInfo,
     ]
   );
   const handlePanResponderMove = useCallback(
@@ -1287,10 +1326,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           const dx = pXY[0] - dragStartPosition.current.x;
           const dy = pXY[1] - dragStartPosition.current.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          
+
           // 移動距離が閾値（5ピクセル）を超えた場合のみドラッグと判定
           if (distance > 5) {
             isMapDragging.current = true;
+
+            // 長押しタイマーをクリア（移動が検出されたため）
+            if (longPressTimerRef.current) {
+              clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
 
             // 既存のタイムアウトをクリア
             if (dragTimeoutRef.current) {
@@ -1362,9 +1407,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
       isPencilTouch.current = undefined;
-      
+
       // ドラッグ開始位置をリセット
       dragStartPosition.current = null;
+
+      // 長押しタイマーをクリア
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
 
       const pXY = getPXY(event);
 
@@ -1756,11 +1807,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // クリーンアップ処理: ドラッグタイムアウトをクリア
+  // クリーンアップ処理: タイマーをクリア
   useEffect(() => {
     return () => {
       if (dragTimeoutRef.current) {
         clearTimeout(dragTimeoutRef.current);
+      }
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
       }
     };
   }, []);
@@ -1797,6 +1851,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       toggleTerrain,
       poiInfo,
       setPoiInfo,
+      mapLocationInfo,
+      setMapLocationInfo,
     }),
     [
       mapViewRef,
@@ -1821,6 +1877,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isPinch,
       poiInfo,
       setPoiInfo,
+      mapLocationInfo,
+      setMapLocationInfo,
     ]
   );
 
