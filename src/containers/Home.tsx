@@ -87,6 +87,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const bottomSheetRef = useRef<BottomSheet>(null);
   const isMapDragging = useRef(false);
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
 
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
@@ -860,7 +861,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await e3kit.cleanupEncryptKey();
     } catch (error) {
       // e3kitが初期化されていない場合などのエラーは無視
-      console.warn('Failed to cleanup encrypt key:', error);
+      // Failed to cleanup encrypt key
     }
 
     clearProject();
@@ -1184,6 +1185,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       if (!event.nativeEvent.touches.length) return;
 
       const pXY = getPXY(event);
+      
+      // ドラッグ開始位置を記録
+      dragStartPosition.current = { x: pXY[0], y: pXY[1] };
 
       //if (route.params?.mode === 'editPosition') hideDrawLine();
       if (isPencilModeActive && isPencilTouch.current === false) {
@@ -1275,17 +1279,27 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         !isPlotTool(currentDrawTool) &&
         !isFreehandTool(currentDrawTool)
       ) {
-        isMapDragging.current = true;
+        // ドラッグ開始位置からの移動距離を計算
+        if (dragStartPosition.current) {
+          const dx = pXY[0] - dragStartPosition.current.x;
+          const dy = pXY[1] - dragStartPosition.current.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          // 移動距離が閾値（5ピクセル）を超えた場合のみドラッグと判定
+          if (distance > 5) {
+            isMapDragging.current = true;
 
-        // 既存のタイムアウトをクリア
-        if (dragTimeoutRef.current) {
-          clearTimeout(dragTimeoutRef.current);
+            // 既存のタイムアウトをクリア
+            if (dragTimeoutRef.current) {
+              clearTimeout(dragTimeoutRef.current);
+            }
+
+            // 300ms後にドラッグ状態をリセット
+            dragTimeoutRef.current = setTimeout(() => {
+              isMapDragging.current = false;
+            }, 300);
+          }
         }
-
-        // 300ms後にドラッグ状態をリセット
-        dragTimeoutRef.current = setTimeout(() => {
-          isMapDragging.current = false;
-        }, 300);
       }
 
       if (currentDrawTool === 'MOVE' || isPinch) {
@@ -1345,6 +1359,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
       isPencilTouch.current = undefined;
+      
+      // ドラッグ開始位置をリセット
+      dragStartPosition.current = null;
 
       const pXY = getPXY(event);
 
