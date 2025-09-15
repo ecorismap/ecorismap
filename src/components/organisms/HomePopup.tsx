@@ -8,37 +8,43 @@ export const HomePopup = React.memo(() => {
   const { vectorTileInfo } = useContext(InfoToolContext);
   const WIDTH = 200;
   const HEIGHT = 150;
-  
+
   // プロパティを表示用に整形
   const renderProperties = () => {
     if (!vectorTileInfo?.properties || vectorTileInfo.properties.length === 0) return null;
-    
+
     return vectorTileInfo.properties.map((property, groupIndex) => (
       <View key={groupIndex}>
         {groupIndex > 0 && (
-          <View style={{ 
-            height: 1, 
-            backgroundColor: COLOR.GRAY1, 
-            marginVertical: 12,
-            marginHorizontal: -12,
-          }} />
+          <View
+            style={{
+              height: 1,
+              backgroundColor: COLOR.GRAY1,
+              marginVertical: 12,
+              marginHorizontal: -12,
+            }}
+          />
         )}
         {Object.entries(property).map(([key, value], index) => (
           <View key={`${groupIndex}-${index}`} style={{ marginBottom: 8 }}>
-            <Text style={{ 
-              fontSize: 11, 
-              color: COLOR.GRAY2,
-              marginBottom: 2,
-              fontWeight: '600',
-              textTransform: 'capitalize',
-            }}>
+            <Text
+              style={{
+                fontSize: 11,
+                color: COLOR.GRAY2,
+                marginBottom: 2,
+                fontWeight: '600',
+                textTransform: 'capitalize',
+              }}
+            >
               {key.replace(/_/g, ' ')}
             </Text>
-            <Text style={{ 
-              fontSize: 13, 
-              color: COLOR.BLACK,
-              lineHeight: 18,
-            }}>
+            <Text
+              style={{
+                fontSize: 13,
+                color: COLOR.BLACK,
+                lineHeight: 18,
+              }}
+            >
               {value !== null && value !== undefined ? String(value) : '-'}
             </Text>
           </View>
@@ -46,7 +52,7 @@ export const HomePopup = React.memo(() => {
       </View>
     ));
   };
-  
+
   return vectorTileInfo ? (
     <View
       style={{
@@ -64,7 +70,7 @@ export const HomePopup = React.memo(() => {
           maxHeight: HEIGHT,
           backgroundColor: COLOR.WHITE,
           borderRadius: 8,
-          shadowColor: '#000',
+          shadowColor: COLOR.BLACK,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
           shadowRadius: 4,
