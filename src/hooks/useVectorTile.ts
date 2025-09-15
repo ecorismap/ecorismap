@@ -9,7 +9,7 @@ export type UseVectorTileReturnType = {
   vectorTileInfo:
     | {
         position: Position;
-        properties: string;
+        properties: { [key: string]: any }[];
       }
     | undefined;
   getVectorTileInfo: (
@@ -34,7 +34,7 @@ export const useVectorTile = (): UseVectorTileReturnType => {
   const [vectorTileInfo, setVectorTileInfo] = useState<
     | {
         position: Position;
-        properties: string;
+        properties: { [key: string]: any }[];
       }
     | undefined
   >(undefined);
@@ -65,15 +65,7 @@ export const useVectorTile = (): UseVectorTileReturnType => {
       setVectorTileInfo(undefined);
       return;
     }
-    const propertiesStr = properties
-      .map((property) =>
-        Object.keys(property)
-          //@ts-ignore
-          .map((key) => `${key} : ${property[key]}`)
-          .join('\n')
-      )
-      .join('\n-----------------------\n');
-    setVectorTileInfo({ position, properties: propertiesStr });
+    setVectorTileInfo({ position, properties });
   }, []);
 
   return {

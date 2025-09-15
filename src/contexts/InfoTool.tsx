@@ -10,7 +10,7 @@ export interface InfoToolContextType {
   vectorTileInfo:
     | {
         position: Position;
-        properties: string;
+        properties: { [key: string]: any }[];
       }
     | undefined;
 

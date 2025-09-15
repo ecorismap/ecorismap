@@ -1,15 +1,52 @@
 import React, { useContext } from 'react';
 import { View, Text } from 'react-native';
-import { Pressable } from '../atoms/Pressable';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { COLOR } from '../../constants/AppConstants';
-import { FontAwesome } from '@expo/vector-icons';
 import { ScrollView } from 'react-native-gesture-handler';
 
 export const HomePopup = React.memo(() => {
-  const { vectorTileInfo, closeVectorTileInfo } = useContext(InfoToolContext);
-  const WIDTH = 250;
-  const HEIGHT = 120;
+  const { vectorTileInfo } = useContext(InfoToolContext);
+  const WIDTH = 200;
+  const HEIGHT = 150;
+  
+  // プロパティを表示用に整形
+  const renderProperties = () => {
+    if (!vectorTileInfo?.properties || vectorTileInfo.properties.length === 0) return null;
+    
+    return vectorTileInfo.properties.map((property, groupIndex) => (
+      <View key={groupIndex}>
+        {groupIndex > 0 && (
+          <View style={{ 
+            height: 1, 
+            backgroundColor: COLOR.GRAY1, 
+            marginVertical: 12,
+            marginHorizontal: -12,
+          }} />
+        )}
+        {Object.entries(property).map(([key, value], index) => (
+          <View key={`${groupIndex}-${index}`} style={{ marginBottom: 8 }}>
+            <Text style={{ 
+              fontSize: 11, 
+              color: COLOR.GRAY2,
+              marginBottom: 2,
+              fontWeight: '600',
+              textTransform: 'capitalize',
+            }}>
+              {key.replace(/_/g, ' ')}
+            </Text>
+            <Text style={{ 
+              fontSize: 13, 
+              color: COLOR.BLACK,
+              lineHeight: 18,
+            }}>
+              {value !== null && value !== undefined ? String(value) : '-'}
+            </Text>
+          </View>
+        ))}
+      </View>
+    ));
+  };
+  
   return vectorTileInfo ? (
     <View
       style={{
@@ -20,30 +57,22 @@ export const HomePopup = React.memo(() => {
         left: vectorTileInfo.position[0] - WIDTH / 2,
       }}
     >
-      {/* クローズボタン */}
-      <Pressable
-        style={{
-          position: 'absolute',
-          top: 5,
-          right: 5,
-          zIndex: 1001, // 吹き出しよりも上に表示
-        }}
-        onPress={closeVectorTileInfo} // クローズボタンが押されたときの動作
-      >
-        <FontAwesome name="close" size={24} color="black" />
-      </Pressable>
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, padding: 8 }}
+        contentContainerStyle={{ padding: 12 }}
         style={{
           width: WIDTH,
-          height: HEIGHT,
+          maxHeight: HEIGHT,
           backgroundColor: COLOR.WHITE,
-          borderRadius: 5,
+          borderRadius: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
         }}
+        showsVerticalScrollIndicator={true}
       >
-        <ScrollView horizontal={true}>
-          <Text>{vectorTileInfo.properties}</Text>
-        </ScrollView>
+        {renderProperties()}
       </ScrollView>
       <View
         // eslint-disable-next-line react-native/no-color-literals
