@@ -58,7 +58,7 @@ export type UseRecordReturnType = {
     layer: LayerType | undefined;
     record: RecordType | undefined;
   };
-  addTrackRecord: (locations: LocationType[]) => {
+  addTrackRecord: (locations: LocationType[], options?: { distance?: string }) => {
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
@@ -276,7 +276,7 @@ export const useRecord = (): UseRecordReturnType => {
   );
 
   const addTrackRecord = useCallback(
-    (locations: LocationType[]) => {
+    (locations: LocationType[], options?: { distance?: string }) => {
       let trackLayer = layers.find((l) => l.id === 'track');
       if (!trackLayer) {
         // Trackレイヤーがなければ初期状態から作成
@@ -287,6 +287,12 @@ export const useRecord = (): UseRecordReturnType => {
       const trackDataSet = lineDataSet.find((d) => d.layerId === trackLayer!.id && d.userId === dataUser.uid);
       const trackRecordSet = trackDataSet ? trackDataSet.data : [];
       const record = generateRecord('LINE', trackLayer, trackRecordSet, locations);
+      
+      // 距離情報が提供されていれば、cmtフィールドに追加
+      if (options?.distance && record.field) {
+        record.field.cmt = options.distance;
+      }
+      
       addRecord(trackLayer, record);
 
       return { isOK: true, message: '', layer: trackLayer, record };

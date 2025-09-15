@@ -12,6 +12,7 @@ import {
   getAllTrackPoints,
   clearAllChunks,
   getCurrentChunkInfo,
+  getLineLength,
 } from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
@@ -437,11 +438,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       setSavingTrackStatus({ isSaving: true, phase: 'saving', message: 'データを保存中...' });
 
+      // 全トラックの総距離を計算
+      const totalDistance = getLineLength(validPoints);
+      const distanceText = totalDistance > 0 ? `${totalDistance.toFixed(2)} km` : '';
+
       // レコードに追加（Redux更新も重い可能性）
       // 注意: cleanupLineは getAllTrackPoints で一括適用済み
       const ret = await new Promise<ReturnType<typeof addTrackRecord>>((resolve) => {
         setTimeout(() => {
-          const result = addTrackRecord(validPoints);
+          const result = addTrackRecord(validPoints, { distance: distanceText });
           resolve(result);
         }, 0);
       });
