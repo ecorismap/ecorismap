@@ -45,16 +45,27 @@ export const useVectorTile = (): UseVectorTileReturnType => {
 
   const getVectorTileInfo = useCallback(
     async (latlon: number[], zoom: number) => {
-      const tileX = lonToTileX(latlon[0], zoom);
-      const tileY = latToTileY(latlon[1], zoom);
       const properties: { [key: string]: any }[] = [];
-      //console.log(tileX, tileY, zoom);
-      for (const tileMap of tileMaps) {
-        if (!(tileMap.visible && (tileMap.url.includes('pmtiles') || tileMap.url.includes('.pbf')))) continue;
-        //console.log(tileMap.name, tileX, tileY, zoom);
-        const propertyList = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: zoom });
-        properties.push(...propertyList);
+      const maxZoomLevelsToCheck = 4; // 最大4レベル下まで検索
+      
+      // 現在のズームレベルから順に低いズームレベルまで検索
+      for (let currentZoom = zoom; currentZoom >= Math.max(zoom - maxZoomLevelsToCheck, 1); currentZoom--) {
+        const tileX = lonToTileX(latlon[0], currentZoom);
+        const tileY = latToTileY(latlon[1], currentZoom);
+        
+        for (const tileMap of tileMaps) {
+          if (!(tileMap.visible && (tileMap.url.includes('pmtiles') || tileMap.url.includes('.pbf')))) continue;
+          
+          const propertyList = await fetchVectorTileInfo(tileMap.id, latlon, { x: tileX, y: tileY, z: currentZoom });
+          properties.push(...propertyList);
+        }
+        
+        // 何か情報が見つかったら検索を終了
+        if (properties.length > 0) {
+          break;
+        }
       }
+      
       return properties;
     },
     [tileMaps]

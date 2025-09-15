@@ -17,6 +17,7 @@ export const fetchVectorTileInfo = async (
   //const LAYER_NAME = '北上川H30';
   //console.log(tile.z, tile.x, tile.y);
   try {
+    // ズームレベルに応じて検索範囲を調整（低いズームレベルのタイルは広い範囲をカバー）
     const maxDistanceToLine = getMetersPerPixelAtZoomLevel(latlon[1], tile.z) * 10;
 
     const localLocation = `${TILE_FOLDER}/${tileMapId}/${tile.z}/${tile.x}/${tile.y}.pbf`;
