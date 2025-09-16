@@ -91,11 +91,21 @@ GoogleService-Info.plist.production
 google-services.json.development
 google-services.json.production
 Maps.plist
+Maps.plist.development
+Maps.plist.production
+Maps.plist.backup
 src/constants/APIKeys.ts
 APIKeys.ts
 APIKeys.ts.development
 APIKeys.ts.production
 APIKeys.ts.backup
+maps-api-key.development
+maps-api-key.production
+maps-api-key.backup
+maptiler-key.development
+maptiler-key.production
+maptiler-key.backup
+android/local.properties.backup
 google-services.json.backup
 GoogleService-Info.plist.backup
 
@@ -124,3 +134,8 @@ maplibre-native/
 *.pkl
 
 *.serena/*
+
+# Firebase keys
+keys/
+*.development
+*.production

@@ -18,26 +18,49 @@ if (!env || !['development', 'production'].includes(env)) {
 }
 
 const projectRoot = path.resolve(__dirname, '..');
+const keysDir = path.join(projectRoot, 'keys', env);
+const templateDir = path.join(projectRoot, 'template');
 
 // 設定ファイルのパス
 const configs = [
+  // Firebase設定ファイル
   {
-    source: `google-services.json.${env}`,
+    source: path.join(keysDir, 'google-services.json'),
     target: 'android/app/google-services.json',
-    backupName: 'google-services.json.backup',
-    name: 'Android'
+    name: 'Android Firebase設定'
   },
   {
-    source: `GoogleService-Info.plist.${env}`,
+    source: path.join(keysDir, 'GoogleService-Info.plist'),
     target: 'ios/ecorismap/GoogleService-Info.plist',
-    backupName: 'GoogleService-Info.plist.backup',
-    name: 'iOS'
+    name: 'iOS Firebase設定'
+  },
+  // Maps API設定
+  {
+    source: path.join(keysDir, 'maps-key-android'),
+    target: 'android/local.properties',
+    template: path.join(templateDir, 'local.properties'),
+    name: 'Android Maps API',
+    type: 'template',
+    placeholder: 'YOUR-MAPS-API-KEY'
   },
   {
-    source: `APIKeys.ts.${env}`,
+    source: path.join(keysDir, 'maps-key-ios'),
+    target: 'ios/ecorismap/Supporting/Maps.plist',
+    template: path.join(templateDir, 'Maps.plist'),
+    name: 'iOS Maps API',
+    type: 'template',
+    placeholder: 'YOUR-MAPS-API-KEY'
+  },
+  // Web設定 - すべてのWeb設定を一度に処理
+  {
+    sources: {
+      firebase: path.join(keysDir, 'firebaseConfig.ts'),
+      recapture: path.join(keysDir, 'reCaptureSiteKey'),
+      maptiler: path.join(keysDir, 'maptilerKey')
+    },
     target: 'src/constants/APIKeys.ts',
-    backupName: 'APIKeys.ts.backup',
-    name: 'Web'
+    name: 'Web設定（Firebase, reCAPTCHA, MapTiler）',
+    type: 'web-config'
   }
 ];
 
@@ -45,28 +68,77 @@ console.log(`\n🔄 Firebase設定を${env}環境に切り替えています...\
 
 let hasError = false;
 
+// keysディレクトリの存在確認
+if (!fs.existsSync(keysDir)) {
+  console.error(`❌ キーディレクトリが見つかりません: ${keysDir}`);
+  process.exit(1);
+}
+
 configs.forEach(config => {
-  const sourcePath = path.join(projectRoot, config.source);
   const targetPath = path.join(projectRoot, config.target);
-  const backupPath = path.join(projectRoot, config.backupName);
 
   try {
     // ソースファイルの存在確認
-    if (!fs.existsSync(sourcePath)) {
+    if (config.type === 'web-config') {
+      // Web設定の場合は複数のソースファイルをチェック
+      for (const [key, sourcePath] of Object.entries(config.sources)) {
+        if (!fs.existsSync(sourcePath)) {
+          console.error(`❌ ${config.name}: ${key}ファイルが見つかりません: ${sourcePath}`);
+          hasError = true;
+          return;
+        }
+      }
+    } else if (!fs.existsSync(config.source)) {
       console.error(`❌ ${config.name}: ソースファイルが見つかりません: ${config.source}`);
       hasError = true;
       return;
     }
 
-    // バックアップの作成（初回のみ、プロジェクト直下に保存）
+    // バックアップの作成（初回のみ）
+    const backupPath = targetPath + '.backup';
     if (!fs.existsSync(backupPath) && fs.existsSync(targetPath)) {
       fs.copyFileSync(targetPath, backupPath);
-      console.log(`📦 ${config.name}: バックアップを作成しました (${config.backupName})`);
+      console.log(`📦 ${config.name}: バックアップを作成しました`);
     }
 
-    // ファイルのコピー
-    fs.copyFileSync(sourcePath, targetPath);
-    console.log(`✅ ${config.name}: ${env}設定に切り替えました`);
+    if (config.type === 'template') {
+      // テンプレートを使用してファイルを生成
+      if (!fs.existsSync(config.template)) {
+        console.error(`❌ ${config.name}: テンプレートファイルが見つかりません: ${config.template}`);
+        hasError = true;
+        return;
+      }
+
+      const keyValue = fs.readFileSync(config.source, 'utf8').trim();
+      let templateContent = fs.readFileSync(config.template, 'utf8');
+      
+      // プレースホルダーを実際の値に置換
+      templateContent = templateContent.replace(config.placeholder, keyValue);
+      
+      fs.writeFileSync(targetPath, templateContent);
+      console.log(`✅ ${config.name}: 設定を更新しました`);
+
+    } else if (config.type === 'web-config') {
+      // Web設定の特殊処理
+      const firebaseConfigContent = fs.readFileSync(config.sources.firebase, 'utf8');
+      const recaptureKey = fs.readFileSync(config.sources.recapture, 'utf8').trim();
+      const maptilerKey = fs.readFileSync(config.sources.maptiler, 'utf8').trim();
+
+      // APIKeys.tsを生成
+      const apiKeysContent = `// ${env === 'production' ? 'Production' : 'Development'} environment API keys
+${firebaseConfigContent.trim()}
+export const reCaptureSiteKey = '${recaptureKey}';
+export const maptilerKey = '${maptilerKey}';
+`;
+
+      fs.writeFileSync(targetPath, apiKeysContent);
+      console.log(`✅ ${config.name}: APIKeys.tsを生成しました`);
+
+    } else {
+      // 単純なファイルコピー
+      fs.copyFileSync(config.source, targetPath);
+      console.log(`✅ ${config.name}: ${env}設定に切り替えました`);
+    }
   } catch (error) {
     console.error(`❌ ${config.name}: エラーが発生しました:`, error.message);
     hasError = true;
