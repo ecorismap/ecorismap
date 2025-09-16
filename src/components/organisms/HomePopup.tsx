@@ -1,11 +1,12 @@
 import React, { useContext } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { InfoToolContext } from '../../contexts/InfoTool';
 import { COLOR } from '../../constants/AppConstants';
 import { ScrollView } from 'react-native-gesture-handler';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export const HomePopup = React.memo(() => {
-  const { vectorTileInfo } = useContext(InfoToolContext);
+  const { vectorTileInfo, closeVectorTileInfo } = useContext(InfoToolContext);
   const WIDTH = 200;
   const HEIGHT = 150;
 
@@ -20,18 +21,18 @@ export const HomePopup = React.memo(() => {
             style={{
               height: 1,
               backgroundColor: COLOR.GRAY1,
-              marginVertical: 12,
+              marginVertical: 6,
               marginHorizontal: -12,
             }}
           />
         )}
         {Object.entries(property).map(([key, value], index) => (
-          <View key={`${groupIndex}-${index}`} style={{ marginBottom: 8 }}>
+          <View key={`${groupIndex}-${index}`} style={{ marginBottom: 4 }}>
             <Text
               style={{
                 fontSize: 11,
                 color: COLOR.GRAY2,
-                marginBottom: 2,
+                marginBottom: 1,
                 fontWeight: '600',
                 textTransform: 'capitalize',
               }}
@@ -42,7 +43,7 @@ export const HomePopup = React.memo(() => {
               style={{
                 fontSize: 13,
                 color: COLOR.BLACK,
-                lineHeight: 18,
+                lineHeight: 16,
               }}
             >
               {value !== null && value !== undefined ? String(value) : '-'}
@@ -63,8 +64,7 @@ export const HomePopup = React.memo(() => {
         left: vectorTileInfo.position[0] - WIDTH / 2,
       }}
     >
-      <ScrollView
-        contentContainerStyle={{ padding: 12 }}
+      <View
         style={{
           width: WIDTH,
           maxHeight: HEIGHT,
@@ -76,10 +76,33 @@ export const HomePopup = React.memo(() => {
           shadowRadius: 4,
           elevation: 3,
         }}
-        showsVerticalScrollIndicator={true}
       >
-        {renderProperties()}
-      </ScrollView>
+        <TouchableOpacity
+          style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            zIndex: 1,
+            width: 20,
+            height: 20,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onPress={closeVectorTileInfo}
+        >
+          <MaterialIcons name="close" size={16} color={COLOR.GRAY2} />
+        </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={{ padding: 12, paddingTop: 20 }}
+          style={{
+            width: WIDTH,
+            maxHeight: HEIGHT,
+          }}
+          showsVerticalScrollIndicator={true}
+        >
+          {renderProperties()}
+        </ScrollView>
+      </View>
       <View
         // eslint-disable-next-line react-native/no-color-literals
         style={{
