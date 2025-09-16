@@ -21,6 +21,7 @@ export const MapModalTileMap = React.memo(() => {
     pressEditMapOK,
     pressEditMapCancel,
     pressImportStyle,
+    pressExportMap,
   } = useContext(MapsContext);
 
   const [tileName, setTileName] = useState('');
@@ -57,9 +58,14 @@ export const MapModalTileMap = React.memo(() => {
   const styles = StyleSheet.create({
     modalButtonContainer: {
       flexDirection: 'row',
-
       justifyContent: 'space-evenly',
       marginTop: 10,
+      width: windowWidth * modalWidthScale,
+    },
+    modalIconButtonContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-evenly',
+      marginVertical: 10,
       width: windowWidth * modalWidthScale,
     },
     modalCenteredView: {
@@ -100,8 +106,8 @@ export const MapModalTileMap = React.memo(() => {
       elevation: 2,
       height: 48,
       justifyContent: 'center',
-      padding: 10,
-      width: 80,
+      paddingHorizontal: 20,
+      minWidth: 100,
     },
     modalTextInput: {
       backgroundColor: COLOR.GRAY1,
@@ -113,8 +119,7 @@ export const MapModalTileMap = React.memo(() => {
     },
     modalTitle: {
       fontSize: 20,
-      marginBottom: 10,
-      textAlign: 'center',
+      flex: 1,
     },
   });
 
@@ -269,28 +274,38 @@ export const MapModalTileMap = React.memo(() => {
                 </>
               )}
             </ScrollView>
+            {data.id && !data.isGroup && (
+              <View style={styles.modalIconButtonContainer}>
+                <Button
+                  name="briefcase-download"
+                  onPress={() => pressExportMap(tileMap())}
+                  backgroundColor={COLOR.BLUE}
+                  labelText={t('Maps.label.export')}
+                />
+                <Button
+                  name="delete"
+                  onPress={() => pressDeleteMap(tileMap())}
+                  backgroundColor={COLOR.DARKRED}
+                  labelText={t('common.delete')}
+                />
+              </View>
+            )}
             <View style={styles.modalButtonContainer}>
               <Pressable
-                style={styles.modalOKCancelButton}
+                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.BLUE }]}
                 onPress={() => {
                   if (checkInputs()) {
                     pressEditMapOK(tileMap());
                   }
                 }}
               >
-                <Text>OK</Text>
+                <Text style={{ color: COLOR.WHITE }}>OK</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalOKCancelButton, { backgroundColor: COLOR.GRAY1 }]}
                 onPress={pressEditMapCancel}
               >
                 <Text>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalOKCancelButton, { backgroundColor: COLOR.DARKRED }]}
-                onPress={() => pressDeleteMap(tileMap())}
-              >
-                <Text style={{ color: COLOR.WHITE }}>{`${t('common.delete')}`}</Text>
               </Pressable>
             </View>
           </View>

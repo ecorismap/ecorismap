@@ -778,6 +778,8 @@
       "successSaveFile": "ファイルを保存しました。",
       "successExportData": "データを保存しました。",
       "successExportMaps": "地図の設定を保存しました。",
+      "updateMap": "地図の設定を更新しました。",
+      "addMap": "地図を追加しました。",
       "dataSizeTooLarge": "データのサイズが大きいためアップロードできません",
       "failDeleteFile": "プロジェクトのファイルの削除に失敗しました"
     },

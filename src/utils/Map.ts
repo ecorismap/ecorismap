@@ -62,6 +62,8 @@ export const csvToJsonArray = (csv: string, delimiter = ',') => {
 
 const isTileMapItem = (data: any): data is TileMapItemType => {
   return (
+    typeof data === 'object' &&
+    data !== null &&
     data.name !== undefined &&
     typeof data.name === 'string' &&
     data.url !== undefined &&
@@ -87,19 +89,32 @@ const isTileMapItem = (data: any): data is TileMapItemType => {
     data.maximumZ >= 0 &&
     data.maximumZ <= 22 &&
     data.flipY !== undefined &&
-    typeof data.flipY === 'boolean'
+    typeof data.flipY === 'boolean' &&
+    // オプショナルフィールドのチェック
+    (data.styleURL === undefined || typeof data.styleURL === 'string') &&
+    (data.isVector === undefined || typeof data.isVector === 'boolean') &&
+    (data.tileSize === undefined || typeof data.tileSize === 'number') &&
+    (data.isGroup === undefined || typeof data.isGroup === 'boolean') &&
+    (data.groupId === undefined || typeof data.groupId === 'string') &&
+    (data.expanded === undefined || typeof data.expanded === 'boolean')
   );
 };
 
 export const isMapListArray = (data: any): data is TileMapItemType[] => data.every((d: any) => isTileMapItem(d));
 export const isTileMapType = (data: any): data is TileMapType => {
-  const { id, mapType, visible, ...mapItem } = data;
+  if (!data || typeof data !== 'object') return false;
+  
+  const { id, maptype, visible, boundary, encryptKey, redraw, ...mapItem } = data;
   return (
     isTileMapItem(mapItem) &&
     typeof id === 'string' &&
-    typeof mapType === 'string' &&
+    typeof maptype === 'string' &&
     typeof visible === 'boolean' &&
-    ['standard', 'satellite', 'hybrid', 'terrain', 'none'].includes(mapType)
+    ['standard', 'satellite', 'hybrid', 'terrain', 'none'].includes(maptype) &&
+    // オプショナルフィールドのチェック
+    (boundary === undefined || (typeof boundary === 'object' && boundary !== null)) &&
+    (encryptKey === undefined || typeof encryptKey === 'string') &&
+    (redraw === undefined || typeof redraw === 'boolean')
   );
 };
 

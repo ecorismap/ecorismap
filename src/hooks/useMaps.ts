@@ -16,12 +16,14 @@ import { blobToBase64 } from '../utils/blob';
 import { convert, warpedFileType } from 'react-native-gdalwarp';
 import { webMercatorToLatLon } from '../utils/Coords';
 import { Buffer } from 'buffer';
-import { unlink } from '../utils/File';
+import { unlink, exportFileFromData } from '../utils/File';
 import { convertPDFToGeoTiff } from '../utils/PDF';
 import { db } from '../utils/db';
 import { generateTilesFromPDF } from '../utils/PDF';
 import * as pmtiles from 'pmtiles';
 import * as projectStorage from '../lib/firebase/storage';
+import dayjs from 'dayjs';
+import sanitize from 'sanitize-filename';
 
 export type UseMapsReturnType = {
   progress: string;
@@ -94,6 +96,7 @@ export type UseMapsReturnType = {
   }>;
   updateMapOrder: (data: TileMapType[], from: number, to: number) => void;
   onDragBegin: (tileMap: TileMapType) => void;
+  exportSingleMap: (tileMap: TileMapType) => Promise<{ isOK: boolean; message: string }>;
 };
 
 export const useMaps = (): UseMapsReturnType => {
@@ -448,6 +451,19 @@ export const useMaps = (): UseMapsReturnType => {
     [maps, dispatch]
   );
 
+  const exportSingleMap = useCallback(async (tileMap: TileMapType) => {
+    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+    const mapData = JSON.stringify(tileMap, null, 2);
+    // ZIP処理と同様にUnicode正規化を追加
+    const fileName = `map_${sanitize(tileMap.name).normalize('NFC')}_${time}.json`;
+    const isOK = await exportFileFromData(mapData, fileName);
+    if (!isOK && Platform.OS !== 'web') {
+      return { isOK: false, message: t('hooks.message.failExport') };
+    } else {
+      return { isOK: true, message: t('hooks.message.successExportMaps') };
+    }
+  }, []);
+
   const toggleOnline = useCallback(() => {
     dispatch(editSettingsAction({ isOffline: !isOffline }));
   }, [dispatch, isOffline]);
@@ -571,23 +587,42 @@ export const useMaps = (): UseMapsReturnType => {
       try {
         const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
         const json = JSON.parse(jsonStrings);
+        
+        // 配列形式の場合（従来の全体インポート）
         if (Array.isArray(json)) {
-          const isValid = json.every((tileMap) => !isTileMapType(tileMap));
+          const isValid = json.every((tileMap) => isTileMapType(tileMap));
           if (!isValid) {
             return { isOK: false, message: t('hooks.message.invalidDataFormat') };
           }
-        } else {
-          return { isOK: false, message: 'Data is not an array' + '\n' + t('hooks.message.invalidDataFormat') };
+          dispatch(setTileMapsAction(json));
+          await updatePmtilesURL();
+          return { isOK: true, message: t('hooks.message.receiveFile') };
+        } 
+        // オブジェクト形式の場合（個別地図）
+        else if (typeof json === 'object' && json !== null && json.id) {
+          const isValid = isTileMapType(json);
+          if (!isValid) {
+            return { isOK: false, message: t('hooks.message.invalidDataFormat') };
+          }
+          
+          // 既存の地図があれば更新、なければ追加
+          const existingMapIndex = maps.findIndex(m => m.id === json.id);
+          if (existingMapIndex !== -1) {
+            dispatch(updateTileMapAction(json));
+            return { isOK: true, message: t('hooks.message.updateMap') };
+          } else {
+            dispatch(addTileMapAction(json));
+            return { isOK: true, message: t('hooks.message.addMap') };
+          }
+        } 
+        else {
+          return { isOK: false, message: t('hooks.message.invalidDataFormat') };
         }
-        //console.log(json);
-        dispatch(setTileMapsAction(json));
-        await updatePmtilesURL();
-        return { isOK: true, message: t('hooks.message.receiveFile') };
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
       }
     },
-    [dispatch, updatePmtilesURL]
+    [dispatch, maps, updatePmtilesURL]
   );
 
   const calculateZoomLevel = (pdfTopCoord: number, pdfBottomCoord: number, imageHeight: number) => {
@@ -871,5 +906,6 @@ export const useMaps = (): UseMapsReturnType => {
     getPmtilesBoundary,
     updateMapOrder,
     onDragBegin,
+    exportSingleMap,
   } as const;
 };

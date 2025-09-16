@@ -38,6 +38,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
     getPmtilesBoundary,
     updateMapOrder,
     onDragBegin,
+    exportSingleMap,
   } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const { runTutrial } = useTutrial();
@@ -149,12 +150,14 @@ export default function MapContainer({ navigation }: Props_Maps) {
   }, [closeEditMap]);
 
   const pressImportMaps = useCallback(async () => {
-    const file = await DocumentPicker.getDocumentAsync({});
+    const file = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'application/pdf', 'application/octet-stream', '*/*'],
+    });
     if (file.assets === null) return;
     const name = file.assets[0].name;
     const uri = file.assets[0].uri;
     const ext = getExt(name)?.toLowerCase();
-    if (!(ext === 'json' || ext === 'pdf' || ext === 'pmtiles')) {
+    if (!ext || !(ext === 'json' || ext === 'pdf' || ext === 'pmtiles')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
@@ -194,6 +197,11 @@ export default function MapContainer({ navigation }: Props_Maps) {
       await AlertAsync(t('hooks.message.successExportMaps'));
     }
   }, [maps]);
+
+  const pressExportMap = useCallback(async (tileMap: TileMapType) => {
+    const result = await exportSingleMap(tileMap);
+    await AlertAsync(result.message);
+  }, [exportSingleMap]);
 
   const gotoMapList = useCallback(() => {
     navigation.navigate('MapList');
@@ -285,6 +293,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         pressMapOrder,
         updateMapOrder,
         onDragBegin,
+        pressExportMap,
       }}
     >
       <Maps />

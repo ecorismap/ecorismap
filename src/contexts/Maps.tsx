@@ -26,6 +26,7 @@ interface MapsContextType {
   pressMapOrder: (tileMap: TileMapType, direction: 'up' | 'down') => void;
   updateMapOrder: (data: TileMapType[], from: number, to: number) => void;
   onDragBegin: (tileMap: TileMapType) => void;
+  pressExportMap: (tileMap: TileMapType) => Promise<void>;
 }
 
 export const MapsContext = createContext({} as MapsContextType);
