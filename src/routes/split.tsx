@@ -10,6 +10,7 @@ import { RootStackParamList } from '.';
 import { COLOR } from '../constants/AppConstants';
 import Maps from '../containers/Maps';
 import MapList from '../containers/MapList';
+import MapEdit from '../containers/MapEdit';
 import { t } from '../i18n/config';
 import Settings from '../containers/Settings';
 import Licenses from '../containers/Licenses';
@@ -37,6 +38,7 @@ export default function SplitScreen() {
       <Stack.Screen name="DataEdit" component={DataEdit} options={{ title: t('DataEdit.navigation.title') }} />
       <Stack.Screen name="LayerEdit" component={LayerEdit} options={{ title: t('LayerEdit.navigation.title') }} />
       <Stack.Screen name="Maps" component={Maps} options={{ title: t('Maps.navigation.title') }} />
+      <Stack.Screen name="MapEdit" component={MapEdit} options={{ title: t('MapEdit.navigation.title') }} />
       <Stack.Screen name="MapList" component={MapList} options={{ title: t('MapList.navigation.title') }} />
       <Stack.Screen name="Settings" component={Settings} options={{ title: t('Settings.navigation.title') }} />
       <Stack.Screen name="Licenses" component={Licenses} options={{ title: t('Licenses.navigation.title') }} />

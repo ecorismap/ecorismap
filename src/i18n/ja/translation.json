@@ -172,7 +172,11 @@
     "move": "上下",
     "finish": "確定",
     "cancel": "取消",
-    "ok": "OK"
+    "cancelEdit": "編集を取消",
+    "ok": "OK",
+    "confirm": {
+      "cancelEdit": "変更を破棄して戻りますか？"
+    }
   },
   "Home": {
     "confirm": {
@@ -457,7 +461,8 @@
     },
     "modal": {
       "title": "地図タイル追加",
-      "placeholder": {}
+      "placeholder": {},
+      "styleURL": "スタイルURL (json)"
     },
     "confirm": {
       "deleteMap": "削除しますか？"
@@ -478,6 +483,14 @@
   "MapList": {
     "navigation": {
       "title": "地図の設定リスト"
+    }
+  },
+  "MapEdit": {
+    "navigation": {
+      "title": "地図編集"
+    },
+    "label": {
+      "save": "保存"
     }
   },
   "Layers": {
@@ -762,6 +775,7 @@
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
+      "wrongInput": "入力内容が正しくありません。",
       "wrongExtension": "ファイルの種類が正しくありません。",
       "failedUpdatePassword": "暗号化パスワードの変更に失敗しました。変更前のパスワードは正しいですか？忘れた場合は暗号化キーをリセットしてください。",
       "inputCorrectFilename": "有効なファイル名を入力してください。",

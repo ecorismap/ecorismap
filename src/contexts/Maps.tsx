@@ -2,21 +2,17 @@ import { createContext } from 'react';
 
 import { TileMapType } from '../types';
 
-interface MapsContextType {
+export interface MapsContextType {
   progress: string;
   isLoading: boolean;
   isOffline: boolean;
   maps: TileMapType[];
-  editedMap: TileMapType;
-  isMapEditorOpen: boolean;
   filterdMaps: TileMapType[];
   changeVisible: (visible: boolean, tileMap: TileMapType) => void;
   pressToggleOnline: () => void;
   pressDownloadMap: (item: TileMapType) => void;
   pressDeleteMap: (tileMap: TileMapType) => void;
-  pressOpenEditMap: (editTileMap: TileMapType | null) => void;
-  pressEditMapOK: (newTileMap: TileMapType) => void;
-  pressEditMapCancel: () => void;
+  gotoMapEdit: (editTileMap: TileMapType | null) => void;
   gotoMapList: () => void;
   pressImportMaps: () => Promise<void>;
   pressExportMaps: () => Promise<void>;

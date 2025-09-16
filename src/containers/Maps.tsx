@@ -14,20 +14,14 @@ import { Platform } from 'react-native';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { readAsStringAsync } from 'expo-file-system';
 import { db } from '../utils/db';
-import { MapModalTileMap } from '../components/organisms/MapModalTileMap';
 import * as FileSystem from 'expo-file-system';
 import { exportFileFromData } from '../utils/File';
 export default function MapContainer({ navigation }: Props_Maps) {
   const {
     progress,
     maps,
-    editedMap,
     isOffline,
-    isMapEditorOpen,
     filterdMaps,
-    openEditMap,
-    closeEditMap,
-    saveMap,
     deleteMap,
     changeVisible,
     changeMapOrder,
@@ -97,57 +91,15 @@ export default function MapContainer({ navigation }: Props_Maps) {
     [importMapFile, navigation]
   );
 
-  const pressOpenEditMap = useCallback(
-    async (editTileMap: TileMapType | null) => {
-      const { isOK, message } = openEditMap(editTileMap);
-      if (!isOK) {
-        await AlertAsync(message);
-      }
+  const gotoMapEdit = useCallback(
+    (editTileMap: TileMapType | null) => {
+      navigation.navigate('MapEdit', {
+        targetMap: editTileMap,
+        previous: 'Maps',
+      });
     },
-    [openEditMap]
+    [navigation]
   );
-
-  const pressEditMapOK = useCallback(
-    async (newTileMap: TileMapType) => {
-      //pmTilesの場合、boundaryを取得して保存する
-      if (newTileMap.url.includes('pmtiles')) {
-        //urlが変更された場合、boundaryとcacheを削除する
-        if (editedMap?.url !== newTileMap.url || editedMap?.styleURL !== newTileMap.styleURL) {
-          if (Platform.OS === 'web') {
-            await db.pmtiles.delete(newTileMap.id);
-          } else {
-            await FileSystem.deleteAsync(`${TILE_FOLDER}/${newTileMap.id}`, { idempotent: true });
-          }
-        }
-        const { header, boundary } = await getPmtilesBoundary(newTileMap.url);
-        // boundaryが取得できた場合のみ保存処理を行う
-        if (boundary) {
-          if (Platform.OS === 'web') {
-            await db.pmtiles.update(newTileMap.id, {
-              boundary: JSON.stringify(boundary),
-            });
-          } else {
-            await FileSystem.makeDirectoryAsync(`${TILE_FOLDER}/${newTileMap.id}`, {
-              intermediates: true,
-            });
-            const boundaryUri = `${TILE_FOLDER}/${newTileMap.id}/boundary.json`;
-            await FileSystem.writeAsStringAsync(boundaryUri, JSON.stringify(boundary));
-          }
-        }
-
-        //newTileMap.overzoomThreshold = header ? header.maxZoom : 16;
-        newTileMap.minimumZ = header ? header.minZoom : 4;
-        newTileMap.maximumZ = header ? header.maxZoom : 16;
-      }
-
-      saveMap(newTileMap);
-    },
-    [editedMap?.styleURL, editedMap?.url, getPmtilesBoundary, saveMap]
-  );
-
-  const pressEditMapCancel = useCallback(() => {
-    closeEditMap();
-  }, [closeEditMap]);
 
   const pressImportMaps = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({
@@ -274,16 +226,12 @@ export default function MapContainer({ navigation }: Props_Maps) {
         isLoading,
         isOffline,
         maps,
-        editedMap,
-        isMapEditorOpen,
         filterdMaps,
         changeVisible,
         pressToggleOnline,
         pressDownloadMap,
         pressDeleteMap,
-        pressOpenEditMap,
-        pressEditMapOK,
-        pressEditMapCancel,
+        gotoMapEdit,
         gotoMapList,
         pressImportMaps,
         pressExportMaps,
@@ -297,7 +245,6 @@ export default function MapContainer({ navigation }: Props_Maps) {
       }}
     >
       <Maps />
-      {isMapEditorOpen && <MapModalTileMap />}
     </MapsContext.Provider>
   );
 }

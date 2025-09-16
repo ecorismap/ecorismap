@@ -76,6 +76,10 @@ export type RootStackParamList = {
     fieldItem: LayerType['field'][0];
     isEdited: boolean;
   };
+  MapEdit: {
+    targetMap: TileMapType | null;
+    previous?: keyof RootStackParamList;
+  };
 };
 
 export type NavigationProp = NativeStackScreenProps<RootStackParamList>;
@@ -96,6 +100,7 @@ export type Props_Layers = NativeStackScreenProps<RootStackParamList, 'Layers'>;
 export type Props_LayerEdit = NativeStackScreenProps<RootStackParamList, 'LayerEdit'>;
 export type Props_LayerEditFeatureStyle = NativeStackScreenProps<RootStackParamList, 'LayerEditFeatureStyle'>;
 export type Props_LayerEditFieldItem = NativeStackScreenProps<RootStackParamList, 'LayerEditFieldItem'>;
+export type Props_MapEdit = NativeStackScreenProps<RootStackParamList, 'MapEdit'>;
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

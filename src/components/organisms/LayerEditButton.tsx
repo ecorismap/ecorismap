@@ -21,7 +21,7 @@ export const LayerEditButton = () => {
       />
       <Button
         name={LAYEREDIT_BTN.DELETE}
-        backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.BLUE}
+        backgroundColor={isEdited || !editable ? COLOR.LIGHTBLUE : COLOR.DARKRED}
         disabled={isEdited || !editable}
         onPress={pressDeleteLayer}
         labelText={t('LayerEdit.label.delete')}
@@ -32,9 +32,9 @@ export const LayerEditButton = () => {
 
 const styles = StyleSheet.create({
   buttonContainer: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginVertical: 20,
+    justifyContent: 'space-between',
+    margin: 20,
   },
 });

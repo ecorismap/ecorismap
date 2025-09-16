@@ -230,7 +230,11 @@
     "EncryptPassword": "Encryption Password",
     "finish": "finish",
     "cancel": "cancel",
-    "ok": "OK"
+    "cancelEdit": "Cancel Edit",
+    "ok": "OK",
+    "confirm": {
+      "cancelEdit": "Would you like to discard the changes and return?"
+    }
   },
   "firebase": {
     "message": {
@@ -422,7 +426,8 @@
   "Maps": {
     "modal": {
       "title": "Map settings",
-      "placeholder": {}
+      "placeholder": {},
+      "styleURL": "Style URL (json)"
     },
     "confirm": {
       "deleteMap": "Do you want to delete it?"
@@ -580,6 +585,7 @@
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
+      "wrongInput": "Invalid input.",
       "wrongExtension": "Incorrect file type.",
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",
       "inputCorrectFilename": "Please enter a valid file name.",
@@ -753,6 +759,14 @@
   "MapList": {
     "navigation": {
       "title": "Map list"
+    }
+  },
+  "MapEdit": {
+    "navigation": {
+      "title": "Map Edit"
+    },
+    "label": {
+      "save": "Save"
     }
   },
   "utils": {

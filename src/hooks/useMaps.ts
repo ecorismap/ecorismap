@@ -87,6 +87,7 @@ export type UseMapsReturnType = {
     message: string;
   }>;
   clearTileCache: () => Promise<void>;
+  clearTiles: (tileMap_: TileMapType) => Promise<void>;
   updatePmtilesURL: () => Promise<void>;
 
   changeExpand: (expanded: boolean, tileMap: TileMapType) => void;
@@ -901,6 +902,7 @@ export const useMaps = (): UseMapsReturnType => {
     importPmtilesFile,
     importStyleFile,
     clearTileCache,
+    clearTiles,
     updatePmtilesURL,
     changeExpand,
     getPmtilesBoundary,

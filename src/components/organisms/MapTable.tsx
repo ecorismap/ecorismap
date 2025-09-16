@@ -28,7 +28,7 @@ export const MapTable = React.memo(() => {
     filterdMaps,
     changeVisible,
     pressDownloadMap,
-    pressOpenEditMap,
+    gotoMapEdit,
     jumpToBoundary,
     changeExpand,
     pressMapOrder,
@@ -100,7 +100,7 @@ export const MapTable = React.memo(() => {
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <Button
                 name="pencil"
-                onPress={() => pressOpenEditMap(item)}
+                onPress={() => gotoMapEdit(item)}
                 backgroundColor={COLOR.LIGHTBLUE2}
                 size={18}
                 labelText={t('Maps.label.edit')}
@@ -144,7 +144,7 @@ export const MapTable = React.memo(() => {
         </View>
       );
     },
-    [changeExpand, changeVisible, pressOpenEditMap, pressDownloadMap, jumpToBoundary, pressMapOrder]
+    [changeExpand, changeVisible, gotoMapEdit, pressDownloadMap, jumpToBoundary, pressMapOrder]
   );
 
   const keyExtractor = useCallback((item: any) => item.id, []);

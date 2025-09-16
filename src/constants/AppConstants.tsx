@@ -307,6 +307,7 @@ export const MAPS_BTN = {
   OFFLINE: 'wifi-off',
   EXPORT: 'briefcase-download',
   IMPORT: 'database-import',
+  SAVE: 'content-save',
 } as const;
 
 export const MAPLIST_BTN = {
