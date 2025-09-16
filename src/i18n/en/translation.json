@@ -809,7 +809,7 @@
   "Layer": {
     "label": {
       "import": "import",
-      "add": "create"
+      "add": "add"
     }
   },
   "conflict": {
