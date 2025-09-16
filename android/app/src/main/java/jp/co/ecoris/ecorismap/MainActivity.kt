@@ -21,11 +21,6 @@ import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.InputStream
 import java.io.OutputStream
-import com.google.android.play.core.integrity.IntegrityManagerFactory
-import com.google.android.play.core.integrity.IntegrityTokenRequest
-import com.google.android.play.core.integrity.IntegrityTokenResponse
-
-
 class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
@@ -40,23 +35,6 @@ class MainActivity : ReactActivity() {
     ) {
       requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
-    // --- Standard モード呼び出し ---
-    val integrityManager = IntegrityManagerFactory.create(this)
-
-    val request = IntegrityTokenRequest.builder()
-        .setCloudProjectNumber(498883984098) // Google Play プロジェクト番号
-        .setNonce("任意のランダム文字列")      // サーバーで検証する場合は必須
-        .build()
-
-    integrityManager.requestIntegrityToken(request)
-        .addOnSuccessListener { response: IntegrityTokenResponse ->
-            val token = response.token()
-            Log.d("IntegrityAPI", "Standard Token: $token")
-            // 必要ならサーバーに送信して検証
-        }
-        .addOnFailureListener { exception ->
-            Log.e("IntegrityAPI", "Failed: ${exception.message}")
-        }
   }
 
   /**
