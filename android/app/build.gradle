@@ -1,11 +1,10 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.facebook.react'
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
     id 'com.google.gms.google-services'
 }
-apply plugin: "com.android.application"
-apply plugin: "org.jetbrains.kotlin.android"
-apply plugin: "com.facebook.react"
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -92,7 +91,7 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:34.2.0')
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-appcheck-playintegrity'
-
+    implementation 'com.google.android.play:integrity:1.4.0'
     // debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
     // debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
     //     exclude group:'com.squareup.okhttp3', module:'okhttp'
