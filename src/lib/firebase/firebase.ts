@@ -57,7 +57,7 @@ const initialize = async (isEmulating = false) => {
   functions = getFunctions(getApp(), 'asia-northeast1');
   storage = getStorage();
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
-  
+
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
@@ -69,15 +69,15 @@ const initialize = async (isEmulating = false) => {
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
   });
-  await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
-
+  const appCheck = await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+  appCheck.activate('ignored', true);
   if (isEmulating) {
     auth.useEmulator('http://localhost:9099');
     functions.useEmulator('localhost', 5001);
     firestore.useEmulator('localhost', 8080);
     storage.useEmulator('localhost', 9199);
   }
-  
+
   isFirebaseInitialized = true;
 };
 
@@ -86,19 +86,20 @@ export const waitForFirebaseInitialization = async (): Promise<void> => {
   if (isFirebaseInitialized) {
     return;
   }
-  
+
   if (firebaseInitializationPromise) {
     await firebaseInitializationPromise;
     return;
   }
-  
+
   // 初期化がまだ開始されていない場合は待機
   let attempts = 0;
-  while (!isFirebaseInitialized && attempts < 50) { // 最大5秒待機
-    await new Promise(resolve => setTimeout(resolve, 100));
+  while (!isFirebaseInitialized && attempts < 50) {
+    // 最大5秒待機
+    await new Promise((resolve) => setTimeout(resolve, 100));
     attempts++;
   }
-  
+
   if (!isFirebaseInitialized) {
     throw new Error('Firebase initialization timeout');
   }
