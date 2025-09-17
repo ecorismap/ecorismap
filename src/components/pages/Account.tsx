@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, TextInput, Text, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, TextInput, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
@@ -125,11 +125,7 @@ export default function Account() {
   }, [accountFormState]);
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
+    <View style={styles.container}>
       <View
         style={{
           alignSelf: 'flex-end',
@@ -142,7 +138,7 @@ export default function Account() {
         <Button name="window-close" backgroundColor={COLOR.GRAY1} onPress={pressClose} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.modalCenteredView}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -310,6 +306,6 @@ export default function Account() {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
