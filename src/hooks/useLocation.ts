@@ -31,6 +31,10 @@ import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
 import { isLocationType } from '../utils/General';
+import {
+  isBatteryOptimizationIgnored,
+  requestDisableBatteryOptimization,
+} from '../lib/native/BatteryOptimization';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -156,6 +160,28 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     } catch (e: any) {
       // エラーハンドリング
     }
+  }, []);
+
+  const ensureBatteryOptimization = useCallback(async () => {
+    if (Platform.OS !== 'android') return true;
+
+    const isIgnored = await isBatteryOptimizationIgnored();
+    if (isIgnored) return true;
+
+    const shouldOpenSettings = await ConfirmAsync(t('hooks.message.requestDisableBatteryOptimization'));
+    if (!shouldOpenSettings) {
+      await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
+      return true;
+    }
+
+    const opened = await requestDisableBatteryOptimization();
+    if (!opened) {
+      await AlertAsync(t('hooks.message.failOpenBatteryOptimizationSettings'));
+      return false;
+    }
+
+    await AlertAsync(t('hooks.message.afterDisableBatteryOptimization'));
+    return false;
   }, []);
 
   const startGPS = useCallback(async () => {
@@ -290,6 +316,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       //console.log('!!!!wakeup', trackingState)
       if (trackingState_ === 'on') {
+        const canStart = await ensureBatteryOptimization();
+        if (!canStart) return;
         await moveCurrentPosition();
         await startTracking();
       } else if (trackingState_ === 'off') {
@@ -297,7 +325,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
       setTrackingState(trackingState_);
     },
-    [moveCurrentPosition, startTracking, stopTracking]
+    [ensureBatteryOptimization, moveCurrentPosition, startTracking, stopTracking]
   );
 
   const toggleHeadingUp = useCallback(

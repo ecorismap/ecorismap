@@ -5,6 +5,10 @@ import React from 'react';
 import { useLocation } from '../useLocation';
 import * as Location from 'expo-location';
 import { ConfirmAsync } from '../../components/molecules/AlertAsync';
+import {
+  isBatteryOptimizationIgnored,
+  requestDisableBatteryOptimization,
+} from '../../lib/native/BatteryOptimization';
 
 // Mock dependencies
 jest.mock('expo-location');
@@ -68,6 +72,10 @@ jest.mock('../../components/molecules/AlertAsync', () => ({
   ConfirmAsync: jest.fn(),
   AlertAsync: jest.fn(),
 }));
+jest.mock('../../lib/native/BatteryOptimization', () => ({
+  isBatteryOptimizationIgnored: jest.fn().mockResolvedValue(true),
+  requestDisableBatteryOptimization: jest.fn().mockResolvedValue(true),
+}));
 
 // Create a mock ref object
 const createMockMapRef = () => ({ current: null });
@@ -104,6 +112,8 @@ describe('useLocation', () => {
     jest.clearAllMocks();
     // Default to not show confirm dialog to avoid state updates
     (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    (isBatteryOptimizationIgnored as jest.Mock).mockResolvedValue(true);
+    (requestDisableBatteryOptimization as jest.Mock).mockResolvedValue(true);
     
     // Mock basic Location functions
     mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
