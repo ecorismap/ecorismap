@@ -126,12 +126,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           await downloadData({ isAdmin, shouldPhotoDownload: false });
         }
 
-        const openResult = await openProject();
+        openProject();
         setIsLoading(false);
-        
-        if (!openResult.isOK) {
-          throw new Error(openResult.message);
-        }
 
         navigation.navigate('Home', {
           jumpTo: projectSettingsResult.region,

@@ -1,7 +1,14 @@
 import { cloneDeep } from 'lodash';
 import { useCallback } from 'react';
 import { t } from '../i18n/config';
-import { addGroupMembers, createGroup, deleteGroup, deleteGroupMembers, loadGroup, ensureE3KitInitialized } from '../lib/virgilsecurity/e3kit';
+import {
+  addGroupMembers,
+  createGroup,
+  deleteGroup,
+  deleteGroupMembers,
+  initializeUser,
+  loadGroup,
+} from '../lib/virgilsecurity/e3kit';
 import { ProjectType, VerifiedType } from '../types';
 
 export type UseE3kitGroupReturnType = {
@@ -39,10 +46,10 @@ export type UseE3kitGroupReturnType = {
 export const useE3kitGroup = (): UseE3kitGroupReturnType => {
   const loadE3kitGroup = async (project: ProjectType) => {
     // まずE3Kitが初期化されているか確認
-    const initResult = await ensureE3KitInitialized(project.ownerUid);
+    const initResult = await initializeUser(project.ownerUid);
     if (!initResult.isOK) {
       console.error('[loadE3kitGroup] E3Kit initialization failed:', initResult.message);
-      return { isOK: false, message: `暗号化の初期化に失敗しました: ${initResult.message}` };
+      return { isOK: false, message: initResult.message };
     }
 
     const { isOK } = await loadGroup(project.id, project.ownerUid);

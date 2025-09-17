@@ -6,10 +6,9 @@ import { RootState } from '../store';
 import { editSettingsAction } from '../modules/settings';
 import { ProjectType, RegionType, UserType, VerifiedType } from '../types';
 import { checkDuplicateMember, checkEmails } from '../utils/Project';
-import { hasRegisterdUser, ensureE3KitInitialized } from '../lib/virgilsecurity/e3kit';
+import { hasRegisterdUser } from '../lib/virgilsecurity/e3kit';
 import { t } from '../i18n/config';
 import { isLoggedIn } from '../utils/Account';
-import { useE3kitGroup } from './useE3kitGroup';
 
 export type UseProjectEditReturnType = {
   user: UserType;
@@ -26,7 +25,7 @@ export type UseProjectEditReturnType = {
     message: string;
     project: ProjectType | undefined;
   }>;
-  openProject: () => Promise<{ isOK: boolean; message: string }>;
+  openProject: () => void;
   saveProject: (updatedProject: ProjectType) => void;
   startProjectSetting: () => void;
   changeText: (name: string, value: string) => void;
@@ -44,7 +43,6 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
   const projects = useSelector((state: RootState) => state.projects);
   const [targetProject, setTargetProject] = useState<ProjectType>(initialProject);
   const [originalProject, setOriginalProject] = useState<ProjectType>(initialProject);
-  const { loadE3kitGroup } = useE3kitGroup();
 
   const [isEdited, setIsEdited] = useState(false);
   const isProjectOpen = useMemo(() => currentProjectId !== undefined, [currentProjectId]);
@@ -70,38 +68,17 @@ export const useProjectEdit = (initialProject: ProjectType, isNew: boolean): Use
     dispatch(editSettingsAction({ isSettingProject: true }));
   }, [dispatch]);
 
-  const openProject = useCallback(async () => {
+  const openProject = useCallback(() => {
     //オープンするときは写真はダウンロードしない
-    if (!isLoggedIn(user)) {
-      return { isOK: false, message: t('hooks.message.pleaseReLogin') };
-    }
-    
-    try {
-      // E3Kitの初期化を確認
-      const initResult = await ensureE3KitInitialized(user.uid);
-      if (!initResult.isOK) {
-        return { isOK: false, message: initResult.message || t('hooks.message.failLoadE3kitGroup') };
-      }
-      
-      // グループの読み込み
-      const loadResult = await loadE3kitGroup(targetProject);
-      if (!loadResult.isOK) {
-        return { isOK: false, message: loadResult.message };
-      }
-      
-      dispatch(
-        editSettingsAction({
-          role: role,
-          projectId: targetProject.id,
-          projectName: targetProject.name,
-        })
-      );
-      
-      return { isOK: true, message: '' };
-    } catch (error) {
-      return { isOK: false, message: t('hooks.message.failLoadE3kitGroup') };
-    }
-  }, [dispatch, role, targetProject, user, loadE3kitGroup]);
+    if (!isLoggedIn(user)) throw new Error('no user');
+    dispatch(
+      editSettingsAction({
+        role: role,
+        projectId: targetProject.id,
+        projectName: targetProject.name,
+      })
+    );
+  }, [dispatch, role, targetProject.id, targetProject.name, user]);
 
   const updateProjectMembers = useCallback(
     (uids: (string | null)[], hasRegisterd: boolean[]): ProjectType => {

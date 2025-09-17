@@ -15,7 +15,7 @@ import { projectsInitialState, setProjectsAction } from '../modules/projects';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
-import { FUNC_LOGIN, FUNC_ENCRYPTION } from '../constants/AppConstants';
+import { FUNC_LOGIN } from '../constants/AppConstants';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 export type UseAccountReturnType = {
@@ -80,16 +80,16 @@ export const useAccount = (): UseAccountReturnType => {
   const initializeEncript = useCallback(async (authUser: FirebaseAuthTypes.User) => {
     //暗号化の初期化
     setIsLoading(true);
-    const initE3kitResult = await e3kit.ensureE3KitInitialized(authUser.uid);
+    const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(authUser.uid);
     setIsLoading(false);
-    if (!initE3kitResult.isOK) {
-      if (initE3kitResult.message === 'not-registered') {
+    if (!initE3kitOK) {
+      if (initE3kitMessage === 'not-registered') {
         setAccountMessage(t('hooks.message.registEncryptPassword'));
         setAccountFormState('registEncryptPassword');
-      } else if (initE3kitResult.message === 'not-localkey') {
+      } else if (initE3kitMessage === 'not-localkey') {
         setAccountMessage(t('hooks.message.inputEncryptPassword'));
         setAccountFormState('restoreEncryptKey');
-      } else if (initE3kitResult.message === 'not-backup') {
+      } else if (initE3kitMessage === 'not-backup') {
         setAccountMessage(t('hooks.message.registEncryptPassword'));
         setAccountFormState('backupEncryptPassword');
       } else {
@@ -164,22 +164,6 @@ export const useAccount = (): UseAccountReturnType => {
           photoURL: authUser.photoURL,
         })
       );
-
-      // ログイン成功後にE3Kit初期化を試みる（エラーがあってもログインは成功とする）
-      if (FUNC_ENCRYPTION) {
-        e3kit.ensureE3KitInitialized(authUser.uid).then((result) => {
-          if (!result.isOK) {
-            // 初期化エラーの処理が必要な場合は、ここで状態を更新
-            if (
-              result.message === 'not-registered' ||
-              result.message === 'not-localkey' ||
-              result.message === 'not-backup'
-            ) {
-              // これらのエラーは後で処理される
-            }
-          }
-        });
-      }
 
       return { isOK: true, authUser };
     },
@@ -411,19 +395,12 @@ export const useAccount = (): UseAccountReturnType => {
   );
 
   useEffect(() => {
-    // ログインしていない場合はスキップ
-    if (!isLoggedIn(user)) return;
-
     (async () => {
-      try {
-        if (FUNC_LOGIN && Platform.OS === 'web') {
-          await initFirebaseAuth();
-        }
-        // E3Kit初期化は必要な時にのみ実行されるため、ここでは行わない
-      } catch (error) {}
+      if (FUNC_LOGIN && Platform.OS === 'web') {
+        await initFirebaseAuth();
+      }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.uid]); // user.uidが変更された時のみ実行
+  }, []);
 
   return {
     user,
