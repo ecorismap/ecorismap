@@ -12,7 +12,6 @@ let eThree: EThree;
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
-  
   // eThreeが既に正常に初期化されているかチェック
   if (eThree !== undefined) {
     try {
@@ -25,38 +24,34 @@ export const initializeUser = async (userId: string) => {
       eThree = undefined as any;
     }
   }
-
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
-  
+
   try {
     // タイムアウトを設定（30秒）
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('E3Kit initialization timeout')), 30000)
     );
-    
+
     //@ts-ignore
-    eThree = await Promise.race([
-      EThree.initialize(initializeFunction, { AsyncStorage }),
-      timeoutPromise
-    ]) as EThree;
+    eThree = (await Promise.race([EThree.initialize(initializeFunction, { AsyncStorage }), timeoutPromise])) as EThree;
 
     const hasRegistered = await hasRegisterdUser(userId);
     if (!hasRegistered) {
       return { isOK: false, message: 'not-registered' };
     }
-    
+
     const hasPrivateKey = await eThree.hasLocalPrivateKey();
     if (!hasPrivateKey) {
       return { isOK: false, message: 'not-localkey' };
     }
-    
+
     const hasBackup = await hasPrivateKeyBackup();
     if (!hasBackup) {
       return { isOK: false, message: 'not-backup' };
     }
-    
+
     return { isOK: true, message: '' };
   } catch (e: any) {
     console.log('[initializeUser] Error:', e);
@@ -159,10 +154,9 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
       return [gzip(JSON.stringify(data))];
     }
 
-    // E3Kitの初期化を確認
-    const initResult = await initializeUser(userId);
-    if (!initResult.isOK) {
-      throw new Error(`E3Kit initialization failed: ${initResult.message}`);
+    // eThreeが初期化されていない場合はエラーを投げる
+    if (!eThree) {
+      throw new Error('E3Kit not initialized');
     }
 
     const { isOK, group } = await loadGroup(groupId, userId);
@@ -185,9 +179,9 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
       return JSON.parse(unzip(dataString[0]));
     }
 
-    // E3Kitの初期化を確認
-    const initResult = await initializeUser(userId);
-    if (!initResult.isOK) {
+    // eThreeが初期化されていない場合はundefinedを返す
+    if (!eThree) {
+      console.log('[decryptEThree] E3Kit not initialized');
       return undefined;
     }
 

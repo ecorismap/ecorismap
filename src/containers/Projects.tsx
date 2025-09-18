@@ -17,7 +17,18 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   const [isEncryptPasswordModalOpen, setIsEncryptPasswordModalOpen] = useState(false);
   const [projectIndex, setProjectIndex] = useState(0);
   const { isSettingProject } = usePermission();
-  const { user, isLoading, projects, favoriteProjectIds, showOnlyFavorites, ownerProjectsCount, fetchProjects, generateProject, toggleFavorite, toggleShowOnlyFavorites } = useProjects();
+  const {
+    user,
+    isLoading,
+    projects,
+    favoriteProjectIds,
+    showOnlyFavorites,
+    ownerProjectsCount,
+    fetchProjects,
+    generateProject,
+    toggleFavorite,
+    toggleShowOnlyFavorites,
+  } = useProjects();
   const { customerLicense } = usePurchasesWeb();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
@@ -50,7 +61,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
 
   const gotoProject = useCallback(
     (projectId: string) => {
-      const project = projects.find(p => p.id === projectId);
+      const project = projects.find((p) => p.id === projectId);
       if (project) {
         navigation.navigate('ProjectEdit', { previous: 'Projects', project, isNew: false });
       }
@@ -75,7 +86,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
       if (true || Platform.OS === 'web') {
         gotoProject(projectId);
       } else {
-        const index = projects.findIndex(p => p.id === projectId);
+        const index = projects.findIndex((p) => p.id === projectId);
         setProjectIndex(index);
         setIsEncryptPasswordModalOpen(true);
       }
@@ -105,12 +116,17 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, []);
 
   useEffect(() => {
-    if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
-      (async () => {
-        await reloadProjects();
-        navigation.setParams({ reload: undefined });
-      })();
-    }
+    // 画面がフォーカスされた時のみ実行
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
+        (async () => {
+          await reloadProjects();
+          navigation.setParams({ reload: undefined });
+        })();
+      }
+    });
+
+    return unsubscribe;
   }, [navigation, projects.length, reloadProjects, route.params?.reload, user]);
 
   return (
