@@ -12,30 +12,57 @@ let eThree: EThree;
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
-  // // 既に初期化されている場合はスキップ
-  // if (eThree !== undefined) return { isOK: true, message: '' };
+  
+  // eThreeが既に正常に初期化されているかチェック
+  if (eThree !== undefined) {
+    try {
+      // eThreeが有効かどうか簡単なテストを実行
+      await eThree.hasLocalPrivateKey();
+      return { isOK: true, message: '' };
+    } catch (e) {
+      // eThreeが無効な場合は再初期化を続行
+      console.log('eThree is invalid, reinitializing...');
+      eThree = undefined as any;
+    }
+  }
+
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
+  
   try {
+    // タイムアウトを設定（30秒）
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('E3Kit initialization timeout')), 30000)
+    );
+    
     //@ts-ignore
-    eThree = await EThree.initialize(initializeFunction, { AsyncStorage });
+    eThree = await Promise.race([
+      EThree.initialize(initializeFunction, { AsyncStorage }),
+      timeoutPromise
+    ]) as EThree;
+
     const hasRegistered = await hasRegisterdUser(userId);
     if (!hasRegistered) {
       return { isOK: false, message: 'not-registered' };
     }
+    
     const hasPrivateKey = await eThree.hasLocalPrivateKey();
     if (!hasPrivateKey) {
       return { isOK: false, message: 'not-localkey' };
     }
+    
     const hasBackup = await hasPrivateKeyBackup();
     if (!hasBackup) {
       return { isOK: false, message: 'not-backup' };
     }
+    
     return { isOK: true, message: '' };
   } catch (e: any) {
-    console.log(e);
-    return { isOK: false, message: e };
+    console.log('[initializeUser] Error:', e);
+    // エラー時はeThreeをクリア
+    eThree = undefined as any;
+    return { isOK: false, message: e.message || e };
   }
 };
 

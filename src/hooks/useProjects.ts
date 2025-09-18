@@ -60,16 +60,16 @@ export const useProjects = (): UseProjectsReturnType => {
   }, [user]);
 
   const fetchProjects = useCallback(async () => {
+    if (!isLoggedIn(user)) return { isOK: false, message: t('hooks.message.pleaseLogin') };
+    
+    setIsLoading(true);
     try {
-      if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
-      setIsLoading(true);
       const initResult = await initializeUser(user.uid);
       if (!initResult.isOK) throw new Error(initResult.message);
 
       dispatch(setProjectsAction([]));
 
       const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
-      setIsLoading(false);
       if (!isOK || updatedProjects === undefined) {
         return { isOK: false, message };
       }
@@ -83,8 +83,9 @@ export const useProjects = (): UseProjectsReturnType => {
       dispatch(setProjectsAction(sortedProjects));
       return { isOK: true, message };
     } catch (e: any) {
-      setIsLoading(false);
       return { isOK: false, message: e.message };
+    } finally {
+      setIsLoading(false);
     }
   }, [dispatch, user]);
 
