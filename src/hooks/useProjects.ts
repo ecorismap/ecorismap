@@ -11,6 +11,7 @@ import { RootState } from '../store';
 import { ulid } from 'ulid';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
+import { initializeUser } from '../lib/virgilsecurity/e3kit';
 
 export type UseProjectsReturnType = {
   user: UserType;
@@ -61,8 +62,12 @@ export const useProjects = (): UseProjectsReturnType => {
   const fetchProjects = useCallback(async () => {
     try {
       if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
-      dispatch(setProjectsAction([]));
       setIsLoading(true);
+      const initResult = await initializeUser(user.uid);
+      if (!initResult.isOK) throw new Error(initResult.message);
+
+      dispatch(setProjectsAction([]));
+
       const { isOK, projects: updatedProjects, message } = await projectRepository.getAllProjects(user.uid);
       setIsLoading(false);
       if (!isOK || updatedProjects === undefined) {
