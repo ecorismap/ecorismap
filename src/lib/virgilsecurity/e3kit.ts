@@ -12,8 +12,8 @@ let eThree: EThree;
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
-  // 既に初期化されている場合はスキップ
-  if (eThree !== undefined) return { isOK: true, message: '' };
+  // // 既に初期化されている場合はスキップ
+  // if (eThree !== undefined) return { isOK: true, message: '' };
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
@@ -65,10 +65,16 @@ export const backupEncryptKey = async (backupPassword: string) => {
 export const cleanupEncryptKey = async () => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
   try {
-    await eThree.cleanup();
+    if (eThree && typeof eThree.cleanup === 'function') {
+      await eThree.cleanup();
+    }
+    // E3Kitの状態をリセット
+    eThree = undefined as any;
     return { isOK: true };
   } catch (e) {
-    console.log(e);
+    console.log('[cleanupEncryptKey] Error:', e);
+    // エラーが発生しても状態をリセット
+    eThree = undefined as any;
     return { isOK: false };
   }
 };

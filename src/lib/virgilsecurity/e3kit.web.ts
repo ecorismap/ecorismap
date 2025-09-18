@@ -15,7 +15,6 @@ let eThree: EThree;
 
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, state: '' };
-  if (eThree !== undefined) return { isOK: true, state: '' };
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);
