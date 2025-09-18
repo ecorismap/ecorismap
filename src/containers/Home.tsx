@@ -1212,7 +1212,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       }
 
       // 長押し検出タイマーを開始（800ms）
-      if (currentDrawTool === 'NONE' && currentMapMemoTool === 'NONE' && featureButton !== 'MEMO') {
+      // ドローツールが開いていても、特定のツールが選択されていない場合は長押しを有効にする
+      if ((featureButton === 'NONE' || currentDrawTool === 'NONE') && currentMapMemoTool === 'NONE' && featureButton !== 'MEMO') {
         longPressTimerRef.current = setTimeout(async () => {
           // 長押しが検出された場合、地図の位置でGoogle Mapsへのポップアップを表示
           const xy = pXY;
@@ -1507,12 +1508,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
         const noFeatureFound = await getInfoOfFeature(event);
         if (noFeatureFound) {
-          // フィーチャーが見つからなかった場合、getInfoOfMapを実行
-          const xy = pXY;
-          const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
-          if (latLonArray && latLonArray.length > 0) {
-            const latlon: Position = [latLonArray[0].longitude, latLonArray[0].latitude];
-            await getInfoOfMap(latlon, xy);
+          // フィーチャーが見つからなかった場合、かつ長押しポップアップが表示されていない場合のみgetInfoOfMapを実行
+          if (!mapLocationInfo) {
+            const xy = pXY;
+            const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
+            if (latLonArray && latLonArray.length > 0) {
+              const latlon: Position = [latLonArray[0].longitude, latLonArray[0].latitude];
+              await getInfoOfMap(latlon, xy);
+            }
           }
         }
       }
@@ -1533,6 +1536,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       handleReleaseSelect,
       isPencilTouch,
       isPinch,
+      mapLocationInfo,
       mapRegion,
       mapSize,
       navigation,
@@ -1820,6 +1824,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     };
   }, []);
 
+  // POIタップの制御用関数
+  const setPoiInfoWithControl = useCallback((poi: PoiInfoType | null) => {
+    // ドローツールが開いていても、特定のツールが選択されていない場合はPOIタップを有効にする
+    if ((featureButton === 'NONE' || currentDrawTool === 'NONE') && currentMapMemoTool === 'NONE') {
+      setPoiInfo(poi);
+    }
+  }, [featureButton, currentDrawTool, currentMapMemoTool]);
+
   // MapViewContextの値をメモ化
   const mapViewContextValue = useMemo(
     () => ({
@@ -1851,7 +1863,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       isTerrainActive,
       toggleTerrain,
       poiInfo,
-      setPoiInfo,
+      setPoiInfo: setPoiInfoWithControl,
       mapLocationInfo,
       setMapLocationInfo,
     }),
@@ -1877,7 +1889,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       toggleTerrain,
       isPinch,
       poiInfo,
-      setPoiInfo,
+      setPoiInfoWithControl,
       mapLocationInfo,
       setMapLocationInfo,
     ]
