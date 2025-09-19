@@ -48,11 +48,6 @@ export let storage: FirebaseStorageTypes.Module;
 export let auth: FirebaseAuthTypes.Module;
 
 const initialize = async (isEmulating = false) => {
-  auth = getAuth();
-  firestore = getFirestore();
-  // @ts-ignore
-  functions = getFunctions(getApp(), 'asia-northeast1');
-  storage = getStorage();
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
@@ -66,6 +61,12 @@ const initialize = async (isEmulating = false) => {
     },
   });
   await initializeAppCheck(getApp(), { provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+
+  auth = getAuth();
+  firestore = getFirestore();
+  // @ts-ignore
+  functions = getFunctions(getApp(), 'asia-northeast1');
+  storage = getStorage();
 
   if (isEmulating) {
     auth.useEmulator('http://localhost:9099');
