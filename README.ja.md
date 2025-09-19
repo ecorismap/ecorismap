@@ -29,6 +29,14 @@ yarn install
 
 #### Android
 1. [Android SDK用のAPIキー](https://developers.google.com/maps/documentation/android-sdk/get-api-key)を取得
+   1-1. キーの制限に本番用のSHA-1証明書とデバッグ用のSHA-1証明書を追加
+       - デバッグ用SHA-1証明書の取得：
+         ```bash
+         cd android
+         ./gradlew signingReport
+         ```
+       - 本番用SHA-1証明書はGoogle Play Consoleから取得し、後で追加
+
 2. テンプレートから`local.properties`を作成：
    ```bash
    cp template/local.properties android/
