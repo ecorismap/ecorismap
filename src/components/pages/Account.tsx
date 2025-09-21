@@ -43,7 +43,7 @@ export default function Account() {
     container: {
       backgroundColor: COLOR.WHITE,
       flex: 1,
-      justifyContent: 'flex-end',
+      justifyContent: 'flex-start',
     },
     message: {
       alignSelf: 'flex-end',
@@ -62,7 +62,7 @@ export default function Account() {
       alignItems: 'center',
       flex: 1,
       justifyContent: 'flex-start',
-      paddingTop: 10,
+      paddingTop: 0,
     },
     modalFrameView: {
       alignItems: 'center',
