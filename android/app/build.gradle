@@ -1,10 +1,9 @@
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-    id 'com.facebook.react'
-    id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
-    id 'com.google.gms.google-services'
-}
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+apply plugin: "com.google.android.libraries.mapsplatform.secrets-gradle-plugin"
+apply plugin: "com.google.gms.google-services"
+
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -37,6 +36,14 @@ def enableProguardInReleaseBuilds = false
 
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// Load local properties
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
 
 android {
     ndkVersion rootProject.ext.ndkVersion
@@ -48,7 +55,7 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2015")
+        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2024")
         versionName '0.4.7'
 
     }
@@ -64,10 +71,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file(System.getenv("STORE_FILE") ?: "debug.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "android"
-            keyAlias System.getenv("KEY_ALIAS") ?: "androiddebugkey"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "android"
+            storeFile file(System.getenv("STORE_FILE")?: localProperties.getProperty('MYAPP_UPLOAD_STORE_FILE'))
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: localProperties.getProperty('MYAPP_UPLOAD_STORE_PASSWORD')
+            keyAlias System.getenv("KEY_ALIAS") ?: localProperties.getProperty('MYAPP_UPLOAD_KEY_ALIAS')
+            keyPassword System.getenv("KEY_PASSWORD") ?: localProperties.getProperty('MYAPP_UPLOAD_KEY_PASSWORD')
         }
     }
     buildTypes {
@@ -89,14 +96,8 @@ dependencies {
 
     implementation("com.facebook.react:react-android")
     implementation platform('com.google.firebase:firebase-bom:34.2.0')
-    implementation 'com.google.firebase:firebase-analytics'
+    //implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-appcheck-playintegrity'
-    implementation 'com.google.android.play:integrity:1.4.0'
-    // debugImplementation("com.facebook.flipper:flipper:${FLIPPER_VERSION}")
-    // debugImplementation("com.facebook.flipper:flipper-network-plugin:${FLIPPER_VERSION}") {
-    //     exclude group:'com.squareup.okhttp3', module:'okhttp'
-    // }
-    // debugImplementation("com.facebook.flipper:flipper-fresco-plugin:${FLIPPER_VERSION}") 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
