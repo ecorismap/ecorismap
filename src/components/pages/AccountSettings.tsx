@@ -2,7 +2,7 @@ import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/eleme
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useContext, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
-import { ACCOUNT_SETTINGS_BTN, FUNC_ENCRYPTION, FUNC_PROJECT, FUNC_PURCHASE } from '../../constants/AppConstants';
+import { ACCOUNT_SETTINGS_BTN, FUNC_ENCRYPTION, FUNC_LOGIN, FUNC_PURCHASE } from '../../constants/AppConstants';
 import { AccountSettingsContext } from '../../contexts/AccountSettings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
@@ -87,7 +87,7 @@ export default function AccountSettings() {
           />
         )}
 
-        {FUNC_PROJECT && Platform.OS === 'web' && (
+        {FUNC_LOGIN && Platform.OS === 'web' && (
           <TextButton
             name={ACCOUNT_SETTINGS_BTN.PROJECT_DELETE_ALL}
             text={t('AccountSettings.project_delete_all.text')}

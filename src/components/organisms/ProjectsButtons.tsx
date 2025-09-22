@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FUNC_CREATE_PROJECT_BY_MOBILE, PROJECTS_BTN } from '../../constants/AppConstants';
+import { PROJECTS_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
@@ -16,7 +16,7 @@ export const ProjectsButtons = (props: Props) => {
   return (
     <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
       <Button name={PROJECTS_BTN.RELOAD} onPress={reloadProjects} labelText={t('Projects.label.reloadProjects')} />
-      {(Platform.OS === 'web' || FUNC_CREATE_PROJECT_BY_MOBILE) && (
+      {Platform.OS === 'web' && (
         <Button name={PROJECTS_BTN.ADD} onPress={createProject} labelText={t('Projects.label.createProject')} />
       )}
     </View>

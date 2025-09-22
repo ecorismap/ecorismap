@@ -3,7 +3,7 @@ import { View, Image, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SelectionalButton } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
-import { HOME_ACCOUNT_BTN, COLOR, FUNC_PROJECT } from '../../constants/AppConstants';
+import { HOME_ACCOUNT_BTN, COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { AppStateContext } from '../../contexts/AppState';
 import { ProjectContext } from '../../contexts/Project';
 import { t } from '../../i18n/config';
@@ -88,7 +88,7 @@ export const HomeAccountButton = React.memo(() => {
                 </View>
               </Pressable>
             )}
-            {FUNC_PROJECT && (
+            {FUNC_LOGIN && (
               <Button
                 id="PROJECTS"
                 name={HOME_ACCOUNT_BTN.PROJECTS}
