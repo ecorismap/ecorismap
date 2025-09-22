@@ -39,8 +39,39 @@ jobs:
       - name: Setup Android keystore
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
-      - name: Get commit count
-        run: echo "VERSION_CODE=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      - name: Get and increment version code
+        run: |
+          # Get the current highest version code from Google Play Console using git tags or commit count
+          # Option 1: Use git commit count (always increasing)
+          VERSION_FROM_COMMITS=$(git rev-list --count HEAD)
+          
+          # Option 2: Get from build.gradle as baseline
+          VERSION_FROM_GRADLE=$(grep "versionCode" android/app/build.gradle | grep -o '[0-9]\+' | tail -1)
+          
+          # Use the higher value to ensure it's always increasing
+          if [ $VERSION_FROM_COMMITS -gt $VERSION_FROM_GRADLE ]; then
+            NEW_VERSION=$VERSION_FROM_COMMITS
+          else
+            # If gradle version is higher, use gradle version + 1
+            NEW_VERSION=$((VERSION_FROM_GRADLE + 1))
+          fi
+          
+          echo "Commit count: $VERSION_FROM_COMMITS"
+          echo "Gradle version: $VERSION_FROM_GRADLE"
+          echo "New version code: $NEW_VERSION"
+          
+          # Set as environment variable
+          echo "VERSION_CODE=$NEW_VERSION" >> $GITHUB_ENV
+          
+          # Create whatsnew files with the build number
+          mkdir -p whatsnew
+          echo "Build $NEW_VERSION" > whatsnew/whatsnew-ja-JP
+          echo "Build $NEW_VERSION" > whatsnew/whatsnew-en-US
+      - name: Update AppConstants with build number
+        run: |
+          # Update VERSION in AppConstants.tsx to include build number
+          sed -i "s/export const VERSION = 'Version \([^']*\)'/export const VERSION = 'Version \1 (Build $NEW_VERSION)'/" src/constants/AppConstants.tsx
+          echo "Updated VERSION to include Build $NEW_VERSION"
       - name: Build Release
         env:
           STORE_FILE: release.keystore

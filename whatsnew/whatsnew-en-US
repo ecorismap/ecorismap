@@ -1,4 +1,0 @@
-2024-10-6
-- Stop displaying geological information
-- Fixed an issue where custom label settings were not displayed
-- Fixed an issue where dictionaries could not be exported in layer settings export
