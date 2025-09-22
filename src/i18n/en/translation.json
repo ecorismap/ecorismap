@@ -641,7 +641,7 @@
       "noInternet": "I'm not connected to the internet. \nPlease connect and try again."
     },
     "confirm": {
-      "closeProject": "Do you want to close the project? \nData that has not been uploaded will be discarded.",
+      "closeProject": "Do you want to finish the project? \nAny data that has not been uploaded will be discarded! \n!",
       "deleteTiles": "Do you want to clear the map cache?",
       "discard": "Do you want to discard your changes?",
       "discardLogout": "There is a project in editing. \nDo you want to discard and log out?",
@@ -727,7 +727,7 @@
       "jumpProject": "home",
       "downloadData": "pull",
       "uploadData": "push",
-      "closeProject": "close",
+      "closeProject": "end",
       "pen": "pen",
       "stamp": "stamp",
       "eraser": "eraser",

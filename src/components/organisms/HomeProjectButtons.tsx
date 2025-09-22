@@ -93,7 +93,7 @@ export const HomeProjectButtons = React.memo(() => {
           </View> */}
           <View style={{ marginHorizontal: 9 }}>
             <Button
-              name="close-thick"
+              name="exit-run"
               backgroundColor={COLOR.DARKRED}
               disabled={false}
               onPress={pressCloseProject}
