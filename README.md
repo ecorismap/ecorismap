@@ -38,6 +38,22 @@ yarn install
    ```
    MAPS_API_KEY=YOUR_ANDROID_MAPS_API_KEY
    ```
+   
+4. (Optional) For release builds, add Keystore configuration:
+   ```
+   MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
+   MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
+   MYAPP_UPLOAD_STORE_PASSWORD=*****
+   MYAPP_UPLOAD_KEY_PASSWORD=*****
+   ```
+   
+   To create a keystore for release builds:
+   ```bash
+   cd android/app
+   keytool -genkeypair -v -storetype PKCS12 -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   
+   > **Important**: Keep your keystore file and passwords secure. Never commit them to version control.
 
 #### iOS
 1. Get [API key for iOS SDK](https://developers.google.com/maps/documentation/ios-sdk/get-api-key)
@@ -86,7 +102,7 @@ yarn web           # Web browser
 
 Advanced setup adds Firebase-based user authentication, data storage, and server-side features.
 
-> **Note**: The examples below use identifiers like `ecoris-map` (project name) and `jp.co.ecoris.ecorismap` (bundle ID), but these should be replaced with your own project-specific values.
+> **Note**: The examples below use identifiers like `ecorismap` (project name) and `jp.co.ecoris.ecorismap` (bundle ID), but these should be replaced with your own project-specific values.
 
 ### 1. Enable Login Features
 Edit `src/constants/AppConstants.ts` to enable login features:
@@ -130,17 +146,54 @@ export const FUNC_LOGIN = true;  // Enable login features
    - Android: Select Play Integrity
    - iOS: Select App Attest
 
-2. For Web reCAPTCHA:
+2. Configure Play Integrity (Android):
+   - Link Play Console to Firebase project:
+     1. Go to Play Console → Your app → App integrity → Play Integrity API
+     2. Click "Link a cloud project"
+     3. Select your Firebase project from the list (or create new)
+     4. Complete the linking process
+   
+   - Add SHA-256 certificate:
+     1. In Play Console → App integrity
+     2. Copy the SHA-256 certificate fingerprint from "App signing key certificate"
+     3. Add it to Firebase Console → Project settings → Your Android app
+
+3. For Web reCAPTCHA:
    - Create key pair at [Google reCAPTCHA](https://www.google.com/recaptcha/admin)
    - Add site key to src/constants/APIKeys.ts
    - Add secret key to Firebase Console App Check settings
 
-3. Debug tokens for development (Android):
+4. Debug tokens for development:
+
+   **Android Debug Token**
    ```bash
-   # Get debug token
+   # Run the app on emulator/device
+   # Get debug token from logcat
    adb logcat | grep DebugAppCheckProvider
-   # Add token to Firebase Console > App Check > Debug tokens
+   
+   # Look for output like:
+   # D DebugAppCheckProvider: Enter this debug secret into the allow list in the Firebase Console for your project: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
    ```
+   
+   **iOS Debug Token**
+   - Run the app on simulator/device
+   - Check Xcode console for debug token
+   - Look for: `Firebase App Check debug token: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+   
+   **Web Debug Token (Auto-generated)**
+   - Automatically enabled for local development when:
+     - Running in development environment (`NODE_ENV === 'development'`)
+     - Accessing from localhost
+     - Using Firebase emulators
+   - Open browser console to see the debug token
+   - Format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+   
+   **Registering Debug Tokens**
+   1. Go to Firebase Console → App Check
+   2. Select your app (Android/iOS/Web)
+   3. Click "Manage" → "Debug tokens"
+   4. Add the token from console output
+   5. Give it a descriptive name (e.g., "Development Device", "iOS Simulator", "Localhost Dev")
 
 ##### Platform-specific App Configuration
 
@@ -148,9 +201,13 @@ export const FUNC_LOGIN = true;  // Enable login features
 1. Add app → Select "Android"
 2. Configuration:
    - Package name: Your app's package name
-   - SHA-1 certificate: `cd android && ./gradlew signingReport`
+   - SHA-1 certificate: 
+     ```bash
+     # Debug certificate (for development)
+     cd android && ./gradlew signingReport
+     ```
 3. Download `google-services.json` and place in `android/app/`
-4. For release: Add Play Console SHA-1 certificate later
+4. For release: Add SHA-256 certificate from Play Console later
 
 **iOS App**
 1. Add app → Select "iOS"
@@ -212,21 +269,6 @@ This project supports both development and production Firebase environments. Con
 
 **Important:** All environment-specific configuration files and backups are gitignored to prevent accidental commits of sensitive data.
 
-### App Check Debug Mode (Web)
-
-For local development, the web application automatically enables App Check debug mode when:
-- Running in development environment (`NODE_ENV === 'development'`)
-- Accessing from localhost
-- Using Firebase emulators
-
-When debug mode is enabled:
-1. Open browser console to see the debug token
-2. Copy the token (format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`)
-3. Register it in Firebase Console:
-   - Go to App Check → Your app → Manage → Debug tokens
-   - Add the token from your console
-
-This allows App Check to work properly during local development.
 
 ## License
 This software is released under the MIT License, see LICENSE.

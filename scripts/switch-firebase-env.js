@@ -40,8 +40,9 @@ const configs = [
     target: 'android/local.properties',
     template: path.join(templateDir, 'local.properties'),
     name: 'Android Maps API',
-    type: 'template',
-    placeholder: 'YOUR-MAPS-API-KEY'
+    type: 'local-properties',
+    placeholder: 'YOUR-MAPS-API-KEY',
+    keystoreConfig: path.join(keysDir, 'keystore-config')
   },
   {
     source: path.join(keysDir, 'maps-key-ios'),
@@ -117,6 +118,38 @@ configs.forEach(config => {
       
       fs.writeFileSync(targetPath, templateContent);
       console.log(`✅ ${config.name}: 設定を更新しました`);
+
+    } else if (config.type === 'local-properties') {
+      // local.properties用の特殊処理（Maps APIキー + Keystore設定）
+      if (!fs.existsSync(config.template)) {
+        console.error(`❌ ${config.name}: テンプレートファイルが見つかりません: ${config.template}`);
+        hasError = true;
+        return;
+      }
+
+      const keyValue = fs.readFileSync(config.source, 'utf8').trim();
+      let content = fs.readFileSync(config.template, 'utf8');
+      
+      // Maps APIキーを置換
+      content = content.replace(config.placeholder, keyValue);
+      
+      // 既存のlocal.propertiesからsdk.dirを保持
+      if (fs.existsSync(targetPath)) {
+        const existingContent = fs.readFileSync(targetPath, 'utf8');
+        const sdkDirMatch = existingContent.match(/^sdk\.dir=.+$/m);
+        if (sdkDirMatch) {
+          content += `\n${sdkDirMatch[0]}`;
+        }
+      }
+      
+      // Keystore設定を追加（存在する場合）
+      if (fs.existsSync(config.keystoreConfig)) {
+        const keystoreConfig = fs.readFileSync(config.keystoreConfig, 'utf8').trim();
+        content += `\n\n# Keystore configuration\n${keystoreConfig}`;
+      }
+      
+      fs.writeFileSync(targetPath, content);
+      console.log(`✅ ${config.name}: 設定を更新しました（Keystore設定を含む）`);
 
     } else if (config.type === 'web-config') {
       // Web設定の特殊処理

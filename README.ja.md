@@ -45,6 +45,22 @@ yarn install
    ```
    MAPS_API_KEY=YOUR_ANDROID_MAPS_API_KEY
    ```
+   
+4. （任意）リリースビルド用にKeystore設定を追加：
+   ```
+   MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
+   MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
+   MYAPP_UPLOAD_STORE_PASSWORD=*****
+   MYAPP_UPLOAD_KEY_PASSWORD=*****
+   ```
+   
+   リリースビルド用のkeystoreを作成する方法：
+   ```bash
+   cd android/app
+   keytool -genkeypair -v -storetype PKCS12 -keystore my-upload-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   
+   > **重要**: keystoreファイルとパスワードは安全に保管してください。絶対にバージョン管理システムにコミットしないでください。
 
 #### iOS
 1. [iOS SDK用のAPIキー](https://developers.google.com/maps/documentation/ios-sdk/get-api-key)を取得
@@ -93,7 +109,7 @@ yarn web           # Webブラウザ
 
 高度なセットアップでは、Firebaseを使用したユーザー認証、データ保存、サーバーサイド機能を追加します。
 
-> **注意**: 以下の設定例では `ecoris-map`（プロジェクト名）や `jp.co.ecoris.ecorismap`（バンドルID）などの固有の識別子を使用していますが、これらは実際のプロジェクトに合わせて適切な値に置き換えてください。
+> **注意**: 以下の設定例では `ecorismap`（プロジェクト名）や `jp.co.ecoris.ecorismap`（バンドルID）などの固有の識別子を使用していますが、これらは実際のプロジェクトに合わせて適切な値に置き換えてください。
 
 ### 1. ログイン機能の有効化
 `src/constants/AppConstants.ts`を編集してログイン機能を有効にします：
@@ -107,7 +123,7 @@ export const FUNC_LOGIN = true;  // ログイン機能を有効化
 
 ##### プロジェクトの作成
 1. [Firebase Console](https://console.firebase.google.com)にアクセス
-2. 「ecoris-map」という名前で新しいプロジェクトを作成
+2. 「ecorismap」という名前で新しいプロジェクトを作成
 3. Blazeプラン（従量課金制）にアップグレード（Functions利用に必要）
 
 ##### Firebase Consoleでの各種サービス設定
@@ -137,17 +153,54 @@ export const FUNC_LOGIN = true;  // ログイン機能を有効化
    - Android: Play Integrityを選択
    - iOS: App Attestを選択
 
-2. Web用reCAPTCHAの設定：
+2. Play Integrityの設定（Android）：
+   - Play ConsoleをFirebaseプロジェクトにリンク：
+     1. Play Console → 対象アプリ → アプリの完全性 → Play Integrity API に移動
+     2. 「クラウドプロジェクトをリンク」をクリック
+     3. リストからFirebaseプロジェクトを選択（または新規作成）
+     4. リンク処理を完了する
+   
+   - SHA-256証明書を追加：
+     1. Play Console → アプリの完全性 に移動
+     2. 「アプリ署名鍵の証明書」からSHA-256証明書フィンガープリントをコピー
+     3. Firebase Console → プロジェクト設定 → Androidアプリに追加
+
+3. Web用reCAPTCHAの設定：
    - [Google reCAPTCHA](https://www.google.com/recaptcha/admin)でキーペアを作成
    - サイトキーをsrc/constants/APIKeys.tsに追加
    - シークレットキーをFirebase ConsoleのApp Check設定に追加
 
-3. 開発環境用デバッグトークン（Android）：
+4. 開発環境用デバッグトークン：
+
+   **Androidデバッグトークン**
    ```bash
-   # デバッグトークンの取得
+   # エミュレータ/実機でアプリを実行
+   # logcatからデバッグトークンを取得
    adb logcat | grep DebugAppCheckProvider
-   # 表示されたトークンをFirebase ConsoleのApp Check > デバッグトークンに追加
+   
+   # 以下のような出力を探す：
+   # D DebugAppCheckProvider: Enter this debug secret into the allow list in the Firebase Console for your project: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
    ```
+   
+   **iOSデバッグトークン**
+   - シミュレータ/実機でアプリを実行
+   - Xcodeコンソールでデバッグトークンを確認
+   - 次の形式で表示されます: `Firebase App Check debug token: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+   
+   **Webデバッグトークン（自動生成）**
+   - ローカル開発時は自動的にデバッグモードが有効化されます：
+     - 開発環境で実行している場合（`NODE_ENV === 'development'`）
+     - localhostからアクセスしている場合
+     - Firebaseエミュレータを使用している場合
+   - ブラウザコンソールを開いてデバッグトークンを確認
+   - 形式: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+   
+   **デバッグトークンの登録**
+   1. Firebase Console → App Checkに移動
+   2. 対象のアプリ（Android/iOS/Web）を選択
+   3. 「管理」→「デバッグトークン」をクリック
+   4. コンソール出力から取得したトークンを追加
+   5. わかりやすい名前を付ける（例：「開発デバイス」、「iOSシミュレータ」、「localhost開発」）
 
 ##### プラットフォーム別アプリの追加
 
@@ -155,9 +208,13 @@ export const FUNC_LOGIN = true;  // ログイン機能を有効化
 1. 「アプリを追加」→「Android」を選択
 2. 設定項目：
    - パッケージ名: `jp.co.ecoris.ecorismap`
-   - SHA-1証明書: `cd android && ./gradlew signingReport`で取得
+   - SHA-1証明書: 
+     ```bash
+     # デバッグ証明書（開発用）
+     cd android && ./gradlew signingReport
+     ```
 3. `google-services.json`をダウンロードして`android/app/`に配置
-4. リリース用: Play ConsoleのSHA-1証明書も後で追加
+4. リリース用: Play ConsoleのSHA-256証明書も後で追加
 
 **iOSアプリ**
 1. 「アプリを追加」→「iOS」を選択
@@ -221,21 +278,6 @@ Firebase HostingはWeb版アプリケーションをホスティングするた�
 
 **重要：** すべての環境別設定ファイルとバックアップは`.gitignore`に登録されており、機密データが誤ってコミットされることを防いでいます。
 
-### App Checkデバッグモード（Web）
-
-ローカル開発時、以下の条件でWebアプリケーションは自動的にApp Checkデバッグモードを有効化します：
-- 開発環境で実行している場合（`NODE_ENV === 'development'`）
-- localhostからアクセスしている場合
-- Firebaseエミュレータを使用している場合
-
-デバッグモードが有効な場合の設定手順：
-1. ブラウザコンソールを開いてデバッグトークンを確認
-2. トークンをコピー（形式: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`）
-3. Firebase Consoleに登録：
-   - App Check → 対象アプリ → 管理 → デバッグトークン
-   - コンソールから取得したトークンを追加
-
-これにより、ローカル開発中もApp Checkが正常に動作するようになります。
 
 ## ライセンス
 このソフトウェアはMITライセンスの下でリリースされています。LICENSEを参照してください。
