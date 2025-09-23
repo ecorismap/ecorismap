@@ -10,6 +10,10 @@ import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
 
+export const isInitialized = (): boolean => {
+  return eThree !== undefined;
+};
+
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
   // eThreeが既に正常に初期化されているかチェック

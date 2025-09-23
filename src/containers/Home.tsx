@@ -345,6 +345,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const downloadData = useCallback(
     async ({ isAdmin = false, shouldPhotoDownload = false }) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+      
+      // e3kitの初期化チェック
+      if (!e3kit.isInitialized() && user.uid) {
+        const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
+        if (!initE3kitOK) {
+          throw new Error(`${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`);
+        }
+      }
       if (isAdmin) {
         //自分以外のPUBLICとPRIVATEデータをサーバーから取得する
         const [publicRes, privateRes, templateRes] = await Promise.all([
@@ -951,6 +959,16 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
       }
+      
+      // e3kitの初期化チェック
+      if (!e3kit.isInitialized() && user.uid) {
+        const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
+        if (!initE3kitOK) {
+          await AlertAsync(`${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`);
+          return;
+        }
+      }
+      
       setIsLoading(true);
       const { isOK, message } = await uploadData(storageLicenseResult.isOK);
       setIsLoading(false);
@@ -963,7 +981,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [isConnected, project, uploadData]);
+  }, [isConnected, project, uploadData, user.uid]);
 
   const pressSyncPosition = useCallback(() => {
     if (isSynced === false) {

@@ -762,6 +762,7 @@
       "registEncryptPassword": "暗号化パスワードを登録してください。",
       "inputEncryptPassword": "暗号化パスワードを入力してください。",
       "errorInitEncrypt": "暗号の初期化に問題があります。",
+      "failedInitializeEncrypt": "暗号化の初期化に失敗しました",
       "noUser": "ユーザーが存在しません。",
       "emailInUse": "そのメールアドレスは既に使用されています。",
       "failSetProfile": "プロフィールの設定に失敗しました。",

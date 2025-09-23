@@ -30,6 +30,7 @@ import { AlertAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system';
+import * as e3kit from '../lib/virgilsecurity/e3kit';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{

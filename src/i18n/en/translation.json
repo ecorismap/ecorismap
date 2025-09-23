@@ -543,6 +543,7 @@
       "duplicateMembers": "Duplicate members.",
       "emailInUse": "That email address is already in use.",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
+      "failedInitializeEncrypt": "Failed to initialize encryption",
       "failAddGroupMembers": "Failed to add member",
       "failCreateE3kitGroup": "Failed to create a group.",
       "failDeleteAccount": "Failed to delete the user account.",
