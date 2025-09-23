@@ -6,7 +6,16 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const DataButton = () => {
-  const { layer, projectId, isChecked, isEditable, pressAddData, pressDeleteData, pressExportData } =
+  const {
+    layer,
+    projectId,
+    isChecked,
+    isEditable,
+    isExporting,
+    pressAddData,
+    pressDeleteData,
+    pressExportData,
+  } =
     useContext(DataContext);
 
   const exportDisabled = useMemo(() => false && projectId !== undefined, [projectId]);
@@ -27,8 +36,8 @@ export const DataButton = () => {
           <Button
             name={DATA_BTN.DOWNLOAD}
             onPress={pressExportData}
-            backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
-            disabled={!(isChecked && isEditable)}
+            backgroundColor={isChecked && isEditable && !isExporting ? COLOR.BLUE : COLOR.LIGHTBLUE}
+            disabled={!(isChecked && isEditable) || isExporting}
             labelText={t('Data.label.export')}
           />
         )}

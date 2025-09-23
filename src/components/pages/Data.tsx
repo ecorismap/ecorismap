@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
@@ -16,7 +16,7 @@ import { COLOR } from '../../constants/AppConstants';
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, gotoBack, addDataByDictionary } = useContext(DataContext);
+  const { layer, gotoBack, addDataByDictionary, isExporting } = useContext(DataContext);
 
   const navigation = useNavigation();
 
@@ -95,6 +95,14 @@ export default function DataScreen() {
         )}
       </ScrollView>
       <DataButton />
+      {isExporting && (
+        <View style={styles.exportingOverlay}>
+          <View style={styles.exportingOverlayContent}>
+            <ActivityIndicator size="large" color={COLOR.PROGRESS_BAR_FILL} />
+            <Text style={styles.exportingOverlayText}>{t('Data.message.exporting')}</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -103,5 +111,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  exportingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLOR.SAVING_OVERLAY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  exportingOverlayContent: {
+    backgroundColor: COLOR.WHITE,
+    borderRadius: 10,
+    paddingVertical: 20,
+    paddingHorizontal: 24,
+    minWidth: 220,
+    alignItems: 'center',
+    shadowColor: COLOR.BLACK,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  exportingOverlayText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: COLOR.TEXT_DARK,
   },
 });

@@ -13,6 +13,7 @@ interface DataContextType {
   sortedName: string;
   sortedOrder: SortOrderType;
   isEditable: boolean;
+  isExporting: boolean;
   addDataByDictionary: (fieldId: string, value: string) => void;
   pressAddData: () => void;
   pressDeleteData: () => void;

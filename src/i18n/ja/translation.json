@@ -610,6 +610,9 @@
       "export": "共有",
       "delete": "削除",
       "add": "追加"
+    },
+    "message": {
+      "exporting": "データをエクスポートしています..."
     }
   },
   "DataEdit": {

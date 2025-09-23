@@ -345,12 +345,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const downloadData = useCallback(
     async ({ isAdmin = false, shouldPhotoDownload = false }) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      
+
       // e3kitの初期化チェック
       if (!e3kit.isInitialized() && user.uid) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
         if (!initE3kitOK) {
-          throw new Error(`${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`);
+          throw new Error(
+            `${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`
+          );
         }
       }
       if (isAdmin) {
@@ -959,17 +961,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
       }
-      
+      setIsLoading(true);
       // e3kitの初期化チェック
       if (!e3kit.isInitialized() && user.uid) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
         if (!initE3kitOK) {
-          await AlertAsync(`${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`);
+          await AlertAsync(
+            `${t('hooks.message.failedInitializeEncrypt')}${initE3kitMessage ? `: ${initE3kitMessage}` : ''}`
+          );
+          setIsLoading(false);
           return;
         }
       }
-      
-      setIsLoading(true);
+
       const { isOK, message } = await uploadData(storageLicenseResult.isOK);
       setIsLoading(false);
       if (!isOK) {
@@ -1231,7 +1235,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
 
       // 長押し検出タイマーを開始（800ms）
       // ドローツールが開いていても、特定のツールが選択されていない場合は長押しを有効にする
-      if ((featureButton === 'NONE' || currentDrawTool === 'NONE') && currentMapMemoTool === 'NONE' && featureButton !== 'MEMO') {
+      if (
+        (featureButton === 'NONE' || currentDrawTool === 'NONE') &&
+        currentMapMemoTool === 'NONE' &&
+        featureButton !== 'MEMO'
+      ) {
         longPressTimerRef.current = setTimeout(async () => {
           // 長押しが検出された場合、地図の位置でGoogle Mapsへのポップアップを表示
           const xy = pXY;
@@ -1843,12 +1851,15 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, []);
 
   // POIタップの制御用関数
-  const setPoiInfoWithControl = useCallback((poi: PoiInfoType | null) => {
-    // ドローツールが開いていても、特定のツールが選択されていない場合はPOIタップを有効にする
-    if ((featureButton === 'NONE' || currentDrawTool === 'NONE') && currentMapMemoTool === 'NONE') {
-      setPoiInfo(poi);
-    }
-  }, [featureButton, currentDrawTool, currentMapMemoTool]);
+  const setPoiInfoWithControl = useCallback(
+    (poi: PoiInfoType | null) => {
+      // ドローツールが開いていても、特定のツールが選択されていない場合はPOIタップを有効にする
+      if ((featureButton === 'NONE' || currentDrawTool === 'NONE') && currentMapMemoTool === 'NONE') {
+        setPoiInfo(poi);
+      }
+    },
+    [featureButton, currentDrawTool, currentMapMemoTool]
+  );
 
   // MapViewContextの値をメモ化
   const mapViewContextValue = useMemo(

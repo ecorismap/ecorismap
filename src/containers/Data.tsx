@@ -21,6 +21,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   //console.log('render DataContainer');
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(route.params.targetLayer);
+  const [isExporting, setIsExporting] = useState(false);
 
   // MapViewContextから現在地とGPS状態を取得
   const { currentLocation, gpsState } = useContext(MapViewContext);
@@ -50,35 +51,51 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const { generateExportGeoData } = useGeoFile();
 
   const pressExportData = useCallback(async () => {
+    if (isExporting) return;
+
+    setIsExporting(true);
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
     // if (isMember) {
     //   Alert.alert('', t('Data.alert.exportData'));
     //   return;
     // }
 
-    let exportedRecords: RecordType[] = [];
-    if (isMapMemoLayer) {
-      checkedRecords.forEach((record) => {
-        if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
-        const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
-        exportedRecords = [...exportedRecords, record, ...subGroupRecords];
-      });
-    } else {
-      exportedRecords = checkedRecords;
-    }
+    try {
+      let exportedRecords: RecordType[] = [];
+      if (isMapMemoLayer) {
+        checkedRecords.forEach((record) => {
+          if (record.field._group && record.field._group !== '') return; //自身がsubGroupの場合はスキップ
+          const subGroupRecords = sortedRecordSet.filter((r) => r.field._group === record.id);
+          exportedRecords = [...exportedRecords, record, ...subGroupRecords];
+        });
+      } else {
+        exportedRecords = checkedRecords;
+      }
 
-    const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `${route.params.targetLayer.name}_${time}`;
-    const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
-      exportPhoto: true,
-    });
-    const isOK = await exportGeoFile(exportData, `data_export_${time}`, 'zip');
-    if (isOK) {
-      await AlertAsync(t('hooks.message.successExportData'));
-    } else {
+      const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
+      const fileNameBase = `${route.params.targetLayer.name}_${time}`;
+      const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
+        exportPhoto: true,
+      });
+      const isOK = await exportGeoFile(exportData, `data_export_${time}`, 'zip');
+      if (isOK) {
+        await AlertAsync(t('hooks.message.successExportData'));
+      } else {
+        await AlertAsync(t('hooks.message.failExport'));
+      }
+    } catch (error) {
       await AlertAsync(t('hooks.message.failExport'));
+    } finally {
+      setIsExporting(false);
     }
-  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isMapMemoLayer, route.params.targetLayer]);;
+  }, [
+    checkedRecords,
+    sortedRecordSet,
+    generateExportGeoData,
+    isExporting,
+    isMapMemoLayer,
+    route.params.targetLayer,
+  ]);
 
   const pressDeleteData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
@@ -183,6 +200,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       sortedName,
       sortedOrder,
       isEditable,
+      isExporting,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -207,6 +225,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       sortedName,
       sortedOrder,
       isEditable,
+      isExporting,
       changeOrder,
       changeChecked,
       changeCheckedAll,

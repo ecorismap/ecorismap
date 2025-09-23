@@ -519,6 +519,9 @@
       "add": "add",
       "export": "DL",
       "delete": "delete"
+    },
+    "message": {
+      "exporting": "Exporting data..."
     }
   },
   "hooks": {
