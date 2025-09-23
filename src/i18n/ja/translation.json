@@ -727,7 +727,7 @@
     },
     "message": {
       "pleaseLogin": "ログインし直してください。",
-      "cannotUploadData": "レイヤの設定が更新されているのでアップロードできません。",
+      "cannotUploadData": "レイヤの設定が更新されています。問題が起きる可能性がありますが、アップロードしますか？（管理者に相談してください）",
       "unknownError": "不明なエラーです。もう一度試してください",
       "cannotAddProject": "プロジェクトの編集中は追加できません",
       "inputProjectName": "プロジェクト名を入力してくだい。",

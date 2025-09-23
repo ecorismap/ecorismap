@@ -26,7 +26,7 @@ import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
-import { AlertAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system';
@@ -467,7 +467,11 @@ export const useRepository = (): UseRepositoryReturnType & {
         (storeUpdatedAt === undefined || dayjs(updatedAt).valueOf() !== dayjs(storeUpdatedAt).valueOf())
       ) {
         //console.log(updatedAt, storeUpdatedAt);
-        return { isOK: false, message: t('hooks.message.cannotUploadData') };
+        const confirmMessage = t('hooks.message.cannotUploadData');
+        const shouldContinue = await ConfirmAsync(confirmMessage);
+        if (!shouldContinue) {
+          return { isOK: false, message: '' };
+        }
       }
 
       const targetLayers = getTargetLayers(layers, uploadType);

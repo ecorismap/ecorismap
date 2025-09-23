@@ -537,7 +537,7 @@
     },
     "message": {
       "pleaseLogin": "Please login",
-      "cannotUploadData": "Cannot upload because the layer settings have been updated.",
+      "cannotUploadData": "Layer settings have been updated. Issues may occur, but would you like to upload anyway? (Please consult with the administrator)",
       "unknownError": "Unknown error.",
       "cannotAddProject": "Cannot be added while editing a project",
       "cannotGetFileSize": "Unable to get file size",
