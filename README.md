@@ -3,11 +3,11 @@ EcorisMap
 EcorisMap is a cross-platform field survey application that records locations and information on maps for outdoor surveys.
 
 ## Official Site
-- https://ecoris-map.web.app
+- https://ecorismap-pro.web.app
 
 ## Documentation
-- [English Documentation](https://ecoris-map.web.app/manual_en.html)
-- [Japanese Documentation](https://ecoris-map.web.app/manual_ja.html)
+- [English Documentation](https://ecorismap-pro.web.app/manual_en.html)
+- [Japanese Documentation](https://ecorismap-pro.web.app/manual_ja.html)
 
 ---
 

@@ -107,7 +107,7 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     //     setAccountFormState('loginUserAccount');
     //     navigation.navigate('Account', {});
     //   }
-    //   //window.open('https://ecoris-map.web.app', '_self');
+    //   //window.open('https://ecorismap-pro.web.app', '_self');
     // } else {
     navigation.navigate('Home');
     // }
