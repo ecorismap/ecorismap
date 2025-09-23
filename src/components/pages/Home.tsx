@@ -204,8 +204,11 @@ export default function HomeScreen() {
   });
   //console.log('Home');
   const toggleDirectionLine = useCallback(() => {
-    setShowDirectionLine((prev) => !prev);
-  }, []);
+    // ドローツールがアクティブでない時のみ方向線を表示
+    if (featureButton === 'NONE' && currentDrawTool === 'NONE') {
+      setShowDirectionLine((prev) => !prev);
+    }
+  }, [featureButton, currentDrawTool]);
 
   const headerRightButton = useCallback(() => {
     if (isDownloading) {
