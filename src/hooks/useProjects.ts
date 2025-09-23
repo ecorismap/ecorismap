@@ -11,7 +11,7 @@ import { RootState } from '../store';
 import { ulid } from 'ulid';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
-import { initializeUser } from '../lib/virgilsecurity/e3kit';
+import * as e3kit from '../lib/virgilsecurity/e3kit';
 
 export type UseProjectsReturnType = {
   user: UserType;
@@ -64,8 +64,13 @@ export const useProjects = (): UseProjectsReturnType => {
     
     setIsLoading(true);
     try {
-      const initResult = await initializeUser(user.uid);
-      if (!initResult.isOK) throw new Error(initResult.message);
+      // e3kitの初期化チェック
+      if (!e3kit.isInitialized()) {
+        const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
+        if (!initE3kitOK) {
+          throw new Error(initE3kitMessage || t('hooks.message.failedInitializeEncrypt'));
+        }
+      }
 
       dispatch(setProjectsAction([]));
 
