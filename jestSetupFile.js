@@ -7,6 +7,23 @@ global.Buffer = Buffer;
 // Reset module registry before mocking
 jest.resetModules();
 
+// Mock redux-persist to prevent timeout issues in tests
+jest.mock('redux-persist', () => {
+  const real = jest.requireActual('redux-persist');
+  return {
+    ...real,
+    persistStore: jest.fn(() => ({
+      pause: jest.fn(),
+      persist: jest.fn(),
+      purge: jest.fn(),
+      flush: jest.fn(),
+      dispatch: jest.fn(),
+      getState: jest.fn(),
+      subscribe: jest.fn(() => jest.fn()),
+    })),
+  };
+});
+
 // Mock AppConstants FIRST to set FUNC_LOGIN to false in tests
 jest.mock('./src/constants/AppConstants.tsx', () => ({
   ...jest.requireActual('./src/constants/AppConstants.tsx'),
