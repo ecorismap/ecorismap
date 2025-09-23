@@ -4,6 +4,149 @@ import { Buffer } from 'buffer';
 // Make Buffer available globally  
 global.Buffer = Buffer;
 
+// Reset module registry before mocking
+jest.resetModules();
+
+// Mock AppConstants FIRST to set FUNC_LOGIN to false in tests
+jest.mock('./src/constants/AppConstants.tsx', () => ({
+  ...jest.requireActual('./src/constants/AppConstants.tsx'),
+  FUNC_LOGIN: false,
+}));
+
+// Mock Firebase modules FIRST before anything else imports them
+jest.mock('@react-native-firebase/app', () => ({
+  __esModule: true,
+  default: () => ({
+    name: '[DEFAULT]',
+  }),
+  getApp: jest.fn(() => ({
+    name: '[DEFAULT]',
+  })),
+  initializeApp: jest.fn(),
+  getApps: jest.fn(() => []),
+  deleteApp: jest.fn(),
+}));
+
+jest.mock('@react-native-firebase/app-check', () => {
+  const mockProvider = {
+    configure: jest.fn(),
+  };
+  
+  const mockAppCheck = {
+    activate: jest.fn(),
+    initializeAppCheck: jest.fn(() => Promise.resolve()),
+    getToken: jest.fn(() => Promise.resolve({ token: 'test-token' })),
+    newReactNativeFirebaseAppCheckProvider: jest.fn(() => mockProvider),
+  };
+  
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockAppCheck),
+    initializeAppCheck: jest.fn(),
+    getAppCheck: jest.fn(() => mockAppCheck),
+  };
+});
+
+jest.mock('@react-native-firebase/auth', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    currentUser: null,
+    signInWithEmailAndPassword: jest.fn(),
+    createUserWithEmailAndPassword: jest.fn(),
+    signOut: jest.fn(),
+    onAuthStateChanged: jest.fn(() => jest.fn()),
+    sendPasswordResetEmail: jest.fn(),
+    confirmPasswordReset: jest.fn(),
+    applyActionCode: jest.fn(),
+    sendEmailVerification: jest.fn(),
+    updateProfile: jest.fn(),
+    updateEmail: jest.fn(),
+    updatePassword: jest.fn(),
+    reauthenticateWithCredential: jest.fn(),
+    deleteUser: jest.fn(),
+    useEmulator: jest.fn(),
+  })),
+}));
+
+jest.mock('@react-native-firebase/firestore', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ exists: false })),
+        set: jest.fn(() => Promise.resolve()),
+        update: jest.fn(() => Promise.resolve()),
+        delete: jest.fn(() => Promise.resolve()),
+        onSnapshot: jest.fn(() => jest.fn()),
+      })),
+      get: jest.fn(() => Promise.resolve({ docs: [] })),
+      add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
+      where: jest.fn(() => ({
+        get: jest.fn(() => Promise.resolve({ docs: [] })),
+        onSnapshot: jest.fn(() => jest.fn()),
+      })),
+      onSnapshot: jest.fn(() => jest.fn()),
+    })),
+    doc: jest.fn(() => ({
+      get: jest.fn(() => Promise.resolve({ exists: false })),
+      set: jest.fn(() => Promise.resolve()),
+      update: jest.fn(() => Promise.resolve()),
+      delete: jest.fn(() => Promise.resolve()),
+      onSnapshot: jest.fn(() => jest.fn()),
+    })),
+    batch: jest.fn(() => ({
+      set: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      commit: jest.fn(() => Promise.resolve()),
+    })),
+    runTransaction: jest.fn(),
+    useEmulator: jest.fn(),
+  })),
+  Timestamp: {
+    now: jest.fn(() => ({ toDate: () => new Date() })),
+    fromDate: jest.fn(date => ({ toDate: () => date })),
+  },
+  FieldValue: {
+    serverTimestamp: jest.fn(),
+    delete: jest.fn(),
+    increment: jest.fn(),
+  },
+}));
+
+jest.mock('@react-native-firebase/storage', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    ref: jest.fn(() => ({
+      child: jest.fn(() => ({
+        put: jest.fn(() => ({
+          on: jest.fn(),
+          then: jest.fn(() => Promise.resolve()),
+          catch: jest.fn(),
+        })),
+        putFile: jest.fn(() => ({
+          on: jest.fn(),
+          then: jest.fn(() => Promise.resolve()),
+          catch: jest.fn(),
+        })),
+        getDownloadURL: jest.fn(() => Promise.resolve('https://example.com/file.jpg')),
+        delete: jest.fn(() => Promise.resolve()),
+        getMetadata: jest.fn(() => Promise.resolve({})),
+        updateMetadata: jest.fn(() => Promise.resolve({})),
+      })),
+    })),
+    useEmulator: jest.fn(),
+  })),
+}));
+
+jest.mock('@react-native-firebase/functions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({ data: {} }))),
+    useEmulator: jest.fn(),
+  })),
+}));
+
 // Mock LogBox before importing react-native
 jest.mock('react-native', () => {
   const RN = jest.requireActual('react-native');
@@ -296,128 +439,30 @@ jest.mock('expo-sqlite', () => ({
   })),
 }));
 
-// Mock Firebase modules
-jest.mock('@react-native-firebase/app', () => ({
-  __esModule: true,
-  default: () => ({
-    name: '[DEFAULT]',
-  }),
-  getApp: jest.fn(() => ({
-    name: '[DEFAULT]',
-  })),
-  initializeApp: jest.fn(),
-  getApps: jest.fn(() => []),
-  deleteApp: jest.fn(),
-}));
 
-jest.mock('@react-native-firebase/auth', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    currentUser: null,
-    signInWithEmailAndPassword: jest.fn(),
-    createUserWithEmailAndPassword: jest.fn(),
-    signOut: jest.fn(),
-    onAuthStateChanged: jest.fn(() => jest.fn()),
-    sendPasswordResetEmail: jest.fn(),
-    confirmPasswordReset: jest.fn(),
-    applyActionCode: jest.fn(),
-    sendEmailVerification: jest.fn(),
-    updateProfile: jest.fn(),
-    updateEmail: jest.fn(),
-    updatePassword: jest.fn(),
-    reauthenticateWithCredential: jest.fn(),
-    deleteUser: jest.fn(),
+// Mock expo-image-picker
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn(() => Promise.resolve({ 
+    canceled: false, 
+    assets: [{ uri: 'test://image.jpg', width: 100, height: 100 }]
   })),
-}));
-
-jest.mock('@react-native-firebase/firestore', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    collection: jest.fn(() => ({
-      doc: jest.fn(() => ({
-        get: jest.fn(() => Promise.resolve({ exists: false })),
-        set: jest.fn(() => Promise.resolve()),
-        update: jest.fn(() => Promise.resolve()),
-        delete: jest.fn(() => Promise.resolve()),
-        onSnapshot: jest.fn(() => jest.fn()),
-      })),
-      get: jest.fn(() => Promise.resolve({ docs: [] })),
-      add: jest.fn(() => Promise.resolve({ id: 'test-id' })),
-      where: jest.fn(() => ({
-        get: jest.fn(() => Promise.resolve({ docs: [] })),
-        onSnapshot: jest.fn(() => jest.fn()),
-      })),
-      onSnapshot: jest.fn(() => jest.fn()),
-    })),
-    doc: jest.fn(() => ({
-      get: jest.fn(() => Promise.resolve({ exists: false })),
-      set: jest.fn(() => Promise.resolve()),
-      update: jest.fn(() => Promise.resolve()),
-      delete: jest.fn(() => Promise.resolve()),
-      onSnapshot: jest.fn(() => jest.fn()),
-    })),
-    batch: jest.fn(() => ({
-      set: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      commit: jest.fn(() => Promise.resolve()),
-    })),
-    runTransaction: jest.fn(),
+  launchCameraAsync: jest.fn(() => Promise.resolve({ 
+    canceled: false, 
+    assets: [{ uri: 'test://image.jpg', width: 100, height: 100 }]
   })),
-  Timestamp: {
-    now: jest.fn(() => ({ toDate: () => new Date() })),
-    fromDate: jest.fn(date => ({ toDate: () => date })),
+  requestCameraPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestMediaLibraryPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  MediaTypeOptions: {
+    Images: 'Images',
+    Videos: 'Videos',
+    All: 'All',
   },
-  FieldValue: {
-    serverTimestamp: jest.fn(),
-    delete: jest.fn(),
-    increment: jest.fn(),
+  ImagePickerResult: {},
+  PermissionStatus: {
+    GRANTED: 'granted',
+    DENIED: 'denied',
+    UNDETERMINED: 'undetermined',
   },
-}));
-
-jest.mock('@react-native-firebase/storage', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    ref: jest.fn(() => ({
-      child: jest.fn(() => ({
-        put: jest.fn(() => ({
-          on: jest.fn(),
-          then: jest.fn(() => Promise.resolve()),
-          catch: jest.fn(),
-        })),
-        putFile: jest.fn(() => ({
-          on: jest.fn(),
-          then: jest.fn(() => Promise.resolve()),
-          catch: jest.fn(),
-        })),
-        getDownloadURL: jest.fn(() => Promise.resolve('https://example.com/file.jpg')),
-        delete: jest.fn(() => Promise.resolve()),
-        getMetadata: jest.fn(() => Promise.resolve({})),
-        updateMetadata: jest.fn(() => Promise.resolve({})),
-      })),
-    })),
-  })),
-}));
-
-jest.mock('@react-native-firebase/functions', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({ data: {} }))),
-  })),
-}));
-
-jest.mock('@react-native-firebase/app-check', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    activate: jest.fn(),
-    initializeAppCheck: jest.fn(),
-    getToken: jest.fn(() => Promise.resolve({ token: 'test-token' })),
-  })),
-  initializeAppCheck: jest.fn(),
-  getAppCheck: jest.fn(() => ({
-    activate: jest.fn(),
-    getToken: jest.fn(() => Promise.resolve({ token: 'test-token' })),
-  })),
 }));
 
 //jest.mock('expo', () => require.requireMock('expo'));
