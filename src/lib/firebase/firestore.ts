@@ -66,15 +66,15 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     } else {
       q = query(collection(firestore, 'projects'), where('membersUid', 'array-contains', uid));
     }
-    
+
     // 常にサーバーから最新データを取得（プロジェクト一覧は最新情報が重要）
-    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> = 
+    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
       await getDocsFromServer(q);
-    
+
     // バッチ処理で設定の更新日時を取得（並列処理）
-    const settingsPromises = querySnapshot.docs.map(docSnapshot => getSettingsUpdatedAt(docSnapshot.id));
+    const settingsPromises = querySnapshot.docs.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id));
     const settingsResults = await Promise.all(settingsPromises);
-    
+
     const result = querySnapshot.docs.map(async (docSnapshot, index) => {
       const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
@@ -90,10 +90,12 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           ownerUid,
           storage: storage ?? { count: 0 },
           license: license ?? 'Free',
-          encryptedAt: toDate(encryptedAt),
-          settingsEncryptedAt,
           ...data,
           ...others,
+          encryptedAt: toDate(encryptedAt),
+          // 設定ミスのためdata中にもsettingsEncryptedAtがある場合が発生したので、
+          // 上書きされないようにこの位置に移動。
+          settingsEncryptedAt: settingsEncryptedAt,
         } as ProjectType;
       }
     });
@@ -107,12 +109,12 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     console.log(error);
     throw new Error(t('common.message.failGetProjects'));
   }
-};;
+};
 
 export const addProject = async (project: ProjectType) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ownerUid, adminsUid, membersUid, storage, license, ...others } = project;
+    const { id, ownerUid, adminsUid, membersUid, storage, license, settingsEncryptedAt, ...others } = project;
     const encdata = await enc(others, ownerUid, id);
     const projectFS: ProjectFS = {
       ownerUid,
@@ -133,7 +135,7 @@ export const addProject = async (project: ProjectType) => {
 export const updateProject = async (project: ProjectType) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ownerUid, adminsUid, membersUid, storage, license, ...others } = project;
+    const { id, ownerUid, adminsUid, membersUid, storage, license, settingsEncryptedAt, ...others } = project;
     const encdata = await enc(others, ownerUid, id);
     const updateProjectFS: UpdateProjectFS = {
       adminsUid,
@@ -270,13 +272,19 @@ export const uploadProjectSettings = async (projectId: string, editorUid: string
 
 export const getSettingsUpdatedAt = async (projectId: string): Promise<Date | undefined> => {
   try {
-    // ドキュメント参照をモジュラー API で作成
-    const settingsRef = doc(firestore, 'projects', projectId, 'settings', 'default');
-    // ドキュメントを取得
-    const snap = await getDoc(settingsRef);
+    // サーバーから最新データを取得（キャッシュを使用しない）
+    const settingsQuery = query(
+      collection(firestore, 'projects', projectId, 'settings'),
+      where('__name__', '==', 'default')
+    );
+    const snap = await getDocsFromServer(settingsQuery);
+
+    if (snap.empty) {
+      return undefined;
+    }
 
     // データをプロジェクト設定型として取得
-    const settings = snap.data() as ProjectSettingsFS;
+    const settings = snap.docs[0].data() as ProjectSettingsFS;
     // encryptedAt フィールドを Date に変換して返す
     return toDate(settings.encryptedAt);
   } catch (error) {

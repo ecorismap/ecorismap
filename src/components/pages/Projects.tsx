@@ -140,14 +140,11 @@ export default function Projects() {
             </View>
           )}
           <View style={{ flexDirection: 'row', height: 45 }}>
-            <Pressable 
-              style={[styles.th, { width: 40 }]}
-              onPress={toggleShowOnlyFavorites}
-            >
-              <MaterialCommunityIcons 
-                name={showOnlyFavorites ? 'star' : 'star-outline'} 
-                size={20} 
-                color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4} 
+            <Pressable style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
+              <MaterialCommunityIcons
+                name={showOnlyFavorites ? 'star' : 'star-outline'}
+                size={20}
+                color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4}
               />
             </Pressable>
             <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>

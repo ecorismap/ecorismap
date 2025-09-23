@@ -61,7 +61,7 @@ export const useProjects = (): UseProjectsReturnType => {
 
   const fetchProjects = useCallback(async () => {
     if (!isLoggedIn(user)) return { isOK: false, message: t('hooks.message.pleaseLogin') };
-    
+
     setIsLoading(true);
     try {
       // e3kitの初期化チェック
