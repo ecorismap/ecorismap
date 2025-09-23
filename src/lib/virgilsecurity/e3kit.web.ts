@@ -13,6 +13,20 @@ import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
 
+export const isInitialized = (): boolean => {
+  if (!FUNC_ENCRYPTION) return true;
+  if (eThree === undefined) return false;
+  
+  try {
+    // eThreeが実際に有効かどうか同期的にチェック
+    // 注: hasLocalPrivateKeyは非同期なので、ここでは基本的なチェックのみ
+    // 詳細なチェックはinitializeUser内で行われる
+    return eThree !== undefined && typeof eThree.encrypt === 'function';
+  } catch (e) {
+    return false;
+  }
+};
+
 export const initializeUser = async (userId: string) => {
   if (!FUNC_ENCRYPTION) return { isOK: true, state: '' };
   const getToken = httpsCallable(functions, 'getVirgilJwt');
