@@ -35,6 +35,7 @@ import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
 import { deleteDatabase, importDictionary } from '../utils/SQLite';
 import { useGeoFile } from './useGeoFile';
+import { clearAllDynamicDictionaries } from './useDynamicDictionaryInput';
 
 export type UseEcorisMapFileReturnType = {
   isLoading: boolean;
@@ -356,6 +357,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
     dispatch(setSettingsAction({ ...settingsInitialState, tutrials: settings.tutrials }));
+    // 動的辞書をクリア
+    clearAllDynamicDictionaries();
     //ログインしていない前提なので、プロジェクトで使うかもしれない写真、地図キャッシュは消さない
     // const { uri } = await FileSystem.getInfoAsync(TILE_FOLDER);
     // if (uri) {

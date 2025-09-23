@@ -27,7 +27,8 @@
       "table": "Table",
       "listtable": "ListTable",
       "string_multi": "String-multipleLines",
-      "string_dictionary": "string-dictionary"
+      "string_dictionary": "string-dictionary",
+      "string_dynamic": "String-dynamic dictionary"
     },
     "permission": {
       "private": "Private",

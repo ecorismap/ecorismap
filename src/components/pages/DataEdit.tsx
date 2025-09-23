@@ -27,6 +27,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Button } from '../atoms';
 import { COLOR, DATAEDIT_BTN } from '../../constants/AppConstants';
 import { DataEditDictionary } from '../organisms/DataEditDictionary';
+import { DataEditDynamicDictionary } from '../organisms/DataEditDynamicDictionary';
 import { DataEditUserName } from '../organisms/DataEditUserName';
 
 export default function DataEditScreen() {
@@ -186,6 +187,18 @@ export default function DataEditScreen() {
                   name={name}
                   value={data.field[name] as string | number | undefined}
                   table={`_${layer.id}_${id}`}
+                  onChangeText={changeField}
+                  onEndEditing={() => submitField(name, format)}
+                />
+              );
+            case 'STRING_DYNAMIC':
+              return (
+                <DataEditDynamicDictionary
+                  key={index}
+                  name={name}
+                  value={data.field[name] as string | number | undefined}
+                  layerId={layer.id}
+                  fieldId={id}
                   onChangeText={changeField}
                   onEndEditing={() => submitField(name, format)}
                 />

@@ -77,6 +77,7 @@ export const DATAFORMAT = {
   STRING: t('constants.dataformat.string'),
   STRING_MULTI: t('constants.dataformat.string_multi'),
   STRING_DICTIONARY: t('constants.dataformat.string_dictionary'),
+  STRING_DYNAMIC: t('constants.dataformat.string_dynamic'),
   SERIAL: t('constants.dataformat.serial'),
   DATETIME: t('constants.dataformat.datetime'),
   DATESTRING: t('constants.dataformat.datestring'),

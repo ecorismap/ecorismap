@@ -11,6 +11,7 @@ import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import * as projectStore from '../lib/firebase/firestore';
 import { isLoggedIn } from '../utils/Account';
 import { t } from '../i18n/config';
+import { clearAllDynamicDictionaries } from './useDynamicDictionaryInput';
 
 export type UseProjectReturnType = {
   isSettingProject: boolean;
@@ -76,6 +77,8 @@ export const useProject = (): UseProjectReturnType => {
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
+    // 動的辞書をクリア
+    clearAllDynamicDictionaries();
   }, [dispatch]);
 
   const saveProjectSetting = useCallback(

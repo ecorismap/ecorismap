@@ -27,7 +27,8 @@
       "table": "テーブル",
       "listtable": "リストテーブル",
       "string_multi": "文字列-複数行",
-      "string_dictionary": "文字列-辞書"
+      "string_dictionary": "文字列-辞書",
+      "string_dynamic": "文字列-動的辞書"
     },
     "permission": {
       "private": "プライベート",

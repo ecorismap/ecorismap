@@ -17,6 +17,7 @@ import { useRoute } from '@react-navigation/native';
 import { isLocationType } from '../utils/General';
 import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { useProject } from './useProject';
+import { addToDynamicDictionary } from './useDynamicDictionaryInput';
 
 export type UseDataEditReturnType = {
   targetRecord: RecordType;
@@ -261,6 +262,17 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
     //unixTimeを更新
     updatedRecord.updatedAt = Date.now();
+
+    // STRING_DYNAMICフィールドの値を辞書に追加
+    targetLayer.field.forEach((field) => {
+      if (field.format === 'STRING_DYNAMIC' && updatedRecord.field[field.name]) {
+        const fieldValue = updatedRecord.field[field.name];
+        if (typeof fieldValue === 'string' || typeof fieldValue === 'number') {
+          const fieldKey = `${targetLayer.id}_${field.id}`;
+          addToDynamicDictionary(fieldKey, fieldValue);
+        }
+      }
+    });
 
     //データの更新。userIdが変更される場合は、元のデータを削除して新しいデータを追加する
     if (targetRecord.userId !== dataUser.uid) {
