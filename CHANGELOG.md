@@ -1,19 +1,17 @@
 # Change Log
-## [0.4.7] - 2025-9-23
-  - Abolished the selection button
-  and changed to always selectable
-  - Added feature to jump to Google
-  Maps information
-  - Added feature to jump to Google
-  Maps by long-pressing the map
-  - Improved track processing in
-  background mode
+## [0.4.8] 
+
+## [0.4.7] - 2025-9-24
+ - Removed the selection button and changed to always selectable
+- Added a jump-to-Google Maps feature by long-pressing on the map or selecting a POI
+- Added support for a dynamic dictionary format
+- Modified to include time in trajectory data
   - Added update information display
 
 - 選択ボタンを廃止して、常時選択可能に変更
-- GoogleMpapsの情報にジャンプできる機能を追加
-- 地図の長押しでGoogeMapsにジャンプできる機能を追加
-- バックグラウンド時の軌跡の処理を改善
+- 地図の長押し or POI選択でgoogle mapsへジャンプ機能を追加
+- 動的辞書フォーマットを追加
+- 軌跡のデータに時間を追加するように修正
 - 更新情報の表示を追加
 
 ## [0.4.6] - 2025-8-23
@@ -175,8 +173,8 @@
 
 ## [0.1.9] - 2022-11-13
 - App Release.
-
-[0.4.7]: https://github.com/ecorismap/ecorismap/compare/7425433d6bae566e48067b2c8a36eacf27bd562e...HEAD
+[0.4.8]: https://github.com/ecorismap/ecorismap/compare/8a3c77e226501865da00c843eb226e8454c30344...HEAD
+[0.4.7]: https://github.com/ecorismap/ecorismap/compare/7425433d6bae566e48067b2c8a36eacf27bd562e...8a3c77e226501865da00c843eb226e8454c30344
 [0.4.6]: https://github.com/ecorismap/ecorismap/compare/6196449453febecc5eb2adcc21be183db21d73b8...7425433d6bae566e48067b2c8a36eacf27bd562e
 [0.4.5]: https://github.com/ecorismap/ecorismap/compare/27e5e0da2bfe9c67ae496efda7a9dbe8ff7d2b12...6196449453febecc5eb2adcc21be183db21d73b8
 [0.4.3]: https://github.com/ecorismap/ecorismap/compare/7ca59c7d5e9678397af39bd4eda43a7c9e83f4e8...27e5e0da2bfe9c67ae496efda7a9dbe8ff7d2b12
