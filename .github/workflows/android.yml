@@ -69,9 +69,20 @@ jobs:
           echo "Build $NEW_VERSION" > whatsnew/whatsnew-en-US
       - name: Update AppConstants with build number
         run: |
-          # Update VERSION in AppConstants.tsx to include build number
-          sed -i "s/export const VERSION = 'Version \([^']*\)'/export const VERSION = 'Version \1 (Build $NEW_VERSION)'/" src/constants/AppConstants.tsx
-          echo "Updated VERSION to include Build $NEW_VERSION"
+          # デバッグ情報を追加
+          echo "Current VERSION_CODE: $VERSION_CODE"
+          echo "Current NEW_VERSION: $NEW_VERSION"
+          
+          # 現在のVERSION行を確認
+          echo "Before update:"
+          grep "export const VERSION" src/constants/AppConstants.tsx
+          
+          # sedコマンドを修正（環境変数を正しく使用）
+          sed -i "s/export const VERSION = 'Version \([^']*\)';/export const VERSION = 'Version \1 (Build ${VERSION_CODE})';/" src/constants/AppConstants.tsx
+          
+          # 更新後の確認
+          echo "After update:"
+          grep "export const VERSION" src/constants/AppConstants.tsx
       - name: Build Release
         env:
           STORE_FILE: release.keystore
