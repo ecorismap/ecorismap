@@ -568,7 +568,11 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
 };
 
 const generateDescription = (record: RecordType, field: FieldType[]) => {
-  return field
+  const userInfo = FUNC_LOGIN && record.displayName 
+    ? `User: ${record.displayName}\n` 
+    : '';
+  
+  const fieldInfo = field
     .map(({ name }) => {
       const fieldValue = record.field[name];
       if (isPhotoField(fieldValue)) {
@@ -578,6 +582,8 @@ const generateDescription = (record: RecordType, field: FieldType[]) => {
       }
     })
     .join('\n');
+    
+  return userInfo + fieldInfo;
 };
 
 const rgbaToKmlColor = (rgba: string, transparency: boolean): string => {
@@ -707,6 +713,29 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
     .att('creator', 'ecoris')
     .att('version', '1.1');
 
+  // Generate description with all fields except name, time, cmt
+  const generateGPXDescription = (record: RecordType) => {
+    const descriptions: string[] = [];
+    
+    // Add user info first if available
+    if (FUNC_LOGIN && record.displayName) {
+      descriptions.push(`User: ${record.displayName}`);
+    }
+    
+    // Add all other fields except name, time, cmt
+    Object.entries(record.field).forEach(([fieldName, fieldValue]) => {
+      if (fieldName !== 'name' && fieldName !== 'time' && fieldName !== 'cmt') {
+        if (isPhotoField(fieldValue)) {
+          descriptions.push(`${fieldName}: ${fieldValue.map((p) => p.name).join(',')}`);
+        } else if (fieldValue !== undefined && fieldValue !== '') {
+          descriptions.push(`${fieldName}: ${fieldValue}`);
+        }
+      }
+    });
+    
+    return descriptions.join('\n');
+  };
+
   switch (type) {
     case 'POINT':
       data.forEach((point) => {
@@ -721,6 +750,11 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
             wpt.ele('ele', point.coords.altitude);
           }
           wpt.ele('cmt', point.field.cmt);
+          // Add all other fields to description
+          const desc = generateGPXDescription(point);
+          if (desc) {
+            wpt.ele('desc', desc);
+          }
         }
       });
       break;
@@ -734,6 +768,11 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
           //console.log(dayjs(line.field.time ? (line.field.time as string) : 0));
           trk.ele('time', time === undefined ? undefined : time.isValid() ? time.toISOString() : undefined);
           trk.ele('cmt', line.field.cmt ?? '');
+          // Add all other fields to description
+          const desc = generateGPXDescription(line);
+          if (desc) {
+            trk.ele('desc', desc);
+          }
           const trkseg = trk.ele('trkseg');
           line.coords.forEach((coord) => {
             //console.log(dayjs.unix(coord.timestamp!).toISOString());
