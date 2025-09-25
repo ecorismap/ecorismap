@@ -352,11 +352,15 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
   const clearEcorisMap = useCallback(async () => {
     await deleteDatabase();
-    //レイヤ、データ、地図情報、設定をリセット。設定のtutrialは現在の状況を引き継ぐ
+    //レイヤ、データ、地図情報、設定をリセット。設定のtutrialと利用規約同意状態は現在の状況を引き継ぐ
     dispatch(setLayersAction(layersInitialState));
     dispatch(setDataSetAction(dataSetInitialState));
     dispatch(setTileMapsAction(tileMapsInitialState));
-    dispatch(setSettingsAction({ ...settingsInitialState, tutrials: settings.tutrials }));
+    dispatch(setSettingsAction({ 
+      ...settingsInitialState, 
+      tutrials: settings.tutrials,
+      agreedTermsVersion: settings.agreedTermsVersion 
+    }));
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
     //ログインしていない前提なので、プロジェクトで使うかもしれない写真、地図キャッシュは消さない
@@ -366,7 +370,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     // }
 
     return { isOK: true, message: '' };
-  }, [dispatch, settings?.tutrials]);
+  }, [dispatch, settings?.tutrials, settings?.agreedTermsVersion]);
 
   return {
     isLoading,

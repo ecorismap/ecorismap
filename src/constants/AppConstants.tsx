@@ -361,6 +361,7 @@ export const SETTINGS_BTN = {
   PDF_SAVE: 'file-image-marker',
   MAP_CACHE_DELETE: 'delete-variant',
   PHOTO_CACHE_DELETE: 'delete-circle',
+  CACHE_DELETE: 'delete-sweep',
   APRI_CLEAR: 'restore',
   GPS_SETTINGS: 'crosshairs-gps',
   MANUAL: 'help',

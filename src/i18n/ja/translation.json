@@ -386,6 +386,9 @@
     "photocachedelete": {
       "text": "写真キャッシュをクリア"
     },
+    "cachedelete": {
+      "text": "キャッシュをクリア"
+    },
     "apriclear": {},
     "manual": {
       "text": "EcorisMapの使い方、利用規約"
@@ -394,13 +397,16 @@
       "clearLocalStorage": "初期化しますか？データと設定がすべてリセットされます。",
       "clearTileCache": "地図のキャッシュとダウンロードファイルをクリアしますか？",
       "clearPhotoCache": "写真のキャッシュをクリアしますか？",
+      "clearCache": "すべてのキャッシュ（地図と写真）をクリアしますか？",
       "fileNew": "現在のデータをクリアしますか？",
       "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。"
     },
     "alert": {
       "loadEcorisMapFile": "ファイルを読み込みました。",
       "clearTileCache": "地図のキャッシュをクリアしました。",
-      "clearPhotoCache": "写真のキャッシュをクリアしました。"
+      "clearPhotoCache": "写真のキャッシュをクリアしました。",
+      "clearCache": "すべてのキャッシュをクリアしました。",
+      "clearCacheError": "キャッシュのクリア中にエラーが発生しました。"
     },
     "termsOfUse": {},
     "version": {},

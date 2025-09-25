@@ -142,6 +142,32 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
     }
   }, []);
 
+  const pressClearCache = useCallback(async () => {
+    const ret = await ConfirmAsync(t('Settings.confirm.clearCache'));
+    if (ret) {
+      setIsLoading(true);
+      try {
+        // 地図キャッシュをクリア
+        await clearTileCache();
+        
+        // 写真キャッシュをクリア（モバイルのみ）
+        if (Platform.OS !== 'web') {
+          const { uri } = await FileSystem.getInfoAsync(PHOTO_FOLDER);
+          if (uri) {
+            await FileSystem.deleteAsync(uri);
+          }
+        }
+        
+        await AlertAsync(t('Settings.alert.clearCache'));
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+        await AlertAsync(t('Settings.alert.clearCacheError'));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [clearTileCache]);
+
   const pressMapListURLOK = useCallback(
     (url: string) => {
       saveMapListURL(url);
@@ -206,6 +232,7 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         pressClearData,
         pressClearTileCache,
         pressClearPhotoCache,
+        pressClearCache,
         pressGotoManual,
         pressOSSLicense,
         pressVersion,

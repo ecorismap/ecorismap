@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
-import { FUNC_LOGIN, SETTINGS_BTN, VERSION, COLOR } from '../../constants/AppConstants';
+import { View, StyleSheet, Text } from 'react-native';
+import { SETTINGS_BTN, VERSION, COLOR } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
@@ -15,8 +15,7 @@ export default function Settings() {
     pressFileOpen,
     pressFileSave,
     pressClearData,
-    pressClearTileCache,
-    pressClearPhotoCache,
+    pressClearCache,
     pressGotoManual,
     pressOSSLicense,
     pressVersion,
@@ -34,7 +33,15 @@ export default function Settings() {
 
   const customHeader = useCallback(
     () => (
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 63,
+          backgroundColor: COLOR.MAIN,
+        }}
+      >
         <Text style={{ fontSize: 16 }}>{t('Settings.navigation.title')}</Text>
       </View>
     ),
@@ -51,39 +58,24 @@ export default function Settings() {
     <View style={styles.container}>
       <Loading visible={isLoading} text="" />
       <ScrollView>
-        <TextButton name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
-        <TextButton name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
+        {/* データ管理 */}
         <TextButton name={SETTINGS_BTN.FILE_OPEN} text={t('Settings.file_open.text')} onPress={pressFileOpen} />
+        <TextButton name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
+        <TextButton name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
         <TextButton name={SETTINGS_BTN.FILE_NEW} text={t('Settings.file_new.text')} onPress={pressClearData} />
+
+        {/* アプリ設定 */}
         <TextButton
           name={SETTINGS_BTN.GPS_SETTINGS}
           text={t('Settings.gps_settings.text')}
           onPress={pressGPSSettingsOpen}
         />
-        {/* <TextButton
-          name={SETTINGS_BTN.MAP_LIST_URL}
-          text={t('Settings.maplisturl.text')}
-          info={t('Settings.maplisturl.info')}
-          onPress={pressMapListURLOpen}
-        /> */}
+        <TextButton name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
 
-        <TextButton
-          name={SETTINGS_BTN.MAP_CACHE_DELETE}
-          text={t('Settings.mapcachedelete.text')}
-          onPress={pressClearTileCache}
-        />
-
-        {FUNC_LOGIN && Platform.OS !== 'web' && (
-          <TextButton
-            name={SETTINGS_BTN.PHOTO_CACHE_DELETE}
-            text={t('Settings.photocachedelete.text')}
-            onPress={pressClearPhotoCache}
-          />
-        )}
-
-        <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
+        {/* 情報・ヘルプ */}
         <TextButton name={SETTINGS_BTN.MANUAL} text={t('Settings.manual.text')} onPress={pressGotoManual} />
-        
+        <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
+
         <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} onPress={pressVersion} />
       </ScrollView>
     </View>

@@ -274,6 +274,9 @@
     "photocachedelete": {
       "text": "Clear photo cache"
     },
+    "cachedelete": {
+      "text": "Clear cache"
+    },
     "apriclear": {},
     "manual": {
       "text": "Manual and Terms of use"
@@ -282,13 +285,16 @@
       "clearLocalStorage": "Initialize? \nAll data and settings will be reset.",
       "clearTileCache": "Clear map cache and download files?",
       "clearPhotoCache": "Clear photo cache?",
+      "clearCache": "Clear all cache (maps and photos)?",
       "fileNew": "Clear current data?",
       "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
     },
     "alert": {
       "loadEcorisMapFile": "File is loaded.",
       "clearTileCache": "Cleared the map cache.",
-      "clearPhotoCache": "Cleared the photo cache."
+      "clearPhotoCache": "Cleared the photo cache.",
+      "clearCache": "Cleared all cache.",
+      "clearCacheError": "An error occurred while clearing the cache."
     },
     "navigation": {
       "title": "Setting"
