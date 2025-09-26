@@ -163,24 +163,21 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, []);
 
   const ensureBatteryOptimization = useCallback(async () => {
-    if (Platform.OS !== 'android') return true;
+    if (Platform.OS !== 'android') return;
 
     const isIgnored = await isBatteryOptimizationIgnored();
-    if (isIgnored) return true;
+    if (isIgnored) return;
 
     const shouldOpenSettings = await ConfirmAsync(t('hooks.message.requestDisableBatteryOptimization'));
     if (!shouldOpenSettings) {
       await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
-      return true;
+      return;
     }
 
     const opened = await requestDisableBatteryOptimization();
     if (!opened) {
       await AlertAsync(t('hooks.message.failOpenBatteryOptimizationSettings'));
-      return false;
     }
-
-    return true;
   }, []);
 
   const startGPS = useCallback(async () => {
@@ -315,8 +312,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       //console.log('!!!!wakeup', trackingState)
       if (trackingState_ === 'on') {
-        const canStart = await ensureBatteryOptimization();
-        if (!canStart) return;
+        await ensureBatteryOptimization();
         await moveCurrentPosition();
         await startTracking();
       } else if (trackingState_ === 'off') {
