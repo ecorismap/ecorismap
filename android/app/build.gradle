@@ -56,7 +56,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2034")
-        versionName '0.4.7'
+        versionName '0.4.8'
 
     }
     packagingOptions {

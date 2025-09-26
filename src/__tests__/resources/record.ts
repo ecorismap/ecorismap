@@ -25,6 +25,7 @@ export const expectedLineGpx = `<?xml version="1.0" encoding="UTF-8"?>
     <name>mizutani</name>
     <time></time>
     <cmt></cmt>
+    <desc>User: mizutani</desc>
     <trkseg>
       <trkpt lat="42.498248918" lon="139.8534992896">
         <time>2021-02-02T09:28:38Z</time>
@@ -82,10 +83,13 @@ export const expectedPointGpx = `<?xml version="1.0" encoding="UTF-8"?>
     <time>2020-01-01T00:28:38.000Z</time>
     <ele>100</ele>
     <cmt></cmt>
+    <desc>User: mizutani
+photo: </desc>
   </wpt>
   <wpt lat="38.24101016421964" lon="140.71548306286388">
     <name>St.3</name>
     <time></time>
     <cmt></cmt>
+    <desc>photo: test.jpg</desc>
   </wpt>
 </gpx>`;
