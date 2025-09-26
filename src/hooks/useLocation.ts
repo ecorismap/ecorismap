@@ -180,8 +180,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       return false;
     }
 
-    await AlertAsync(t('hooks.message.afterDisableBatteryOptimization'));
-    return false;
+    return true;
   }, []);
 
   const startGPS = useCallback(async () => {
