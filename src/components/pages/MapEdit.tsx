@@ -33,7 +33,7 @@ export default function MapEditScreen() {
   } = useContext(MapEditContext);
 
   const navigation = useNavigation();
-  const { windowWidth } = useWindow();
+  const { windowWidth, isLandscape } = useWindow();
 
   const customHeader = useCallback(
     (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
@@ -93,14 +93,14 @@ export default function MapEditScreen() {
         <View style={styles.content}>
           <View style={{ width: '100%', alignItems: 'flex-start' }}>
             <CheckBox
-              style={{ backgroundColor: COLOR.WHITE, marginVertical: 10 }}
+              style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
               label={t('common.addGroup')}
-              width={windowWidth * 0.5}
+              width={windowWidth * (isLandscape ? 0.25 : 0.5)}
               checked={map.isGroup || false}
               onCheck={changeIsGroup}
             />
           </View>
-          
+
           <TextInput
             style={styles.textInput}
             placeholder={t('common.name')}
@@ -118,7 +118,7 @@ export default function MapEditScreen() {
                 value={map.url}
                 onChangeText={changeMapURL}
               />
-              
+
               <TextInput
                 style={styles.textInput}
                 placeholder={t('common.sourceName')}
@@ -126,21 +126,21 @@ export default function MapEditScreen() {
                 value={map.attribution}
                 onChangeText={changeAttribution}
               />
-              
+
               <Slider
                 label={t('common.transparency')}
-                width={windowWidth * 0.8}
+                width={windowWidth * (isLandscape ? 0.4 : 0.8)}
                 initialValue={map.transparency}
                 step={0.1}
                 minimumValue={0}
                 maximumValue={1}
                 onSlidingComplete={changeTransparency}
               />
-              
-              {!map.url?.includes('pdf') && map.isVector && (
+
+              {!map.url?.includes('pdf') && !map.isVector && (
                 <Slider
                   label={t('common.fixZoom')}
-                  width={windowWidth * 0.8}
+                  width={windowWidth * (isLandscape ? 0.4 : 0.8)}
                   initialValue={map.overzoomThreshold || 18}
                   step={1}
                   minimumValue={0}
@@ -148,36 +148,36 @@ export default function MapEditScreen() {
                   onSlidingComplete={changeOverzoomThreshold}
                 />
               )}
-              
+
               {!map.url?.includes('pmtiles') && !map.url?.includes('.pbf') && !map.url?.includes('pdf') && (
                 <View style={{ flexDirection: 'row', marginVertical: 10 }}>
                   <CheckBox
-                    style={{ backgroundColor: COLOR.WHITE }}
+                    style={{ backgroundColor: COLOR.GRAY0 }}
                     label={t('common.highResolution')}
-                    width={windowWidth * 0.8 * 0.5}
+                    width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
                     checked={map.highResolutionEnabled || false}
                     onCheck={changeHighResolutionEnabled}
                   />
                   <CheckBox
-                    style={{ backgroundColor: COLOR.WHITE }}
+                    style={{ backgroundColor: COLOR.GRAY0 }}
                     label={t('common.Yaxis')}
-                    width={windowWidth * 0.8 * 0.5}
+                    width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
                     checked={map.flipY || false}
                     onCheck={changeFlipY}
                   />
                 </View>
               )}
-              
+
               {map.url && (map.url.includes('pmtiles') || map.url.includes('.pbf')) && (
                 <CheckBox
-                  style={{ backgroundColor: COLOR.WHITE, marginVertical: 10 }}
+                  style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
                   label={t('common.vectortile')}
-                  width={windowWidth * 0.8 * 0.5}
+                  width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
                   checked={map.isVector ?? true}
                   onCheck={changeIsVector}
                 />
               )}
-              
+
               {map.url && (map.url.includes('pmtiles') || map.url.includes('.pbf')) && map.isVector && (
                 <View style={{ flexDirection: 'row', marginBottom: 10 }}>
                   <TextInput
@@ -201,7 +201,7 @@ export default function MapEditScreen() {
           )}
         </View>
       </ScrollView>
-      
+
       {!isNewMap && !map.isGroup && (
         <View style={styles.buttonContainer}>
           <Button
