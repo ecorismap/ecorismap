@@ -91,45 +91,54 @@ export default function MapEditScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
         <View style={styles.content}>
-          <View style={{ width: '100%', alignItems: 'flex-start' }}>
+          <View style={{ width: '101%', alignItems: 'flex-start' }}>
             <CheckBox
               style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
               label={t('common.addGroup')}
-              width={windowWidth * (isLandscape ? 0.25 : 0.5)}
+              labelSize={13}
               checked={map.isGroup || false}
               onCheck={changeIsGroup}
             />
           </View>
 
-          <TextInput
-            style={styles.textInput}
-            placeholder={t('common.name')}
-            placeholderTextColor={COLOR.GRAY4}
-            value={map.name}
-            onChangeText={changeMapName}
-          />
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>{t('common.name')}</Text>
+            <TextInput
+              style={styles.textInput}
+              placeholderTextColor={COLOR.GRAY4}
+              value={map.name}
+              onChangeText={changeMapName}
+            />
+          </View>
 
           {!map.isGroup && (
             <>
-              <TextInput
-                style={styles.textInput}
-                placeholder=" https://example/{z}/{x}/{y}.png"
-                placeholderTextColor={COLOR.GRAY4}
-                value={map.url}
-                onChangeText={changeMapURL}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>URL</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder=" https://example/{z}/{x}/{y}.png"
+                  placeholderTextColor={COLOR.GRAY4}
+                  value={map.url}
+                  onChangeText={changeMapURL}
+                />
+              </View>
 
-              <TextInput
-                style={styles.textInput}
-                placeholder={t('common.sourceName')}
-                placeholderTextColor={COLOR.GRAY4}
-                value={map.attribution}
-                onChangeText={changeAttribution}
-              />
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>{t('common.sourceName')}</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholderTextColor={COLOR.GRAY4}
+                  value={map.attribution}
+                  onChangeText={changeAttribution}
+                />
+              </View>
 
               <Slider
                 label={t('common.transparency')}
-                width={windowWidth * (isLandscape ? 0.4 : 0.8)}
+                labelColor={COLOR.GRAY4}
+                style={{ marginTop: 10 }}
+                width={windowWidth * (isLandscape ? 0.45 : 0.88)}
                 initialValue={map.transparency}
                 step={0.1}
                 minimumValue={0}
@@ -137,10 +146,11 @@ export default function MapEditScreen() {
                 onSlidingComplete={changeTransparency}
               />
 
-              {!map.url?.includes('pdf') && !map.isVector && (
+              {!map.url?.includes('pdf') && (
                 <Slider
                   label={t('common.fixZoom')}
-                  width={windowWidth * (isLandscape ? 0.4 : 0.8)}
+                  labelColor={COLOR.GRAY4}
+                  width={windowWidth * (isLandscape ? 0.45 : 0.88)}
                   initialValue={map.overzoomThreshold || 18}
                   step={1}
                   minimumValue={0}
@@ -150,51 +160,60 @@ export default function MapEditScreen() {
               )}
 
               {!map.url?.includes('pmtiles') && !map.url?.includes('.pbf') && !map.url?.includes('pdf') && (
-                <View style={{ flexDirection: 'row', marginVertical: 10 }}>
+                <>
+                  <View style={{ width: '101%', alignItems: 'flex-start', marginTop: 10 }}>
+                    <CheckBox
+                      style={{ backgroundColor: COLOR.GRAY0 }}
+                      labelSize={13}
+                      width={windowWidth * (isLandscape ? 0.45 : 0.85)}
+                      label={`${t('common.highResolution')}`}
+                      checked={map.highResolutionEnabled || false}
+                      onCheck={changeHighResolutionEnabled}
+                    />
+                  </View>
+                  <View style={{ width: '101%', alignItems: 'flex-start', marginTop: 10 }}>
+                    <CheckBox
+                      style={{ backgroundColor: COLOR.GRAY0 }}
+                      labelSize={13}
+                      width={windowWidth * (isLandscape ? 0.45 : 0.85)}
+                      label={`${t('common.Yaxis')}`}
+                      checked={map.flipY || false}
+                      onCheck={changeFlipY}
+                    />
+                  </View>
+                </>
+              )}
+
+              {map.url?.includes('pmtiles') && (
+                <View style={{ width: '100%', alignItems: 'flex-start' }}>
                   <CheckBox
-                    style={{ backgroundColor: COLOR.GRAY0 }}
-                    label={t('common.highResolution')}
-                    width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
-                    checked={map.highResolutionEnabled || false}
-                    onCheck={changeHighResolutionEnabled}
-                  />
-                  <CheckBox
-                    style={{ backgroundColor: COLOR.GRAY0 }}
-                    label={t('common.Yaxis')}
-                    width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
-                    checked={map.flipY || false}
-                    onCheck={changeFlipY}
+                    style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
+                    label={t('common.vectortile')}
+                    checked={map.isVector ? true : false}
+                    onCheck={changeIsVector}
                   />
                 </View>
               )}
 
-              {map.url && (map.url.includes('pmtiles') || map.url.includes('.pbf')) && (
-                <CheckBox
-                  style={{ backgroundColor: COLOR.GRAY0, marginVertical: 10 }}
-                  label={t('common.vectortile')}
-                  width={windowWidth * (isLandscape ? 0.4 : 0.8) * 0.5}
-                  checked={map.isVector ?? true}
-                  onCheck={changeIsVector}
-                />
-              )}
-
-              {map.url && (map.url.includes('pmtiles') || map.url.includes('.pbf')) && map.isVector && (
-                <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-                  <TextInput
-                    style={[styles.textInput, { flex: 1, marginRight: 10 }]}
-                    placeholder={t('Maps.modal.styleURL')}
-                    placeholderTextColor={COLOR.GRAY4}
-                    value={map.styleURL || ''}
-                    onChangeText={changeStyleURL}
-                  />
-                  <Button
-                    name={'folder-open'}
-                    onPress={pressImportStyle}
-                    backgroundColor={COLOR.GRAY2}
-                    size={20}
-                    borderRadius={5}
-                    color={COLOR.GRAY3}
-                  />
+              {((map.url?.includes('pmtiles') && map.isVector) || map.url?.includes('.pbf')) && (
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>{t('Maps.modal.styleURL')}</Text>
+                  <View style={{ flexDirection: 'row', width: '100%' }}>
+                    <TextInput
+                      style={[styles.textInput, { flex: 1, marginRight: 10 }]}
+                      placeholderTextColor={COLOR.GRAY4}
+                      value={map.styleURL || ''}
+                      onChangeText={changeStyleURL}
+                    />
+                    <Button
+                      name={'folder-open'}
+                      onPress={pressImportStyle}
+                      backgroundColor={COLOR.GRAY2}
+                      size={20}
+                      borderRadius={5}
+                      color={COLOR.GRAY4}
+                    />
+                  </View>
                 </View>
               )}
             </>
@@ -233,15 +252,24 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 0,
     paddingBottom: 20,
     alignItems: 'center',
+  },
+  inputContainer: {
+    width: '99%',
+    marginVertical: 5,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLOR.GRAY4,
+    marginBottom: 5,
+    marginLeft: 3,
   },
   textInput: {
     backgroundColor: COLOR.GRAY1,
     borderRadius: 5,
     height: 40,
-    marginBottom: 10,
     paddingHorizontal: 10,
     width: '100%',
   },

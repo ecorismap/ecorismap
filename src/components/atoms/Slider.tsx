@@ -36,7 +36,7 @@ const Slider = React.memo((props: Props) => {
         style,
       ]}
     >
-      <Text style={{ width: 80, fontSize: 12, color: labelColor }}>{label}</Text>
+      <Text style={{ width: 80, fontSize: 13, color: labelColor }}>{label}</Text>
       <RNSlider
         // @ts-ignore
         style={{ height: 48, width: sliderWidth }}
