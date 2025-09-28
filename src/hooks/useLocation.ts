@@ -142,13 +142,34 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const confirmLocationPermission = useCallback(async () => {
     try {
       if (Platform.OS === 'android') {
-        const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
-        if (notificationStatus !== 'granted') {
-          await AlertAsync(t('hooks.message.permitAccessGPS'));
-          openSettings();
-          return;
+        const notificationPermission = await Notifications.getPermissionsAsync();
+        if (notificationPermission.status !== 'granted') {
+          if (notificationPermission.canAskAgain) {
+            const { status: notificationStatus } = await Notifications.requestPermissionsAsync();
+            if (notificationStatus !== 'granted') {
+              await AlertAsync(t('hooks.message.permitAccessGPS'));
+              openSettings();
+              return;
+            }
+          } else {
+            await AlertAsync(t('hooks.message.permitAccessGPS'));
+            openSettings();
+            return;
+          }
         }
       }
+
+      const foregroundPermission = await ExpoLocation.getForegroundPermissionsAsync();
+      if (foregroundPermission.status === 'granted') {
+        return 'granted' as ExpoLocation.PermissionStatus.GRANTED;
+      }
+
+      if (foregroundPermission.status === 'denied' && !foregroundPermission.canAskAgain) {
+        await AlertAsync(t('hooks.message.permitAccessGPS'));
+        openSettings();
+        return;
+      }
+
       const { status: foregroundStatus } = await ExpoLocation.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         await AlertAsync(t('hooks.message.permitAccessGPS'));

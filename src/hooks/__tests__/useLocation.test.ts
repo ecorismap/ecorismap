@@ -4,7 +4,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
 import { useLocation } from '../useLocation';
 import * as Location from 'expo-location';
-import { ConfirmAsync } from '../../components/molecules/AlertAsync';
+import { ConfirmAsync, AlertAsync } from '../../components/molecules/AlertAsync';
+import * as Notifications from 'expo-notifications';
 import {
   isBatteryOptimizationIgnored,
   requestDisableBatteryOptimization,
@@ -81,6 +82,7 @@ jest.mock('../../lib/native/BatteryOptimization', () => ({
 const createMockMapRef = () => ({ current: null });
 
 const mockLocation = Location as jest.Mocked<typeof Location>;
+const mockNotifications = Notifications as jest.Mocked<typeof Notifications>;
 
 // Create a test store
 const createTestStore = () => {
@@ -149,6 +151,19 @@ describe('useLocation', () => {
       },
       timestamp: Date.now(),
     });
+
+    mockNotifications.getPermissionsAsync.mockResolvedValue({
+      status: 'granted',
+      granted: true,
+      canAskAgain: true,
+      expires: 'never',
+    } as any);
+    mockNotifications.requestPermissionsAsync.mockResolvedValue({
+      status: 'granted',
+      granted: true,
+      canAskAgain: true,
+      expires: 'never',
+    } as any);
   });
 
   it('should initialize with default values', () => {
@@ -167,6 +182,12 @@ describe('useLocation', () => {
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     let permissionStatus;
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
+      status: 'undetermined' as Location.PermissionStatus.UNDETERMINED,
+      granted: false,
+      canAskAgain: true,
+      expires: 'never',
+    });
     await act(async () => {
       permissionStatus = await result.current.confirmLocationPermission();
     });
@@ -204,6 +225,14 @@ describe('useLocation', () => {
   });
 
   it('should handle permission denied', async () => {
+    const alertSpy = AlertAsync as jest.Mock;
+    alertSpy.mockResolvedValue(undefined);
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
+      status: 'undetermined' as Location.PermissionStatus.UNDETERMINED,
+      granted: false,
+      canAskAgain: true,
+      expires: 'never',
+    });
     mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
       status: 'denied' as Location.PermissionStatus.DENIED,
       granted: false,
@@ -219,6 +248,26 @@ describe('useLocation', () => {
       permissionStatus = await result.current.confirmLocationPermission();
     });
 
+    expect(permissionStatus).toBeUndefined();
+  });
+
+  it('should open settings when permission is blocked', async () => {
+    const mockRef = createMockMapRef();
+    const { result } = renderHook(() => useLocation(mockRef), { wrapper });
+
+    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
+      status: 'denied' as Location.PermissionStatus.DENIED,
+      granted: false,
+      canAskAgain: false,
+      expires: 'never',
+    });
+
+    let permissionStatus;
+    await act(async () => {
+      permissionStatus = await result.current.confirmLocationPermission();
+    });
+
+    expect(mockLocation.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(permissionStatus).toBeUndefined();
   });
 
