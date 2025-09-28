@@ -165,24 +165,30 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const ensureBatteryOptimization = useCallback(async () => {
     if (Platform.OS !== 'android') return { willOpenSettings: false };
 
-    const isIgnored = await isBatteryOptimizationIgnored();
-    if (isIgnored) return { willOpenSettings: false };
+    try {
+      const isIgnored = await isBatteryOptimizationIgnored();
+      if (isIgnored) return { willOpenSettings: false };
 
-    const shouldOpenSettings = await ConfirmAsync(t('hooks.message.requestDisableBatteryOptimization'));
-    
-    if (!shouldOpenSettings) {
-      await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
+      const shouldOpenSettings = await ConfirmAsync(t('hooks.message.requestDisableBatteryOptimization'));
+      
+      if (!shouldOpenSettings) {
+        await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
+        return { willOpenSettings: false };
+      }
+
+      const opened = await requestDisableBatteryOptimization();
+      
+      if (!opened) {
+        await AlertAsync(t('hooks.message.failOpenBatteryOptimizationSettings'));
+        return { willOpenSettings: false };
+      }
+      
+      return { willOpenSettings: true };
+    } catch (error) {
+      console.error('Error in ensureBatteryOptimization:', error);
+      // エラーが発生しても処理を継続（willOpenSettings: false を返す）
       return { willOpenSettings: false };
     }
-
-    const opened = await requestDisableBatteryOptimization();
-    
-    if (!opened) {
-      await AlertAsync(t('hooks.message.failOpenBatteryOptimizationSettings'));
-      return { willOpenSettings: false };
-    }
-    
-    return { willOpenSettings: true };
   }, []);
 
   const startGPS = useCallback(async () => {
@@ -239,27 +245,33 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   }, [projectId, dataUser]);
 
   const startTracking = useCallback(async () => {
-    // チャンクシステムを初期化
-    clearStoredLocations();
+    try {
+      // チャンクシステムを初期化
+      clearStoredLocations();
 
-    // 実際のGPSでトラッキング
-    if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-      await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
-        ...gpsAccuracyOption,
-        pausesUpdatesAutomatically: false,
-        showsBackgroundLocationIndicator: true,
-        foregroundService: {
-          notificationTitle: 'EcorisMap',
-          notificationBody: t('hooks.notification.inTracking'),
-          killServiceOnDestroy: false,
-        },
-      });
-    }
+      // 実際のGPSでトラッキング
+      if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
+        await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
+          ...gpsAccuracyOption,
+          pausesUpdatesAutomatically: false,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: 'EcorisMap',
+            notificationBody: t('hooks.notification.inTracking'),
+            killServiceOnDestroy: false,
+          },
+        });
+      }
 
-    if (headingSubscriber.current === undefined) {
-      headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
-        setAzimuth(pos.trueHeading);
-      });
+      if (headingSubscriber.current === undefined) {
+        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+          setAzimuth(pos.trueHeading);
+        });
+      }
+    } catch (error) {
+      console.error('Error in startTracking:', error);
+      // エラーが発生しても最低限の処理は続ける
+      throw error; // 呼び出し元でハンドリングするために再スロー
     }
   }, [gpsAccuracyOption]);
 
@@ -317,7 +329,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       
       try {
         if (trackingState_ === 'on') {
-          const { willOpenSettings } = await ensureBatteryOptimization();
+          let willOpenSettings = false;
+          
+          try {
+            const result = await ensureBatteryOptimization();
+            willOpenSettings = result.willOpenSettings;
+          } catch (error) {
+            console.error('Error checking battery optimization:', error);
+            // エラーが発生してもトラッキングを続行
+            willOpenSettings = false;
+          }
           
           if (willOpenSettings) {
             // 設定画面が開かれる場合は、フラグをセットしてtrackingStateを更新
@@ -325,8 +346,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             setTrackingState(trackingState_);
           } else {
             // 設定画面が開かれない場合は、すぐにトラッキングを開始
-            await moveCurrentPosition();
-            await startTracking();
+            try {
+              await moveCurrentPosition();
+              await startTracking();
+            } catch (error) {
+              console.error('Error starting tracking:', error);
+              // エラーが発生してもstateは更新する
+            }
             setTrackingState(trackingState_);
           }
           
@@ -604,7 +630,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           
           try {
             // バッテリー最適化の状態を再確認
-            const isIgnored = await isBatteryOptimizationIgnored();
+            let isIgnored = true;
+            try {
+              isIgnored = await isBatteryOptimizationIgnored();
+            } catch (error) {
+              console.error('Error checking battery optimization status:', error);
+              // エラーが発生した場合は最適化が無効と仮定して続行
+              isIgnored = true;
+            }
+            
             if (!isIgnored) {
               // まだ最適化が有効な場合はメッセージを表示
               await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
