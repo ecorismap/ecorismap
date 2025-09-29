@@ -55,8 +55,8 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2034")
-        versionName '0.4.8'
+        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2046")
+        versionName '0.4.9'
 
     }
     packagingOptions {
