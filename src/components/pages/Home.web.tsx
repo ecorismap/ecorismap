@@ -556,6 +556,19 @@ export default function HomeScreen() {
     const map = (mapViewRef.current as MapRef).getMap();
     if (!map) return;
 
+    // スタイルのロードが完了するまで待つ
+    if (!map.isStyleLoaded()) {
+      await new Promise<void>((resolve) => {
+        const checkStyleLoaded = () => {
+          if (map.isStyleLoaded()) {
+            map.off('idle', checkStyleLoaded);
+            resolve();
+          }
+        };
+        map.on('idle', checkStyleLoaded);
+      });
+    }
+
     // Remove all existing dynamic layers (both raster and vector)
     const style = map.getStyle();
     if (style && style.layers) {
@@ -602,7 +615,12 @@ export default function HomeScreen() {
         }
       }
     });
-  }, [tileMaps, getTileMapLayers, mapViewRef]);
+
+    // isTerrainActiveの状態に基づいて地形設定を復元
+    if (isTerrainActive) {
+      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
+    }
+  }, [tileMaps, getTileMapLayers, mapViewRef, isTerrainActive]);
 
   // ========== Hooks ==========
 
@@ -621,7 +639,9 @@ export default function HomeScreen() {
         await addDynamicLayers();
       }
     })();
-  }, [tileMaps, addDynamicLayers, mapViewRef]);
+    // mapViewRef is a ref object and should not be in the dependency array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tileMaps, addDynamicLayers]);
 
   useEffect(() => {
     if (isPointRecordType(selectedRecord?.record)) return;
@@ -679,21 +699,15 @@ export default function HomeScreen() {
         map.addSource('rasterdem', rasterdem);
       }
 
-      // 初回ロード時にレイヤーを追加
-      await addDynamicLayers();
+      // 地形を設定
+      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
 
-      // スタイル変更時の処理（二回目以降）
-      map.on('style.load', async function () {
-        if (!map.getSource('rasterdem')) {
-          map.addSource('rasterdem', rasterdem);
-        }
-        map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
-
-        // スタイル変更時にもレイヤーを再追加
+      // 初回ロード時にレイヤーを追加（useEffectが実行される前に確実に追加）
+      if (mapViewRef.current) {
         await addDynamicLayers();
-      });
+      }
     },
-    [addDynamicLayers, rasterdem]
+    [rasterdem, addDynamicLayers, mapViewRef]
   );
 
   // ========== マップスタイル定義 ==========
