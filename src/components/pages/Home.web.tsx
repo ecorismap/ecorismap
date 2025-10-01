@@ -618,7 +618,9 @@ export default function HomeScreen() {
 
     // isTerrainActiveの状態に基づいて地形設定を復元
     if (isTerrainActive) {
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
+      map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+    } else {
+      map.setTerrain(null);
     }
   }, [tileMaps, getTileMapLayers, mapViewRef, isTerrainActive]);
 
@@ -699,15 +701,19 @@ export default function HomeScreen() {
         map.addSource('rasterdem', rasterdem);
       }
 
-      // 地形を設定
-      map.setTerrain({ source: 'rasterdem', exaggeration: 1 });
+      // ユーザーの設定に合わせて地形表示を初期化
+      if (isTerrainActive) {
+        map.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
+      } else {
+        map.setTerrain(null);
+      }
 
       // 初回ロード時にレイヤーを追加（useEffectが実行される前に確実に追加）
       if (mapViewRef.current) {
         await addDynamicLayers();
       }
     },
-    [rasterdem, addDynamicLayers, mapViewRef]
+    [rasterdem, isTerrainActive, addDynamicLayers, mapViewRef]
   );
 
   // ========== マップスタイル定義 ==========
