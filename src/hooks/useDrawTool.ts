@@ -158,6 +158,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const [featureButton, setFeatureButton] = useState<FeatureButtonType>('NONE');
   const [, setRedraw] = useState('');
   const [isTerrainActive, setIsTerrainActive] = useState(false);
+  const terrainPreferenceRef = useRef(false);
   const [visibleInfoPicker, setVisibleInfoPicker] = useState(false);
   const [isDrawLineVisible, setDrawLineVisible] = useState(true);
   const refreshDrawLine = useRef(true);
@@ -1092,16 +1093,27 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const toggleTerrain = useCallback(
     (activate?: boolean) => {
       if (Platform.OS !== 'web' || mapViewRef === null) return;
+
       const mapView = (mapViewRef as MapRef).getMap();
       let activateTerrain = activate;
+
       if (activate === undefined) {
         activateTerrain = !isTerrainActive;
+        terrainPreferenceRef.current = activateTerrain;
       }
+
+      if (activateTerrain === undefined) return;
+
       if (activateTerrain) {
+        if (isTerrainActive) return;
+        if (activate !== undefined && !terrainPreferenceRef.current) return;
+
         mapView.setTerrain({ source: 'rasterdem', exaggeration: 1.5 });
         setIsTerrainActive(true);
       } else {
-        //Terrainが有効の時やビューが回転していると、boundsが正確に取れなくてSVGのラインを正しく変換できないので無効にする。
+        if (!isTerrainActive) return;
+
+        // Terrain が有効のままだとピッチやベアリングが保持され、ライン変換の精度が落ちるためリセットする
         mapView.setTerrain(null);
         dispatch(editSettingsAction({ mapRegion: { ...mapRegion, pitch: 0, bearing: 0 } }));
         setIsTerrainActive(false);
