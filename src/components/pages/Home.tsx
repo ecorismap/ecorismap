@@ -719,7 +719,7 @@ export default function HomeScreen() {
             <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLOR.BLACK }}>
               {t('Home.download.downloading', 'ダウンロード中')}
             </Text>
-            <View style={{ marginVertical: 20, alignItems: 'center' }}>
+            <View style={{ marginVertical: 20, alignItems: 'center', minHeight: 80 }}>
               <Text style={{ fontSize: 16, color: COLOR.GRAY3, marginBottom: 8, textAlign: 'center' }}>
                 {downloadProgress.substring(0, downloadProgress.lastIndexOf(' '))}
               </Text>

@@ -27,7 +27,11 @@ export type UseTilesReturnType = {
   clearTiles: (tileMap_: TileMapType) => Promise<void>;
 };
 
-export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: string[], tileMaps?: TileMapType[]): UseTilesReturnType => {
+export const useTiles = (
+  tileMap: TileMapType | undefined,
+  selectedTileMapIds?: string[],
+  tileMaps?: TileMapType[]
+): UseTilesReturnType => {
   //console.log(tileMap);
   const dispatch = useDispatch();
   const { mapRegion } = useWindow();
@@ -71,9 +75,16 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
     if (tileMap?.id) {
       return tileRegions.filter(({ tileMapId }) => tileMapId === tileMap.id);
     }
+    // tileMapsが渡されている場合（ダウンロードモード）は、ダウンロード可能な地図のsavedAreaのみ返す
+    if (tileMaps && tileMaps.length > 0) {
+      const downloadableMapIds = tileMaps
+        .filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid')
+        .map((map) => map.id);
+      return tileRegions.filter(({ tileMapId }) => downloadableMapIds.includes(tileMapId));
+    }
     // どちらでもない場合は全て返す
     return tileRegions;
-  }, [tileMap?.id, tileRegions, selectedTileMapIds]);
+  }, [tileMap?.id, tileRegions, selectedTileMapIds, tileMaps]);
 
   const stopDownloadTiles = useCallback(() => {
     pause.current = true;
@@ -381,6 +392,7 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
       setIsDownloading(true);
       let totalCompleted = 0;
       const totalMaps = tileMapsToDownload.length;
+      const errorMaps: string[] = [];
 
       for (let i = 0; i < tileMapsToDownload.length; i++) {
         if (pause.current) {
@@ -395,7 +407,7 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
         }
 
         const currentTileMap = tileMapsToDownload[i];
-        setProgress(`地図 ${i + 1}/${totalMaps}: ${currentTileMap.name}`);
+        setProgress(`地図 ${i + 1}/${totalMaps}: ${currentTileMap.name} 0%`);
 
         const tileRegion = cloneDeep(downloadArea);
         tileRegion.id = ulid();
@@ -559,7 +571,10 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
               .then(({ uri, status }) => {
                 if (status !== 200) {
                   FileSystem.deleteAsync(uri);
-                  errorCount++;
+                  // 404は正常な欠損タイルなのでエラーカウントしない
+                  if (status !== 404) {
+                    errorCount++;
+                  }
                 }
               })
               .catch(() => {
@@ -577,7 +592,10 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
               .then(({ uri, status }) => {
                 if (status !== 200) {
                   FileSystem.deleteAsync(uri);
-                  errorCount++;
+                  // 404は正常な欠損タイルなのでエラーカウントしない
+                  if (status !== 404) {
+                    errorCount++;
+                  }
                 }
               })
               .catch(() => {
@@ -596,17 +614,23 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
         }
         await Promise.all(batchDownload);
 
-        if ((errorCount / tiles.length) * 100 > 20) {
-          await AlertAsync(t('hooks.alert.errorDownload') + ` (${currentTileMap.name})`);
+        // エラー率が80%を超える場合のみ警告（404などの正常な欠損タイルを考慮）
+        if ((errorCount / tiles.length) * 100 > 80) {
+          errorMaps.push(currentTileMap.name);
         }
 
         totalCompleted++;
       }
 
       setIsDownloading(false);
-      await AlertAsync(`${totalCompleted}個の地図のダウンロードが完了しました`);
+
+      let message = `${totalCompleted}個の地図のダウンロードが完了しました`;
+      if (errorMaps.length > 0) {
+        message += `\n\nエラーが発生した地図:\n${errorMaps.join('\n')}`;
+      }
+      await AlertAsync(message);
     },
-    [addTileRegions, dispatch, downloadArea, downloadRegion, tileRegions]
+    [dispatch, downloadArea, downloadRegion, tileRegions]
   );
 
   useEffect(() => {
@@ -622,9 +646,10 @@ export const useTiles = (tileMap: TileMapType | undefined, selectedTileMapIds?: 
       }
 
       // 選択された地図のサイズの合計を計算
-      const mapsToCheck = selectedTileMapIds && selectedTileMapIds.length > 0
-        ? tileMaps.filter(m => selectedTileMapIds.includes(m.id))
-        : tileMaps;
+      const mapsToCheck =
+        selectedTileMapIds && selectedTileMapIds.length > 0
+          ? tileMaps.filter((m) => selectedTileMapIds.includes(m.id))
+          : tileMaps;
 
       let totalSize = 0;
       for (const map of mapsToCheck) {

@@ -21,11 +21,12 @@ import {
   InfoToolType,
   PoiInfoType,
   MapLocationInfoType,
+  TileMapType,
 } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { useTiles } from '../hooks/useTiles';
 import { useRecord } from '../hooks/useRecord';
@@ -47,7 +48,9 @@ import {
   isPolygonTool,
 } from '../utils/General';
 import { t } from '../i18n/config';
-import { COLOR } from '../constants/AppConstants';
+import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
+import * as FileSystem from 'expo-file-system';
+import { editSettingsAction } from '../modules/settings';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
 import { HomeModalUpdateInfo } from '../components/organisms/HomeModalUpdateInfo';
@@ -100,8 +103,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const dispatch = useDispatch();
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
   const user = useSelector((state: RootState) => state.user);
+  const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
   const projectName = useSelector((state: RootState) => state.settings.projectName, shallowEqual);
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const mapType = useSelector((state: RootState) => state.settings.mapType, shallowEqual);
@@ -902,25 +907,35 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
     if (!ret) return;
 
+    let mapsToDelete: TileMapType[] = [];
+
     // 選択された地図を削除
     if (selectedTileMapIds.length > 0) {
-      const mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
-      for (const map of mapsToDelete) {
-        await clearTiles(map);
-      }
+      mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
     } else if (downloadMode && route.params?.mode === 'download') {
       // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図を削除
-      const downloadableMaps = tileMaps.filter(
+      mapsToDelete = tileMaps.filter(
         (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'
       );
-      for (const map of downloadableMaps) {
-        await clearTiles(map);
-      }
     } else if (route.params?.tileMap !== undefined) {
       // 従来の単一地図削除（後方互換性のため）
-      await clearTiles(route.params.tileMap);
+      mapsToDelete = [route.params.tileMap];
     }
-  }, [clearTiles, downloadMode, route.params?.tileMap, route.params?.mode, selectedTileMapIds, tileMaps]);
+
+    // ファイル削除
+    for (const map of mapsToDelete) {
+      try {
+        await FileSystem.deleteAsync(`${TILE_FOLDER}/${map.id}/`);
+      } catch (error) {
+        // エラーは無視
+      }
+    }
+
+    // tileRegionsを一括削除
+    const mapIdsToDelete = mapsToDelete.map((m) => m.id);
+    const newTileRegions = tileRegions.filter((region) => !mapIdsToDelete.includes(region.tileMapId));
+    dispatch(editSettingsAction({ tileRegions: newTileRegions }));
+  }, [dispatch, downloadMode, route.params?.tileMap, route.params?.mode, selectedTileMapIds, tileRegions, tileMaps]);
 
   const toggleTileMapSelection = useCallback((tileMapId: string) => {
     setSelectedTileMapIds((prev) => {
