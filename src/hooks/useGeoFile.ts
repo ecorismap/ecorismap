@@ -333,7 +333,13 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
       //GeoJSON
       if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-        const geojson = generateGeoJson(exportedRecords, targetLayer.field, targetLayer.type, targetLayer.name);
+        const geojson = generateGeoJson(
+          exportedRecords,
+          targetLayer.field,
+          targetLayer.type,
+          targetLayer.name,
+          targetLayer.permission
+        );
         const geojsonData = JSON.stringify(geojson);
         const geojsonName = `${fileNameBase}.geojson`;
         exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: exportFolder });

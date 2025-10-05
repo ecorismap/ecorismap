@@ -24,8 +24,8 @@ export const Polygon = React.memo((props: Props) => {
 
   if (data === undefined || data.length === 0) return null;
 
-  const geojsonData = generateGeoJson(data, layer.field, 'POLYGON', layer.name);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'CENTROID', layer.name);
+  const geojsonData = generateGeoJson(data, layer.field, 'POLYGON', layer.name, layer.permission);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'CENTROID', layer.name, layer.permission);
   //console.log(geojsonData);
   return (
     <View>

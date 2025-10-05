@@ -142,8 +142,8 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
 
   const dataStyle = getDataStyleLine(layer, userId, displayName, editingLineId);
 
-  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name);
+  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, layer.permission);
+  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, layer.permission);
 
   return (
     <View>

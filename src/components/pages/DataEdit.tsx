@@ -148,7 +148,9 @@ export default function DataEditScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={'padding'}>
       <ScrollView>
-        {projectId && data.displayName && <DataEditUserName value={data.displayName} />}
+        {projectId && data.displayName && layer.permission !== 'COMMON' && (
+          <DataEditUserName value={data.displayName} />
+        )}
         <DataEditLayerName value={layer.name} />
 
         {layer.field.map(({ id, name, format, list }, index) => {

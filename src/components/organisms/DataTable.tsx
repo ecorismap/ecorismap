@@ -63,7 +63,7 @@ const DataRow = React.memo(
           />
         </View>
 
-        {projectId !== undefined && (
+        {projectId !== undefined && layer.permission !== 'COMMON' && (
           <Pressable
             style={[styles.td, { flex: 2, width: 100 }]}
             onLongPress={drag}
@@ -300,7 +300,7 @@ const DataTitle = React.memo((props: Props) => {
           size={22}
         />
       </View>
-      {projectId !== undefined && (
+      {projectId !== undefined && layer.permission !== 'COMMON' && (
         <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onChangeOrder('_user_', '_user_')}>
           <Text adjustsFontSizeToFit={true} numberOfLines={2}>
             User

@@ -808,7 +808,11 @@ export const isPhotoField = (value: any): value is PhotoType[] => {
   return false;
 };
 
-const generateProperties = (record: RecordType, field: LayerType['field']) => {
+const generateProperties = (
+  record: RecordType,
+  field: LayerType['field'],
+  permission?: LayerType['permission']
+) => {
   const properties = field
     .map(({ name }) => {
       const fieldValue = record.field[name];
@@ -820,7 +824,7 @@ const generateProperties = (record: RecordType, field: LayerType['field']) => {
       }
     })
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-  if (FUNC_LOGIN) {
+  if (FUNC_LOGIN && permission !== 'COMMON') {
     if ('displayName' in record) {
       properties.displayName === undefined
         ? (properties.displayName = record.displayName as string)
@@ -834,7 +838,8 @@ export const generateGeoJson = (
   data: RecordType[] | RecordType[],
   field: LayerType['field'],
   type: GeoJsonFeatureType,
-  layerName: string
+  layerName: string,
+  permission?: LayerType['permission']
 ) => {
   const isMapMemoLayer = data.some((d) => d.field._strokeColor !== undefined);
 
@@ -850,7 +855,7 @@ export const generateGeoJson = (
   switch (type) {
     case 'POINT':
       features = data.map((record) => {
-        const properties = generateProperties(record, field);
+        const properties = generateProperties(record, field, permission);
 
         const feature = {
           type: 'Feature',
@@ -867,7 +872,7 @@ export const generateGeoJson = (
       break;
     case 'LINE':
       features = data.map((record) => {
-        const properties = generateProperties(record, field);
+        const properties = generateProperties(record, field, permission);
         const mapMemoProperties = isMapMemoLayer
           ? {
               _visible: record.visible,
@@ -913,7 +918,7 @@ export const generateGeoJson = (
 
     case 'POLYGON':
       features = data.map((record) => {
-        const properties = generateProperties(record, field);
+        const properties = generateProperties(record, field, permission);
         let geometry;
         if (isLocationTypeArray(record.coords)) {
           const coordinates = record.coords.map((coords) => [coords.longitude, coords.latitude]);
