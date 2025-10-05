@@ -79,10 +79,9 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
   // 3. lastTimeStampより新しいデータのみをフィルタリング
   let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
 
-  // 4. ログの取り始め（lastTimeStampが0）の場合のみ精度フィルタリング
-  if (lastTimeStamp === 0) {
-    filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
-  }
+  // 4. 精度フィルタリング（常時適用）
+  // GPS精度が30m以上の場合はその点をスキップ（トンネル内などの精度悪化に対応）
+  filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
 
   return filteredLocations;
 };
@@ -172,7 +171,10 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
 
   // メタデータを更新
   metadata.totalPoints += totalPointsAdded;
-  metadata.lastTimeStamp = locations[locations.length - 1]?.timestamp || Date.now();
+  // 実際に追加された最後の点のタイムスタンプを使用（フィルタリング後のデータ）
+  if (locations.length > 0) {
+    metadata.lastTimeStamp = locations[locations.length - 1]?.timestamp || Date.now();
+  }
   metadata.currentDistance = currentDistance; // 距離を保存
   metadata.lastChunkIndex = currentChunkIndex; // 現在のチャンクインデックスも保存
   saveTrackMetadata(metadata);
