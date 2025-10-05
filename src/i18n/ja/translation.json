@@ -222,7 +222,7 @@
       "exportPDF": "PDFの出力"
     },
     "download": {
-      "selectMaps": "ダウンロードする地図を選択:",
+      "selectMaps": "ダウンロードする地図を選択",
       "selectDisplayMap": "表示する地図を選択:",
       "selectAll": "すべて選択",
       "allMaps": "すべての地図",
@@ -240,9 +240,9 @@
       "newFeatures": "新機能",
       "improvements": "改善",
       "bugFixes": "バグ修正",
-      "feature1": "複数の地図をまとめてダウンロード・削除できるようになりました",
-      "feature2": "ダウンロード進行状況を画面中央に大きく表示するようになりました",
-      "feature3": "地図選択画面にダウンロードボタンを追加しました",
+      "feature1": "複数の地図を一括ダウンロードできるようになりました",
+      "feature2": "",
+      "feature3": "",
       "improvement1": "ログアウト処理の改善",
       "improvement2": "依存関係のアップデート",
       "bugFix1": "iOSでPMTilesの数値属性のエラーを修正",

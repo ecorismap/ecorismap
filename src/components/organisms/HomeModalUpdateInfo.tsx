@@ -112,9 +112,15 @@ export const HomeModalUpdateInfo = React.memo(() => {
             <ScrollView style={styles.updateInfoContainer} showsVerticalScrollIndicator={true}>
               <View style={styles.updateInfoSection}>
                 <Text style={styles.updateInfoSectionTitle}>{t('Home.updateInfo.newFeatures')}</Text>
-                <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature1')}</Text>
-                <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature2')}</Text>
-                <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature3')}</Text>
+                {t('Home.updateInfo.feature1') && (
+                  <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature1')}</Text>
+                )}
+                {t('Home.updateInfo.feature2') && (
+                  <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature2')}</Text>
+                )}
+                {t('Home.updateInfo.feature3') && (
+                  <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.feature3')}</Text>
+                )}
               </View>
 
               {/* <View style={styles.updateInfoSection}>
@@ -122,7 +128,7 @@ export const HomeModalUpdateInfo = React.memo(() => {
                 <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.improvement1')}</Text>
                 <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.improvement2')}</Text>
               </View>
-              
+
               <View style={styles.updateInfoSection}>
                 <Text style={styles.updateInfoSectionTitle}>{t('Home.updateInfo.bugFixes')}</Text>
                 <Text style={styles.updateInfoItem}>• {t('Home.updateInfo.bugFix1')}</Text>

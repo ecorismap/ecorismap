@@ -76,6 +76,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
             checked={isAllMapsSelected}
             onCheck={handleSelectAll}
             labelAlign="row"
+            labelSize={16}
           />
           {downloadableTileMaps.map((tileMap) => (
             <CheckBox
@@ -84,6 +85,7 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
               checked={isMapSelected(tileMap.id)}
               onCheck={() => handleMapSelect(tileMap.id)}
               labelAlign="row"
+              labelSize={16}
             />
           ))}
         </ScrollView>
@@ -122,13 +124,14 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   selectAllButton: {
     paddingHorizontal: 10,
