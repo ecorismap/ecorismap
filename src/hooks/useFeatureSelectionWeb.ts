@@ -32,6 +32,9 @@ export const useFeatureSelectionWeb = (mapViewRef: MapView | MapRef | null): Use
         const userId = beforeFeature.record.userId === undefined ? '' : beforeFeature.record.userId;
         const source = `${beforeFeature.layerId}_${userId}`;
         map.removeFeatureState({ source });
+        // ポリゴンのアウトライン用ソースも解除
+        const outlineSource = `outline-${beforeFeature.layerId}_${userId}`;
+        map.removeFeatureState({ source: outlineSource });
       }
     } catch (e) {
       //console.log(e);
@@ -57,6 +60,17 @@ export const useFeatureSelectionWeb = (mapViewRef: MapView | MapRef | null): Use
           map.setFeatureState(
             {
               source: source,
+              id: selectedRecord?.record?.id,
+            },
+            {
+              clicked: true,
+            }
+          );
+          // ポリゴンのアウトライン用ソースも設定
+          const outlineSource = `outline-${selectedRecord.layerId}_${userId}`;
+          map.setFeatureState(
+            {
+              source: outlineSource,
               id: selectedRecord?.record?.id,
             },
             {

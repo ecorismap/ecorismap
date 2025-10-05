@@ -37,7 +37,7 @@ export const Polygon = React.memo((props: Props) => {
         </Source>
       )}
       {/*// @ts-ignore*/}
-      <Source type="geojson" data={geojsonData}>
+      <Source id={`outline-${layer.id}_${userId}`} type="geojson" data={geojsonData} promoteId={'_id'}>
         {/*// @ts-ignore*/}
         <Layer {...dataStyleOutline} />
       </Source>
