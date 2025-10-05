@@ -661,7 +661,7 @@ export const useTiles = (
       const size = (totalSize / 1048576).toFixed(1);
       setTileSize(size);
     })();
-  }, [isDownloading, tileMap, selectedTileMapIds, tileMaps]);
+  }, [isDownloading, tileMap, selectedTileMapIds, tileMaps, tileRegions]);
 
   return {
     isDownloading,

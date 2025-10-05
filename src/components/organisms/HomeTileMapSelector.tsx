@@ -77,6 +77,8 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
             onCheck={handleSelectAll}
             labelAlign="row"
             labelSize={16}
+            width={280}
+            numberOfLines={2}
           />
           {downloadableTileMaps.map((tileMap) => (
             <CheckBox
@@ -86,6 +88,8 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
               onCheck={() => handleMapSelect(tileMap.id)}
               labelAlign="row"
               labelSize={16}
+              width={280}
+              numberOfLines={2}
             />
           ))}
         </ScrollView>
