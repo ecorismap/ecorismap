@@ -141,7 +141,6 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     downloadTiles,
     downloadMultipleTiles,
     stopDownloadTiles,
-    clearTiles,
   } = useTiles(route.params?.tileMap, selectedTileMapIds, tileMaps);
 
   //位置データの操作、作成関連
