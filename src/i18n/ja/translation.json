@@ -218,8 +218,17 @@
       "zoomLevel": "この範囲では取得できません。ズームしてください。"
     },
     "navigation": {
-      "download": "地図のダウンロード",
+      "download": "ダウンロード",
       "exportPDF": "PDFの出力"
+    },
+    "download": {
+      "selectMaps": "ダウンロードする地図を選択:",
+      "selectDisplayMap": "表示する地図を選択:",
+      "selectAll": "すべて選択",
+      "allMaps": "すべての地図",
+      "mapsSelected": "個の地図",
+      "downloading": "ダウンロード中",
+      "stop": "停止"
     },
     "modal": {
       "infoTool": {

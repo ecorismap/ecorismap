@@ -21,6 +21,10 @@ export interface TileManagementContextType {
     centroid: { latitude: number; longitude: number };
   }[];
   downloadProgress: string;
+  selectedTileMapIds: string[];
+  selectedDisplayTileMapId: string | null;
+  toggleTileMapSelection: (tileMapId: string) => void;
+  setSelectedDisplayTileMapId: (tileMapId: string | null) => void;
   pressDownloadTiles: () => Promise<void>;
   pressStopDownloadTiles: () => void;
   pressDeleteTiles: () => Promise<void>;
@@ -45,6 +49,10 @@ export const TileManagementContext = createContext<TileManagementContextType>({
   },
   savedArea: [],
   downloadProgress: '',
+  selectedTileMapIds: [],
+  selectedDisplayTileMapId: null,
+  toggleTileMapSelection: () => {},
+  setSelectedDisplayTileMapId: () => {},
   pressDownloadTiles: async () => {},
   pressStopDownloadTiles: () => {},
   pressDeleteTiles: async () => {},

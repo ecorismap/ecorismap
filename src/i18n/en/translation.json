@@ -669,8 +669,17 @@
       "addLocationPoint": "Add a point at the current location?"
     },
     "navigation": {
-      "download": "Map download",
+      "download": "download",
       "exportPDF": "PDF output"
+    },
+    "download": {
+      "selectMaps": "Select maps to download:",
+      "selectDisplayMap": "Select map to display:",
+      "selectAll": "Select All",
+      "allMaps": "All Maps",
+      "mapsSelected": "maps selected",
+      "downloading": "Downloading",
+      "stop": "Stop"
     },
     "modal": {
       "infoTool": {

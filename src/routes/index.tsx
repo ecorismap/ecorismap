@@ -26,7 +26,15 @@ export type RootStackParamList = {
         tileMap?: TileMapType | undefined;
         jumpTo?: RegionType;
         previous: keyof RootStackParamList;
-        mode: 'exportPDF' | 'openEcorisMap' | 'clearEcorisMap' | 'downloadMap' | 'jumpTo' | 'editPosition' | undefined;
+        mode:
+          | 'exportPDF'
+          | 'openEcorisMap'
+          | 'clearEcorisMap'
+          | 'downloadMap'
+          | 'jumpTo'
+          | 'editPosition'
+          | 'download'
+          | undefined;
         layer?: LayerType;
         record?: RecordType;
         withCoord?: boolean;

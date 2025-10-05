@@ -1,11 +1,12 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Platform, Text } from 'react-native';
+import { StyleSheet, View, Platform, Text, Modal } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
 import { COLOR, FUNC_LOGIN, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
+import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
 import { CurrentMarker } from '../organisms/HomeCurrentMarker';
 import { Point } from '../organisms/HomePoint';
@@ -57,7 +58,7 @@ import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 // import { HomeInfoToolButton } from '../organisms/HomeInfoToolButton';
 import { TrackLog } from '../organisms/HomeTrackLog';
 import { HomeDownloadButtons } from '../organisms/HomeDownloadButtons';
-import { Pressable } from '../atoms/Pressable';
+import { HomeTileMapSelector } from '../organisms/HomeTileMapSelector';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { HomePoiPopup } from '../organisms/HomePoiPopup';
 
@@ -66,21 +67,32 @@ export default function HomeScreen() {
 
   // Local state for direction line visibility
   const [showDirectionLine, setShowDirectionLine] = useState(false);
+  const [showMapSelector, setShowMapSelector] = useState(false);
 
   // TileManagementContext
   const {
     downloadMode,
-    downloadTileMapName,
     tileMaps,
     savedTileSize,
     isDownloading,
     downloadArea,
     savedArea,
     downloadProgress,
+    selectedTileMapIds,
     pressDownloadTiles,
     pressStopDownloadTiles,
     pressDeleteTiles,
   } = useContext(TileManagementContext);
+
+  // 選択した地図のsavedAreaのみ表示
+  const filteredSavedArea = useMemo(() => {
+    // 「すべての地図」が選択されている場合は全て表示
+    if (selectedTileMapIds.length === 0) {
+      return savedArea;
+    }
+    // 選択された地図のsavedAreaのみ表示
+    return savedArea.filter((area) => selectedTileMapIds.includes(area.tileMapId));
+  }, [savedArea, selectedTileMapIds]);
 
   // MapMemoContext
   const {
@@ -211,16 +223,7 @@ export default function HomeScreen() {
   }, [featureButton, currentDrawTool]);
 
   const headerRightButton = useCallback(() => {
-    if (isDownloading) {
-      return (
-        <View style={styles.headerRight}>
-          <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-          <View style={{ width: 40, alignItems: 'flex-end' }}>
-            <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
-          </View>
-        </View>
-      );
-    } else if (exportPDFMode) {
+    if (exportPDFMode) {
       return (
         <View style={[styles.headerRight, { marginRight: -10 }]}>
           <Button name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.pdfsettings')} />
@@ -232,20 +235,13 @@ export default function HomeScreen() {
           <View style={{ width: 80, alignItems: 'flex-end' }}>
             <Text style={{ marginHorizontal: 5 }}>{savedTileSize}MB</Text>
           </View>
-          <Button name="delete" onPress={pressDeleteTiles} size={13} backgroundColor={COLOR.DARKRED} />
+          {!isDownloading && (
+            <Button name="delete" onPress={pressDeleteTiles} size={18} backgroundColor={COLOR.DARKRED} />
+          )}
         </View>
       );
     }
-  }, [
-    isDownloading,
-    exportPDFMode,
-    styles.headerRight,
-    pressStopDownloadTiles,
-    downloadProgress,
-    pressPDFSettingsOpen,
-    savedTileSize,
-    pressDeleteTiles,
-  ]);
+  }, [isDownloading, exportPDFMode, styles.headerRight, pressPDFSettingsOpen, savedTileSize, pressDeleteTiles]);
 
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
@@ -318,31 +314,50 @@ export default function HomeScreen() {
           height: 56 + insets.top,
           paddingTop: insets.top,
           backgroundColor: COLOR.MAIN,
+          paddingHorizontal: 10,
         }}
       >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
+        <View style={{ flex: 0, minWidth: 40, justifyContent: 'center' }}>
           {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} style={{ marginLeft: 10 }} />
+          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
         </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>
-            {downloadTileMapName || t('Home.navigation.download', '地図のダウンロード')}
-          </Text>
+        <View style={{ flex: 1, paddingHorizontal: 10 }}>
+          <Pressable
+            style={{
+              backgroundColor: COLOR.WHITE,
+              borderRadius: 5,
+              padding: 10,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            onPress={() => setShowMapSelector(true)}
+          >
+            <Text numberOfLines={1} style={{ flex: 1 }}>
+              {selectedTileMapIds.length === 0
+                ? t('Home.download.allMaps')
+                : selectedTileMapIds.length === 1
+                ? tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
+                : `${selectedTileMapIds.length} ${t('Home.download.mapsSelected', '個の地図')}`}
+            </Text>
+            <Text style={{ marginLeft: 8 }}>▼</Text>
+          </Pressable>
         </View>
         <View
           style={{
-            flex: 1.5,
+            flex: 0,
+            minWidth: 40,
             flexDirection: 'row',
             justifyContent: 'flex-end',
             alignItems: 'center',
-            paddingRight: 10,
           }}
         >
           {headerRightButton()}
         </View>
       </View>
     ),
-    [gotoMaps, headerRightButton, insets.top, downloadTileMapName]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [gotoMaps, headerRightButton, insets.top, selectedTileMapIds, tileMaps, t]
   );
 
   const customHeaderPDF = useCallback(
@@ -609,7 +624,7 @@ export default function HomeScreen() {
             {downloadMode && (
               <DownloadArea
                 downloadArea={downloadArea as any}
-                savedArea={savedArea as any}
+                savedArea={filteredSavedArea as any}
                 onPress={pressDownloadTiles}
               />
             )}
@@ -655,7 +670,21 @@ export default function HomeScreen() {
           )}
           {!(downloadMode || exportPDFMode) && featureButton === 'MEMO' && <HomeMapMemoTools />}
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeButtons />}
-          {downloadMode && <HomeDownloadButtons zoom={zoom} downloading={isDownloading} onPress={pressDownloadTiles} />}
+          {downloadMode && (
+            <>
+              {showMapSelector && (
+                <HomeTileMapSelector
+                  onConfirm={() => setShowMapSelector(false)}
+                  onCancel={() => setShowMapSelector(false)}
+                />
+              )}
+              <HomeDownloadButtons
+                zoom={zoom}
+                downloading={isDownloading}
+                onPress={pressDownloadTiles}
+              />
+            </>
+          )}
           {exportPDFMode && (
             <HomePDFButtons
               pdfTileMapZoomLevel={pdfTileMapZoomLevel}
@@ -668,6 +697,45 @@ export default function HomeScreen() {
           )}
         </View>
       </View>
+
+      <Modal visible={isDownloading} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: COLOR.SAVING_OVERLAY,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: COLOR.WHITE,
+              borderRadius: 10,
+              padding: 30,
+              alignItems: 'center',
+              minWidth: 200,
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: COLOR.BLACK }}>
+              {t('Home.download.downloading', 'ダウンロード中')}
+            </Text>
+            <View style={{ marginVertical: 20, alignItems: 'center' }}>
+              <Text style={{ fontSize: 16, color: COLOR.GRAY3, marginBottom: 8, textAlign: 'center' }}>
+                {downloadProgress.substring(0, downloadProgress.lastIndexOf(' '))}
+              </Text>
+              <Text style={{ fontSize: 36, fontWeight: 'bold', color: COLOR.BLACK }}>
+                {downloadProgress.substring(downloadProgress.lastIndexOf(' ') + 1)}
+              </Text>
+            </View>
+            <Button
+              name="pause"
+              onPress={pressStopDownloadTiles}
+              backgroundColor={COLOR.DARKRED}
+              labelText={t('Home.download.stop', '停止')}
+            />
+          </View>
+        </View>
+      </Modal>
 
       <BottomSheet
         ref={bottomSheetRef}

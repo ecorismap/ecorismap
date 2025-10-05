@@ -8,11 +8,15 @@ import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../routes';
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function MapScreen() {
   //console.log('render Maps');
   const { progress, isLoading, isOffline, pressToggleOnline } = useContext(MapsContext);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
 
   const customHeader = useCallback(
     () => (
@@ -42,10 +46,27 @@ export default function MapScreen() {
         <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 16 }}>{t('Maps.navigation.title')}</Text>
         </View>
-        <View style={{ flex: 1 }} />
+        <View
+          style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 10 }}
+        >
+          <Button
+            name="arrow-right"
+            backgroundColor={COLOR.MAIN}
+            onPress={() => navigation.navigate('Home', { mode: 'download', previous: 'Maps' })}
+            labelText={t('Home.navigation.download')}
+            labelTextColor={COLOR.GRAY3}
+            size={25}
+            color={COLOR.GRAY3}
+            borderRadius={5}
+            borderWidth={1}
+            borderColor={COLOR.GRAY3}
+            style={{ width: 80, marginLeft: 'auto' }}
+          />
+        </View>
       </View>
     ),
-    [isOffline, pressToggleOnline]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isOffline, navigation, pressToggleOnline, t]
   );
 
   useEffect(() => {

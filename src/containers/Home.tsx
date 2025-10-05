@@ -120,6 +120,12 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const { zoom, zoomDecimal, zoomIn, zoomOut, changeMapRegion } = useMapView(mapViewRef.current);
   const { isConnected } = useNetInfo();
 
+  // 複数地図選択状態
+  const [selectedTileMapIds, setSelectedTileMapIds] = useState<string[]>([]);
+
+  // 表示する地図の選択状態
+  const [selectedDisplayTileMapId, setSelectedDisplayTileMapId] = useState<string | null>(null);
+
   //タイルのダウンロード関連
   const {
     isDownloading,
@@ -128,9 +134,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     downloadProgress,
     savedTileSize,
     downloadTiles,
+    downloadMultipleTiles,
     stopDownloadTiles,
     clearTiles,
-  } = useTiles(route.params?.tileMap);
+  } = useTiles(route.params?.tileMap, selectedTileMapIds, tileMaps);
 
   //位置データの操作、作成関連
   const {
@@ -337,7 +344,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     [tileMaps]
   );
 
-  const downloadMode = useMemo(() => route.params?.tileMap !== undefined, [route.params?.tileMap]);
+  const downloadMode = useMemo(
+    () => route.params?.tileMap !== undefined || route.params?.mode === 'download',
+    [route.params?.tileMap, route.params?.mode]
+  );
   const downloadTileMapName = useMemo(() => route.params?.tileMap?.name || '', [route.params?.tileMap]);
   const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
 
@@ -422,6 +432,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     bottomSheetRef.current?.close();
   }, [isEditingRecord, route.params?.mode, routeName, setIsEditingRecord, unselectRecord]);
+
+  // ダウンロードモードに入った時にBottomSheetを閉じる
+  useEffect(() => {
+    if (downloadMode) {
+      bottomSheetRef.current?.close();
+    }
+  }, [downloadMode]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
@@ -797,8 +814,22 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await AlertAsync(t('Home.alert.zoomLevel'));
       return;
     }
-    downloadTiles(zoom);
-  }, [downloadTiles, zoom]);
+
+    // 選択された地図がある場合は複数ダウンロード
+    if (selectedTileMapIds.length > 0) {
+      const selectedMaps = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
+      await downloadMultipleTiles(zoom, selectedMaps);
+    } else if (route.params?.mode === 'download') {
+      // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図をダウンロード
+      const downloadableMaps = tileMaps.filter(
+        (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'
+      );
+      await downloadMultipleTiles(zoom, downloadableMaps);
+    } else {
+      // 従来の単一地図ダウンロード
+      downloadTiles(zoom);
+    }
+  }, [downloadTiles, downloadMultipleTiles, route.params?.mode, selectedTileMapIds, tileMaps, zoom]);
 
   const pressStopDownloadTiles = useCallback(() => {
     stopDownloadTiles();
@@ -868,11 +899,38 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   }, [confirmLocationPermission, gpsState, toggleGPS, trackingState]);
 
   const pressDeleteTiles = useCallback(async () => {
-    if (route.params?.tileMap !== undefined) {
-      const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
-      if (ret) await clearTiles(route.params.tileMap);
+    const ret = await ConfirmAsync(t('Home.confirm.deleteTiles'));
+    if (!ret) return;
+
+    // 選択された地図を削除
+    if (selectedTileMapIds.length > 0) {
+      const mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
+      for (const map of mapsToDelete) {
+        await clearTiles(map);
+      }
+    } else if (downloadMode && route.params?.mode === 'download') {
+      // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図を削除
+      const downloadableMaps = tileMaps.filter(
+        (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'
+      );
+      for (const map of downloadableMaps) {
+        await clearTiles(map);
+      }
+    } else if (route.params?.tileMap !== undefined) {
+      // 従来の単一地図削除（後方互換性のため）
+      await clearTiles(route.params.tileMap);
     }
-  }, [clearTiles, route.params?.tileMap]);
+  }, [clearTiles, downloadMode, route.params?.tileMap, route.params?.mode, selectedTileMapIds, tileMaps]);
+
+  const toggleTileMapSelection = useCallback((tileMapId: string) => {
+    setSelectedTileMapIds((prev) => {
+      if (prev.includes(tileMapId)) {
+        return prev.filter((id) => id !== tileMapId);
+      } else {
+        return [...prev, tileMapId];
+      }
+    });
+  }, []);
 
   const pressLogout = useCallback(async () => {
     if (isSettingProject) {
@@ -1071,11 +1129,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-
     bottomSheetRef.current?.snapToIndex(2);
-    navigation.setParams({ tileMap: undefined });
+    navigation.setParams({ tileMap: undefined, mode: undefined });
     navigation.navigate('Maps');
-  }, [isEditingRecord, navigation]);
+  }, [isEditingRecord, navigation]);;;
 
   const gotoSettings = useCallback(async () => {
     bottomSheetRef.current?.snapToIndex(2);
@@ -1688,7 +1745,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
       }
     } else if (route.params?.previous === 'Maps') {
-      if (route.params?.tileMap) {
+      if (route.params?.tileMap || route.params?.mode === 'download') {
         //ダウンロード画面を開いた場合
         setTimeout(() => bottomSheetRef.current?.close(), 500);
         toggleTerrain(false);
@@ -2110,6 +2167,10 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       downloadArea,
       savedArea,
       downloadProgress,
+      selectedTileMapIds,
+      selectedDisplayTileMapId,
+      toggleTileMapSelection,
+      setSelectedDisplayTileMapId,
       pressDownloadTiles,
       pressStopDownloadTiles,
       pressDeleteTiles,
@@ -2123,6 +2184,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       downloadArea,
       savedArea,
       downloadProgress,
+      selectedTileMapIds,
+      selectedDisplayTileMapId,
+      toggleTileMapSelection,
       pressDownloadTiles,
       pressStopDownloadTiles,
       pressDeleteTiles,

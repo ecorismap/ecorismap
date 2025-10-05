@@ -27,7 +27,6 @@ export const MapTable = React.memo(() => {
   const {
     filterdMaps,
     changeVisible,
-    pressDownloadMap,
     gotoMapEdit,
     jumpToBoundary,
     changeExpand,
@@ -101,27 +100,12 @@ export const MapTable = React.memo(() => {
               <Button
                 name="pencil"
                 onPress={() => gotoMapEdit(item)}
-                backgroundColor={COLOR.LIGHTBLUE2}
+                backgroundColor={COLOR.GRAY3}
                 size={18}
                 labelText={t('Maps.label.edit')}
+                borderRadius={5}
               />
             )}
-          </View>
-          <View style={[styles.td, { flex: 1, width: 80 }]}>
-            {item.id !== 'standard' &&
-              item.id !== 'hybrid' &&
-              !item.isGroup &&
-              !item.url.includes('file://') &&
-              !item.url.includes('blob:') && (
-                <Button
-                  name="download"
-                  onPress={() => pressDownloadMap(item)}
-                  borderRadius={5}
-                  backgroundColor={COLOR.GRAY3}
-                  size={18}
-                  labelText={t('Maps.label.download')}
-                />
-              )}
           </View>
           <View style={[styles.td, { flex: 2, width: 80, flexDirection: 'row', justifyContent: 'center' }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
@@ -144,7 +128,7 @@ export const MapTable = React.memo(() => {
         </View>
       );
     },
-    [changeExpand, changeVisible, gotoMapEdit, pressDownloadMap, jumpToBoundary, pressMapOrder]
+    [changeExpand, changeVisible, gotoMapEdit, jumpToBoundary, pressMapOrder]
   );
 
   const keyExtractor = useCallback((item: any) => item.id, []);
