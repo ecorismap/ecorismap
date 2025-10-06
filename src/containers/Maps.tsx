@@ -61,6 +61,39 @@ export default function MapContainer({ navigation }: Props_Maps) {
 
   const pressDownloadMap = useCallback(
     async (item: TileMapType) => {
+      // Web版でローカルインポートしたPDF（file://）の場合はIndexedDBから保存済みPDFをダウンロード
+      if (Platform.OS === 'web' && item.url.startsWith('file://') && item.url.endsWith('.pdf')) {
+        try {
+          const geotiff = await db.geotiff.get(item.id);
+          if (geotiff && geotiff.pdf) {
+            const link = document.createElement('a');
+            link.href = geotiff.pdf;
+            link.download = `${item.name}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return;
+          }
+          await AlertAsync(t('Maps.alert.pdfNotFound'));
+          return;
+        } catch (e: any) {
+          await AlertAsync(e.message);
+          return;
+        }
+      }
+
+      // Web版でFirebaseまたは外部URLのPDF（pdf://, http://, https://）の場合は再ダウンロード
+      if (Platform.OS === 'web' && (item.url.startsWith('pdf://') || item.url.startsWith('http'))) {
+        const ext = getExt(item.url)?.toLowerCase();
+        if (ext === 'pdf' || item.url.startsWith('pdf://')) {
+          setIsLoading(true);
+          const { message } = await importMapFile(item.url, item.name, ext, item.id, item.encryptKey);
+          setIsLoading(false);
+          if (message !== '') await AlertAsync(message);
+          return;
+        }
+      }
+
       if (Platform.OS === 'web') {
         AlertAsync(t('Maps.alert.cannotDownloadOnWeb'));
         return;
@@ -150,10 +183,13 @@ export default function MapContainer({ navigation }: Props_Maps) {
     }
   }, [maps]);
 
-  const pressExportMap = useCallback(async (tileMap: TileMapType) => {
-    const result = await exportSingleMap(tileMap);
-    await AlertAsync(result.message);
-  }, [exportSingleMap]);
+  const pressExportMap = useCallback(
+    async (tileMap: TileMapType) => {
+      const result = await exportSingleMap(tileMap);
+      await AlertAsync(result.message);
+    },
+    [exportSingleMap]
+  );
 
   const gotoMapList = useCallback(() => {
     navigation.navigate('MapList');

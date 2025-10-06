@@ -449,10 +449,12 @@
       "edit": "edit",
       "export": "export",
       "offline": "offline",
-      "online": "online"
+      "online": "online",
+      "pdf": "PDF"
     },
     "alert": {
-      "cannotDownloadOnWeb": "Cannot be used on the web version"
+      "cannotDownloadOnWeb": "Cannot be used on the web version",
+      "pdfNotFound": "PDF not found"
     }
   },
   "Projects": {
@@ -596,6 +598,7 @@
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
+      "corsError": "PDFs from external servers cannot be accessed on the web version. Please use the mobile version.",
       "wrongInput": "Invalid input.",
       "wrongExtension": "Incorrect file type.",
       "failedUpdatePassword": "Failed to change the encrypted password. \nIs the password correct before change? \nReset the encryption key if you forget it.",

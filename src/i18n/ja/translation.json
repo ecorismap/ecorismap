@@ -490,10 +490,12 @@
       "edit": "編集",
       "export": "ｴｸｽﾎﾟｰﾄ",
       "offline": "ｵﾌﾗｲﾝ",
-      "online": "ｵﾝﾗｲﾝ"
+      "online": "ｵﾝﾗｲﾝ",
+      "pdf": "PDF"
     },
     "alert": {
-      "cannotDownloadOnWeb": "Web版では使用できません"
+      "cannotDownloadOnWeb": "Web版では使用できません",
+      "pdfNotFound": "PDFが見つかりません"
     }
   },
   "MapList": {
@@ -795,6 +797,7 @@
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
+      "corsError": "外部サーバーのPDFはWeb版では取得できません。モバイル版をご利用ください。",
       "wrongInput": "入力内容が正しくありません。",
       "wrongExtension": "ファイルの種類が正しくありません。",
       "failedUpdatePassword": "暗号化パスワードの変更に失敗しました。変更前のパスワードは正しいですか？忘れた場合は暗号化キーをリセットしてください。",

@@ -854,20 +854,26 @@ export const useMaps = (): UseMapsReturnType => {
           }
           dataUri = response.uri;
         } else if (Platform.OS === 'web') {
-          const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
-          const response = await fetch(noAuthUri, {
-            mode: 'cors',
-            headers: {
-              Authorization: options,
-            },
-          });
+          try {
+            const noAuthUri = uri.replace(/^(https?:\/\/)([^:]+):([^@]+)@/, '$1');
+            const response = await fetch(noAuthUri, {
+              mode: 'cors',
+              headers: {
+                Authorization: options,
+              },
+            });
 
-          if (!response.ok) {
-            return { isOK: false, message: t('hooks.message.failReceiveFile') };
+            if (!response.ok) {
+              return { isOK: false, message: t('hooks.message.failReceiveFile') };
+            }
+            const blob = await response.blob();
+            const base64 = await blobToBase64(blob);
+            dataUri = `data:application/pdf;base64,${base64}`;
+          } catch (error) {
+            console.error('PDF download error:', error);
+            // CORSエラーの可能性が高い
+            return { isOK: false, message: t('hooks.message.corsError') };
           }
-          const blob = await response.blob();
-          const base64 = await blobToBase64(blob);
-          dataUri = `data:application/pdf;base64,${base64}`;
         }
         const result = await importPdfFile(dataUri, name, id);
         unlink(tempPdf);

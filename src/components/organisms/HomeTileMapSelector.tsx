@@ -21,7 +21,15 @@ export const HomeTileMapSelector = React.memo((props: Props) => {
     setSelectedDisplayTileMapId,
   } = useContext(TileManagementContext);
 
-  const downloadableTileMaps = tileMaps.filter((tileMap) => tileMap.id !== 'standard' && tileMap.id !== 'hybrid');
+  const downloadableTileMaps = tileMaps.filter(
+    (tileMap) =>
+      tileMap.id !== 'standard' &&
+      tileMap.id !== 'hybrid' &&
+      !tileMap.url.endsWith('.pdf') &&
+      !tileMap.url.startsWith('pdf://') &&
+      !tileMap.url.includes('file://') &&
+      !tileMap.url.includes('blob:')
+  );
 
   // 「すべての地図」が選択されているか（selectedTileMapIdsが空 = すべて選択状態）
   const isAllMapsSelected = selectedTileMapIds.length === 0;

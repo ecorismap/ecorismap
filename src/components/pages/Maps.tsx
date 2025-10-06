@@ -49,19 +49,21 @@ export default function MapScreen() {
         <View
           style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 10 }}
         >
-          <Button
-            name="arrow-right"
-            backgroundColor={COLOR.MAIN}
-            onPress={() => navigation.navigate('Home', { mode: 'download', previous: 'Maps' })}
-            labelText={t('Home.navigation.download')}
-            labelTextColor={COLOR.GRAY3}
-            size={25}
-            color={COLOR.GRAY3}
-            borderRadius={5}
-            borderWidth={1}
-            borderColor={COLOR.GRAY3}
-            style={{ width: 80, marginLeft: 'auto' }}
-          />
+          {Platform.OS !== 'web' && (
+            <Button
+              name="arrow-right"
+              backgroundColor={COLOR.MAIN}
+              onPress={() => navigation.navigate('Home', { mode: 'download', previous: 'Maps' })}
+              labelText={t('Home.navigation.download')}
+              labelTextColor={COLOR.GRAY3}
+              size={25}
+              color={COLOR.GRAY3}
+              borderRadius={5}
+              borderWidth={1}
+              borderColor={COLOR.GRAY3}
+              style={{ width: 80, marginLeft: 'auto' }}
+            />
+          )}
         </View>
       </View>
     ),

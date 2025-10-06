@@ -27,6 +27,7 @@ export const MapTable = React.memo(() => {
   const {
     filterdMaps,
     changeVisible,
+    pressDownloadMap,
     gotoMapEdit,
     jumpToBoundary,
     changeExpand,
@@ -96,6 +97,21 @@ export const MapTable = React.memo(() => {
             </View>
           </Pressable>
           <View style={[styles.td, { flex: 1, width: 80 }]}>
+            {item.id !== 'standard' &&
+              item.id !== 'hybrid' &&
+              !item.isGroup &&
+              (item.url.endsWith('.pdf') || item.url.startsWith('pdf://')) && (
+                <Button
+                  name="download"
+                  onPress={() => pressDownloadMap(item)}
+                  borderRadius={5}
+                  backgroundColor={COLOR.GRAY3}
+                  size={18}
+                  labelText={t('Maps.label.pdf')}
+                />
+              )}
+          </View>
+          <View style={[styles.td, { flex: 1, width: 80 }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <Button
                 name="pencil"
@@ -128,7 +144,7 @@ export const MapTable = React.memo(() => {
         </View>
       );
     },
-    [changeExpand, changeVisible, gotoMapEdit, jumpToBoundary, pressMapOrder]
+    [changeExpand, changeVisible, gotoMapEdit, jumpToBoundary, pressMapOrder, pressDownloadMap]
   );
 
   const keyExtractor = useCallback((item: any) => item.id, []);

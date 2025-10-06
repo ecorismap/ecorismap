@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ulid } from 'ulid';
 import { RootState } from '../store';
@@ -636,6 +637,12 @@ export const useTiles = (
   useEffect(() => {
     //ダウンロードしたタイルの情報
     (async () => {
+      // Web版では FileSystem.getInfoAsync が使えないのでスキップ
+      if (Platform.OS === 'web') {
+        setTileSize('0');
+        return;
+      }
+
       if (!tileMaps || tileMaps.length === 0) {
         if (tileMap) {
           const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap.id}`, { size: true });
