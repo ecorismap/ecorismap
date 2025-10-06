@@ -93,34 +93,59 @@ async function convertPDFToPNG(page: pdfjs.PDFPageProxy) {
 }
 
 async function createGCPs(geo: GeoInfo, width: number, height: number, Gdal: any): Promise<string[]> {
+  // bbox: 左上、左下、右下、右上の順
   const bbox = [
     [0, 0],
     [0, height],
     [width, height],
     [width, 0],
   ];
-  const coords = [];
+
+  // gpts配列から座標を取得
+  const geoPoints = [];
   for (let i = 0; i < 8; i += 2) {
-    coords.push([geo.gpts[i + 1], geo.gpts[i]]);
+    geoPoints.push({
+      lat: geo.gpts[i],
+      lon: geo.gpts[i + 1],
+    });
   }
 
-  // y座標が逆転している場合、上下の座標を入れ替え
-  if (coords[0][1] < coords[1][1]) {
-    [coords[0], coords[1]] = [coords[1], coords[0]];
-    [coords[2], coords[3]] = [coords[3], coords[2]];
-  }
+  // 緯度・経度の範囲を取得
+  const lats = geoPoints.map(p => p.lat);
+  const lons = geoPoints.map(p => p.lon);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
 
-  const t_src = geo.epsg ? `EPSG:${geo.epsg}` : geo.wkt;
-  if (t_src === undefined) throw new Error('No EPSG or WKT found in GeoInfo');
-  const options = ['-s_srs', 'EPSG:4326', '-t_srs', t_src, '-output_xy'];
-  const newCoords: [[number, number]] = await Gdal.gdaltransform(coords, options);
-  return newCoords
+  // 各点の位置を判定（上下左右）
+  const coords = geoPoints.map(p => {
+    const isTop = Math.abs(p.lat - maxLat) < Math.abs(p.lat - minLat);
+    const isLeft = Math.abs(p.lon - minLon) < Math.abs(p.lon - maxLon);
+    return { ...p, isTop, isLeft };
+  });
+
+  // bbox順に並べ替える: 左上、左下、右下、右上
+  const topLeft = coords.find(p => p.isTop && p.isLeft);
+  const bottomLeft = coords.find(p => !p.isTop && p.isLeft);
+  const bottomRight = coords.find(p => !p.isTop && !p.isLeft);
+  const topRight = coords.find(p => p.isTop && !p.isLeft);
+
+  const orderedCoords = [
+    [topLeft?.lon, topLeft?.lat],
+    [bottomLeft?.lon, bottomLeft?.lat],
+    [bottomRight?.lon, bottomRight?.lat],
+    [topRight?.lon, topRight?.lat],
+  ];
+
+  // EPSG:4326の座標を直接GCPとして使用
+  return orderedCoords
     .map((coord, index) => [
       '-gcp',
       bbox[index][0].toString(),
       bbox[index][1].toString(),
-      coord[0].toString(),
-      coord[1].toString(),
+      coord[0]!.toString(),
+      coord[1]!.toString(),
     ])
     .flat();
 }
@@ -135,9 +160,8 @@ async function convertPNGToGeoTiff(
   const Gdal = await initGdalJs({ path: 'static', useWorker: false });
   const gcps = await createGCPs(geo, png.width, png.height, Gdal);
   const dataset = (await Gdal.open(png.file)).datasets[0];
-  const a_src = geo.epsg ? `EPSG:${geo.epsg}` : geo.wkt;
-  if (a_src === undefined) throw new Error('No EPSG or WKT found in GeoInfo');
-  const translateOptions = ['-of', 'GTiff', '-a_srs', a_src, ...gcps];
+  // GCPはEPSG:4326（WGS84）の座標なので、a_srsもEPSG:4326を指定
+  const translateOptions = ['-of', 'GTiff', '-a_srs', 'EPSG:4326', ...gcps];
   const translated = await Gdal.gdal_translate(dataset, translateOptions);
   const translatedDs = (await Gdal.open(translated.local)).datasets[0];
 
