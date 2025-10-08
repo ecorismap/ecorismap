@@ -645,6 +645,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        try {
+          await updateCurrentLocationFromTracking();
+        } catch (error) {
+          console.error('Failed to refresh current location on foreground:', error);
+        }
         // 保留中のトラッキング開始を処理
         if (pendingTrackingStart.current && trackingState === 'on') {
           pendingTrackingStart.current = false;
@@ -708,7 +713,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return () => {
       subscription && subscription.remove();
     };
-  }, [gpsState, headingUp, toggleHeadingUp, trackingState, startGPS, moveCurrentPosition, startTracking]);
+  }, [
+    gpsState,
+    headingUp,
+    toggleHeadingUp,
+    trackingState,
+    startGPS,
+    moveCurrentPosition,
+    startTracking,
+    updateCurrentLocationFromTracking,
+  ]);
 
   return {
     currentLocation,

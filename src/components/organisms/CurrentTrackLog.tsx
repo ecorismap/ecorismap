@@ -2,7 +2,7 @@ import React from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR } from '../../constants/AppConstants';
-import { getDisplayBuffer } from '../../utils/Location';
+import { getDisplayBufferSimplified } from '../../utils/Location';
 
 interface Props {
   currentLocation: { latitude: number; longitude: number } | null;
@@ -28,7 +28,7 @@ export const CurrentTrackLog = React.memo((props: Props) => {
   const { currentLocation } = props;
 
   // 実際のデータはMMKVから直接取得
-  const currentChunk = getDisplayBuffer();
+  const currentChunk = getDisplayBufferSimplified(400);
 
   // データがない場合は何も表示しない
   if (!currentChunk || currentChunk.length === 0) {

@@ -219,6 +219,46 @@ export const getTrackChunk = (chunkIndex: number): LocationType[] => {
   return trackLogMMKV.getChunk(`track_chunk_${chunkIndex}`) || [];
 };
 
+export const simplifyLocations = (points: LocationType[] = [], maxPoints = 250): LocationType[] => {
+  if (!points || points.length === 0) {
+    return [];
+  }
+
+  if (points.length <= maxPoints) {
+    return points.slice();
+  }
+
+  const step = Math.ceil(points.length / maxPoints);
+  const simplified: LocationType[] = [];
+
+  for (let i = 0; i < points.length; i += step) {
+    simplified.push(points[i]);
+  }
+
+  const lastPoint = points[points.length - 1];
+  const lastSimplified = simplified[simplified.length - 1];
+
+  if (
+    !lastSimplified ||
+    lastSimplified.timestamp !== lastPoint.timestamp ||
+    lastSimplified.latitude !== lastPoint.latitude ||
+    lastSimplified.longitude !== lastPoint.longitude
+  ) {
+    simplified.push(lastPoint);
+  }
+
+  return simplified;
+};
+
+export const getTrackChunkForDisplay = (chunkIndex: number, maxPoints = 250): LocationType[] => {
+  const chunk = getTrackChunk(chunkIndex);
+  return simplifyLocations(chunk, maxPoints);
+};
+
+export const getDisplayBufferSimplified = (maxPoints = DISPLAY_BUFFER_SIZE): LocationType[] => {
+  return simplifyLocations(getDisplayBuffer(), maxPoints);
+};
+
 // メタデータ管理
 export const getTrackMetadata = (): TrackChunkMetadata => {
   return (
