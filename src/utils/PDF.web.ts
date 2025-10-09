@@ -92,7 +92,7 @@ async function convertPDFToPNG(page: pdfjs.PDFPageProxy) {
   return { file: new File([blob], 'temp.png'), width: canvas.width, height: canvas.height };
 }
 
-async function createGCPs(geo: GeoInfo, width: number, height: number, Gdal: any): Promise<string[]> {
+async function createGCPs(geo: GeoInfo, width: number, height: number, _Gdal: any): Promise<string[]> {
   // bbox: 左上、左下、右下、右上の順
   const bbox = [
     [0, 0],
