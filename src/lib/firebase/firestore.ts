@@ -71,20 +71,27 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
       await getDocsFromServer(q);
 
-    // バッチ処理で設定の更新日時を取得（並列処理）
-    const settingsPromises = querySnapshot.docs.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id));
-    const settingsResults = await Promise.all(settingsPromises);
+    // 設定取得と復号化を分離して最適化（全プラットフォーム共通）
 
+    // 1. まず設定の更新日時を小さいバッチで順次取得
+    const SETTINGS_BATCH_SIZE = 5;
+    const settingsResults: (Date | undefined)[] = [];
+
+    for (let i = 0; i < querySnapshot.docs.length; i += SETTINGS_BATCH_SIZE) {
+      const batch = querySnapshot.docs.slice(i, Math.min(i + SETTINGS_BATCH_SIZE, querySnapshot.docs.length));
+      const batchResults = await Promise.all(
+        batch.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id))
+      );
+      settingsResults.push(...batchResults);
+    }
+
+    // 2. 設定取得完了後、復号化を並列で実行
     const result = querySnapshot.docs.map(async (docSnapshot, index) => {
       const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
       if (data === undefined) {
         return undefined;
       } else {
-        // 事前に取得した設定の更新日時を使用
-        const settingsEncryptedAt = settingsResults[index];
-        //ToDO 2022.6.24以降に作成したプロジェクトは、functionsでstorage,licenseを設定するのでundefineにはならないはず。
-        //古いプロジェクトがなくなったらコードとProjectFSのtypeを変更すること
         return {
           id: docSnapshot.id,
           ownerUid,
@@ -93,12 +100,12 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           ...data,
           ...others,
           encryptedAt: toDate(encryptedAt),
-          // 設定ミスのためdata中にもsettingsEncryptedAtがある場合が発生したので、
-          // 上書きされないようにこの位置に移動。
-          settingsEncryptedAt: settingsEncryptedAt,
+          // 事前に取得した設定の更新日時を使用
+          settingsEncryptedAt: settingsResults[index],
         } as ProjectType;
       }
     });
+
     const projects = await Promise.all(result);
     if (projects.includes(undefined)) {
       const filteredProjects = projects.filter((v): v is ProjectType => v !== undefined);
