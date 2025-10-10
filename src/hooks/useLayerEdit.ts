@@ -19,6 +19,7 @@ export type UseLayerEditReturnType = {
   targetLayer: LayerType;
   isEdited: boolean;
   isNewLayer: boolean;
+  canChangePermission: boolean;
   saveLayer: () => void;
   deleteLayer: () => void;
   deleteLayerPhotos: () => Promise<void>;
@@ -57,6 +58,17 @@ export const useLayerEdit = (
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
     [projectId, user]
   );
+
+  const hasAnyRecord = useMemo(
+    () =>
+      dataSet.some((d) => {
+        const records = d.data ?? [];
+        return records.length > 0;
+      }),
+    [dataSet]
+  );
+
+  const canChangePermission = useMemo(() => isNewLayer || !hasAnyRecord, [hasAnyRecord, isNewLayer]);
 
   useEffect(() => {
     setTargetLayer(layer);
@@ -209,12 +221,13 @@ export const useLayerEdit = (
 
   const changePermission = useCallback(
     (val: PermissionType) => {
+      if (!canChangePermission) return;
       const m = cloneDeep(targetLayer);
       m.permission = val;
       setTargetLayer(m);
       setIsEdited(true);
     },
-    [targetLayer]
+    [canChangePermission, targetLayer]
   );
 
   const changeFieldOrder = useCallback(
@@ -310,6 +323,7 @@ export const useLayerEdit = (
     targetLayer,
     isEdited,
     isNewLayer,
+    canChangePermission,
     saveLayer,
     deleteLayer,
     deleteLayerPhotos,
