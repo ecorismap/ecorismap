@@ -754,7 +754,7 @@ export default function HomeScreen() {
                 attribution: tileMap.attribution,
               },
             };
-          } else if (tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) {
+          } else if (tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://') || tileMap.url.startsWith('file://')) {
             return {
               ...result,
               [tileMap.id]: {

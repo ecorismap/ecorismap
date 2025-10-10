@@ -209,7 +209,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
           } else {
             boundary = JSON.parse(boundaryJson);
           }
-        } else if (item.url.endsWith('.pdf') || item.url.startsWith('pdf://')) {
+        } else if (item.url.endsWith('.pdf') || item.url.startsWith('pdf://') || item.url.startsWith('file://')) {
           boundaryJson = (await db.geotiff.get(item.id))?.boundary;
           if (boundaryJson === undefined) return;
           boundary = JSON.parse(boundaryJson);

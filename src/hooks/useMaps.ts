@@ -25,6 +25,17 @@ import * as projectStorage from '../lib/firebase/storage';
 import dayjs from 'dayjs';
 import sanitize from 'sanitize-filename';
 
+const PDF_PROGRESS = {
+  idle: 0,
+  downloadStart: 0,
+  downloadEnd: 45,
+  convertStart: 50,
+  convertEnd: 100,
+} as const;
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+const formatProgress = (value: number) => Math.round(value).toString();
+
 export type UseMapsReturnType = {
   progress: string;
   mapListURL: string;
@@ -108,7 +119,7 @@ export const useMaps = (): UseMapsReturnType => {
   const tileRegions = useSelector((state: RootState) => state.settings.tileRegions, shallowEqual);
   const [editedMap, setEditedMap] = useState({} as TileMapType);
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
-  const [progress, setProgress] = useState('10');
+  const [progress, setProgress] = useState(formatProgress(PDF_PROGRESS.idle));
   const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
 
   const filterdMaps = useMemo(
@@ -588,7 +599,7 @@ export const useMaps = (): UseMapsReturnType => {
       try {
         const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
         const json = JSON.parse(jsonStrings);
-        
+
         // 配列形式の場合（従来の全体インポート）
         if (Array.isArray(json)) {
           const isValid = json.every((tileMap) => isTileMapType(tileMap));
@@ -598,16 +609,16 @@ export const useMaps = (): UseMapsReturnType => {
           dispatch(setTileMapsAction(json));
           await updatePmtilesURL();
           return { isOK: true, message: t('hooks.message.receiveFile') };
-        } 
+        }
         // オブジェクト形式の場合（個別地図）
         else if (typeof json === 'object' && json !== null && json.id) {
           const isValid = isTileMapType(json);
           if (!isValid) {
             return { isOK: false, message: t('hooks.message.invalidDataFormat') };
           }
-          
+
           // 既存の地図があれば更新、なければ追加
-          const existingMapIndex = maps.findIndex(m => m.id === json.id);
+          const existingMapIndex = maps.findIndex((m) => m.id === json.id);
           if (existingMapIndex !== -1) {
             dispatch(updateTileMapAction(json));
             return { isOK: true, message: t('hooks.message.updateMap') };
@@ -615,8 +626,7 @@ export const useMaps = (): UseMapsReturnType => {
             dispatch(addTileMapAction(json));
             return { isOK: true, message: t('hooks.message.addMap') };
           }
-        } 
-        else {
+        } else {
           return { isOK: false, message: t('hooks.message.invalidDataFormat') };
         }
       } catch (e: any) {
@@ -647,7 +657,7 @@ export const useMaps = (): UseMapsReturnType => {
       if (outputFiles.length === 0) {
         return { isOK: false, message: t('hooks.message.failReceiveFile') };
       }
-      setProgress('50');
+      setProgress(formatProgress(PDF_PROGRESS.convertStart));
 
       const totalPages = outputFiles.length;
       for (let page = 1; page <= totalPages; page++) {
@@ -725,9 +735,11 @@ export const useMaps = (): UseMapsReturnType => {
           dispatch(updateTileMapAction(tileMap));
         }
 
-        setProgress((50 + (page / totalPages) * 50).toFixed());
+        const convertProgress =
+          PDF_PROGRESS.convertStart + (page / totalPages) * (PDF_PROGRESS.convertEnd - PDF_PROGRESS.convertStart);
+        setProgress(formatProgress(convertProgress));
       }
-      setProgress('10'); //次回のための初期値
+      setProgress(formatProgress(PDF_PROGRESS.idle)); //次回のための初期値
 
       return { isOK: true, message: t('hooks.message.receiveFile') };
     },
@@ -834,24 +846,42 @@ export const useMaps = (): UseMapsReturnType => {
         const auth = uri.split('@')[0].split('//')[1];
         const options = auth ? 'Basic' + ' ' + Buffer.from(auth).toString('base64') : '';
         const tempPdf = `${FileSystem.cacheDirectory}${ulid()}.pdf`;
+        const updateDownloadProgress = (ratio: number) => {
+          if (!Number.isFinite(ratio)) return;
+          const clampedRatio = clamp(ratio, 0, 1);
+          const range = PDF_PROGRESS.downloadEnd - PDF_PROGRESS.downloadStart;
+          const value = PDF_PROGRESS.downloadStart + clampedRatio * range;
+          setProgress(formatProgress(value));
+        };
+        updateDownloadProgress(0);
         //firebaseからダウンロードする場合
         if (uri.startsWith('pdf://')) {
           const downloadUrl = uri.replace('pdf://', '');
           if (!key) return { isOK: false, message: t('hooks.message.failReceiveFile') };
-          const result = await projectStorage.downloadPDF(downloadUrl, key);
+          const result = await projectStorage.downloadPDF(downloadUrl, key, updateDownloadProgress);
           if (!result.isOK || result.data === undefined) {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
           dataUri = result.data;
         } else if (Platform.OS === 'ios' || Platform.OS === 'android') {
           const downloadUrl = uri;
-          const download = FileSystem.createDownloadResumable(downloadUrl, tempPdf, {
-            headers: { Authorization: options },
-          });
+          const download = FileSystem.createDownloadResumable(
+            downloadUrl,
+            tempPdf,
+            {
+              headers: { Authorization: options },
+            },
+            (downloadProgress) => {
+              const { totalBytesExpectedToWrite, totalBytesWritten } = downloadProgress;
+              if (!totalBytesExpectedToWrite) return;
+              updateDownloadProgress(totalBytesWritten / totalBytesExpectedToWrite);
+            }
+          );
           const response = await download.downloadAsync();
           if (!response || response.status !== 200) {
             return { isOK: false, message: t('hooks.message.failReceiveFile') };
           }
+          updateDownloadProgress(1);
           dataUri = response.uri;
         } else if (Platform.OS === 'web') {
           try {
@@ -866,7 +896,31 @@ export const useMaps = (): UseMapsReturnType => {
             if (!response.ok) {
               return { isOK: false, message: t('hooks.message.failReceiveFile') };
             }
-            const blob = await response.blob();
+            let blob: Blob;
+            const contentLengthHeader = response.headers.get('content-length');
+            if (response.body && contentLengthHeader) {
+              const totalBytes = parseInt(contentLengthHeader, 10);
+              if (Number.isFinite(totalBytes) && totalBytes > 0) {
+                const reader = response.body.getReader();
+                const chunks: Uint8Array[] = [];
+                let loaded = 0;
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  if (value) {
+                    chunks.push(value);
+                    loaded += value.length;
+                    updateDownloadProgress(loaded / totalBytes);
+                  }
+                }
+                blob = new Blob(chunks as BlobPart[]);
+              } else {
+                blob = await response.blob();
+              }
+            } else {
+              blob = await response.blob();
+            }
+            updateDownloadProgress(1);
             const base64 = await blobToBase64(blob);
             dataUri = `data:application/pdf;base64,${base64}`;
           } catch (error) {

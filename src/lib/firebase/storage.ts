@@ -89,14 +89,41 @@ export const uploadPDF = async (projectId: string, tileMapId: string) => {
   }
 };
 
-export const downloadPDF = async (url: string, key: string) => {
+export const downloadPDF = async (url: string, key: string, onProgress?: (progressRatio: number) => void) => {
   try {
     if (Platform.OS === 'web') {
       const response = await fetch(url);
       if (response.status !== 200) {
         return { isOK: false };
       } else {
-        const blob = await response.blob();
+        let blob: Blob;
+        const contentLengthHeader = response.headers.get('content-length');
+        if (response.body && contentLengthHeader) {
+          const totalBytes = parseInt(contentLengthHeader, 10);
+          if (Number.isFinite(totalBytes) && totalBytes > 0) {
+            const reader = response.body.getReader();
+            const chunks: Uint8Array[] = [];
+            let loaded = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) {
+                chunks.push(value);
+                loaded += value.length;
+                if (onProgress) {
+                  const ratio = loaded / totalBytes;
+                  onProgress(Math.min(Math.max(ratio, 0), 1));
+                }
+              }
+            }
+            blob = new Blob(chunks as BlobPart[], { type: 'application/pdf' });
+          } else {
+            blob = await response.blob();
+          }
+        } else {
+          blob = await response.blob();
+        }
+        onProgress?.(1);
         const { decdata } = await decFile(blob, key);
         if (decdata === undefined) {
           return { isOK: false };
@@ -106,14 +133,30 @@ export const downloadPDF = async (url: string, key: string) => {
         return { isOK: true, data: dataUri };
       }
     } else {
-      const { uri, status } = await FileSystem.downloadAsync(url, FileSystem.cacheDirectory + 'temp.pdf');
-      if (status !== 200) {
-        await FileSystem.deleteAsync(uri);
+      const download = FileSystem.createDownloadResumable(
+        url,
+        FileSystem.cacheDirectory + 'temp.pdf',
+        {},
+        (progressData) => {
+          const { totalBytesExpectedToWrite, totalBytesWritten } = progressData;
+          if (!totalBytesExpectedToWrite) return;
+          if (onProgress) {
+            const ratio = totalBytesWritten / totalBytesExpectedToWrite;
+            onProgress(Math.min(Math.max(ratio, 0), 1));
+          }
+        }
+      );
+      const result = await download.downloadAsync();
+      if (!result || result.status !== 200) {
+        if (result?.uri) {
+          await FileSystem.deleteAsync(result.uri).catch(() => undefined);
+        }
         return { isOK: false };
       } else {
-        const { decUri } = await decFileRN(uri, key);
+        onProgress?.(1);
+        const { decUri } = await decFileRN(result.uri, key);
         if (decUri === undefined) {
-          await FileSystem.deleteAsync(uri);
+          await FileSystem.deleteAsync(result.uri).catch(() => undefined);
           return { isOK: false };
         }
         return { isOK: true, data: 'file://' + decUri };

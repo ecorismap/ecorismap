@@ -111,25 +111,25 @@ async function createGCPs(geo: GeoInfo, width: number, height: number, _Gdal: an
   }
 
   // 緯度・経度の範囲を取得
-  const lats = geoPoints.map(p => p.lat);
-  const lons = geoPoints.map(p => p.lon);
+  const lats = geoPoints.map((p) => p.lat);
+  const lons = geoPoints.map((p) => p.lon);
   const minLat = Math.min(...lats);
   const maxLat = Math.max(...lats);
   const minLon = Math.min(...lons);
   const maxLon = Math.max(...lons);
 
   // 各点の位置を判定（上下左右）
-  const coords = geoPoints.map(p => {
+  const coords = geoPoints.map((p) => {
     const isTop = Math.abs(p.lat - maxLat) < Math.abs(p.lat - minLat);
     const isLeft = Math.abs(p.lon - minLon) < Math.abs(p.lon - maxLon);
     return { ...p, isTop, isLeft };
   });
 
   // bbox順に並べ替える: 左上、左下、右下、右上
-  const topLeft = coords.find(p => p.isTop && p.isLeft);
-  const bottomLeft = coords.find(p => !p.isTop && p.isLeft);
-  const bottomRight = coords.find(p => !p.isTop && !p.isLeft);
-  const topRight = coords.find(p => p.isTop && !p.isLeft);
+  const topLeft = coords.find((p) => p.isTop && p.isLeft);
+  const bottomLeft = coords.find((p) => !p.isTop && p.isLeft);
+  const bottomRight = coords.find((p) => !p.isTop && !p.isLeft);
+  const topRight = coords.find((p) => p.isTop && !p.isLeft);
 
   const orderedCoords = [
     [topLeft?.lon, topLeft?.lat],
@@ -174,7 +174,7 @@ async function convertPNGToGeoTiff(
   Gdal.close(translatedDs);
   const files = await Gdal.getOutputFiles();
   const fileBytes = await Gdal.getFileBytes(files[0].path);
-  const blob = new Blob([fileBytes], { type: 'image/tiff' });
+  const blob = new Blob([fileBytes as BlobPart], { type: 'image/tiff' });
   const uri = URL.createObjectURL(blob);
   return {
     uri,
