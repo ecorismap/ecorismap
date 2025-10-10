@@ -445,6 +445,41 @@ export const useRepository = (): UseRepositoryReturnType & {
     [layers, user]
   );
 
+  const mergeTemplateRecords = useCallback(
+    (layerId: string): RecordType[] => {
+      const candidates = fullDataSet.filter(
+        (d) => d.layerId === layerId && (d.userId === 'template' || d.userId === undefined || d.userId === user.uid)
+      );
+      if (candidates.length === 0) return [];
+
+      // テンプレート編集は自分の UID で編集内容を持つが、Firestore へは userId:'template' の単一データとしてアップロードしたい。
+      // getTargetRecordSet を共通ロジックのままにしつつテンプレート時のみマージするため、
+      // 既存テンプレート → 未設定 → 自分の順に上書きして一つのレコード集合に統合する。
+      const priority = (data: DataType) => {
+        if (data.userId === user.uid) return 2;
+        if (data.userId === undefined) return 1;
+        return 0;
+      };
+
+      const merged = new Map<string, RecordType>();
+      [...candidates]
+        .sort((a, b) => priority(a) - priority(b))
+        .forEach((data) => {
+          data.data.forEach((record) => {
+            merged.set(record.id, cloneDeep(record));
+          });
+        });
+
+      return Array.from(merged.values()).map((record) => ({
+        ...record,
+        userId: 'template',
+        displayName: t('common.admin'),
+        uploaded: true,
+      }));
+    },
+    [fullDataSet, user.uid]
+  );
+
   const uploadDataToRepository = useCallback(
     async (
       project: ProjectType,
@@ -479,7 +514,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       for (const layer of targetLayers) {
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
-        const targetRecordSet = getTargetRecordSet(fullDataSet, layer, user, isTemplate);
+        const targetRecordSet = isTemplate ? mergeTemplateRecords(layer.id) : getTargetRecordSet(fullDataSet, layer, user);
 
         //写真の更新
         const updatedData = await Promise.all(
@@ -511,7 +546,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       }
       return { isOK: true, message: '' };
     },
-    [dispatch, fullDataSet, isSettingProject, layers, updateStoragePhoto, updatedAt, user]
+    [dispatch, fullDataSet, isSettingProject, layers, mergeTemplateRecords, updateStoragePhoto, updatedAt, user]
   );
 
   const uploadTileMaps = useCallback(
