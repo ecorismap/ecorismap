@@ -15274,7 +15274,7 @@ index 0000000..f674e64
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java
 new file mode 100644
-index 0000000..8ecd4e3
+index 0000000..bcafff4
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/VectorStyle/PaintStyle.java
 @@ -0,0 +1,43 @@
@@ -15288,7 +15288,7 @@ index 0000000..8ecd4e3
 +  public Object fillColor;
 +
 +  @SerializedName("fill-outline-color")
-+  public String fillOutlineColor;
++  public Object fillOutlineColor;
 +
 +  @SerializedName("fill-opacity")
 +  public Float fillOpacity;
@@ -15306,7 +15306,7 @@ index 0000000..8ecd4e3
 +  public Float circleRadius;
 +
 +  @SerializedName("circle-stroke-color")
-+  public String circleStrokeColor;
++  public Object circleStrokeColor;
 +
 +  @SerializedName("circle-stroke-width")
 +  public Float circleStrokeWidth;
@@ -15315,7 +15315,7 @@ index 0000000..8ecd4e3
 +  public Object textColor;
 +
 +  @SerializedName("text-halo-color")
-+  public String textHaloColor;
++  public Object textHaloColor;
 +
 +  @SerializedName("text-halo-width")
 +  public Float textHaloWidth;
