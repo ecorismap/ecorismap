@@ -571,7 +571,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const checkUnsavedTrackLog = useCallback(async () => {
     // メタデータからデータの有無を確認
     const metadata = getTrackMetadata();
-    const hasData = metadata.totalPoints > 0 || trackMetadata.totalPoints > 1;
+    const totalPoints = Math.max(metadata.totalPoints, trackMetadata.totalPoints);
+    const hasData = totalPoints > 1;
 
     if (hasData) {
       const ans = await ConfirmAsync(t('hooks.message.saveTracking'));
