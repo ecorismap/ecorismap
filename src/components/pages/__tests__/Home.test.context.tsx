@@ -241,6 +241,7 @@ export const mockAppStateContextValue: AppStateContextType = {
   restored: true,
   attribution: '',
   isLoading: false,
+  setLoading: jest.fn(),
   user: {
     uid: undefined,
     email: null,

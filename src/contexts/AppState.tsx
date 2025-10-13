@@ -7,6 +7,7 @@ export interface AppStateContextType {
   restored: boolean;
   attribution: string;
   isLoading: boolean;
+  setLoading: (loading: boolean) => void;
   user: {
     uid: string | undefined;
     email: string | null;
@@ -31,6 +32,7 @@ export const AppStateContext = createContext<AppStateContextType>({
   restored: true,
   attribution: '',
   isLoading: false,
+  setLoading: () => {},
   user: {
     uid: undefined,
     email: null,

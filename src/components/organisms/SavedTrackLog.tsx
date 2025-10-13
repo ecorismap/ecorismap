@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Polyline } from 'react-native-maps';
 
 import { COLOR } from '../../constants/AppConstants';
 import { LocationType } from '../../types';
 import { getTrackChunkForDisplay } from '../../utils/Location';
+import { AppStateContext } from '../../contexts/AppState';
 
 interface Props {
   savedChunkCount: number;
@@ -19,6 +20,9 @@ export const SavedTrackLog = React.memo((props: Props) => {
   const { savedChunkCount } = props;
   const [loadedChunks, setLoadedChunks] = useState<Record<number, LocationType[]>>({});
   const loadedChunksRef = useRef<Record<number, LocationType[]>>({});
+  const { setLoading } = useContext(AppStateContext);
+  const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const loadingControlRef = useRef(false);
   
   // チャンクインデックスの配列を作成（メモ化）
   const chunkIndices = useMemo(() => {
@@ -63,11 +67,21 @@ export const SavedTrackLog = React.memo((props: Props) => {
   }, [chunkIndices]);
 
   useEffect(() => {
-    if (chunkIndices.length === 0) return;
+    if (chunkIndices.length === 0) {
+      setIsInitialLoading(false);
+      return;
+    }
 
     let isCancelled = false;
 
     const schedule = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    const needInitialLoad = chunkIndices.some((index) => !loadedChunksRef.current[index]);
+    if (!needInitialLoad) {
+      setIsInitialLoading(false);
+    } else {
+      setIsInitialLoading(true);
+    }
 
     const loadChunks = async () => {
       for (const index of chunkIndices) {
@@ -97,6 +111,10 @@ export const SavedTrackLog = React.memo((props: Props) => {
           console.error('Failed to load track chunk:', error);
         }
       }
+
+      if (!isCancelled) {
+        setIsInitialLoading(false);
+      }
     };
 
     loadChunks();
@@ -105,9 +123,26 @@ export const SavedTrackLog = React.memo((props: Props) => {
       isCancelled = true;
     };
   }, [chunkIndices]);
+
+  useEffect(() => {
+    if (isInitialLoading && !loadingControlRef.current) {
+      loadingControlRef.current = true;
+      setLoading(true);
+    } else if (!isInitialLoading && loadingControlRef.current) {
+      loadingControlRef.current = false;
+      setLoading(false);
+    }
+
+    return () => {
+      if (loadingControlRef.current) {
+        loadingControlRef.current = false;
+        setLoading(false);
+      }
+    };
+  }, [isInitialLoading, setLoading]);
   
   // データがない場合は何も表示しない
-  if (chunkIndices.length === 0) {
+  if (chunkIndices.length === 0 || isInitialLoading) {
     return null;
   }
   
