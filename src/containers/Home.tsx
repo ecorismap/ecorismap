@@ -355,6 +355,19 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const downloadTileMapName = useMemo(() => route.params?.tileMap?.name || '', [route.params?.tileMap]);
   const exportPDFMode = useMemo(() => route.params?.mode === 'exportPDF', [route.params?.mode]);
 
+  // ネットワーク状態に基づく効果的なオフライン判定
+  // 手動のisOffline設定とネットワーク接続状態の両方を考慮
+  const effectiveOffline = useMemo(() => {
+    // 手動でオフラインモードが設定されている場合は常にオフライン
+    if (isOffline) return true;
+
+    // ネットワーク接続状態をチェック（nullの場合はオンラインと仮定）
+    if (isConnected === false) return true;
+
+    // それ以外はオンライン
+    return false;
+  }, [isOffline, isConnected]);
+
   /******************************* */
   const downloadData = useCallback(
     async ({ isAdmin = false, shouldPhotoDownload = false }) => {
@@ -2296,7 +2309,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   // AppStateContextの値をメモ化
   const appStateContextValue = useMemo(
     () => ({
-      isOffline,
+      isOffline: effectiveOffline, // effectiveOfflineを使用
       restored,
       attribution,
       isLoading,
@@ -2311,7 +2324,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       updatePmtilesURL,
     }),
     [
-      isOffline,
+      effectiveOffline, // isOfflineの代わりにeffectiveOfflineを依存配列に含める
       restored,
       attribution,
       isLoading,
