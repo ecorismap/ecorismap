@@ -48,20 +48,23 @@ export const Point = React.memo(
 
     return (
       <>
-        {culledData.map((feature) => (
-          <PointComponent
-            key={`point-${feature.id}-${feature.redraw}`}
-            feature={feature}
-            selectedRecord={selectedRecord}
-            editPositionMode={editPositionMode}
-            editPositionRecord={editPositionRecord}
-            editPositionLayer={editPositionLayer}
-            currentDrawTool={currentDrawTool}
-            onDragEndPoint={onDragEndPoint}
-            layer={layer}
-            zoom={zoom}
-          />
-        ))}
+        {culledData.map((feature) => {
+          const isSelected = feature.id === selectedRecord?.record?.id;
+          return (
+            <PointComponent
+              key={`point-${feature.id}-${feature.redraw}-${isSelected}`}
+              feature={feature}
+              selectedRecord={selectedRecord}
+              editPositionMode={editPositionMode}
+              editPositionRecord={editPositionRecord}
+              editPositionLayer={editPositionLayer}
+              currentDrawTool={currentDrawTool}
+              onDragEndPoint={onDragEndPoint}
+              layer={layer}
+              zoom={zoom}
+            />
+          );
+        })}
       </>
     );
   },
@@ -146,7 +149,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
   if (!feature.coords) return null;
   return (
     <Marker
-      tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+      tracksViewChanges={Platform.OS === 'ios' ? true : false} //ラベル変更と色変更を反映するため.
       draggable={draggable}
       onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
       coordinate={feature.coords}
