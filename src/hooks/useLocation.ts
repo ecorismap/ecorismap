@@ -611,16 +611,51 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     if (Platform.OS === 'web') return;
 
     (async () => {
-      //kill後の起動時にログ取得中なら終了させる。なぜかエラーになるがtry catchする
-
+      // Androidの場合: kill後の再起動時にトラッキングが継続している場合は状態を復元
+      // iOS/その他: 従来通り停止処理
       const hasStarted = await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
+
       if (hasStarted) {
-        //再起動時にトラックを止める
-        await stopTracking();
-      }
-      const { isOK, message } = await checkUnsavedTrackLog();
-      if (!isOK) {
-        await AlertAsync(message);
+        if (Platform.OS === 'android') {
+          // Androidの場合: トラッキング状態を復元（キル後も継続させる）
+          console.log('[tracking] Restoring tracking state after app restart');
+          setTrackingState('on');
+
+          // headingSubscriberも復元
+          if (headingSubscriber.current === undefined) {
+            try {
+              headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+                setAzimuth(pos.trueHeading);
+              });
+            } catch (error) {
+              console.error('Error restoring heading subscriber:', error);
+            }
+          }
+
+          // メタデータを更新して表示
+          const chunkInfo = getCurrentChunkInfo();
+          const metadata = getTrackMetadata();
+          setTrackMetadata({
+            distance: metadata.currentDistance,
+            lastTimeStamp: metadata.lastTimeStamp,
+            savedChunkCount: chunkInfo.currentChunkIndex,
+            currentChunkSize: chunkInfo.currentChunkSize,
+            totalPoints: metadata.totalPoints,
+          });
+        } else {
+          // iOS/その他: 従来通り停止
+          await stopTracking();
+          const { isOK, message } = await checkUnsavedTrackLog();
+          if (!isOK) {
+            await AlertAsync(message);
+          }
+        }
+      } else {
+        // トラッキングが開始されていない場合は未保存データのチェックのみ
+        const { isOK, message } = await checkUnsavedTrackLog();
+        if (!isOK) {
+          await AlertAsync(message);
+        }
       }
     })();
 
