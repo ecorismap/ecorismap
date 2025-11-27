@@ -25,6 +25,7 @@ jobs:
       - name: Create local.properties
         run: |
           echo "MAPS_API_KEY=${{ secrets.MAPS_API_KEY }}" > android/local.properties
+          echo "TRANSISTORSOFT_LICENSE_KEY=\"${{ secrets.TRANSISTORSOFT_LICENSE_KEY }}\"" >> android/local.properties
       - name: Decode google-services.json
         env:
           GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}

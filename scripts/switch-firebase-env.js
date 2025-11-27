@@ -42,7 +42,8 @@ const configs = [
     name: 'Android Maps API',
     type: 'local-properties',
     placeholder: 'YOUR-MAPS-API-KEY',
-    keystoreConfig: path.join(keysDir, 'keystore-config')
+    keystoreConfig: path.join(keysDir, 'keystore-config'),
+    transistorsoftLicenseKey: path.join(keysDir, 'transistorsoft-license-key')
   },
   {
     source: path.join(keysDir, 'maps-key-ios'),
@@ -120,7 +121,7 @@ configs.forEach(config => {
       console.log(`✅ ${config.name}: 設定を更新しました`);
 
     } else if (config.type === 'local-properties') {
-      // local.properties用の特殊処理（Maps APIキー + Keystore設定）
+      // local.properties用の特殊処理（Maps APIキー + Transistorsoft License + Keystore設定）
       if (!fs.existsSync(config.template)) {
         console.error(`❌ ${config.name}: テンプレートファイルが見つかりません: ${config.template}`);
         hasError = true;
@@ -129,10 +130,16 @@ configs.forEach(config => {
 
       const keyValue = fs.readFileSync(config.source, 'utf8').trim();
       let content = fs.readFileSync(config.template, 'utf8');
-      
+
       // Maps APIキーを置換
       content = content.replace(config.placeholder, keyValue);
-      
+
+      // Transistorsoft License Keyを置換（存在する場合）
+      if (config.transistorsoftLicenseKey && fs.existsSync(config.transistorsoftLicenseKey)) {
+        const licenseKey = fs.readFileSync(config.transistorsoftLicenseKey, 'utf8').trim();
+        content = content.replace('YOUR-TRANSISTORSOFT-LICENSE-KEY', `"${licenseKey}"`);
+      }
+
       // 既存のlocal.propertiesからsdk.dirを保持
       if (fs.existsSync(targetPath)) {
         const existingContent = fs.readFileSync(targetPath, 'utf8');
@@ -141,13 +148,13 @@ configs.forEach(config => {
           content += `\n${sdkDirMatch[0]}`;
         }
       }
-      
+
       // Keystore設定を追加（存在する場合）
       if (fs.existsSync(config.keystoreConfig)) {
         const keystoreConfig = fs.readFileSync(config.keystoreConfig, 'utf8').trim();
         content += `\n\n# Keystore configuration\n${keystoreConfig}`;
       }
-      
+
       fs.writeFileSync(targetPath, content);
       console.log(`✅ ${config.name}: 設定を更新しました（Keystore設定を含む）`);
 

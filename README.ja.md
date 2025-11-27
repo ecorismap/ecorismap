@@ -45,8 +45,14 @@ yarn install
    ```
    MAPS_API_KEY=YOUR_ANDROID_MAPS_API_KEY
    ```
-   
-4. （任意）リリースビルド用にKeystore設定を追加：
+
+4. （任意）バックグラウンド位置追跡機能を使用する場合、Transistorsoftライセンスキーを追加：
+   ```
+   TRANSISTORSOFT_LICENSE_KEY="YOUR_LICENSE_KEY"
+   ```
+   > ライセンスキーは[Transistorsoft](https://shop.transistorsoft.com/)から取得してください。有効なライセンスがない場合、トラッキング機能はデバッグモードでのみ動作します。
+
+5. （任意）リリースビルド用にKeystore設定を追加：
    ```
    MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
    MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
@@ -250,19 +256,21 @@ Firebase HostingはWeb版アプリケーションをホスティングするた�
 
 ### 環境ファイルの設定方法
 
-1. Firebase設定ファイルをプロジェクトルートに配置：
+1. 設定ファイルを`keys/`ディレクトリに配置：
    ```
-   # Android
-   google-services.json.development
-   google-services.json.production
-   
-   # iOS  
-   GoogleService-Info.plist.development
-   GoogleService-Info.plist.production
-   
-   # Web
-   APIKeys.ts.development
-   APIKeys.ts.production
+   keys/
+   ├── development/
+   │   ├── google-services.json
+   │   ├── GoogleService-Info.plist
+   │   ├── firebaseConfig.ts
+   │   ├── maps-key-android
+   │   ├── maps-key-ios
+   │   ├── maptilerKey
+   │   ├── reCaptureSiteKey
+   │   ├── keystore-config
+   │   └── transistorsoft-license-key
+   └── production/
+       └── （developmentと同じファイル構成）
    ```
 
 2. 環境の切り替えコマンド：
@@ -273,7 +281,9 @@ Firebase HostingはWeb版アプリケーションをホスティングするた�
 
    このコマンドにより、自動的に適切な設定ファイルが以下の場所にコピーされます：
    - `android/app/google-services.json`
+   - `android/local.properties`（Maps APIキー、Transistorsoftライセンス、Keystore設定）
    - `ios/ecorismap/GoogleService-Info.plist`
+   - `ios/ecorismap/Supporting/Maps.plist`
    - `src/constants/APIKeys.ts`
 
 **重要：** すべての環境別設定ファイルとバックアップは`.gitignore`に登録されており、機密データが誤ってコミットされることを防いでいます。

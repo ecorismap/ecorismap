@@ -38,8 +38,14 @@ yarn install
    ```
    MAPS_API_KEY=YOUR_ANDROID_MAPS_API_KEY
    ```
-   
-4. (Optional) For release builds, add Keystore configuration:
+
+4. (Optional) For background geolocation tracking, add your Transistorsoft license key:
+   ```
+   TRANSISTORSOFT_LICENSE_KEY="YOUR_LICENSE_KEY"
+   ```
+   > Get a license key from [Transistorsoft](https://shop.transistorsoft.com/). Without a valid license, tracking features will work in debug mode only.
+
+5. (Optional) For release builds, add Keystore configuration:
    ```
    MYAPP_UPLOAD_STORE_FILE=my-upload-key.keystore
    MYAPP_UPLOAD_KEY_ALIAS=my-key-alias
@@ -241,19 +247,21 @@ This project supports both development and production Firebase environments. Con
 
 ### Setting up environment files
 
-1. Place your Firebase configuration files in the project root:
+1. Place your configuration files in the `keys/` directory:
    ```
-   # Android
-   google-services.json.development
-   google-services.json.production
-   
-   # iOS  
-   GoogleService-Info.plist.development
-   GoogleService-Info.plist.production
-   
-   # Web
-   APIKeys.ts.development
-   APIKeys.ts.production
+   keys/
+   ├── development/
+   │   ├── google-services.json
+   │   ├── GoogleService-Info.plist
+   │   ├── firebaseConfig.ts
+   │   ├── maps-key-android
+   │   ├── maps-key-ios
+   │   ├── maptilerKey
+   │   ├── reCaptureSiteKey
+   │   ├── keystore-config
+   │   └── transistorsoft-license-key
+   └── production/
+       └── (same files as development)
    ```
 
 2. Switch between environments:
@@ -264,7 +272,9 @@ This project supports both development and production Firebase environments. Con
 
    This command will automatically copy the appropriate configuration files to:
    - `android/app/google-services.json`
+   - `android/local.properties` (Maps API key, Transistorsoft license, Keystore config)
    - `ios/ecorismap/GoogleService-Info.plist`
+   - `ios/ecorismap/Supporting/Maps.plist`
    - `src/constants/APIKeys.ts`
 
 **Important:** All environment-specific configuration files and backups are gitignored to prevent accidental commits of sensitive data.
