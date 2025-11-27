@@ -15436,6 +15436,8 @@ __metadata:
     react-i18next: ^14.1.3
     react-map-gl: ^7.1.7
     react-native: 0.79.5
+    react-native-background-fetch: ^4.2.8
+    react-native-background-geolocation: ^4.19.2
     react-native-date-picker: ^4.2.13
     react-native-device-info: ^14.0.4
     react-native-draggable-flatlist: 4.0.3
@@ -25521,6 +25523,22 @@ __metadata:
     maplibre-gl:
       optional: true
   checksum: fa53bdcdf2d168a9735a7a9db80257acc206a7893a879e022cfa02ce0cd5cc662a470824968cb5a421a46e5db0f24b339a7fc50ecf98f70e39e787bdbaaed9b0
+  languageName: node
+  linkType: hard
+
+"react-native-background-fetch@npm:^4.2.8, react-native-background-fetch@npm:~4.2.6":
+  version: 4.2.8
+  resolution: "react-native-background-fetch@npm:4.2.8"
+  checksum: f931c9f0804ff26df5296d317d4b469a9d3dc9c93221a6e481bf92a0a5ea84d8325de28295814c89241f8ff9580ad7b41cde5eb757da63dc15fedc586c2721cc
+  languageName: node
+  linkType: hard
+
+"react-native-background-geolocation@npm:^4.19.2":
+  version: 4.19.2
+  resolution: "react-native-background-geolocation@npm:4.19.2"
+  dependencies:
+    react-native-background-fetch: ~4.2.6
+  checksum: 2b525363e553b7f68dee8aae5544c0ac2a2d7fdf9a03174225ef877e50c8f1a7e85d0fddc7003d068849cc5e3e0846000fa62e8ac59c62d92c56cc4193bb9d74
   languageName: node
   linkType: hard
 

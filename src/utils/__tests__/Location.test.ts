@@ -1,5 +1,5 @@
-import { LocationObject } from 'expo-location';
 import {
+  LocationObjectInput,
   isLocationObject,
   toLocationType,
   getLineLength,
@@ -88,7 +88,7 @@ describe('isLocationObject', () => {
 
 describe('toLocationType', () => {
   it('return LoactionType from LocationObject', () => {
-    const locationObject: LocationObject = {
+    const locationObject: LocationObjectInput = {
       coords: {
         latitude: 35.6812,
         longitude: 139.7671,
@@ -132,7 +132,7 @@ describe('checkLocations', () => {
   const baseTime = Date.now();
 
   it('filters locations by timestamp', () => {
-    const locations: LocationObject[] = [
+    const locations: LocationObjectInput[] = [
       {
         coords: {
           latitude: 35,
@@ -165,7 +165,7 @@ describe('checkLocations', () => {
   });
 
   it('filters out low accuracy when starting', () => {
-    const locations: LocationObject[] = [
+    const locations: LocationObjectInput[] = [
       {
         coords: {
           latitude: 35,
@@ -198,7 +198,7 @@ describe('checkLocations', () => {
   });
 
   it('rejects all data when timestamp reversal detected', () => {
-    const locations: LocationObject[] = [
+    const locations: LocationObjectInput[] = [
       {
         coords: {
           latitude: 35,
@@ -230,7 +230,7 @@ describe('checkLocations', () => {
   });
 
   it('accepts all valid locations when no issues', () => {
-    const locations: LocationObject[] = [
+    const locations: LocationObjectInput[] = [
       {
         coords: {
           latitude: 35,

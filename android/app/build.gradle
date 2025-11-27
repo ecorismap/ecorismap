@@ -4,6 +4,10 @@ apply plugin: "com.facebook.react"
 apply plugin: "com.google.android.libraries.mapsplatform.secrets-gradle-plugin"
 apply plugin: "com.google.gms.google-services"
 
+// react-native-background-geolocation
+def background_geolocation = project(':react-native-background-geolocation')
+apply from: "${background_geolocation.projectDir}/app.gradle"
+
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -86,6 +90,7 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }

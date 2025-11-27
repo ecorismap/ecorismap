@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useCallback, useState } from 'react';
-import * as ExpoLocation from 'expo-location';
+import BackgroundGeolocation, {
+  Location as BackgroundLocation,
+  Subscription as BackgroundSubscription,
+  State as BackgroundState,
+} from 'react-native-background-geolocation';
+import { watchHeadingAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
 import { LocationStateType, LocationType, TrackingStateType, TrackMetadataType } from '../types';
@@ -13,6 +18,7 @@ import {
   clearAllChunks,
   getCurrentChunkInfo,
   getLineLength,
+  toLocationObject,
 } from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
@@ -21,46 +27,18 @@ import { isLoggedIn } from '../utils/Account';
 import { RootState } from '../store';
 import { isMapView } from '../utils/Map';
 import { t } from '../i18n/config';
-import { LocationSubscription } from 'expo-location';
-import { TASK } from '../constants/AppConstants';
 import { AppState as RNAppState, Platform } from 'react-native';
-import { EventEmitter } from 'fbemitter';
-import * as TaskManager from 'expo-task-manager';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
 import { isLocationType } from '../utils/General';
-import {
-  isBatteryOptimizationIgnored,
-  requestDisableBatteryOptimization,
-} from '../lib/native/BatteryOptimization';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
     // 設定ページを開けなかった場合
   });
 };
-
-const locationEventsEmitter = new EventEmitter();
-
-TaskManager.defineTask(TASK.FETCH_LOCATION, async (event) => {
-  if (event.error) {
-    return console.error('[tracking]', 'Something went wrong within the background location task...', event.error);
-  }
-
-  const locations = (event.data as any).locations as ExpoLocation.LocationObject[];
-
-  try {
-    // MMKVに保存されているトラックログをチェックして、必要な位置情報を取得
-    // バックグラウンドの場合もフォアグラウンドの場合も、MMKVにログを保持し続ける
-    checkAndStoreLocations(locations);
-    // データは渡さず、イベントのみ発火（受信側で直接MMKVから読み込む）
-    locationEventsEmitter.emit('update');
-  } catch (error) {
-    // エラーログは削除
-  }
-});
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -82,7 +60,7 @@ export type UseLocationReturnType = {
     isOK: boolean;
     message: string;
   }>;
-  confirmLocationPermission: () => Promise<ExpoLocation.PermissionStatus.GRANTED | undefined>;
+  confirmLocationPermission: () => Promise<'granted' | undefined>;
 };
 
 export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>): UseLocationReturnType => {
@@ -107,11 +85,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   });
   const { addTrackRecord } = useRecord();
   const [azimuth, setAzimuth] = useState(0);
-  const gpsSubscriber = useRef<{ remove(): void } | undefined>(undefined);
-  const headingSubscriber = useRef<LocationSubscription | undefined>(undefined);
-  const pendingTrackingStart = useRef<boolean>(false);
-
-  const updateGpsPosition = useRef<(pos: ExpoLocation.LocationObject) => void>(() => null);
+  const gpsWatchId = useRef<string | null>(null);
+  const headingSubscriber = useRef<LocationSubscription | null>(null);
+  const bgReadyRef = useRef(false);
+  const initializedRef = useRef(false);
+  const trackingStateRef = useRef<TrackingStateType>('off');
+  const gpsStateRef = useRef<LocationStateType>('off');
+  const locationSubscription = useRef<BackgroundSubscription | null>(null);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
@@ -124,18 +104,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     message: string;
   }>({ isSaving: false, phase: '', message: '' });
 
-
   const gpsAccuracyOption = useMemo(() => {
-    // トラック記録中は固定設定を使用
     switch (gpsAccuracy) {
       case 'HIGH':
-        return { accuracy: ExpoLocation.Accuracy.Highest, distanceInterval: 2 };
+        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH, distanceFilter: 2 };
       case 'MEDIUM':
-        return { accuracy: ExpoLocation.Accuracy.High, distanceInterval: 10 };
+        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_MEDIUM, distanceFilter: 10 };
       case 'LOW':
-        return { accuracy: ExpoLocation.Accuracy.Balanced };
+        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_LOW, distanceFilter: 50 };
       default:
-        return { accuracy: ExpoLocation.Accuracy.Highest, distanceInterval: 2 };
+        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH, distanceFilter: 2 };
     }
   }, [gpsAccuracy]);
 
@@ -159,99 +137,170 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       }
 
-      const foregroundPermission = await ExpoLocation.getForegroundPermissionsAsync();
-      if (foregroundPermission.status === 'granted') {
-        return 'granted' as ExpoLocation.PermissionStatus.GRANTED;
+      const authStatus = await BackgroundGeolocation.requestPermission();
+      if (
+        authStatus === BackgroundGeolocation.AUTHORIZATION_STATUS_ALWAYS ||
+        authStatus === BackgroundGeolocation.AUTHORIZATION_STATUS_WHEN_IN_USE
+      ) {
+        return 'granted';
       }
 
-      if (foregroundPermission.status === 'denied' && !foregroundPermission.canAskAgain) {
-        await AlertAsync(t('hooks.message.permitAccessGPS'));
-        openSettings();
-        return;
-      }
-
-      const { status: foregroundStatus } = await ExpoLocation.requestForegroundPermissionsAsync();
-      if (foregroundStatus !== 'granted') {
-        await AlertAsync(t('hooks.message.permitAccessGPS'));
-        openSettings();
-        return;
-      }
-
-      return 'granted' as ExpoLocation.PermissionStatus.GRANTED;
+      await AlertAsync(t('hooks.message.permitAccessGPS'));
+      openSettings();
+      return;
     } catch (e: any) {
-      // エラーハンドリング
+      console.error('confirmLocationPermission error', e);
     }
   }, []);
 
-  const ensureBatteryOptimization = useCallback(async () => {
-    if (Platform.OS !== 'android') return { willOpenSettings: false };
-
-    try {
-      const isIgnored = await isBatteryOptimizationIgnored();
-      if (isIgnored) return { willOpenSettings: false };
-
-      const shouldOpenSettings = await ConfirmAsync(t('hooks.message.requestDisableBatteryOptimization'));
-      
-      if (!shouldOpenSettings) {
-        await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
-        return { willOpenSettings: false };
+  const handleBackgroundLocation = useCallback(
+    (location: BackgroundLocation) => {
+      if (trackingStateRef.current !== 'on') {
+        return;
       }
 
-      const opened = await requestDisableBatteryOptimization();
-      
-      if (!opened) {
-        await AlertAsync(t('hooks.message.failOpenBatteryOptimizationSettings'));
-        return { willOpenSettings: false };
-      }
-      
-      return { willOpenSettings: true };
-    } catch (error) {
-      console.error('Error in ensureBatteryOptimization:', error);
-      // エラーが発生しても処理を継続（willOpenSettings: false を返す）
-      return { willOpenSettings: false };
-    }
-  }, []);
+      try {
+        const normalized = toLocationObject(location);
+        checkAndStoreLocations([normalized]);
+        const latest = { ...normalized.coords, timestamp: normalized.timestamp };
+        trackLogMMKV.setCurrentLocation(latest);
 
-  const startGPS = useCallback(async () => {
-    //GPSもトラッキングもOFFの場合
-    if (
-      gpsSubscriber.current === undefined &&
-      !(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))
-    ) {
-      // 実際のGPSを使用
-      gpsSubscriber.current = await ExpoLocation.watchPositionAsync(gpsAccuracyOption, (pos) => {
-        updateGpsPosition.current(pos);
-      });
+        // メタデータを更新
+        const chunkInfo = getCurrentChunkInfo();
+        const metadata = getTrackMetadata();
+        setTrackMetadata({
+          distance: metadata.currentDistance,
+          lastTimeStamp: metadata.lastTimeStamp,
+          savedChunkCount: chunkInfo.currentChunkIndex,
+          currentChunkSize: chunkInfo.currentChunkSize,
+          totalPoints: metadata.totalPoints,
+          currentLocation: latest,
+        });
+
+        // カメラ移動（followモードまたはバックグラウンド時）
+        if (gpsStateRef.current === 'follow' || RNAppState.currentState === 'background') {
+          if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+            (mapViewRef.current as MapView).animateCamera(
+              {
+                center: {
+                  latitude: latest.latitude,
+                  longitude: latest.longitude,
+                },
+              },
+              { duration: 5 }
+            );
+          }
+        }
+
+        setCurrentLocation(latest);
+      } catch (error) {
+        console.error('[tracking] Failed to persist location', error);
+      }
+    },
+    [mapViewRef]
+  );
+
+  const ensureBackgroundGeolocation = useCallback(async () => {
+    const config = {
+      desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
+      distanceFilter: gpsAccuracyOption.distanceFilter,
+      stopOnTerminate: false,
+      startOnBoot: true,
+      enableHeadless: true,
+      foregroundService: true,
+      locationAuthorizationRequest: 'WhenInUse',
+      disableLocationAuthorizationAlert: true,
+      disableMotionActivityUpdates: true,
+      notification: {
+        sticky: true,
+        title: 'EcorisMap',
+        text: t('hooks.notification.inTracking'),
+        channelName: 'EcorisMap Tracking',
+        color: '#0F5FBA',
+        smallIcon: 'drawable/ic_notification',
+        largeIcon: 'mipmap/ic_launcher',
+      },
+      allowsBackgroundLocationUpdates: true,
+      reset: true,
+    } as const;
+
+    const state = await BackgroundGeolocation.ready(config);
+
+    if (!locationSubscription.current) {
+      locationSubscription.current = BackgroundGeolocation.onLocation(
+        (location) => handleBackgroundLocation(location),
+        (error) => console.error('[tracking] location error', error)
+      );
     }
-    if (headingSubscriber.current === undefined) {
-      headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
-        setAzimuth(pos.trueHeading);
-      });
-    }
-  }, [gpsAccuracyOption]);
+
+    bgReadyRef.current = true;
+    return state;
+  }, [gpsAccuracyOption.desiredAccuracy, gpsAccuracyOption.distanceFilter, handleBackgroundLocation]);
+
+  const startGPS = useCallback(
+    async (mode: LocationStateType) => {
+      if (mode === 'off') return;
+      await ensureBackgroundGeolocation();
+      // トラッキング中はwatchPositionを開始しない（onLocationが担当）
+      if (trackingStateRef.current === 'on') return;
+      if (gpsWatchId.current === null) {
+        BackgroundGeolocation.watchPosition(
+          (location) => {
+            const coords = location.coords;
+            setCurrentLocation(coords);
+            if (mode === 'follow' && mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+              (mapViewRef.current as MapView).animateCamera(
+                {
+                  center: {
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                  },
+                },
+                { duration: 5 }
+              );
+            }
+          },
+          (error) => {
+            console.error('[tracking] watchPosition error', error);
+          },
+          {
+            interval: 2000,
+            persist: false,
+            desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
+          } as any
+        );
+        gpsWatchId.current = 'watching';
+      }
+      if (headingSubscriber.current === null) {
+        try {
+          headingSubscriber.current = await watchHeadingAsync((pos) => {
+            setAzimuth(pos.trueHeading);
+          });
+        } catch (error) {
+          console.error('Failed to start heading subscriber:', error);
+        }
+      }
+    },
+    [ensureBackgroundGeolocation, gpsAccuracyOption.desiredAccuracy, mapViewRef]
+  );
 
   const stopGPS = useCallback(async () => {
-    if (gpsSubscriber.current !== undefined) {
-      gpsSubscriber.current.remove();
-      gpsSubscriber.current = undefined;
+    if (gpsWatchId.current !== null) {
+      await BackgroundGeolocation.stopWatchPosition();
+      gpsWatchId.current = null;
     }
-    if (headingSubscriber.current !== undefined) {
+    if (headingSubscriber.current !== null) {
       headingSubscriber.current.remove();
-      headingSubscriber.current = undefined;
+      headingSubscriber.current = null;
     }
   }, []);
 
   const stopTracking = useCallback(async () => {
     try {
-      // チャンクシステムは自動的に保存されるため、追加の保存処理は不要
-
-      if (await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION)) {
-        await ExpoLocation.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
-
-        if (headingSubscriber.current !== undefined) {
-          headingSubscriber.current.remove();
-          headingSubscriber.current = undefined;
-        }
+      await ensureBackgroundGeolocation();
+      const state: BackgroundState = await BackgroundGeolocation.getState();
+      if (state.enabled) {
+        await BackgroundGeolocation.stop();
       }
 
       // React Stateをクリア（メモリ解放を促進）
@@ -263,51 +312,59 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setCurrentLocation(null);
       }
     }
-  }, [projectId, dataUser]);
+  }, [projectId, dataUser, ensureBackgroundGeolocation]);
 
   const startTracking = useCallback(async () => {
     try {
       // チャンクシステムを初期化
       clearStoredLocations();
 
-      // 実際のGPSでトラッキング
-      if (!(await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION))) {
-        await ExpoLocation.startLocationUpdatesAsync(TASK.FETCH_LOCATION, {
-          ...gpsAccuracyOption,
-          pausesUpdatesAutomatically: false,
-          showsBackgroundLocationIndicator: true,
-          foregroundService: {
-            notificationTitle: 'EcorisMap',
-            notificationBody: t('hooks.notification.inTracking'),
-            killServiceOnDestroy: false,
-          },
-        });
+      await ensureBackgroundGeolocation();
+      const state: BackgroundState = await BackgroundGeolocation.getState();
+      if (!state.enabled) {
+        await BackgroundGeolocation.start();
       }
 
-      if (headingSubscriber.current === undefined) {
-        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+      // 強制的に移動モードにして位置更新を継続させる
+      // BackgroundGeolocationはデフォルトで静止モード(isMoving:false)で開始されるため必須
+      await BackgroundGeolocation.changePace(true);
+
+      if (headingSubscriber.current === null) {
+        headingSubscriber.current = await watchHeadingAsync((pos) => {
           setAzimuth(pos.trueHeading);
         });
       }
     } catch (error) {
       console.error('Error in startTracking:', error);
-      // エラーが発生しても最低限の処理は続ける
-      throw error; // 呼び出し元でハンドリングするために再スロー
+      throw error;
     }
-  }, [gpsAccuracyOption]);
+  }, [ensureBackgroundGeolocation]);
 
   const moveCurrentPosition = useCallback(async () => {
-    const location = await ExpoLocation.getLastKnownPositionAsync();
-    if (location === null) return;
-    setCurrentLocation(location.coords);
-    if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
-    mapViewRef.current.animateCamera(
-      {
-        center: location.coords,
-      },
-      { duration: 5 }
-    );
-  }, [mapViewRef]);
+    try {
+      const location = await BackgroundGeolocation.getCurrentPosition({
+        persist: false,
+        samples: 1,
+        desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
+        timeout: 30,
+      } as any);
+      if (!location) return;
+      const coords = location.coords;
+      setCurrentLocation(coords);
+      if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
+      mapViewRef.current.animateCamera(
+        {
+          center: {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          },
+        },
+        { duration: 5 }
+      );
+    } catch (error) {
+      console.error('moveCurrentPosition error', error);
+    }
+  }, [gpsAccuracyOption.desiredAccuracy, mapViewRef]);
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
@@ -317,94 +374,68 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
           setCurrentLocation(null);
         }
-      } else if (gpsState_ === 'follow') {
-        await moveCurrentPosition();
-        updateGpsPosition.current = (pos: ExpoLocation.LocationObject) => {
-          (mapViewRef.current as MapView).animateCamera(
-            {
-              center: {
-                latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude,
-              },
-            },
-            { duration: 5 }
-          );
-          setCurrentLocation(pos.coords);
-        };
-        await startGPS();
-      } else if (gpsState_ === 'show') {
-        updateGpsPosition.current = (pos: ExpoLocation.LocationObject) => {
-          setCurrentLocation(pos.coords);
-        };
-        await startGPS();
+      } else {
+        if (gpsWatchId.current !== null) {
+          await BackgroundGeolocation.stopWatchPosition();
+          gpsWatchId.current = null;
+        }
+        if (gpsState_ === 'follow') {
+          await moveCurrentPosition();
+        }
+        await startGPS(gpsState_);
       }
 
       setGpsState(gpsState_);
+      gpsStateRef.current = gpsState_;
     },
-    [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS, mapViewRef]
+    [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS]
   );
 
   const toggleTracking = useCallback(
     async (trackingState_: TrackingStateType) => {
-      //Tracking Stateの変更後の処理
-      
       try {
         if (trackingState_ === 'on') {
-          let willOpenSettings = false;
-          
-          try {
-            const result = await ensureBatteryOptimization();
-            willOpenSettings = result.willOpenSettings;
-          } catch (error) {
-            console.error('Error checking battery optimization:', error);
-            // エラーが発生してもトラッキングを続行
-            willOpenSettings = false;
-          }
-          
-          if (willOpenSettings) {
-            // 設定画面が開かれる場合は、フラグをセットしてtrackingStateを更新
-            pendingTrackingStart.current = true;
-            setTrackingState(trackingState_);
-          } else {
-            // 設定画面が開かれない場合は、すぐにトラッキングを開始
-            try {
-              await moveCurrentPosition();
-              await startTracking();
-            } catch (error) {
-              console.error('Error starting tracking:', error);
-              // エラーが発生してもstateは更新する
-            }
-            setTrackingState(trackingState_);
-          }
-          
-        } else if (trackingState_ === 'off') {
-          pendingTrackingStart.current = false;
-          await stopTracking();
+          // 先にUIを更新（ボタンの色を即座に変更）
           setTrackingState(trackingState_);
+          trackingStateRef.current = trackingState_;
+          // watchPositionを停止（onLocationに任せる）
+          if (gpsWatchId.current !== null) {
+            await BackgroundGeolocation.stopWatchPosition();
+            gpsWatchId.current = null;
+          }
+          await startTracking();
+          await moveCurrentPosition();
+        } else if (trackingState_ === 'off') {
+          // 先にUIを更新（ボタンの色を即座に変更）
+          setTrackingState(trackingState_);
+          trackingStateRef.current = trackingState_;
+          await stopTracking();
+          // GPS状態に応じてwatchPositionを再開
+          if (gpsStateRef.current !== 'off') {
+            await startGPS(gpsStateRef.current);
+          }
         }
-        
       } catch (error) {
         console.error('Error in toggleTracking:', error);
-        pendingTrackingStart.current = false;
-        // エラーが発生してもstateは更新する
         setTrackingState(trackingState_);
+        trackingStateRef.current = trackingState_;
       }
     },
-    [ensureBatteryOptimization, moveCurrentPosition, startTracking, stopTracking]
+    [moveCurrentPosition, startTracking, stopTracking, startGPS]
   );
 
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean) => {
       if (mapViewRef.current === null) return;
-      const { status: foregroundStatus } = await ExpoLocation.getForegroundPermissionsAsync();
-      if (foregroundStatus !== 'granted') return;
+      const permissionStatus = await confirmLocationPermission();
+      if (permissionStatus !== 'granted') return;
       if (headingUp_) {
-        if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
+        if (headingSubscriber.current !== null) headingSubscriber.current.remove();
 
         let lastHeading = 0;
         let lastUpdateTime = 0;
 
-        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+        headingSubscriber.current = await watchHeadingAsync((pos) => {
           const newHeading = Math.abs((-1.0 * pos.trueHeading) % 360);
           const currentTime = Date.now();
 
@@ -435,8 +466,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setAzimuth(pos.trueHeading);
         });
       } else {
-        if (headingSubscriber.current !== undefined) headingSubscriber.current.remove();
-        headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+        if (headingSubscriber.current !== null) headingSubscriber.current.remove();
+        headingSubscriber.current = await watchHeadingAsync((pos) => {
           setAzimuth(pos.trueHeading);
         });
 
@@ -449,24 +480,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
       setHeadingUp(headingUp_);
     },
-    [mapViewRef]
+    [confirmLocationPermission, mapViewRef]
   );
 
-  const updateCurrentLocationFromTracking = useCallback(async () => {
-    // チャンク処理はcheckAndStoreLocationsで完了済み
-    // ここではメタデータ更新のみを行う
-
-    // 現在地を取得（MMKVから直接）
+  // フォアグラウンド復帰時にMMKVからデータを同期する関数
+  const syncLocationFromMMKV = useCallback(() => {
     const latestCoords = trackLogMMKV.getCurrentLocation();
-
     if (!latestCoords) return;
 
-    // トラッキング中の場合、メタデータを更新（通常/擬似GPS共通）
-    if (trackingState === 'on') {
+    // トラッキング中の場合、メタデータを更新
+    if (trackingStateRef.current === 'on') {
       const chunkInfo = getCurrentChunkInfo();
       const metadata = getTrackMetadata();
-
-      // メタデータを更新（現在地を含める）
       setTrackMetadata({
         distance: metadata.currentDistance,
         lastTimeStamp: metadata.lastTimeStamp,
@@ -477,20 +502,22 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       });
     }
 
-    // 現在位置の更新
-    if (gpsState === 'follow' || RNAppState.currentState === 'background') {
-      (mapViewRef.current as MapView).animateCamera(
-        {
-          center: {
-            latitude: latestCoords.latitude,
-            longitude: latestCoords.longitude,
+    // カメラ移動（followモード時）
+    if (gpsStateRef.current === 'follow') {
+      if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+        (mapViewRef.current as MapView).animateCamera(
+          {
+            center: {
+              latitude: latestCoords.latitude,
+              longitude: latestCoords.longitude,
+            },
           },
-        },
-        { duration: 5 }
-      );
+          { duration: 5 }
+        );
+      }
     }
     setCurrentLocation(latestCoords);
-  }, [gpsState, mapViewRef, trackingState]);
+  }, [mapViewRef]);
 
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
@@ -596,43 +623,51 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return { isOK: true, message: '' };
   }, [saveTrackLog, trackMetadata.totalPoints]);
 
-
-  useEffect(() => {
-    // console.log('#define locationEventsEmitter update function');
-
-    const eventSubscription = locationEventsEmitter.addListener('update', updateCurrentLocationFromTracking);
-    return () => {
-      // console.log('clean locationEventsEmitter');
-      eventSubscription && eventSubscription.remove();
-    };
-  }, [updateCurrentLocationFromTracking]);
-
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
+    // 初期化済みの場合はスキップ（依存配列の変更による再実行を防ぐ）
+    if (initializedRef.current) {
+      return;
+    }
+
     (async () => {
-      // Androidの場合: kill後の再起動時にトラッキングが継続している場合は状態を復元
-      // iOS/その他: 従来通り停止処理
-      const hasStarted = await ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION);
+      initializedRef.current = true;
 
-      if (hasStarted) {
+      // 先にstateを確認して、enabledならrefを先に更新
+      const preState = await BackgroundGeolocation.getState();
+      if (preState.enabled && Platform.OS === 'android') {
+        // 先にrefを更新（onLocationコールバックが正しく動作するため）
+        trackingStateRef.current = 'on';
+      }
+
+      await ensureBackgroundGeolocation();
+      const state = await BackgroundGeolocation.getState();
+
+      if (state.enabled) {
         if (Platform.OS === 'android') {
-          // Androidの場合: トラッキング状態を復元（キル後も継続させる）
-          console.log('[tracking] Restoring tracking state after app restart');
+          // Androidでアプリ再起動時にトラッキング状態を復元
           setTrackingState('on');
+          if (gpsStateRef.current === 'off') {
+            setGpsState('follow');
+            gpsStateRef.current = 'follow';
+          }
 
-          // headingSubscriberも復元
-          if (headingSubscriber.current === undefined) {
+          if (headingSubscriber.current === null) {
             try {
-              headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
-                setAzimuth(pos.trueHeading);
-              });
+              const permissionStatus = await confirmLocationPermission();
+              if (permissionStatus !== 'granted') {
+                console.warn('[tracking] Heading subscription skipped: permission not granted');
+              } else {
+                headingSubscriber.current = await watchHeadingAsync((pos) => {
+                  setAzimuth(pos.trueHeading);
+                });
+              }
             } catch (error) {
               console.error('Error restoring heading subscriber:', error);
             }
           }
 
-          // メタデータを更新して表示
           const chunkInfo = getCurrentChunkInfo();
           const metadata = getTrackMetadata();
           setTrackMetadata({
@@ -643,7 +678,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             totalPoints: metadata.totalPoints,
           });
         } else {
-          // iOS/その他: 従来通り停止
           await stopTracking();
           const { isOK, message } = await checkUnsavedTrackLog();
           if (!isOK) {
@@ -651,95 +685,70 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         }
       } else {
-        // トラッキングが開始されていない場合は未保存データのチェックのみ
         const { isOK, message } = await checkUnsavedTrackLog();
         if (!isOK) {
           await AlertAsync(message);
         }
       }
+      console.log('[tracking] useEffect initialization completed');
     })();
 
     return () => {
-      ExpoLocation.hasStartedLocationUpdatesAsync(TASK.FETCH_LOCATION).then((hasStarted) => {
-        if (hasStarted) {
-          ExpoLocation.stopLocationUpdatesAsync(TASK.FETCH_LOCATION);
-        }
-      });
-
-      if (gpsSubscriber.current !== undefined) {
-        gpsSubscriber.current.remove();
-        gpsSubscriber.current = undefined;
+      if (gpsWatchId.current !== null) {
+        BackgroundGeolocation.stopWatchPosition();
+        gpsWatchId.current = null;
       }
-      if (headingSubscriber.current !== undefined) {
+      if (headingSubscriber.current !== null) {
         headingSubscriber.current.remove();
-        headingSubscriber.current = undefined;
+        headingSubscriber.current = null;
+      }
+      if (locationSubscription.current) {
+        locationSubscription.current.remove();
+        locationSubscription.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [checkUnsavedTrackLog, confirmLocationPermission, ensureBackgroundGeolocation, stopTracking]);
 
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         try {
-          await updateCurrentLocationFromTracking();
+          syncLocationFromMMKV();
         } catch (error) {
           console.error('Failed to refresh current location on foreground:', error);
         }
-        // 保留中のトラッキング開始を処理
-        if (pendingTrackingStart.current && trackingState === 'on') {
-          pendingTrackingStart.current = false;
-          
+        // GPSがONの場合、GPSサブスクライバーを再開（トラッキング中はstartGPS内でスキップされる）
+        if ((gpsState === 'show' || gpsState === 'follow') && gpsWatchId.current === null) {
+          await startGPS(gpsState);
+        }
+
+        const shouldSubscribeHeading = trackingState === 'on' || gpsState !== 'off' || headingUp;
+        if (shouldSubscribeHeading && headingSubscriber.current === null) {
           try {
-            // バッテリー最適化の状態を再確認
-            let isIgnored = true;
-            try {
-              isIgnored = await isBatteryOptimizationIgnored();
-            } catch (error) {
-              console.error('Error checking battery optimization status:', error);
-              // エラーが発生した場合は最適化が無効と仮定して続行
-              isIgnored = true;
-            }
-            
-            if (!isIgnored) {
-              // まだ最適化が有効な場合はメッセージを表示
-              await AlertAsync(t('hooks.message.batteryOptimizationStillEnabled'));
-            }
-            
-            await moveCurrentPosition();
-            await startTracking();
-          } catch (error) {
-            console.error('Error starting tracking after foreground:', error);
-          }
-        }
-
-        // GPSがONの場合、GPSサブスクライバーを再開
-        if ((gpsState === 'show' || gpsState === 'follow') && gpsSubscriber.current === undefined) {
-          // GPSを再開
-          await startGPS();
-        }
-
-        if (trackingState === 'on') {
-          if (gpsState === 'show' || gpsState === 'follow') {
-            if (headingSubscriber.current === undefined) {
-              headingSubscriber.current = await ExpoLocation.watchHeadingAsync((pos) => {
+            const permissionStatus = await confirmLocationPermission();
+            if (permissionStatus === 'granted') {
+              headingSubscriber.current = await watchHeadingAsync((pos) => {
                 setAzimuth(pos.trueHeading);
               });
+            } else {
+              console.warn('[tracking] Skipped heading subscription on foreground: permission not granted');
             }
+          } catch (error) {
+            console.error('Error resubscribing heading watcher on foreground:', error);
           }
         }
 
         if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         // バックグラウンド時はGPSサブスクライバーを一時停止（トラッキング中でない場合）
-        if (trackingState !== 'on' && gpsSubscriber.current !== undefined) {
-          gpsSubscriber.current.remove();
-          gpsSubscriber.current = undefined;
+        if (trackingState !== 'on' && gpsWatchId.current !== null) {
+          await BackgroundGeolocation.stopWatchPosition();
+          gpsWatchId.current = null;
         }
 
-        if (headingSubscriber.current !== undefined) {
+        if (headingSubscriber.current !== null) {
           headingSubscriber.current.remove();
-          headingSubscriber.current = undefined;
+          headingSubscriber.current = null;
         }
       }
 
@@ -757,8 +766,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     startGPS,
     moveCurrentPosition,
     startTracking,
-    updateCurrentLocationFromTracking,
+    syncLocationFromMMKV,
+    confirmLocationPermission,
   ]);
+
+  useEffect(() => {
+    trackingStateRef.current = trackingState;
+  }, [trackingState]);
+
+  useEffect(() => {
+    gpsStateRef.current = gpsState;
+  }, [gpsState]);
 
   return {
     currentLocation,

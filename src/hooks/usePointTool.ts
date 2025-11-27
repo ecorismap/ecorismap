@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { LayerType, LocationType, RecordType } from '../types';
-import * as Location from 'expo-location';
+import BackgroundGeolocation from 'react-native-background-geolocation';
 import { toLocationType } from '../utils/Location';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';
@@ -33,9 +33,31 @@ export const usePointTool = (): UsePointToolReturnType => {
   const { addRecordWithCheck } = useRecord();
 
   const getCurrentPoint = useCallback(async () => {
-    const location = await Location.getLastKnownPositionAsync();
-    if (location === null) return undefined;
-    return toLocationType(location);
+    try {
+      const location = await BackgroundGeolocation.getCurrentPosition({
+        persist: false,
+        samples: 1,
+        desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+        timeout: 30,
+      });
+      if (!location) return undefined;
+      return toLocationType({
+        coords: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          altitude: location.coords.altitude ?? null,
+          accuracy: location.coords.accuracy ?? null,
+          altitudeAccuracy: location.coords.altitude_accuracy ?? null,
+          heading: location.coords.heading ?? null,
+          speed: location.coords.speed ?? null,
+        },
+        timestamp:
+          typeof location.timestamp === 'string' ? new Date(location.timestamp).getTime() : location.timestamp ?? Date.now(),
+      });
+    } catch (error) {
+      console.error('Failed to get current point', error);
+      return undefined;
+    }
   }, []);
 
   const addCurrentPoint = useCallback(async () => {

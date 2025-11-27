@@ -10,6 +10,10 @@ buildscript {
         // We use NDK 23 which has both M1 support and is the side-by-side NDK version from AGP.
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.0.21"
+
+        // react-native-background-geolocation
+        appCompatVersion = "1.4.2"
+        googlePlayServicesLocationVersion = "21.0.1"
     }
     repositories {
         google()
@@ -26,4 +30,12 @@ buildscript {
         // in the individual module build.gradle files
     }
 }
+
+allprojects {
+    repositories {
+        maven { url("${rootProject.projectDir}/../node_modules/react-native-background-geolocation/android/libs") }
+        maven { url("${rootProject.projectDir}/../node_modules/react-native-background-fetch/android/libs") }
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"

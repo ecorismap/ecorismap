@@ -1,5 +1,4 @@
 import { LocationType, TrackLogType } from '../types';
-import { LocationObject } from 'expo-location';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 import { cleanupLine } from './Coords';
@@ -38,7 +37,42 @@ export const getStoredLocations = (): TrackLogType => {
   };
 };
 
-export const checkAndStoreLocations = (locations: LocationObject[]): void => {
+export type LocationObjectInput = {
+  coords: {
+    latitude: number;
+    longitude: number;
+    altitude?: number | null;
+    accuracy?: number | null;
+    altitudeAccuracy?: number | null;
+    heading?: number | null;
+    speed?: number | null;
+  };
+  timestamp: number;
+};
+
+
+/**
+ * BackgroundGeolocationからの位置情報を統一されたLocationObjectInput形式に変換する
+ */
+export const toLocationObject = (location: any): LocationObjectInput => {
+  const timestamp =
+    typeof location?.timestamp === 'string' ? new Date(location.timestamp).getTime() : (location?.timestamp ?? Date.now());
+
+  return {
+    coords: {
+      latitude: location?.coords?.latitude ?? 0,
+      longitude: location?.coords?.longitude ?? 0,
+      altitude: location?.coords?.altitude ?? null,
+      accuracy: location?.coords?.accuracy ?? null,
+      altitudeAccuracy: location?.coords?.altitude_accuracy ?? null,
+      heading: location?.coords?.heading ?? null,
+      speed: location?.coords?.speed ?? null,
+    },
+    timestamp,
+  };
+};
+
+export const checkAndStoreLocations = (locations: LocationObjectInput[]): void => {
   // メタデータから最終タイムスタンプを取得
   const metadata = getTrackMetadata();
 
@@ -58,12 +92,12 @@ export const checkAndStoreLocations = (locations: LocationObject[]): void => {
 };
 
 // toLocationType関数を先に定義（checkLocationsで使用するため）
-export const toLocationType = (locationObject: LocationObject): LocationType => {
+export const toLocationType = (locationObject: LocationObjectInput): LocationType => {
   // coordsには既にaltitude, altitudeAccuracyが含まれているので、そのまま使用
   return { ...locationObject.coords, timestamp: locationObject.timestamp };
 };
 
-export const checkLocations = (lastTimeStamp: number, locations: LocationObject[]) => {
+export const checkLocations = (lastTimeStamp: number, locations: LocationObjectInput[]) => {
   if (locations.length === 0) return [];
 
   // 1. まず変換
@@ -86,7 +120,7 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObject[
   return filteredLocations;
 };
 
-export const isLocationObject = (d: any): d is { locations: LocationObject[] } => {
+export const isLocationObject = (d: any): d is { locations: LocationObjectInput[] } => {
   if (!d) return false;
   if ('locations' in d) {
     return true;

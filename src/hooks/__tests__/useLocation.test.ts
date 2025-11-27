@@ -4,6 +4,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
 import { useLocation } from '../useLocation';
 import * as Location from 'expo-location';
+import BackgroundGeolocation from 'react-native-background-geolocation';
 import { ConfirmAsync, AlertAsync } from '../../components/molecules/AlertAsync';
 import * as Notifications from 'expo-notifications';
 import {
@@ -13,8 +14,39 @@ import {
 
 // Mock dependencies
 jest.mock('expo-location');
-jest.mock('expo-task-manager');
 jest.mock('expo-notifications');
+jest.mock('react-native-background-geolocation', () => {
+  const constants = {
+    DESIRED_ACCURACY_HIGH: 0,
+    DESIRED_ACCURACY_MEDIUM: 1,
+    DESIRED_ACCURACY_LOW: 2,
+    AUTHORIZATION_STATUS_ALWAYS: 3,
+    AUTHORIZATION_STATUS_WHEN_IN_USE: 2,
+  };
+  const subscription = { remove: jest.fn() };
+  const mock = {
+    ready: jest.fn(),
+    requestPermission: jest.fn(),
+    getState: jest.fn(),
+    setConfig: jest.fn(),
+    start: jest.fn(),
+    stop: jest.fn(),
+    getCurrentPosition: jest.fn(),
+    watchPosition: jest.fn(),
+    stopWatchPosition: jest.fn(),
+    onLocation: jest.fn().mockImplementation(() => subscription),
+  };
+
+  return {
+    __esModule: true,
+    default: {
+      ...constants,
+      ...mock,
+    },
+    ...constants,
+    ...mock,
+  };
+});
 jest.mock('../useRecord', () => ({
   useRecord: () => ({
     addTrackRecord: jest.fn().mockReturnValue({ isOK: true, message: '' }),
@@ -82,6 +114,8 @@ jest.mock('../../lib/native/BatteryOptimization', () => ({
 const createMockMapRef = () => ({ current: null });
 
 const mockLocation = Location as jest.Mocked<typeof Location>;
+ 
+const mockBackgroundGeolocation = BackgroundGeolocation as any;
 const mockNotifications = Notifications as jest.Mocked<typeof Notifications>;
 
 // Create a test store
@@ -118,28 +152,14 @@ describe('useLocation', () => {
     (requestDisableBatteryOptimization as jest.Mock).mockResolvedValue(true);
     
     // Mock basic Location functions
-    mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
-      status: 'granted' as Location.PermissionStatus.GRANTED,
-      granted: true,
-      canAskAgain: true,
-      expires: 'never',
-    });
-
-    mockLocation.getForegroundPermissionsAsync.mockResolvedValue({
-      status: 'granted' as Location.PermissionStatus.GRANTED,
-      granted: true,
-      canAskAgain: true,
-      expires: 'never',
-    });
-
-    mockLocation.hasStartedLocationUpdatesAsync.mockResolvedValue(false);
-    mockLocation.watchPositionAsync.mockResolvedValue({
-      remove: jest.fn(),
-    });
-    mockLocation.watchHeadingAsync.mockResolvedValue({
-      remove: jest.fn(),
-    });
-    mockLocation.getLastKnownPositionAsync.mockResolvedValue({
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(
+      BackgroundGeolocation.AUTHORIZATION_STATUS_ALWAYS
+    );
+    mockBackgroundGeolocation.watchPosition.mockResolvedValue('watch-id' as any);
+    mockBackgroundGeolocation.stopWatchPosition.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
       coords: {
         latitude: 35.0,
         longitude: 135.0,
@@ -150,6 +170,11 @@ describe('useLocation', () => {
         speed: 0,
       },
       timestamp: Date.now(),
+    } as any);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+
+    mockLocation.watchHeadingAsync.mockResolvedValue({
+      remove: jest.fn(),
     });
 
     mockNotifications.getPermissionsAsync.mockResolvedValue({
@@ -182,17 +207,11 @@ describe('useLocation', () => {
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
     let permissionStatus;
-    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
-      status: 'undetermined' as Location.PermissionStatus.UNDETERMINED,
-      granted: false,
-      canAskAgain: true,
-      expires: 'never',
-    });
     await act(async () => {
       permissionStatus = await result.current.confirmLocationPermission();
     });
 
-    expect(mockLocation.requestForegroundPermissionsAsync).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.requestPermission).toHaveBeenCalled();
     expect(permissionStatus).toBe('granted');
   });
 
@@ -205,7 +224,7 @@ describe('useLocation', () => {
     });
 
     expect(result.current.gpsState).toBe('show');
-    expect(mockLocation.watchPositionAsync).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.watchPosition).toHaveBeenCalled();
   });
 
   it('should toggle heading up', async () => {
@@ -227,18 +246,7 @@ describe('useLocation', () => {
   it('should handle permission denied', async () => {
     const alertSpy = AlertAsync as jest.Mock;
     alertSpy.mockResolvedValue(undefined);
-    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
-      status: 'undetermined' as Location.PermissionStatus.UNDETERMINED,
-      granted: false,
-      canAskAgain: true,
-      expires: 'never',
-    });
-    mockLocation.requestForegroundPermissionsAsync.mockResolvedValue({
-      status: 'denied' as Location.PermissionStatus.DENIED,
-      granted: false,
-      canAskAgain: false,
-      expires: 'never',
-    });
+    mockBackgroundGeolocation.requestPermission.mockResolvedValueOnce(0 as any);
 
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
@@ -255,19 +263,13 @@ describe('useLocation', () => {
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
 
-    mockLocation.getForegroundPermissionsAsync.mockResolvedValueOnce({
-      status: 'denied' as Location.PermissionStatus.DENIED,
-      granted: false,
-      canAskAgain: false,
-      expires: 'never',
-    });
+    mockBackgroundGeolocation.requestPermission.mockResolvedValueOnce(0 as any);
 
     let permissionStatus;
     await act(async () => {
       permissionStatus = await result.current.confirmLocationPermission();
     });
 
-    expect(mockLocation.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
     expect(permissionStatus).toBeUndefined();
   });
 
@@ -276,7 +278,7 @@ describe('useLocation', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
     // Set up the mock to reject after being called
-    mockLocation.watchPositionAsync.mockRejectedValueOnce(new Error('Location error'));
+    mockBackgroundGeolocation.watchPosition.mockRejectedValueOnce(new Error('Location error') as any);
 
     const mockRef = createMockMapRef();
     const { result } = renderHook(() => useLocation(mockRef), { wrapper });
