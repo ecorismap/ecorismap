@@ -102,6 +102,8 @@
 		<string>Turning on location services allows us to show your current location and record your tracks.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>Give $(PRODUCT_NAME) permission to use your microphone</string>
+		<key>NSMotionUsageDescription</key>
+		<string>This app may use motion data to improve tracking accuracy.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Give $(PRODUCT_NAME) permission to save photos</string>
 		<key>NSPhotoLibraryUsageDescription</key>
