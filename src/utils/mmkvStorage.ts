@@ -1,16 +1,15 @@
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV, MMKV } from 'react-native-mmkv';
 import { Storage } from 'redux-persist';
 
 // MMKVインスタンスを作成（アプリ全体で再利用）
-export const storage = new MMKV({
+// v4では new MMKV() から createMMKV() に変更
+export const storage: MMKV = createMMKV({
   id: 'ecorismap-storage',
-  encryptionKey: undefined, // 必要に応じて暗号化キーを設定
 });
 
 // 大容量データ用の別インスタンス（トラックログ用）
-export const trackLogStorage = new MMKV({
+export const trackLogStorage: MMKV = createMMKV({
   id: 'ecorismap-tracklog',
-  encryptionKey: undefined,
 });
 // デバッグログ専用のMMKVインスタンス（削除済み）
 
@@ -25,7 +24,7 @@ export const reduxMMKVStorage: Storage = {
     return Promise.resolve(value ?? null);
   },
   removeItem: (key: string): Promise<void> => {
-    storage.delete(key);
+    storage.remove(key);
     return Promise.resolve();
   },
 };
@@ -52,7 +51,7 @@ export const MMKVAsyncStorageCompat = {
   
   removeItem: async (key: string): Promise<void> => {
     try {
-      storage.delete(key);
+      storage.remove(key);
     } catch (error) {
       // console.error('MMKV removeItem error:', error);
       throw error;
@@ -110,7 +109,7 @@ export const trackLogMMKV = {
   
   clearTrackLog: (): void => {
     try {
-      trackLogStorage.delete('tracklog');
+      trackLogStorage.remove('tracklog');
     } catch (error) {
       // console.error('Failed to clear track log from MMKV:', error);
       throw error;
@@ -129,7 +128,7 @@ export const trackLogMMKV = {
       if (location) {
         trackLogStorage.set('current-location', JSON.stringify(location));
       } else {
-        trackLogStorage.delete('current-location');
+        trackLogStorage.remove('current-location');
       }
     } catch (error) {
       // console.error('Failed to save current location:', error);
@@ -169,7 +168,7 @@ export const trackLogMMKV = {
   
   removeChunk: (key: string): void => {
     try {
-      trackLogStorage.delete(key);
+      trackLogStorage.remove(key);
     } catch (error) {
       // console.error(`Failed to remove chunk ${key}:`, error);
       throw error;

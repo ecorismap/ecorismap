@@ -294,8 +294,8 @@ export const migrateToMMKV = async (options: {
     storage.set('migrated_keys_count', migratedCount.toString());
     
     // postponedフラグをクリア
-    storage.delete('migration_postponed');
-    storage.delete('migration_postpone_date');
+    storage.remove('migration_postponed');
+    storage.remove('migration_postpone_date');
 
     // 古いデータを削除
     if (options.clearOldData) {
@@ -346,13 +346,13 @@ export const postponeMigration = (): void => {
  * 移行状態をリセット（デバッグ用）
  */
 export const resetMigrationStatus = (): void => {
-  storage.delete('migration_completed_v2');
-  storage.delete('migration_skipped');
-  storage.delete('migration_postponed');
-  storage.delete('migration_date');
-  storage.delete('migrated_keys_count');
-  storage.delete('migration_skip_date');
-  storage.delete('migration_postpone_date');
+  storage.remove('migration_completed_v2');
+  storage.remove('migration_skipped');
+  storage.remove('migration_postponed');
+  storage.remove('migration_date');
+  storage.remove('migrated_keys_count');
+  storage.remove('migration_skip_date');
+  storage.remove('migration_postpone_date');
 };
 
 /**

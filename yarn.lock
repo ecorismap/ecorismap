@@ -15449,8 +15449,9 @@ __metadata:
     react-native-japanese-text-analyzer: ^0.1.3
     react-native-keychain: ^8.1.2
     react-native-maps: 1.14.0
-    react-native-mmkv: ^2.12.2
+    react-native-mmkv: ^4.1.0
     react-native-modal-selector: ^2.1.2
+    react-native-nitro-modules: ^0.31.10
     react-native-reanimated: ~3.17.4
     react-native-safe-area-context: ^5.4.0
     react-native-scale-bar: ^1.0.6
@@ -25708,13 +25709,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-mmkv@npm:^2.12.2":
-  version: 2.12.2
-  resolution: "react-native-mmkv@npm:2.12.2"
+"react-native-mmkv@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "react-native-mmkv@npm:4.1.0"
   peerDependencies:
     react: "*"
-    react-native: ">=0.71.0"
-  checksum: 8c79504a89fefd7f9c290a4a6bb24f1f9ef9e2a69d20d0f7d882b89f3943556e9c919c9d46583e44ab698f25213489277fccb6d4c856cce310267c5f907388f1
+    react-native: "*"
+    react-native-nitro-modules: "*"
+  checksum: e5da782735eb5dde98d747595e401e1a0fce9e9e8c4f047e6d58ecaf6bcb4d5497ebef1a3963281a7539000a128f3a8c08609e619512263b2dd2b1c7c7fef788
   languageName: node
   linkType: hard
 
@@ -25724,6 +25726,16 @@ __metadata:
   dependencies:
     prop-types: ^15.5.10
   checksum: c7b00ebceb6fe15e025ef1655483bc98fdb150453fb27e71d17a282a87317c5b1e242a1108f5247fac99594e6778470513d19c21e02eb2ce81f80688dd616419
+  languageName: node
+  linkType: hard
+
+"react-native-nitro-modules@npm:^0.31.10":
+  version: 0.31.10
+  resolution: "react-native-nitro-modules@npm:0.31.10"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 1c8d2f12ff29b6733c784c5fd0dedcbec4ceec9f82eb49f49e7734f31b9367346938010dcacf69bf695a352e36fec5aa23fd57b8091f6acd78c3d9a61e14ea7f
   languageName: node
   linkType: hard
 

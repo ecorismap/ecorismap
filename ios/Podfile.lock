@@ -1540,14 +1540,64 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
-  - MMKV (2.2.3):
-    - MMKVCore (~> 2.2.3)
-  - MMKVCore (2.2.3)
+  - MMKVCore (2.2.4)
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
   - nanopb/decode (3.30910.0)
   - nanopb/encode (3.30910.0)
+  - NitroMmkv (4.1.0):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - MMKVCore (= 2.2.4)
+    - NitroModules
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-callinvoker
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
+  - NitroModules (0.31.10):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-callinvoker
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - PromisesObjC (2.4.0)
   - Protobuf (4.32.1)
   - RCT-Folly (2024.11.18.00):
@@ -2942,31 +2992,6 @@ PODS:
     - React-Core
   - react-native-maps (1.14.0):
     - React-Core
-  - react-native-mmkv (2.12.2):
-    - DoubleConversion
-    - glog
-    - hermes-engine
-    - MMKV (>= 1.3.3)
-    - RCT-Folly (= 2024.11.18.00)
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-hermes
-    - React-ImageManager
-    - React-jsi
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-renderercss
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - Yoga
   - react-native-netinfo (11.4.1):
     - React-Core
   - react-native-safe-area-context (5.4.0):
@@ -3621,6 +3646,8 @@ DEPENDENCIES:
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - NitroMmkv (from `../node_modules/react-native-mmkv`)
+  - NitroModules (from `../node_modules/react-native-nitro-modules`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
@@ -3661,7 +3688,6 @@ DEPENDENCIES:
   - "react-native-image-editor (from `../node_modules/@react-native-community/image-editor`)"
   - react-native-japanese-text-analyzer (from `../node_modules/react-native-japanese-text-analyzer`)
   - react-native-maps (from `../node_modules/react-native-maps`)
-  - react-native-mmkv (from `../node_modules/react-native-mmkv`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
@@ -3748,7 +3774,6 @@ SPEC REPOS:
     - GTMSessionFetcher
     - leveldb-library
     - libwebp
-    - MMKV
     - MMKVCore
     - nanopb
     - PromisesObjC
@@ -3823,6 +3848,10 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-2025-06-04-RNv0.79.3-7f9a871eefeb2c3852365ee80f0b6733ec12ac3b
+  NitroMmkv:
+    :path: "../node_modules/react-native-mmkv"
+  NitroModules:
+    :path: "../node_modules/react-native-nitro-modules"
   RCT-Folly:
     :podspec: "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
   RCTDeprecation:
@@ -3899,8 +3928,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-japanese-text-analyzer"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
-  react-native-mmkv:
-    :path: "../node_modules/react-native-mmkv"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
   react-native-safe-area-context:
@@ -4072,9 +4099,10 @@ SPEC CHECKSUMS:
   hermes-engine: f03b0e06d3882d71e67e45b073bb827da1a21aae
   leveldb-library: cc8b8f8e013647a295ad3f8cd2ddf49a6f19be19
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
-  MMKV: 941e8774da0e6fdf12c6b3fcc833ca687ae5a42d
-  MMKVCore: 6d5cc1bacce539f4c974985dfe646fb65a5d27d2
+  MMKVCore: f2dd4c9befea04277a55e84e7812f930537993df
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  NitroMmkv: b1bdccd420795a55d4201da9321baa4d0f720ba6
+  NitroModules: 28c506e7ef22aab51c5f09ff9b4b07d0fe236649
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   Protobuf: 19ac8864550efbdbc2269473d57ed73d545d0f8f
   RCT-Folly: e78785aa9ba2ed998ea4151e314036f6c49e6d82
@@ -4115,7 +4143,6 @@ SPEC CHECKSUMS:
   react-native-image-editor: c237fa8c2a5c4252cac06284b8c2fba213788a31
   react-native-japanese-text-analyzer: 7a5378afd3fc4192f8cd7facbe8cc960934221e3
   react-native-maps: deb2adbdf309b622f15055b72b8742054929c740
-  react-native-mmkv: e9cd6d0593cd140507aba1c941dbfcd74a6d1faf
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
   react-native-safe-area-context: 9d72abf6d8473da73033b597090a80b709c0b2f1
   react-native-slider: e695ce8d13049eb245f89df938fb8128b70e9191
