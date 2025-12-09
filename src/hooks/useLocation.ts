@@ -427,9 +427,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const toggleHeadingUp = useCallback(
     async (headingUp_: boolean) => {
       if (mapViewRef.current === null) return;
-      const permissionStatus = await confirmLocationPermission();
-      if (permissionStatus !== 'granted') return;
+
       if (headingUp_) {
+        // headingUpをtrueにする場合のみ権限チェック
+        const permissionStatus = await confirmLocationPermission();
+        if (permissionStatus !== 'granted') return;
+
         if (headingSubscriber.current !== null) headingSubscriber.current.remove();
 
         let lastHeading = 0;
@@ -466,10 +469,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setAzimuth(pos.trueHeading);
         });
       } else {
-        if (headingSubscriber.current !== null) headingSubscriber.current.remove();
-        headingSubscriber.current = await watchHeadingAsync((pos) => {
-          setAzimuth(pos.trueHeading);
-        });
+        // headingUpをfalseにする場合は権限不要
+        if (headingSubscriber.current !== null) {
+          headingSubscriber.current.remove();
+          headingSubscriber.current = null;
+        }
 
         (mapViewRef.current as MapView).animateCamera(
           {
