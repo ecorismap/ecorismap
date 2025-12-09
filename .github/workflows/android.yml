@@ -13,12 +13,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'yarn'
+          cache: "yarn"
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: "temurin"
+          java-version: "17"
           cache: gradle
       - name: Install deps
         run: yarn install
@@ -33,7 +33,7 @@ jobs:
           echo $GOOGLE_SERVICES_JSON > android/app/google-services.json
       - name: Download and integrate react-native-gdalwarp
         run: |
-          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.1/react-native-gdalwarp.zip
+          curl -L -o react-native-gdalwarp.zip https://github.com/tmizu23/build_gdal_android_ios/releases/download/v0.0.2/react-native-gdalwarp.zip
           unzip react-native-gdalwarp.zip
           mkdir -p modules
           cp -r react-native-gdalwarp modules/
@@ -45,10 +45,10 @@ jobs:
           # Get the current highest version code from Google Play Console using git tags or commit count
           # Option 1: Use git commit count (always increasing)
           VERSION_FROM_COMMITS=$(git rev-list --count HEAD)
-          
+
           # Option 2: Get from build.gradle as baseline
           VERSION_FROM_GRADLE=$(grep "versionCode" android/app/build.gradle | grep -o '[0-9]\+' | tail -1)
-          
+
           # Use the higher value to ensure it's always increasing
           if [ $VERSION_FROM_COMMITS -gt $VERSION_FROM_GRADLE ]; then
             NEW_VERSION=$VERSION_FROM_COMMITS
@@ -56,14 +56,14 @@ jobs:
             # If gradle version is higher, use gradle version + 1
             NEW_VERSION=$((VERSION_FROM_GRADLE + 1))
           fi
-          
+
           echo "Commit count: $VERSION_FROM_COMMITS"
           echo "Gradle version: $VERSION_FROM_GRADLE"
           echo "New version code: $NEW_VERSION"
-          
+
           # Set as environment variable
           echo "VERSION_CODE=$NEW_VERSION" >> $GITHUB_ENV
-          
+
           # Create whatsnew files with the build number
           mkdir -p whatsnew
           echo "Build $NEW_VERSION" > whatsnew/whatsnew-ja-JP
@@ -73,14 +73,14 @@ jobs:
           # デバッグ情報を追加
           echo "Current VERSION_CODE: $VERSION_CODE"
           echo "Current NEW_VERSION: $NEW_VERSION"
-          
+
           # 現在のVERSION行を確認
           echo "Before update:"
           grep "export const VERSION" src/constants/AppConstants.tsx
-          
+
           # sedコマンドを修正（環境変数を正しく使用）
           sed -i "s/export const VERSION = 'Version \([^']*\)';/export const VERSION = 'Version \1 (Build ${VERSION_CODE})';/" src/constants/AppConstants.tsx
-          
+
           # 更新後の確認
           echo "After update:"
           grep "export const VERSION" src/constants/AppConstants.tsx
