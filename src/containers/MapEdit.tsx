@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 import { formattedInputs } from '../utils/Format';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 

@@ -12,9 +12,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
 import { Platform } from 'react-native';
 import { TILE_FOLDER } from '../constants/AppConstants';
-import { readAsStringAsync } from 'expo-file-system';
+import { readAsStringAsync } from 'expo-file-system/legacy';
 import { db } from '../utils/db';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { exportFileFromData } from '../utils/File';
 export default function MapContainer({ navigation }: Props_Maps) {
   const {

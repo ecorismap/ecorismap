@@ -24,7 +24,7 @@ jest.mock('../Layer', () => ({
 import * as Photo from '../Photo';
 import { manipulateAsync } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../../types';
 import { getPhotoFields } from '../Layer';

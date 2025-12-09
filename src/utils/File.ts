@@ -5,7 +5,7 @@ import JSZip from 'jszip';
 import sanitize from 'sanitize-filename';
 import { getExt } from './General';
 import { AppID } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { fetchPhoto } from '../lib/firebase/storage';
 

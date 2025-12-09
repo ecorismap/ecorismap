@@ -8,7 +8,7 @@ import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
 import { latLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';

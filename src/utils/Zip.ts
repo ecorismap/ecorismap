@@ -2,7 +2,7 @@ import pako from 'pako';
 import { Buffer } from 'buffer';
 import { Platform } from 'react-native';
 import JSZip from 'jszip';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export function gzip(str: string) {
   return Buffer.from(pako.deflate(str)).toString('base64');

@@ -29,7 +29,7 @@ import { t } from '../i18n/config';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
 import { db } from '../utils/db';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export type UseRepositoryReturnType = {
   createProject: (project: ProjectType) => Promise<{

@@ -1,7 +1,7 @@
 import Pbf from 'pbf';
 import VectorTile from '@mapbox/vector-tile';
 import { pointToLineDistance, booleanPointInPolygon, distance, polygon, point, lineString } from '@turf/turf';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { Buffer } from 'buffer';
 import { getMetersPerPixelAtZoomLevel } from './Coords';

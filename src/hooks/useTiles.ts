@@ -8,7 +8,7 @@ import { tileGridForRegion } from '../utils/Tile';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { TileMapType, TileRegionType } from '../types';
 import { TILE_FOLDER } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 import { useWindow } from './useWindow';
 import { getExt } from '../utils/General';

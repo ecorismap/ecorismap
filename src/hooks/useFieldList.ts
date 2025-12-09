@@ -6,7 +6,7 @@ import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import { decodeUri } from '../utils/File.web';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { getDatabase } from '../utils/SQLite';
 import { ulid } from 'ulid';
 

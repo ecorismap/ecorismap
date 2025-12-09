@@ -49,7 +49,7 @@ import {
 } from '../utils/General';
 import { t } from '../i18n/config';
 import { COLOR, TILE_FOLDER } from '../constants/AppConstants';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { editSettingsAction } from '../modules/settings';
 import { useTutrial } from '../hooks/useTutrial';
 import { HomeModalTermsOfUse } from '../components/organisms/HomeModalTermsOfUse';
