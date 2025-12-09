@@ -59,8 +59,37 @@ jest.mock('@react-native-firebase/app-check', () => {
   return {
     __esModule: true,
     default: jest.fn(() => mockAppCheck),
-    initializeAppCheck: jest.fn(),
+    initializeAppCheck: jest.fn(() => Promise.resolve()),
     getAppCheck: jest.fn(() => mockAppCheck),
+    ReactNativeFirebaseAppCheckProvider: jest.fn().mockImplementation(() => mockProvider),
+  };
+});
+
+// Mock react-native-mmkv
+jest.mock('react-native-mmkv', () => {
+  const storage = new Map();
+  return {
+    __esModule: true,
+    MMKV: jest.fn().mockImplementation(() => ({
+      set: jest.fn((key, value) => storage.set(key, value)),
+      getString: jest.fn((key) => storage.get(key)),
+      getNumber: jest.fn((key) => storage.get(key)),
+      getBoolean: jest.fn((key) => storage.get(key)),
+      delete: jest.fn((key) => storage.delete(key)),
+      contains: jest.fn((key) => storage.has(key)),
+      clearAll: jest.fn(() => storage.clear()),
+      getAllKeys: jest.fn(() => Array.from(storage.keys())),
+    })),
+    createMMKV: jest.fn(() => ({
+      set: jest.fn((key, value) => storage.set(key, value)),
+      getString: jest.fn((key) => storage.get(key)),
+      getNumber: jest.fn((key) => storage.get(key)),
+      getBoolean: jest.fn((key) => storage.get(key)),
+      delete: jest.fn((key) => storage.delete(key)),
+      contains: jest.fn((key) => storage.has(key)),
+      clearAll: jest.fn(() => storage.clear()),
+      getAllKeys: jest.fn(() => Array.from(storage.keys())),
+    })),
   };
 });
 
