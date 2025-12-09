@@ -15439,7 +15439,7 @@ __metadata:
     react-native-background-fetch: ^4.2.8
     react-native-background-geolocation: ^4.19.2
     react-native-date-picker: ^4.2.13
-    react-native-device-info: ^14.0.4
+    react-native-device-info: ^15.0.1
     react-native-draggable-flatlist: 4.0.3
     react-native-fs: ^2.20.0
     react-native-gdalwarp: "link:./modules/react-native-gdalwarp"
@@ -25555,12 +25555,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-device-info@npm:^14.0.4":
-  version: 14.0.4
-  resolution: "react-native-device-info@npm:14.0.4"
+"react-native-device-info@npm:^15.0.1":
+  version: 15.0.1
+  resolution: "react-native-device-info@npm:15.0.1"
   peerDependencies:
     react-native: "*"
-  checksum: aa839dbe7df1246a4b5f9bcfeb3d4cc4be585f13a0d3ff6a03f57a0c2cfe7590291ac292dda4c51fd8765f94c870857676463e8e2f1660b057f3ae2b4335db29
+  checksum: e7c20006db07758fcf820e891b979b9d7e87c10b6a38066402d60d85ff1dc8e1ac47e8b57209bf394f20516fb49600cde6688cd6f7cfe7210f285555960a74e4
   languageName: node
   linkType: hard
 

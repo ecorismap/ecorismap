@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { LogBox, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,30 +10,6 @@ import Routes from './routes';
 import { persistor, store } from './store';
 import { StatusBarOverlay } from './components/atoms/StatusBarOverlay';
 import { checkAsyncStorageData, isMigrationCompleted, isMigrationSkipped, StorageInfo } from './utils/storageMigration';
-
-const IGNORED_LOGS = ['Animated: `useNativeDriver`', 'VirtualizedLists', 'worklet', 'NativeEventEmitter', 'Possible'];
-
-LogBox.ignoreLogs(IGNORED_LOGS);
-
-// Workaround for Expo 45
-if (__DEV__ && Platform.OS !== 'web') {
-  const withoutIgnored =
-    (logger: any) =>
-    (...args: any[]) => {
-      const output = args.join(' ');
-
-      if (!IGNORED_LOGS.some((log) => output.includes(log))) {
-        logger(...args);
-      }
-    };
-
-  /* eslint-disable no-console */
-  console.log = withoutIgnored(console.log);
-  console.info = withoutIgnored(console.info);
-  console.warn = withoutIgnored(console.warn);
-  console.error = withoutIgnored(console.error);
-  /* eslint-enable no-console */
-}
 
 const StorageMigrationDialog =
   Platform.OS !== 'web' ? require('./components/organisms/StorageMigrationDialog').StorageMigrationDialog : null;

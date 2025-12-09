@@ -178,7 +178,7 @@
     "react-native-background-fetch": "^4.2.8",
     "react-native-background-geolocation": "^4.19.2",
     "react-native-date-picker": "^4.2.13",
-    "react-native-device-info": "^14.0.4",
+    "react-native-device-info": "^15.0.1",
     "react-native-draggable-flatlist": "4.0.3",
     "react-native-fs": "^2.20.0",
     "react-native-gdalwarp": "link:./modules/react-native-gdalwarp",
