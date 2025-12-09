@@ -1,6 +1,9 @@
 import { getApp } from '@react-native-firebase/app';
 
-import appCheck from '@react-native-firebase/app-check';
+import {
+  initializeAppCheck,
+  ReactNativeFirebaseAppCheckProvider,
+} from '@react-native-firebase/app-check';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';
@@ -49,7 +52,7 @@ export let auth: FirebaseAuthTypes.Module;
 
 const initialize = async (isEmulating = false) => {
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
-  const rnfbProvider = appCheck().newReactNativeFirebaseAppCheckProvider();
+  const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
       provider: __DEV__ ? 'debug' : 'playIntegrity',
@@ -58,8 +61,9 @@ const initialize = async (isEmulating = false) => {
       provider: __DEV__ ? 'debug' : 'appAttest',
       debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
     },
+    isTokenAutoRefreshEnabled: true,
   });
-  await appCheck().initializeAppCheck({ provider: rnfbProvider, isTokenAutoRefreshEnabled: true });
+  await initializeAppCheck(getApp(), { provider: rnfbProvider });
 
   auth = getAuth();
   firestore = getFirestore();
