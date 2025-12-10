@@ -24,6 +24,14 @@ jest.mock('../useRecord', () => ({
   }),
 }));
 
+jest.mock('../../contexts/BottomSheetNavigationContext', () => ({
+  useBottomSheetNavigation: () => ({
+    currentScreen: { name: 'DataEdit', params: {} },
+    navigate: jest.fn(),
+    goBack: jest.fn(),
+  }),
+}));
+
 // テスト用のストアを作成
 const createTestStore = (initialRecords: RecordType[] = []) => {
   return configureStore({
