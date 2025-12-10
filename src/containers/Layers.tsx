@@ -4,7 +4,6 @@ import { LayerType } from '../types';
 import Layers from '../components/pages/Layers';
 import { TEMPLATE_LAYER } from '../modules/layers';
 import { useLayers } from '../hooks/useLayers';
-import { Props_Layers } from '../routes';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
@@ -13,9 +12,12 @@ import { usePermission } from '../hooks/usePermission';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGeoFile } from '../hooks/useGeoFile';
 import { getExt } from '../utils/General';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 
-export default function LayerContainer({ navigation }: Props_Layers) {
+export default function LayerContainer() {
   //console.log('render LayerContainer');
+  const { navigate } = useBottomSheetNavigation();
+
   const {
     layers,
     filterdLayers,
@@ -82,42 +84,42 @@ export default function LayerContainer({ navigation }: Props_Layers) {
       AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    navigation.navigate('LayerEdit', {
+    navigate('LayerEdit', {
       previous: 'Layers',
       targetLayer: { ...TEMPLATE_LAYER, id: ulid() },
       isEdited: true,
     });
-  }, [isRunningProject, navigation]);
+  }, [isRunningProject, navigate]);
 
   const gotoLayerEdit = useCallback(
     (layer: LayerType) => {
-      navigation.navigate('LayerEdit', {
+      navigate('LayerEdit', {
         previous: 'Layers',
         targetLayer: { ...layer },
         isEdited: false,
       });
     },
-    [navigation]
+    [navigate]
   );
 
   const gotoData = useCallback(
     (layer: LayerType) => {
-      navigation.navigate('Data', {
+      navigate('Data', {
         targetLayer: { ...layer },
       });
     },
-    [navigation]
+    [navigate]
   );
 
   const gotoColorStyle = useCallback(
     (layer: LayerType) => {
-      navigation.navigate('LayerEditFeatureStyle', {
+      navigate('LayerEditFeatureStyle', {
         targetLayer: { ...layer },
         isEdited: false,
         previous: 'Layers',
       });
     },
-    [navigation]
+    [navigate]
   );
 
   const layersContextValue = React.useMemo(

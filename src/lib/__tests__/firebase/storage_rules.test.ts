@@ -10,8 +10,8 @@ const userImageRef = (storage: Storage, projectId: string, layerId: string, user
   userImagesRef(storage, projectId, layerId, userId).child(imageName);
 const userImagesRef = (storage: Storage, projectId: string, layerId: string, userId: string) =>
   storage.ref(`projects/${projectId}/${layerId}/${userId}`);
-const loadIconImage = () => fs.readFileSync('./icon.png');
-const loadBigIconImage = () => fs.readFileSync('./big_image.jpg');
+const loadIconImage = () => new Uint8Array(fs.readFileSync('./icon.png'));
+const loadBigIconImage = () => new Uint8Array(fs.readFileSync('./big_image.jpg'));
 //const create500MBImage = () => new Int8Array(5 * 1024);
 const contentType = 'image/png';
 

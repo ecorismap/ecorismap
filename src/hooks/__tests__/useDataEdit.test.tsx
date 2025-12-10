@@ -10,13 +10,6 @@ import userReducer from '../../modules/user';
 import { RecordType, LayerType } from '../../types';
 import { isLocationType } from '../../utils/General';
 
-// モックナビゲーション
-jest.mock('@react-navigation/native', () => ({
-  useRoute: () => ({
-    name: 'DataEdit',
-    params: {},
-  }),
-}));
 
 jest.mock('../useProject', () => ({
   useProject: () => ({

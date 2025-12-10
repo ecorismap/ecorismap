@@ -116,17 +116,13 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
   }, []);
 
   useEffect(() => {
-    // 画面がフォーカスされた時のみ実行
-    const unsubscribe = navigation.addListener('focus', () => {
-      if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
-        (async () => {
-          await reloadProjects();
-          navigation.setParams({ reload: undefined });
-        })();
-      }
-    });
-
-    return unsubscribe;
+    // プロジェクト一覧の読み込み
+    if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
+      (async () => {
+        await reloadProjects();
+        navigation.setParams({ reload: undefined });
+      })();
+    }
   }, [navigation, projects.length, reloadProjects, route.params?.reload, user]);
 
   return (

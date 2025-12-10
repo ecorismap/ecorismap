@@ -11,7 +11,7 @@ import { LocationTrackingContext } from '../../contexts/LocationTracking';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isTablet } from 'react-native-device-info';
 import { t } from '../../i18n/config';
-import { useRoute } from '@react-navigation/native';
+import { useRootRoute } from '../../contexts/RootNavigationContext';
 
 export const HomeDrawTools = React.memo(() => {
   const { isPencilModeActive, togglePencilMode } = useContext(MapMemoContext);
@@ -32,22 +32,18 @@ export const HomeDrawTools = React.memo(() => {
     pressSaveDraw,
   } = useContext(DrawingToolsContext);
   const { editPositionMode, pressDeletePosition, finishEditPosition } = useContext(LocationTrackingContext);
-  const route = useRoute();
+  const { params } = useRootRoute<'Home'>();
   const insets = useSafeAreaInsets();
 
   //座標がある場合
   const editPositionWithCoord = useMemo(() => {
-    // @ts-ignore
-    return editPositionMode && route.params?.withCoord;
-    // @ts-ignore
-  }, [editPositionMode, route.params?.withCoord]);
+    return editPositionMode && params?.withCoord;
+  }, [editPositionMode, params?.withCoord]);
 
   //座標がない場合
   const editPositionWithoutCoord = useMemo(() => {
-    // @ts-ignore
-    return editPositionMode && !route.params?.withCoord;
-    // @ts-ignore
-  }, [editPositionMode, route.params?.withCoord]);
+    return editPositionMode && !params?.withCoord;
+  }, [editPositionMode, params?.withCoord]);
 
   const styles = StyleSheet.create({
     button: {

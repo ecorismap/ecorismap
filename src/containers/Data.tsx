@@ -4,7 +4,6 @@ import Data from '../components/pages/Data';
 import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useData } from '../hooks/useData';
-import { Props_Data } from '../routes';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
@@ -16,11 +15,15 @@ import dayjs from 'dayjs';
 import { useRecord } from '../hooks/useRecord';
 import { useLayers } from '../hooks/useLayers';
 import { MapViewContext } from '../contexts/MapView';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 
-export default function DataContainer({ navigation, route }: Props_Data) {
+export default function DataContainer() {
   //console.log('render DataContainer');
+  const { navigate } = useBottomSheetNavigation();
+  const { params } = useBottomSheetRoute<'Data'>();
+
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
-  const [layer] = useState<LayerType>(route.params.targetLayer);
+  const [layer] = useState<LayerType>(params?.targetLayer as LayerType);
   const [isExporting, setIsExporting] = useState(false);
 
   // MapViewContextから現在地とGPS状態を取得
@@ -43,7 +46,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     addDefaultRecord,
     deleteRecords,
     updateRecordSetOrder,
-  } = useData(route.params.targetLayer.id);
+  } = useData(params?.targetLayer?.id ?? '');
   const { changeActiveLayer } = useLayers();
   const { checkRecordEditable } = useRecord();
   const { isOwnerAdmin } = usePermission();
@@ -51,7 +54,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
   const { generateExportGeoData } = useGeoFile();
 
   const pressExportData = useCallback(async () => {
-    if (isExporting) return;
+    if (isExporting || !params?.targetLayer) return;
 
     setIsExporting(true);
     //Todo : トラブル対応のためしばらくは誰でもエクスポート可能にする
@@ -73,8 +76,8 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
 
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const fileNameBase = `${route.params.targetLayer.name}_${time}`;
-      const exportData = await generateExportGeoData(route.params.targetLayer, exportedRecords, fileNameBase, {
+      const fileNameBase = `${params.targetLayer.name}_${time}`;
+      const exportData = await generateExportGeoData(params.targetLayer, exportedRecords, fileNameBase, {
         exportPhoto: true,
       });
       const isOK = await exportGeoFile(exportData, `data_export_${time}`, 'zip');
@@ -88,20 +91,15 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     } finally {
       setIsExporting(false);
     }
-  }, [
-    checkedRecords,
-    sortedRecordSet,
-    generateExportGeoData,
-    isExporting,
-    isMapMemoLayer,
-    route.params.targetLayer,
-  ]);
+  }, [checkedRecords, sortedRecordSet, generateExportGeoData, isExporting, isMapMemoLayer, params?.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
+    if (!params?.targetLayer) return;
+
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (!ret) return;
 
-    const checkResult = checkRecordEditable(route.params.targetLayer);
+    const checkResult = checkRecordEditable(params.targetLayer);
 
     if (!checkResult.isOK) {
       if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -109,7 +107,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
         if (!confirmResult) return;
         // 編集モードにする
-        changeActiveLayer(route.params.targetLayer);
+        changeActiveLayer(params.targetLayer);
       } else {
         // その他の編集不可理由（プロジェクトロックなど）
         Alert.alert('', checkResult.message);
@@ -117,10 +115,12 @@ export default function DataContainer({ navigation, route }: Props_Data) {
       }
     }
     deleteRecords();
-  }, [changeActiveLayer, checkRecordEditable, deleteRecords, route.params.targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, deleteRecords, params?.targetLayer]);
 
   const pressAddData = useCallback(async () => {
-    const checkResult = checkRecordEditable(route.params.targetLayer);
+    if (!params?.targetLayer) return;
+
+    const checkResult = checkRecordEditable(params.targetLayer);
 
     if (!checkResult.isOK) {
       if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -128,7 +128,7 @@ export default function DataContainer({ navigation, route }: Props_Data) {
         const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
         if (!confirmResult) return;
         // 編集モードにする
-        changeActiveLayer(route.params.targetLayer);
+        changeActiveLayer(params.targetLayer);
       } else {
         // その他の編集不可理由（プロジェクトロックなど）
         Alert.alert('', checkResult.message);
@@ -139,16 +139,27 @@ export default function DataContainer({ navigation, route }: Props_Data) {
     // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
     const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
     const addedData = addDefaultRecord(undefined, locationToUse);
-    navigation.navigate('DataEdit', {
+    navigate('DataEdit', {
       previous: 'Data',
       targetData: addedData,
       targetLayer: layer,
     });
-  }, [addDefaultRecord, changeActiveLayer, checkRecordEditable, layer, navigation, route.params.targetLayer, gpsState, currentLocation]);
+  }, [
+    addDefaultRecord,
+    changeActiveLayer,
+    checkRecordEditable,
+    layer,
+    navigate,
+    params?.targetLayer,
+    gpsState,
+    currentLocation,
+  ]);
 
   const addDataByDictionary = useCallback(
     async (fieldId: string, value: string) => {
-      const checkResult = checkRecordEditable(route.params.targetLayer);
+      if (!params?.targetLayer) return;
+
+      const checkResult = checkRecordEditable(params.targetLayer);
 
       if (!checkResult.isOK) {
         if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -156,36 +167,36 @@ export default function DataContainer({ navigation, route }: Props_Data) {
           const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
           if (!confirmResult) return;
           // 編集モードにする
-          changeActiveLayer(route.params.targetLayer);
+          changeActiveLayer(params.targetLayer);
         } else {
           // その他の編集不可理由（プロジェクトロックなど）
           Alert.alert('', checkResult.message);
           return;
         }
       }
-      const fieldName = route.params.targetLayer.field.find((f) => f.id === fieldId)?.name;
+      const fieldName = params.targetLayer.field.find((f) => f.id === fieldId)?.name;
       if (!fieldName) return;
-      
+
       // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
       const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
       addDefaultRecord({ [fieldName]: value }, locationToUse);
     },
-    [addDefaultRecord, changeActiveLayer, checkRecordEditable, route.params.targetLayer, gpsState, currentLocation]
+    [addDefaultRecord, changeActiveLayer, checkRecordEditable, params?.targetLayer, gpsState, currentLocation]
   );
   const gotoDataEdit = useCallback(
     (index: number) => {
-      navigation.navigate('DataEdit', {
+      navigate('DataEdit', {
         previous: 'Data',
         targetData: sortedRecordSet[index],
         targetLayer: { ...layer },
       });
     },
-    [navigation, sortedRecordSet, layer]
+    [navigate, sortedRecordSet, layer]
   );
 
   const gotoBack = useCallback(() => {
-    navigation.navigate('Layers');
-  }, [navigation]);
+    navigate('Layers', undefined);
+  }, [navigate]);
 
   // DataContext.ProviderのvalueをuseMemoでメモ化し、props変更時のみ再生成
   const dataContextValue = React.useMemo(

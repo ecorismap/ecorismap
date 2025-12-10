@@ -1,30 +1,14 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { LicensesContext } from '../../contexts/Licenses';
 import { FlatList } from 'react-native-gesture-handler';
-import { useNavigation } from '@react-navigation/native';
 import { t } from '../../i18n/config';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function Licenses() {
-  const { packageNames, pressPackageName } = useContext(LicensesContext);
-  const navigation = useNavigation();
-
-  const customHeader = useCallback(
-    () => (
-      <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <Text style={{ fontSize: 16 }}>{t('Licenses.navigation.title')}</Text>
-      </View>
-    ),
-    []
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
+  const { packageNames, pressPackageName, gotoBack } = useContext(LicensesContext);
 
   const styles = StyleSheet.create({
     td: {
@@ -42,7 +26,9 @@ export default function Licenses() {
   });
 
   return (
-    <FlatList
+    <View style={{ flex: 1 }}>
+      <BottomSheetHeader title={t('Licenses.navigation.title')} showBackButton onBack={gotoBack} />
+      <FlatList
       data={packageNames}
       initialNumToRender={packageNames.length}
       keyExtractor={(item) => item}
@@ -64,6 +50,7 @@ export default function Licenses() {
           </View>
         );
       }}
-    />
+      />
+    </View>
   );
 }

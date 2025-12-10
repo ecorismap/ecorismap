@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import Settings from '../components/pages/Settings';
-import { Props_Settings } from '../routes';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { DEFAULT_MAP_LIST_URL, PHOTO_FOLDER } from '../constants/AppConstants';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -22,7 +22,8 @@ import { GpsAccuracyType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
 
-export default function SettingsContainers({ navigation }: Props_Settings) {
+export default function SettingsContainers() {
+  const { navigate, navigateToHome } = useBottomSheetNavigation();
   const dispatch = useDispatch();
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
@@ -37,11 +38,11 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   const [isLoading, setIsLoading] = useState(false);
 
   const pressPDFSettingsOpen = useCallback(async () => {
-    navigation.navigate('Home', {
+    navigateToHome?.({
       previous: 'Settings',
       mode: 'exportPDF',
     });
-  }, [navigation]);
+  }, [navigateToHome]);
 
   const pressFileSave = useCallback(async () => {
     // if (isRunningProject) {
@@ -90,14 +91,14 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
         await AlertAsync(message);
       } else if (isOK) {
         await AlertAsync(t('Settings.alert.loadEcorisMapFile'));
-        navigation.navigate('Home', {
+        navigateToHome?.({
           jumpTo: region,
           previous: 'Settings',
           mode: 'openEcorisMap',
         });
       }
     }
-  }, [isRunningProject, navigation, openEcorisMapFile]);
+  }, [isRunningProject, navigateToHome, openEcorisMapFile]);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
@@ -107,10 +108,10 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
       if (!isOK) {
         await AlertAsync(message);
       } else {
-        navigation.navigate('Home', { previous: 'Settings', mode: 'clearEcorisMap' });
+        navigateToHome?.({ previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
-  }, [clearEcorisMap, navigation]);
+  }, [clearEcorisMap, navigateToHome]);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -211,10 +212,10 @@ export default function SettingsContainers({ navigation }: Props_Settings) {
   }, []);
 
   const pressOSSLicense = useCallback(() => {
-    navigation.navigate('Licenses', {
+    navigate('Licenses', {
       previous: 'Settings',
     });
-  }, [navigation]);
+  }, [navigate]);
 
   const pressVersion = useCallback(async () => {
     const url = t('site.changelog');

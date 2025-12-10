@@ -2,13 +2,16 @@ import React, { useCallback } from 'react';
 import LayerEditFieldItem from '../components/pages/LayerEditFieldItem';
 import { LayerEditFieldItemContext } from '../contexts/LayerEditFieldItem';
 import { useFieldList } from '../hooks/useFieldList';
-import { Props_LayerEditFieldItem } from '../routes';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { getExt } from '../utils/General';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { t } from '../i18n/config';
 import * as DocumentPicker from 'expo-document-picker';
 
-export default function LayerEditFieldItemContainer({ navigation, route }: Props_LayerEditFieldItem) {
+export default function LayerEditFieldItemContainer() {
+  const { navigate } = useBottomSheetNavigation();
+  const { params } = useBottomSheetRoute<'LayerEditFieldItem'>();
+
   const {
     isLoading,
     isEdited,
@@ -32,17 +35,17 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
     deleteValue,
     pressListOrder,
     importDictionaryFromCSV,
-  } = useFieldList(route.params.targetLayer, route.params.fieldItem, route.params.fieldIndex, route.params.isEdited);
+  } = useFieldList(params!.targetLayer, params!.fieldItem, params!.fieldIndex, params!.isEdited);
 
   const gotoBack = useCallback(() => {
-    navigation.navigate('LayerEdit', {
+    navigate('LayerEdit', {
       isEdited: isEdited,
-      fieldIndex: route.params.fieldIndex,
+      fieldIndex: params!.fieldIndex,
       itemValues: itemValues,
       useLastValue: useLastValue,
-      targetLayer: route.params.targetLayer,
+      targetLayer: params!.targetLayer,
     });
-  }, [isEdited, itemValues, navigation, route.params.fieldIndex, route.params.targetLayer, useLastValue]);
+  }, [isEdited, itemValues, navigate, params, useLastValue]);
 
   const pressImportDictionary = useCallback(async () => {
     const file = await DocumentPicker.getDocumentAsync({});
@@ -52,10 +55,10 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
     }
-    const tableName = `_${route.params.targetLayer.id}_${route.params.fieldItem.id}`;
+    const tableName = `_${params!.targetLayer.id}_${params!.fieldItem.id}`;
     const { message } = await importDictionaryFromCSV(file.assets[0].uri, tableName);
     if (message !== '') await AlertAsync(message);
-  }, [importDictionaryFromCSV, route.params.fieldItem.id, route.params.targetLayer.id]);
+  }, [importDictionaryFromCSV, params]);
 
   return (
     <LayerEditFieldItemContext.Provider
@@ -63,7 +66,7 @@ export default function LayerEditFieldItemContainer({ navigation, route }: Props
         isLoading,
         dictionaryData,
         itemValues,
-        itemFormat: route.params.fieldItem.format,
+        itemFormat: params!.fieldItem.format,
         pickerValues,
         refLayerIds,
         refLayerNames,

@@ -14,6 +14,7 @@ export interface MapsContextType {
   pressDeleteMap: (tileMap: TileMapType) => void;
   gotoMapEdit: (editTileMap: TileMapType | null) => void;
   gotoMapList: () => void;
+  gotoDownload: () => void;
   pressImportMaps: () => Promise<void>;
   pressExportMaps: () => Promise<void>;
   jumpToBoundary: (tileMap: TileMapType) => void;

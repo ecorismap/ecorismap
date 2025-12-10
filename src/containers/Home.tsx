@@ -76,8 +76,14 @@ import { useVectorTile } from '../hooks/useVectorTile';
 import { useWindow } from '../hooks/useWindow';
 import { xyArrayToLatLonObjects } from '../utils/Coords';
 import BottomSheet from '@gorhom/bottom-sheet';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useNetInfo } from '@react-native-community/netinfo';
+import {
+  BottomSheetNavigationProvider,
+  NavigateToHomeParams,
+  BottomSheetScreenName,
+  BottomSheetScreenParams,
+  useBottomSheetNavigation,
+} from '../contexts/BottomSheetNavigationContext';
 
 import { usePDF } from '../hooks/usePDF';
 import { HomeModalPDFSettings } from '../components/organisms/HomeModalPDFSettings';
@@ -94,7 +100,8 @@ import { ConflictResolverModal } from '../components/organisms/HomeModalConflict
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import { useLayers } from '../hooks/useLayers';
 
-export default function HomeContainers({ navigation, route }: Props_Home) {
+// 内部コンポーネント - BottomSheetNavigationProvider の内側で使用
+function HomeContainersInner({ navigation, route }: Props_Home) {
   const [restored] = useState(true);
   const mapViewRef = useRef<MapView | MapRef | null>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -118,7 +125,20 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
   const dataSet = useSelector(selectNonDeletedDataSet);
   const fullDataSet = useSelector((state: RootState) => state.dataSet);
 
-  const routeName = getFocusedRouteNameFromRoute(route);
+  // SplitScreen のルート名を追跡
+  const [currentSplitRoute, setCurrentSplitRoute] = useState<string>('Layers');
+  const routeName = currentSplitRoute;
+
+  // BottomSheetNavigationContext からナビゲーション関数を取得
+  const { navigate: bottomSheetNavigate, currentScreen: bottomSheetCurrentScreen } = useBottomSheetNavigation();
+
+  // navigateToSplit 関数（BottomSheetNavigationContext の navigate を使用）
+  const navigateToSplit = useCallback(
+    <T extends BottomSheetScreenName>(screen: T, params?: BottomSheetScreenParams[T]) => {
+      bottomSheetNavigate(screen, params);
+    },
+    [bottomSheetNavigate]
+  );
 
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
@@ -627,13 +647,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     } else {
       bottomSheetRef.current?.snapToIndex(2);
 
-      navigation.navigate('DataEdit', {
+      navigateToSplit?.('DataEdit', {
         previous: 'Data',
         targetData: record,
         targetLayer: layer,
       });
     }
-  }, [addCurrentPoint, gpsState, navigation, trackingState]);
+  }, [addCurrentPoint, gpsState, navigateToSplit, trackingState]);
 
   const addLocationPointInEditPosition = useCallback(
     async (layer: LayerType, record: RecordType) => {
@@ -818,13 +838,13 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     }
     if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
       bottomSheetRef.current?.snapToIndex(2);
-      navigation.navigate('DataEdit', {
+      navigateToSplit?.('DataEdit', {
         previous: 'Data',
         targetData: recordSet[0],
         targetLayer: layer,
       });
     }
-  }, [featureButton, navigation, route.params?.mode, saveLine, savePolygon, setDrawTool]);
+  }, [featureButton, navigation, navigateToSplit, route.params?.mode, saveLine, savePolygon, setDrawTool]);
 
   const pressDownloadTiles = useCallback(async () => {
     if (zoom < 11) {
@@ -838,9 +858,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await downloadMultipleTiles(zoom, selectedMaps);
     } else if (route.params?.mode === 'download') {
       // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図をダウンロード
-      const downloadableMaps = tileMaps.filter(
-        (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'
-      );
+      const downloadableMaps = tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid');
       await downloadMultipleTiles(zoom, downloadableMaps);
     } else {
       // 従来の単一地図ダウンロード
@@ -926,9 +944,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       mapsToDelete = tileMaps.filter((map) => selectedTileMapIds.includes(map.id));
     } else if (downloadMode && route.params?.mode === 'download') {
       // ダウンロードモードで「すべての地図」が選択されている場合、ダウンロード可能な全ての地図を削除
-      mapsToDelete = tileMaps.filter(
-        (map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid'
-      );
+      mapsToDelete = tileMaps.filter((map) => !map.isGroup && map.id !== 'standard' && map.id !== 'hybrid');
     } else if (route.params?.tileMap !== undefined) {
       // 従来の単一地図削除（後方互換性のため）
       mapsToDelete = [route.params.tileMap];
@@ -1083,11 +1099,11 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
     const ret = await ConfirmAsync(t('Home.confirm.closeProject'));
     if (ret) {
       //Layersに戻らないとwebでエラー（白く）なる
-      navigation.navigate('Layers');
+      navigateToSplit?.('Layers');
       clearProject();
       setIsShowingProjectButtons(false);
     }
-  }, [clearProject, navigation]);
+  }, [clearProject, navigateToSplit]);
 
   const pressSaveProjectSetting = useCallback(async () => {
     try {
@@ -1105,23 +1121,23 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       await saveProjectSetting(storageLicenseResult.isOK);
       setIsLoading(false);
       await AlertAsync(t('Home.alert.saveProject'));
-      navigation.navigate('Layers');
+      navigateToSplit?.('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     } catch (e: any) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [clearProject, navigation, project, saveProjectSetting]);
+  }, [clearProject, navigateToSplit, navigation, project, saveProjectSetting]);
 
   const pressDiscardProjectSetting = useCallback(async () => {
     const ret = await ConfirmAsync(t('Home.confirm.discardProject'));
     if (ret) {
-      navigation.navigate('Layers');
+      navigateToSplit?.('Layers');
       clearProject();
       navigation.navigate('ProjectEdit', { previous: 'Projects', project: project!, isNew: false });
     }
-  }, [clearProject, navigation, project]);
+  }, [clearProject, navigateToSplit, navigation, project]);
   /****************** goto ****************************/
 
   const gotoProjects = useCallback(async () => {
@@ -1145,32 +1161,46 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-    finishEditPosition();
-    if (routeName === undefined || routeName === 'Settings' || routeName === 'Licenses' || routeName === 'Maps') {
-      navigation.navigate('Layers');
+    navigation.setParams({ mode: undefined });
+    // Data または DataEdit 画面が開いている場合は BottomSheet を開くだけ
+    if (bottomSheetCurrentScreen.name !== 'Data' && bottomSheetCurrentScreen.name !== 'DataEdit') {
+      navigateToSplit?.('Layers');
     }
-  }, [finishEditPosition, isEditingRecord, navigation, routeName]);
+    bottomSheetRef.current?.snapToIndex(2);
+  }, [isEditingRecord, navigation, navigateToSplit, bottomSheetCurrentScreen.name]);
 
   const gotoMaps = useCallback(async () => {
     if (isEditingRecord) {
       AlertAsync(t('Home.alert.discardChanges'));
       return;
     }
-    bottomSheetRef.current?.snapToIndex(2);
     navigation.setParams({ tileMap: undefined, mode: undefined });
-    navigation.navigate('Maps');
-  }, [isEditingRecord, navigation]);;;
+    // 先にナビゲーションを完了させてからBottomSheetを開く（ちらつき防止）
+    navigateToSplit?.('Maps');
+    bottomSheetRef.current?.snapToIndex(2);
+  }, [isEditingRecord, navigation, navigateToSplit]);
 
   const gotoSettings = useCallback(async () => {
-    bottomSheetRef.current?.snapToIndex(2);
-    navigation.navigate('Settings', {
+    navigateToSplit?.('Settings', {
       previous: 'Home',
     });
-  }, [navigation]);
+    bottomSheetRef.current?.snapToIndex(2);
+  }, [navigateToSplit]);
 
-  const gotoHome = useCallback(() => {
-    navigation.navigate('Home', { previous: 'Home', mode: undefined });
-  }, [navigation]);
+  const gotoHome = useCallback(
+    (params?: NavigateToHomeParams) => {
+      navigation.navigate('Home', {
+        previous: params?.previous || 'Home',
+        mode: params?.mode,
+        tileMap: params?.tileMap,
+        jumpTo: params?.jumpTo,
+        layer: params?.layer,
+        record: params?.record,
+        withCoord: params?.withCoord,
+      });
+    },
+    [navigation]
+  );
 
   const pressExportPDF = useCallback(async () => {
     //console.log('pressExportPDF');
@@ -1291,14 +1321,14 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       } else {
         bottomSheetRef.current?.snapToIndex(1);
       }
-      navigation.navigate('DataEdit', {
+      navigateToSplit?.('DataEdit', {
         previous: 'Data',
         targetData: { ...feature },
         targetLayer: { ...layer },
       });
       return false; // フィーチャーが見つかったのでfalseを返す
     },
-    [isEditingRecord, isLandscape, navigation, selectRecord, selectSingleFeature, unselectRecord]
+    [isEditingRecord, isLandscape, navigateToSplit, selectRecord, selectSingleFeature, unselectRecord]
   );
 
   const handlePanResponderGrant = useCallback(
@@ -1378,7 +1408,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
               setDrawTool('NONE');
               if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
                 bottomSheetRef.current?.snapToIndex(2);
-                navigation.navigate('DataEdit', {
+                navigateToSplit?.('DataEdit', {
                   previous: 'Data',
                   targetData: recordSet[0],
                   targetLayer: layer,
@@ -1409,7 +1439,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,
-      navigation,
+      navigateToSplit,
       route.params?.mode,
       saveLine,
       savePolygon,
@@ -1512,9 +1542,9 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         return;
       }
       bottomSheetRef.current?.close();
-      navigation.navigate('Data', { targetLayer: layer });
+      navigateToSplit?.('Data', { targetLayer: layer });
     }
-  }, [deleteDraw, drawLine, navigation]);
+  }, [deleteDraw, drawLine, navigateToSplit]);
 
   const handlePanResponderRelease = useCallback(
     async (event: GestureResponderEvent) => {
@@ -1552,7 +1582,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
         }
 
         bottomSheetRef.current?.close();
-        navigation.navigate('Data', { targetLayer: layer });
+        navigateToSplit?.('Data', { targetLayer: layer });
       } else if (currentDrawTool === 'PLOT_POINT') {
         handleReleasePlotPoint();
         if (route.params?.mode === 'editPosition') {
@@ -1573,7 +1603,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           setDrawTool('NONE');
           if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
             bottomSheetRef.current?.snapToIndex(2);
-            navigation.navigate('DataEdit', {
+            navigateToSplit?.('DataEdit', {
               previous: 'Data',
               targetData: recordSet[0],
               targetLayer: layer,
@@ -1601,7 +1631,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
             setDrawTool('NONE');
             if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
               bottomSheetRef.current?.snapToIndex(2);
-              navigation.navigate('DataEdit', {
+              navigateToSplit?.('DataEdit', {
                 previous: 'Data',
                 targetData: recordSet[0],
                 targetLayer: layer,
@@ -1629,6 +1659,8 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
           }
         }
       }
+      // ドラッグ状態をリセット
+      isMapDragging.current = false;
     },
     [
       currentDrawTool,
@@ -1649,7 +1681,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       mapLocationInfo,
       mapRegion,
       mapSize,
-      navigation,
+      navigateToSplit,
       route.params,
       saveLine,
       savePoint,
@@ -2319,6 +2351,7 @@ export default function HomeContainers({ navigation, route }: Props_Home) {
       gotoSettings,
       gotoLayers,
       gotoHome,
+      onSplitRouteChange: setCurrentSplitRoute,
       bottomSheetRef,
       onCloseBottomSheet,
       updatePmtilesURL,
@@ -2517,3 +2550,34 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
 });
+
+// 外部コンポーネント - BottomSheetNavigationProvider でラップ
+export default function HomeContainers(props: Props_Home) {
+  // ルート変更を追跡するためのstate（HomeContainersInnerで使用）
+  const [, setCurrentSplitRoute] = useState<string>('Layers');
+
+  // gotoHome用のナビゲーション関数
+  const handleNavigateToHome = useCallback(
+    (params?: NavigateToHomeParams) => {
+      props.navigation.navigate('Home', {
+        previous: params?.previous || 'Home',
+        mode: params?.mode,
+        tileMap: params?.tileMap,
+        jumpTo: params?.jumpTo,
+        layer: params?.layer,
+        record: params?.record,
+        withCoord: params?.withCoord,
+      });
+    },
+    [props.navigation]
+  );
+
+  return (
+    <BottomSheetNavigationProvider
+      onRouteChange={setCurrentSplitRoute}
+      onNavigateToHome={handleNavigateToHome}
+    >
+      <HomeContainersInner {...props} />
+    </BottomSheetNavigationProvider>
+  );
+}

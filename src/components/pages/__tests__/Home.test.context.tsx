@@ -252,6 +252,7 @@ export const mockAppStateContextValue: AppStateContextType = {
   gotoSettings: jest.fn(),
   gotoLayers: jest.fn(),
   gotoHome: jest.fn(),
+  onSplitRouteChange: jest.fn(),
   bottomSheetRef: createRef<BottomSheetMethods>(),
   onCloseBottomSheet: jest.fn().mockResolvedValue(undefined),
   updatePmtilesURL: jest.fn().mockResolvedValue(undefined),

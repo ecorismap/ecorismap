@@ -28,7 +28,7 @@ export const fetchVectorTileInfo = async (
 
     const binaryData = Buffer.from(base64String, 'base64');
 
-    const pbf = new Pbf(binaryData);
+    const pbf = new Pbf(new Uint8Array(binaryData));
     const layers = new VectorTile.VectorTile(pbf).layers;
     const propertyList: { [key: string]: any }[] = [];
     for (const layerName of Object.keys(layers).reverse()) {

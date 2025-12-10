@@ -1,7 +1,5 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { COLOR } from '../../constants/AppConstants';
 import { Button, Picker, TextInput } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
@@ -11,6 +9,7 @@ import { FlatList, ScrollView } from 'react-native-gesture-handler';
 import { CheckBox } from '../molecules/CheckBox';
 import { Loading } from '../molecules/Loading';
 import { DataEditTimeRange } from '../organisms/DataEditTimeRange';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function LayerEditFieldItemScreen() {
   const {
@@ -37,59 +36,22 @@ export default function LayerEditFieldItemScreen() {
     gotoBack,
     pressListOrder,
   } = useContext(LayerEditFieldItemContext);
-  const navigation = useNavigation();
   const editable = true;
-  const customHeader = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton
-            {...props_}
-            label={t('LayerEdit.navigation.title')}
-            labelStyle={{ fontSize: 11 }}
-            onPress={gotoBack}
-            style={{ marginLeft: 10 }}
-          />
-        </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('LayerEditFieldItem.navigation.title')}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1.5,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            flexDirection: 'row',
-            paddingRight: 13,
-          }}
-        >
-          {itemFormat === 'STRING_DICTIONARY' && (
-            <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
-          )}
-        </View>
-      </View>
-    ),
-    [gotoBack, itemFormat, pressImportDictionary]
-  );
 
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
+  const rightComponent =
+    itemFormat === 'STRING_DICTIONARY' ? (
+      <Button name={'folder-open'} onPress={pressImportDictionary} labelText={t('LayerEdit.label.dictionaty')} />
+    ) : undefined;
 
   if (itemFormat === 'STRING_DICTIONARY') {
     return (
       <View style={styles.container}>
+        <BottomSheetHeader
+          title={t('LayerEditFieldItem.navigation.title')}
+          showBackButton
+          onBack={gotoBack}
+          rightComponent={rightComponent}
+        />
         <Loading visible={isLoading} text="" />
 
         <FlatList
@@ -112,6 +74,11 @@ export default function LayerEditFieldItemScreen() {
   } else if (itemFormat === 'REFERENCE') {
     return (
       <View style={styles.container}>
+        <BottomSheetHeader
+          title={t('LayerEditFieldItem.navigation.title')}
+          showBackButton
+          onBack={gotoBack}
+        />
         <View style={styles.tr3}>
           <View style={[styles.td3, { flex: 1 }]}>
             <Text style={[styles.title, { textAlign: 'center' }]}>{'reference layer'}</Text>
@@ -189,6 +156,11 @@ export default function LayerEditFieldItemScreen() {
   } else {
     return (
       <View style={styles.container}>
+        <BottomSheetHeader
+          title={t('LayerEditFieldItem.navigation.title')}
+          showBackButton
+          onBack={gotoBack}
+        />
         {(itemFormat === 'STRING' ||
           itemFormat === 'INTEGER' ||
           itemFormat === 'LIST' ||

@@ -88,7 +88,7 @@ jest.mock('expo-sharing', () => ({
 
 // react-native-zip-archiveは使用しなくなったためモック削除
 
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   documentDirectory: 'file:///document/',
   cacheDirectory: 'file:///cache/',
   readDirectoryAsync: jest.fn(),

@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import configureStore from 'redux-mock-store';
 
@@ -51,19 +50,6 @@ jest.mock('react-native-maps', () => {
   return MapView;
 });
 
-// Mock navigation
-const mockNavigate = jest.fn();
-jest.mock('@react-navigation/native', () => ({
-  ...jest.requireActual('@react-navigation/native'),
-  useNavigation: () => ({
-    navigate: mockNavigate,
-    goBack: jest.fn(),
-    setOptions: jest.fn(),
-  }),
-  useRoute: () => ({
-    params: {},
-  }),
-}));
 
 // Create mock store
 const mockStore = configureStore([]);
@@ -120,9 +106,7 @@ describe('Home Component', () => {
   it('should render without crashing', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -132,9 +116,7 @@ describe('Home Component', () => {
   it('should show GPS button', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -145,9 +127,7 @@ describe('Home Component', () => {
   it('should show zoom buttons', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -161,9 +141,7 @@ describe('Home Component', () => {
   it('should show layers button', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -174,9 +152,7 @@ describe('Home Component', () => {
   it('should show project name when available', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -187,9 +163,7 @@ describe('Home Component', () => {
   it('should show map view', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -200,9 +174,7 @@ describe('Home Component', () => {
   it('should show loading indicator', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -213,9 +185,7 @@ describe('Home Component', () => {
   it('should show feature button', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -226,9 +196,7 @@ describe('Home Component', () => {
   it('should render map markers', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 
@@ -239,9 +207,7 @@ describe('Home Component', () => {
   it('should handle button interactions', () => {
     const { getByTestId } = render(
       <Provider store={store}>
-        <NavigationContainer>
-          <Home />
-        </NavigationContainer>
+        <Home />
       </Provider>
     );
 

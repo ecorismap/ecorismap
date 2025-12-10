@@ -645,7 +645,7 @@ export const useTiles = (
 
       if (!tileMaps || tileMaps.length === 0) {
         if (tileMap) {
-          const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap.id}`, { size: true });
+          const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${tileMap.id}`);
           const size = info.exists ? (info.size / 1048576).toFixed(1) : '0';
           setTileSize(size);
         }
@@ -660,7 +660,7 @@ export const useTiles = (
 
       let totalSize = 0;
       for (const map of mapsToCheck) {
-        const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${map.id}`, { size: true });
+        const info = await FileSystem.getInfoAsync(`${TILE_FOLDER}/${map.id}`);
         if (info.exists) {
           totalSize += info.size;
         }

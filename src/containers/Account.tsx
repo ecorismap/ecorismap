@@ -38,9 +38,12 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
   } = useAccount();
 
   useEffect(() => {
-    setAccountFormState(route.params?.accountFormState ?? 'loginUserAccount');
-    setAccountMessage(route.params?.message ?? '');
-    navigation.setParams({ accountFormState: undefined, message: undefined });
+    // パラメータが存在する場合のみ処理（無限ループ防止）
+    if (route.params?.accountFormState !== undefined || route.params?.message !== undefined) {
+      setAccountFormState(route.params?.accountFormState ?? 'loginUserAccount');
+      setAccountMessage(route.params?.message ?? '');
+      navigation.setParams({ accountFormState: undefined, message: undefined });
+    }
   }, [navigation, route.params?.accountFormState, route.params?.message, setAccountFormState, setAccountMessage]);
 
   const pressLoginUserAccount = useCallback(

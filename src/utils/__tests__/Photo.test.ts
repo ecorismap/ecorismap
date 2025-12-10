@@ -8,7 +8,7 @@ jest.mock('expo-media-library', () => ({
   createAssetAsync: jest.fn(),
   MediaTypeValue: { photo: 'photo' },
 }));
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   makeDirectoryAsync: jest.fn(),
   copyAsync: jest.fn(),
   deleteAsync: jest.fn(),

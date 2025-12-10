@@ -1,11 +1,9 @@
-import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import React, { useContext } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { ColorTable } from '../organisms/FeatureStyleColorTable';
 import { SimplePicker } from '../molecules/SimplePicker';
 import { SingleColorSelect } from '../organisms/FeatureStyleSingleColorSelect';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import Slider from '../atoms/Slider';
 import { t } from '../../i18n/config';
 import { LayerEditFeatureStyleContext } from '../../contexts/LayerEditFeatureStyle';
@@ -14,6 +12,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import HeaderRightButton from '../molecules/HeaderRightButton';
 import { HomeModalColorPicker } from '../organisms/HomeModalColorPicker';
 import { CheckBox } from '../molecules/CheckBox';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function LayerEditFeatureStyleScreen() {
   const {
@@ -42,63 +41,24 @@ export default function LayerEditFeatureStyleScreen() {
     pressSelectColorCancel,
     saveColorStyle,
   } = useContext(LayerEditFeatureStyleContext);
-  const navigation = useNavigation();
 
-  const customHeader = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton
-            {...props_}
-            label={t('LayerEdit.navigation.title')}
-            labelStyle={{ fontSize: 11 }}
-            onPress={gotoBack}
-            style={{ marginLeft: 10 }}
-          />
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('LayerEditFeatureStyle.navigation.title')}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1.5,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            flexDirection: 'row',
-            paddingRight: 13,
-          }}
-        >
-          {isStyleChangeOnly && (
-            <HeaderRightButton
-              name={LAYEREDIT_BTN.SAVE}
-              onPress={saveColorStyle}
-              backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
-              disabled={!isEdited}
-            />
-          )}
-        </View>
-      </View>
-    ),
-    [gotoBack, isEdited, isStyleChangeOnly, saveColorStyle]
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
+  const rightComponent = isStyleChangeOnly ? (
+    <HeaderRightButton
+      name={LAYEREDIT_BTN.SAVE}
+      onPress={saveColorStyle}
+      backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+      disabled={!isEdited}
+    />
+  ) : undefined;
 
   return (
     <View style={styles.container}>
+      <BottomSheetHeader
+        title={t('LayerEditFeatureStyle.navigation.title')}
+        showBackButton
+        onBack={gotoBack}
+        rightComponent={rightComponent}
+      />
       <ScrollView>
         {(layerType === 'LINE' || layerType === 'POLYGON') && colorStyle.colorType !== 'INDIVIDUAL' && (
           <View style={{ paddingHorizontal: 10, borderBottomWidth: 1, borderColor: COLOR.GRAY2 }}>

@@ -939,7 +939,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       let recordIndex;
 
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POINT_INFO')) {
-        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+        const radius = calcDegreeRadius(2000, mapRegion, mapSize);
         for (const { layerId, data } of pointDataSet) {
           const selectedFeature = selectPointFeatureByLatLon(
             data,
@@ -960,7 +960,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
 
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'LINE_INFO')) {
-        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+        const radius = calcDegreeRadius(2000, mapRegion, mapSize);
 
         for (const { layerId, data } of lineDataSet) {
           const selectedFeature = selectLineFeatureByLatLon(
@@ -982,7 +982,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       }
 
       if (feature === undefined && (currentInfoTool === 'ALL_INFO' || currentInfoTool === 'POLYGON_INFO')) {
-        const radius = calcDegreeRadius(1000, mapRegion, mapSize);
+        const radius = calcDegreeRadius(2000, mapRegion, mapSize);
         for (const { layerId, data } of polygonDataSet) {
           const selectedFeature = selectPolygonFeatureByLatLon(
             data,

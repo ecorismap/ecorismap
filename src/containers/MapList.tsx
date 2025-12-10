@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import MapList from '../components/pages/MapList';
 import { useMaps } from '../hooks/useMaps';
-import { Props_MapList } from '../routes';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { TileMapItemType } from '../types';
 import { ulid } from 'ulid';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import { MapListContext } from '../contexts/MapList';
 
-export default function MapListContainer({ navigation }: Props_MapList) {
+export default function MapListContainer() {
+  const { navigate } = useBottomSheetNavigation();
   const { mapList, saveMap, fetchMapList } = useMaps();
   const [isLoading, setIsLoading] = useState(false);
   const [reload, setReload] = useState(false);
@@ -15,7 +16,7 @@ export default function MapListContainer({ navigation }: Props_MapList) {
   const addMap = (map: TileMapItemType) => {
     const tileMap = { ...map, id: ulid(), visible: true, maptype: 'none' as const };
     saveMap(tileMap);
-    navigation.navigate('Maps');
+    navigate('Maps', undefined);
   };
 
   const reloadMapList = useCallback(() => {
@@ -25,8 +26,8 @@ export default function MapListContainer({ navigation }: Props_MapList) {
   }, []);
 
   const gotoBack = useCallback(async () => {
-    navigation.navigate('Maps');
-  }, [navigation]);
+    navigate('Maps', undefined);
+  }, [navigate]);
 
   useEffect(() => {
     const controller = new AbortController();
