@@ -1,6 +1,14 @@
 # Change Log
 
-## [0.4.9]
+## [0.5.0]
+
+## [0.4.9] - 2025-12-10
+
+- Added bulk map download feature
+- Fixed track recording issue on Android
+
+- 地図の一括ダウンロード機能を追加
+- Android における軌跡の記録の不具合を修正（react-native-background-geolocation を導入）
 
 ## [0.4.8] - 2025-9-29
 
@@ -191,7 +199,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.4.9]: https://github.com/ecorismap/ecorismap/compare/65c311635ef12f2d6d22842e1872ecfaa2064bcb...HEAD
+  [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...HEAD
+  [0.4.9]: https://github.com/ecorismap/ecorismap/compare/65c311635ef12f2d6d22842e1872ecfaa2064bcb...3e9b5a093965d8dd68a53b66b83962ad6a4cf594
   [0.4.8]: https://github.com/ecorismap/ecorismap/compare/7425433d6bae566e48067b2c8a36eacf27bd562e...65c311635ef12f2d6d22842e1872ecfaa2064bcb
   [0.4.6]: https://github.com/ecorismap/ecorismap/compare/6196449453febecc5eb2adcc21be183db21d73b8...7425433d6bae566e48067b2c8a36eacf27bd562e
   [0.4.5]: https://github.com/ecorismap/ecorismap/compare/27e5e0da2bfe9c67ae496efda7a9dbe8ff7d2b12...6196449453febecc5eb2adcc21be183db21d73b8
