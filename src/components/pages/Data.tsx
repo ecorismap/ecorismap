@@ -1,62 +1,21 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
 
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { DataContext } from '../../contexts/Data';
 //import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { t } from '../../i18n/config';
 import { COLOR } from '../../constants/AppConstants';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function DataScreen() {
   //console.log('render Data');
 
   const { layer, gotoBack, addDataByDictionary, isExporting } = useContext(DataContext);
-
-  const navigation = useNavigation();
-
-  const customHeader = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton
-            {...props_}
-            label={t('Layers.navigation.title')}
-            labelStyle={{ fontSize: 11 }}
-            onPress={gotoBack}
-            style={{ marginLeft: 10 }}
-          />
-        </View>
-        <View style={{ minWidth: 200, flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text numberOfLines={1} adjustsFontSizeToFit>
-            {layer.name}
-          </Text>
-        </View>
-        <View style={{ flex: 1.5 }} />
-      </View>
-    ),
-    [gotoBack, layer.name]
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
 
   // useEffect(() => {
   //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;
@@ -73,6 +32,7 @@ export default function DataScreen() {
 
   return (
     <View style={styles.container}>
+      <BottomSheetHeader title={layer.name} showBackButton onBack={gotoBack} />
       {layer.dictionaryFieldId !== undefined && (
         <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
           <DictionaryTextInput
@@ -83,17 +43,19 @@ export default function DataScreen() {
           />
         </View>
       )}
-      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-        {Platform.OS === 'web' ? (
-          <ScrollView style={{ flex: 1 }}>
-            <DataTable />
-          </ScrollView>
-        ) : (
-          <View style={{ flex: 1 }}>
-            <DataTable />
-          </View>
-        )}
-      </ScrollView>
+      <View style={styles.tableContainer}>
+        <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+          {Platform.OS === 'web' ? (
+            <ScrollView style={{ flex: 1 }}>
+              <DataTable />
+            </ScrollView>
+          ) : (
+            <View style={{ flex: 1 }}>
+              <DataTable />
+            </View>
+          )}
+        </ScrollView>
+      </View>
       <DataButton />
       {isExporting && (
         <View style={styles.exportingOverlay}>
@@ -110,7 +72,9 @@ export default function DataScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
+  },
+  tableContainer: {
+    flex: 1,
   },
   exportingOverlay: {
     position: 'absolute',

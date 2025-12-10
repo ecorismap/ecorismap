@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { Platform } from 'react-native';
 import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
@@ -50,7 +49,7 @@ export const Point = React.memo(
       <>
         {culledData.map((feature) => (
           <PointComponent
-            key={`point-${feature.id}-${feature.redraw}`}
+            key={`point-${feature.id}-${feature.redraw}-${selectedRecord?.record?.id === feature.id}`}
             feature={feature}
             selectedRecord={selectedRecord}
             editPositionMode={editPositionMode}
@@ -146,7 +145,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
   if (!feature.coords) return null;
   return (
     <Marker
-      tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+      tracksViewChanges={true} //色変更を反映するため常にtrue
       draggable={draggable}
       onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
       coordinate={feature.coords}

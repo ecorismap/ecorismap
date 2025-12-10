@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { storage, ref, uploadBytes, getDownloadURL, deleteObject, listAll } from './firebase';
 import { t } from '../../i18n/config';

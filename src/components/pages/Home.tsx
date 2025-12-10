@@ -1,6 +1,8 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, Platform, Text, Modal } from 'react-native';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
+import { StyleSheet, View, Platform, Text, Modal, TouchableOpacity } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
+// @ts-ignore - PMTile is added via patch-package
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
@@ -22,11 +24,9 @@ import { HomeAccountButton } from '../organisms/HomeAccountButton';
 
 import { HomeGPSButton } from '../organisms/HomeGPSButton';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
-import SplitScreen from '../../routes/split';
+import { BottomSheetContent } from '../organisms/BottomSheetContent';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { useWindow } from '../../hooks/useWindow';
@@ -109,8 +109,16 @@ export default function HomeScreen() {
     useContext(DataSelectionContext);
 
   // AppStateContext
-  const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet } =
-    useContext(AppStateContext);
+  const {
+    isOffline,
+    restored,
+    attribution,
+    isLoading,
+    gotoMaps,
+    gotoHome,
+    bottomSheetRef,
+    onCloseBottomSheet,
+  } = useContext(AppStateContext);
 
   // SVGDrawingContext
   const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -160,7 +168,6 @@ export default function HomeScreen() {
   const { projectName, isSynced, isShowingProjectButtons, pressProjectLabel } = useContext(ProjectContext);
   //console.log(Platform.Version);
   const layers = useSelector((state: RootState) => state.layers);
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { mapRegion, windowHeight, isLandscape, windowWidth } = useWindow();
   const { bounds } = useViewportBounds(mapRegion);
@@ -245,6 +252,7 @@ export default function HomeScreen() {
 
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
+
   const animatedStyle = useAnimatedStyle(() => {
     return {
       height: interpolate(
@@ -304,131 +312,102 @@ export default function HomeScreen() {
     );
   }, [isEditingRecord, onCloseBottomSheet]);
 
-  const customHeaderDownload = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 56 + insets.top,
-          paddingTop: insets.top,
-          backgroundColor: COLOR.MAIN,
-          paddingHorizontal: 10,
-        }}
-      >
-        <View style={{ flex: 0, minWidth: 40, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoMaps} />
-        </View>
-        <View style={{ flex: 1, paddingHorizontal: 10 }}>
-          <Pressable
-            style={{
-              backgroundColor: COLOR.WHITE,
-              borderRadius: 5,
-              padding: 10,
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-            onPress={() => setShowMapSelector(true)}
-          >
-            <Text numberOfLines={1} style={{ flex: 1 }}>
-              {selectedTileMapIds.length === 0
-                ? t('Home.download.allMaps')
-                : selectedTileMapIds.length === 1
-                ? tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
-                : `${selectedTileMapIds.length} ${t('Home.download.mapsSelected', '個の地図')}`}
-            </Text>
-            <Text style={{ marginLeft: 8 }}>▼</Text>
-          </Pressable>
-        </View>
-        <View
+  // ダウンロードモード用ヘッダー
+  const renderDownloadHeader = () => (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: 56 + insets.top,
+        paddingTop: insets.top,
+        backgroundColor: COLOR.MAIN,
+        paddingHorizontal: 10,
+      }}
+    >
+      <View style={{ flex: 0, minWidth: 40, justifyContent: 'center' }}>
+        <TouchableOpacity style={{ padding: 5 }} onPress={gotoMaps}>
+          <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
+        </TouchableOpacity>
+      </View>
+      <View style={{ flex: 1, paddingHorizontal: 10 }}>
+        <Pressable
           style={{
-            flex: 0,
-            minWidth: 40,
+            backgroundColor: COLOR.WHITE,
+            borderRadius: 5,
+            padding: 10,
             flexDirection: 'row',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
             alignItems: 'center',
           }}
+          onPress={() => setShowMapSelector(true)}
         >
-          {headerRightButton()}
-        </View>
+          <Text numberOfLines={1} style={{ flex: 1 }}>
+            {selectedTileMapIds.length === 0
+              ? t('Home.download.allMaps')
+              : selectedTileMapIds.length === 1
+              ? tileMaps?.find((m) => m.id === selectedTileMapIds[0])?.name || t('Home.download.allMaps')
+              : `${selectedTileMapIds.length} ${t('Home.download.mapsSelected', '個の地図')}`}
+          </Text>
+          <Text style={{ marginLeft: 8 }}>▼</Text>
+        </Pressable>
       </View>
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [gotoMaps, headerRightButton, insets.top, selectedTileMapIds, tileMaps, t]
-  );
-
-  const customHeaderPDF = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
       <View
         style={{
+          flex: 0,
+          minWidth: 40,
           flexDirection: 'row',
-          justifyContent: 'space-between',
+          justifyContent: 'flex-end',
           alignItems: 'center',
-          height: 56 + insets.top,
-          paddingTop: insets.top,
-          backgroundColor: COLOR.MAIN,
         }}
       >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={false} onPress={gotoHome} style={{ marginLeft: 10 }} />
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('Home.navigation.exportPDF', 'PDF')}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1.5,
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            paddingRight: 10,
-          }}
-        >
-          {headerRightButton()}
-        </View>
+        {headerRightButton()}
       </View>
-    ),
-    [gotoHome, headerRightButton, insets.top]
+    </View>
   );
 
-  useEffect(() => {
-    //console.log('#useeffect3');
-    if (downloadMode) {
-      navigation.setOptions({
-        headerShown: true,
-        header: customHeaderDownload,
-      });
-    } else if (exportPDFMode) {
-      navigation.setOptions({
-        headerShown: true,
-        header: customHeaderPDF,
-      });
-    } else {
-      navigation.setOptions({ headerShown: false });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    downloadMode,
-    exportPDFMode,
-    customHeaderDownload,
-    customHeaderPDF,
-    isDownloading,
-    downloadProgress,
-    savedTileSize,
-    pdfPaperSize,
-    pdfScale,
-    pdfOrientation,
-  ]);
+  // PDFエクスポートモード用ヘッダー
+  const renderPDFHeader = () => (
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: 56 + insets.top,
+        paddingTop: insets.top,
+        backgroundColor: COLOR.MAIN,
+      }}
+    >
+      <View style={{ flex: 1.5, justifyContent: 'center' }}>
+        <TouchableOpacity style={{ padding: 5 }} onPress={() => gotoHome()}>
+          <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
+        </TouchableOpacity>
+      </View>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 16 }}>{t('Home.navigation.exportPDF', 'PDF')}</Text>
+      </View>
+      <View
+        style={{
+          flex: 1.5,
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          paddingRight: 10,
+        }}
+      >
+        {headerRightButton()}
+      </View>
+    </View>
+  );
 
   //console.log('isPencilTouch', isPencilTouch);
   //console.log('isFinger', isMapMemoDrawTool(currentMapMemoTool) && isPencilModeActive && !isPencilTouch);
   //console.log(mapMemoEditingLine.length);
   return !restored ? null : (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      {/* Custom Headers */}
+      {downloadMode && renderDownloadHeader()}
+      {exportPDFMode && !downloadMode && renderPDFHeader()}
       <View style={[styles.container, { flexDirection: isLandscape ? 'row' : 'column' }]}>
         <View
           style={{
@@ -758,7 +737,7 @@ export default function HomeScreen() {
       >
         <BottomSheetView style={{ flex: 1 }}>
           <Animated.View style={animatedStyle}>
-            <SplitScreen />
+            <BottomSheetContent />
           </Animated.View>
         </BottomSheetView>
       </BottomSheet>

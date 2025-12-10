@@ -31,7 +31,7 @@ import {
 } from '../utils/General';
 import { t } from '../i18n/config';
 import { convert } from 'react-native-gdalwarp';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { interpolateLineString, latLonObjectsToLatLonArray } from '../utils/Coords';
 import { generateTileMap } from '../utils/PDF';
 

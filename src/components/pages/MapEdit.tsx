@@ -1,7 +1,5 @@
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, Text, TextInput, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { MapEditContext } from '../../contexts/MapEdit';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
@@ -9,6 +7,7 @@ import { t } from '../../i18n/config';
 import { CheckBox } from '../molecules/CheckBox';
 import Slider from '../atoms/Slider';
 import { useWindow } from '../../hooks/useWindow';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function MapEditScreen() {
   const {
@@ -32,63 +31,26 @@ export default function MapEditScreen() {
     changeFlipY,
   } = useContext(MapEditContext);
 
-  const navigation = useNavigation();
   const { windowWidth, isLandscape } = useWindow();
 
-  const customHeader = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton
-            {...props_}
-            label={t('Maps.navigation.title')}
-            labelStyle={{ fontSize: 11 }}
-            onPress={gotoBack}
-            style={{ marginLeft: 10 }}
-          />
-        </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('MapEdit.navigation.title')}</Text>
-        </View>
-        <View
-          style={{
-            flex: 1.5,
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            flexDirection: 'row',
-            paddingRight: 13,
-          }}
-        >
-          <Button
-            name={MAPS_BTN.SAVE}
-            onPress={pressSaveMap}
-            backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
-            disabled={!isEdited}
-            labelText={t('MapEdit.label.save')}
-          />
-        </View>
-      </View>
-    ),
-    [gotoBack, isEdited, pressSaveMap]
+  const rightComponent = (
+    <Button
+      name={MAPS_BTN.SAVE}
+      onPress={pressSaveMap}
+      backgroundColor={isEdited ? COLOR.BLUE : COLOR.LIGHTBLUE}
+      disabled={!isEdited}
+      labelText={t('MapEdit.label.save')}
+    />
   );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
+      <BottomSheetHeader
+        title={t('MapEdit.navigation.title')}
+        showBackButton
+        onBack={gotoBack}
+        rightComponent={rightComponent}
+      />
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={true}>
         <View style={styles.content}>
           <View style={{ width: '101%', alignItems: 'flex-start' }}>

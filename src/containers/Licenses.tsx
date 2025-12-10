@@ -3,8 +3,10 @@ import { Linking } from 'react-native';
 import Licenses from '../components/pages/Licenses';
 import { LicensesContext } from '../contexts/Licenses';
 import licenseFile from '../licenses.json';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 
 export default function LicensesContainers() {
+  const { goBack } = useBottomSheetNavigation();
   const packageNames = Object.keys(licenseFile);
 
   const pressPackageName = useCallback((packageName: string) => {
@@ -13,8 +15,12 @@ export default function LicensesContainers() {
     Linking.openURL(url);
   }, []);
 
+  const gotoBack = useCallback(() => {
+    goBack();
+  }, [goBack]);
+
   return (
-    <LicensesContext.Provider value={{ packageNames, pressPackageName }}>
+    <LicensesContext.Provider value={{ packageNames, pressPackageName, gotoBack }}>
       <Licenses />
     </LicensesContext.Provider>
   );

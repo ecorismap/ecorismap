@@ -5,7 +5,7 @@ import { LayerType, PhotoType, RecordType } from '../types';
 import DataEdit from '../components/pages/DataEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useDataEdit } from '../hooks/useDataEdit';
-import { Props_DataEdit } from '../routes';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { useRecord } from '../hooks/useRecord';
@@ -23,7 +23,9 @@ import { isLocationType, isLocationTypeArray } from '../utils/General';
 import { DataEditModalPhotoView } from '../components/organisms/DataEditModalPhotoView';
 import { useLayers } from '../hooks/useLayers';
 
-export default function DataEditContainer({ navigation, route }: Props_DataEdit) {
+export default function DataEditContainer() {
+  const { navigate, navigateToHome } = useBottomSheetNavigation();
+  const { params } = useBottomSheetRoute<'DataEdit'>();
   //console.log(route.params.targetData);
   const [isPhotoViewOpen, setPhotoEditorOpen] = useState(false);
 
@@ -51,7 +53,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     submitField,
     changeLatLon,
     cancelUpdate,
-  } = useDataEdit(route.params.targetData, route.params.targetLayer);
+  } = useDataEdit(params!.targetData, params!.targetLayer);
   const { changeActiveLayer } = useLayers();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
@@ -106,23 +108,23 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       Alert.alert('', result.message);
     }
 
-    if (route.params.previous === 'Data') {
-      navigation.navigate('DataEdit', {
+    if (params?.previous === 'Data') {
+      navigate('DataEdit', {
         previous: 'Data',
         targetData: targetRecord,
         targetLayer: { ...targetLayer },
       });
     } else if (
-      route.params.previous === 'DataEdit' &&
-      route.params.mainLayer !== undefined &&
-      route.params.mainData !== undefined
+      params?.previous === 'DataEdit' &&
+      params?.mainLayer !== undefined &&
+      params?.mainData !== undefined
     ) {
-      navigation.navigate('DataEdit', {
+      navigate('DataEdit', {
         previous: 'DataEdit',
         targetData: targetRecord,
         targetLayer: { ...targetLayer },
-        mainData: route.params.mainData,
-        mainLayer: route.params.mainLayer,
+        mainData: params.mainData,
+        mainLayer: params.mainLayer,
       });
     }
   }, [
@@ -131,10 +133,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     isDecimal,
     keyboardShown,
     latlon,
-    navigation,
-    route.params.mainData,
-    route.params.mainLayer,
-    route.params.previous,
+    navigate,
+    params?.mainData,
+    params?.mainLayer,
+    params?.previous,
     saveData,
     targetLayer,
     targetRecord,
@@ -145,31 +147,31 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     if (!ret) return;
     const newData = copyRecord(targetRecord);
     await AlertAsync(t('DataEdit.alert.copyData'));
-    if (route.params.previous === 'Data') {
-      navigation.navigate('DataEdit', {
+    if (params?.previous === 'Data') {
+      navigate('DataEdit', {
         previous: 'Data',
         targetData: newData,
         targetLayer: { ...targetLayer },
       });
     } else if (
-      route.params.previous === 'DataEdit' &&
-      route.params.mainLayer !== undefined &&
-      route.params.mainData !== undefined
+      params?.previous === 'DataEdit' &&
+      params?.mainLayer !== undefined &&
+      params?.mainData !== undefined
     ) {
-      navigation.navigate('DataEdit', {
+      navigate('DataEdit', {
         previous: 'DataEdit',
         targetData: newData,
         targetLayer: { ...targetLayer },
-        mainData: route.params.mainData,
-        mainLayer: route.params.mainLayer,
+        mainData: params.mainData,
+        mainLayer: params.mainLayer,
       });
     }
   }, [
     copyRecord,
-    navigation,
-    route.params.mainData,
-    route.params.mainLayer,
-    route.params.previous,
+    navigate,
+    params?.mainData,
+    params?.mainLayer,
+    params?.previous,
     targetLayer,
     targetRecord,
   ]);
@@ -196,19 +198,19 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       if (isEditingRecord) saveData();
       deleteRecord();
 
-      if (route.params.previous === 'Data') {
-        navigation.navigate('Data', {
+      if (params?.previous === 'Data') {
+        navigate('Data', {
           targetLayer: { ...targetLayer },
         });
       } else if (
-        route.params.previous === 'DataEdit' &&
-        route.params.mainLayer !== undefined &&
-        route.params.mainData !== undefined
+        params?.previous === 'DataEdit' &&
+        params?.mainLayer !== undefined &&
+        params?.mainData !== undefined
       ) {
-        navigation.navigate('DataEdit', {
+        navigate('DataEdit', {
           previous: 'Data',
-          targetLayer: route.params.mainLayer,
-          targetData: route.params.mainData,
+          targetLayer: params.mainLayer,
+          targetData: params.mainData,
         });
       }
     }
@@ -217,10 +219,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     checkRecordEditable,
     deleteRecord,
     isEditingRecord,
-    navigation,
-    route.params.mainData,
-    route.params.mainLayer,
-    route.params.previous,
+    navigate,
+    params?.mainData,
+    params?.mainLayer,
+    params?.previous,
     saveData,
     targetLayer,
   ]);
@@ -357,12 +359,12 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   const pressJumpToData = useCallback(() => {
     const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
     if (jumpRegion === undefined) return;
-    navigation.navigate('Home', {
+    navigateToHome?.({
       jumpTo: jumpRegion,
       previous: 'DataEdit',
       mode: 'jumpTo',
     });
-  }, [isLandscape, mapRegion, navigation, targetLayer, targetRecord, windowWidth]);
+  }, [isLandscape, mapRegion, navigateToHome, targetLayer, targetRecord, windowWidth]);
 
   const gotoGoogleMaps = useCallback(async () => {
     let lat = 35;
@@ -416,20 +418,20 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
 
   const gotoBack = useCallback(async () => {
     const goBack = () => {
-      if (route.params.previous === 'Data') {
+      if (params?.previous === 'Data') {
         unselectRecord();
-        navigation.navigate('Data', {
+        navigate('Data', {
           targetLayer: { ...targetLayer },
         });
       } else if (
-        route.params.previous === 'DataEdit' &&
-        route.params.mainLayer !== undefined &&
-        route.params.mainData !== undefined
+        params?.previous === 'DataEdit' &&
+        params?.mainLayer !== undefined &&
+        params?.mainData !== undefined
       ) {
-        navigation.navigate('DataEdit', {
+        navigate('DataEdit', {
           previous: 'Data',
-          targetLayer: route.params.mainLayer,
-          targetData: route.params.mainData,
+          targetLayer: params.mainLayer,
+          targetData: params.mainData,
         });
       }
     };
@@ -445,10 +447,10 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
   }, [
     cancelUpdate,
     isEditingRecord,
-    navigation,
-    route.params.mainData,
-    route.params.mainLayer,
-    route.params.previous,
+    navigate,
+    params?.mainData,
+    params?.mainLayer,
+    params?.previous,
     targetLayer,
     unselectRecord,
   ]);
@@ -459,7 +461,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         Alert.alert('', t('DataEdit.alert.referenceData'));
         return;
       }
-      navigation.navigate('DataEdit', {
+      navigate('DataEdit', {
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
@@ -467,7 +469,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         mainLayer: targetLayer,
       });
     },
-    [isEditingRecord, navigation, targetLayer, targetRecord]
+    [isEditingRecord, navigate, targetLayer, targetRecord]
   );
 
   const pressAddReferenceData = useCallback(
@@ -484,7 +486,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
       //console.log(fields);
       const referenceData = addRecord(fields);
 
-      navigation.navigate('DataEdit', {
+      navigate('DataEdit', {
         previous: 'DataEdit',
         targetData: referenceData,
         targetLayer: referenceLayer,
@@ -492,7 +494,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
         mainLayer: targetLayer,
       });
     },
-    [isEditingRecord, navigation, targetLayer, targetRecord]
+    [isEditingRecord, navigate, targetLayer, targetRecord]
   );
 
   const pressEditPosition = useCallback(async () => {
@@ -517,7 +519,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     }
     const jumpRegion = getJumpRegion(targetLayer, targetRecord, mapRegion, windowWidth, isLandscape);
 
-    navigation.navigate('Home', {
+    navigateToHome?.({
       previous: 'DataEdit',
       mode: 'editPosition',
       jumpTo: jumpRegion,
@@ -531,7 +533,7 @@ export default function DataEditContainer({ navigation, route }: Props_DataEdit)
     isEditingRecord,
     isLandscape,
     mapRegion,
-    navigation,
+    navigateToHome,
     targetLayer,
     targetRecord,
     windowWidth,

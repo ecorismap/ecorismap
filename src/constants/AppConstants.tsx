@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';

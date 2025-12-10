@@ -1,86 +1,57 @@
-import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Platform, Text } from 'react-native';
+import React, { useContext } from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { MapButtons } from '../organisms/MapButttons';
 import { MapTable } from '../organisms/MapTable';
-import { useNavigation } from '@react-navigation/native';
 import { MapsContext } from '../../contexts/Maps';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../../routes';
-
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function MapScreen() {
   //console.log('render Maps');
-  const { progress, isLoading, isOffline, pressToggleOnline } = useContext(MapsContext);
-  const navigation = useNavigation<NavigationProp>();
+  const { progress, isLoading, isOffline, pressToggleOnline, gotoDownload } = useContext(MapsContext);
 
-  const customHeader = useCallback(
-    () => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <View
-          style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', flexDirection: 'row', paddingLeft: 10 }}
-        >
-          {Platform.OS !== 'web' && (
-            <Button
-              name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
-              backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
-              onPress={pressToggleOnline}
-              labelText={isOffline ? t('Maps.label.offline') : t('Maps.label.online')}
-              size={20}
-              borderRadius={50}
-            />
-          )}
-        </View>
-        <View style={{ flex: 2, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('Maps.navigation.title')}</Text>
-        </View>
-        <View
-          style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexDirection: 'row', paddingRight: 10 }}
-        >
-          {Platform.OS !== 'web' && (
-            <Button
-              name="arrow-right"
-              backgroundColor={COLOR.MAIN}
-              onPress={() => navigation.navigate('Home', { mode: 'download', previous: 'Maps' })}
-              labelText={t('Home.navigation.download')}
-              labelTextColor={COLOR.GRAY3}
-              size={25}
-              color={COLOR.GRAY3}
-              borderRadius={5}
-              borderWidth={1}
-              borderColor={COLOR.GRAY3}
-              style={{ width: 80, marginLeft: 'auto' }}
-            />
-          )}
-        </View>
-      </View>
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isOffline, navigation, pressToggleOnline, t]
-  );
+  const leftComponent =
+    Platform.OS !== 'web' ? (
+      <Button
+        name={isOffline ? MAPS_BTN.OFFLINE : MAPS_BTN.ONLINE}
+        backgroundColor={isOffline ? 'red' : COLOR.LIGHTBLUE2}
+        onPress={pressToggleOnline}
+        labelText={isOffline ? t('Maps.label.offline') : t('Maps.label.online')}
+        size={20}
+        borderRadius={50}
+      />
+    ) : undefined;
 
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
+  const rightComponent =
+    Platform.OS !== 'web' ? (
+      <Button
+        name="arrow-right"
+        backgroundColor={COLOR.MAIN}
+        onPress={gotoDownload}
+        labelText={t('Home.navigation.download')}
+        labelTextColor={COLOR.GRAY3}
+        labelFontSize={11}
+        size={20}
+        color={COLOR.GRAY3}
+        borderRadius={5}
+        borderWidth={1}
+        borderColor={COLOR.GRAY3}
+        style={{ width: 75, height: 36, marginLeft: 'auto' }}
+      />
+    ) : undefined;
 
   return (
     <View style={styles.container}>
+      <BottomSheetHeader
+        title={t('Maps.navigation.title')}
+        leftComponent={leftComponent}
+        rightComponent={rightComponent}
+      />
       <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
-      <View style={{ flex: 1 }}>
+      <View style={styles.tableContainer}>
         <MapTable />
       </View>
       <MapButtons />
@@ -91,6 +62,8 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
+  },
+  tableContainer: {
+    flex: 1,
   },
 });

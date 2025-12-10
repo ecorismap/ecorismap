@@ -4,17 +4,20 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { MapEditContext } from '../contexts/MapEdit';
 import { useMapEdit } from '../hooks/useMapEdit';
 import { useMaps } from '../hooks/useMaps';
-import { Props_MapEdit } from '../routes';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { t } from '../i18n/config';
 import { Platform } from 'react-native';
 import { formattedInputs } from '../utils/Format';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { db } from '../utils/db';
 import { TILE_FOLDER } from '../constants/AppConstants';
 
-export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
+export default function MapEditContainer() {
+  const { goBack: navigationGoBack } = useBottomSheetNavigation();
+  const { params } = useBottomSheetRoute<'MapEdit'>();
+
   const {
     map,
     isEdited,
@@ -32,7 +35,7 @@ export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
     changeHighResolutionEnabled,
     changeFlipY,
     saveMap: saveMapToState,
-  } = useMapEdit(route.params.targetMap);
+  } = useMapEdit(params!.targetMap);
 
   const { deleteMap, exportSingleMap, importStyleFile, getPmtilesBoundary } = useMaps();
 
@@ -52,7 +55,7 @@ export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
     // pmTilesの場合、boundaryを取得して保存する
     if (map.url.includes('pmtiles')) {
       // urlが変更された場合、boundaryとcacheを削除する
-      if (route.params.targetMap && (route.params.targetMap.url !== map.url || route.params.targetMap.styleURL !== map.styleURL)) {
+      if (params?.targetMap && (params.targetMap.url !== map.url || params.targetMap.styleURL !== map.styleURL)) {
         if (Platform.OS === 'web') {
           await db.pmtiles.delete(map.id);
         } else {
@@ -81,7 +84,7 @@ export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
     }
 
     saveMapToState();
-  }, [getPmtilesBoundary, map, route.params.targetMap, saveMapToState]);
+  }, [getPmtilesBoundary, map, params?.targetMap, saveMapToState]);
 
   const pressDeleteMap = useCallback(async () => {
     const ret = await ConfirmAsync(t('Maps.confirm.deleteMap'));
@@ -90,10 +93,10 @@ export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
       if (!isOK) {
         await AlertAsync(message);
       } else {
-        navigation.goBack();
+        navigationGoBack();
       }
     }
-  }, [deleteMap, map, navigation]);
+  }, [deleteMap, navigationGoBack, map]);
 
   const pressExportMap = useCallback(async () => {
     const result = await exportSingleMap(map);
@@ -124,12 +127,12 @@ export default function MapEditContainer({ navigation, route }: Props_MapEdit) {
   const gotoBack = useCallback(() => {
     if (isEdited) {
       ConfirmAsync(t('common.confirm.cancelEdit')).then((ret) => {
-        if (ret) navigation.goBack();
+        if (ret) navigationGoBack();
       });
     } else {
-      navigation.goBack();
+      navigationGoBack();
     }
-  }, [isEdited, navigation]);
+  }, [navigationGoBack, isEdited]);
 
   return (
     <MapEditContext.Provider

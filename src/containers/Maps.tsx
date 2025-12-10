@@ -5,18 +5,20 @@ import { MapsContext } from '../contexts/Maps';
 import { useMaps } from '../hooks/useMaps';
 import { useTutrial } from '../hooks/useTutrial';
 import { t } from '../i18n/config';
-import { Props_Maps } from '../routes';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { boundaryType, TileMapType } from '../types';
 import dayjs from 'dayjs';
 import * as DocumentPicker from 'expo-document-picker';
 import { getExt } from '../utils/General';
 import { Platform } from 'react-native';
 import { TILE_FOLDER } from '../constants/AppConstants';
-import { readAsStringAsync } from 'expo-file-system';
+import { readAsStringAsync } from 'expo-file-system/legacy';
 import { db } from '../utils/db';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { exportFileFromData } from '../utils/File';
-export default function MapContainer({ navigation }: Props_Maps) {
+
+export default function MapContainer() {
+  const { navigate, navigateToHome } = useBottomSheetNavigation();
   const {
     progress,
     maps,
@@ -113,7 +115,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
           setIsLoading(false);
           if (message !== '') await AlertAsync(message);
         } else {
-          navigation.navigate('Home', {
+          navigateToHome?.({
             tileMap: item,
             previous: 'Maps',
             mode: 'downloadMap',
@@ -121,17 +123,17 @@ export default function MapContainer({ navigation }: Props_Maps) {
         }
       }
     },
-    [importMapFile, navigation]
+    [importMapFile, navigateToHome]
   );
 
   const gotoMapEdit = useCallback(
     (editTileMap: TileMapType | null) => {
-      navigation.navigate('MapEdit', {
+      navigate('MapEdit', {
         targetMap: editTileMap,
         previous: 'Maps',
       });
     },
-    [navigation]
+    [navigate]
   );
 
   const pressImportMaps = useCallback(async () => {
@@ -192,8 +194,15 @@ export default function MapContainer({ navigation }: Props_Maps) {
   );
 
   const gotoMapList = useCallback(() => {
-    navigation.navigate('MapList');
-  }, [navigation]);
+    navigate('MapList', undefined);
+  }, [navigate]);
+
+  const gotoDownload = useCallback(() => {
+    navigateToHome?.({
+      mode: 'download',
+      previous: 'Maps',
+    });
+  }, [navigateToHome]);
 
   const jumpToBoundary = useCallback(
     async (item: TileMapType) => {
@@ -233,7 +242,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         }
       }
       if (boundary === undefined) return;
-      navigation.navigate('Home', {
+      navigateToHome?.({
         previous: 'Maps',
         jumpTo: {
           latitude: boundary.center.latitude,
@@ -245,7 +254,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         mode: 'jumpTo',
       });
     },
-    [getPmtilesBoundary, navigation]
+    [getPmtilesBoundary, navigateToHome]
   );
 
   const pressMapOrder = useCallback(
@@ -269,6 +278,7 @@ export default function MapContainer({ navigation }: Props_Maps) {
         pressDeleteMap,
         gotoMapEdit,
         gotoMapList,
+        gotoDownload,
         pressImportMaps,
         pressExportMaps,
         jumpToBoundary,

@@ -1,6 +1,4 @@
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
-import { useNavigation } from '@react-navigation/native';
-import React, { useCallback, useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { MapListButtons } from '../organisms/MapListButtons';
@@ -8,36 +6,15 @@ import { MapListTable } from '../organisms/MapListTable';
 import { t } from '../../i18n/config';
 import { MapListContext } from '../../contexts/MapList';
 import { ScrollView } from 'react-native-gesture-handler';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function MapListScreen() {
   //console.log('render Maps');
   const { isLoading, gotoBack } = useContext(MapListContext);
-  const navigation = useNavigation();
-
-  const customHeader = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 63, backgroundColor: COLOR.MAIN }}>
-        <View style={{ flex: 1.5, justifyContent: 'center' }}>
-          {/* @ts-ignore */}
-          <HeaderBackButton {...props_} labelVisible={true} onPress={gotoBack} style={{ marginLeft: 10 }} />
-        </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 16 }}>{t('MapList.navigation.title')}</Text>
-        </View>
-        <View style={{ flex: 1.5 }} />
-      </View>
-    ),
-    [gotoBack]
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
+      <BottomSheetHeader title={t('MapList.navigation.title')} showBackButton onBack={gotoBack} />
       {isLoading ? (
         <View style={styles.indicator}>
           <ActivityIndicator size="large" color={COLOR.BLUE} />

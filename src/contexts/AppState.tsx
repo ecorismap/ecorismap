@@ -1,5 +1,6 @@
 import React, { createContext } from 'react';
 import { BottomSheetMethods } from '@gorhom/bottom-sheet/lib/typescript/types';
+import { NavigateToHomeParams } from './BottomSheetNavigationContext';
 
 export interface AppStateContextType {
   // General app states
@@ -19,7 +20,8 @@ export interface AppStateContextType {
   gotoMaps: () => void;
   gotoSettings: () => void;
   gotoLayers: () => void;
-  gotoHome: () => void;
+  gotoHome: (params?: NavigateToHomeParams) => void;
+  onSplitRouteChange: (routeName: string) => void;
 
   // Other
   bottomSheetRef: React.RefObject<BottomSheetMethods | null>;
@@ -43,6 +45,7 @@ export const AppStateContext = createContext<AppStateContextType>({
   gotoSettings: () => {},
   gotoLayers: () => {},
   gotoHome: () => {},
+  onSplitRouteChange: () => {},
   bottomSheetRef: React.createRef<BottomSheetMethods>(),
   onCloseBottomSheet: async () => {},
   updatePmtilesURL: async () => {},

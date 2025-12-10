@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export async function getDatabase() {
   return SQLite.openDatabaseSync('dictionary.sqlite', { useNewConnection: true });

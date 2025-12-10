@@ -81,7 +81,7 @@ jest.mock('react-redux', () => ({
 jest.mock('ulid', () => ({ ulid: () => '123456789' }));
 
 // Mock expo-file-system
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   readAsStringAsync: jest.fn(() => Promise.resolve('')),
 }));
 

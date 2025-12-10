@@ -10,13 +10,6 @@ import userReducer from '../../modules/user';
 import { RecordType, LayerType } from '../../types';
 import { isLocationType } from '../../utils/General';
 
-// モックナビゲーション
-jest.mock('@react-navigation/native', () => ({
-  useRoute: () => ({
-    name: 'DataEdit',
-    params: {},
-  }),
-}));
 
 jest.mock('../useProject', () => ({
   useProject: () => ({
@@ -28,6 +21,14 @@ jest.mock('../useRecord', () => ({
   useRecord: () => ({
     selectRecord: jest.fn(),
     setIsEditingRecord: jest.fn(),
+  }),
+}));
+
+jest.mock('../../contexts/BottomSheetNavigationContext', () => ({
+  useBottomSheetNavigation: () => ({
+    currentScreen: { name: 'DataEdit', params: {} },
+    navigate: jest.fn(),
+    goBack: jest.fn(),
   }),
 }));
 

@@ -4,7 +4,7 @@ import { ExportType, FeatureType, GeoJsonFeatureType, LayerType, PhotoType, Reco
 
 import { RootState } from '../store';
 import { addLayerAction } from '../modules/layers';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 import { gpx2Data, geoJson2Data, createLayerFromGeoJson, csv2Data, detectGeoJsonType } from '../utils/Geometry';
 import { Platform } from 'react-native';

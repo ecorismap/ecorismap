@@ -1,0 +1,20 @@
+diff --git a/node_modules/@react-native-community/slider/react-native-slider.podspec b/node_modules/@react-native-community/slider/react-native-slider.podspec
+index 54d77bd..c2e88c9 100644
+--- a/node_modules/@react-native-community/slider/react-native-slider.podspec
++++ b/node_modules/@react-native-community/slider/react-native-slider.podspec
+@@ -16,7 +16,14 @@ Pod::Spec.new do |s|
+   s.platforms    = { :ios => "9.0", :visionos => "1.0" }
+ 
+   s.source       = { :git => "https://github.com/callstack/react-native-slider.git", :tag => "v#{s.version}" }
+-  s.source_files = "ios/**/*.{h,m,mm}"
++
++  if new_arch_enabled
++    s.source_files = "ios/**/*.{h,m,mm}"
++  else
++    # Exclude Fabric component files for Old Architecture
++    s.source_files = "ios/**/*.{h,m}"
++    s.exclude_files = "ios/**/RNCSliderComponentView.{h,mm}"
++  end
+ 
+   if new_arch_enabled
+     s.subspec "common" do |ss|

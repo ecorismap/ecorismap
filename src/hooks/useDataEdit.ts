@@ -8,12 +8,12 @@ import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
 import { latLonDMS, toLatLonDMS } from '../utils/Coords';
 import { formattedInputs } from '../utils/Format';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { updateRecordCoords, updateReferenceFieldValue } from '../utils/Data';
 import { useRecord } from './useRecord';
 import { ulid } from 'ulid';
 import { deleteLocalPhoto, deleteRecordPhotos } from '../utils/Photo';
-import { useRoute } from '@react-navigation/native';
+import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { isLocationType } from '../utils/General';
 import { selectNonDeletedDataSet, selectNonDeletedAllUserRecordSet } from '../modules/selectors';
 import { useProject } from './useProject';
@@ -76,7 +76,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const [temporaryAddedPhotoList, setTemporaryAddedPhotoList] = useState<{ photoId: string; uri: string }[]>([]);
 
   const { selectRecord, setIsEditingRecord } = useRecord();
-  const route = useRoute();
+  const { currentScreen } = useBottomSheetNavigation();
 
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -104,7 +104,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   useEffect(() => {
     //changeRecordが呼ばれた場合、targetRecordを変更する
-    if (route.name !== 'DataEdit') return;
+    if (currentScreen.name !== 'DataEdit') return;
 
     //recordNumberが変更された場合、targetRecordを変更する
     const newRecord = allUserRecordSet[recordNumber - 1];
@@ -121,7 +121,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   useEffect(() => {
     //recordが変更された場合、targetRecordを変更する
-    if (route.name !== 'DataEdit') return;
+    if (currentScreen.name !== 'DataEdit') return;
 
     // allUserRecordSetをセレクタから取得
     const initialRecordNumber = allUserRecordSet.findIndex((d) => d.id === record.id) + 1;
@@ -139,7 +139,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   // Reduxストアのデータが更新された際に緯度経度を更新
   useEffect(() => {
-    if (route.name !== 'DataEdit') return;
+    if (currentScreen.name !== 'DataEdit') return;
     if (!targetRecord || !targetRecord.id) return;
 
     // Reduxストアから最新のレコードを取得

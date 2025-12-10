@@ -1,12 +1,19 @@
-import React, { useCallback, useContext, useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, ScrollView } from 'react-native';
+import React, { useCallback, useContext, useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  useWindowDimensions,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { ProjectsButtons } from '../organisms/ProjectsButtons';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
@@ -32,8 +39,11 @@ export default function Projects() {
     toggleFavorite,
     toggleShowOnlyFavorites,
   } = useContext(ProjectsContext);
-  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+
+  // Web用: ヘッダー(56 + insets.top) + テーブルヘッダー(45) + ボタン(約60) + マージンを引く
+  const tableHeight = windowHeight - (56 + insets.top) - 45 - 60 - insets.bottom - 20;
 
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('ASCENDING');
@@ -95,183 +105,167 @@ export default function Projects() {
     return sorted;
   }, [filteredProjects, sortField, sortOrder]);
 
-  const headerLeftButton = useCallback(
-    (props: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      //@ts-ignore
-      <HeaderBackButton {...props} labelVisible={false} onPress={gotoBack} />
-    ),
-    [gotoBack]
-  );
-
-  const customHeader = useCallback(
-    () => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          height: 56 + insets.top,
-          backgroundColor: COLOR.MAIN,
-          paddingHorizontal: 10,
-          paddingTop: insets.top,
-        }}
-      >
-        {headerLeftButton({} as HeaderBackButtonProps)}
-        <Text style={{ fontSize: 16 }}>{t('Projects.navigation.title')}</Text>
-        <View style={{ width: 40 }} />
+  // テーブルヘッダー（カラム名）のレンダリング
+  const renderTableHeader = () => (
+    <View style={{ flexDirection: 'row', height: 45 }}>
+      <Pressable style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
+        <MaterialCommunityIcons
+          name={showOnlyFavorites ? 'star' : 'star-outline'}
+          size={20}
+          color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4}
+        />
+      </Pressable>
+      <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>
+        <Text>{`${t('common.projectName')}`}</Text>
+        {sortField === 'name' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+        )}
+        {sortField === 'name' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+        )}
+      </Pressable>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('abstract')}>
+        <Text>{`${t('common.overview')}`}</Text>
+        {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+        )}
+        {sortField === 'abstract' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+        )}
+      </Pressable>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
+        <Text>{`${t('common.updatedAt')}`}</Text>
+        {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
+        )}
+        {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
+        )}
+      </Pressable>
+      <View style={[styles.th, { flex: 2, width: 100 }]}>
+        <Text>{`${t('common.owner')}`}</Text>
       </View>
-    ),
-    [headerLeftButton, insets.top]
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
+        <Text>{`${t('common.usage')}`}</Text>
+        {sortField === 'storage' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color="black" />
+        )}
+        {sortField === 'storage' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-numeric-descending" size={16} color="black" />
+        )}
+      </Pressable>
+      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('license')}>
+        <Text>{`${t('common.license')}`}</Text>
+        {sortField === 'license' && sortOrder === 'ASCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+        )}
+        {sortField === 'license' && sortOrder === 'DESCENDING' && (
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+        )}
+      </Pressable>
+    </View>
   );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: insets.bottom }}>
-        <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
-          {showOnlyFavorites && favoriteProjectIds.length === 0 && (
-            <View style={{ padding: 20, alignItems: 'flex-start' }}>
-              <Text style={{ color: COLOR.GRAY4, fontSize: 14 }}>{t('Projects.label.noFavorites')}</Text>
-            </View>
-          )}
-          <View style={{ flexDirection: 'row', height: 45 }}>
-            <Pressable style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
-              <MaterialCommunityIcons
-                name={showOnlyFavorites ? 'star' : 'star-outline'}
-                size={20}
-                color={showOnlyFavorites ? COLOR.YELLOW : COLOR.GRAY4}
-              />
-            </Pressable>
-            <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>
-              <Text>{`${t('common.projectName')}`}</Text>
-              {sortField === 'name' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
-              )}
-              {sortField === 'name' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
-              )}
-            </Pressable>
-            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('abstract')}>
-              <Text>{`${t('common.overview')}`}</Text>
-              {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
-              )}
-              {sortField === 'abstract' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
-              )}
-            </Pressable>
-            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
-              <Text>{`${t('common.updatedAt')}`}</Text>
-              {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
-              )}
-              {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
-              )}
-            </Pressable>
-            <View style={[styles.th, { flex: 2, width: 100 }]}>
-              <Text>{`${t('common.owner')}`}</Text>
-            </View>
-            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
-              <Text>{`${t('common.usage')}`}</Text>
-              {sortField === 'storage' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color="black" />
-              )}
-              {sortField === 'storage' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-numeric-descending" size={16} color="black" />
-              )}
-            </Pressable>
-            <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('license')}>
-              <Text>{`${t('common.license')}`}</Text>
-              {sortField === 'license' && sortOrder === 'ASCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
-              )}
-              {sortField === 'license' && sortOrder === 'DESCENDING' && (
-                <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
-              )}
-            </Pressable>
-          </View>
-          {isLoading ? (
-            <Loading visible={isLoading} text="" />
-          ) : (
-            <FlatList
-              initialNumToRender={sortedProjects.length}
-              data={sortedProjects}
-              extraData={sortedProjects}
-              renderItem={({ item, index }) => (
-                <Pressable
-                  key={index}
-                  style={{
-                    flex: 1,
-                    height: 45,
-                    flexDirection: 'row',
-                  }}
-                  onPress={() => gotoProject(item.id)}
-                >
-                  <Pressable
-                    style={[styles.td, { width: 40, alignItems: 'center' }]}
-                    onPress={() => toggleFavorite(item.id)}
-                  >
-                    <MaterialCommunityIcons
-                      name={favoriteProjectIds.includes(item.id) ? 'star' : 'star-outline'}
-                      size={20}
-                      color={favoriteProjectIds.includes(item.id) ? '#FFD700' : COLOR.GRAY4}
-                    />
-                  </Pressable>
-                  <View style={[styles.td, { flex: 3, width: 140 }]}>
-                    <Text
-                      adjustsFontSizeToFit={true}
-                      numberOfLines={2}
-                      onPress={() => gotoProject(item.id)}
-                      testID={`project-${index}`}
-                    >
-                      {item.name}
-                    </Text>
-                  </View>
-                  <View style={[styles.td, { flex: 2, width: 120 }]}>
-                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.abstract}
-                    </Text>
-                  </View>
-                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.settingsEncryptedAt
-                        ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '-'}
-                    </Text>
-                  </View>
-                  <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
-                    {item.ownerUid === user.uid && (
-                      <MaterialCommunityIcons name="crown" size={18} color={COLOR.GRAY4} />
-                    )}
-                  </View>
-                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
-                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
-                    </Text>
-                  </View>
-                  <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-                    <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                      {item.license ?? 'Free'}
-                    </Text>
-                  </View>
-                </Pressable>
-              )}
-            />
-          )}
+      {/* Custom Header */}
+      <View style={[styles.header, { height: 56 + insets.top, paddingTop: insets.top }]}>
+        <TouchableOpacity style={{ padding: 5 }} onPress={gotoBack}>
+          <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 16 }}>{t('Projects.navigation.title')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      {showOnlyFavorites && favoriteProjectIds.length === 0 && (
+        <View style={{ padding: 20, alignItems: 'flex-start' }}>
+          <Text style={{ color: COLOR.GRAY4, fontSize: 14 }}>{t('Projects.label.noFavorites')}</Text>
         </View>
-      </ScrollView>
+      )}
+      {/* Table */}
+      <View style={{ flex: 1 }}>
+        {isLoading ? (
+          <Loading visible={isLoading} text="" />
+        ) : (
+          <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }} style={{ marginBottom: insets.bottom }}>
+            <View style={{ flexDirection: 'column', flex: 1 }}>
+              {renderTableHeader()}
+              <FlatList
+                style={Platform.OS === 'web' ? { maxHeight: tableHeight } : undefined}
+                data={sortedProjects}
+                extraData={sortedProjects}
+                renderItem={({ item, index }) => (
+                  <Pressable
+                    key={index}
+                    style={{
+                      flex: 1,
+                      height: 45,
+                      flexDirection: 'row',
+                    }}
+                    onPress={() => gotoProject(item.id)}
+                  >
+                    <Pressable
+                      style={[styles.td, { width: 40, alignItems: 'center' }]}
+                      onPress={() => toggleFavorite(item.id)}
+                    >
+                      <MaterialCommunityIcons
+                        name={favoriteProjectIds.includes(item.id) ? 'star' : 'star-outline'}
+                        size={20}
+                        color={favoriteProjectIds.includes(item.id) ? '#FFD700' : COLOR.GRAY4}
+                      />
+                    </Pressable>
+                    <View style={[styles.td, { flex: 3, width: 140 }]}>
+                      <Text
+                        adjustsFontSizeToFit={true}
+                        numberOfLines={2}
+                        onPress={() => gotoProject(item.id)}
+                        testID={`project-${index}`}
+                      >
+                        {item.name}
+                      </Text>
+                    </View>
+                    <View style={[styles.td, { flex: 2, width: 120 }]}>
+                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                        {item.abstract}
+                      </Text>
+                    </View>
+                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
+                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                        {item.settingsEncryptedAt
+                          ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '-'}
+                      </Text>
+                    </View>
+                    <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
+                      {item.ownerUid === user.uid && (
+                        <MaterialCommunityIcons name="crown" size={18} color={COLOR.GRAY4} />
+                      )}
+                    </View>
+                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
+                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                        {`${
+                          item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0
+                        }GB`}
+                      </Text>
+                    </View>
+                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
+                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+                        {item.license ?? 'Free'}
+                      </Text>
+                    </View>
+                  </Pressable>
+                )}
+              />
+            </View>
+          </ScrollView>
+        )}
+      </View>
 
       <ProjectsButtons createProject={pressAddProject} reloadProjects={onReloadProjects} />
       <ProjectsModalEncryptPassword
@@ -286,6 +280,13 @@ export default function Projects() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLOR.MAIN,
+    paddingHorizontal: 10,
   },
   td: {
     alignItems: 'flex-start',

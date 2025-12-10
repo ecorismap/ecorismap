@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import LayerEdit from '../components/pages/LayerEdit';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useLayerEdit } from '../hooks/useLayerEdit';
-import { Props_LayerEdit } from '../routes';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { FieldType } from '../types';
 import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
@@ -12,7 +12,10 @@ import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
-export default function LayerEditContainer({ navigation, route }: Props_LayerEdit) {
+
+export default function LayerEditContainer() {
+  const { navigate } = useBottomSheetNavigation();
+  const { params } = useBottomSheetRoute<'LayerEdit'>();
   const {
     targetLayer,
     isEdited,
@@ -33,12 +36,12 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     deleteField,
     addField,
   } = useLayerEdit(
-    route.params.targetLayer,
-    route.params.isEdited,
-    route.params.fieldIndex,
-    route.params.itemValues,
-    route.params.colorStyle,
-    route.params.useLastValue
+    params!.targetLayer,
+    params!.isEdited,
+    params?.fieldIndex,
+    params?.itemValues,
+    params?.colorStyle,
+    params?.useLastValue
   );
   const { isRunningProject } = usePermission();
   const { generateExportGeoData } = useGeoFile();
@@ -65,9 +68,9 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
     if (ret) {
       deleteLayer();
       await deleteLayerPhotos();
-      navigation.navigate('Layers');
+      navigate('Layers', undefined);
     }
-  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigation]);
+  }, [deleteLayer, deleteLayerPhotos, isRunningProject, navigate]);
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
@@ -81,32 +84,32 @@ export default function LayerEditContainer({ navigation, route }: Props_LayerEdi
   }, [generateExportGeoData, targetLayer]);;
 
   const gotoLayerEditFeatureStyle = useCallback(() => {
-    navigation.navigate('LayerEditFeatureStyle', {
+    navigate('LayerEditFeatureStyle', {
       targetLayer: { ...targetLayer },
       isEdited: isEdited,
     });
-  }, [isEdited, navigation, targetLayer]);
+  }, [isEdited, navigate, targetLayer]);
 
   const gotoLayerEditFieldItem = useCallback(
     (fieldIndex: number, fieldItem: FieldType) => {
-      navigation.navigate('LayerEditFieldItem', {
+      navigate('LayerEditFieldItem', {
         targetLayer: { ...targetLayer },
         fieldIndex: fieldIndex,
         fieldItem: fieldItem,
         isEdited: isEdited,
       });
     },
-    [isEdited, navigation, targetLayer]
+    [isEdited, navigate, targetLayer]
   );
 
   const gotoBack = useCallback(async () => {
     if (isEdited) {
       const ret = await ConfirmAsync(t('LayerEdit.confirm.gotoBack'));
-      if (ret) navigation.navigate('Layers');
+      if (ret) navigate('Layers', undefined);
     } else {
-      navigation.navigate('Layers');
+      navigate('Layers', undefined);
     }
-  }, [isEdited, navigation]);
+  }, [isEdited, navigate]);
 
   const layersContextValue = React.useMemo(
     () => ({

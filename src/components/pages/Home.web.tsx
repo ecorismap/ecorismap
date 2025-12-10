@@ -3,7 +3,6 @@ import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
-import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
@@ -21,10 +20,8 @@ import { CurrentMarker } from '../organisms/HomeCurrentMarker.web';
 import { Polygon } from '../organisms/HomePolygon.web';
 import { Line } from '../organisms/HomeLine';
 import { TileMapType, PaperOrientationType, PaperSizeType, ScaleType } from '../../types';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderBackButton, HeaderBackButtonProps } from '@react-navigation/elements';
 import { SvgView } from '../organisms/HomeSvgView';
-import SplitScreen from '../../routes/split';
+import { BottomSheetContent } from '../organisms/BottomSheetContent';
 import { HomeZoomLevel } from '../organisms/HomeZoomLevel';
 import { HomeProjectButtons } from '../organisms/HomeProjectButtons';
 import { Loading } from '../molecules/Loading';
@@ -71,8 +68,7 @@ import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   // TileManagementContext
-  const { downloadMode, tileMaps, savedTileSize, isDownloading, downloadProgress, pressStopDownloadTiles } =
-    useContext(TileManagementContext);
+  const { downloadMode, tileMaps } = useContext(TileManagementContext);
 
   // MapMemoContext
   const { currentMapMemoTool, visibleMapMemoColor, penColor, setVisibleMapMemoColor, selectPenColor } =
@@ -83,8 +79,7 @@ export default function HomeScreen() {
     useContext(DataSelectionContext);
 
   // AppStateContext
-  const { restored, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } =
-    useContext(AppStateContext);
+  const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } = useContext(AppStateContext);
 
   // SVGDrawingContext
   const { mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -131,7 +126,6 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
 
   const { mapRegion, windowWidth, isLandscape } = useWindow();
-  const navigation = useNavigation();
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
@@ -186,44 +180,6 @@ export default function HomeScreen() {
   maplibregl.addProtocol('pdf', loadPDF);
 
   //console.log('Home');
-  const headerGotoMapsButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      //@ts-ignore
-      <HeaderBackButton {...props_} labelVisible={true} onPress={gotoMaps} />
-    ),
-    [gotoMaps]
-  );
-  const headerGotoHomeButton = useCallback(
-    (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => (
-      //@ts-ignore
-      <HeaderBackButton {...props_} labelVisible={true} onPress={gotoHome} />
-    ),
-    [gotoHome]
-  );
-  const headerRightButton = useCallback(() => {
-    if (isDownloading) {
-      return (
-        <View style={styles.headerRight}>
-          <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-          <View style={{ width: 40, alignItems: 'flex-end' }}>
-            <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
-          </View>
-        </View>
-      );
-    } else if (exportPDFMode) {
-      return (
-        <View style={styles.headerRight}>
-          <Button name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.settings')} />
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.headerRight}>
-          <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
-        </View>
-      );
-    }
-  }, [downloadProgress, isDownloading, exportPDFMode, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
 
   const customHandle = useCallback(() => {
     return (
@@ -650,27 +606,6 @@ export default function HomeScreen() {
     selectFeatureWeb(selectedRecord);
   }, [selectFeatureWeb, selectedRecord]);
 
-  useEffect(() => {
-    //console.log('#useeffect3');
-    if (downloadMode) {
-      navigation.setOptions({
-        title: t('Home.navigation.download', '地図のダウンロード'),
-        headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoMapsButton(props_),
-        headerRight: () => headerRightButton(),
-      });
-    } else if (exportPDFMode) {
-      navigation.setOptions({
-        title: t('Home.navigation.exportPDF', 'PDFの出力'),
-        headerShown: true,
-        headerLeft: (props_: JSX.IntrinsicAttributes & HeaderBackButtonProps) => headerGotoHomeButton(props_),
-        headerRight: () => headerRightButton(),
-      });
-    } else {
-      navigation.setOptions({ headerShown: false });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [downloadMode, exportPDFMode, isDownloading, downloadProgress, savedTileSize]);
 
   // 地理院のraster-dem
   const maptilerdem = {
@@ -1034,7 +969,7 @@ export default function HomeScreen() {
             flex: 1,
           }}
         >
-          <SplitScreen />
+          <BottomSheetContent />
         </View>
       </BottomSheet>
     </GestureHandlerRootView>
@@ -1044,13 +979,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
   },
   map: {
     ...StyleSheet.absoluteFillObject,

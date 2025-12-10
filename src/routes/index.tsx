@@ -1,147 +1,95 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackScreenProps } from '@react-navigation/native-stack';
-import {
-  AccountFormStateType,
-  ColorStyle,
-  LayerType,
-  ProjectType,
-  RecordType,
-  RegionType,
-  TileMapType,
-} from '../types';
+import { View, StyleSheet } from 'react-native';
 import Home from '../containers/Home';
 import Account from '../containers/Account';
 import AccountSettings from '../containers/AccountSettings';
 import Purchases from '../containers/Purchases';
 import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
-import SplitScreen from './split';
-import { t } from '../i18n/config';
+import {
+  RootNavigationProvider,
+  useRootNavigation,
+  RootScreenParams,
+} from '../contexts/RootNavigationContext';
 
-export type RootStackParamList = {
-  Account: { accountFormState?: AccountFormStateType; message?: string; previous?: keyof RootStackParamList };
-  Home:
-    | {
-        tileMap?: TileMapType | undefined;
-        jumpTo?: RegionType;
-        previous: keyof RootStackParamList;
-        mode:
-          | 'exportPDF'
-          | 'openEcorisMap'
-          | 'clearEcorisMap'
-          | 'downloadMap'
-          | 'jumpTo'
-          | 'editPosition'
-          | 'download'
-          | undefined;
-        layer?: LayerType;
-        record?: RecordType;
-        withCoord?: boolean;
-      }
-    | undefined;
-  AccountSettings: { previous: keyof RootStackParamList };
-  Purchases: undefined;
-  Settings: { previous: keyof RootStackParamList };
-  Licenses: { previous: keyof RootStackParamList };
-  Projects: { reload: boolean } | undefined;
-  ProjectEdit: {
-    previous: keyof RootStackParamList;
-    project: ProjectType;
-    isNew: boolean;
-  };
-  SplitScreen: { screen?: keyof RootStackParamList; params?: any } | undefined;
-  Maps: undefined;
-  MapList: undefined;
-  Data: {
-    targetLayer: LayerType;
-  };
-  DataEdit: {
-    previous: keyof RootStackParamList;
-    targetData: RecordType;
-    targetLayer: LayerType;
-    mainData?: RecordType;
-    mainLayer?: LayerType;
-  };
-  Layers: undefined;
-  LayerEdit: {
-    targetLayer: LayerType;
-    isEdited: boolean;
-    previous?: keyof RootStackParamList;
-    colorStyle?: ColorStyle;
-    fieldIndex?: number;
-    itemValues?: { value: string; isOther: boolean; customFieldValue: string }[];
-    useLastValue?: boolean;
-  };
-  LayerEditFeatureStyle: {
-    targetLayer: LayerType;
-    isEdited: boolean;
-    previous?: keyof RootStackParamList;
-  };
-  LayerEditFieldItem: {
-    targetLayer: LayerType;
-    fieldIndex: number;
-    fieldItem: LayerType['field'][0];
-    isEdited: boolean;
-  };
-  MapEdit: {
-    targetMap: TileMapType | null;
-    previous?: keyof RootStackParamList;
-  };
+// Navigation型（useRootNavigationの戻り値から抽出）
+type Navigation = Pick<ReturnType<typeof useRootNavigation>, 'navigate' | 'setParams'>;
+
+// Props型
+export type Props_Account = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['Account'] };
 };
 
-export type NavigationProp = NativeStackScreenProps<RootStackParamList>;
+export type Props_Home = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['Home'] };
+};
 
-export type Props_Account = NativeStackScreenProps<RootStackParamList, 'Account'>;
-export type Props_Home = NativeStackScreenProps<RootStackParamList, 'Home'>;
-export type Props_AccountSettings = NativeStackScreenProps<RootStackParamList, 'AccountSettings'>;
-export type Props_Purchases = NativeStackScreenProps<RootStackParamList, 'Purchases'>;
-export type Props_Settings = NativeStackScreenProps<RootStackParamList, 'Settings'>;
-export type Props_Licenses = NativeStackScreenProps<RootStackParamList, 'Licenses'>;
-export type Props_Projects = NativeStackScreenProps<RootStackParamList, 'Projects'>;
-export type Props_ProjectEdit = NativeStackScreenProps<RootStackParamList, 'ProjectEdit'>;
-export type Props_Maps = NativeStackScreenProps<RootStackParamList, 'Maps'>;
-export type Props_MapList = NativeStackScreenProps<RootStackParamList, 'MapList'>;
-export type Props_Data = NativeStackScreenProps<RootStackParamList, 'Data'>;
-export type Props_DataEdit = NativeStackScreenProps<RootStackParamList, 'DataEdit'>;
-export type Props_Layers = NativeStackScreenProps<RootStackParamList, 'Layers'>;
-export type Props_LayerEdit = NativeStackScreenProps<RootStackParamList, 'LayerEdit'>;
-export type Props_LayerEditFeatureStyle = NativeStackScreenProps<RootStackParamList, 'LayerEditFeatureStyle'>;
-export type Props_LayerEditFieldItem = NativeStackScreenProps<RootStackParamList, 'LayerEditFieldItem'>;
-export type Props_MapEdit = NativeStackScreenProps<RootStackParamList, 'MapEdit'>;
+export type Props_AccountSettings = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['AccountSettings'] };
+};
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+export type Props_Purchases = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['Purchases'] };
+};
+
+export type Props_Projects = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['Projects'] };
+};
+
+export type Props_ProjectEdit = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['ProjectEdit'] };
+};
+
+// 画面をレンダリングするコンポーネント
+function RootScreenRenderer() {
+  const { currentScreen, currentParams, navigate, setParams } = useRootNavigation();
+
+  // 各画面に渡すnavigationとrouteオブジェクト
+  const navigation = { navigate, setParams };
+
+  switch (currentScreen) {
+    case 'Home':
+      return <Home navigation={navigation} route={{ params: currentParams as RootScreenParams['Home'] }} />;
+    case 'Account':
+      return <Account navigation={navigation} route={{ params: currentParams as RootScreenParams['Account'] }} />;
+    case 'AccountSettings':
+      return (
+        <AccountSettings
+          navigation={navigation}
+          route={{ params: currentParams as RootScreenParams['AccountSettings'] }}
+        />
+      );
+    case 'Purchases':
+      return <Purchases navigation={navigation} route={{ params: currentParams as RootScreenParams['Purchases'] }} />;
+    case 'Projects':
+      return <Projects navigation={navigation} route={{ params: currentParams as RootScreenParams['Projects'] }} />;
+    case 'ProjectEdit':
+      return (
+        <ProjectEdit navigation={navigation} route={{ params: currentParams as RootScreenParams['ProjectEdit'] }} />
+      );
+    default:
+      return <Home navigation={navigation} route={{ params: undefined }} />;
+  }
+}
 
 export default function Routes() {
   return (
-    <NavigationContainer
-      documentTitle={{
-        formatter: () => `EcorisMap`,
-      }}
-      navigationInChildEnabled
-    >
-      <Stack.Navigator
-        screenOptions={{
-          headerTitleAlign: 'center',
-          animation: 'none',
-        }}
-      >
-        <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-        <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
-        <Stack.Screen
-          name="AccountSettings"
-          component={AccountSettings}
-          options={{ title: t('AccountSettings.navigation.title') }}
-        />
-        <Stack.Screen name="Purchases" component={Purchases} options={{ title: t('Purchases.navigation.title') }} />
-        <Stack.Screen name="Projects" component={Projects} options={{ title: t('Projects.navigation.title') }} />
-        <Stack.Screen
-          name="ProjectEdit"
-          component={ProjectEdit}
-          options={{ title: t('ProjectEdit.navigation.title') }}
-        />
-        <Stack.Screen name="SplitScreen" component={SplitScreen} options={{}} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <RootNavigationProvider initialScreen="Home" initialParams={undefined}>
+      <View style={styles.container}>
+        <RootScreenRenderer />
+      </View>
+    </RootNavigationProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

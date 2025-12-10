@@ -79,11 +79,12 @@ export const encryptSharedFile = async (file: File | Blob) => {
   });
 
   const encryptedChunks = await encryptedChunksPromise;
-  const encryptedSharedFile = new Blob(encryptedChunks, { type: file.type });
+  const encryptedSharedFile = new Blob(encryptedChunks.map((chunk) => new Uint8Array(chunk)), { type: file.type });
+  const exportedKey = virgilCrypto.exportPrivateKey(keypair.privateKey);
 
   return {
     encryptedSharedFile,
-    fileKey: Buffer.from(virgilCrypto.exportPrivateKey(keypair.privateKey)).toString('base64'),
+    fileKey: Buffer.from(new Uint8Array(exportedKey)).toString('base64'),
   };
 };
 
@@ -128,5 +129,5 @@ export const decryptSharedFile = async (file: File | Blob, fileKey: string) => {
 
   const decryptedFile = await decryptedChunksPromise;
 
-  return new Blob(decryptedFile, { type: file.type });
+  return new Blob(decryptedFile.map((chunk) => new Uint8Array(chunk)), { type: file.type });
 };

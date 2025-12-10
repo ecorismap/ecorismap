@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { boundaryType, TileMapItemType, TileMapType } from '../types';

@@ -28,7 +28,7 @@ import tileMapsReducer from '../../modules/tileMaps';
 jest.mock('expo-print', () => ({
   printToFileAsync: jest.fn().mockResolvedValue({ uri: 'mock://print.pdf' }),
 }));
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   writeAsStringAsync: jest.fn().mockResolvedValue(undefined),
   EncodingType: { UTF8: 'UTF8' },
 }));

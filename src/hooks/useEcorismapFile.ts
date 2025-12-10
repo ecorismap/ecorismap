@@ -17,7 +17,7 @@ import { layersInitialState, setLayersAction } from '../modules/layers';
 import { dataSetInitialState } from '../modules/dataSet';
 import { tileMapsInitialState } from '../modules/tileMaps';
 import { settingsInitialState } from '../modules/settings';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { setDataSetAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';

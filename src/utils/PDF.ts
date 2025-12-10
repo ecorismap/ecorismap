@@ -1,7 +1,7 @@
 import * as RNFS from 'react-native-fs';
 import { TILE_FOLDER } from '../constants/AppConstants';
 import { SaveFormat, manipulateAsync } from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { getTileRegion, tileToWebMercator } from './Tile';
 import { TileMapType } from '../types';
 import { warpedFileType } from 'react-native-gdalwarp';

@@ -1,9 +1,6 @@
 import { getApp } from '@react-native-firebase/app';
 
-import {
-  initializeAppCheck,
-  ReactNativeFirebaseAppCheckProvider,
-} from '@react-native-firebase/app-check';
+import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider } from '@react-native-firebase/app-check';
 import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
 import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';

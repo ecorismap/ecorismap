@@ -8,7 +8,7 @@ jest.mock('expo-media-library', () => ({
   createAssetAsync: jest.fn(),
   MediaTypeValue: { photo: 'photo' },
 }));
-jest.mock('expo-file-system', () => ({
+jest.mock('expo-file-system/legacy', () => ({
   makeDirectoryAsync: jest.fn(),
   copyAsync: jest.fn(),
   deleteAsync: jest.fn(),
@@ -24,7 +24,7 @@ jest.mock('../Layer', () => ({
 import * as Photo from '../Photo';
 import { manipulateAsync } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import { LayerType, PhotoType, RecordType } from '../../types';
 import { getPhotoFields } from '../Layer';

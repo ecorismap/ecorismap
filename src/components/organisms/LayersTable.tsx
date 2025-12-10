@@ -111,7 +111,7 @@ export const LayersTable = React.memo(() => {
             style={[styles.td, { flex: 5, width: 150, height: 60 }]}
             onLongPress={drag}
             disabled={isActive}
-            onPress={() => item.type !== 'LAYERGROUP' && gotoData(item)}
+            onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
           >
             <Text style={styles.nameText} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5}>
               {item.name}

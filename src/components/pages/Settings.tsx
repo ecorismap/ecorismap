@@ -1,12 +1,12 @@
-import React, { useCallback, useContext, useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { SETTINGS_BTN, VERSION, COLOR } from '../../constants/AppConstants';
+import React, { useContext } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Loading } from '../molecules/Loading';
-import { useNavigation } from '@react-navigation/native';
+import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function Settings() {
   const {
@@ -29,33 +29,9 @@ export default function Settings() {
     },
   });
 
-  const navigation = useNavigation();
-
-  const customHeader = useCallback(
-    () => (
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: 63,
-          backgroundColor: COLOR.MAIN,
-        }}
-      >
-        <Text style={{ fontSize: 16 }}>{t('Settings.navigation.title')}</Text>
-      </View>
-    ),
-    []
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      header: customHeader,
-    });
-  }, [customHeader, navigation]);
-
   return (
     <View style={styles.container}>
+      <BottomSheetHeader title={t('Settings.navigation.title')} />
       <Loading visible={isLoading} text="" />
       <ScrollView>
         {/* データ管理 */}

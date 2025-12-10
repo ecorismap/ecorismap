@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import { useNavigation } from '@react-navigation/native';
 import { CheckBox } from '../molecules/CheckBox';
 import { License, Price, Product } from '../../types';
 import { Loading } from '../molecules/Loading';
@@ -20,23 +19,6 @@ interface Props {
 
 export default function Purchases(props: Props) {
   const { products, isLoading, customerLicense, customerPortal, onPressPurchase } = props;
-  const navigation = useNavigation();
-
-  const headerTitle = useCallback(
-    () => (
-      <View style={{ alignItems: 'center', marginTop: 50 }}>
-        <img src="https://www.ecoris.co.jp/ecorismap/toplogo.png" width="400" height="120" />
-      </View>
-    ),
-    []
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerShadowVisible: false,
-      headerTitle: () => headerTitle(),
-    });
-  }, [headerTitle, navigation]);
 
   return customerLicense === undefined ? (
     <View style={styles.container} />
