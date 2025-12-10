@@ -3,7 +3,6 @@ import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
 import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
-import { Button } from '../atoms';
 import { HomeButtons } from '../organisms/HomeButtons';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
@@ -69,8 +68,7 @@ import { Pressable } from '../atoms/Pressable';
 
 export default function HomeScreen() {
   // TileManagementContext
-  const { downloadMode, tileMaps, savedTileSize, isDownloading, downloadProgress, pressStopDownloadTiles } =
-    useContext(TileManagementContext);
+  const { downloadMode, tileMaps } = useContext(TileManagementContext);
 
   // MapMemoContext
   const { currentMapMemoTool, visibleMapMemoColor, penColor, setVisibleMapMemoColor, selectPenColor } =
@@ -182,30 +180,6 @@ export default function HomeScreen() {
   maplibregl.addProtocol('pdf', loadPDF);
 
   //console.log('Home');
-  const headerRightButton = useCallback(() => {
-    if (isDownloading) {
-      return (
-        <View style={styles.headerRight}>
-          <Button name="pause" onPress={pressStopDownloadTiles} backgroundColor={COLOR.DARKRED} />
-          <View style={{ width: 40, alignItems: 'flex-end' }}>
-            <Text style={{ marginHorizontal: 0 }}>{downloadProgress}%</Text>
-          </View>
-        </View>
-      );
-    } else if (exportPDFMode) {
-      return (
-        <View style={styles.headerRight}>
-          <Button name="cog" onPress={pressPDFSettingsOpen} labelText={t('Home.label.settings')} />
-        </View>
-      );
-    } else {
-      return (
-        <View style={styles.headerRight}>
-          <Text style={{ marginHorizontal: 10 }}>{savedTileSize}MB</Text>
-        </View>
-      );
-    }
-  }, [downloadProgress, isDownloading, exportPDFMode, pressPDFSettingsOpen, pressStopDownloadTiles, savedTileSize]);
 
   const customHandle = useCallback(() => {
     return (
@@ -1005,13 +979,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-
-  headerRight: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginRight: 10,
   },
   map: {
     ...StyleSheet.absoluteFillObject,
