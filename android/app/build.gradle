@@ -59,7 +59,7 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2100")
+        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2107")
         versionName '0.5.0'
 
         // Google Play用：ARM64とARM32のみに限定

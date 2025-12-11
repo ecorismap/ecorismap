@@ -8,7 +8,7 @@ import { LayerEditButton } from '../organisms/LayerEditButton';
 import { LayerEditRadio } from '../organisms/LayerEditRadio';
 import { LayerEditContext } from '../../contexts/LayerEdit';
 import { usePermission } from '../../hooks/usePermission';
-import { FlatList, ScrollView } from 'react-native-gesture-handler';
+import { ScrollView } from 'react-native-gesture-handler';
 import { COLOR, LAYEREDIT_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { t } from '../../i18n/config';
@@ -37,21 +37,14 @@ export default function LayerEditScreen() {
         onBack={gotoBack}
         rightComponent={rightComponent}
       />
-      <FlatList
-        data={[{ key: 'dummy' }]}
-        renderItem={() => (
-          <>
-            <LayerName />
-            <LayerStyle />
-            {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
-            {layer.type !== 'LAYERGROUP' && (
-              <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-                <LayerEditFieldTable />
-              </ScrollView>
-            )}
-          </>
-        )}
-      />
+      <LayerName />
+      <LayerStyle />
+      {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
+      {layer.type !== 'LAYERGROUP' && (
+        <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+          <LayerEditFieldTable />
+        </ScrollView>
+      )}
       <LayerEditButton />
     </View>
   );

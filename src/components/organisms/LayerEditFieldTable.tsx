@@ -62,6 +62,7 @@ export const LayerEditFieldTable = () => {
 
   return (
     <View style={{ flexDirection: 'column', flex: 1, marginBottom: 10 }}>
+      <LayerEditFieldTitle />
       <FlatList
         data={layer.field}
         initialNumToRender={layer.field.length}
@@ -153,7 +154,6 @@ export const LayerEditFieldTable = () => {
             </View>
           );
         }}
-        ListHeaderComponent={<LayerEditFieldTitle />}
         disableVirtualization={true}
       />
     </View>

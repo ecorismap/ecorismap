@@ -1,6 +1,11 @@
 # Change Log
 
-## [0.5.0]
+## [0.5.1]
+
+## [0.5.0] - 2025-12-11
+
+- Fixed a bug that map layers and data lists could not be scrolled
+- レイヤ一覧やデータ一覧がスクロールできなくなる不具合を修正
 
 ## [0.4.9] - 2025-12-10
 
@@ -199,7 +204,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...HEAD
+  [0.5.1]: https://github.com/ecorismap/ecorismap/compare/169ec0287a8129c93c38d0d826170176242bd8ed...HEAD
+  [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...169ec0287a8129c93c38d0d826170176242bd8ed
   [0.4.9]: https://github.com/ecorismap/ecorismap/compare/65c311635ef12f2d6d22842e1872ecfaa2064bcb...3e9b5a093965d8dd68a53b66b83962ad6a4cf594
   [0.4.8]: https://github.com/ecorismap/ecorismap/compare/7425433d6bae566e48067b2c8a36eacf27bd562e...65c311635ef12f2d6d22842e1872ecfaa2064bcb
   [0.4.6]: https://github.com/ecorismap/ecorismap/compare/6196449453febecc5eb2adcc21be183db21d73b8...7425433d6bae566e48067b2c8a36eacf27bd562e
