@@ -452,4 +452,308 @@ describe('useLayers', () => {
       payload: expectedPayload,
     });
   });
+
+  // --- filterdLayers のテストケース ---
+
+  test('filterdLayers: 展開中のグループの子レイヤは表示される', () => {
+    const { result } = renderHook(() => useLayers());
+    // G1 は expanded: true なので、子レイヤ L2, L3 は表示される
+    const filterd = result.current.filterdLayers;
+    expect(filterd.some((l) => l.id === 'G1')).toBe(true);
+    expect(filterd.some((l) => l.id === 'L2')).toBe(true);
+    expect(filterd.some((l) => l.id === 'L3')).toBe(true);
+  });
+
+  test('filterdLayers: 折りたたみ中のグループの子レイヤは表示されない', () => {
+    const { result } = renderHook(() => useLayers());
+    // G2 は expanded: false なので、子レイヤ L5 は表示されない
+    const filterd = result.current.filterdLayers;
+    expect(filterd.some((l) => l.id === 'G2')).toBe(true); // グループ自体は表示される
+    expect(filterd.some((l) => l.id === 'L5')).toBe(false); // 子レイヤは表示されない
+  });
+
+  test('filterdLayers: グループに属していないレイヤは常に表示される', () => {
+    const { result } = renderHook(() => useLayers());
+    const filterd = result.current.filterdLayers;
+    expect(filterd.some((l) => l.id === 'L1')).toBe(true);
+    expect(filterd.some((l) => l.id === 'L4')).toBe(true);
+    expect(filterd.some((l) => l.id === 'L6')).toBe(true);
+  });
+
+  test('filterdLayers: 子レイヤのexpandedが親と異なっていても親のexpandedで判定する', () => {
+    // 子レイヤのexpandedがtrueでも、親がfalseなら表示されない
+    const layersWithMismatch: LayerType[] = [
+      {
+        id: 'G1',
+        name: 'Group 1',
+        type: 'LAYERGROUP',
+        visible: true,
+        expanded: false, // 親は閉じている
+        permission: 'PRIVATE',
+        active: false,
+        colorStyle: { colorType: 'SINGLE', color: '#ff0000', transparency: 0.2, fieldName: '', customFieldValue: '', colorRamp: 'RANDOM', colorList: [], lineWidth: 1.5 },
+        label: '',
+        field: [],
+      },
+      {
+        id: 'L1',
+        name: 'Layer 1',
+        type: 'POINT',
+        visible: true,
+        groupId: 'G1',
+        expanded: true, // 子は開いている（不整合状態）
+        active: false,
+        permission: 'PRIVATE',
+        colorStyle: { colorType: 'SINGLE', color: '#00ff00', transparency: 0.2, fieldName: '', customFieldValue: '', colorRamp: 'RANDOM', colorList: [], lineWidth: 1.5 },
+        label: 'name',
+        field: [],
+      },
+    ];
+    mockSelector.mockReturnValue(layersWithMismatch);
+
+    const { result } = renderHook(() => useLayers());
+    const filterd = result.current.filterdLayers;
+
+    // 親グループが閉じているので、子レイヤのexpandedがtrueでも表示されない
+    expect(filterd.some((l) => l.id === 'G1')).toBe(true);
+    expect(filterd.some((l) => l.id === 'L1')).toBe(false);
+  });
+
+  // --- changeExpand のテストケース ---
+
+  test('changeExpand: グループを開くと親と子のexpandedがtrueになる', () => {
+    const { result } = renderHook(() => useLayers());
+    const groupLayer = result.current.layers.find((l) => l.id === 'G2')!; // expanded: false
+    expect(groupLayer.expanded).toBe(false);
+
+    act(() => {
+      result.current.changeExpand(groupLayer);
+    });
+
+    // G2 と L5 の expanded が true になることを期待
+    const expectedPayload = result.current.layers.map((l) => {
+      if (l.id === 'G2' || l.groupId === 'G2') {
+        return { ...l, expanded: true };
+      }
+      return l;
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'layers/setLayersAction',
+      payload: expectedPayload,
+    });
+  });
+
+  test('changeExpand: グループを閉じると親と子のexpandedがfalseになる', () => {
+    const { result } = renderHook(() => useLayers());
+    const groupLayer = result.current.layers.find((l) => l.id === 'G1')!; // expanded: true
+    expect(groupLayer.expanded).toBe(true);
+
+    act(() => {
+      result.current.changeExpand(groupLayer);
+    });
+
+    // G1, L2, L3 の expanded が false になることを期待
+    const expectedPayload = result.current.layers.map((l) => {
+      if (l.id === 'G1' || l.groupId === 'G1') {
+        return { ...l, expanded: false };
+      }
+      return l;
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'layers/setLayersAction',
+      payload: expectedPayload,
+    });
+  });
+
+  test('changeExpand: 複数のグループがある場合、対象グループの子だけが変更される', () => {
+    const { result } = renderHook(() => useLayers());
+    const groupG2 = result.current.layers.find((l) => l.id === 'G2')!; // expanded: false
+
+    act(() => {
+      result.current.changeExpand(groupG2);
+    });
+
+    // G2 と L5 のみ expanded が true になり、G1, L2, L3 は変更されないことを期待
+    const expectedPayload = result.current.layers.map((l) => {
+      if (l.id === 'G2' || l.groupId === 'G2') {
+        return { ...l, expanded: true };
+      }
+      return l;
+    });
+
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'layers/setLayersAction',
+      payload: expectedPayload,
+    });
+
+    // G1グループの子は変更されていないことを確認
+    const dispatchedPayload = mockDispatch.mock.calls[0][0].payload;
+    const g1Layer = dispatchedPayload.find((l: LayerType) => l.id === 'G1');
+    const l2Layer = dispatchedPayload.find((l: LayerType) => l.id === 'L2');
+    const l3Layer = dispatchedPayload.find((l: LayerType) => l.id === 'L3');
+    expect(g1Layer.expanded).toBe(true); // 元のまま
+    expect(l2Layer.expanded).toBe(true); // 元のまま
+    expect(l3Layer.expanded).toBe(true); // 元のまま
+  });
+
+  // --- stale closure問題の検出テスト ---
+  // 注意: これらのテストはstale closure問題が発生する実際のシナリオを
+  // シミュレートするために、rerender()せずに古いコールバック参照を使用します。
+  // 実際のアプリでは、DraggableFlatListなどのメモ化されたコンポーネントが
+  // 古いコールバック参照を保持することでstale closureが発生します。
+
+  test('changeExpand: state更新後も古いコールバック参照で正しく動作する（stale closure対策）', () => {
+    // 両方のグループが閉じた状態でスタート
+    const bothClosedLayers: LayerType[] = initialLayers.map((l) => {
+      if (l.id === 'G1' || l.groupId === 'G1') {
+        return { ...l, expanded: false };
+      }
+      return l;
+    });
+    mockSelector.mockReturnValue(bothClosedLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 両方のグループが閉じていることを確認
+    expect(result.current.layers.find((l) => l.id === 'G1')?.expanded).toBe(false);
+    expect(result.current.layers.find((l) => l.id === 'G2')?.expanded).toBe(false);
+
+    // 古いコールバック参照を保存（メモ化コンポーネントがこれを保持する状況をシミュレート）
+    const oldChangeExpand = result.current.changeExpand;
+
+    // 1つ目のグループ(G1)を開く
+    const groupG1 = result.current.layers.find((l) => l.id === 'G1')!;
+    act(() => {
+      oldChangeExpand(groupG1);
+    });
+
+    // dispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+
+    // G1とその子が開かれたことを確認
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    // G2はまだ閉じたまま
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
+
+    // Reduxのstate更新をシミュレート
+    // rerenderでuseEffectが実行され、layersRefが更新される
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // ★重要: 古いコールバック参照を使って2つ目のグループを開く
+    // useRefを使用しているので、古いコールバックでも最新のstateを参照できる
+    // stale closureがあると、この呼び出しは古いstateを参照してしまう
+    const groupG2 = bothClosedLayers.find((l) => l.id === 'G2')!;
+    act(() => {
+      oldChangeExpand(groupG2);
+    });
+
+    // 2回目のdispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // G2とその子が開かれたことを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(true);
+
+    // ★重要: G1は開いたままであることを確認
+    // useRefを使用しているため、古いコールバック参照を使っても最新のstateを参照できる
+    // stale closureがあると、G1が閉じた状態でdispatchされてしまう
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+  });
+
+  test('changeExpand: 連続して異なるグループを開いても、それぞれ独立して動作する', () => {
+    // 両方のグループが閉じた状態でスタート
+    const bothClosedLayers: LayerType[] = initialLayers.map((l) => {
+      if (l.id === 'G1' || l.groupId === 'G1') {
+        return { ...l, expanded: false };
+      }
+      return l;
+    });
+    mockSelector.mockReturnValue(bothClosedLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 両方のグループが閉じていることを確認
+    expect(result.current.layers.find((l) => l.id === 'G1')?.expanded).toBe(false);
+    expect(result.current.layers.find((l) => l.id === 'G2')?.expanded).toBe(false);
+
+    // 1つ目のグループ(G1)を開く
+    const groupG1 = result.current.layers.find((l) => l.id === 'G1')!;
+    act(() => {
+      result.current.changeExpand(groupG1);
+    });
+
+    // dispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+
+    // G1とその子が開かれたことを確認
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    // G2はまだ閉じたまま
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
+
+    // Reduxのstate更新をシミュレート（実際のアプリでは自動的に行われる）
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // 2つ目のグループ(G2)を開く
+    const groupG2 = result.current.layers.find((l) => l.id === 'G2')!;
+    act(() => {
+      result.current.changeExpand(groupG2);
+    });
+
+    // 2回目のdispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // G2とその子が開かれたことを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(true);
+
+    // 重要: G1は開いたままであることを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+  });
+
+  test('changeExpand: 連続して同じグループを開閉しても正しく動作する', () => {
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // G2は最初閉じている
+    expect(result.current.layers.find((l) => l.id === 'G2')?.expanded).toBe(false);
+
+    // G2を開く
+    const groupG2 = result.current.layers.find((l) => l.id === 'G2')!;
+    act(() => {
+      result.current.changeExpand(groupG2);
+    });
+
+    const firstPayload = mockDispatch.mock.calls[0][0].payload;
+    expect(firstPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
+
+    // state更新をシミュレート
+    mockSelector.mockReturnValue(firstPayload);
+    rerender();
+
+    // G2を閉じる
+    const updatedG2 = result.current.layers.find((l) => l.id === 'G2')!;
+    act(() => {
+      result.current.changeExpand(updatedG2);
+    });
+
+    const secondPayload = mockDispatch.mock.calls[1][0].payload;
+    // G2が正しく閉じられることを確認
+    expect(secondPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
+    expect(secondPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(false);
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -122,8 +122,21 @@ export const useMaps = (): UseMapsReturnType => {
   const [progress, setProgress] = useState(formatProgress(PDF_PROGRESS.idle));
   const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
 
+  // stale closure対策: 常に最新のmapsを参照できるようにする
+  const mapsRef = useRef(maps);
+  useEffect(() => {
+    mapsRef.current = maps;
+  }, [maps]);
+
   const filterdMaps = useMemo(
-    () => maps.filter((map) => map.isGroup || (map.groupId && map.expanded) || !map.groupId),
+    () =>
+      maps.filter((map) => {
+        if (map.isGroup) return true;
+        if (!map.groupId) return true;
+        // 親グループのexpanded状態を確認
+        const parentGroup = maps.find((m) => m.id === map.groupId);
+        return parentGroup?.expanded === true;
+      }),
     [maps]
   );
 
@@ -227,19 +240,22 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeExpand = useCallback(
     (expanded: boolean, tileMap: TileMapType) => {
-      const newTileMaps = cloneDeep(maps);
-      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
-      newTileMaps[index].expanded = expanded;
-      if (newTileMaps[index].isGroup) {
-        newTileMaps.forEach((item) => {
-          if (item.groupId === newTileMaps[index].id) {
-            item.expanded = expanded;
-          }
-        });
-      }
+      const currentMaps = mapsRef.current;
+      const currentMap = currentMaps.find((m) => m.id === tileMap.id);
+      if (!currentMap) return;
+
+      const newTileMaps = currentMaps.map((item) => {
+        if (item.id === currentMap.id) {
+          return { ...item, expanded };
+        }
+        if (currentMap.isGroup && item.groupId === currentMap.id) {
+          return { ...item, expanded };
+        }
+        return item;
+      });
       dispatch(setTileMapsAction(newTileMaps));
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const changeMapOrder = useCallback(

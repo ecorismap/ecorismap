@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { LayerType } from '../types';
 import { RootState } from '../store';
@@ -23,9 +23,23 @@ export const useLayers = (): UseLayersReturnType => {
   const dispatch = useDispatch();
 
   const layers = useSelector((state: RootState) => state.layers);
+
+  // stale closure対策: 常に最新のlayersを参照できるようにする
+  const layersRef = useRef(layers);
+  useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
+
   // フィルタ条件は必要に応じて拡張可能。ここでは全件返す。
   const filterdLayers = useMemo(
-    () => layers.filter((layer) => layer.type === 'LAYERGROUP' || (layer.groupId && layer.expanded) || !layer.groupId),
+    () =>
+      layers.filter((layer) => {
+        if (layer.type === 'LAYERGROUP') return true; // グループ親は常に表示
+        if (!layer.groupId) return true; // グループに属していないレイヤーは表示
+        // グループの子は、親グループのexpandedを見て表示/非表示を決定
+        const parentGroup = layers.find((l) => l.id === layer.groupId);
+        return parentGroup?.expanded === true;
+      }),
     [layers]
   );
 
@@ -45,17 +59,22 @@ export const useLayers = (): UseLayersReturnType => {
 
   const changeExpand = useCallback(
     (layer: LayerType) => {
+      // layersRefから最新のlayersを取得（stale closure対策）
+      const currentLayers = layersRef.current;
+      const currentLayer = currentLayers.find((l) => l.id === layer.id);
+      if (!currentLayer) return;
+
       //Layersの中で、groupIdとlayer.idが一致するものと自分のexpandedを反転させる
-      const newExpanded = !layer.expanded;
-      const targetLayers = layers.map((l) => {
-        if (l.groupId === layer.id || l.id === layer.id) {
+      const newExpanded = !currentLayer.expanded;
+      const targetLayers = currentLayers.map((l) => {
+        if (l.groupId === currentLayer.id || l.id === currentLayer.id) {
           return { ...l, expanded: newExpanded };
         }
         return l;
       });
       dispatch(setLayersAction(targetLayers));
     },
-    [dispatch, layers]
+    [dispatch]
   );
   const changeVisible = useCallback(
     (visible: boolean, layer: LayerType) => {
