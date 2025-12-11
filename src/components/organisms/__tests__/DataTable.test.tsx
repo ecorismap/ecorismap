@@ -142,8 +142,8 @@ describe('DataTable', () => {
 
   describe('データ更新時の再レンダリング', () => {
     it('レコードのフィールド値が更新された時に再レンダリングされる', async () => {
-      const initialRecord = createMockRecord('record1', 'Initial Name', 100);
-      const updatedRecord = createMockRecord('record1', 'Updated Name', 200);
+      const initialRecord = createMockRecord('record1', 'Initial Name', 100, 1000);
+      const updatedRecord = createMockRecord('record1', 'Updated Name', 200, 2000);
 
       const { rerender, getByText } = render(
         <DataContext.Provider
@@ -181,7 +181,7 @@ describe('DataTable', () => {
 
     it('同じオブジェクト参照でフィールドだけ変更された場合も再レンダリングされる', async () => {
       // 実際の問題を再現：同じidのレコードだが、フィールドだけが異なる
-      const record = createMockRecord('record1', 'Initial Name', 100);
+      const record = createMockRecord('record1', 'Initial Name', 100, 1000);
 
       // contextValueを作成
       let contextValue = {
@@ -205,7 +205,8 @@ describe('DataTable', () => {
       const updatedRecord = {
         ...record,
         id: 'record1', // 同じID
-        field: { Name: 'Updated Name', Value: 200 } // フィールドだけ変更
+        field: { Name: 'Updated Name', Value: 200 }, // フィールドだけ変更
+        updatedAt: 2000, // updatedAtを変更して変更を検出可能に
       };
       
       // 新しいcontextValueだが、レコードの参照が浅い比較では変更を検出できない
@@ -231,15 +232,15 @@ describe('DataTable', () => {
 
     it('複数のレコードが更新された時に全て正しく再レンダリングされる', async () => {
       const initialRecords = [
-        createMockRecord('record1', 'Name 1', 100),
-        createMockRecord('record2', 'Name 2', 200),
-        createMockRecord('record3', 'Name 3', 300),
+        createMockRecord('record1', 'Name 1', 100, 1000),
+        createMockRecord('record2', 'Name 2', 200, 1001),
+        createMockRecord('record3', 'Name 3', 300, 1002),
       ];
 
       const updatedRecords = [
-        createMockRecord('record1', 'Updated 1', 150),
-        createMockRecord('record2', 'Updated 2', 250),
-        createMockRecord('record3', 'Updated 3', 350),
+        createMockRecord('record1', 'Updated 1', 150, 2000),
+        createMockRecord('record2', 'Updated 2', 250, 2001),
+        createMockRecord('record3', 'Updated 3', 350, 2002),
       ];
 
       const { rerender, getByText } = render(
