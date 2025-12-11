@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import { useBottomSheetNavigation, BottomSheetScreenName } from '../../contexts/BottomSheetNavigationContext';
 import { COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
@@ -52,7 +52,7 @@ interface BottomSheetContentProps {
 }
 
 export function BottomSheetContent({}: BottomSheetContentProps) {
-  const { currentScreen } = useBottomSheetNavigation();
+  const { currentScreen, isBottomSheetOpen } = useBottomSheetNavigation();
 
   const screenName = currentScreen.name;
   const screenParams = currentScreen.params;
@@ -65,6 +65,17 @@ export function BottomSheetContent({}: BottomSheetContentProps) {
 
   if (!ScreenComponent) {
     return null;
+  }
+
+  // BottomSheetが開くまでローディング表示
+  if (!isBottomSheetOpen) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={COLOR.GRAY4} />
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -124,6 +135,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

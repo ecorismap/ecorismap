@@ -126,8 +126,11 @@ const DataRow = React.memo(
     const nextIndex = nextProps.getIndex();
     if (prevIndex === undefined || nextIndex === undefined) return false;
 
-    // itemの全フィールドを比較（深い比較）
-    const isItemEqual = JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item);
+    // idとvisibleで比較（JSON.stringifyは重いので避ける）
+    const isItemEqual =
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.visible === nextProps.item.visible &&
+      prevProps.item.displayName === nextProps.item.displayName;
 
     return (
       isItemEqual &&
@@ -227,13 +230,16 @@ export const DataTable = React.memo(() => {
       )}
       data={sortedRecordSet}
       stickyHeaderIndices={[0]}
-      initialNumToRender={15}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={5}
       removeClippedSubviews={true}
-      extraData={checkList} // 変更：必要なデータのみ
+      extraData={checkList}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       onDragEnd={({ data }) => updateRecordSetOrder(data)}
       activationDistance={5}
+      getItemLayout={(_, index) => ({ length: 45, offset: 45 * index, index })}
     />
   ) : (
     <DataTitle

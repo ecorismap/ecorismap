@@ -93,6 +93,9 @@ export interface BottomSheetNavigationContextType {
   currentRouteName: BottomSheetScreenName;
   // Homeに戻る（位置編集、ジャンプなど）
   navigateToHome: (params?: NavigateToHomeParams) => void;
+  // BottomSheetが開いているかどうか
+  isBottomSheetOpen: boolean;
+  setIsBottomSheetOpen: (isOpen: boolean) => void;
 }
 
 // デフォルト値
@@ -109,6 +112,8 @@ const defaultValue: BottomSheetNavigationContextType = {
   snapToIndex: () => {},
   currentRouteName: 'Layers',
   navigateToHome: () => {},
+  isBottomSheetOpen: false,
+  setIsBottomSheetOpen: () => {},
 };
 
 export const BottomSheetNavigationContext = createContext<BottomSheetNavigationContextType>(defaultValue);
@@ -132,6 +137,7 @@ export function BottomSheetNavigationProvider({
   const internalBottomSheetRef = useRef<BottomSheet>(null);
   const bottomSheetRef = externalBottomSheetRef || internalBottomSheetRef;
   const [stack, setStack] = useState<BottomSheetScreen[]>([{ name: initialScreen }]);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
 
   const currentScreen = stack[stack.length - 1];
 
@@ -206,10 +212,12 @@ export function BottomSheetNavigationProvider({
       snapToIndex,
       currentRouteName: currentScreen.name,
       navigateToHome,
+      isBottomSheetOpen,
+      setIsBottomSheetOpen,
     }),
     // bottomSheetRef は useRef で作成されているため、値は変わらない
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [currentScreen, stack, navigate, goBack, canGoBack, reset, openBottomSheet, closeBottomSheet, snapToIndex, navigateToHome]
+    [currentScreen, stack, navigate, goBack, canGoBack, reset, openBottomSheet, closeBottomSheet, snapToIndex, navigateToHome, isBottomSheetOpen]
   );
 
   return <BottomSheetNavigationContext.Provider value={value}>{children}</BottomSheetNavigationContext.Provider>;

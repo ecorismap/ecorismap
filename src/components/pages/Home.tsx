@@ -44,6 +44,7 @@ import { TileManagementContext } from '../../contexts/TileManagement';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
+import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
@@ -109,16 +110,11 @@ export default function HomeScreen() {
     useContext(DataSelectionContext);
 
   // AppStateContext
-  const {
-    isOffline,
-    restored,
-    attribution,
-    isLoading,
-    gotoMaps,
-    gotoHome,
-    bottomSheetRef,
-    onCloseBottomSheet,
-  } = useContext(AppStateContext);
+  const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet } =
+    useContext(AppStateContext);
+
+  // BottomSheetNavigationContext
+  const { setIsBottomSheetOpen } = useBottomSheetNavigation();
 
   // SVGDrawingContext
   const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -657,11 +653,7 @@ export default function HomeScreen() {
                   onCancel={() => setShowMapSelector(false)}
                 />
               )}
-              <HomeDownloadButtons
-                zoom={zoom}
-                downloading={isDownloading}
-                onPress={pressDownloadTiles}
-              />
+              <HomeDownloadButtons zoom={zoom} downloading={isDownloading} onPress={pressDownloadTiles} />
             </>
           )}
           {exportPDFMode && (
@@ -724,9 +716,10 @@ export default function HomeScreen() {
         animateOnMount={true}
         animatedIndex={animatedIndex}
         onClose={onCloseBottomSheet}
+        onChange={(index) => setIsBottomSheetOpen(index >= 0)}
         handleComponent={customHandle}
         enableDynamicSizing={false}
-        overrideReduceMotion={ReduceMotion.Always}
+        overrideReduceMotion={ReduceMotion.System}
         style={[
           {
             marginLeft: isLandscape ? '50%' : '0%',

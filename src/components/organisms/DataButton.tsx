@@ -6,50 +6,39 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const DataButton = () => {
-  const {
-    layer,
-    projectId,
-    isChecked,
-    isEditable,
-    isExporting,
-    pressAddData,
-    pressDeleteData,
-    pressExportData,
-  } =
+  const { layer, projectId, isChecked, isEditable, isExporting, pressAddData, pressDeleteData, pressExportData } =
     useContext(DataContext);
 
   const exportDisabled = useMemo(() => false && projectId !== undefined, [projectId]);
 
   return (
-    <>
-      <View style={styles.button}>
-        {(layer.type === 'NONE' || layer.type === 'POINT') && (
-          <Button
-            name={DATA_BTN.ADD}
-            onPress={pressAddData}
-            backgroundColor={isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
-            disabled={!isEditable}
-            labelText={t('Data.label.add')}
-          />
-        )}
-        {!exportDisabled && (
-          <Button
-            name={DATA_BTN.DOWNLOAD}
-            onPress={pressExportData}
-            backgroundColor={isChecked && isEditable && !isExporting ? COLOR.BLUE : COLOR.LIGHTBLUE}
-            disabled={!(isChecked && isEditable) || isExporting}
-            labelText={t('Data.label.export')}
-          />
-        )}
+    <View style={styles.button}>
+      {(layer.type === 'NONE' || layer.type === 'POINT') && (
         <Button
-          name={DATA_BTN.DELETE}
-          onPress={pressDeleteData}
-          backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
-          disabled={!(isChecked && isEditable)}
-          labelText={t('Data.label.delete')}
+          name={DATA_BTN.ADD}
+          onPress={pressAddData}
+          backgroundColor={isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!isEditable}
+          labelText={t('Data.label.add')}
         />
-      </View>
-    </>
+      )}
+      {!exportDisabled && (
+        <Button
+          name={DATA_BTN.DOWNLOAD}
+          onPress={pressExportData}
+          backgroundColor={isChecked && isEditable && !isExporting ? COLOR.BLUE : COLOR.LIGHTBLUE}
+          disabled={!(isChecked && isEditable) || isExporting}
+          labelText={t('Data.label.export')}
+        />
+      )}
+      <Button
+        name={DATA_BTN.DELETE}
+        onPress={pressDeleteData}
+        backgroundColor={isChecked && isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
+        disabled={!(isChecked && isEditable)}
+        labelText={t('Data.label.delete')}
+      />
+    </View>
   );
 };
 
