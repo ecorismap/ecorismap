@@ -160,7 +160,7 @@ const LayerRow = React.memo(
                 value={customLabelValue}
                 onChangeText={(v: string) => handleCustomLabel(item.id, v)}
                 onBlur={() => changeCustomLabel(item, customLabelValue)}
-                style={styles.input}
+                style={[styles.input, { backgroundColor }]}
               />
             )}
           </View>
