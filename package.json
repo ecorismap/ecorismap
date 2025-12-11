@@ -84,7 +84,8 @@
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
     "postinstall": "patch-package --verbose",
     "firebase:dev": "node scripts/switch-firebase-env.js development",
-    "firebase:prod": "node scripts/switch-firebase-env.js production"
+    "firebase:prod": "node scripts/switch-firebase-env.js production",
+    "licenses": "npx npm-license-crawler --dependencies --production --onlyDirectDependencies --omitVersion --json ./src/licenses.json"
   },
   "dependencies": {
     "@babel/plugin-proposal-export-namespace-from": "^7.18.9",

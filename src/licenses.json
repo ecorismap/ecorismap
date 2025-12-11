@@ -143,30 +143,6 @@
         "licenseUrl": "https://github.com/react-native-voice/voice/raw/master/LICENSE",
         "parents": "ecorismap"
     },
-    "@react-navigation/elements": {
-        "licenses": "MIT",
-        "repository": "https://github.com/react-navigation/react-navigation",
-        "licenseUrl": "https://github.com/react-navigation/react-navigation/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@react-navigation/native-stack": {
-        "licenses": "MIT",
-        "repository": "https://github.com/react-navigation/react-navigation",
-        "licenseUrl": "https://github.com/react-navigation/react-navigation/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@react-navigation/native": {
-        "licenses": "MIT",
-        "repository": "https://github.com/react-navigation/react-navigation",
-        "licenseUrl": "https://github.com/react-navigation/react-navigation/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@react-navigation/stack": {
-        "licenses": "MIT",
-        "repository": "https://github.com/react-navigation/react-navigation",
-        "licenseUrl": "https://github.com/react-navigation/react-navigation/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
     "@reduxjs/toolkit": {
         "licenses": "MIT",
         "repository": "https://github.com/reduxjs/redux-toolkit",
@@ -513,6 +489,18 @@
         "licenseUrl": "https://github.com/visgl/react-map-gl/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "react-native-background-fetch": {
+        "licenses": "MIT",
+        "repository": "https://github.com/transistorsoft/react-native-background-fetch",
+        "licenseUrl": "https://github.com/transistorsoft/react-native-background-fetch/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "react-native-background-geolocation": {
+        "licenses": "MIT",
+        "repository": "https://github.com/transistorsoft/react-native-background-geolocation",
+        "licenseUrl": "https://github.com/transistorsoft/react-native-background-geolocation/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "react-native-date-picker": {
         "licenses": "MIT",
         "repository": "https://github.com/henninghall/react-native-date-picker",
@@ -574,15 +562,21 @@
         "parents": "ecorismap"
     },
     "react-native-mmkv": {
-        "licenses": "(MIT AND BSD-3-Clause)",
+        "licenses": "MIT",
         "repository": "https://github.com/mrousavy/react-native-mmkv",
-        "licenseUrl": "https://github.com/mrousavy/react-native-mmkv/raw/master/LICENSE",
+        "licenseUrl": "https://github.com/mrousavy/react-native-mmkv",
         "parents": "ecorismap"
     },
     "react-native-modal-selector": {
         "licenses": "MIT",
         "repository": "https://github.com/peacechen/react-native-modal-selector",
         "licenseUrl": "https://github.com/peacechen/react-native-modal-selector/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "react-native-nitro-modules": {
+        "licenses": "MIT",
+        "repository": "https://github.com/mrousavy/nitro",
+        "licenseUrl": "https://github.com/mrousavy/nitro",
         "parents": "ecorismap"
     },
     "react-native-reanimated": {
@@ -593,8 +587,8 @@
     },
     "react-native-safe-area-context": {
         "licenses": "MIT",
-        "repository": "https://github.com/th3rdwave/react-native-safe-area-context",
-        "licenseUrl": "https://github.com/th3rdwave/react-native-safe-area-context/raw/master/LICENSE",
+        "repository": "https://github.com/AppAndFlow/react-native-safe-area-context",
+        "licenseUrl": "https://github.com/AppAndFlow/react-native-safe-area-context/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "react-native-scale-bar": {
