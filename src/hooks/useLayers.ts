@@ -46,9 +46,10 @@ export const useLayers = (): UseLayersReturnType => {
   const changeExpand = useCallback(
     (layer: LayerType) => {
       //Layersの中で、groupIdとlayer.idが一致するものと自分のexpandedを反転させる
+      const newExpanded = !layer.expanded;
       const targetLayers = layers.map((l) => {
         if (l.groupId === layer.id || l.id === layer.id) {
-          return { ...l, expanded: !l.expanded };
+          return { ...l, expanded: newExpanded };
         }
         return l;
       });
