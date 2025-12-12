@@ -153,11 +153,20 @@ export async function getDropedFile(acceptedFiles: any) {
 //   return iconv.decode(buffer, encoding);
 // }
 
-export function decodeUri(uri: string): string {
+export async function decodeUri(uri: string): Promise<string> {
   try {
-    const base64 = uri.split(',').pop() || '';
-    const decodedData = Buffer.from(base64, 'base64').toString('utf-8');
-    return decodedData;
+    // blob URLまたはhttp(s) URLの場合
+    if (uri.startsWith('blob:') || uri.startsWith('http')) {
+      const response = await fetch(uri);
+      return await response.text();
+    }
+    // data URIの場合
+    if (uri.includes(',')) {
+      const base64 = uri.split(',').pop() || '';
+      return Buffer.from(base64, 'base64').toString('utf-8');
+    }
+    // その他はbase64として扱う
+    return Buffer.from(uri, 'base64').toString('utf-8');
   } catch (error) {
     console.error('Error decoding URI:', error);
     return '';

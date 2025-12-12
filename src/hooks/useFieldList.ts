@@ -246,7 +246,7 @@ export const useFieldList = (
       if (!db) throw new Error(t('hooks.message.cannotOpenDB'));
       setIsLoading(true);
       // CSVファイルを読み込む
-      const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const csvStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const values = csvStrings.split('\n');
       // テーブルを削除する（存在する場合）
       await db.execAsync(`DROP TABLE IF EXISTS "${tableName}"`);

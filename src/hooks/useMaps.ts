@@ -575,7 +575,7 @@ export const useMaps = (): UseMapsReturnType => {
     try {
       // console.log('importStyleFile', uri, name, id);
       if (Platform.OS === 'web') {
-        const jsonStrings = decodeUri(uri);
+        const jsonStrings = await decodeUri(uri);
         db.pmtiles.put({ mapId: tileMap.id, blob: undefined, boundary: '', style: jsonStrings });
         setEditedMap({ ...tileMap, styleURL: 'style://' + name });
       } else {
@@ -613,7 +613,7 @@ export const useMaps = (): UseMapsReturnType => {
   const importJsonMapFile = useCallback(
     async (uri: string) => {
       try {
-        const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+        const jsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
         const json = JSON.parse(jsonStrings);
 
         // 配列形式の場合（従来の全体インポート）

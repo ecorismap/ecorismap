@@ -123,7 +123,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const loadGeojson = useCallback(
     async (uri: string, name: string) => {
-      const geojsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const geojsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const geojson = JSON.parse(geojsonStrings);
       const featureType = detectGeoJsonType(geojson);
       return importGeoJson(geojson, featureType, name);
@@ -133,7 +133,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const loadGpx = useCallback(
     async (uri: string, name: string) => {
-      const gpx = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const gpx = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       importGPX(gpx, 'POINT', name);
       importGPX(gpx, 'LINE', name);
     },
@@ -160,7 +160,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const loadKml = useCallback(
     async (uri: string, name: string) => {
-      const kmlString = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const kmlString = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const parser = new DOMParser();
       const xml = parser.parseFromString(kmlString, 'text/xml');
       //@ts-ignore
@@ -176,7 +176,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const loadCsv = useCallback(
     async (uri: string, name: string) => {
       //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
-      const csvStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const csvStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       importCsv(csvStrings, name);
     },
     [importCsv]
@@ -229,7 +229,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
 
   const loadJson = useCallback(
     async (uri: string) => {
-      const jsonStrings = Platform.OS === 'web' ? decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
+      const jsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const json = JSON.parse(jsonStrings);
       if (!isLayerType(json)) throw new Error('invalid json file');
       const { layer: importedLayer } = changeLayerId(json);
