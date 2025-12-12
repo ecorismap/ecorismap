@@ -109,6 +109,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const freehandFinishedRef = useRef(false);
 
   const dispatch = useDispatch();
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
@@ -1417,6 +1418,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         handleGrantPlot(pXY);
       } else if (isFreehandTool(currentDrawTool)) {
         const finished = handleGrantFreehand(pXY);
+        freehandFinishedRef.current = finished;
         if (finished) {
           if (route.params?.mode === 'editPosition') {
             const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
@@ -1670,7 +1672,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         handleReleaseFreehand();
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
-      } else if (!isMapDragging.current) {
+      } else if (!isMapDragging.current && !freehandFinishedRef.current) {
         // 地図をドラッグしていない場合のみ情報取得
         // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
         const noFeatureFound = await getInfoOfFeature(event);
@@ -1688,6 +1690,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       // ドラッグ状態をリセット
       isMapDragging.current = false;
+      // フリーハンド完了フラグをリセット
+      freehandFinishedRef.current = false;
     },
     [
       currentDrawTool,
