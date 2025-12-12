@@ -87,7 +87,7 @@ export default function HomeScreen() {
   const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } = useContext(AppStateContext);
 
   // BottomSheetNavigationContext
-  const { currentRouteName } = useBottomSheetNavigation();
+  const { currentRouteName, setIsBottomSheetOpen } = useBottomSheetNavigation();
 
   // SVGDrawingContext
   const { mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -967,6 +967,7 @@ export default function HomeScreen() {
         animatedIndex={animatedIndex}
         animateOnMount={true}
         onClose={() => onCloseBottomSheet(currentRouteName)}
+        onChange={(index) => setIsBottomSheetOpen(index >= 0)}
         handleComponent={customHandle}
         enableDynamicSizing={false}
         overrideReduceMotion={ReduceMotion.Always}

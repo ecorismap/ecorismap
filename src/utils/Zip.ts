@@ -29,15 +29,24 @@ export const unzipFile = async (blob: Blob) => {
 };
 
 export async function unzipFromUri(uri: string) {
-  let base64;
   if (Platform.OS === 'web') {
-    const arr = uri.split(',');
-    base64 = arr[arr.length - 1];
+    // Web版: blob URLまたはdata URIに対応
+    if (uri.startsWith('blob:') || uri.startsWith('http')) {
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+      return await JSZip.loadAsync(arrayBuffer);
+    } else if (uri.includes(',')) {
+      // data URIの場合
+      const arr = uri.split(',');
+      const base64 = arr[arr.length - 1];
+      return await JSZip.loadAsync(base64, { base64: true });
+    } else {
+      return await JSZip.loadAsync(uri, { base64: true });
+    }
   } else {
-    base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+    return await JSZip.loadAsync(base64, { base64: true });
   }
-  const loaded = await JSZip.loadAsync(base64, { base64: true });
-  return loaded;
 }
 
 //zipファイルを作成してtempフォルダに保存する
