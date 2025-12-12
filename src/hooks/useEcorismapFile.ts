@@ -308,7 +308,10 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
         setIsLoading(true);
         const loaded = await unzipFromUri(uri);
         const jsonFile = Object.keys(loaded.files).find((f) => {
-          return getExt(f) === 'json' && !f.includes('/');
+          if (getExt(f) !== 'json') return false;
+          // ルートレベル または トップレベルフォルダ直下のJSONファイルを検索
+          const parts = f.split('/').filter((p) => p !== '');
+          return parts.length === 1 || (parts.length === 2 && !f.endsWith('/'));
         });
 
         if (jsonFile === undefined) return;
