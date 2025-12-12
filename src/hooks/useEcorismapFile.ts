@@ -145,8 +145,8 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
       for (const layer of data.layers) {
         if (layer.type === 'LAYERGROUP') continue;
-        const fileNameBase = `${layer.name}_${time}`;
-        const exportFolder = `${sanitize(layer.name)}_${layer.id}`;
+        const fileNameBase = `${layer.name.normalize('NFC')}_${time}`;
+        const exportFolder = `${sanitize(layer.name.normalize('NFC'))}_${layer.id}`;
         //mapMemoの場合はグループ化されたデータをソートしてエクスポート
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
