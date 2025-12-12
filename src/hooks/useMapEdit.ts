@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TileMapType } from '../types';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { addTileMapAction, deleteTileMapAction, updateTileMapAction } from '../modules/tileMaps';
+import { editSettingsAction } from '../modules/settings';
 import { ulid } from 'ulid';
 
 export const useMapEdit = (targetMap?: TileMapType | null) => {
@@ -27,6 +28,18 @@ export const useMapEdit = (targetMap?: TileMapType | null) => {
   const [map, setMap] = useState<TileMapType>(targetMap || defaultMap);
   const [isEdited, setIsEdited] = useState(targetMap === null || targetMap === undefined);
   const isNewMap = targetMap === null || targetMap === undefined;
+
+  // isEditedの変更をReduxに同期
+  useEffect(() => {
+    dispatch(editSettingsAction({ isEditingMap: isEdited }));
+  }, [dispatch, isEdited]);
+
+  // コンポーネントがアンマウントされるときにisEditingMapをリセット
+  useEffect(() => {
+    return () => {
+      dispatch(editSettingsAction({ isEditingMap: false }));
+    };
+  }, [dispatch]);
 
   const changeMapName = useCallback((name: string) => {
     setMap((prev) => ({ ...prev, name }));

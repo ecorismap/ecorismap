@@ -119,6 +119,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const mapType = useSelector((state: RootState) => state.settings.mapType, shallowEqual);
   const isOffline = useSelector((state: RootState) => state.settings.isOffline, shallowEqual);
   const isEditingRecord = useSelector((state: RootState) => state.settings.isEditingRecord, shallowEqual);
+  const isEditingLayer = useSelector((state: RootState) => state.settings.isEditingLayer, shallowEqual);
+  const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap, shallowEqual);
   const memberLocations = useSelector((state: RootState) => state.settings.memberLocation, shallowEqual);
 
   const layers = useSelector((state: RootState) => state.layers);
@@ -451,24 +453,49 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   /*************** onXXXXMapView *********************/
 
-  const onCloseBottomSheet = useCallback(async () => {
-    if (routeName === 'DataEdit') {
-      if (isEditingRecord) {
-        const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
-        if (ret) {
-          setIsEditingRecord(false);
-          unselectRecord();
-          //ToDo 写真の削除処理はどうする？
+  const onCloseBottomSheet = useCallback(
+    async (currentRouteName?: string) => {
+      // currentRouteNameが渡された場合はそれを使用、なければrouteNameを使用
+      const effectiveRouteName = currentRouteName ?? routeName;
+      if (effectiveRouteName === 'DataEdit') {
+        if (isEditingRecord) {
+          const ret = await ConfirmAsync(t('DataEdit.confirm.gotoBack'));
+          if (ret) {
+            setIsEditingRecord(false);
+            unselectRecord();
+            //ToDo 写真の削除処理はどうする？
+          } else {
+            bottomSheetRef.current?.snapToIndex(2);
+            return;
+          }
         } else {
-          bottomSheetRef.current?.snapToIndex(2);
-          return;
+          if (route.params?.mode !== 'editPosition') unselectRecord();
         }
-      } else {
-        if (route.params?.mode !== 'editPosition') unselectRecord();
+      } else if (effectiveRouteName === 'LayerEdit') {
+        if (isEditingLayer) {
+          const ret = await ConfirmAsync(t('LayerEdit.confirm.gotoBack'));
+          if (ret) {
+            dispatch(editSettingsAction({ isEditingLayer: false }));
+          } else {
+            bottomSheetRef.current?.snapToIndex(2);
+            return;
+          }
+        }
+      } else if (effectiveRouteName === 'MapEdit') {
+        if (isEditingMap) {
+          const ret = await ConfirmAsync(t('MapEdit.confirm.gotoBack'));
+          if (ret) {
+            dispatch(editSettingsAction({ isEditingMap: false }));
+          } else {
+            bottomSheetRef.current?.snapToIndex(2);
+            return;
+          }
+        }
       }
-    }
-    bottomSheetRef.current?.close();
-  }, [isEditingRecord, route.params?.mode, routeName, setIsEditingRecord, unselectRecord]);
+      bottomSheetRef.current?.close();
+    },
+    [dispatch, isEditingLayer, isEditingMap, isEditingRecord, route.params?.mode, routeName, setIsEditingRecord, unselectRecord]
+  );
 
   // ダウンロードモードに入った時にBottomSheetを閉じる
   useEffect(() => {
@@ -1900,12 +1927,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   }, []);
 
   useEffect(() => {
+    //編集中にアプリを落とした場合に再起動時に編集を破棄する
+    setIsEditingRecord(false);
+    dispatch(editSettingsAction({ isEditingLayer: false, isEditingMap: false }));
+
     if (Platform.OS === 'web') return;
 
     //起動時に読み込む場合
-
-    //編集中にアプリを落とした場合に再起動時に編集を破棄する
-    setIsEditingRecord(false);
 
     (async () => {
       await importExternalFiles();

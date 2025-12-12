@@ -42,6 +42,7 @@ import { TileManagementContext } from '../../contexts/TileManagement';
 import { MapMemoContext } from '../../contexts/MapMemo';
 import { DataSelectionContext } from '../../contexts/DataSelection';
 import { AppStateContext } from '../../contexts/AppState';
+import { useBottomSheetNavigation } from '../../contexts/BottomSheetNavigationContext';
 import { MemberMarker } from '../organisms/HomeMemberMarker';
 import { useFeatureSelectionWeb } from '../../hooks/useFeatureSelectionWeb';
 import { isPointRecordType } from '../../utils/Data';
@@ -78,8 +79,15 @@ export default function HomeScreen() {
   const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord } =
     useContext(DataSelectionContext);
 
+  // isEditingLayer, isEditingMap from Redux
+  const isEditingLayer = useSelector((state: RootState) => state.settings.isEditingLayer);
+  const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
+
   // AppStateContext
   const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } = useContext(AppStateContext);
+
+  // BottomSheetNavigationContext
+  const { currentRouteName } = useBottomSheetNavigation();
 
   // SVGDrawingContext
   const { mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -200,7 +208,7 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        {!isEditingRecord && (
+        {!isEditingRecord && !isEditingLayer && !isEditingMap && (
           <Pressable
             style={{
               position: 'absolute',
@@ -211,14 +219,14 @@ export default function HomeScreen() {
               justifyContent: 'center',
               alignItems: 'center',
             }}
-            onPress={onCloseBottomSheet}
+            onPress={() => onCloseBottomSheet(currentRouteName)}
           >
             <Text style={{ fontSize: 40, color: COLOR.GRAY4, lineHeight: 35 }}>×</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isEditingRecord, onCloseBottomSheet]);
+  }, [isEditingRecord, isEditingLayer, isEditingMap, onCloseBottomSheet, currentRouteName]);
 
   // ========== レイヤースタイル関連の処理 ==========
 
@@ -955,10 +963,10 @@ export default function HomeScreen() {
         ref={bottomSheetRef}
         index={-1}
         snapPoints={snapPoints}
-        enablePanDownToClose
+        enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
         animatedIndex={animatedIndex}
         animateOnMount={true}
-        onClose={onCloseBottomSheet}
+        onClose={() => onCloseBottomSheet(currentRouteName)}
         handleComponent={customHandle}
         enableDynamicSizing={false}
         overrideReduceMotion={ReduceMotion.Always}

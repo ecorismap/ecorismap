@@ -102,6 +102,8 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
         },
         memberLocation: [],
         isEditingRecord: false,
+        isEditingLayer: false,
+        isEditingMap: false,
         selectedRecord: undefined,
         plugins: {},
         mapListURL: '',

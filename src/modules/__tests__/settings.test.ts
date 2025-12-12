@@ -8,6 +8,8 @@ describe('modules/settings', () => {
     isSettingProject: false,
     isSynced: false,
     isEditingRecord: false,
+    isEditingLayer: false,
+    isEditingMap: false,
     isOffline: false,
     updatedAt: new Date('2000/1/1').toISOString(),
     role: undefined as RoleType | undefined,

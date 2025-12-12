@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import { addDataAction, deleteDataAction, updateDataAction } from '../modules/dataSet';
 import { addLayerAction, deleteLayerAction, setLayersAction, updateLayerAction } from '../modules/layers';
+import { editSettingsAction } from '../modules/settings';
 import { changeFieldValue, getInitialFieldValue } from '../utils/Data';
 import sanitize from 'sanitize-filename';
 import { selectDataSet, selectIsNewLayer } from '../modules/selectors';
@@ -74,6 +75,18 @@ export const useLayerEdit = (
     setTargetLayer(layer);
     setIsEdited(isStyleEdited);
   }, [isStyleEdited, layer]);
+
+  // isEditedの変更をReduxに同期
+  useEffect(() => {
+    dispatch(editSettingsAction({ isEditingLayer: isEdited }));
+  }, [dispatch, isEdited]);
+
+  // コンポーネントがアンマウントされるときにisEditingLayerをリセット
+  useEffect(() => {
+    return () => {
+      dispatch(editSettingsAction({ isEditingLayer: false }));
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (isStyleEdited && colorStyle !== undefined) {

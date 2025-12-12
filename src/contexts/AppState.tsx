@@ -25,7 +25,7 @@ export interface AppStateContextType {
 
   // Other
   bottomSheetRef: React.RefObject<BottomSheetMethods | null>;
-  onCloseBottomSheet: () => Promise<void>;
+  onCloseBottomSheet: (currentRouteName?: string) => Promise<void>;
   updatePmtilesURL: () => Promise<void>;
 }
 

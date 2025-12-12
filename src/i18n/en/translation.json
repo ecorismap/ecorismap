@@ -788,6 +788,9 @@
     "navigation": {
       "title": "Map Edit"
     },
+    "confirm": {
+      "gotoBack": "Would you like to discard your changes and return?"
+    },
     "label": {
       "save": "Save"
     }

@@ -9,6 +9,8 @@ export const settingsInitialState: SettingsType = {
   isSettingProject: false,
   isSynced: false,
   isEditingRecord: false,
+  isEditingLayer: false,
+  isEditingMap: false,
   isOffline: false,
   updatedAt: dayjs('2000-01-01').toISOString(),
   role: undefined as RoleType | undefined,

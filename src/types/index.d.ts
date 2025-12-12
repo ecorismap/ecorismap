@@ -348,6 +348,8 @@ export interface SettingsType {
   projectRegion: RegionType;
   memberLocation: MemberLocationType[];
   isEditingRecord: boolean;
+  isEditingLayer: boolean;
+  isEditingMap: boolean;
   selectedRecord:
     | {
         layerId: string;

@@ -155,6 +155,13 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allUserRecordSet]);
 
+  // コンポーネントがアンマウントされるときにisEditingRecordをリセット
+  useEffect(() => {
+    return () => {
+      setIsEditingRecord(false);
+    };
+  }, [setIsEditingRecord]);
+
   const changeRecord = useCallback(
     (value: number) => {
       if (targetRecordSet.length === 0) return;

@@ -109,12 +109,16 @@ export default function HomeScreen() {
   const { pointDataSet, lineDataSet, polygonDataSet, selectedRecord, isEditingRecord } =
     useContext(DataSelectionContext);
 
+  // isEditingLayer, isEditingMap from Redux
+  const isEditingLayer = useSelector((state: RootState) => state.settings.isEditingLayer);
+  const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
+
   // AppStateContext
   const { isOffline, restored, attribution, isLoading, gotoMaps, gotoHome, bottomSheetRef, onCloseBottomSheet } =
     useContext(AppStateContext);
 
   // BottomSheetNavigationContext
-  const { setIsBottomSheetOpen } = useBottomSheetNavigation();
+  const { setIsBottomSheetOpen, currentRouteName } = useBottomSheetNavigation();
 
   // SVGDrawingContext
   const { isPencilTouch, mapMemoEditingLine } = useContext(SVGDrawingContext);
@@ -288,7 +292,7 @@ export default function HomeScreen() {
             alignSelf: 'center',
           }}
         />
-        {!isEditingRecord && (
+        {!isEditingRecord && !isEditingLayer && !isEditingMap && (
           <Pressable
             style={{
               position: 'absolute',
@@ -299,14 +303,14 @@ export default function HomeScreen() {
               justifyContent: 'center',
               alignItems: 'center',
             }}
-            onPress={onCloseBottomSheet}
+            onPress={() => onCloseBottomSheet(currentRouteName)}
           >
             <Text style={{ fontSize: 40, color: COLOR.GRAY3, lineHeight: 40 }}>×</Text>
           </Pressable>
         )}
       </View>
     );
-  }, [isEditingRecord, onCloseBottomSheet]);
+  }, [isEditingRecord, isEditingLayer, isEditingMap, onCloseBottomSheet, currentRouteName]);
 
   // ダウンロードモード用ヘッダー
   const renderDownloadHeader = () => (
@@ -712,10 +716,10 @@ export default function HomeScreen() {
         ref={bottomSheetRef}
         index={-1}
         snapPoints={snapPoints}
-        enablePanDownToClose
+        enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
         animateOnMount={true}
         animatedIndex={animatedIndex}
-        onClose={onCloseBottomSheet}
+        onClose={() => onCloseBottomSheet(currentRouteName)}
         onChange={(index) => setIsBottomSheetOpen(index >= 0)}
         handleComponent={customHandle}
         enableDynamicSizing={false}

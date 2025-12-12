@@ -507,6 +507,9 @@
     "navigation": {
       "title": "地図編集"
     },
+    "confirm": {
+      "gotoBack": "変更を破棄して戻りますか？"
+    },
     "label": {
       "save": "保存"
     }
