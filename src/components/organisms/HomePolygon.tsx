@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
@@ -61,13 +61,15 @@ export const Polygon = React.memo(
             );
           } else {
             return (
-              <Marker key={feature.id} coordinate={feature.centroid ?? feature.coords[0]} tracksViewChanges={selected}>
-                <View style={{ alignItems: 'center' }}>
-                  {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
-                  <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} />
-                  <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
-                </View>
-              </Marker>
+              <PolygonMarkerComponent
+                key={`${feature.id}-${selected}`}
+                feature={feature}
+                label={label}
+                strokeColor={strokeColor}
+                pointColor={pointColor}
+                borderColor={borderColor}
+                selected={selected}
+              />
             );
           }
         })}
@@ -136,5 +138,30 @@ const PolygonComponent = React.memo((props: PolygonComponentProps) => {
         color={strokeColor}
       />
     </>
+  );
+});
+
+interface PolygonMarkerComponentProps {
+  feature: PolygonRecordType;
+  label: string;
+  strokeColor: string;
+  pointColor: string;
+  borderColor: string;
+  selected: boolean;
+}
+
+const PolygonMarkerComponent = React.memo((props: PolygonMarkerComponentProps) => {
+  const { feature, label, strokeColor, pointColor, borderColor } = props;
+
+  if (!feature.coords) return null;
+
+  // iOSではtrue（ラベル変更を即反映）、AndroidではGoogle Maps SDKのIllegalStateExceptionを回避するためfalse
+  return (
+    <Marker coordinate={feature.centroid ?? feature.coords[0]} tracksViewChanges={Platform.OS === 'ios'}>
+      <View style={{ alignItems: 'center' }}>
+        <PointLabel label={label} size={15} color={strokeColor} borderColor={COLOR.WHITE} />
+        <PointView size={10} color={pointColor} borderColor={borderColor} style={{ borderRadius: 0 }} />
+      </View>
+    </Marker>
   );
 });

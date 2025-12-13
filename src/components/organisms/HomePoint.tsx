@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Platform } from 'react-native';
 import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
@@ -142,10 +143,13 @@ const PointComponent = React.memo((props: PointComponentProps) => {
           editPositionRecord.id === feature.id)),
     [currentDrawTool, editPositionLayer?.id, editPositionMode, editPositionRecord, feature.id, layer.id]
   );
+
   if (!feature.coords) return null;
+  // iOSではtrue（ラベル変更を即反映）、AndroidではfalseでkeyによるremountでOK
+  // AndroidではGoogle Maps SDKのIllegalStateExceptionを回避するためfalseが必須
   return (
     <Marker
-      tracksViewChanges={true} //色変更を反映するため常にtrue
+      tracksViewChanges={Platform.OS === 'ios'}
       draggable={draggable}
       onDragEnd={(e) => onDragEndPoint(e, layer, feature)}
       coordinate={feature.coords}

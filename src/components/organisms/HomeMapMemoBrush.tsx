@@ -23,13 +23,13 @@ export const HomeMapMemoBrush = React.memo((props: Props) => {
     <>
       {points.map((point, idx) => (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
           coordinate={{ latitude: point.coordinates[1], longitude: point.coordinates[0] }}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
           rotation={point.angle}
           style={{ zIndex: -1, alignItems: 'center' }}
-          key={idx}
+          key={`${idx}-${selected}`}
         >
           <View style={{ width: 20, height: 20 }}>
             {feature.field._strokeStyle === 'PLUS' && (

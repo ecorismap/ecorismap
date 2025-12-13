@@ -23,7 +23,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'NUMBERS':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -41,7 +42,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'ALPHABETS':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -59,7 +61,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TEXT':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -77,7 +80,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TOMARI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -96,7 +100,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'KARI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -114,7 +119,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'HOVERING':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -133,7 +139,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'VOICE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -152,7 +159,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'KOUBI':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -170,7 +178,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'SQUARE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected}
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -186,7 +195,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'CIRCLE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected} //ラベル変更と色変更を反映するため.androidは常にtrueだとパフォーマンスが落ちるため選択時のみtrue
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -202,7 +212,8 @@ export const HomeMapMemoStamp = React.memo((props: Props) => {
     case 'TRIANGLE':
       return (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected}
+          tracksViewChanges={Platform.OS === 'ios'}
+          key={`stamp-${selected}`}
           coordinate={feature.coords}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}

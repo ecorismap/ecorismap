@@ -133,7 +133,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const routeName = currentSplitRoute;
 
   // BottomSheetNavigationContext からナビゲーション関数を取得
-  const { navigate: bottomSheetNavigate, currentScreen: bottomSheetCurrentScreen } = useBottomSheetNavigation();
+  const { navigate: bottomSheetNavigate, currentScreen: bottomSheetCurrentScreen, isBottomSheetOpen } =
+    useBottomSheetNavigation();
+
+  // ボトムシートが開いた後にselectRecordを実行するためのペンディング状態
+  const pendingSelectRecord = useRef<{ layerId: string; feature: RecordType } | null>(null);
 
   // navigateToSplit 関数（BottomSheetNavigationContext の navigate を使用）
   const navigateToSplit = useCallback(
@@ -504,6 +508,21 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       bottomSheetRef.current?.close();
     }
   }, [downloadMode]);
+
+  // ボトムシートが開いた後にpendingSelectRecordを処理
+  // マーカーの色変更とボトムシートのアニメーションの競合（IllegalStateException）を避けるため
+  // アニメーション完了を待つために遅延を追加
+  useEffect(() => {
+    if (isBottomSheetOpen && pendingSelectRecord.current) {
+      const { layerId, feature } = pendingSelectRecord.current;
+      pendingSelectRecord.current = null;
+      // ボトムシートのアニメーションが完全に完了するまで待つ
+      const timer = setTimeout(() => {
+        selectRecord(layerId, feature);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isBottomSheetOpen, selectRecord]);
 
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
@@ -1343,8 +1362,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         unselectRecord();
         return true; // 何も見つからなかったのでtrueを返す
       }
-      selectRecord(layer.id, { ...feature });
 
+      // selectRecordを遅延実行するためにペンディング状態に保存
+      // ボトムシートが開いた後にselectRecordを実行することで、
+      // マーカーの色変更とボトムシートのアニメーションの競合を避ける
+      pendingSelectRecord.current = { layerId: layer.id, feature: { ...feature } };
+
+      // 先にボトムシートを開く
       if (isLandscape) {
         bottomSheetRef.current?.snapToIndex(2);
       } else {
@@ -1357,7 +1381,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
       return false; // フィーチャーが見つかったのでfalseを返す
     },
-    [isEditingRecord, isLandscape, navigateToSplit, selectRecord, selectSingleFeature, unselectRecord]
+    [isEditingRecord, isLandscape, navigateToSplit, selectSingleFeature, unselectRecord]
   );
 
   const handlePanResponderGrant = useCallback(

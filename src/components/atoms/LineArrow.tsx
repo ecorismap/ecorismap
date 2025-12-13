@@ -39,7 +39,7 @@ const LineArrow = React.memo((props: Props) => {
   return (
     <>
       <Marker
-        tracksViewChanges={Platform.OS === 'ios' ? true : selected}
+        tracksViewChanges={Platform.OS === 'ios'}
         coordinate={coordinates[coordinates.length - 1]}
         opacity={1}
         anchor={{ x: 0.5, y: 0.5 }}
@@ -54,7 +54,7 @@ const LineArrow = React.memo((props: Props) => {
       </Marker>
       {arrowStyle === 'ARROW_BOTH' && (
         <Marker
-          tracksViewChanges={Platform.OS === 'ios' ? true : selected}
+          tracksViewChanges={Platform.OS === 'ios'}
           coordinate={coordinates[0]}
           opacity={1}
           anchor={{ x: 0.5, y: 0.5 }}

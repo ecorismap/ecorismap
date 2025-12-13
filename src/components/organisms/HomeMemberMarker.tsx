@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Image, StyleSheet, Text } from 'react-native';
+import { View, Image, StyleSheet, Text, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { Marker } from 'react-native-maps';
 import { MemberLocationType } from '../../types';
@@ -22,7 +22,7 @@ export const MemberMarker = React.memo((props: Props) => {
       }}
       opacity={0.9}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={true}
+      tracksViewChanges={Platform.OS === 'ios'}
     >
       {memberLocation.icon.photoURL !== null ? (
         //@ts-ignore

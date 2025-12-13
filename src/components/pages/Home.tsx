@@ -717,13 +717,14 @@ export default function HomeScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose={!isEditingRecord && !isEditingLayer && !isEditingMap}
-        animateOnMount={true}
+        animateOnMount={false}
         animatedIndex={animatedIndex}
         onClose={() => onCloseBottomSheet(currentRouteName)}
         onChange={(index) => setIsBottomSheetOpen(index >= 0)}
         handleComponent={customHandle}
         enableDynamicSizing={false}
-        overrideReduceMotion={ReduceMotion.System}
+        animationConfigs={{ duration: 0 }}
+        overrideReduceMotion={ReduceMotion.Always}
         style={[
           {
             marginLeft: isLandscape ? '50%' : '0%',
