@@ -551,6 +551,8 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   }, [drawLine, editingLineXY, editingObjectIndex]);
 
   const tryFinishEditObject = useCallback(() => {
+    // ラインの場合は始点タップで確定しない（ポリゴンのみ）
+    if (currentDrawTool === 'PLOT_LINE') return false;
     if (editingNodeState.current === 'NEW') return false;
     if (editingNodeIndex.current !== 0) return false;
     if (editingLineXY.current.length > 5) return false;
@@ -558,7 +560,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const index = editingObjectIndex.current;
     const lineXY = drawLine.current[index].xy;
 
-    if (currentDrawTool === 'PLOT_LINE' && lineXY.length < 2) return false;
     if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
 
     undoLine.current.push({
@@ -566,7 +567,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       latlon: drawLine.current[index].latlon,
       action: 'FINISH',
     });
-    //最初のノードをタッチで編集終了
+    //最初のノードをタッチで編集終了（ポリゴンのみ）
     if (currentDrawTool === 'PLOT_POLYGON') lineXY.push(lineXY[0]);
     drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
     drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
@@ -595,19 +596,14 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const lineXY = drawLine.current[index].xy;
 
     // 最小ポイント数のチェック
-    if (currentDrawTool === 'PLOT_LINE' && lineXY.length < 2) return false;
-    if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
+    if ((currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'FREEHAND_LINE') && lineXY.length < 2) return false;
+    if ((currentDrawTool === 'PLOT_POLYGON' || currentDrawTool === 'FREEHAND_POLYGON') && lineXY.length < 3) return false;
 
     undoLine.current.push({
       index: index,
       latlon: drawLine.current[index].latlon,
       action: 'FINISH',
     });
-
-    // ポリゴンの場合は閉じる
-    if (currentDrawTool === 'PLOT_POLYGON' && lineXY[0] !== lineXY[lineXY.length - 1]) {
-      lineXY.push(lineXY[0]);
-    }
 
     drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
     drawLine.current[index].properties = drawLine.current[index].properties.filter((p) => p !== 'EDIT');
@@ -650,10 +646,11 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
   const tryFinishFreehandEditObject = useCallback(
     (pXY: Position) => {
+      // フリーハンドの場合は始点タップで確定しない（確定ボタンを使う）
+      if (currentDrawTool === 'FREEHAND_LINE' || currentDrawTool === 'FREEHAND_POLYGON') return false;
       const index = editingObjectIndex.current;
       if (index === -1) return false;
       const lineXY = drawLine.current[index].xy;
-      if (currentDrawTool === 'FREEHAND_LINE' && lineXY.length < 2) return false;
       if (currentDrawTool === 'FREEHAND_POLYGON' && lineXY.length < 3) return false;
       const isNearWithFirstNode = isNearWithPlot(pXY, lineXY[0]);
       if (!isNearWithFirstNode) return false;
@@ -687,7 +684,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       isEditingObject,
       editingLineXY,
     ]
-  );
+  );;
 
   const editStartNewFreehandObject = useCallback(
     (pXY: Position) => {
@@ -731,12 +728,17 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [editingLineXY]
   );
 
-  const tryClosePolygon = (lineXY: Position[]) => {
-    if (lineXY.length < 4) return false;
+  const tryClosePolygon = (lineXY: Position[], forceClose = false) => {
+    if (lineXY.length < 3) return false;
     const startPoint = lineXY[0];
     const endPoint = lineXY[lineXY.length - 1];
-    if (!isNearWithPlot(startPoint, endPoint)) return false;
-    lineXY.splice(-2, 2, startPoint);
+    // forceCloseがtrueの場合は距離に関係なく閉じる（フリーハンド用）
+    if (!forceClose && !isNearWithPlot(startPoint, endPoint)) return false;
+    // 始点と終点が同じでなければ始点を追加してポリゴンを閉じる
+    if (startPoint[0] !== endPoint[0] || startPoint[1] !== endPoint[1]) {
+      lineXY.push(startPoint);
+    }
+    return true;
   };
 
   const createNewFreehandObject = useCallback(() => {
@@ -744,8 +746,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     const lineXY = drawLine.current[index].xy;
     lineXY.splice(-2);
     if (lineXY.length < 2) return;
-    //FREEHAND_POLYGONツールの場合は、エリアを閉じるために始点を追加する。
-    if (currentDrawTool === 'FREEHAND_POLYGON') tryClosePolygon(lineXY);
     const smoothedXY = smoothingByBezier(lineXY);
     const simplifiedXY = simplify(smoothedXY);
     drawLine.current[index].xy = simplifiedXY;
@@ -887,13 +887,16 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     //削除したものを取り除く
     drawLine.current = drawLine.current.filter((line) => line.xy.length !== 0);
 
-    //有効なポリゴンかチェック(閉じていない。自己交差は不正でない)
-    // drawLine.current.forEach((line) => {
-    //   //line.xy = makeValidPolygon(line.xy);
-    //   line.xy = makeBufferPolygon(line.xy);
-    //   line.latlon = xyArrayToLatLonArray(line.xy, mapRegion, mapSize);
-    // });
+    // ポリゴンを閉じる（始点と終点が異なる場合）
+    drawLine.current.forEach((line) => {
+      const lineXY = line.xy;
+      if (lineXY.length >= 3 && (lineXY[0][0] !== lineXY[lineXY.length - 1][0] || lineXY[0][1] !== lineXY[lineXY.length - 1][1])) {
+        lineXY.push(lineXY[0]);
+        line.latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
+      }
+    });
 
+    //有効なポリゴンかチェック(閉じていない。自己交差は不正でない)
     const isValid = drawLine.current.every((line) => isValidPolygon(line.latlon));
 
     if (!isValid) {

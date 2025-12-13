@@ -1,6 +1,7 @@
 import React, { useContext, useMemo } from 'react';
 import { StyleSheet, View, Platform } from 'react-native';
 import { COLOR, DRAWTOOL, MAPMEMOTOOL, POINTTOOL } from '../../constants/AppConstants';
+import { isFreehandTool, isPlotTool } from '../../utils/General';
 
 import { Button } from '../atoms';
 import { HomeLineToolButton } from './HomeLineToolButton';
@@ -80,16 +81,16 @@ export const HomeDrawTools = React.memo(() => {
   return (
     <>
       {/* 編集完了・キャンセルボタン */}
-      {isEditingObject && (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') && (
+      {isEditingObject && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
         <View style={styles.editControlContainer}>
           <Button
             name="check"
             backgroundColor={COLOR.BLUE}
             borderRadius={8}
             onPress={async () => {
-              const finished = finishEditObject();
-              if (finished) {
-                await pressSaveDraw();
+              const saved = await pressSaveDraw();
+              if (saved) {
+                finishEditObject();
               }
             }}
             labelText={t('common.finish')}

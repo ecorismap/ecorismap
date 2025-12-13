@@ -853,11 +853,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     } else if (featureButton === 'POLYGON') {
       result = savePolygon();
     }
-    if (result === undefined) return;
+    if (result === undefined) return false;
     const { isOK, message, layer, recordSet } = result;
     if (!isOK) {
       Alert.alert('', message);
-      return;
+      return false;
     }
     // console.log('🔍 pressSaveDraw - layer:', layer?.name, 'type:', layer?.type, 'id:', layer?.id);
     setDrawTool('NONE');
@@ -872,6 +872,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
+    return true;
   }, [featureButton, navigation, navigateToSplit, route.params?.mode, saveLine, savePolygon, setDrawTool]);
 
   const pressDownloadTiles = useCallback(async () => {

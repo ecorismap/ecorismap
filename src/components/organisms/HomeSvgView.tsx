@@ -5,7 +5,7 @@ import Svg, { G, Defs, Marker, Path, Circle, Rect } from 'react-native-svg';
 import { pointsToSvg } from '../../utils/Coords';
 import { ulid } from 'ulid';
 import { COLOR } from '../../constants/AppConstants';
-import { isPlotTool, isPolygonTool } from '../../utils/General';
+import { isFreehandTool, isPlotTool, isPolygonTool } from '../../utils/General';
 import { DrawingToolsContext } from '../../contexts/DrawingTools';
 import { SVGDrawingContext } from '../../contexts/SVGDrawing';
 
@@ -32,28 +32,33 @@ export const SvgView = React.memo(() => {
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <LineDefs />
         {drawLine.current.map(({ xy, properties }: { xy: any; properties: any }, idx: number) => {
-          // 最初のポイントを強調表示（編集モード時）
-          const isFirstPointHighlighted = properties.includes('EDIT') && 
-            (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON');
-          
-          const startStyle =
-            currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
-              ? ''
-              : properties.includes('EDIT')
-              ? isFirstPointHighlighted ? `url(#firstPoint)` : `url(#add)`
-              : isEditingObject
-              ? ''
-              : `url(#delete)`;
+          // フリーハンドツールの場合はマーカーを表示しない
+          const isFreehand = isFreehandTool(currentDrawTool);
+
+          // 最初のポイントを強調表示（編集モード時、プロットツールのみ）
+          const isFirstPointHighlighted = properties.includes('EDIT') && isPlotTool(currentDrawTool);
+
+          const startStyle = isFreehand
+            ? ''
+            : currentDrawTool === 'SELECT' || currentDrawTool === 'MOVE'
+            ? ''
+            : properties.includes('EDIT')
+            ? isFirstPointHighlighted ? `url(#firstPoint)` : `url(#add)`
+            : isEditingObject
+            ? ''
+            : `url(#delete)`;
           const midStyle =
             currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
               ? properties.includes('EDIT')
                 ? `url(#plot)`
                 : ''
               : '';
-          const endStyle = properties.includes('POINT')
+          const endStyle = isFreehand
+            ? ''
+            : properties.includes('POINT')
             ? `url(#point)`
             : properties.includes('EDIT')
-            ? `url(#last)`
+            ? `url(#firstPoint)`
             : '';
 
           const strokeColor = properties.includes('EDIT') ? 'lightblue' : '#F7C114';

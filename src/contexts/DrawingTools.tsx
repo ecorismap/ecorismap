@@ -72,7 +72,7 @@ export interface DrawingToolsContextType {
   // Drawing actions (stable references)
   onDragEndPoint: (e: DragEndEvent, layer: LayerType, feature: RecordType) => Promise<void>;
   pressUndoDraw: () => Promise<void>;
-  pressSaveDraw: () => Promise<void>;
+  pressSaveDraw: () => Promise<boolean>;
   pressDeleteDraw: () => Promise<void>;
   finishEditObject: () => boolean;
   resetDrawTools: () => void;
