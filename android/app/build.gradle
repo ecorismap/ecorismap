@@ -59,8 +59,8 @@ android {
         applicationId "jp.co.ecoris.ecorismap"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2107")
-        versionName '0.5.0'
+        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2120")
+        versionName '0.5.1'
 
         // Google Play用：ARM64とARM32のみに限定
         // react-native-virgil-cryptoのx86_64ライブラリが16KB page size非対応のため

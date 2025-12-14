@@ -1,6 +1,16 @@
 # Change Log
 
-## [0.5.1]
+## [Unreleased]
+
+## [0.5.1] - 2025-12-14
+
+- Fixed an instability issue in information display
+- Fixed bugs in the draw tool
+
+- 情報表示で不安定になる不具合を修正
+- ドローツールの不具合を修正
+
+-
 
 ## [0.5.0] - 2025-12-11
 
