@@ -13,8 +13,7 @@ export const ConfirmAsync = async (
         { text: text.true, onPress: () => resolve(true), swalType: 'confirm' },
       ],
       {
-        cancelable: true,
-        onDismiss: () => resolve(false),
+        cancelable: false,
       }
     );
   });
