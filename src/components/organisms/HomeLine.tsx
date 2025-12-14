@@ -147,7 +147,6 @@ const PolylineComponent = React.memo((props: PolylineProps) => {
       {arrowStyle && (
         <LineArrow
           key={`arrow-${feature.id}-${selected}`}
-          selected={selected}
           coordinates={feature.coords as LatLng[]}
           strokeColor={lineColor}
           strokeWidth={strokeWidth}

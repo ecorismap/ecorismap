@@ -106,7 +106,6 @@ export const Line = React.memo((props: Props & { editingLineId?: string }) => {
         return (
           <LineArrow
             key={'arrow' + feature.id}
-            selected={selected}
             coordinates={feature.coords}
             strokeColor={lineColor}
             strokeWidth={strokeWidth}

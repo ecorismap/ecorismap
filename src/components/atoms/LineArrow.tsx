@@ -7,7 +7,6 @@ import * as turf from '@turf/helpers';
 import { ArrowStyleType } from '../../types';
 
 interface Props {
-  selected: boolean;
   coordinates: LatLng[];
   strokeColor: string;
   strokeWidth: number;
@@ -15,7 +14,7 @@ interface Props {
 }
 
 const LineArrow = React.memo((props: Props) => {
-  const { selected, coordinates, strokeColor, strokeWidth, arrowStyle } = props;
+  const { coordinates, strokeColor, strokeWidth, arrowStyle } = props;
 
   if (arrowStyle === 'NONE') return null;
   const p0 = [coordinates[0].longitude, coordinates[0].latitude];

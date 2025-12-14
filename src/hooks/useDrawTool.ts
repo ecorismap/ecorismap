@@ -651,7 +651,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       const index = editingObjectIndex.current;
       if (index === -1) return false;
       const lineXY = drawLine.current[index].xy;
-      if (currentDrawTool === 'FREEHAND_POLYGON' && lineXY.length < 3) return false;
+      if (currentDrawTool === 'PLOT_POLYGON' && lineXY.length < 3) return false;
       const isNearWithFirstNode = isNearWithPlot(pXY, lineXY[0]);
       if (!isNearWithFirstNode) return false;
 
@@ -661,7 +661,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         action: 'FINISH',
       });
       //最初のノードをタッチで編集終了
-      if (currentDrawTool === 'FREEHAND_POLYGON') {
+      if (currentDrawTool === 'PLOT_POLYGON') {
         //ポリゴンは閉じてなかったら閉じる
         if (!isClosedPolygon(lineXY)) lineXY.push(lineXY[0]);
       }
@@ -728,19 +728,6 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     [editingLineXY]
   );
 
-  const tryClosePolygon = (lineXY: Position[], forceClose = false) => {
-    if (lineXY.length < 3) return false;
-    const startPoint = lineXY[0];
-    const endPoint = lineXY[lineXY.length - 1];
-    // forceCloseがtrueの場合は距離に関係なく閉じる（フリーハンド用）
-    if (!forceClose && !isNearWithPlot(startPoint, endPoint)) return false;
-    // 始点と終点が同じでなければ始点を追加してポリゴンを閉じる
-    if (startPoint[0] !== endPoint[0] || startPoint[1] !== endPoint[1]) {
-      lineXY.push(startPoint);
-    }
-    return true;
-  };
-
   const createNewFreehandObject = useCallback(() => {
     const index = drawLine.current.length - 1;
     const lineXY = drawLine.current[index].xy;
@@ -753,7 +740,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     drawLine.current[index].properties = ['EDIT'];
 
     editingObjectIndex.current = index;
-  }, [currentDrawTool, drawLine, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
+  }, [drawLine, editingObjectIndex, mapRegion, mapSize, mapViewRef]);
 
   const editFreehandObject = useCallback(() => {
     // //ライン修正の場合
@@ -927,7 +914,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
 
     resetDrawTools();
     return { isOK: true, message: '', layer: layer, recordSet: savedRecordSet };
-  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, resetDrawTools, updateRecord]);
+  }, [addRecord, findLayer, generateRecord, getEditableLayerAndRecordSetWithCheck, mapRegion, mapSize, mapViewRef, resetDrawTools, updateRecord]);
 
   const selectSingleFeature = useCallback(
     (event: GestureResponderEvent) => {

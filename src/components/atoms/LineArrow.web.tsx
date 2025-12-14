@@ -8,7 +8,6 @@ import { Marker } from 'react-map-gl/maplibre';
 import { LatLng } from 'react-native-maps';
 
 interface Props {
-  selected: boolean;
   coordinates: LatLng[];
   strokeColor: string;
   strokeWidth: number;
