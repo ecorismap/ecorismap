@@ -201,6 +201,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   );
 
   const ensureBackgroundGeolocation = useCallback(async () => {
+    // 既存のサービス状態を確認（アプリキル後の再起動でサービスが動作中かどうか）
+    const existingState = await BackgroundGeolocation.getState();
+    const isServiceRunning = existingState.enabled;
+
     const config = {
       desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
       distanceFilter: gpsAccuracyOption.distanceFilter,
@@ -221,7 +225,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         largeIcon: 'mipmap/ic_launcher',
       },
       allowsBackgroundLocationUpdates: true,
-      reset: true,
+      // サービスが動作中（アプリキル後の再起動）の場合はresetしない
+      // resetするとバックグラウンドで継続中の記録が途切れる
+      reset: !isServiceRunning,
     } as const;
 
     const state = await BackgroundGeolocation.ready(config);
@@ -656,6 +662,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             setGpsState('follow');
             gpsStateRef.current = 'follow';
           }
+
+          // 移動モードを確実に有効化（アプリキル後の再起動で静止モードになっている可能性があるため）
+          await BackgroundGeolocation.changePace(true);
 
           if (headingSubscriber.current === null) {
             try {
