@@ -170,11 +170,11 @@ const LineDefs = () => {
           refY="5"
           //@ts-ignore
           markerUnits="strokeWidth"
-          markerWidth={20 * OS_ASPECT_RATIO}
-          markerHeight={20 * OS_ASPECT_RATIO}
+          markerWidth={15 * OS_ASPECT_RATIO}
+          markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
-          <Circle cx="5" cy="5" r="4" fill={COLOR.BLUE} stroke="white" strokeWidth="1.5" />
+          <Circle cx="5" cy="5" r="3.5" fill={COLOR.BLUE} stroke="white" strokeWidth="1.5" />
         </Marker>
 
         <Marker
@@ -219,7 +219,7 @@ const LineDefs = () => {
           markerHeight={15 * OS_ASPECT_RATIO}
           orient="0"
         >
-          <Circle cx="5" cy="5" r="3.5" fill="white" stroke="blue" strokeWidth="2" />
+          <Circle cx="5" cy="5" r="3.5" fill={COLOR.BLUE} stroke="white" strokeWidth="1.5" />
         </Marker>
         <Marker
           id="last"
