@@ -1,6 +1,6 @@
 # Change Log
 
-## [Unreleased]
+## [0.5.2]
 
 ## [0.5.1] - 2025-12-14
 
@@ -9,8 +9,6 @@
 
 - 情報表示で不安定になる不具合を修正
 - ドローツールの不具合を修正
-
--
 
 ## [0.5.0] - 2025-12-11
 
@@ -214,7 +212,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.1]: https://github.com/ecorismap/ecorismap/compare/169ec0287a8129c93c38d0d826170176242bd8ed...HEAD
+  [0.5.2]: https://github.com/ecorismap/ecorismap/compare/bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc...HEAD
+  [0.5.1]: https://github.com/ecorismap/ecorismap/compare/169ec0287a8129c93c38d0d826170176242bd8ed...bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc
   [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...169ec0287a8129c93c38d0d826170176242bd8ed
   [0.4.9]: https://github.com/ecorismap/ecorismap/compare/65c311635ef12f2d6d22842e1872ecfaa2064bcb...3e9b5a093965d8dd68a53b66b83962ad6a4cf594
   [0.4.8]: https://github.com/ecorismap/ecorismap/compare/7425433d6bae566e48067b2c8a36eacf27bd562e...65c311635ef12f2d6d22842e1872ecfaa2064bcb
