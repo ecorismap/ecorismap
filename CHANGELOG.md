@@ -2,6 +2,8 @@
 
 ## [0.5.2]
 
+- 軌跡の記録が kill 後に再開されない不具合を修正(Android)
+
 ## [0.5.1] - 2025-12-14
 
 - Fixed an instability issue in information display
