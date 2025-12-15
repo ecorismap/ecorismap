@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { DEFAULT_MAP_LIST_URL } from '../constants/AppConstants';
 import { TUTRIALS } from '../constants/Tutrials';
-import { TileRegionType, MemberLocationType, SettingsType, RoleType } from '../types';
+import { TileRegionType, MemberLocationType, SettingsType, RoleType, ProximityAlertSettingsType } from '../types';
 import dayjs from 'dayjs';
 
 export const settingsInitialState: SettingsType = {
@@ -43,6 +43,11 @@ export const settingsInitialState: SettingsType = {
   isModalInfoToolHidden: false,
   isModalMapMemoToolHidden: false,
   currentInfoTool: 'ALL_INFO',
+  proximityAlert: {
+    enabled: false,
+    targetLayerIds: [],
+    distanceThreshold: 10,
+  } as ProximityAlertSettingsType,
 };
 
 type SettingsEditType = Partial<SettingsType>;

@@ -430,6 +430,9 @@
     },
     "gps_settings": {
       "text": "GPSの設定"
+    },
+    "proximity_alert": {
+      "text": "接近通知"
     }
   },
   "Projects": {
@@ -883,5 +886,16 @@
     "cancelButton": "キャンセル",
     "okButton": "OK",
     "exportFailed": "エクスポートに失敗しました"
+  },
+  "settings": {
+    "proximityAlert": {
+      "title": "接近通知設定",
+      "enable": "接近通知を有効にする",
+      "distance": "通知距離",
+      "threshold": "閾値",
+      "distanceHelp": "1〜500mの範囲で設定できます",
+      "targetLayers": "対象レイヤー",
+      "noPointLayers": "ポイントレイヤーがありません"
+    }
   }
 }

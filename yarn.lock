@@ -15227,6 +15227,7 @@ __metadata:
     expo-notifications: ~0.32.13
     expo-print: ~15.0.7
     expo-sharing: ~14.0.7
+    expo-speech: ~14.0.8
     expo-splash-screen: ~31.0.11
     expo-sqlite: ~16.0.9
     expo-status-bar: ~3.0.8
@@ -16544,6 +16545,15 @@ __metadata:
   peerDependencies:
     expo: "*"
   checksum: 8ac54d82328141dc67add5b9db3f16253b42e0e0aa2d39589fffd4d9cf15067e10262b0ab21837b184caae2799de81d74f8b2d129886c50e25550ef4fc6919f3
+  languageName: node
+  linkType: hard
+
+"expo-speech@npm:~14.0.8":
+  version: 14.0.8
+  resolution: "expo-speech@npm:14.0.8"
+  peerDependencies:
+    expo: "*"
+  checksum: b1fa82f6517ea4b031dd862939a30420502812c10baa4cbadfe5c443b3aa99be8d80ca7e5f747a11158b86ef25b1a3258ac80d4a79d6be2538e64d5fa2949365
   languageName: node
   linkType: hard
 

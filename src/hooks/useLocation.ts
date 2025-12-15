@@ -33,6 +33,7 @@ import * as Notifications from 'expo-notifications';
 import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
 import { isLocationType } from '../utils/General';
+import { useProximityAlert } from './useProximityAlert';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -84,6 +85,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     };
   });
   const { addTrackRecord } = useRecord();
+  const { checkProximity } = useProximityAlert();
   const [azimuth, setAzimuth] = useState(0);
   const gpsWatchId = useRef<string | null>(null);
   const headingSubscriber = useRef<LocationSubscription | null>(null);
@@ -193,11 +195,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
 
         setCurrentLocation(latest);
+
+        // 接近通知チェック（トラッキング中のみ）
+        checkProximity(latest);
       } catch (error) {
         console.error('[tracking] Failed to persist location', error);
       }
     },
-    [mapViewRef]
+    [mapViewRef, checkProximity]
   );
 
   const ensureBackgroundGeolocation = useCallback(async () => {

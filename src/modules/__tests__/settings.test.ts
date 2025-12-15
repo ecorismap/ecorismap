@@ -42,6 +42,11 @@ describe('modules/settings', () => {
     isModalInfoToolHidden: false,
     isModalMapMemoToolHidden: false,
     currentInfoTool: 'ALL_INFO',
+    proximityAlert: {
+      enabled: false,
+      targetLayerIds: [],
+      distanceThreshold: 10,
+    },
   };
   test('should set the rile to state', () => {
     const role = 'OWNER';

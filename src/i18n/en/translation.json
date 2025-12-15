@@ -312,6 +312,9 @@
     },
     "gps_settings": {
       "text": "GPS settings"
+    },
+    "proximity_alert": {
+      "text": "Proximity Alert"
     }
   },
   "Purchases": {
@@ -883,5 +886,16 @@
     "cancelButton": "Cancel",
     "okButton": "OK",
     "exportFailed": "Export failed"
+  },
+  "settings": {
+    "proximityAlert": {
+      "title": "Proximity Alert Settings",
+      "enable": "Enable proximity alert",
+      "distance": "Notification distance",
+      "threshold": "Threshold",
+      "distanceHelp": "Range: 1-500m",
+      "targetLayers": "Target layers",
+      "noPointLayers": "No point layers available"
+    }
   }
 }

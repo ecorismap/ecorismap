@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
 import { SETTINGS_BTN, VERSION } from '../../constants/AppConstants';
 import { SettingsContext } from '../../contexts/Settings';
 import { t } from '../../i18n/config';
@@ -21,6 +21,7 @@ export default function Settings() {
     pressVersion,
     pressPDFSettingsOpen,
     pressGPSSettingsOpen,
+    pressProximityAlertSettingsOpen,
   } = useContext(SettingsContext);
 
   const styles = StyleSheet.create({
@@ -46,6 +47,13 @@ export default function Settings() {
           text={t('Settings.gps_settings.text')}
           onPress={pressGPSSettingsOpen}
         />
+        {Platform.OS !== 'web' && (
+          <TextButton
+            name={SETTINGS_BTN.PROXIMITY_ALERT}
+            text={t('Settings.proximity_alert.text')}
+            onPress={pressProximityAlertSettingsOpen}
+          />
+        )}
         <TextButton name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
 
         {/* 情報・ヘルプ */}
