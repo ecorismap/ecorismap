@@ -383,6 +383,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
+      // 先にUIを更新（ボタンの色を即座に変更）
+      setGpsState(gpsState_);
+      gpsStateRef.current = gpsState_;
+
       if (gpsState_ === 'off') {
         await stopGPS();
         if (isLoggedIn(dataUser) && hasOpened(projectId)) {
@@ -399,9 +403,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
         await startGPS(gpsState_);
       }
-
-      setGpsState(gpsState_);
-      gpsStateRef.current = gpsState_;
     },
     [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS]
   );
