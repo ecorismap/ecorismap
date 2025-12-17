@@ -1,10 +1,12 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import * as Speech from 'expo-speech';
 import { distance, point } from '@turf/turf';
 import { RootState } from '../store';
-import { LocationType, RecordType, LayerType } from '../types';
+import { LocationType, RecordType, LayerType, ProximityAlertSettingsType, DataType } from '../types';
 import { isLocationType } from '../utils/General';
+import { generateLabel } from '../utils/Layer';
+import i18n, { t } from '../i18n/config';
 
 // 通知済みポイントの情報
 interface NotifiedPoint {
@@ -22,9 +24,9 @@ export interface UseProximityAlertReturnType {
  * ポイント接近時に音声通知を行うフック
  */
 // デフォルト値（Redux Persistの既存データにproximityAlertがない場合のフォールバック）
-const DEFAULT_PROXIMITY_ALERT = {
+const DEFAULT_PROXIMITY_ALERT: ProximityAlertSettingsType = {
   enabled: false,
-  targetLayerIds: [] as string[],
+  targetLayerIds: [],
   distanceThreshold: 10,
 };
 
@@ -33,6 +35,24 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   const proximityAlert = useSelector((state: RootState) => state.settings.proximityAlert ?? DEFAULT_PROXIMITY_ALERT);
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector((state: RootState) => state.dataSet);
+
+  // refで最新のstateを保持（コールバックがクロージャで古い参照を保持する問題を回避）
+  const proximityAlertRef = useRef<ProximityAlertSettingsType>(proximityAlert);
+  const layersRef = useRef<LayerType[]>(layers);
+  const dataSetRef = useRef<DataType[]>(dataSet);
+
+  // refを最新に同期
+  useEffect(() => {
+    proximityAlertRef.current = proximityAlert;
+  }, [proximityAlert]);
+
+  useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
+
+  useEffect(() => {
+    dataSetRef.current = dataSet;
+  }, [dataSet]);
 
   // 通知済みポイントの管理 (Map: pointId -> NotifiedPoint)
   const notifiedPointsRef = useRef<Map<string, NotifiedPoint>>(new Map());
@@ -44,32 +64,37 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   const MIN_NOTIFICATION_INTERVAL = 3000; // 3秒
 
   /**
-   * 音声で通知
+   * 音声で通知（国際化対応）
    */
   const speakAlert = useCallback((pointName: string) => {
-    const message = `${pointName}に近づきました`;
+    const message = t('settings.proximityAlert.speechMessage', { name: pointName });
+    const lang = i18n.language;
     Speech.speak(message, {
-      language: 'ja-JP',
+      language: lang.startsWith('ja') ? 'ja-JP' : 'en-US',
       rate: 1.0,
       pitch: 1.0,
     });
   }, []);
 
   /**
-   * 対象レイヤーのポイントを取得
+   * 対象レイヤーのポイントを取得（refから最新値を参照）
    */
   const getTargetPoints = useCallback((): { record: RecordType; layer: LayerType }[] => {
-    if (!proximityAlert.enabled || proximityAlert.targetLayerIds.length === 0) {
+    const currentSettings = proximityAlertRef.current;
+    const currentLayers = layersRef.current;
+    const currentDataSet = dataSetRef.current;
+
+    if (!currentSettings.enabled || currentSettings.targetLayerIds.length === 0) {
       return [];
     }
 
     const targetPoints: { record: RecordType; layer: LayerType }[] = [];
 
-    for (const layerId of proximityAlert.targetLayerIds) {
-      const layer = layers.find((l) => l.id === layerId);
+    for (const layerId of currentSettings.targetLayerIds) {
+      const layer = currentLayers.find((l) => l.id === layerId);
       if (!layer || layer.type !== 'POINT') continue;
 
-      const layerData = dataSet.filter((d) => d.layerId === layerId);
+      const layerData = currentDataSet.filter((d) => d.layerId === layerId);
       for (const data of layerData) {
         for (const record of data.data) {
           if (!record.deleted && record.visible && isLocationType(record.coords)) {
@@ -80,22 +105,16 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
     }
 
     return targetPoints;
-  }, [proximityAlert, layers, dataSet]);
+  }, []); // 依存配列を空に - refから最新値を取得するため
 
   /**
-   * ポイント名を取得（labelフィールドまたはデフォルト）
+   * ポイント名を取得（カスタムラベル対応）
    */
   const getPointName = useCallback((record: RecordType, layer: LayerType): string => {
-    // labelフィールドの値を取得
-    const labelFieldName = layer.label;
-    if (labelFieldName && record.field[labelFieldName]) {
-      const labelValue = record.field[labelFieldName];
-      if (typeof labelValue === 'string' || typeof labelValue === 'number') {
-        return String(labelValue);
-      }
-    }
-    // フォールバック: レイヤー名
-    return layer.name;
+    // generateLabelを使用してカスタムラベルを含むすべてのラベル形式に対応
+    const label = generateLabel(layer, record);
+    // ラベルが空の場合はレイヤー名をフォールバック
+    return label || layer.name;
   }, []);
 
   /**
@@ -109,19 +128,21 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   }, []);
 
   /**
-   * 接近チェックと音声通知
+   * 接近チェックと音声通知（refから最新値を参照）
    */
   const checkProximity = useCallback(
     (currentLocation: LocationType) => {
+      const currentSettings = proximityAlertRef.current;
+
       // 機能が無効の場合はスキップ
-      if (!proximityAlert.enabled) return;
+      if (!currentSettings.enabled) return;
 
       // GPS精度が悪い場合はスキップ（30m以上）
       if (currentLocation.accuracy && currentLocation.accuracy > 30) return;
 
       const now = Date.now();
       const targetPoints = getTargetPoints();
-      const threshold = proximityAlert.distanceThreshold;
+      const threshold = currentSettings.distanceThreshold;
       const resetThreshold = threshold * 2; // 閾値の2倍離れたらリセット
 
       for (const { record, layer } of targetPoints) {
@@ -147,7 +168,7 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
         }
       }
     },
-    [proximityAlert, getTargetPoints, calculateDistance, getPointName, speakAlert]
+    [getTargetPoints, calculateDistance, getPointName, speakAlert] // proximityAlertを削除 - refから取得するため
   );
 
   /**

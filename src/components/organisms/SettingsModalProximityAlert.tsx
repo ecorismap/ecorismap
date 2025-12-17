@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Modal, Text, StyleSheet, Switch, TextInput, ScrollView } from 'react-native';
+import { View, Modal, Text, StyleSheet, Switch, ScrollView } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 import { CheckBox } from '../molecules/CheckBox';
 import { ProximityAlertSettingsType, LayerType } from '../../types';
+
+// 選択可能な距離オプション
+const DISTANCE_OPTIONS = [5, 10, 20, 50, 100, 500, 1000] as const;
 
 interface Props {
   visible: boolean;
@@ -22,12 +25,20 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
 
   const [enabled, setEnabled] = useState(false);
   const [targetLayerIds, setTargetLayerIds] = useState<string[]>([]);
-  const [distanceThreshold, setDistanceThreshold] = useState('10');
+  const [distanceThreshold, setDistanceThreshold] = useState(10);
 
   useEffect(() => {
     setEnabled(proximityAlert.enabled);
     setTargetLayerIds(proximityAlert.targetLayerIds);
-    setDistanceThreshold(String(proximityAlert.distanceThreshold));
+    // 既存の値が選択肢にない場合は最も近い値を選択
+    const validDistance = DISTANCE_OPTIONS.includes(proximityAlert.distanceThreshold as typeof DISTANCE_OPTIONS[number])
+      ? proximityAlert.distanceThreshold
+      : DISTANCE_OPTIONS.reduce((prev, curr) =>
+          Math.abs(curr - proximityAlert.distanceThreshold) < Math.abs(prev - proximityAlert.distanceThreshold)
+            ? curr
+            : prev
+        );
+    setDistanceThreshold(validDistance);
   }, [proximityAlert]);
 
   const handleLayerToggle = (layerId: string) => {
@@ -37,11 +48,10 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
   };
 
   const handleOK = () => {
-    const distance = parseInt(distanceThreshold, 10);
     pressOK({
       enabled,
       targetLayerIds,
-      distanceThreshold: isNaN(distance) || distance < 1 ? 10 : Math.min(distance, 500),
+      distanceThreshold,
     });
   };
 
@@ -106,32 +116,32 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
       borderRadius: 5,
       padding: 10,
     },
-    distanceRow: {
+    distanceOptionsContainer: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      flexWrap: 'wrap',
       width: '100%',
+      gap: 8,
       paddingVertical: 10,
     },
-    distanceInput: {
+    distanceOption: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 5,
       borderWidth: 1,
       borderColor: COLOR.GRAY2,
-      borderRadius: 5,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      width: 80,
-      textAlign: 'center',
-      fontSize: 16,
+      backgroundColor: COLOR.WHITE,
     },
-    distanceUnit: {
-      fontSize: 16,
-      marginLeft: 5,
+    distanceOptionSelected: {
+      borderColor: COLOR.BLUE,
+      backgroundColor: COLOR.ALFABLUE2,
     },
-    helpText: {
-      fontSize: 12,
+    distanceOptionText: {
+      fontSize: 14,
       color: COLOR.GRAY4,
-      marginTop: 5,
-      alignSelf: 'flex-start',
+    },
+    distanceOptionTextSelected: {
+      color: COLOR.BLUE,
+      fontWeight: 'bold',
     },
     modalButtonContainer: {
       flexDirection: 'row',
@@ -176,20 +186,27 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
 
             {/* 通知距離設定 */}
             <Text style={styles.sectionTitle}>{t('settings.proximityAlert.distance')}</Text>
-            <View style={styles.distanceRow}>
-              <Text style={styles.switchLabel}>{t('settings.proximityAlert.threshold')}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TextInput
-                  style={styles.distanceInput}
-                  value={distanceThreshold}
-                  onChangeText={setDistanceThreshold}
-                  keyboardType="numeric"
-                  maxLength={3}
-                />
-                <Text style={styles.distanceUnit}>m</Text>
-              </View>
+            <View style={styles.distanceOptionsContainer}>
+              {DISTANCE_OPTIONS.map((distance) => (
+                <Pressable
+                  key={distance}
+                  style={[
+                    styles.distanceOption,
+                    distanceThreshold === distance && styles.distanceOptionSelected,
+                  ]}
+                  onPress={() => setDistanceThreshold(distance)}
+                >
+                  <Text
+                    style={[
+                      styles.distanceOptionText,
+                      distanceThreshold === distance && styles.distanceOptionTextSelected,
+                    ]}
+                  >
+                    {distance}m
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <Text style={styles.helpText}>{t('settings.proximityAlert.distanceHelp')}</Text>
 
             {/* 対象レイヤー選択 */}
             <Text style={styles.sectionTitle}>{t('settings.proximityAlert.targetLayers')}</Text>

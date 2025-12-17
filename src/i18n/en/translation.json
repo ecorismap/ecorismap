@@ -891,11 +891,10 @@
     "proximityAlert": {
       "title": "Proximity Alert Settings",
       "enable": "Enable proximity alert",
-      "distance": "Notification distance",
-      "threshold": "Threshold",
-      "distanceHelp": "Range: 1-500m",
+      "distance": "Select notification distance",
       "targetLayers": "Target layers",
-      "noPointLayers": "No point layers available"
+      "noPointLayers": "No point layers available",
+      "speechMessage": "Approaching {{name}}"
     }
   }
 }
