@@ -259,6 +259,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           (location) => {
             const coords = location.coords;
             setCurrentLocation(coords);
+
+            // 接近通知チェック（GPS ONのみの場合、フォアグラウンドで動作）
+            checkProximity(coords);
+
             if (mode === 'follow' && mapViewRef.current !== null && isMapView(mapViewRef.current)) {
               (mapViewRef.current as MapView).animateCamera(
                 {
@@ -292,7 +296,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       }
     },
-    [ensureBackgroundGeolocation, gpsAccuracyOption.desiredAccuracy, mapViewRef]
+    [ensureBackgroundGeolocation, gpsAccuracyOption.desiredAccuracy, mapViewRef, checkProximity]
   );
 
   const stopGPS = useCallback(async () => {
