@@ -177,7 +177,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         // トラッキング中のみ軌跡を保存
         if (isTracking) {
           checkAndStoreLocations([normalized]);
-          trackLogMMKV.setCurrentLocation(latest);
 
           // メタデータを更新
           const chunkInfo = getCurrentChunkInfo();
@@ -191,6 +190,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             currentLocation: latest,
           });
         }
+
+        // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
+        trackLogMMKV.setCurrentLocation(latest);
 
         // 常に現在地を更新
         setCurrentLocation(latest);
