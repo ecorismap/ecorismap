@@ -145,7 +145,25 @@ export const trackLogMMKV = {
       return null;
     }
   },
-  
+
+  // トラッキング状態の保存/取得（kill後の復帰で軌跡記録を正しく復元するため）
+  setTrackingState: (state: 'on' | 'off'): void => {
+    try {
+      trackLogStorage.set('trackingState', state);
+    } catch (error) {
+      // console.error('Failed to save tracking state:', error);
+    }
+  },
+
+  getTrackingState: (): 'on' | 'off' => {
+    try {
+      return (trackLogStorage.getString('trackingState') as 'on' | 'off') ?? 'off';
+    } catch (error) {
+      // console.error('Failed to get tracking state:', error);
+      return 'off';
+    }
+  },
+
   // チャンク操作用メソッド
   setChunk: (key: string, data: any): void => {
     try {

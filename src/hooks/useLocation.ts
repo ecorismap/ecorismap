@@ -326,6 +326,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (state.enabled) {
         await BackgroundGeolocation.stop();
       }
+      // トラッキング状態をMMKVからクリア
+      trackLogMMKV.setTrackingState('off');
       // GPSも停止
       setGpsState('off');
       gpsStateRef.current = 'off';
@@ -368,6 +370,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // 強制的に移動モードにして位置更新を継続させる
       // BackgroundGeolocationはデフォルトで静止モード(isMoving:false)で開始されるため必須
       await BackgroundGeolocation.changePace(true);
+
+      // トラッキング状態をMMKVに保存（kill後の復帰で正しく復元するため）
+      trackLogMMKV.setTrackingState('on');
 
       if (headingSubscriber.current === null) {
         headingSubscriber.current = await watchHeadingAsync((pos) => {
@@ -667,11 +672,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     (async () => {
       initializedRef.current = true;
 
-      // 先にstateを確認して、enabledならrefを先に更新
+      // 先にstateを確認して、軌跡記録中だったらrefを先に更新
       const preState = await BackgroundGeolocation.getState();
       if (preState.enabled && Platform.OS === 'android') {
-        // 先にrefを更新（onLocationコールバックが正しく動作するため）
-        trackingStateRef.current = 'on';
+        // MMKVから保存されたトラッキング状態を取得（GPSのみオンの場合は'off'）
+        const savedTrackingState = trackLogMMKV.getTrackingState();
+        if (savedTrackingState === 'on') {
+          // 先にrefを更新（onLocationコールバックが正しく動作するため）
+          trackingStateRef.current = 'on';
+        }
       }
 
       await ensureBackgroundGeolocation();
@@ -679,8 +688,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       if (state.enabled) {
         if (Platform.OS === 'android') {
-          // 実際に軌跡記録中だった場合のみ復元（GPSのみオンだった場合は復元しない）
-          if (trackingState === 'on') {
+          // MMKVから保存されたトラッキング状態を取得して復元
+          const savedTrackingState = trackLogMMKV.getTrackingState();
+          if (savedTrackingState === 'on') {
             setTrackingState('on');
 
             const chunkInfo = getCurrentChunkInfo();
