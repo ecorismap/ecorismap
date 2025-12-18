@@ -31,6 +31,7 @@ jest.mock('react-native-background-geolocation', () => {
     watchPosition: jest.fn(),
     stopWatchPosition: jest.fn(),
     onLocation: jest.fn().mockImplementation(() => subscription),
+    changePace: jest.fn(),
   };
 
   return {
@@ -214,7 +215,8 @@ describe('useLocation', () => {
     });
 
     expect(result.current.gpsState).toBe('show');
-    expect(mockBackgroundGeolocation.watchPosition).toHaveBeenCalled();
+    // GPS ON時はBackgroundGeolocation.startが呼ばれる（watchPositionは廃止）
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
   });
 
   it('should toggle heading up', async () => {
