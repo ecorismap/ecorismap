@@ -625,7 +625,8 @@
       "failDeleteFile": "Failed to delete files in the project"
     },
     "notification": {
-      "inTracking": "Recording a track. \nPress the button on the track to finish."
+      "inTracking": "Recording a track. \nPress the button on the track to finish.",
+      "gpsOn": "GPS location tracking"
     },
     "pdf": {
       "comment": "This map is created using the Web Mercator projection. \nThe scale length is a guideline at the center of the diagram."

@@ -273,6 +273,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (trackingStateRef.current !== 'on') {
         const state = await BackgroundGeolocation.getState();
         if (!state.enabled) {
+          // GPSのみオン時の通知メッセージを設定
+          await BackgroundGeolocation.setConfig({
+            notification: {
+              sticky: true,
+              title: 'EcorisMap',
+              text: t('hooks.notification.gpsOn'),
+              channelName: 'EcorisMap Tracking',
+              color: '#0F5FBA',
+              smallIcon: 'drawable/ic_notification',
+              largeIcon: 'mipmap/ic_launcher',
+            },
+          });
           await BackgroundGeolocation.start();
           // 移動モードにして位置更新を継続させる
           await BackgroundGeolocation.changePace(true);
@@ -309,23 +321,21 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const stopTracking = useCallback(async () => {
     try {
       await ensureBackgroundGeolocation();
-      // GPSがオンでない場合のみBackgroundGeolocationを停止
-      if (gpsStateRef.current === 'off') {
-        const state: BackgroundState = await BackgroundGeolocation.getState();
-        if (state.enabled) {
-          await BackgroundGeolocation.stop();
-        }
-        // React Stateをクリア（メモリ解放を促進）
-        setCurrentLocation(null);
+      // 軌跡記録停止時はBackgroundGeolocationも停止
+      const state: BackgroundState = await BackgroundGeolocation.getState();
+      if (state.enabled) {
+        await BackgroundGeolocation.stop();
       }
-      // GPSがオンの場合はBackgroundGeolocationは継続（onLocationで位置更新を続ける）
+      // GPSも停止
+      setGpsState('off');
+      gpsStateRef.current = 'off';
+      // React Stateをクリア（メモリ解放を促進）
+      setCurrentLocation(null);
     } catch (e) {
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
         projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
-        if (gpsStateRef.current === 'off') {
-          setCurrentLocation(null);
-        }
+        setCurrentLocation(null);
       }
     }
   }, [projectId, dataUser, ensureBackgroundGeolocation]);
@@ -336,6 +346,20 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       clearStoredLocations();
 
       await ensureBackgroundGeolocation();
+
+      // トラッキング用の通知メッセージを設定
+      await BackgroundGeolocation.setConfig({
+        notification: {
+          sticky: true,
+          title: 'EcorisMap',
+          text: t('hooks.notification.inTracking'),
+          channelName: 'EcorisMap Tracking',
+          color: '#0F5FBA',
+          smallIcon: 'drawable/ic_notification',
+          largeIcon: 'mipmap/ic_launcher',
+        },
+      });
+
       const state: BackgroundState = await BackgroundGeolocation.getState();
       if (!state.enabled) {
         await BackgroundGeolocation.start();
@@ -655,8 +679,22 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       if (state.enabled) {
         if (Platform.OS === 'android') {
-          // Androidでアプリ再起動時にトラッキング状態を復元
-          setTrackingState('on');
+          // 実際に軌跡記録中だった場合のみ復元（GPSのみオンだった場合は復元しない）
+          if (trackingState === 'on') {
+            setTrackingState('on');
+
+            const chunkInfo = getCurrentChunkInfo();
+            const metadata = getTrackMetadata();
+            setTrackMetadata({
+              distance: metadata.currentDistance,
+              lastTimeStamp: metadata.lastTimeStamp,
+              savedChunkCount: chunkInfo.currentChunkIndex,
+              currentChunkSize: chunkInfo.currentChunkSize,
+              totalPoints: metadata.totalPoints,
+            });
+          }
+
+          // GPS/軌跡どちらの場合も共通の処理
           if (gpsStateRef.current === 'off') {
             setGpsState('follow');
             gpsStateRef.current = 'follow';
@@ -679,16 +717,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               console.error('Error restoring heading subscriber:', error);
             }
           }
-
-          const chunkInfo = getCurrentChunkInfo();
-          const metadata = getTrackMetadata();
-          setTrackMetadata({
-            distance: metadata.currentDistance,
-            lastTimeStamp: metadata.lastTimeStamp,
-            savedChunkCount: chunkInfo.currentChunkIndex,
-            currentChunkSize: chunkInfo.currentChunkSize,
-            totalPoints: metadata.totalPoints,
-          });
 
           // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）
           const latestCoords = trackLogMMKV.getCurrentLocation();
@@ -742,7 +770,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         locationSubscription.current = null;
       }
     };
-  }, [checkUnsavedTrackLog, confirmLocationPermission, ensureBackgroundGeolocation, stopTracking]);
+  }, [checkUnsavedTrackLog, confirmLocationPermission, ensureBackgroundGeolocation, stopTracking, trackingState]);
 
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
