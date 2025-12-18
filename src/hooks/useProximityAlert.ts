@@ -41,9 +41,12 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   const layersRef = useRef<LayerType[]>(layers);
   const dataSetRef = useRef<DataType[]>(dataSet);
 
-  // refを最新に同期
+  // refを最新に同期 + 設定変更時は通知済みポイントをリセット
   useEffect(() => {
     proximityAlertRef.current = proximityAlert;
+    // 設定変更時は通知済みポイントをリセット（すぐに再通知可能にする）
+    notifiedPointsRef.current.clear();
+    lastNotificationTimeRef.current = 0;
   }, [proximityAlert]);
 
   useEffect(() => {

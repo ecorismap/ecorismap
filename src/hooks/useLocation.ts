@@ -86,6 +86,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   });
   const { addTrackRecord } = useRecord();
   const { checkProximity } = useProximityAlert();
+  const checkProximityRef = useRef(checkProximity);
   const [azimuth, setAzimuth] = useState(0);
   const gpsWatchId = useRef<string | null>(null);
   const headingSubscriber = useRef<LocationSubscription | null>(null);
@@ -118,6 +119,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH, distanceFilter: 2 };
     }
   }, [gpsAccuracy]);
+
+  // checkProximityをrefで同期（onLocationコールバックがクロージャで古い参照を保持する問題を回避）
+  useEffect(() => {
+    checkProximityRef.current = checkProximity;
+  }, [checkProximity]);
 
   const confirmLocationPermission = useCallback(async () => {
     try {
@@ -197,12 +203,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setCurrentLocation(latest);
 
         // 接近通知チェック（トラッキング中のみ）
-        checkProximity(latest);
+        checkProximityRef.current(latest);
       } catch (error) {
         console.error('[tracking] Failed to persist location', error);
       }
     },
-    [mapViewRef, checkProximity]
+    [mapViewRef]
   );
 
   const ensureBackgroundGeolocation = useCallback(async () => {
