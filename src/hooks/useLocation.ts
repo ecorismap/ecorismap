@@ -88,7 +88,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const { checkProximity } = useProximityAlert();
   const checkProximityRef = useRef(checkProximity);
   const [azimuth, setAzimuth] = useState(0);
-  const gpsWatchId = useRef<string | null>(null);
   const headingSubscriber = useRef<LocationSubscription | null>(null);
   const bgReadyRef = useRef(false);
   const initializedRef = useRef(false);
@@ -163,30 +162,41 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const handleBackgroundLocation = useCallback(
     (location: BackgroundLocation) => {
-      if (trackingStateRef.current !== 'on') {
+      const isTracking = trackingStateRef.current === 'on';
+      const isGpsOn = gpsStateRef.current !== 'off';
+
+      // トラッキング中でもGPSオンでもない場合は何もしない
+      if (!isTracking && !isGpsOn) {
         return;
       }
 
       try {
         const normalized = toLocationObject(location);
-        checkAndStoreLocations([normalized]);
         const latest = { ...normalized.coords, timestamp: normalized.timestamp };
-        trackLogMMKV.setCurrentLocation(latest);
 
-        // メタデータを更新
-        const chunkInfo = getCurrentChunkInfo();
-        const metadata = getTrackMetadata();
-        setTrackMetadata({
-          distance: metadata.currentDistance,
-          lastTimeStamp: metadata.lastTimeStamp,
-          savedChunkCount: chunkInfo.currentChunkIndex,
-          currentChunkSize: chunkInfo.currentChunkSize,
-          totalPoints: metadata.totalPoints,
-          currentLocation: latest,
-        });
+        // トラッキング中のみ軌跡を保存
+        if (isTracking) {
+          checkAndStoreLocations([normalized]);
+          trackLogMMKV.setCurrentLocation(latest);
 
-        // カメラ移動（followモードまたはバックグラウンド時）
-        if (gpsStateRef.current === 'follow' || RNAppState.currentState === 'background') {
+          // メタデータを更新
+          const chunkInfo = getCurrentChunkInfo();
+          const metadata = getTrackMetadata();
+          setTrackMetadata({
+            distance: metadata.currentDistance,
+            lastTimeStamp: metadata.lastTimeStamp,
+            savedChunkCount: chunkInfo.currentChunkIndex,
+            currentChunkSize: chunkInfo.currentChunkSize,
+            totalPoints: metadata.totalPoints,
+            currentLocation: latest,
+          });
+        }
+
+        // 常に現在地を更新
+        setCurrentLocation(latest);
+
+        // カメラ移動（followモードまたはバックグラウンド時のトラッキング中）
+        if (gpsStateRef.current === 'follow' || (isTracking && RNAppState.currentState === 'background')) {
           if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
             (mapViewRef.current as MapView).animateCamera(
               {
@@ -200,9 +210,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         }
 
-        setCurrentLocation(latest);
-
-        // 接近通知チェック（トラッキング中のみ）
+        // 接近通知チェック（GPSオンまたはトラッキング中）
         checkProximityRef.current(latest);
       } catch (error) {
         console.error('[tracking] Failed to persist location', error);
@@ -258,40 +266,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     async (mode: LocationStateType) => {
       if (mode === 'off') return;
       await ensureBackgroundGeolocation();
-      // トラッキング中はwatchPositionを開始しない（onLocationが担当）
-      if (trackingStateRef.current === 'on') return;
-      if (gpsWatchId.current === null) {
-        BackgroundGeolocation.watchPosition(
-          (location) => {
-            const coords = location.coords;
-            setCurrentLocation(coords);
 
-            // 接近通知チェック（GPS ONのみの場合、フォアグラウンドで動作）
-            checkProximity(coords);
-
-            if (mode === 'follow' && mapViewRef.current !== null && isMapView(mapViewRef.current)) {
-              (mapViewRef.current as MapView).animateCamera(
-                {
-                  center: {
-                    latitude: coords.latitude,
-                    longitude: coords.longitude,
-                  },
-                },
-                { duration: 5 }
-              );
-            }
-          },
-          (error) => {
-            console.error('[tracking] watchPosition error', error);
-          },
-          {
-            interval: 2000,
-            persist: false,
-            desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
-          } as any
-        );
-        gpsWatchId.current = 'watching';
+      // トラッキング中でなければBackgroundGeolocationを開始
+      if (trackingStateRef.current !== 'on') {
+        const state = await BackgroundGeolocation.getState();
+        if (!state.enabled) {
+          await BackgroundGeolocation.start();
+          // 移動モードにして位置更新を継続させる
+          await BackgroundGeolocation.changePace(true);
+        }
       }
+
       if (headingSubscriber.current === null) {
         try {
           headingSubscriber.current = await watchHeadingAsync((pos) => {
@@ -302,13 +287,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       }
     },
-    [ensureBackgroundGeolocation, gpsAccuracyOption.desiredAccuracy, mapViewRef, checkProximity]
+    [ensureBackgroundGeolocation]
   );
 
   const stopGPS = useCallback(async () => {
-    if (gpsWatchId.current !== null) {
-      await BackgroundGeolocation.stopWatchPosition();
-      gpsWatchId.current = null;
+    // トラッキング中でなければBackgroundGeolocationを停止
+    if (trackingStateRef.current !== 'on') {
+      const state = await BackgroundGeolocation.getState();
+      if (state.enabled) {
+        await BackgroundGeolocation.stop();
+      }
     }
     if (headingSubscriber.current !== null) {
       headingSubscriber.current.remove();
@@ -319,18 +307,23 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const stopTracking = useCallback(async () => {
     try {
       await ensureBackgroundGeolocation();
-      const state: BackgroundState = await BackgroundGeolocation.getState();
-      if (state.enabled) {
-        await BackgroundGeolocation.stop();
+      // GPSがオンでない場合のみBackgroundGeolocationを停止
+      if (gpsStateRef.current === 'off') {
+        const state: BackgroundState = await BackgroundGeolocation.getState();
+        if (state.enabled) {
+          await BackgroundGeolocation.stop();
+        }
+        // React Stateをクリア（メモリ解放を促進）
+        setCurrentLocation(null);
       }
-
-      // React Stateをクリア（メモリ解放を促進）
-      setCurrentLocation(null);
+      // GPSがオンの場合はBackgroundGeolocationは継続（onLocationで位置更新を続ける）
     } catch (e) {
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
         projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
-        setCurrentLocation(null);
+        if (gpsStateRef.current === 'off') {
+          setCurrentLocation(null);
+        }
       }
     }
   }, [projectId, dataUser, ensureBackgroundGeolocation]);
@@ -400,10 +393,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setCurrentLocation(null);
         }
       } else {
-        if (gpsWatchId.current !== null) {
-          await BackgroundGeolocation.stopWatchPosition();
-          gpsWatchId.current = null;
-        }
         if (gpsState_ === 'follow') {
           await moveCurrentPosition();
         }
@@ -420,11 +409,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // 先にUIを更新（ボタンの色を即座に変更）
           setTrackingState(trackingState_);
           trackingStateRef.current = trackingState_;
-          // watchPositionを停止（onLocationに任せる）
-          if (gpsWatchId.current !== null) {
-            await BackgroundGeolocation.stopWatchPosition();
-            gpsWatchId.current = null;
-          }
           await startTracking();
           await moveCurrentPosition();
         } else if (trackingState_ === 'off') {
@@ -432,10 +416,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setTrackingState(trackingState_);
           trackingStateRef.current = trackingState_;
           await stopTracking();
-          // GPS状態に応じてwatchPositionを再開
-          if (gpsStateRef.current !== 'off') {
-            await startGPS(gpsStateRef.current);
-          }
+          // GPSがオンの場合はstopTracking内でBackgroundGeolocationは継続している
         }
       } catch (error) {
         console.error('Error in toggleTracking:', error);
@@ -443,7 +424,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         trackingStateRef.current = trackingState_;
       }
     },
-    [moveCurrentPosition, startTracking, stopTracking, startGPS]
+    [moveCurrentPosition, startTracking, stopTracking]
   );
 
   const toggleHeadingUp = useCallback(
@@ -706,6 +687,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             currentChunkSize: chunkInfo.currentChunkSize,
             totalPoints: metadata.totalPoints,
           });
+
+          // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）
+          const latestCoords = trackLogMMKV.getCurrentLocation();
+          if (latestCoords) {
+            setCurrentLocation(latestCoords);
+          }
         } else {
           await stopTracking();
           const { isOK, message } = await checkUnsavedTrackLog();
@@ -718,15 +705,32 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (!isOK) {
           await AlertAsync(message);
         }
+
+        // GPSがオンの場合もBackgroundGeolocationを開始
+        if (gpsStateRef.current !== 'off') {
+          const bgState = await BackgroundGeolocation.getState();
+          if (!bgState.enabled) {
+            await BackgroundGeolocation.start();
+            await BackgroundGeolocation.changePace(true);
+          }
+          if (headingSubscriber.current === null) {
+            try {
+              const permissionStatus = await confirmLocationPermission();
+              if (permissionStatus === 'granted') {
+                headingSubscriber.current = await watchHeadingAsync((pos) => {
+                  setAzimuth(pos.trueHeading);
+                });
+              }
+            } catch (error) {
+              console.error('Error starting heading subscriber:', error);
+            }
+          }
+        }
       }
       console.log('[tracking] useEffect initialization completed');
     })();
 
     return () => {
-      if (gpsWatchId.current !== null) {
-        BackgroundGeolocation.stopWatchPosition();
-        gpsWatchId.current = null;
-      }
       if (headingSubscriber.current !== null) {
         headingSubscriber.current.remove();
         headingSubscriber.current = null;
@@ -741,16 +745,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        // フォアグラウンド復帰時
         try {
           syncLocationFromMMKV();
         } catch (error) {
           console.error('Failed to refresh current location on foreground:', error);
         }
-        // GPSがONの場合、GPSサブスクライバーを再開（トラッキング中はstartGPS内でスキップされる）
-        if ((gpsState === 'show' || gpsState === 'follow') && gpsWatchId.current === null) {
-          await startGPS(gpsState);
-        }
 
+        // ヘディング再購読
         const shouldSubscribeHeading = trackingState === 'on' || gpsState !== 'off' || headingUp;
         if (shouldSubscribeHeading && headingSubscriber.current === null) {
           try {
@@ -769,12 +771,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
         if (headingUp) toggleHeadingUp(true);
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-        // バックグラウンド時はGPSサブスクライバーを一時停止（トラッキング中でない場合）
-        if (trackingState !== 'on' && gpsWatchId.current !== null) {
-          await BackgroundGeolocation.stopWatchPosition();
-          gpsWatchId.current = null;
-        }
+        // バックグラウンド移行時
+        // BackgroundGeolocationは継続（onLocationで位置更新を続ける）
 
+        // ヘディング購読を停止（バッテリー節約）
         if (headingSubscriber.current !== null) {
           headingSubscriber.current.remove();
           headingSubscriber.current = null;
@@ -792,9 +792,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     headingUp,
     toggleHeadingUp,
     trackingState,
-    startGPS,
-    moveCurrentPosition,
-    startTracking,
     syncLocationFromMMKV,
     confirmLocationPermission,
   ]);
