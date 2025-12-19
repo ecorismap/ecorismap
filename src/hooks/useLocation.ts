@@ -735,19 +735,26 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         } else {
           await stopTracking();
+          // 軌跡記録中だった場合のみ保存確認（GPSのみONの場合はスキップ）
+          if (trackLogMMKV.getTrackingState() === 'on') {
+            const { isOK, message } = await checkUnsavedTrackLog();
+            if (!isOK) {
+              await AlertAsync(message);
+            }
+          }
+        }
+      } else {
+        // 軌跡記録中だった場合のみ保存確認（GPSのみONの場合はスキップ）
+        const savedTrackingState = trackLogMMKV.getTrackingState();
+        if (savedTrackingState === 'on') {
           const { isOK, message } = await checkUnsavedTrackLog();
           if (!isOK) {
             await AlertAsync(message);
           }
         }
-      } else {
-        const { isOK, message } = await checkUnsavedTrackLog();
-        if (!isOK) {
-          await AlertAsync(message);
-        }
 
-        // GPSがオンの場合もBackgroundGeolocationを開始
-        if (gpsStateRef.current !== 'off') {
+        // GPSまたは軌跡がオンの場合はBackgroundGeolocationを開始
+        if (gpsStateRef.current !== 'off' || savedTrackingState === 'on') {
           const bgState = await BackgroundGeolocation.getState();
           if (!bgState.enabled) {
             await BackgroundGeolocation.start();
@@ -764,6 +771,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             } catch (error) {
               console.error('Error starting heading subscriber:', error);
             }
+          }
+
+          // 現在位置設定（GPS/軌跡共通）
+          const latestCoords = trackLogMMKV.getCurrentLocation();
+          if (latestCoords) {
+            setCurrentLocation(latestCoords);
           }
         }
       }
