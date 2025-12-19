@@ -260,7 +260,7 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeMapOrder = useCallback(
     (tileMap: TileMapType, direction: 'up' | 'down') => {
-      const newTileMaps = cloneDeep(maps);
+      const newTileMaps = cloneDeep(mapsRef.current);
       const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
 
       if (direction === 'up') {
@@ -377,7 +377,7 @@ export const useMaps = (): UseMapsReturnType => {
         dispatch(setTileMapsAction(newTileMaps));
       }
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const updateMapOrder = useCallback(

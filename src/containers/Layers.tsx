@@ -34,13 +34,18 @@ export default function LayerContainer() {
   const { importGeoFile } = useGeoFile();
   const { runTutrial } = useTutrial();
 
+  const layersRef = React.useRef(layers);
+  React.useEffect(() => {
+    layersRef.current = layers;
+  }, [layers]);
+
   const pressLayerOrder = useCallback(
     (layer: LayerType, direction: 'up' | 'down') => {
-      const index = layers.findIndex((l) => l.id === layer.id);
+      const index = layersRef.current.findIndex((l) => l.id === layer.id);
       if (index === -1) return;
       changeLayerOrder(index, direction);
     },
-    [changeLayerOrder, layers]
+    [changeLayerOrder]
   );
 
   const pressImportLayerAndData = useCallback(async () => {
