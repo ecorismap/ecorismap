@@ -96,6 +96,17 @@ jest.mock('../../utils/mmkvStorage', () => ({
   trackLogMMKV: {
     getCurrentLocation: jest.fn(() => null),
     setCurrentLocation: jest.fn(),
+    getTrackingState: jest.fn(() => 'off'),
+    setTrackingState: jest.fn(),
+    getTrackLog: jest.fn(() => null),
+    setTrackLog: jest.fn(),
+    clearTrackLog: jest.fn(),
+    getSize: jest.fn(() => 0),
+    setChunk: jest.fn(),
+    getChunk: jest.fn(() => null),
+    removeChunk: jest.fn(),
+    setMetadata: jest.fn(),
+    getMetadata: jest.fn(() => null),
   },
 }));
 jest.mock('../../components/molecules/AlertAsync', () => ({

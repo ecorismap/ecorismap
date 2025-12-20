@@ -93,6 +93,60 @@ jest.mock('react-native-mmkv', () => {
   };
 });
 
+// Mock mmkvStorage - use module path relative from src directory
+jest.mock('./src/utils/mmkvStorage.ts', () => {
+  const trackLogData = new Map();
+  return {
+    __esModule: true,
+    storage: {
+      set: jest.fn(),
+      getString: jest.fn(),
+      getNumber: jest.fn(),
+      getBoolean: jest.fn(),
+      delete: jest.fn(),
+      remove: jest.fn(),
+      contains: jest.fn(),
+      clearAll: jest.fn(),
+      getAllKeys: jest.fn(() => []),
+    },
+    trackLogStorage: {
+      set: jest.fn((key, value) => trackLogData.set(key, value)),
+      getString: jest.fn((key) => trackLogData.get(key)),
+      remove: jest.fn((key) => trackLogData.delete(key)),
+      clearAll: jest.fn(() => trackLogData.clear()),
+      getAllKeys: jest.fn(() => Array.from(trackLogData.keys())),
+    },
+    reduxMMKVStorage: {
+      setItem: jest.fn(() => Promise.resolve(true)),
+      getItem: jest.fn(() => Promise.resolve(null)),
+      removeItem: jest.fn(() => Promise.resolve()),
+    },
+    MMKVAsyncStorageCompat: {
+      setItem: jest.fn(() => Promise.resolve()),
+      getItem: jest.fn(() => Promise.resolve(null)),
+      removeItem: jest.fn(() => Promise.resolve()),
+      clear: jest.fn(() => Promise.resolve()),
+      getAllKeys: jest.fn(() => Promise.resolve([])),
+    },
+    trackLogMMKV: {
+      setTrackLog: jest.fn(),
+      getTrackLog: jest.fn(() => null),
+      clearTrackLog: jest.fn(),
+      getSize: jest.fn(() => 0),
+      setCurrentLocation: jest.fn(),
+      getCurrentLocation: jest.fn(() => null),
+      setTrackingState: jest.fn(),
+      getTrackingState: jest.fn(() => 'off'),
+      setChunk: jest.fn(),
+      getChunk: jest.fn(() => null),
+      removeChunk: jest.fn(),
+      setMetadata: jest.fn(),
+      getMetadata: jest.fn(() => null),
+    },
+    migrateFromAsyncStorage: jest.fn(() => Promise.resolve()),
+  };
+});
+
 jest.mock('@react-native-firebase/auth', () => ({
   __esModule: true,
   default: jest.fn(() => ({
