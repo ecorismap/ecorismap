@@ -182,6 +182,24 @@ export const trackLogMMKV = {
     }
   },
 
+  // 近接通知有効状態の保存/取得（kill後の復帰で即座に復元するため）
+  setProximityAlertEnabled: (enabled: boolean): void => {
+    try {
+      trackLogStorage.set('proximityAlertEnabled', enabled);
+    } catch (error) {
+      // console.error('Failed to save proximity alert enabled:', error);
+    }
+  },
+
+  getProximityAlertEnabled: (): boolean => {
+    try {
+      return trackLogStorage.getBoolean('proximityAlertEnabled') ?? false;
+    } catch (error) {
+      // console.error('Failed to get proximity alert enabled:', error);
+      return false;
+    }
+  },
+
   // チャンク操作用メソッド
   setChunk: (key: string, data: any): void => {
     try {

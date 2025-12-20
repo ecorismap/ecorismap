@@ -7,6 +7,7 @@ import { LocationType, RecordType, LayerType, ProximityAlertSettingsType, DataTy
 import { isLocationType } from '../utils/General';
 import { generateLabel } from '../utils/Layer';
 import i18n, { t } from '../i18n/config';
+import { trackLogMMKV } from '../utils/mmkvStorage';
 
 // 通知済みポイントの情報
 interface NotifiedPoint {
@@ -36,14 +37,24 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector((state: RootState) => state.dataSet);
 
+  // 初期化時にMMKVから読み込んだ値でenabledを上書き（kill後の即座復元用）
+  // Redux Persistが復元される前でもMMKVの値を使用することで、kill後も正しく動作する
+  const savedEnabled = trackLogMMKV.getProximityAlertEnabled();
+  const initialProximityAlert = {
+    ...proximityAlert,
+    enabled: savedEnabled || proximityAlert.enabled,
+  };
+
   // refで最新のstateを保持（コールバックがクロージャで古い参照を保持する問題を回避）
-  const proximityAlertRef = useRef<ProximityAlertSettingsType>(proximityAlert);
+  const proximityAlertRef = useRef<ProximityAlertSettingsType>(initialProximityAlert);
   const layersRef = useRef<LayerType[]>(layers);
   const dataSetRef = useRef<DataType[]>(dataSet);
 
   // refを最新に同期 + 設定変更時は通知済みポイントをリセット
   useEffect(() => {
     proximityAlertRef.current = proximityAlert;
+    // MMKVにも保存（kill後の即座復元用）
+    trackLogMMKV.setProximityAlertEnabled(proximityAlert.enabled);
     // 設定変更時は通知済みポイントをリセット（すぐに再通知可能にする）
     notifiedPointsRef.current.clear();
     lastNotificationTimeRef.current = 0;
