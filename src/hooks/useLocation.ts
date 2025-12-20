@@ -672,14 +672,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     (async () => {
       initializedRef.current = true;
 
-      // 先にstateを確認して、軌跡記録中だったらrefを先に更新
-      const preState = await BackgroundGeolocation.getState();
-      if (preState.enabled && Platform.OS === 'android') {
-        // MMKVから保存されたトラッキング状態を取得（GPSのみオンの場合は'off'）
-        const savedTrackingState = trackLogMMKV.getTrackingState();
-        if (savedTrackingState === 'on') {
-          // 先にrefを更新（onLocationコールバックが正しく動作するため）
-          trackingStateRef.current = 'on';
+      // kill後復帰用に保存済みのトラッキング状態を先に読み出す
+      const savedTrackingState = Platform.OS === 'android' ? trackLogMMKV.getTrackingState() : 'off';
+      const wasTracking = savedTrackingState === 'on';
+
+      if (wasTracking && Platform.OS === 'android') {
+        // onLocationで弾かれないように先にref/stateを復元
+        trackingStateRef.current = 'on';
+        setTrackingState('on');
+        if (gpsStateRef.current === 'off') {
+          setGpsState('follow');
+          gpsStateRef.current = 'follow';
         }
       }
 
@@ -689,10 +692,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       if (state.enabled) {
         if (Platform.OS === 'android') {
           // MMKVから保存されたトラッキング状態を取得して復元
-          const savedTrackingState = trackLogMMKV.getTrackingState();
-          if (savedTrackingState === 'on') {
-            setTrackingState('on');
-
+          if (wasTracking) {
             const chunkInfo = getCurrentChunkInfo();
             const metadata = getTrackMetadata();
             setTrackMetadata({
@@ -702,6 +702,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               currentChunkSize: chunkInfo.currentChunkSize,
               totalPoints: metadata.totalPoints,
             });
+            await moveCurrentPosition();
           }
 
           // GPS/軌跡どちらの場合も共通の処理
@@ -745,8 +746,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       } else {
         // 軌跡記録中だった場合のみ保存確認（GPSのみONの場合はスキップ）
-        const savedTrackingState = trackLogMMKV.getTrackingState();
-        if (savedTrackingState === 'on') {
+        if (wasTracking) {
           const { isOK, message } = await checkUnsavedTrackLog();
           if (!isOK) {
             await AlertAsync(message);
@@ -754,7 +754,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
 
         // GPSまたは軌跡がオンの場合はBackgroundGeolocationを開始
-        if (gpsStateRef.current !== 'off' || savedTrackingState === 'on') {
+        if (gpsStateRef.current !== 'off' || wasTracking) {
           const bgState = await BackgroundGeolocation.getState();
           if (!bgState.enabled) {
             await BackgroundGeolocation.start();
@@ -777,6 +777,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           const latestCoords = trackLogMMKV.getCurrentLocation();
           if (latestCoords) {
             setCurrentLocation(latestCoords);
+          } else if (wasTracking) {
+            await moveCurrentPosition();
           }
         }
       }
@@ -793,7 +795,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         locationSubscription.current = null;
       }
     };
-  }, [checkUnsavedTrackLog, confirmLocationPermission, ensureBackgroundGeolocation, stopTracking, trackingState]);
+  }, [
+    checkUnsavedTrackLog,
+    confirmLocationPermission,
+    ensureBackgroundGeolocation,
+    stopTracking,
+    trackingState,
+    moveCurrentPosition,
+  ]);
 
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
