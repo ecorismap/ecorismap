@@ -98,6 +98,8 @@ jest.mock('../../utils/mmkvStorage', () => ({
     setCurrentLocation: jest.fn(),
     getTrackingState: jest.fn(() => 'off'),
     setTrackingState: jest.fn(),
+    getGpsState: jest.fn(() => 'off'),
+    setGpsState: jest.fn(),
     getTrackLog: jest.fn(() => null),
     setTrackLog: jest.fn(),
     clearTrackLog: jest.fn(),

@@ -331,6 +331,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // GPSも停止
       setGpsState('off');
       gpsStateRef.current = 'off';
+      trackLogMMKV.setGpsState('off');
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
     } catch (e) {
@@ -413,6 +414,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
+      // GPSのみONのケースでもトラッキング状態を確実にOFFにしておく（キル復帰での誤保存防止）
+      if (trackingStateRef.current !== 'on') {
+        trackLogMMKV.setTrackingState('off');
+      }
+      trackLogMMKV.setGpsState(gpsState_);
+
       // 先にUIを更新（ボタンの色を即座に変更）
       setGpsState(gpsState_);
       gpsStateRef.current = gpsState_;
@@ -672,9 +679,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     (async () => {
       initializedRef.current = true;
 
-      // kill後復帰用に保存済みのトラッキング状態を先に読み出す
+      // kill後復帰用に保存済みの状態を先に読み出す
       const savedTrackingState = Platform.OS === 'android' ? trackLogMMKV.getTrackingState() : 'off';
+      const savedGpsState = Platform.OS === 'android' ? trackLogMMKV.getGpsState() : 'off';
       const wasTracking = savedTrackingState === 'on';
+
+      if (savedGpsState !== 'off') {
+        setGpsState(savedGpsState);
+        gpsStateRef.current = savedGpsState;
+      }
 
       if (wasTracking && Platform.OS === 'android') {
         // onLocationで弾かれないように先にref/stateを復元
@@ -684,6 +697,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setGpsState('follow');
           gpsStateRef.current = 'follow';
         }
+      }
+      // 追跡が不要な場合は念のためトラッキング状態をクリア（GPSのみONでの誤保存防止）
+      if (!wasTracking) {
+        trackLogMMKV.setTrackingState('off');
       }
 
       await ensureBackgroundGeolocation();
@@ -703,12 +720,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               totalPoints: metadata.totalPoints,
             });
             await moveCurrentPosition();
-          }
-
-          // GPS/軌跡どちらの場合も共通の処理
-          if (gpsStateRef.current === 'off') {
-            setGpsState('follow');
-            gpsStateRef.current = 'follow';
           }
 
           // 移動モードを確実に有効化（アプリキル後の再起動で静止モードになっている可能性があるため）

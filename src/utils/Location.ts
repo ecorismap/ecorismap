@@ -73,6 +73,9 @@ export const toLocationObject = (location: any): LocationObjectInput => {
 };
 
 export const checkAndStoreLocations = (locations: LocationObjectInput[]): void => {
+  // トラッキングがOFFの場合は軌跡を保存しない（GPSのみONでの記録を防止）
+  if (trackLogMMKV.getTrackingState() !== 'on') return;
+
   // メタデータから最終タイムスタンプを取得
   const metadata = getTrackMetadata();
 

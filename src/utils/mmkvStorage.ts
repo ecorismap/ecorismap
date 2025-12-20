@@ -164,6 +164,24 @@ export const trackLogMMKV = {
     }
   },
 
+  // GPS状態の保存/取得（kill後の復帰でGPS状態を復元するため）
+  setGpsState: (state: 'off' | 'show' | 'follow'): void => {
+    try {
+      trackLogStorage.set('gpsState', state);
+    } catch (error) {
+      // console.error('Failed to save gps state:', error);
+    }
+  },
+
+  getGpsState: (): 'off' | 'show' | 'follow' => {
+    try {
+      return (trackLogStorage.getString('gpsState') as 'off' | 'show' | 'follow') ?? 'off';
+    } catch (error) {
+      // console.error('Failed to get gps state:', error);
+      return 'off';
+    }
+  },
+
   // チャンク操作用メソッド
   setChunk: (key: string, data: any): void => {
     try {
