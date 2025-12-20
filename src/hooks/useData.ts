@@ -144,15 +144,15 @@ export const useData = (layerId: string): UseDataReturnType => {
   const updateRecordSetOrder = useCallback(
     (sortedRecordSet_: RecordType[]) => {
       changeCheckedAll(false);
-      // userIdごとにグループ化
+      // userIdごとにグループ化（undefinedはキー'undefined'として処理）
       const userMap: { [userId: string]: RecordType[] } = {};
       sortedRecordSet_.forEach((record) => {
-        if (!record.userId) return;
-        if (!userMap[record.userId]) userMap[record.userId] = [];
-        userMap[record.userId].push(record);
+        const key = record.userId ?? 'undefined';
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(record);
       });
       Object.entries(userMap).forEach(([userId, data]) => {
-        dispatch(setRecordSetAction({ layerId: targetLayer.id, userId, data }));
+        dispatch(setRecordSetAction({ layerId: targetLayer.id, userId: userId === 'undefined' ? undefined : userId, data }));
       });
     },
     [changeCheckedAll, dispatch, targetLayer]
