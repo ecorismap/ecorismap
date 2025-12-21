@@ -144,6 +144,8 @@ jest.mock('./src/utils/mmkvStorage.ts', () => {
       removeChunk: jest.fn(),
       setMetadata: jest.fn(),
       getMetadata: jest.fn(() => null),
+      setProximityAlertEnabled: jest.fn(),
+      getProximityAlertEnabled: jest.fn(() => false),
     },
     migrateFromAsyncStorage: jest.fn(() => Promise.resolve()),
   };

@@ -109,6 +109,8 @@ jest.mock('../../utils/mmkvStorage', () => ({
     removeChunk: jest.fn(),
     setMetadata: jest.fn(),
     getMetadata: jest.fn(() => null),
+    setProximityAlertEnabled: jest.fn(),
+    getProximityAlertEnabled: jest.fn(() => false),
   },
 }));
 jest.mock('../../components/molecules/AlertAsync', () => ({
