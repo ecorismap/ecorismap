@@ -149,13 +149,16 @@ export const MapTable = React.memo(() => {
 
   const keyExtractor = useCallback((item: any) => item.id, []);
 
+  // ListHeaderComponentをメモ化（不要な再マウントを防止）
+  const ListHeader = React.useMemo(() => <MapTableTitle />, []);
+
   return (
     // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
     <DraggableFlatList<any>
       data={filterdMaps}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
-      ListHeaderComponent={<MapTableTitle />}
+      ListHeaderComponent={ListHeader}
       stickyHeaderIndices={[0]}
       initialNumToRender={filterdMaps.length}
       onDragBegin={(index) => onDragBegin(filterdMaps[index])}
