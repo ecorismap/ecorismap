@@ -175,10 +175,12 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
           if (!notified) {
             // 未通知の場合、連続通知防止チェック
             if (now - lastNotificationTimeRef.current >= MIN_NOTIFICATION_INTERVAL) {
-              const pointName = getPointName(record, layer);
-              speakAlert(pointName);
+              // 先に通知済みとして記録（次の位置更新が来る前に記録して重複を防止）
               notifiedPointsRef.current.set(record.id, { id: record.id, notifiedAt: now });
               lastNotificationTimeRef.current = now;
+
+              const pointName = getPointName(record, layer);
+              speakAlert(pointName);
             }
           }
         } else if (dist > resetThreshold && notified) {
