@@ -181,15 +181,21 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
 
         if (dist <= threshold) {
           // 閾値以内に入った
-          // 現在の距離が該当する通知ステップを取得（閾値以下のステップのみ対象）
-          const currentStep = NOTIFICATION_STEPS.find((step) => step <= threshold && dist <= step);
-          // 前回通知したステップを取得
+          // 現在の距離より大きい最小のステップを取得（閾値以下のステップのみ対象）
+          // 例: dist=80m, threshold=100m → stepsInRange=[100,50,20,10,5] → currentStep=100
+          // 例: dist=45m, threshold=100m → stepsInRange=[100,50,20,10,5] → currentStep=50
+          const stepsInRange = NOTIFICATION_STEPS.filter((step) => step <= threshold);
+          const currentStep = stepsInRange.find((step) => dist <= step);
+
+          // 前回通知時のステップを取得
           const lastStep = notified
-            ? NOTIFICATION_STEPS.find((step) => step <= threshold && notified.lastNotifiedDistance <= step)
+            ? stepsInRange.find((step) => notified.lastNotifiedDistance <= step)
             : undefined;
 
-          // 新しいステップに入った場合に通知（より小さいステップに入った = より近づいた）
-          const shouldNotify = currentStep !== undefined && currentStep !== lastStep;
+          // 新しいより小さいステップに入った場合に通知
+          // currentStep < lastStep は「より近づいた」を意味する
+          const shouldNotify =
+            currentStep !== undefined && (lastStep === undefined || currentStep < lastStep);
 
           if (shouldNotify && now - lastNotificationTimeRef.current >= MIN_NOTIFICATION_INTERVAL) {
             // 先に通知済みとして記録（次の位置更新が来る前に記録して重複を防止）
@@ -201,7 +207,8 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
             lastNotificationTimeRef.current = now;
 
             const pointName = getPointName(record, layer);
-            speakAlert(pointName, dist);
+            // 通知はステップの値（閾値）を読み上げる
+            speakAlert(pointName, currentStep);
           }
         } else if (dist > resetThreshold && notified) {
           // 閾値の2倍以上離れたらリセット（再接近時に再通知可能）
