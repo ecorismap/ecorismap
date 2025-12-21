@@ -895,7 +895,7 @@
       "distance": "通知距離を選択",
       "targetLayers": "対象レイヤー",
       "noPointLayers": "ポイントレイヤーがありません",
-      "speechMessage": "{{name}}に近づきました"
+      "speechMessage": "{{name}}まで{{distance}}メートル"
     }
   }
 }

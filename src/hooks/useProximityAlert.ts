@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
+import { Vibration } from 'react-native';
 import { useSelector } from 'react-redux';
 import * as Speech from 'expo-speech';
 import { distance, point } from '@turf/turf';
@@ -13,6 +14,7 @@ import { trackLogMMKV } from '../utils/mmkvStorage';
 interface NotifiedPoint {
   id: string;
   notifiedAt: number;
+  lastNotifiedDistance: number; // 最後に通知した距離（メートル）
 }
 
 // フック戻り値の型
@@ -28,8 +30,11 @@ export interface UseProximityAlertReturnType {
 const DEFAULT_PROXIMITY_ALERT: ProximityAlertSettingsType = {
   enabled: false,
   targetLayerIds: [],
-  distanceThreshold: 10,
+  distanceThreshold: 20,
 };
+
+// 通知距離のステップ（メートル）- 大きい順
+const NOTIFICATION_STEPS = [1000, 500, 100, 50, 20, 10, 5] as const;
 
 export const useProximityAlert = (): UseProximityAlertReturnType => {
   // Redux state
@@ -80,9 +85,13 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   /**
    * 音声で通知（国際化対応）
    */
-  const speakAlert = useCallback((pointName: string) => {
-    const message = t('settings.proximityAlert.speechMessage', { name: pointName });
+  const speakAlert = useCallback((pointName: string, distanceMeters: number) => {
+    const roundedDistance = Math.round(distanceMeters);
+    const message = t('settings.proximityAlert.speechMessage', { name: pointName, distance: roundedDistance });
     const lang = i18n.language;
+
+    // バイブレーション（短い振動パターン: 200ms振動、100ms休止、200ms振動）
+    Vibration.vibrate([0, 200, 100, 200]);
 
     Speech.speak(message, {
       language: lang.startsWith('ja') ? 'ja' : 'en',
@@ -162,7 +171,7 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
       const now = Date.now();
       const targetPoints = getTargetPoints();
       const threshold = currentSettings.distanceThreshold;
-      const resetThreshold = threshold * 2; // 閾値の2倍離れたらリセット
+      const resetThreshold = threshold; // 閾値を離れたらリセット
 
       for (const { record, layer } of targetPoints) {
         if (!isLocationType(record.coords)) continue;
@@ -172,16 +181,27 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
 
         if (dist <= threshold) {
           // 閾値以内に入った
-          if (!notified) {
-            // 未通知の場合、連続通知防止チェック
-            if (now - lastNotificationTimeRef.current >= MIN_NOTIFICATION_INTERVAL) {
-              // 先に通知済みとして記録（次の位置更新が来る前に記録して重複を防止）
-              notifiedPointsRef.current.set(record.id, { id: record.id, notifiedAt: now });
-              lastNotificationTimeRef.current = now;
+          // 現在の距離が該当する通知ステップを取得（閾値以下のステップのみ対象）
+          const currentStep = NOTIFICATION_STEPS.find((step) => step <= threshold && dist <= step);
+          // 前回通知したステップを取得
+          const lastStep = notified
+            ? NOTIFICATION_STEPS.find((step) => step <= threshold && notified.lastNotifiedDistance <= step)
+            : undefined;
 
-              const pointName = getPointName(record, layer);
-              speakAlert(pointName);
-            }
+          // 新しいステップに入った場合に通知（より小さいステップに入った = より近づいた）
+          const shouldNotify = currentStep !== undefined && currentStep !== lastStep;
+
+          if (shouldNotify && now - lastNotificationTimeRef.current >= MIN_NOTIFICATION_INTERVAL) {
+            // 先に通知済みとして記録（次の位置更新が来る前に記録して重複を防止）
+            notifiedPointsRef.current.set(record.id, {
+              id: record.id,
+              notifiedAt: now,
+              lastNotifiedDistance: dist,
+            });
+            lastNotificationTimeRef.current = now;
+
+            const pointName = getPointName(record, layer);
+            speakAlert(pointName, dist);
           }
         } else if (dist > resetThreshold && notified) {
           // 閾値の2倍以上離れたらリセット（再接近時に再通知可能）

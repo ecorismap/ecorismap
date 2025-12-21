@@ -895,7 +895,7 @@
       "distance": "Select notification distance",
       "targetLayers": "Target layers",
       "noPointLayers": "No point layers available",
-      "speechMessage": "Approaching {{name}}"
+      "speechMessage": "{{distance}} meters to {{name}}"
     }
   }
 }
