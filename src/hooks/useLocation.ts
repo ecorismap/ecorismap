@@ -793,7 +793,6 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         }
       }
-      console.log('[tracking] useEffect initialization completed');
     })();
 
     return () => {

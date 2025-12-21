@@ -83,8 +83,9 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   const speakAlert = useCallback((pointName: string) => {
     const message = t('settings.proximityAlert.speechMessage', { name: pointName });
     const lang = i18n.language;
+
     Speech.speak(message, {
-      language: lang.startsWith('ja') ? 'ja-JP' : 'en-US',
+      language: lang.startsWith('ja') ? 'ja' : 'en',
       rate: 1.0,
       pitch: 1.0,
     });
@@ -149,10 +150,14 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
       const currentSettings = proximityAlertRef.current;
 
       // 機能が無効の場合はスキップ
-      if (!currentSettings.enabled) return;
+      if (!currentSettings.enabled) {
+        return;
+      }
 
       // GPS精度が悪い場合はスキップ（30m以上）
-      if (currentLocation.accuracy && currentLocation.accuracy > 30) return;
+      if (currentLocation.accuracy && currentLocation.accuracy > 30) {
+        return;
+      }
 
       const now = Date.now();
       const targetPoints = getTargetPoints();
