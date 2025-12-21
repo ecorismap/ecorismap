@@ -212,24 +212,29 @@ export const DataTable = React.memo(() => {
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
+  // ListHeaderComponentをメモ化（頻繁な再レンダリングでボタンが反応しなくなる問題を回避）
+  const ListHeader = useCallback(
+    () => (
+      <DataTitle
+        isMapMemoLayer={isMapMemoLayer}
+        visibleAll={visibleAll}
+        onVisibleAll={onVisibleAll}
+        checkedAll={checkedAll}
+        onCheckAll={onCheckAll}
+        onChangeOrder={onChangeOrder}
+        sortedName={sortedName}
+        sortedOrder={sortedOrder}
+        projectId={projectId}
+        layer={layer}
+      />
+    ),
+    [isMapMemoLayer, visibleAll, onVisibleAll, checkedAll, onCheckAll, onChangeOrder, sortedName, sortedOrder, projectId, layer]
+  );
+
   return sortedRecordSet.length !== 0 ? (
     // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
     <DraggableFlatList<RecordType>
-      // eslint-disable-next-line react/no-unstable-nested-components
-      ListHeaderComponent={() => (
-        <DataTitle
-          isMapMemoLayer={isMapMemoLayer}
-          visibleAll={visibleAll}
-          onVisibleAll={onVisibleAll}
-          checkedAll={checkedAll}
-          onCheckAll={onCheckAll}
-          onChangeOrder={onChangeOrder}
-          sortedName={sortedName}
-          sortedOrder={sortedOrder}
-          projectId={projectId}
-          layer={layer}
-        />
-      )}
+      ListHeaderComponent={ListHeader}
       data={sortedRecordSet}
       stickyHeaderIndices={[0]}
       initialNumToRender={10}
