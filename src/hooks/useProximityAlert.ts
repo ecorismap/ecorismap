@@ -181,15 +181,18 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
 
         if (dist <= threshold) {
           // 閾値以内に入った
-          // 現在の距離より大きい最小のステップを取得（閾値以下のステップのみ対象）
+          // 現在の距離以上で最小のステップを取得（閾値以下のステップのみ対象）
+          // 配列は大きい順なので、逆順で検索して dist <= step を満たす最小のステップを見つける
           // 例: dist=80m, threshold=100m → stepsInRange=[100,50,20,10,5] → currentStep=100
           // 例: dist=45m, threshold=100m → stepsInRange=[100,50,20,10,5] → currentStep=50
           const stepsInRange = NOTIFICATION_STEPS.filter((step) => step <= threshold);
-          const currentStep = stepsInRange.find((step) => dist <= step);
+          // 小さい順に検索して、dist以上の最小ステップを見つける
+          const stepsAscending = [...stepsInRange].reverse(); // [5, 10, 20, 50, 100]
+          const currentStep = stepsAscending.find((step) => dist <= step);
 
-          // 前回通知時のステップを取得
+          // 前回通知時のステップを取得（同様に小さい順で検索）
           const lastStep = notified
-            ? stepsInRange.find((step) => notified.lastNotifiedDistance <= step)
+            ? stepsAscending.find((step) => notified.lastNotifiedDistance <= step)
             : undefined;
 
           // 新しいより小さいステップに入った場合に通知
