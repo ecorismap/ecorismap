@@ -663,6 +663,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           currentChunkSize: 0,
           totalPoints: 0,
         });
+
+        // 現在地もクリア（表示更新のトリガー）
+        setCurrentLocation(null);
       }
     }
     return { isOK: true, message: '' };

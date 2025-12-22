@@ -6,10 +6,16 @@ import { getDisplayBufferSimplified } from '../../utils/Location';
 
 interface Props {
   currentLocation: { latitude: number; longitude: number } | null;
+  totalPoints: number;
 }
 
 // カスタム比較関数で不要な再レンダリングを防ぐ
 const arePropsEqual = (prevProps: Props, nextProps: Props) => {
+  // totalPointsが変更されたら再レンダリング（破棄時のトリガー用）
+  if (prevProps.totalPoints !== nextProps.totalPoints) {
+    return false;
+  }
+
   // 現在位置が変更されたら再レンダリング
   if (
     prevProps.currentLocation?.latitude !== nextProps.currentLocation?.latitude ||
@@ -22,10 +28,10 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
 };
 
 export const CurrentTrackLog = React.memo((props: Props) => {
-  // props.currentLocationは再レンダリングのトリガーとして使用（arePropsEqualで比較）
+  // props.currentLocationとtotalPointsは再レンダリングのトリガーとして使用（arePropsEqualで比較）
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { currentLocation } = props;
+  const { currentLocation, totalPoints } = props;
 
   // 実際のデータはMMKVから直接取得
   const currentChunk = getDisplayBufferSimplified(400);

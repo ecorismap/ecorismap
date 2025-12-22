@@ -20,8 +20,11 @@ export const TrackLog = React.memo((props: Props) => {
       {/* 保存済みチャンク（静的） - savedChunkCountが変わった時のみ再レンダリング */}
       <SavedTrackLog savedChunkCount={metadata.savedChunkCount} />
 
-      {/* 現在記録中のチャンク（動的） - 現在地が変わった時に再レンダリング */}
-      <CurrentTrackLog currentLocation={metadata.currentLocation || null} />
+      {/* 現在記録中のチャンク（動的） - 現在地またはtotalPointsが変わった時に再レンダリング */}
+      <CurrentTrackLog
+        currentLocation={metadata.currentLocation || null}
+        totalPoints={metadata.totalPoints}
+      />
     </>
   );
 });
