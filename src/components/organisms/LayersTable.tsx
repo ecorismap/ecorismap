@@ -283,13 +283,16 @@ export const LayersTable = React.memo(() => {
 
   const keyExtractor = useCallback((item: LayerType) => item.id, []);
 
+  // ListHeaderComponentをメモ化（不要な再マウントを防止）
+  const ListHeader = useMemo(() => <LayersTitle hasCustomLabel={hasCustomLabel} />, [hasCustomLabel]);
+
   return (
     // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
     <DraggableFlatList<LayerType>
       data={filterdLayers}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
-      ListHeaderComponent={<LayersTitle hasCustomLabel={hasCustomLabel} />}
+      ListHeaderComponent={ListHeader}
       stickyHeaderIndices={[0]}
       initialNumToRender={5}
       maxToRenderPerBatch={5}

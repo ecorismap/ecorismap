@@ -99,6 +99,11 @@ const createTestStore = (initialData: RecordType[] = []) => {
         isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
         showMockGPSButton: false,
+        proximityAlert: {
+          enabled: false,
+          targetLayerIds: [],
+          distanceThreshold: 10,
+        },
       },
       user: {
         uid: 'user1',
@@ -268,6 +273,11 @@ describe('useData', () => {
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
             showMockGPSButton: false,
+            proximityAlert: {
+              enabled: false,
+              targetLayerIds: [],
+              distanceThreshold: 10,
+            },
           },
           user: {
             uid: 'user1',
@@ -381,6 +391,11 @@ describe('useData', () => {
             isModalMapMemoToolHidden: false,
             currentInfoTool: 'ALL_INFO' as const,
             showMockGPSButton: false,
+            proximityAlert: {
+              enabled: false,
+              targetLayerIds: [],
+              distanceThreshold: 10,
+            },
           },
           user: {
             uid: 'user1',

@@ -941,8 +941,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.track_start'));
       if (!ret) return;
       if ((await confirmLocationPermission()) !== 'granted') return;
-      await toggleTracking('on');
       await toggleGPS('follow');
+      await toggleTracking('on');
       setFeatureButton('NONE');
     } else if (trackingState === 'on') {
       const ret = await ConfirmAsync(t('Home.confirm.track'));

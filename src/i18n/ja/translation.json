@@ -430,6 +430,9 @@
     },
     "gps_settings": {
       "text": "GPSの設定"
+    },
+    "proximity_alert": {
+      "text": "接近通知"
     }
   },
   "Projects": {
@@ -824,7 +827,8 @@
       "failDeleteFile": "プロジェクトのファイルの削除に失敗しました"
     },
     "notification": {
-      "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。"
+      "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。",
+      "gpsOn": "GPS位置情報取得中"
     },
     "pdf": {
       "comment": "この地図はウェブメルカトル図法で作成しています。スケールの長さは図の中心位置での目安です。"
@@ -883,5 +887,15 @@
     "cancelButton": "キャンセル",
     "okButton": "OK",
     "exportFailed": "エクスポートに失敗しました"
+  },
+  "settings": {
+    "proximityAlert": {
+      "title": "接近通知設定",
+      "enable": "接近通知を有効にする",
+      "distance": "通知距離を選択",
+      "targetLayers": "対象レイヤー",
+      "noPointLayers": "ポイントレイヤーがありません",
+      "speechMessage": "{{name}}まで{{distance}}メートル"
+    }
   }
 }

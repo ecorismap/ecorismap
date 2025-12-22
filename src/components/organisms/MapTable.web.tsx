@@ -1,10 +1,20 @@
-import React, { useContext, useCallback } from 'react';
+import React, { useContext, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { MapsContext } from '../../contexts/Maps';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { t } from 'i18next';
 
 // タイトル行
@@ -23,31 +33,43 @@ const MapTableTitle = () => (
   </View>
 );
 
-export const MapTable = React.memo(() => {
-  const {
-    filterdMaps,
+// ドラッグ可能な行コンポーネント
+const SortableMapRow = React.memo(
+  ({
+    item,
     changeVisible,
     pressDownloadMap,
     gotoMapEdit,
     jumpToBoundary,
     changeExpand,
     pressMapOrder,
-    updateMapOrder,
-    onDragBegin,
-  } = useContext(MapsContext);
-  //閉じたグループの子要素を除外する
+  }: {
+    item: any;
+    changeVisible: (visible: boolean, item: any) => void;
+    pressDownloadMap: (item: any) => void;
+    gotoMapEdit: (item: any) => void;
+    jumpToBoundary: (item: any) => void;
+    changeExpand: (expanded: boolean, item: any) => void;
+    pressMapOrder: (item: any, direction: 'up' | 'down') => void;
+  }) => {
+    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
-  // 各行の描画
-  const renderItem = useCallback(
-    ({ item, drag, isActive }: RenderItemParams<any>) => {
-      const backgroundColor = isActive
-        ? COLOR.WHITE
-        : item.isGroup
-        ? COLOR.KHAKI
-        : item.groupId
-        ? COLOR.LIGHTKHAKI
-        : COLOR.MAIN;
-      return (
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    const backgroundColor = isDragging
+      ? COLOR.WHITE
+      : item.isGroup
+      ? COLOR.KHAKI
+      : item.groupId
+      ? COLOR.LIGHTKHAKI
+      : COLOR.MAIN;
+
+    return (
+      <div ref={setNodeRef} style={style}>
         <View style={[styles.tr, { backgroundColor }]}>
           <View
             style={[
@@ -81,9 +103,7 @@ export const MapTable = React.memo(() => {
             </View>
           </View>
           <Pressable
-            style={[styles.td, { flex: 4 }]}
-            onLongPress={drag}
-            disabled={isActive}
+            style={[styles.td, { flex: 4, cursor: 'grab' } as any]}
             onPress={() => {
               if (item.isGroup) {
                 changeExpand(!item.expanded, item);
@@ -91,6 +111,7 @@ export const MapTable = React.memo(() => {
                 jumpToBoundary(item);
               }
             }}
+            {...listeners}
           >
             <View style={{ flex: 1 }}>
               <Text>{item.name}</Text>
@@ -142,34 +163,86 @@ export const MapTable = React.memo(() => {
             )}
           </View>
         </View>
-      );
-    },
-    [changeExpand, changeVisible, gotoMapEdit, jumpToBoundary, pressMapOrder, pressDownloadMap]
+      </div>
+    );
+  }
+);
+
+export const MapTable = React.memo(() => {
+  const {
+    filterdMaps,
+    changeVisible,
+    pressDownloadMap,
+    gotoMapEdit,
+    jumpToBoundary,
+    changeExpand,
+    pressMapOrder,
+    updateMapOrder,
+    onDragBegin,
+  } = useContext(MapsContext);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
   );
 
-  const keyExtractor = useCallback((item: any) => item.id, []);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
 
-  // ListHeaderComponentをメモ化（不要な再マウントを防止）
-  const ListHeader = React.useMemo(() => <MapTableTitle />, []);
+      if (over && active.id !== over.id) {
+        const oldIndex = filterdMaps.findIndex((map: any) => map.id === active.id);
+        const newIndex = filterdMaps.findIndex((map: any) => map.id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          updateMapOrder(filterdMaps, oldIndex, newIndex > oldIndex ? newIndex + 1 : newIndex);
+        }
+      }
+    },
+    [filterdMaps, updateMapOrder]
+  );
+
+  const handleDragStart = useCallback(
+    (event: { active: { id: string | number } }) => {
+      const map = filterdMaps.find((m: any) => m.id === event.active.id);
+      if (map) {
+        onDragBegin(map);
+      }
+    },
+    [filterdMaps, onDragBegin]
+  );
+
+  const itemIds = useMemo(() => filterdMaps.map((map: any) => map.id), [filterdMaps]);
 
   return (
-    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
-    <DraggableFlatList<any>
-      data={filterdMaps}
-      keyExtractor={keyExtractor}
-      renderItem={renderItem}
-      ListHeaderComponent={ListHeader}
-      stickyHeaderIndices={[0]}
-      initialNumToRender={filterdMaps.length}
-      onDragBegin={(index) => onDragBegin(filterdMaps[index])}
-      onDragEnd={({ from, to }) => updateMapOrder(filterdMaps, from, to > from ? to + 1 : to)}
-      activationDistance={5}
-      removeClippedSubviews
-    />
+    <View style={styles.container}>
+      <MapTableTitle />
+      {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+        {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {filterdMaps.map((item: any) => (
+            <SortableMapRow
+              key={item.id}
+              item={item}
+              changeVisible={changeVisible}
+              pressDownloadMap={pressDownloadMap}
+              gotoMapEdit={gotoMapEdit}
+              jumpToBoundary={jumpToBoundary}
+              changeExpand={changeExpand}
+              pressMapOrder={pressMapOrder}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,

@@ -118,7 +118,7 @@ export const useLayers = (): UseLayersReturnType => {
 
   const changeLayerOrder = useCallback(
     (index: number, direction: 'up' | 'down') => {
-      const newLayers = cloneDeep(layers);
+      const newLayers = cloneDeep(layersRef.current);
       if (direction === 'up') {
         if (index === 0) return;
 
@@ -296,7 +296,7 @@ export const useLayers = (): UseLayersReturnType => {
         dispatch(setLayersAction(newLayers));
       }
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   const onDragBegin = useCallback(

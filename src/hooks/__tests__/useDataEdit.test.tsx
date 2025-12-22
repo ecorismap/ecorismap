@@ -115,6 +115,11 @@ const createTestStore = (initialRecords: RecordType[] = []) => {
         isModalMapMemoToolHidden: false,
         currentInfoTool: 'ALL_INFO' as const,
         showMockGPSButton: false,
+        proximityAlert: {
+          enabled: false,
+          targetLayerIds: [],
+          distanceThreshold: 10,
+        },
       },
       user: {
         uid: 'user1',

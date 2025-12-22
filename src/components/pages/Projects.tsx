@@ -18,6 +18,8 @@ import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { ProjectsContext } from '../../contexts/Projects';
 import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptPassword';
+import { ProjectType } from '../../types';
+import { ListRenderItemInfo } from 'react-native';
 
 type SortField = 'name' | 'abstract' | 'storage' | 'license' | 'encryptedAt';
 type SortOrder = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
@@ -106,7 +108,7 @@ export default function Projects() {
   }, [filteredProjects, sortField, sortOrder]);
 
   // テーブルヘッダー（カラム名）のレンダリング
-  const renderTableHeader = () => (
+  const renderTableHeader = useCallback(() => (
     <View style={{ flexDirection: 'row', height: 45 }}>
       <Pressable style={[styles.th, { width: 40 }]} onPress={toggleShowOnlyFavorites}>
         <MaterialCommunityIcons
@@ -164,6 +166,76 @@ export default function Projects() {
         )}
       </Pressable>
     </View>
+  ), [handleSort, showOnlyFavorites, sortField, sortOrder, toggleShowOnlyFavorites]);
+
+  // renderItemをメモ化（不要な再生成を防止）
+  const renderItem = useCallback(
+    ({ item, index }: ListRenderItemInfo<ProjectType>) => (
+      <Pressable
+        key={index}
+        style={{
+          flex: 1,
+          height: 45,
+          flexDirection: 'row',
+        }}
+        onPress={() => gotoProject(item.id)}
+      >
+        <Pressable
+          style={[styles.td, { width: 40, alignItems: 'center' }]}
+          onPress={() => toggleFavorite(item.id)}
+        >
+          <MaterialCommunityIcons
+            name={favoriteProjectIds.includes(item.id) ? 'star' : 'star-outline'}
+            size={20}
+            color={favoriteProjectIds.includes(item.id) ? '#FFD700' : COLOR.GRAY4}
+          />
+        </Pressable>
+        <View style={[styles.td, { flex: 3, width: 140 }]}>
+          <Text
+            adjustsFontSizeToFit={true}
+            numberOfLines={2}
+            onPress={() => gotoProject(item.id)}
+            testID={`project-${index}`}
+          >
+            {item.name}
+          </Text>
+        </View>
+        <View style={[styles.td, { flex: 2, width: 120 }]}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            {item.abstract}
+          </Text>
+        </View>
+        <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            {item.settingsEncryptedAt
+              ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '-'}
+          </Text>
+        </View>
+        <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
+          {item.ownerUid === user.uid && (
+            <MaterialCommunityIcons name="crown" size={18} color={COLOR.GRAY4} />
+          )}
+        </View>
+        <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
+          </Text>
+        </View>
+        <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+            {item.license ?? 'Free'}
+          </Text>
+        </View>
+      </Pressable>
+    ),
+    [favoriteProjectIds, gotoProject, toggleFavorite, user.uid]
   );
 
   return (
@@ -194,73 +266,7 @@ export default function Projects() {
                 style={Platform.OS === 'web' ? { maxHeight: tableHeight } : undefined}
                 data={sortedProjects}
                 extraData={sortedProjects}
-                renderItem={({ item, index }) => (
-                  <Pressable
-                    key={index}
-                    style={{
-                      flex: 1,
-                      height: 45,
-                      flexDirection: 'row',
-                    }}
-                    onPress={() => gotoProject(item.id)}
-                  >
-                    <Pressable
-                      style={[styles.td, { width: 40, alignItems: 'center' }]}
-                      onPress={() => toggleFavorite(item.id)}
-                    >
-                      <MaterialCommunityIcons
-                        name={favoriteProjectIds.includes(item.id) ? 'star' : 'star-outline'}
-                        size={20}
-                        color={favoriteProjectIds.includes(item.id) ? '#FFD700' : COLOR.GRAY4}
-                      />
-                    </Pressable>
-                    <View style={[styles.td, { flex: 3, width: 140 }]}>
-                      <Text
-                        adjustsFontSizeToFit={true}
-                        numberOfLines={2}
-                        onPress={() => gotoProject(item.id)}
-                        testID={`project-${index}`}
-                      >
-                        {item.name}
-                      </Text>
-                    </View>
-                    <View style={[styles.td, { flex: 2, width: 120 }]}>
-                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                        {item.abstract}
-                      </Text>
-                    </View>
-                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                        {item.settingsEncryptedAt
-                          ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '-'}
-                      </Text>
-                    </View>
-                    <View style={[styles.td, { flex: 2, width: 100, alignItems: 'center' }]}>
-                      {item.ownerUid === user.uid && (
-                        <MaterialCommunityIcons name="crown" size={18} color={COLOR.GRAY4} />
-                      )}
-                    </View>
-                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
-                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                        {`${
-                          item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0
-                        }GB`}
-                      </Text>
-                    </View>
-                    <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-                      <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                        {item.license ?? 'Free'}
-                      </Text>
-                    </View>
-                  </Pressable>
-                )}
+                renderItem={renderItem}
               />
             </View>
           </ScrollView>

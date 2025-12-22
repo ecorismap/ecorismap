@@ -145,7 +145,61 @@ export const trackLogMMKV = {
       return null;
     }
   },
-  
+
+  // トラッキング状態の保存/取得（kill後の復帰で軌跡記録を正しく復元するため）
+  setTrackingState: (state: 'on' | 'off'): void => {
+    try {
+      trackLogStorage.set('trackingState', state);
+    } catch (error) {
+      // console.error('Failed to save tracking state:', error);
+    }
+  },
+
+  getTrackingState: (): 'on' | 'off' => {
+    try {
+      return (trackLogStorage.getString('trackingState') as 'on' | 'off') ?? 'off';
+    } catch (error) {
+      // console.error('Failed to get tracking state:', error);
+      return 'off';
+    }
+  },
+
+  // GPS状態の保存/取得（kill後の復帰でGPS状態を復元するため）
+  setGpsState: (state: 'off' | 'show' | 'follow'): void => {
+    try {
+      trackLogStorage.set('gpsState', state);
+    } catch (error) {
+      // console.error('Failed to save gps state:', error);
+    }
+  },
+
+  getGpsState: (): 'off' | 'show' | 'follow' => {
+    try {
+      return (trackLogStorage.getString('gpsState') as 'off' | 'show' | 'follow') ?? 'off';
+    } catch (error) {
+      // console.error('Failed to get gps state:', error);
+      return 'off';
+    }
+  },
+
+  // 近接通知有効状態の保存/取得（kill後の復帰で即座に復元するため）
+  setProximityAlertEnabled: (enabled: boolean): void => {
+    try {
+      trackLogStorage.set('proximityAlertEnabled', enabled);
+    } catch (error) {
+      // console.error('Failed to save proximity alert enabled:', error);
+    }
+  },
+
+  getProximityAlertEnabled: (): boolean => {
+    try {
+      return trackLogStorage.getBoolean('proximityAlertEnabled') ?? false;
+    } catch (error) {
+      // console.error('Failed to get proximity alert enabled:', error);
+      return false;
+    }
+  },
+
   // チャンク操作用メソッド
   setChunk: (key: string, data: any): void => {
     try {

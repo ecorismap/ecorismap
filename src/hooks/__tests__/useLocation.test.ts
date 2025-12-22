@@ -31,6 +31,7 @@ jest.mock('react-native-background-geolocation', () => {
     watchPosition: jest.fn(),
     stopWatchPosition: jest.fn(),
     onLocation: jest.fn().mockImplementation(() => subscription),
+    changePace: jest.fn(),
   };
 
   return {
@@ -95,6 +96,21 @@ jest.mock('../../utils/mmkvStorage', () => ({
   trackLogMMKV: {
     getCurrentLocation: jest.fn(() => null),
     setCurrentLocation: jest.fn(),
+    getTrackingState: jest.fn(() => 'off'),
+    setTrackingState: jest.fn(),
+    getGpsState: jest.fn(() => 'off'),
+    setGpsState: jest.fn(),
+    getTrackLog: jest.fn(() => null),
+    setTrackLog: jest.fn(),
+    clearTrackLog: jest.fn(),
+    getSize: jest.fn(() => 0),
+    setChunk: jest.fn(),
+    getChunk: jest.fn(() => null),
+    removeChunk: jest.fn(),
+    setMetadata: jest.fn(),
+    getMetadata: jest.fn(() => null),
+    setProximityAlertEnabled: jest.fn(),
+    getProximityAlertEnabled: jest.fn(() => false),
   },
 }));
 jest.mock('../../components/molecules/AlertAsync', () => ({
@@ -214,7 +230,8 @@ describe('useLocation', () => {
     });
 
     expect(result.current.gpsState).toBe('show');
-    expect(mockBackgroundGeolocation.watchPosition).toHaveBeenCalled();
+    // GPS ON時はBackgroundGeolocation.startが呼ばれる（watchPositionは廃止）
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
   });
 
   it('should toggle heading up', async () => {

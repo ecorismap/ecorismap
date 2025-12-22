@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useState, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,15 +8,23 @@ import { RecordType, PhotoType, FormatType, LayerType } from '../../types';
 import dayjs from '../../i18n/dayjs';
 import { DataContext } from '../../contexts/Data';
 import { SortOrderType } from '../../utils/Data';
-import DraggableFlatList, { RenderItemParams } from 'react-native-draggable-flatlist';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-// メモ化されたデータ行コンポーネント
-const DataRow = React.memo(
+// ドラッグ可能なデータ行コンポーネント
+const SortableDataRow = React.memo(
   ({
     item,
-    getIndex,
-    drag,
-    isActive,
+    index,
     checkList,
     projectId,
     layer,
@@ -26,9 +34,7 @@ const DataRow = React.memo(
     gotoDataEdit,
   }: {
     item: RecordType;
-    getIndex: () => number | undefined;
-    drag: () => void;
-    isActive: boolean;
+    index: number;
     checkList: { id: number; checked: boolean }[];
     projectId: string | undefined;
     layer: LayerType;
@@ -37,97 +43,95 @@ const DataRow = React.memo(
     changeVisible: (item: RecordType) => void;
     gotoDataEdit: (index: number) => void;
   }) => {
-    const index = getIndex();
-    if (index === undefined) return null;
+    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
     const isGroupParent = item.field._group ? item.field._group === '' : true;
     if (!isGroupParent) return null;
 
     return (
-      <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}>
-        <View style={[styles.td, { width: 50 }]}>
-          <Button
-            name={item.visible ? 'eye' : 'eye-off-outline'}
-            onPress={() => changeVisible(item)}
-            color={COLOR.GRAY4}
-            style={{ backgroundColor: COLOR.MAIN }}
-          />
-        </View>
-        <View style={[styles.td, { width: 60 }]}>
-          <Button
-            color={COLOR.GRAY4}
-            style={{ backgroundColor: isActive ? COLOR.WHITE : COLOR.MAIN }}
-            borderRadius={0}
-            name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-            onPress={() => changeChecked(index, !checkList[index]?.checked)}
-            size={20}
-          />
-        </View>
-
-        {projectId !== undefined && layer.permission !== 'COMMON' && (
-          <Pressable
-            style={[styles.td, { flex: 2, width: 100 }]}
-            onLongPress={drag}
-            disabled={isActive}
-            onPress={() => gotoDataEdit(index)}
-          >
-            <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ textAlign: 'center' }}>
-              {item.displayName}
-            </Text>
-          </Pressable>
-        )}
-        {projectId === undefined && layer.field.length === 0 ? (
+      <div ref={setNodeRef} style={style}>
+        <View style={{ flex: 1, height: 45, flexDirection: 'row', backgroundColor: isDragging ? COLOR.WHITE : COLOR.MAIN }}>
+          <View style={[styles.td, { width: 50 }]}>
+            <Button
+              name={item.visible ? 'eye' : 'eye-off-outline'}
+              onPress={() => changeVisible(item)}
+              color={COLOR.GRAY4}
+              style={{ backgroundColor: COLOR.MAIN }}
+            />
+          </View>
           <View style={[styles.td, { width: 60 }]}>
             <Button
               color={COLOR.GRAY4}
-              style={{ backgroundColor: COLOR.MAIN }}
+              style={{ backgroundColor: isDragging ? COLOR.WHITE : COLOR.MAIN }}
               borderRadius={0}
-              name={'menu-right'}
-              onPress={() => gotoDataEdit(index)}
+              name={checkList[index]?.checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
+              onPress={() => changeChecked(index, !checkList[index]?.checked)}
+              size={20}
             />
           </View>
-        ) : (
-          layer.field.map(({ name, format }, field_index) => (
+
+          {projectId !== undefined && layer.permission !== 'COMMON' && (
             <Pressable
-              key={field_index}
-              style={[styles.td, { flex: 2, width: 120 }]}
-              onLongPress={drag}
-              disabled={isActive}
+              style={[styles.td, { flex: 2, width: 100, cursor: 'grab' } as any]}
               onPress={() => gotoDataEdit(index)}
+              {...listeners}
             >
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                {item.field[name] === undefined
-                  ? ''
-                  : format === 'DATETIME'
-                  ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
-                  : format === 'PHOTO'
-                  ? `${(item.field[name] as PhotoType[]).length} pic`
-                  : format === 'REFERENCE'
-                  ? 'Reference'
-                  : `${item.field[name]}`}
+              <Text numberOfLines={2} style={{ textAlign: 'center' }}>
+                {item.displayName}
               </Text>
             </Pressable>
-          ))
-        )}
-        {isMapMemoLayer &&
-          //['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom']
-          ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
-            <View key={field_index} style={[styles.td, { flex: 2, width: 120 }]}>
-              <Text adjustsFontSizeToFit={true} numberOfLines={2}>
-                {item.field[name] === undefined ? '' : (item.field[name] as string)}
-              </Text>
+          )}
+          {projectId === undefined && layer.field.length === 0 ? (
+            <View style={[styles.td, { width: 60 }]}>
+              <Button
+                color={COLOR.GRAY4}
+                style={{ backgroundColor: COLOR.MAIN }}
+                borderRadius={0}
+                name={'menu-right'}
+                onPress={() => gotoDataEdit(index)}
+              />
             </View>
-          ))}
-      </View>
+          ) : (
+            layer.field.map(({ name, format }, field_index) => (
+              <Pressable
+                key={field_index}
+                style={[styles.td, { flex: 2, width: 120, cursor: 'grab' } as any]}
+                onPress={() => gotoDataEdit(index)}
+                {...listeners}
+              >
+                <Text numberOfLines={2}>
+                  {item.field[name] === undefined
+                    ? ''
+                    : format === 'DATETIME'
+                    ? `${dayjs(item.field[name] as string).format('L HH:mm')}`
+                    : format === 'PHOTO'
+                    ? `${(item.field[name] as PhotoType[]).length} pic`
+                    : format === 'REFERENCE'
+                    ? 'Reference'
+                    : `${item.field[name]}`}
+                </Text>
+              </Pressable>
+            ))
+          )}
+          {isMapMemoLayer &&
+            ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
+              <View key={field_index} style={[styles.td, { flex: 2, width: 120 }]}>
+                <Text numberOfLines={2}>
+                  {item.field[name] === undefined ? '' : (item.field[name] as string)}
+                </Text>
+              </View>
+            ))}
+        </View>
+      </div>
     );
   },
   (prevProps, nextProps) => {
-    // カスタム比較関数: trueを返すと再レンダリングをスキップ
-    const prevIndex = prevProps.getIndex();
-    const nextIndex = nextProps.getIndex();
-    if (prevIndex === undefined || nextIndex === undefined) return false;
-
-    // id, visible, displayName, updatedAtで比較（JSON.stringifyは重いので避ける）
-    // updatedAtを比較することでフィールドの変更を検出できる
     const isItemEqual =
       prevProps.item.id === nextProps.item.id &&
       prevProps.item.visible === nextProps.item.visible &&
@@ -136,14 +140,13 @@ const DataRow = React.memo(
 
     return (
       isItemEqual &&
-      prevProps.isActive === nextProps.isActive &&
-      prevProps.checkList[prevIndex]?.checked === nextProps.checkList[nextIndex]?.checked
+      prevProps.index === nextProps.index &&
+      prevProps.checkList[prevProps.index]?.checked === nextProps.checkList[nextProps.index]?.checked
     );
   }
 );
 
 export const DataTable = React.memo(() => {
-  //console.log(data[0]);
   const {
     sortedRecordSet,
     checkList,
@@ -189,32 +192,33 @@ export const DataTable = React.memo(() => {
     },
     [changeOrder, sortedName, sortedOrder]
   );
-  //@ts-ignore
-  const renderItem = useCallback(
-    ({ item, getIndex, drag, isActive }: RenderItemParams<RecordType>) => {
-      return (
-        <DataRow
-          item={item}
-          getIndex={getIndex}
-          drag={drag}
-          isActive={isActive}
-          checkList={checkList}
-          projectId={projectId}
-          layer={layer}
-          isMapMemoLayer={isMapMemoLayer}
-          changeChecked={changeChecked}
-          changeVisible={changeVisible}
-          gotoDataEdit={gotoDataEdit}
-        />
-      );
-    },
-    [changeChecked, changeVisible, checkList, gotoDataEdit, isMapMemoLayer, layer, projectId]
-  );
-  const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
-  // ListHeaderComponentをメモ化（頻繁な再レンダリングでボタンが反応しなくなる問題を回避）
-  const ListHeader = useCallback(
-    () => (
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = sortedRecordSet.findIndex((record) => record.id === active.id);
+        const newIndex = sortedRecordSet.findIndex((record) => record.id === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newData = arrayMove(sortedRecordSet, oldIndex, newIndex);
+          updateRecordSetOrder(newData);
+        }
+      }
+    },
+    [sortedRecordSet, updateRecordSetOrder]
+  );
+
+  const itemIds = useMemo(() => sortedRecordSet.map((record) => record.id), [sortedRecordSet]);
+
+  return sortedRecordSet.length !== 0 ? (
+    <View style={styles.container}>
       <DataTitle
         isMapMemoLayer={isMapMemoLayer}
         visibleAll={visibleAll}
@@ -227,27 +231,31 @@ export const DataTable = React.memo(() => {
         projectId={projectId}
         layer={layer}
       />
-    ),
-    [isMapMemoLayer, visibleAll, onVisibleAll, checkedAll, onCheckAll, onChangeOrder, sortedName, sortedOrder, projectId, layer]
-  );
-
-  return sortedRecordSet.length !== 0 ? (
-    // @ts-ignore - react-native-draggable-flatlist is not compatible with React 19 types
-    <DraggableFlatList<RecordType>
-      ListHeaderComponent={ListHeader}
-      data={sortedRecordSet}
-      stickyHeaderIndices={[0]}
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={5}
-      removeClippedSubviews={true}
-      extraData={{ checkList, sortedRecordSet }}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      onDragEnd={({ data }) => updateRecordSetOrder(data)}
-      activationDistance={5}
-      getItemLayout={(_, index) => ({ length: 45, offset: 45 * index, index })}
-    />
+      {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        {/* @ts-ignore - dnd-kit is not compatible with React 19 types */}
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {sortedRecordSet.map((item, index) => {
+            const isGroupParent = item.field._group ? item.field._group === '' : true;
+            if (!isGroupParent) return null;
+            return (
+              <SortableDataRow
+                key={item.id}
+                item={item}
+                index={index}
+                checkList={checkList}
+                projectId={projectId}
+                layer={layer}
+                isMapMemoLayer={isMapMemoLayer}
+                changeChecked={changeChecked}
+                changeVisible={changeVisible}
+                gotoDataEdit={gotoDataEdit}
+              />
+            );
+          })}
+        </SortableContext>
+      </DndContext>
+    </View>
   ) : (
     <DataTitle
       isMapMemoLayer={isMapMemoLayer}
@@ -278,7 +286,6 @@ interface Props {
 }
 
 const DataTitle = React.memo((props: Props) => {
-  //propsから変数を取り出す
   const {
     isMapMemoLayer,
     visibleAll,
@@ -315,7 +322,7 @@ const DataTitle = React.memo((props: Props) => {
       </View>
       {projectId !== undefined && layer.permission !== 'COMMON' && (
         <Pressable style={[styles.th, { flex: 2, width: 100 }]} onPress={() => onChangeOrder('_user_', '_user_')}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text numberOfLines={2}>
             User
           </Text>
           {sortedName === '_user_' && sortedOrder === 'ASCENDING' && (
@@ -346,7 +353,6 @@ const DataTitle = React.memo((props: Props) => {
         ))
       )}
       {isMapMemoLayer &&
-        //['_group', '_stamp', '_strokeStyle', '_strokeColor', '_strokeWidth', '_zoom']
         ['_strokeColor', '_strokeWidth'].map((name, field_index) => (
           <View key={field_index} style={[styles.th, { flex: 2, width: 120 }]}>
             <Text>{name}</Text>
@@ -357,23 +363,23 @@ const DataTitle = React.memo((props: Props) => {
 });
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
-    //flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
     paddingVertical: 0,
-    //borderRightWidth: 1,
   },
   th: {
     alignItems: 'center',
     backgroundColor: COLOR.GRAY1,
     borderColor: COLOR.GRAY2,
     borderRightWidth: 1,
-    //flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,

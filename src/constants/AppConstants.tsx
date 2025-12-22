@@ -364,6 +364,7 @@ export const SETTINGS_BTN = {
   CACHE_DELETE: 'delete-sweep',
   APRI_CLEAR: 'restore',
   GPS_SETTINGS: 'crosshairs-gps',
+  PROXIMITY_ALERT: 'bell-ring',
   MANUAL: 'help',
   TERMSOFUSE: 'book-open-variant',
   OSSLICENSE: 'star',

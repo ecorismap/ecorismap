@@ -371,6 +371,7 @@ export interface SettingsType {
   isModalInfoToolHidden: boolean;
   isModalMapMemoToolHidden: boolean;
   currentInfoTool: InfoToolType;
+  proximityAlert: ProximityAlertSettingsType;
 }
 
 export interface RegionType {
@@ -382,6 +383,12 @@ export interface RegionType {
   bearing?: number;
   pitch?: number;
   altitude?: number;
+}
+
+export interface ProximityAlertSettingsType {
+  enabled: boolean;
+  targetLayerIds: string[];
+  distanceThreshold: number; // メートル単位、デフォルト10
 }
 
 export interface ActionType {

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Settings from '../components/pages/Settings';
 import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -17,8 +17,9 @@ import { exportGeoFile } from '../utils/File';
 import { usePermission } from '../hooks/usePermission';
 import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
+import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
 import { editSettingsAction } from '../modules/settings';
-import { GpsAccuracyType } from '../types';
+import { GpsAccuracyType, ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
 
@@ -29,11 +30,20 @@ export default function SettingsContainers() {
   const dataSet = useSelector(selectNonDeletedDataSet);
   const maps = useSelector((state: RootState) => state.tileMaps);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
+  const proximityAlert = useSelector((state: RootState) => state.settings.proximityAlert ?? {
+    enabled: false,
+    targetLayerIds: [],
+    distanceThreshold: 10,
+  });
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isGPSSettingsOpen, setIsGPSSettingsOpen] = useState(false);
+  const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
+
+  // ポイントレイヤーのみ抽出
+  const pointLayers = useMemo(() => layers.filter((l) => l.type === 'POINT'), [layers]);
   const { isRunningProject } = usePermission();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -206,6 +216,22 @@ export default function SettingsContainers() {
     setIsGPSSettingsOpen(false);
   }, []);
 
+  const pressProximityAlertSettingsOpen = useCallback(() => {
+    setIsProximityAlertSettingsOpen(true);
+  }, []);
+
+  const pressProximityAlertSettingsOK = useCallback(
+    (value: ProximityAlertSettingsType) => {
+      dispatch(editSettingsAction({ proximityAlert: value }));
+      setIsProximityAlertSettingsOpen(false);
+    },
+    [dispatch]
+  );
+
+  const pressProximityAlertSettingsCancel = useCallback(() => {
+    setIsProximityAlertSettingsOpen(false);
+  }, []);
+
   const pressGotoManual = useCallback(() => {
     const url = t('site.manual');
     Linking.openURL(url);
@@ -239,6 +265,7 @@ export default function SettingsContainers() {
         pressVersion,
         pressPDFSettingsOpen,
         pressGPSSettingsOpen,
+        pressProximityAlertSettingsOpen,
       }}
     >
       <Settings />
@@ -254,6 +281,13 @@ export default function SettingsContainers() {
         pressOK={pressMapListURLOK}
         pressCancel={pressMapListURLCancel}
         pressReset={pressMapListURLReset}
+      />
+      <SettingsModalProximityAlert
+        visible={isProximityAlertSettingsOpen}
+        proximityAlert={proximityAlert}
+        pointLayers={pointLayers}
+        pressOK={pressProximityAlertSettingsOK}
+        pressCancel={pressProximityAlertSettingsCancel}
       />
     </SettingsContext.Provider>
   );
