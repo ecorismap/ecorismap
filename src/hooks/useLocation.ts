@@ -714,13 +714,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // MMKVから保存されたトラッキング状態を取得して復元
           if (wasTracking) {
             const chunkInfo = getCurrentChunkInfo();
-            const metadata = getTrackMetadata();
+            const trackMetadataFromMMKV = getTrackMetadata();
             setTrackMetadata({
-              distance: metadata.currentDistance,
-              lastTimeStamp: metadata.lastTimeStamp,
+              distance: trackMetadataFromMMKV.currentDistance,
+              lastTimeStamp: trackMetadataFromMMKV.lastTimeStamp,
               savedChunkCount: chunkInfo.currentChunkIndex,
               currentChunkSize: chunkInfo.currentChunkSize,
-              totalPoints: metadata.totalPoints,
+              totalPoints: trackMetadataFromMMKV.totalPoints,
             });
             await moveCurrentPosition();
           }
@@ -750,21 +750,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         } else {
           await stopTracking();
-          // 軌跡記録中だった場合のみ保存確認（GPSのみONの場合はスキップ）
-          if (trackLogMMKV.getTrackingState() === 'on') {
-            const { isOK, message } = await checkUnsavedTrackLog();
-            if (!isOK) {
-              await AlertAsync(message);
-            }
-          }
-        }
-      } else {
-        // 軌跡記録中だった場合のみ保存確認（GPSのみONの場合はスキップ）
-        if (wasTracking) {
           const { isOK, message } = await checkUnsavedTrackLog();
           if (!isOK) {
             await AlertAsync(message);
           }
+        }
+      } else {
+        const { isOK, message } = await checkUnsavedTrackLog();
+        if (!isOK) {
+          await AlertAsync(message);
         }
 
         // GPSまたは軌跡がオンの場合はBackgroundGeolocationを開始
