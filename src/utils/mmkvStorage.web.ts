@@ -240,6 +240,27 @@ export const trackLogMMKV = {
       return null;
     }
   },
+
+  // 接近通知の有効/無効状態を保存・取得
+  setProximityAlertEnabled: (enabled: boolean): void => {
+    try {
+      if (webStorage) {
+        webStorage.setItem('proximity_alert_enabled', enabled ? 'true' : 'false');
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getProximityAlertEnabled: (): boolean => {
+    try {
+      if (!webStorage) return false;
+      const value = webStorage.getItem('proximity_alert_enabled');
+      return value === 'true';
+    } catch (error) {
+      return false;
+    }
+  },
 };
 
 // データマイグレーション用ユーティリティ（Web用）
