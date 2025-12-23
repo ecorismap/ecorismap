@@ -128,16 +128,16 @@ export default function ProjectEditScreen() {
         )}
 
         {/* メンバーリスト（スクロール可能） */}
-        {isOwnerAdmin && (
-          <View style={styles.memberTableContainer}>
+        <View style={styles.memberTableContainer}>
+          {isOwnerAdmin && (
             <FlatList
               data={project.members}
               renderItem={renderMemberItem}
               keyExtractor={(_, index) => index.toString()}
               style={Platform.OS === 'web' ? { maxHeight: memberListMaxHeight } : undefined}
             />
-          </View>
-        )}
+          )}
+        </View>
 
         <Loading visible={isLoading} text="" />
         <ProjectEditButtons
