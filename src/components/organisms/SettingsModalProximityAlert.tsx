@@ -222,6 +222,7 @@ export const SettingsModalProximityAlert = React.memo((props: Props) => {
                     checked={targetLayerIds.includes(layer.id)}
                     onCheck={() => handleLayerToggle(layer.id)}
                     radio={false}
+                    style={{ backgroundColor: COLOR.WHITE }}
                   />
                 ))
               )}
