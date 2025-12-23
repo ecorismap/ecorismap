@@ -568,6 +568,22 @@ export interface CloudDataGroup {
   lastUpdatedAt: Date;
 }
 
+// 階層構造用の型定義
+export interface CloudDataItem {
+  permission: PermissionType | 'TEMPLATE';
+  userId?: string;
+  userEmail?: string;
+  lastUpdatedAt: Date;
+}
+
+export interface CloudLayerGroup {
+  layerId: string;
+  layerName: string;
+  isOrphan: boolean;
+  dataItems: CloudDataItem[];
+  lastUpdatedAt: Date;
+}
+
 export interface CloudDataDeleteTarget {
   layerId: string;
   permission: PermissionType | 'TEMPLATE';

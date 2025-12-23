@@ -2,17 +2,16 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
-import { CloudDataGroup } from '../../types';
+import { CloudDataItem } from '../../types';
 import { t } from '../../i18n/config';
 
 interface Props {
-  group: CloudDataGroup;
+  dataItem: CloudDataItem;
   checked: boolean;
   onChangeChecked: (checked: boolean) => void;
 }
 
-const getPermissionColor = (permission: string, isOrphan: boolean): string => {
-  if (isOrphan) return COLOR.DARKRED;
+const getPermissionColor = (permission: string): string => {
   switch (permission) {
     case 'PRIVATE':
       return COLOR.BLUE;
@@ -37,41 +36,33 @@ const formatDate = (date: Date): string => {
 };
 
 export const CloudDataListItem = React.memo((props: Props) => {
-  const { group, checked, onChangeChecked } = props;
-  const isOrphan = group.type === 'orphan';
-  const permissionColor = getPermissionColor(group.permission, isOrphan);
+  const { dataItem, checked, onChangeChecked } = props;
+  const permissionColor = getPermissionColor(dataItem.permission);
 
   return (
     <TouchableOpacity style={styles.container} onPress={() => onChangeChecked(!checked)} activeOpacity={0.7}>
+      <View style={styles.indent} />
       <View style={styles.checkboxContainer}>
         <MaterialCommunityIcons
           name={checked ? 'checkbox-marked-outline' : 'checkbox-blank-outline'}
-          size={24}
+          size={20}
           color={COLOR.BLUE}
         />
       </View>
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
-          <Text style={styles.layerName} numberOfLines={1}>
-            {group.layerName}
-          </Text>
+          <MaterialCommunityIcons name="file-document-outline" size={16} color={COLOR.GRAY3} style={styles.fileIcon} />
           <View style={[styles.permissionBadge, { backgroundColor: permissionColor }]}>
-            <Text style={styles.permissionText}>{group.permission}</Text>
+            <Text style={styles.permissionText}>{dataItem.permission}</Text>
           </View>
+          {dataItem.userEmail && (
+            <Text style={styles.userInfo} numberOfLines={1}>
+              {dataItem.userEmail}
+            </Text>
+          )}
         </View>
-        {group.type === 'user' && group.userEmail && (
-          <Text style={styles.userInfo} numberOfLines={1}>
-            {t('CloudDataManagement.label.user')}: {group.userEmail}
-          </Text>
-        )}
-        {isOrphan && (
-          <View style={styles.warningRow}>
-            <MaterialCommunityIcons name="alert" size={14} color={COLOR.DARKRED} />
-            <Text style={styles.warningText}>{t('CloudDataManagement.label.orphanWarning')}</Text>
-          </View>
-        )}
         <Text style={styles.infoText}>
-          {t('CloudDataManagement.label.lastUpdated')}: {formatDate(group.lastUpdatedAt)}
+          {t('CloudDataManagement.label.lastUpdated')}: {formatDate(dataItem.lastUpdatedAt)}
         </Text>
       </View>
     </TouchableOpacity>
@@ -81,15 +72,19 @@ export const CloudDataListItem = React.memo((props: Props) => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: COLOR.WHITE,
+    backgroundColor: COLOR.GRAY1,
     borderBottomWidth: 1,
     borderBottomColor: COLOR.GRAY2,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  indent: {
+    width: 32,
   },
   checkboxContainer: {
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 8,
   },
   contentContainer: {
     flex: 1,
@@ -97,20 +92,16 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 4,
   },
-  layerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLOR.BLACK,
-    flex: 1,
+  fileIcon: {
     marginRight: 8,
   },
   permissionBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    marginRight: 8,
   },
   permissionText: {
     fontSize: 10,
@@ -118,22 +109,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   userInfo: {
-    fontSize: 13,
-    color: COLOR.GRAY3,
-    marginBottom: 4,
-  },
-  warningRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  warningText: {
     fontSize: 12,
-    color: COLOR.DARKRED,
-    marginLeft: 4,
+    color: COLOR.GRAY3,
+    flex: 1,
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 11,
     color: COLOR.GRAY3,
+    marginLeft: 24,
   },
 });

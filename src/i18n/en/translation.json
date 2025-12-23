@@ -513,16 +513,20 @@
       "orphanWarning": "This layer has been deleted",
       "lastUpdated": "Last updated",
       "noData": "No data in cloud",
+      "noCloudData": "No cloud data",
       "user": "User",
       "allData": "All data"
     },
     "confirm": {
-      "delete": "Delete {{count}} selected data?\nAssociated photos will also be deleted.\nThis action cannot be undone."
+      "delete": "Delete {{count}} selected data?\nAssociated photos will also be deleted.\nThis action cannot be undone.",
+      "deleteLayer": "Delete {{count}} layer(s)?\nLayer definitions and all associated data and photos will be deleted.\nThis action cannot be undone."
     },
     "message": {
       "failGetData": "Failed to get data",
       "failDeleteData": "Failed to delete data",
-      "deleteSuccess": "Data deleted successfully"
+      "failDeleteLayer": "Failed to delete layer",
+      "deleteSuccess": "Data deleted successfully",
+      "deleteLayerSuccess": "Layer deleted successfully"
     }
   },
   "LayerEdit": {

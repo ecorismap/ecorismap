@@ -828,3 +828,40 @@ export const getCloudDataSummary = async (
     };
   }
 };
+
+/**
+ * プロジェクト設定から指定したレイヤ定義を削除
+ * クラウドデータ管理画面で使用
+ */
+export const deleteLayerFromSettings = async (
+  projectId: string,
+  editorUid: string,
+  layerIdsToDelete: string[]
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    // 1. 現在のプロジェクト設定を取得
+    const settingsResult = await downloadProjectSettings(projectId);
+    if (!settingsResult.isOK || !settingsResult.data) {
+      return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
+    }
+
+    // 2. 削除対象レイヤをフィルタリング
+    const updatedLayers = settingsResult.data.layers.filter((layer) => !layerIdsToDelete.includes(layer.id));
+
+    // 3. 更新した設定を保存
+    const updatedSettings: ProjectSettingsType = {
+      ...settingsResult.data,
+      layers: updatedLayers,
+    };
+
+    const result = await uploadProjectSettings(projectId, editorUid, updatedSettings);
+    if (!result.isOK) {
+      return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
+    }
+
+    return { isOK: true, message: '' };
+  } catch (error) {
+    console.error('deleteLayerFromSettings Error:', error);
+    return { isOK: false, message: t('CloudDataManagement.message.failDeleteLayer') };
+  }
+};

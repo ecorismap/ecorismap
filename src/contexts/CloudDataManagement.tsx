@@ -1,14 +1,16 @@
 import { createContext } from 'react';
-import { CloudDataGroup, ProjectType } from '../types';
+import { CloudLayerGroup, ProjectType } from '../types';
+import { LayerCheckState } from '../hooks/useCloudDataManagement';
 
 interface CloudDataManagementContextType {
   project: ProjectType;
   isLoading: boolean;
-  dataGroups: CloudDataGroup[];
-  checkList: { id: number; checked: boolean }[];
+  layerGroups: CloudLayerGroup[];
+  checkStates: LayerCheckState[];
   isChecked: boolean;
   refreshData: () => Promise<void>;
-  changeChecked: (index: number, checked: boolean) => void;
+  changeLayerChecked: (layerIndex: number, checked: boolean) => void;
+  changeDataChecked: (layerIndex: number, dataIndex: number, checked: boolean) => void;
   changeCheckedAll: (checked: boolean) => void;
   pressDeleteSelected: () => Promise<void>;
   gotoBack: () => void;

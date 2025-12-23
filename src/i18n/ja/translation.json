@@ -488,16 +488,20 @@
       "orphanWarning": "このレイヤは削除されています",
       "lastUpdated": "最終更新",
       "noData": "クラウドにデータがありません",
+      "noCloudData": "クラウドデータなし",
       "user": "ユーザー",
       "allData": "全データ"
     },
     "confirm": {
-      "delete": "選択した{{count}}件のデータを削除しますか？\n関連する写真も削除されます。\nこの操作は取り消せません。"
+      "delete": "選択した{{count}}件のデータを削除しますか？\n関連する写真も削除されます。\nこの操作は取り消せません。",
+      "deleteLayer": "選択した{{count}}件のレイヤを削除しますか？\nレイヤ定義と配下の全データ・写真が削除されます。\nこの操作は取り消せません。"
     },
     "message": {
       "failGetData": "データの取得に失敗しました",
       "failDeleteData": "データの削除に失敗しました",
-      "deleteSuccess": "データを削除しました"
+      "failDeleteLayer": "レイヤの削除に失敗しました",
+      "deleteSuccess": "データを削除しました",
+      "deleteLayerSuccess": "レイヤを削除しました"
     }
   },
   "Maps": {

@@ -15,8 +15,17 @@ const SELECT_ALL_HEIGHT = 48;
 const FOOTER_HEIGHT = 80;
 
 export default function CloudDataManagementScreen() {
-  const { isLoading, dataGroups, checkList, isChecked, changeChecked, changeCheckedAll, pressDeleteSelected, gotoBack } =
-    useContext(CloudDataManagementContext);
+  const {
+    isLoading,
+    layerGroups,
+    checkStates,
+    isChecked,
+    changeLayerChecked,
+    changeDataChecked,
+    changeCheckedAll,
+    pressDeleteSelected,
+    gotoBack,
+  } = useContext(CloudDataManagementContext);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
@@ -24,8 +33,8 @@ export default function CloudDataManagementScreen() {
   const listMaxHeight = windowHeight - (HEADER_HEIGHT + insets.top) - SELECT_ALL_HEIGHT - FOOTER_HEIGHT - insets.bottom;
 
   const isAllChecked = useMemo(() => {
-    return checkList.length > 0 && checkList.every((item) => item.checked);
-  }, [checkList]);
+    return checkStates.length > 0 && checkStates.every((state) => state.checked);
+  }, [checkStates]);
 
   return (
     <View style={styles.container}>
@@ -51,22 +60,25 @@ export default function CloudDataManagementScreen() {
       {/* Scrollable Data List */}
       <View style={styles.listContainer}>
         <CloudDataList
-          dataGroups={dataGroups}
-          checkList={checkList}
-          onChangeChecked={changeChecked}
+          layerGroups={layerGroups}
+          checkStates={checkStates}
+          onChangeLayerChecked={changeLayerChecked}
+          onChangeDataChecked={changeDataChecked}
           maxHeight={Platform.OS === 'web' ? listMaxHeight : undefined}
         />
       </View>
 
       {/* Fixed Footer - Delete Button */}
       <View style={[styles.footer, { paddingBottom: 15 + insets.bottom }]}>
-        <Button
-          name={PROJECTEDIT_BTN.DELETE}
-          onPress={pressDeleteSelected}
-          backgroundColor={isChecked ? COLOR.DARKRED : COLOR.LIGHTBLUE}
-          disabled={!isChecked}
-          labelText={t('CloudDataManagement.label.delete')}
-        />
+        <View style={styles.buttonWrapper}>
+          <Button
+            name={PROJECTEDIT_BTN.DELETE}
+            onPress={pressDeleteSelected}
+            backgroundColor={isChecked ? COLOR.DARKRED : COLOR.LIGHTBLUE}
+            disabled={!isChecked}
+            labelText={t('CloudDataManagement.label.delete')}
+          />
+        </View>
       </View>
 
       <Loading visible={isLoading} text="" />
@@ -117,5 +129,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     backgroundColor: COLOR.MAIN,
+  },
+  buttonWrapper: {
+    marginHorizontal: 10,
   },
 });
