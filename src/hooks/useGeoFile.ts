@@ -216,7 +216,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         const choice = await DuplicateLayerConfirmAsync(json.name);
 
         if (choice === 'cancel') {
-          return; // インポート中止
+          return false; // インポート中止
         }
 
         if (choice === 'replace') {
@@ -319,6 +319,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           dispatch(addLayerAction(importedLayer));
         }
       }
+      return true;
     },
     [dispatch, importCsv, importGeoJson, layers, dataUser.uid, dataUser.displayName]
   );
@@ -344,7 +345,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
           break;
         }
         case 'zip': {
-          await loadZip(uri, name);
+          result = await loadZip(uri, name);
           break;
         }
         case 'json': {
@@ -385,7 +386,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         if (result) {
           return { isOK: true, message: t('hooks.message.receiveFile') };
         } else {
-          return { isOK: false, message: t('hooks.message.failLoadFile') };
+          // キャンセル時はメッセージを空にする
+          return { isOK: false, message: '' };
         }
       } catch (e: any) {
         return { isOK: false, message: e.message + '\n' + t('hooks.message.failReceiveFile') };
