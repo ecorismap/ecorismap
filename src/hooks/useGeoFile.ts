@@ -3,12 +3,12 @@ import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { ExportType, FeatureType, GeoJsonFeatureType, LayerType, PhotoType, RecordType } from '../types';
 
 import { RootState } from '../store';
-import { addLayerAction } from '../modules/layers';
+import { addLayerAction, updateLayerAction } from '../modules/layers';
 import * as FileSystem from 'expo-file-system/legacy';
 
 import { gpx2Data, geoJson2Data, createLayerFromGeoJson, csv2Data, detectGeoJsonType } from '../utils/Geometry';
 import { Platform } from 'react-native';
-import { addDataAction } from '../modules/dataSet';
+import { addDataAction, deleteDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
 import { getExt } from '../utils/General';
@@ -21,6 +21,7 @@ import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { decodeUri } from '../utils/File.web';
 import { importDictionary, exportDatabase } from '../utils/SQLite';
 import { generateCSV, generateGeoJson, generateGPX, generateKML } from '../utils/Geometry';
+import { DuplicateLayerConfirmAsync } from '../components/molecules/AlertAsync';
 
 export type UseGeoFileReturnType = {
   isLoading: boolean;
@@ -64,6 +65,7 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
+  const layers = useSelector((state: RootState) => state.layers, shallowEqual);
   const [isLoading, setIsLoading] = useState(false);
   const dataUser = useMemo(
     () => (projectId === undefined ? { ...user, uid: undefined, displayName: null } : user),
@@ -191,40 +193,134 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       if (jsonFile === undefined) throw new Error('invalid zip file');
       const jsonDecompressed = await loaded.files[jsonFile].async('text');
       //有効なjsonかチェック
-      const json = JSON.parse(jsonDecompressed);
+      const json = JSON.parse(jsonDecompressed) as LayerType;
       if (!isLayerType(json)) throw new Error('invalid json file');
-      const { layer: importedLayer, layerIdMap, fieldIdMap } = changeLayerId(json);
-      const sqliteFile = files.find((f) => getExt(f) === 'sqlite' && !f.startsWith('__MACOS/'));
-      if (sqliteFile !== undefined) {
-        const sqlite =
-          Platform.OS !== 'web'
-            ? await loaded.files[sqliteFile].async('uint8array')
-            : await loaded.files[sqliteFile].async('arraybuffer');
 
-        await importDictionary(sqlite, layerIdMap, fieldIdMap);
+      // 重複チェック（PUBLIC/PRIVATEのレイヤのみ対象）
+      const originalLayerId = json.id;
+      const duplicateLayer =
+        json.permission === 'PUBLIC' || json.permission === 'PRIVATE'
+          ? layers.find(
+              (layer) =>
+                layer.id === originalLayerId &&
+                layer.name === json.name &&
+                (layer.permission === 'PUBLIC' || layer.permission === 'PRIVATE')
+            )
+          : undefined;
+
+      let shouldReplace = false;
+      let existingLayerToReplace: LayerType | undefined;
+
+      if (duplicateLayer) {
+        // 3択ダイアログを表示
+        const choice = await DuplicateLayerConfirmAsync(json.name);
+
+        if (choice === 'cancel') {
+          return; // インポート中止
+        }
+
+        if (choice === 'replace') {
+          shouldReplace = true;
+          existingLayerToReplace = duplicateLayer;
+        }
+        // choice === 'newLayer' の場合は通常フロー（新規ID生成）
       }
+
+      const sqliteFile = files.find((f) => getExt(f) === 'sqlite' && !f.startsWith('__MACOS/'));
       const csvFile = files.find((f) => getExt(f) === 'csv' && !f.startsWith('__MACOS/'));
       const geojsonFile = files.find((f) => getExt(f) === 'geojson' && !f.startsWith('__MACOS/'));
 
-      if (importedLayer.type === 'LAYERGROUP') {
-        dispatch(addLayerAction(importedLayer));
-      } else if (geojsonFile !== undefined && importedLayer.type !== 'NONE') {
-        const geojsonStrings = await loaded.files[geojsonFile].async('text');
-        const geojson = JSON.parse(geojsonStrings);
-        //ToDo 有効なgeojsonファイルかチェック
-        const result = importGeoJson(geojson, importedLayer.type, name, importedLayer);
-        //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
-        if (!result) importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
-      } else if (csvFile !== undefined) {
-        const csv = await loaded.files[csvFile].async('text');
-        //ToDo 有効なcsvファイルかチェック
-        importCsv(csv, name, importedLayer);
+      if (shouldReplace && existingLayerToReplace) {
+        // 置き換えモード
+        const updatedLayer: LayerType = {
+          ...json,
+          id: existingLayerToReplace.id, // 既存IDを保持
+          active: existingLayerToReplace.active,
+          visible: existingLayerToReplace.visible,
+          groupId: existingLayerToReplace.groupId,
+          expanded: existingLayerToReplace.expanded,
+        };
+
+        // SQLite辞書処理
+        if (sqliteFile !== undefined) {
+          const sqlite =
+            Platform.OS !== 'web'
+              ? await loaded.files[sqliteFile].async('uint8array')
+              : await loaded.files[sqliteFile].async('arraybuffer');
+          // 置き換えの場合は既存レイヤIDを使用
+          await importDictionary(sqlite, { [originalLayerId]: existingLayerToReplace.id }, {});
+        }
+
+        // 既存データを削除
+        dispatch(deleteDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: [] }]));
+
+        // レイヤ設定を更新
+        dispatch(updateLayerAction(updatedLayer));
+
+        // データのインポート処理
+        if (updatedLayer.type === 'LAYERGROUP') {
+          // LAYERGROUPの場合はデータなし
+        } else if (geojsonFile !== undefined && updatedLayer.type !== 'NONE') {
+          const geojsonStrings = await loaded.files[geojsonFile].async('text');
+          const geojson = JSON.parse(geojsonStrings);
+          const recordSet = geoJson2Data(geojson, updatedLayer, updatedLayer.type, dataUser.uid, dataUser.displayName);
+          if (recordSet && recordSet.length > 0) {
+            dispatch(addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: recordSet }]));
+          } else {
+            // MULTIタイプを試す
+            const multiRecordSet = geoJson2Data(
+              geojson,
+              updatedLayer,
+              `MULTI${updatedLayer.type}` as GeoJsonFeatureType,
+              dataUser.uid,
+              dataUser.displayName
+            );
+            if (multiRecordSet && multiRecordSet.length > 0) {
+              dispatch(
+                addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: multiRecordSet }])
+              );
+            }
+          }
+        } else if (csvFile !== undefined) {
+          const csv = await loaded.files[csvFile].async('text');
+          const data = csv2Data(csv, name, dataUser.uid, dataUser.displayName, updatedLayer);
+          if (data && data.recordSet.length > 0) {
+            dispatch(addDataAction([{ layerId: existingLayerToReplace.id, userId: dataUser.uid, data: data.recordSet }]));
+          }
+        }
       } else {
-        //レイヤー設定のみの場合
-        dispatch(addLayerAction(importedLayer));
+        // 通常モード（新規レイヤとして追加）
+        const { layer: importedLayer, layerIdMap, fieldIdMap } = changeLayerId(json);
+
+        if (sqliteFile !== undefined) {
+          const sqlite =
+            Platform.OS !== 'web'
+              ? await loaded.files[sqliteFile].async('uint8array')
+              : await loaded.files[sqliteFile].async('arraybuffer');
+
+          await importDictionary(sqlite, layerIdMap, fieldIdMap);
+        }
+
+        if (importedLayer.type === 'LAYERGROUP') {
+          dispatch(addLayerAction(importedLayer));
+        } else if (geojsonFile !== undefined && importedLayer.type !== 'NONE') {
+          const geojsonStrings = await loaded.files[geojsonFile].async('text');
+          const geojson = JSON.parse(geojsonStrings);
+          //ToDo 有効なgeojsonファイルかチェック
+          const result = importGeoJson(geojson, importedLayer.type, name, importedLayer);
+          //QGISでgeojsonをエクスポートするとマルチタイプになるので。厳密にするなら必要ない処理だが作業的に頻出するので対応
+          if (!result) importGeoJson(geojson, `MULTI${importedLayer.type}`, name, importedLayer);
+        } else if (csvFile !== undefined) {
+          const csv = await loaded.files[csvFile].async('text');
+          //ToDo 有効なcsvファイルかチェック
+          importCsv(csv, name, importedLayer);
+        } else {
+          //レイヤー設定のみの場合
+          dispatch(addLayerAction(importedLayer));
+        }
       }
     },
-    [dispatch, importCsv, importGeoJson]
+    [dispatch, importCsv, importGeoJson, layers, dataUser.uid, dataUser.displayName]
   );
 
   const loadJson = useCallback(

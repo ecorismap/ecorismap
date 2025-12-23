@@ -562,6 +562,12 @@
     }
   },
   "hooks": {
+    "duplicateLayer": {
+      "title": "Duplicate Layer Detected",
+      "message": "Layer \"{{layerName}}\" already exists. What would you like to do?",
+      "replace": "Replace",
+      "newLayer": "New Layer"
+    },
     "confirm": {
       "stopDownload": "Do you want to stop the download?",
       "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?"

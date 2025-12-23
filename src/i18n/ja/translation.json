@@ -764,6 +764,12 @@
     }
   },
   "hooks": {
+    "duplicateLayer": {
+      "title": "重複するレイヤを検出",
+      "message": "レイヤ「{{layerName}}」は既に存在します。どうしますか？",
+      "replace": "置き換える",
+      "newLayer": "別レイヤにする"
+    },
     "confirm": {
       "stopDownload": "ダウンロードを中止しますか?",
       "sendMailForActivate": "アカウントがアクティベートされていません。アクティベート用のメールを送信しますか？"
