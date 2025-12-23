@@ -29,7 +29,12 @@ export const ProjectEditButtons = React.memo((props: Props) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.buttonContainer, { bottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.buttonContainer,
+        Platform.OS === 'web' ? { marginVertical: 15 } : { marginTop: 20, marginBottom: insets.bottom + 15 },
+      ]}
+    >
       {!isNew && (
         <View style={{ marginHorizontal: 9 }}>
           <Button
@@ -91,10 +96,8 @@ export const ProjectEditButtons = React.memo((props: Props) => {
 const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'flex-start',
-    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginVertical: 15,
     zIndex: 101,
   },
 });
