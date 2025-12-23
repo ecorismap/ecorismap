@@ -298,6 +298,23 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     navigation.navigate('Projects');
   }, [isEdited, navigation]);
 
+  const pressCloudDataManagement = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // E3Kitグループをロード（セッションが切れている場合のため）
+      const loadE3kitGroupResult = await loadE3kitGroup(targetProject);
+      if (!loadE3kitGroupResult.isOK) throw new Error(loadE3kitGroupResult.message);
+      setIsLoading(false);
+      navigation.navigate('CloudDataManagement', {
+        previous: 'ProjectEdit',
+        project: targetProject,
+      });
+    } catch (e: any) {
+      setIsLoading(false);
+      await AlertAsync(e.message);
+    }
+  }, [loadE3kitGroup, navigation, targetProject]);
+
   return (
     <ProjectEditContext.Provider
       value={{
@@ -318,6 +335,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         pressExportProject,
         pressDeleteProject,
         pressSettingProject,
+        pressCloudDataManagement,
         gotoBack,
       }}
     >

@@ -543,3 +543,33 @@ export type PaperOrientationType = keyof typeof ORIENTATIONTYPE;
 export type GpsAccuracyType = keyof typeof GPS_ACCURACY;
 
 export type ArrowStyleType = 'NONE' | 'ARROW_END' | 'ARROW_BOTH';
+
+// Cloud Data Management Types
+export interface CloudDataSummaryItem {
+  layerId: string;
+  layerName: string;
+  permission: PermissionType | 'TEMPLATE';
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  recordCount: number;
+  lastUpdatedAt: Date;
+  isOrphan: boolean;
+}
+
+export interface CloudDataGroup {
+  type: 'user' | 'layer' | 'orphan';
+  layerId: string;
+  layerName: string;
+  permission: PermissionType | 'TEMPLATE';
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  lastUpdatedAt: Date;
+}
+
+export interface CloudDataDeleteTarget {
+  layerId: string;
+  permission: PermissionType | 'TEMPLATE';
+  userId?: string;
+}

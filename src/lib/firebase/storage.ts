@@ -395,3 +395,48 @@ export const deleteProjectStyle = async (projectId: string, excludeItems: string
     return { isOK: false, message: t('hooks.message.failDeleteFile') };
   }
 };
+
+/**
+ * フォルダを再帰的に削除
+ */
+const deleteStorageFolderRecursive = async (folderRef: ReturnType<typeof ref>): Promise<void> => {
+  const listResult = await listAll(folderRef);
+
+  // ファイルを削除
+  await Promise.all(listResult.items.map((itemRef) => deleteObject(itemRef)));
+
+  // サブフォルダを再帰削除
+  await Promise.all(listResult.prefixes.map((subFolderRef) => deleteStorageFolderRecursive(subFolderRef)));
+};
+
+/**
+ * 指定レイヤ・ユーザーの写真を全て削除
+ * クラウドデータ管理画面で使用
+ */
+export const deleteLayerPhotos = async (
+  projectId: string,
+  layerId: string,
+  userId?: string
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    // パス構造: projects/{projectId}/PHOTO/{layerId}/{userId}/...
+    const basePath = userId
+      ? `projects/${projectId}/PHOTO/${layerId}/${userId}`
+      : `projects/${projectId}/PHOTO/${layerId}`;
+
+    const folderRef = ref(storage, basePath);
+
+    // 再帰的に全ファイルを取得して削除
+    await deleteStorageFolderRecursive(folderRef);
+
+    return { isOK: true, message: '' };
+  } catch (error) {
+    // フォルダが存在しない場合はエラーにしない
+    const errorMessage = error instanceof Error ? error.message : '';
+    if (errorMessage.includes('object-not-found') || errorMessage.includes('storage/object-not-found')) {
+      return { isOK: true, message: '' };
+    }
+    console.error('deleteLayerPhotos Error:', error);
+    return { isOK: false, message: t('firebase.message.failDeletePhoto') };
+  }
+};

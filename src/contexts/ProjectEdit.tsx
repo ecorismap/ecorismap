@@ -19,6 +19,7 @@ interface ProjectEditContextType {
   pressExportProject: () => void;
   pressDeleteProject: () => void;
   pressSettingProject: () => void;
+  pressCloudDataManagement: () => void;
   gotoBack: () => void;
 }
 export const ProjectEditContext = createContext({} as ProjectEditContextType);

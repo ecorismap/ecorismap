@@ -351,6 +351,7 @@ export const PROJECTEDIT_BTN = {
   EXPORT: 'download',
   DELETE: 'delete',
   SAVE: 'content-save',
+  DATA_MANAGE: 'database-cog',
 } as const;
 
 export const SETTINGS_BTN = {

@@ -99,6 +99,8 @@
     "layerSetting": "設定",
     "add": "追加",
     "admin": "管理者",
+    "email": "メール",
+    "role": "ロール",
     "mapListURL": "地図の設定リストURL",
     "name": "名称",
     "sourceName": "出典表記",
@@ -154,7 +156,7 @@
     "snapWithLine": "ラインにスナップ",
     "straight_curve": "種類",
     "common": "共通",
-    "addMembers": "メンバーを追加（メールアドレスをカンマ区切りで入力し、Enterキーを押す）",
+    "addMembers": "メンバーを追加（メールアドレスをカンマ区切りで入力してEnter）",
     "selectionType": "選択タイプ",
     "selectAllInfo": "すべて",
     "selectPointInfo": "ポイントのみ",
@@ -471,7 +473,31 @@
       "setting": "設定",
       "export": "DL",
       "delete": "削除",
-      "save": "保存"
+      "save": "保存",
+      "dataManage": "データ管理"
+    }
+  },
+  "CloudDataManagement": {
+    "navigation": {
+      "title": "クラウドデータ管理"
+    },
+    "label": {
+      "selectAll": "全選択",
+      "delete": "削除",
+      "orphan": "孤児",
+      "orphanWarning": "このレイヤは削除されています",
+      "lastUpdated": "最終更新",
+      "noData": "クラウドにデータがありません",
+      "user": "ユーザー",
+      "allData": "全データ"
+    },
+    "confirm": {
+      "delete": "選択した{{count}}件のデータを削除しますか？\n関連する写真も削除されます。\nこの操作は取り消せません。"
+    },
+    "message": {
+      "failGetData": "データの取得に失敗しました",
+      "failDeleteData": "データの削除に失敗しました",
+      "deleteSuccess": "データを削除しました"
     }
   },
   "Maps": {

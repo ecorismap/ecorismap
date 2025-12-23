@@ -756,3 +756,75 @@ export const updateLayerDataPermission = async (
     return { isOK: false, message: '権限の一括更新に失敗しました' };
   }
 };
+
+/**
+ * プロジェクト内の全データのサマリー情報を取得（復号化なし）
+ * クラウドデータ管理画面で使用
+ */
+export const getCloudDataSummary = async (
+  projectId: string
+): Promise<{
+  isOK: boolean;
+  message: string;
+  data?: {
+    layerId: string;
+    userId: string;
+    permission: PermissionType | 'TEMPLATE';
+    chunkCount: number;
+    lastUpdatedAt: Date;
+  }[];
+}> => {
+  try {
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const snapshot = await getDocs(dataCol);
+
+    // layerId + userId + permission でグループ化
+    const summaryMap = new Map<
+      string,
+      {
+        layerId: string;
+        userId: string;
+        permission: PermissionType | 'TEMPLATE';
+        chunkCount: number;
+        lastUpdatedAt: Date;
+      }
+    >();
+
+    snapshot.docs.forEach(
+      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+        const data = docSnap.data() as DataFS;
+        const key = `${data.layerId}_${data.userId}_${data.permission}`;
+
+        const existing = summaryMap.get(key);
+        const encryptedAt = toDate(data.encryptedAt);
+
+        if (existing) {
+          existing.chunkCount += 1;
+          if (encryptedAt > existing.lastUpdatedAt) {
+            existing.lastUpdatedAt = encryptedAt;
+          }
+        } else {
+          summaryMap.set(key, {
+            layerId: data.layerId,
+            userId: data.userId,
+            permission: data.permission,
+            chunkCount: 1,
+            lastUpdatedAt: encryptedAt,
+          });
+        }
+      }
+    );
+
+    return {
+      isOK: true,
+      message: '',
+      data: Array.from(summaryMap.values()),
+    };
+  } catch (error) {
+    console.error('getCloudDataSummary Error:', error);
+    return {
+      isOK: false,
+      message: t('CloudDataManagement.message.failGetData'),
+    };
+  }
+};
