@@ -47,8 +47,8 @@ export default function Projects() {
   // Web用: ヘッダー(56 + insets.top) + テーブルヘッダー(45) + ボタン(約60) + マージンを引く
   const tableHeight = windowHeight - (56 + insets.top) - 45 - 60 - insets.bottom - 20;
 
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('ASCENDING');
+  const [sortField, setSortField] = useState<SortField>('encryptedAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('DESCENDING');
 
   const handleSort = useCallback(
     (field: SortField) => {

@@ -6,6 +6,7 @@ import AccountSettings from '../containers/AccountSettings';
 import Purchases from '../containers/Purchases';
 import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
+import CloudDataManagement from '../containers/CloudDataManagement';
 import {
   RootNavigationProvider,
   useRootNavigation,
@@ -46,6 +47,11 @@ export type Props_ProjectEdit = {
   route: { params: RootScreenParams['ProjectEdit'] };
 };
 
+export type Props_CloudDataManagement = {
+  navigation: Navigation;
+  route: { params: RootScreenParams['CloudDataManagement'] };
+};
+
 // 画面をレンダリングするコンポーネント
 function RootScreenRenderer() {
   const { currentScreen, currentParams, navigate, setParams } = useRootNavigation();
@@ -72,6 +78,13 @@ function RootScreenRenderer() {
     case 'ProjectEdit':
       return (
         <ProjectEdit navigation={navigation} route={{ params: currentParams as RootScreenParams['ProjectEdit'] }} />
+      );
+    case 'CloudDataManagement':
+      return (
+        <CloudDataManagement
+          navigation={navigation}
+          route={{ params: currentParams as RootScreenParams['CloudDataManagement'] }}
+        />
       );
     default:
       return <Home navigation={navigation} route={{ params: undefined }} />;

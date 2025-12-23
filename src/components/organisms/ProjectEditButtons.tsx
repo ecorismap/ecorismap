@@ -8,12 +8,12 @@ import { t } from '../../i18n/config';
 interface Props {
   disabled: boolean;
   isNew: boolean;
-
   isOwnerAdmin: boolean;
   onPressOpenProject: () => void;
   onPressDeleteProject: () => void;
   onPressExportProject: () => void;
   onPressSettingProject: () => void;
+  onPressCloudDataManagement: () => void;
 }
 export const ProjectEditButtons = React.memo((props: Props) => {
   const {
@@ -24,6 +24,7 @@ export const ProjectEditButtons = React.memo((props: Props) => {
     onPressDeleteProject,
     onPressExportProject,
     onPressSettingProject,
+    onPressCloudDataManagement,
   } = props;
   const insets = useSafeAreaInsets();
 
@@ -48,6 +49,18 @@ export const ProjectEditButtons = React.memo((props: Props) => {
           backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
           labelText={t('ProjectEdit.label.setting')}
         />
+      )}
+      {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
+        <View style={{ marginHorizontal: 9 }}>
+          <Button
+            name={PROJECTEDIT_BTN.DATA_MANAGE}
+            onPress={onPressCloudDataManagement}
+            disabled={disabled}
+            backgroundColor={disabled ? COLOR.LIGHTBLUE : COLOR.BLUE}
+            labelText={t('ProjectEdit.label.dataManage')}
+            labelFontSize={6}
+          />
+        </View>
       )}
       {!isNew && isOwnerAdmin && Platform.OS === 'web' && (
         <View style={{ marginHorizontal: 9 }}>

@@ -162,6 +162,8 @@
     "layerSetting": "set",
     "add": "add",
     "admin": "Administrator",
+    "email": "Email",
+    "role": "Role",
     "mapListURL": "Map list URL",
     "name": "name",
     "sourceName": "source notation",
@@ -496,7 +498,31 @@
       "setting": "set",
       "export": "DL",
       "delete": "delete",
-      "save": "save"
+      "save": "save",
+      "dataManage": "Data"
+    }
+  },
+  "CloudDataManagement": {
+    "navigation": {
+      "title": "Cloud Data Management"
+    },
+    "label": {
+      "selectAll": "Select All",
+      "delete": "Delete",
+      "orphan": "Orphan",
+      "orphanWarning": "This layer has been deleted",
+      "lastUpdated": "Last updated",
+      "noData": "No data in cloud",
+      "user": "User",
+      "allData": "All data"
+    },
+    "confirm": {
+      "delete": "Delete {{count}} selected data?\nAssociated photos will also be deleted.\nThis action cannot be undone."
+    },
+    "message": {
+      "failGetData": "Failed to get data",
+      "failDeleteData": "Failed to delete data",
+      "deleteSuccess": "Data deleted successfully"
     }
   },
   "LayerEdit": {
