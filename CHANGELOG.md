@@ -1,9 +1,20 @@
 # Change Log
 
-## [0.5.2]　- UNRELEASED
+## [0.5.3]　- UNRELEASED
 
+## [0.5.2]　- 2025-12-24
+
+- Added proximity voice notification feature
+- Improved operation of the draw tool
+- Modified to allow data replacement during import
+- Fixed a bug where track recording did not resume after being killed (Android)
+- Other minor bug fixes
+
+- 近接音声通知の機能追加
+- ドローツールの操作を改善
+- インポート時にデータの置換えができるように修正
 - 軌跡の記録が kill 後に再開されない不具合を修正(Android)
-- 確認ダイアログのキャンセル動作を修正
+- その他細かなバグ修正
 
 ## [0.5.1] - 2025-12-14
 
@@ -215,7 +226,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.2]: https://github.com/ecorismap/ecorismap/compare/bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc...HEAD
+  [0.5.3]: https://github.com/ecorismap/ecorismap/compare/57c4b971f94c6eff41fd857d81ee7fa48af2709b...HEAD
+  [0.5.2]: https://github.com/ecorismap/ecorismap/compare/bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc...57c4b971f94c6eff41fd857d81ee7fa48af2709b
   [0.5.1]: https://github.com/ecorismap/ecorismap/compare/169ec0287a8129c93c38d0d826170176242bd8ed...bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc
   [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...169ec0287a8129c93c38d0d826170176242bd8ed
   [0.4.9]: https://github.com/ecorismap/ecorismap/compare/65c311635ef12f2d6d22842e1872ecfaa2064bcb...3e9b5a093965d8dd68a53b66b83962ad6a4cf594

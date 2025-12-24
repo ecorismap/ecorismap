@@ -11,6 +11,24 @@
         "licenseUrl": "https://github.com/dmtrKovalenko/date-io/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "@dnd-kit/core": {
+        "licenses": "MIT",
+        "repository": "https://github.com/clauderic/dnd-kit",
+        "licenseUrl": "https://github.com/clauderic/dnd-kit/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "@dnd-kit/sortable": {
+        "licenses": "MIT",
+        "repository": "https://github.com/clauderic/dnd-kit",
+        "licenseUrl": "https://github.com/clauderic/dnd-kit/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "@dnd-kit/utilities": {
+        "licenses": "MIT",
+        "repository": "https://github.com/clauderic/dnd-kit",
+        "licenseUrl": "https://github.com/clauderic/dnd-kit/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "@emotion/react": {
         "licenses": "MIT",
         "repository": "https://github.com/emotion-js/emotion/tree/main/packages/react",
@@ -294,6 +312,12 @@
         "parents": "ecorismap"
     },
     "expo-sharing": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo",
+        "parents": "ecorismap"
+    },
+    "expo-speech": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
         "licenseUrl": "https://github.com/expo/expo",
