@@ -178,17 +178,33 @@ const initialLayers: LayerType[] = [
 
 let mockDispatch = jest.fn();
 let mockSelector = jest.fn();
+// getStateの返す値を追跡するための変数
+let currentState: LayerType[] = initialLayers;
 
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
   useSelector: () => mockSelector(),
 }));
 
+// Thunk関数を実行して内部のdispatchを取得するヘルパー
+const executeThunkAndGetPayload = (thunkFn: (dispatch: jest.Mock, getState: () => { layers: LayerType[] }) => void): LayerType[] => {
+  const innerDispatch = jest.fn();
+  const getState = () => ({ layers: currentState });
+  thunkFn(innerDispatch, getState);
+  // innerDispatchに渡されたアクションのpayloadを返す
+  if (innerDispatch.mock.calls.length > 0) {
+    return innerDispatch.mock.calls[0][0].payload;
+  }
+  return [];
+};
+
+
 describe('useLayers', () => {
   beforeEach(() => {
     mockDispatch = jest.fn();
     // initialLayers を返すように設定
     mockSelector = jest.fn().mockReturnValue(initialLayers);
+    currentState = initialLayers;
   });
 
   afterEach(() => {
@@ -203,12 +219,15 @@ describe('useLayers', () => {
     act(() => {
       if (targetLayer) result.current.changeActiveLayer(targetLayer);
     });
-    // payload の期待値も新しい構造に合わせて調整が必要
+    // Thunkなのでdispatchには関数が渡される
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    expect(typeof thunkFn).toBe('function');
+
+    // Thunk関数を実行してpayloadを取得
+    const payload = executeThunkAndGetPayload(thunkFn);
     const expectedPayload = result.current.layers.map((l) => (l.id === 'L1' ? { ...l, active: false } : l));
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('編集ボタンを押すと非アクティブはアクティブになり、同タイプは非アクティブになる', () => {
@@ -233,10 +252,9 @@ describe('useLayers', () => {
       return l;
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('編集ボタンを押してもNONEであれば同タイプの状態は変わらない', () => {
@@ -250,10 +268,9 @@ describe('useLayers', () => {
     });
 
     const expectedPayload = result.current.layers.map((l) => (l.id === 'L6' ? { ...l, active: true } : l));
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('表示非表示ボタンを押すとレイヤの表示非表示が切り替わる (通常レイヤ)', () => {
@@ -266,10 +283,9 @@ describe('useLayers', () => {
     });
 
     const expectedPayload = result.current.layers.map((l) => (l.id === 'L1' ? { ...l, visible: false } : l));
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('表示非表示ボタンを押すとレイヤの表示非表示が切り替わる (グループレイヤ)', () => {
@@ -290,10 +306,9 @@ describe('useLayers', () => {
     const expectedPayload = result.current.layers.map((l) =>
       l.id === 'G1' || l.groupId === 'G1' ? { ...l, visible: false } : l
     );
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('ラベルが切り替わる', () => {
@@ -305,6 +320,7 @@ describe('useLayers', () => {
       if (targetLayer) result.current.changeLabel(targetLayer, 'id');
     });
 
+    // changeLabelはThunkではないので直接検証
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'layers/updateLayerAction',
       payload: { ...targetLayer, label: 'id' },
@@ -339,10 +355,9 @@ describe('useLayers', () => {
       original.find((l) => l.id === 'L6')!,
     ];
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('updateLayersOrder: 通常レイヤを展開中のグループに入れる', () => {
@@ -366,10 +381,9 @@ describe('useLayers', () => {
       original.find((l) => l.id === 'L6')!,
     ];
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('updateLayersOrder: 子レイヤをグループ外に出す', () => {
@@ -393,10 +407,9 @@ describe('useLayers', () => {
       original.find((l) => l.id === 'L6')!,
     ];
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('updateLayersOrder: 子レイヤを同じグループ内で移動する', () => {
@@ -420,10 +433,9 @@ describe('useLayers', () => {
       original.find((l) => l.id === 'L6')!,
     ];
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('updateLayersOrder: 通常レイヤを折りたたみ中のグループに入れようとする', () => {
@@ -447,10 +459,9 @@ describe('useLayers', () => {
       original.find((l) => l.id === 'L6')!,
     ];
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   // --- filterdLayers のテストケース ---
@@ -510,6 +521,7 @@ describe('useLayers', () => {
       },
     ];
     mockSelector.mockReturnValue(layersWithMismatch);
+    currentState = layersWithMismatch;
 
     const { result } = renderHook(() => useLayers());
     const filterd = result.current.filterdLayers;
@@ -538,10 +550,9 @@ describe('useLayers', () => {
       return l;
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('changeExpand: グループを閉じると親と子のexpandedがfalseになる', () => {
@@ -561,10 +572,9 @@ describe('useLayers', () => {
       return l;
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
   });
 
   test('changeExpand: 複数のグループがある場合、対象グループの子だけが変更される', () => {
@@ -583,16 +593,14 @@ describe('useLayers', () => {
       return l;
     });
 
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'layers/setLayersAction',
-      payload: expectedPayload,
-    });
+    const thunkFn = mockDispatch.mock.calls[0][0];
+    const payload = executeThunkAndGetPayload(thunkFn);
+    expect(payload).toEqual(expectedPayload);
 
     // G1グループの子は変更されていないことを確認
-    const dispatchedPayload = mockDispatch.mock.calls[0][0].payload;
-    const g1Layer = dispatchedPayload.find((l: LayerType) => l.id === 'G1');
-    const l2Layer = dispatchedPayload.find((l: LayerType) => l.id === 'L2');
-    const l3Layer = dispatchedPayload.find((l: LayerType) => l.id === 'L3');
+    const g1Layer = payload.find((l: LayerType) => l.id === 'G1')!;
+    const l2Layer = payload.find((l: LayerType) => l.id === 'L2')!;
+    const l3Layer = payload.find((l: LayerType) => l.id === 'L3')!;
     expect(g1Layer.expanded).toBe(true); // 元のまま
     expect(l2Layer.expanded).toBe(true); // 元のまま
     expect(l3Layer.expanded).toBe(true); // 元のまま
@@ -613,6 +621,7 @@ describe('useLayers', () => {
       return l;
     });
     mockSelector.mockReturnValue(bothClosedLayers);
+    currentState = bothClosedLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -631,22 +640,24 @@ describe('useLayers', () => {
 
     // dispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(1);
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
 
     // G1とその子が開かれたことを確認
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1')!.expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2')!.expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3')!.expanded).toBe(true);
     // G2はまだ閉じたまま
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(false);
 
     // Reduxのstate更新をシミュレート
     // rerenderでuseEffectが実行され、layersRefが更新される
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // ★重要: 古いコールバック参照を使って2つ目のグループを開く
-    // useRefを使用しているので、古いコールバックでも最新のstateを参照できる
+    // Thunkを使用しているので、古いコールバックでも最新のstateを参照できる
     // stale closureがあると、この呼び出しは古いstateを参照してしまう
     const groupG2 = bothClosedLayers.find((l) => l.id === 'G2')!;
     act(() => {
@@ -655,18 +666,19 @@ describe('useLayers', () => {
 
     // 2回目のdispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // G2とその子が開かれたことを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5')!.expanded).toBe(true);
 
     // ★重要: G1は開いたままであることを確認
-    // useRefを使用しているため、古いコールバック参照を使っても最新のstateを参照できる
+    // Thunkを使用しているため、古いコールバック参照を使っても最新のstateを参照できる
     // stale closureがあると、G1が閉じた状態でdispatchされてしまう
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3')!.expanded).toBe(true);
   });
 
   test('changeExpand: 連続して異なるグループを開いても、それぞれ独立して動作する', () => {
@@ -678,6 +690,7 @@ describe('useLayers', () => {
       return l;
     });
     mockSelector.mockReturnValue(bothClosedLayers);
+    currentState = bothClosedLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -693,17 +706,19 @@ describe('useLayers', () => {
 
     // dispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(1);
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
 
     // G1とその子が開かれたことを確認
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G1')!.expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2')!.expanded).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L3')!.expanded).toBe(true);
     // G2はまだ閉じたまま
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(false);
 
     // Reduxのstate更新をシミュレート（実際のアプリでは自動的に行われる）
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // 2つ目のグループ(G2)を開く
@@ -714,16 +729,17 @@ describe('useLayers', () => {
 
     // 2回目のdispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // G2とその子が開かれたことを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5')!.expanded).toBe(true);
 
     // 重要: G1は開いたままであることを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').expanded).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3').expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'G1')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2')!.expanded).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L3')!.expanded).toBe(true);
   });
 
   test('changeExpand: 連続して同じグループを開閉しても正しく動作する', () => {
@@ -738,11 +754,13 @@ describe('useLayers', () => {
       result.current.changeExpand(groupG2);
     });
 
-    const firstPayload = mockDispatch.mock.calls[0][0].payload;
-    expect(firstPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(true);
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstPayload = executeThunkAndGetPayload(thunkFn1);
+    expect(firstPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(true);
 
     // state更新をシミュレート
     mockSelector.mockReturnValue(firstPayload);
+    currentState = firstPayload;
     rerender();
 
     // G2を閉じる
@@ -751,10 +769,11 @@ describe('useLayers', () => {
       result.current.changeExpand(updatedG2);
     });
 
-    const secondPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondPayload = executeThunkAndGetPayload(thunkFn2);
     // G2が正しく閉じられることを確認
-    expect(secondPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
-    expect(secondPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(false);
+    expect(secondPayload.find((l: LayerType) => l.id === 'G2')!.expanded).toBe(false);
+    expect(secondPayload.find((l: LayerType) => l.id === 'L5')!.expanded).toBe(false);
   });
 
   // --- changeVisible のstale closure問題検出テスト ---
@@ -762,6 +781,7 @@ describe('useLayers', () => {
   test('changeVisible: state更新後も古いコールバック参照で正しく動作する（stale closure対策）', () => {
     // すべてのレイヤが表示されている状態でスタート
     mockSelector.mockReturnValue(initialLayers);
+    currentState = initialLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -780,19 +800,21 @@ describe('useLayers', () => {
 
     // dispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(1);
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
 
     // L1が非表示になったことを確認
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1')!.visible).toBe(false);
     // L4はまだ表示されている
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L4')!.visible).toBe(true);
 
     // Reduxのstate更新をシミュレート
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // ★重要: 古いコールバック参照を使って2つ目のレイヤを非表示にする
-    // useRefを使用しているので、古いコールバックでも最新のstateを参照できる
+    // Thunkを使用しているので、古いコールバックでも最新のstateを参照できる
     const layerL4 = initialLayers.find((l) => l.id === 'L4')!;
     act(() => {
       oldChangeVisible(false, layerL4);
@@ -800,18 +822,20 @@ describe('useLayers', () => {
 
     // 2回目のdispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // L4が非表示になったことを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4')!.visible).toBe(false);
 
     // ★重要: L1は非表示のままであることを確認
     // stale closureがあると、L1がtrueに戻ってしまう
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1')!.visible).toBe(false);
   });
 
   test('changeVisible: 連続して異なるレイヤの表示を切り替えても、それぞれ独立して動作する', () => {
     mockSelector.mockReturnValue(initialLayers);
+    currentState = initialLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -827,13 +851,15 @@ describe('useLayers', () => {
 
     // dispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(1);
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
 
     // L1が非表示になったことを確認
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1')!.visible).toBe(false);
 
     // Reduxのstate更新をシミュレート
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // 2つ目のレイヤ(L4)を非表示にする
@@ -844,13 +870,14 @@ describe('useLayers', () => {
 
     // 2回目のdispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // L4が非表示になったことを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4')!.visible).toBe(false);
 
     // 重要: L1は非表示のままであることを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1')!.visible).toBe(false);
   });
 
   // --- changeActiveLayer のstale closure問題検出テスト ---
@@ -858,6 +885,7 @@ describe('useLayers', () => {
   test('changeActiveLayer: state更新後も古いコールバック参照で正しく動作する（stale closure対策）', () => {
     // L1がアクティブな状態でスタート
     mockSelector.mockReturnValue(initialLayers);
+    currentState = initialLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -877,14 +905,16 @@ describe('useLayers', () => {
 
     // dispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(1);
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
 
     // L2がアクティブになり、L1が非アクティブになったことを確認
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2')!.active).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1')!.active).toBe(false);
 
     // Reduxのstate更新をシミュレート
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // ★重要: 古いコールバック参照を使ってL5をアクティブにする
@@ -895,19 +925,21 @@ describe('useLayers', () => {
 
     // 2回目のdispatch呼び出しを確認
     expect(mockDispatch).toHaveBeenCalledTimes(2);
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // L5がアクティブになったことを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').active).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5')!.active).toBe(true);
 
     // ★重要: L2は非アクティブになることを確認（同じPOINTタイプなので）
     // stale closureがあると、古いstateを参照してL1がアクティブに戻ったりする
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(false);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2')!.active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1')!.active).toBe(false);
   });
 
   test('changeActiveLayer: 連続して異なるレイヤをアクティブにしても正しく動作する', () => {
     mockSelector.mockReturnValue(initialLayers);
+    currentState = initialLayers;
 
     const { result, rerender } = renderHook(() => useLayers());
 
@@ -920,12 +952,14 @@ describe('useLayers', () => {
       result.current.changeActiveLayer(layerL2);
     });
 
-    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(true);
-    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+    const thunkFn1 = mockDispatch.mock.calls[0][0];
+    const firstDispatchPayload = executeThunkAndGetPayload(thunkFn1);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2')!.active).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1')!.active).toBe(false);
 
     // state更新をシミュレート
     mockSelector.mockReturnValue(firstDispatchPayload);
+    currentState = firstDispatchPayload;
     rerender();
 
     // L5をアクティブにする
@@ -934,11 +968,12 @@ describe('useLayers', () => {
       result.current.changeActiveLayer(layerL5);
     });
 
-    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+    const thunkFn2 = mockDispatch.mock.calls[1][0];
+    const secondDispatchPayload = executeThunkAndGetPayload(thunkFn2);
 
     // L5がアクティブになり、L2は非アクティブになることを確認
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').active).toBe(true);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(false);
-    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5')!.active).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2')!.active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1')!.active).toBe(false);
   });
 });

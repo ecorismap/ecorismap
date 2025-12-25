@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
 import { ulid } from 'ulid';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -6,7 +6,7 @@ import { boundaryType, TileMapItemType, TileMapType } from '../types';
 import { Platform } from 'react-native';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { editSettingsAction } from '../modules/settings';
-import { RootState } from '../store';
+import { RootState, AppDispatch } from '../store';
 import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMapAction } from '../modules/tileMaps';
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
@@ -112,7 +112,7 @@ export type UseMapsReturnType = {
 };
 
 export const useMaps = (): UseMapsReturnType => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const isOffline = useSelector((state: RootState) => state.settings.isOffline, shallowEqual);
   const mapListURL = useSelector((state: RootState) => state.settings.mapListURL, shallowEqual);
   const maps = useSelector((state: RootState) => state.tileMaps);
@@ -121,12 +121,6 @@ export const useMaps = (): UseMapsReturnType => {
   const [isMapEditorOpen, setMapEditorOpen] = useState(false);
   const [progress, setProgress] = useState(formatProgress(PDF_PROGRESS.idle));
   const mapList = useSelector((state: RootState) => state.settings.mapList, shallowEqual);
-
-  // stale closure対策: 常に最新のmapsを参照できるようにする
-  const mapsRef = useRef(maps);
-  useEffect(() => {
-    mapsRef.current = maps;
-  }, [maps]);
 
   const filterdMaps = useMemo(
     () =>
@@ -207,177 +201,183 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeVisible = useCallback(
     (visible: boolean, tileMap: TileMapType) => {
-      // mapsRefから最新のmapsを取得（stale closure対策）
-      const currentMaps = mapsRef.current;
-      const newTileMaps = cloneDeep(currentMaps);
-      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
-      newTileMaps[index].visible = visible;
+      dispatch((thunkDispatch, getState) => {
+        // getState()から最新のmapsを取得（stale closure対策）
+        const currentMaps = (getState() as RootState).tileMaps;
+        const newTileMaps = cloneDeep(currentMaps);
+        const index = newTileMaps.findIndex(({ id }: TileMapType) => id === tileMap.id);
+        newTileMaps[index].visible = visible;
 
-      const groupTileMapId = currentMaps[index].id;
-      newTileMaps.forEach((item) => {
-        if (item.groupId === groupTileMapId) {
-          item.visible = visible;
+        const groupTileMapId = currentMaps[index].id;
+        newTileMaps.forEach((item: TileMapType) => {
+          if (item.groupId === groupTileMapId) {
+            item.visible = visible;
+          }
+        });
+
+        //標準を可視。衛星を不可視に
+        if (newTileMaps[index].id === 'standard' && newTileMaps[index].visible) {
+          thunkDispatch(editSettingsAction({ mapType: newTileMaps[index].maptype }));
+          newTileMaps.find((tileMap_: TileMapType) => tileMap_.id === 'hybrid')!.visible = false;
+          //衛星を可視。標準を不可視に
+        } else if (newTileMaps[index].id === 'hybrid' && newTileMaps[index].visible) {
+          thunkDispatch(editSettingsAction({ mapType: newTileMaps[index].maptype }));
+          newTileMaps.find((tileMap_: TileMapType) => tileMap_.id === 'standard')!.visible = false;
+          //標準を不可視
+        } else if (newTileMaps[index].id === 'standard' && newTileMaps[index].visible === false) {
+          thunkDispatch(editSettingsAction({ mapType: 'none' }));
+          //衛星を不可視
+        } else if (newTileMaps[index].id === 'hybrid' && newTileMaps[index].visible === false) {
+          thunkDispatch(editSettingsAction({ mapType: 'none' }));
         }
+        thunkDispatch(setTileMapsAction(newTileMaps));
       });
-
-      //標準を可視。衛星を不可視に
-      if (newTileMaps[index].id === 'standard' && newTileMaps[index].visible) {
-        dispatch(editSettingsAction({ mapType: newTileMaps[index].maptype }));
-        newTileMaps.find((tileMap_) => tileMap_.id === 'hybrid')!.visible = false;
-        //衛星を可視。標準を不可視に
-      } else if (newTileMaps[index].id === 'hybrid' && newTileMaps[index].visible) {
-        dispatch(editSettingsAction({ mapType: newTileMaps[index].maptype }));
-        newTileMaps.find((tileMap_) => tileMap_.id === 'standard')!.visible = false;
-        //標準を不可視
-      } else if (newTileMaps[index].id === 'standard' && newTileMaps[index].visible === false) {
-        dispatch(editSettingsAction({ mapType: 'none' }));
-        //衛星を不可視
-      } else if (newTileMaps[index].id === 'hybrid' && newTileMaps[index].visible === false) {
-        dispatch(editSettingsAction({ mapType: 'none' }));
-      }
-      dispatch(setTileMapsAction(newTileMaps));
     },
     [dispatch]
   );
 
   const changeExpand = useCallback(
     (expanded: boolean, tileMap: TileMapType) => {
-      const currentMaps = mapsRef.current;
-      const currentMap = currentMaps.find((m) => m.id === tileMap.id);
-      if (!currentMap) return;
+      dispatch((thunkDispatch, getState) => {
+        const currentMaps = (getState() as RootState).tileMaps;
+        const currentMap = currentMaps.find((m: TileMapType) => m.id === tileMap.id);
+        if (!currentMap) return;
 
-      const newTileMaps = currentMaps.map((item) => {
-        if (item.id === currentMap.id) {
-          return { ...item, expanded };
-        }
-        if (currentMap.isGroup && item.groupId === currentMap.id) {
-          return { ...item, expanded };
-        }
-        return item;
+        const newTileMaps = currentMaps.map((item: TileMapType) => {
+          if (item.id === currentMap.id) {
+            return { ...item, expanded };
+          }
+          if (currentMap.isGroup && item.groupId === currentMap.id) {
+            return { ...item, expanded };
+          }
+          return item;
+        });
+        thunkDispatch(setTileMapsAction(newTileMaps));
       });
-      dispatch(setTileMapsAction(newTileMaps));
     },
     [dispatch]
   );
 
   const changeMapOrder = useCallback(
     (tileMap: TileMapType, direction: 'up' | 'down') => {
-      const newTileMaps = cloneDeep(mapsRef.current);
-      const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
+      dispatch((thunkDispatch, getState) => {
+        const newTileMaps = cloneDeep((getState() as RootState).tileMaps);
+        const index = newTileMaps.findIndex(({ id }: TileMapType) => id === tileMap.id);
 
-      if (direction === 'up') {
-        if (index === 0) return;
-        const currentTileMap = newTileMaps[index];
-        const previousTileMap = newTileMaps[index - 1];
-        if (currentTileMap.isGroup) {
-          const childTileMaps = newTileMaps.filter((item) => item.groupId === currentTileMap.id);
-          const childTileMapCount = childTileMaps.length;
-          if (previousTileMap.groupId === undefined) {
-            newTileMaps.splice(index, 1 + childTileMapCount);
-            newTileMaps.splice(index - 1, 0, currentTileMap, ...childTileMaps);
-          } else {
-            const groupParentIndex = newTileMaps.findIndex((item) => item.id === previousTileMap.groupId);
-            if (groupParentIndex !== -1) {
+        if (direction === 'up') {
+          if (index === 0) return;
+          const currentTileMap = newTileMaps[index];
+          const previousTileMap = newTileMaps[index - 1];
+          if (currentTileMap.isGroup) {
+            const childTileMaps = newTileMaps.filter((item: TileMapType) => item.groupId === currentTileMap.id);
+            const childTileMapCount = childTileMaps.length;
+            if (previousTileMap.groupId === undefined) {
               newTileMaps.splice(index, 1 + childTileMapCount);
-              newTileMaps.splice(groupParentIndex, 0, currentTileMap, ...childTileMaps);
-            }
-          }
-          dispatch(setTileMapsAction(newTileMaps));
-          return;
-        } else {
-          if (previousTileMap.isGroup && currentTileMap.groupId !== previousTileMap.id) {
-            currentTileMap.groupId = previousTileMap.id;
-            currentTileMap.expanded = previousTileMap.expanded;
-            dispatch(setTileMapsAction(newTileMaps));
-            return;
-          } else if (previousTileMap.groupId && currentTileMap.groupId !== previousTileMap.groupId) {
-            currentTileMap.groupId = previousTileMap.groupId;
-            currentTileMap.expanded = previousTileMap.expanded;
-            dispatch(setTileMapsAction(newTileMaps));
-            return;
-          } else if (previousTileMap.isGroup && currentTileMap.groupId) {
-            const groupParentIndex = newTileMaps.findIndex((item) => item.id === currentTileMap.groupId);
-            if (groupParentIndex !== -1) {
-              currentTileMap.groupId = undefined;
-              newTileMaps.splice(index, 1);
-              newTileMaps.splice(groupParentIndex, 0, currentTileMap);
-              dispatch(setTileMapsAction(newTileMaps));
-              return;
-            }
-          }
-        }
-        [newTileMaps[index], newTileMaps[index - 1]] = [newTileMaps[index - 1], newTileMaps[index]];
-        dispatch(setTileMapsAction(newTileMaps));
-      } else if (direction === 'down') {
-        const currentTileMap = newTileMaps[index];
-        if (currentTileMap.isGroup) {
-          const childTileMaps = newTileMaps.filter((item) => item.groupId === currentTileMap.id);
-          const childTileMapCount = childTileMaps.length;
-          const groupEndIndex = index + childTileMapCount;
-          if (groupEndIndex >= newTileMaps.length - 3) {
-            return;
-          }
-          const groupToMove = newTileMaps.slice(index, groupEndIndex + 1);
-          const nextItemIndex = groupEndIndex + 1;
-          const nextItem = newTileMaps[nextItemIndex];
-          let endOfNextBlockIndex;
-          if (nextItem.isGroup) {
-            const nextGroupChildren = newTileMaps.filter((item) => item.groupId === nextItem.id);
-            endOfNextBlockIndex = nextItemIndex + nextGroupChildren.length;
-          } else {
-            endOfNextBlockIndex = nextItemIndex;
-          }
-          let insertionIndex = endOfNextBlockIndex + 1;
-          newTileMaps.splice(index, 1 + childTileMapCount);
-          if (index < insertionIndex) {
-            insertionIndex -= 1 + childTileMapCount;
-          }
-          newTileMaps.splice(insertionIndex, 0, ...groupToMove);
-          dispatch(setTileMapsAction(newTileMaps));
-          return;
-        } else {
-          const nextTileMap = newTileMaps[index + 1];
-          if (nextTileMap.isGroup && currentTileMap.groupId !== nextTileMap.id) {
-            currentTileMap.groupId = nextTileMap.id;
-            currentTileMap.expanded = nextTileMap.expanded;
-            newTileMaps.splice(index, 1);
-            newTileMaps.splice(index + 1, 0, currentTileMap);
-            dispatch(setTileMapsAction(newTileMaps));
-            return;
-          } else if (nextTileMap.groupId && currentTileMap.groupId !== nextTileMap.groupId) {
-            currentTileMap.groupId = nextTileMap.groupId;
-            const parent = newTileMaps.find((l) => l.id === nextTileMap.groupId);
-            if (parent) currentTileMap.expanded = parent.expanded;
-            newTileMaps.splice(index, 1);
-            newTileMaps.splice(index, 0, currentTileMap);
-            dispatch(setTileMapsAction(newTileMaps));
-            return;
-          } else if (currentTileMap.groupId && (!nextTileMap || nextTileMap.groupId !== currentTileMap.groupId)) {
-            const currentGroupId = currentTileMap.groupId;
-            currentTileMap.groupId = undefined;
-            let groupLastIndex = -1;
-            for (let i = newTileMaps.length - 1; i >= 0; i--) {
-              if (i !== index && newTileMaps[i].groupId === currentGroupId) {
-                groupLastIndex = i;
-                break;
+              newTileMaps.splice(index - 1, 0, currentTileMap, ...childTileMaps);
+            } else {
+              const groupParentIndex = newTileMaps.findIndex((item: TileMapType) => item.id === previousTileMap.groupId);
+              if (groupParentIndex !== -1) {
+                newTileMaps.splice(index, 1 + childTileMapCount);
+                newTileMaps.splice(groupParentIndex, 0, currentTileMap, ...childTileMaps);
               }
             }
-            if (groupLastIndex !== -1) {
-              const tileMapToMove = newTileMaps.splice(index, 1)[0];
-              const insertionIndex = index < groupLastIndex ? groupLastIndex : groupLastIndex + 1;
-              newTileMaps.splice(insertionIndex, 0, tileMapToMove);
-              dispatch(setTileMapsAction(newTileMaps));
+            thunkDispatch(setTileMapsAction(newTileMaps));
+            return;
+          } else {
+            if (previousTileMap.isGroup && currentTileMap.groupId !== previousTileMap.id) {
+              currentTileMap.groupId = previousTileMap.id;
+              currentTileMap.expanded = previousTileMap.expanded;
+              thunkDispatch(setTileMapsAction(newTileMaps));
+              return;
+            } else if (previousTileMap.groupId && currentTileMap.groupId !== previousTileMap.groupId) {
+              currentTileMap.groupId = previousTileMap.groupId;
+              currentTileMap.expanded = previousTileMap.expanded;
+              thunkDispatch(setTileMapsAction(newTileMaps));
+              return;
+            } else if (previousTileMap.isGroup && currentTileMap.groupId) {
+              const groupParentIndex = newTileMaps.findIndex((item: TileMapType) => item.id === currentTileMap.groupId);
+              if (groupParentIndex !== -1) {
+                currentTileMap.groupId = undefined;
+                newTileMaps.splice(index, 1);
+                newTileMaps.splice(groupParentIndex, 0, currentTileMap);
+                thunkDispatch(setTileMapsAction(newTileMaps));
+                return;
+              }
+            }
+          }
+          [newTileMaps[index], newTileMaps[index - 1]] = [newTileMaps[index - 1], newTileMaps[index]];
+          thunkDispatch(setTileMapsAction(newTileMaps));
+        } else if (direction === 'down') {
+          const currentTileMap = newTileMaps[index];
+          if (currentTileMap.isGroup) {
+            const childTileMaps = newTileMaps.filter((item: TileMapType) => item.groupId === currentTileMap.id);
+            const childTileMapCount = childTileMaps.length;
+            const groupEndIndex = index + childTileMapCount;
+            if (groupEndIndex >= newTileMaps.length - 3) {
               return;
             }
-          } else if (index === newTileMaps.length - 3) {
+            const groupToMove = newTileMaps.slice(index, groupEndIndex + 1);
+            const nextItemIndex = groupEndIndex + 1;
+            const nextItem = newTileMaps[nextItemIndex];
+            let endOfNextBlockIndex;
+            if (nextItem.isGroup) {
+              const nextGroupChildren = newTileMaps.filter((item: TileMapType) => item.groupId === nextItem.id);
+              endOfNextBlockIndex = nextItemIndex + nextGroupChildren.length;
+            } else {
+              endOfNextBlockIndex = nextItemIndex;
+            }
+            let insertionIndex = endOfNextBlockIndex + 1;
+            newTileMaps.splice(index, 1 + childTileMapCount);
+            if (index < insertionIndex) {
+              insertionIndex -= 1 + childTileMapCount;
+            }
+            newTileMaps.splice(insertionIndex, 0, ...groupToMove);
+            thunkDispatch(setTileMapsAction(newTileMaps));
             return;
+          } else {
+            const nextTileMap = newTileMaps[index + 1];
+            if (nextTileMap.isGroup && currentTileMap.groupId !== nextTileMap.id) {
+              currentTileMap.groupId = nextTileMap.id;
+              currentTileMap.expanded = nextTileMap.expanded;
+              newTileMaps.splice(index, 1);
+              newTileMaps.splice(index + 1, 0, currentTileMap);
+              thunkDispatch(setTileMapsAction(newTileMaps));
+              return;
+            } else if (nextTileMap.groupId && currentTileMap.groupId !== nextTileMap.groupId) {
+              currentTileMap.groupId = nextTileMap.groupId;
+              const parent = newTileMaps.find((l: TileMapType) => l.id === nextTileMap.groupId);
+              if (parent) currentTileMap.expanded = parent.expanded;
+              newTileMaps.splice(index, 1);
+              newTileMaps.splice(index, 0, currentTileMap);
+              thunkDispatch(setTileMapsAction(newTileMaps));
+              return;
+            } else if (currentTileMap.groupId && (!nextTileMap || nextTileMap.groupId !== currentTileMap.groupId)) {
+              const currentGroupId = currentTileMap.groupId;
+              currentTileMap.groupId = undefined;
+              let groupLastIndex = -1;
+              for (let i = newTileMaps.length - 1; i >= 0; i--) {
+                if (i !== index && newTileMaps[i].groupId === currentGroupId) {
+                  groupLastIndex = i;
+                  break;
+                }
+              }
+              if (groupLastIndex !== -1) {
+                const tileMapToMove = newTileMaps.splice(index, 1)[0];
+                const insertionIndex = index < groupLastIndex ? groupLastIndex : groupLastIndex + 1;
+                newTileMaps.splice(insertionIndex, 0, tileMapToMove);
+                thunkDispatch(setTileMapsAction(newTileMaps));
+                return;
+              }
+            } else if (index === newTileMaps.length - 3) {
+              return;
+            }
           }
+          const tileMapToMove = newTileMaps[index];
+          const nextTileMap = newTileMaps[index + 1];
+          [newTileMaps[index], newTileMaps[index + 1]] = [nextTileMap, tileMapToMove];
+          thunkDispatch(setTileMapsAction(newTileMaps));
         }
-        const tileMapToMove = newTileMaps[index];
-        const nextTileMap = newTileMaps[index + 1];
-        [newTileMaps[index], newTileMaps[index + 1]] = [nextTileMap, tileMapToMove];
-        dispatch(setTileMapsAction(newTileMaps));
-      }
+      });
     },
     [dispatch]
   );
@@ -388,99 +388,103 @@ export const useMaps = (): UseMapsReturnType => {
       if (to > data.length - 2) return;
       if (from > data.length - 3) return;
 
-      // mapsRefから最新のmapsを取得（stale closure対策）
-      const currentMaps = mapsRef.current;
-      const draggedTileMap = data[from];
-      const targetTileMap = to > 0 ? data[to - 1] : undefined;
-      const fromIndex = currentMaps.findIndex(({ id }) => id === data[from].id);
-      const toIndex = currentMaps.findIndex(({ id }) => id === data[to].id);
-      const newMaps = cloneDeep(currentMaps);
+      dispatch((thunkDispatch, getState) => {
+        // getState()から最新のmapsを取得（stale closure対策）
+        const currentMaps = (getState() as RootState).tileMaps;
+        const draggedTileMap = data[from];
+        const targetTileMap = to > 0 ? data[to - 1] : undefined;
+        const fromIndex = currentMaps.findIndex(({ id }: TileMapType) => id === data[from].id);
+        const toIndex = currentMaps.findIndex(({ id }: TileMapType) => id === data[to].id);
+        const newMaps = cloneDeep(currentMaps);
 
-      //ドラッグするものがグループ親の場合
-      if (draggedTileMap.isGroup) {
-        //グループの中には移動できない
-        if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
-          return;
+        //ドラッグするものがグループ親の場合
+        if (draggedTileMap.isGroup) {
+          //グループの中には移動できない
+          if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
+            return;
+          } else {
+            //グループごと移動する
+            const groupTileMaps = newMaps.filter(
+              (tileMap: TileMapType) => tileMap.id === draggedTileMap.id || tileMap.groupId === draggedTileMap.id
+            );
+            newMaps.splice(fromIndex, groupTileMaps.length);
+            const fixedToIndex = toIndex > fromIndex ? toIndex - groupTileMaps.length : toIndex;
+            // groupTileMapsはすでにdeep cloneされているのでそのまま使う
+            newMaps.splice(fixedToIndex, 0, ...groupTileMaps);
+          }
+          //ドラッグするものがグループの子要素の場合
+        } else if (draggedTileMap.groupId) {
+          // 子要素の場合は新しいオブジェクトとして挿入
+          newMaps.splice(fromIndex, 1);
+          const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+          newMaps.splice(fixedToIndex, 0, draggedTileMap);
+          //グループの中で移動する場合
+          if (
+            targetTileMap &&
+            targetTileMap.expanded &&
+            ((targetTileMap.isGroup && targetTileMap.id === draggedTileMap.groupId) ||
+              (targetTileMap.groupId && targetTileMap.groupId === draggedTileMap.groupId))
+          ) {
+            // 何もしない
+          } else if (
+            targetTileMap &&
+            targetTileMap.expanded &&
+            ((targetTileMap.isGroup && targetTileMap.id !== draggedTileMap.groupId) ||
+              (targetTileMap.groupId && targetTileMap.groupId !== draggedTileMap.groupId))
+          ) {
+            // 別のグループに移動
+            newMaps[fixedToIndex] = {
+              ...newMaps[fixedToIndex],
+              groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
+              expanded: targetTileMap.expanded,
+            };
+          } else {
+            // グループの外に移動
+            newMaps[fixedToIndex] = {
+              ...newMaps[fixedToIndex],
+              groupId: undefined,
+            };
+          }
         } else {
-          //グループごと移動する
-          const groupTileMaps = newMaps.filter(
-            (tileMap) => tileMap.id === draggedTileMap.id || tileMap.groupId === draggedTileMap.id
-          );
-          newMaps.splice(fromIndex, groupTileMaps.length);
-          const fixedToIndex = toIndex > fromIndex ? toIndex - groupTileMaps.length : toIndex;
-          // groupTileMapsはすでにdeep cloneされているのでそのまま使う
-          newMaps.splice(fixedToIndex, 0, ...groupTileMaps);
+          //グループに属していない場合
+          newMaps.splice(fromIndex, 1);
+          const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+          newMaps.splice(fixedToIndex, 0, draggedTileMap);
+          if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
+            newMaps[fixedToIndex] = {
+              ...newMaps[fixedToIndex],
+              groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
+              expanded: targetTileMap.expanded,
+            };
+          }
+          //グループに入らない場合は何もしない
         }
-        //ドラッグするものがグループの子要素の場合
-      } else if (draggedTileMap.groupId) {
-        // 子要素の場合は新しいオブジェクトとして挿入
-        newMaps.splice(fromIndex, 1);
-        const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
-        newMaps.splice(fixedToIndex, 0, draggedTileMap);
-        //グループの中で移動する場合
-        if (
-          targetTileMap &&
-          targetTileMap.expanded &&
-          ((targetTileMap.isGroup && targetTileMap.id === draggedTileMap.groupId) ||
-            (targetTileMap.groupId && targetTileMap.groupId === draggedTileMap.groupId))
-        ) {
-          // 何もしない
-        } else if (
-          targetTileMap &&
-          targetTileMap.expanded &&
-          ((targetTileMap.isGroup && targetTileMap.id !== draggedTileMap.groupId) ||
-            (targetTileMap.groupId && targetTileMap.groupId !== draggedTileMap.groupId))
-        ) {
-          // 別のグループに移動
-          newMaps[fixedToIndex] = {
-            ...newMaps[fixedToIndex],
-            groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
-            expanded: targetTileMap.expanded,
-          };
-        } else {
-          // グループの外に移動
-          newMaps[fixedToIndex] = {
-            ...newMaps[fixedToIndex],
-            groupId: undefined,
-          };
-        }
-      } else {
-        //グループに属していない場合
-        newMaps.splice(fromIndex, 1);
-        const fixedToIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
-        newMaps.splice(fixedToIndex, 0, draggedTileMap);
-        if (targetTileMap && targetTileMap.expanded && (targetTileMap.isGroup || targetTileMap.groupId)) {
-          newMaps[fixedToIndex] = {
-            ...newMaps[fixedToIndex],
-            groupId: targetTileMap.isGroup ? targetTileMap.id : targetTileMap.groupId,
-            expanded: targetTileMap.expanded,
-          };
-        }
-        //グループに入らない場合は何もしない
-      }
 
-      dispatch(setTileMapsAction(newMaps));
+        thunkDispatch(setTileMapsAction(newMaps));
+      });
     },
     [dispatch]
   );
 
   const onDragBegin = useCallback(
     (tileMap: TileMapType) => {
-      // ドラッグ開始時の処理
-      //ドラッグしたものがグループの場合、グループの展開を閉じる
-      // mapsRefから最新のmapsを取得（stale closure対策）
-      const currentMaps = mapsRef.current;
-      const index = currentMaps.findIndex(({ id }) => id === tileMap.id);
-      const item = currentMaps[index];
-      if (item.isGroup) {
-        const newMaps = currentMaps.map((map) => {
-          if (map.groupId === item.id || map.id === item.id) {
-            return { ...map, expanded: false };
-          }
-          return map;
-        });
-        dispatch(setTileMapsAction(newMaps));
-      }
+      dispatch((thunkDispatch, getState) => {
+        // ドラッグ開始時の処理
+        //ドラッグしたものがグループの場合、グループの展開を閉じる
+        // getState()から最新のmapsを取得（stale closure対策）
+        const currentMaps = (getState() as RootState).tileMaps;
+        const index = currentMaps.findIndex(({ id }: TileMapType) => id === tileMap.id);
+        const item = currentMaps[index];
+        if (item.isGroup) {
+          const newMaps = currentMaps.map((map: TileMapType) => {
+            if (map.groupId === item.id || map.id === item.id) {
+              return { ...map, expanded: false };
+            }
+            return map;
+          });
+          thunkDispatch(setTileMapsAction(newMaps));
+        }
+      });
     },
     [dispatch]
   );
@@ -558,15 +562,17 @@ export const useMaps = (): UseMapsReturnType => {
 
   const saveMap = useCallback(
     (newTileMap: TileMapType) => {
-      //新規だったら追加、編集だったら置き換え
-      // mapsRefから最新のmapsを取得（stale closure対策）
-      const currentMaps = mapsRef.current;
-      const index = currentMaps.findIndex(({ id }) => id === newTileMap.id);
-      if (index === -1) {
-        dispatch(addTileMapAction(newTileMap));
-      } else {
-        dispatch(updateTileMapAction(newTileMap));
-      }
+      dispatch((thunkDispatch, getState) => {
+        //新規だったら追加、編集だったら置き換え
+        // getState()から最新のmapsを取得（stale closure対策）
+        const currentMaps = (getState() as RootState).tileMaps;
+        const index = currentMaps.findIndex(({ id }: TileMapType) => id === newTileMap.id);
+        if (index === -1) {
+          thunkDispatch(addTileMapAction(newTileMap));
+        } else {
+          thunkDispatch(updateTileMapAction(newTileMap));
+        }
+      });
       setMapEditorOpen(false);
     },
     [dispatch]
@@ -603,20 +609,24 @@ export const useMaps = (): UseMapsReturnType => {
   const updatePmtilesURL = useCallback(async () => {
     //URL.createObjectURLはセッションごとにリセットされるため、再度生成する必要がある
     if (Platform.OS !== 'web') return;
-    const currentMaps = mapsRef.current;
-    for (const tileMap of currentMaps) {
-      try {
-        if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
-          const pmtile = await db.pmtiles.get(tileMap.id);
-          if (pmtile && pmtile.blob) {
-            const url = 'pmtiles://' + URL.createObjectURL(pmtile.blob);
-            dispatch(updateTileMapAction({ ...tileMap, url }));
+    // Note: This is an async function, so we need to get the current state directly
+    // We use a simple dispatch pattern here since each update is independent
+    dispatch(async (thunkDispatch, getState) => {
+      const currentMaps = (getState() as RootState).tileMaps;
+      for (const tileMap of currentMaps) {
+        try {
+          if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
+            const pmtile = await db.pmtiles.get(tileMap.id);
+            if (pmtile && pmtile.blob) {
+              const url = 'pmtiles://' + URL.createObjectURL(pmtile.blob);
+              thunkDispatch(updateTileMapAction({ ...tileMap, url }));
+            }
           }
+        } catch (e) {
+          console.log(e);
         }
-      } catch (e) {
-        console.log(e);
       }
-    }
+    });
   }, [dispatch]);
 
   const importJsonMapFile = useCallback(
@@ -749,16 +759,18 @@ export const useMaps = (): UseMapsReturnType => {
           dispatch(addTileMapAction(tileMap));
         } else if (id) {
           //単ページでファイルダウンロードの場合は置き換え
-          const currentMaps = mapsRef.current;
-          const index = currentMaps.findIndex((item) => item.id === id);
-          const oldTileMap = currentMaps[index];
-          tileMap.name = oldTileMap.name;
-          tileMap.url = oldTileMap.url;
-          tileMap.attribution = oldTileMap.attribution;
-          tileMap.transparency = oldTileMap.transparency;
-          tileMap.encryptKey = oldTileMap.encryptKey;
-          tileMap.redraw = !oldTileMap.redraw;
-          dispatch(updateTileMapAction(tileMap));
+          dispatch((thunkDispatch, getState) => {
+            const currentMaps = (getState() as RootState).tileMaps;
+            const index = currentMaps.findIndex((item: TileMapType) => item.id === id);
+            const oldTileMap = currentMaps[index];
+            tileMap.name = oldTileMap.name;
+            tileMap.url = oldTileMap.url;
+            tileMap.attribution = oldTileMap.attribution;
+            tileMap.transparency = oldTileMap.transparency;
+            tileMap.encryptKey = oldTileMap.encryptKey;
+            tileMap.redraw = !oldTileMap.redraw;
+            thunkDispatch(updateTileMapAction(tileMap));
+          });
         }
 
         const convertProgress =

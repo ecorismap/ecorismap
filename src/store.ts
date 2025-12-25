@@ -21,3 +21,6 @@ export const persistor = persistStore(store);
 
 // RootStateの型を明示的に定義して、undefinedを防ぐ
 export type RootState = ReturnType<typeof reducer>;
+
+// AppDispatch型をエクスポート（Thunkを使用するために必要）
+export type AppDispatch = typeof store.dispatch;
