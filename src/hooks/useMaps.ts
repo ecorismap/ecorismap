@@ -207,11 +207,13 @@ export const useMaps = (): UseMapsReturnType => {
 
   const changeVisible = useCallback(
     (visible: boolean, tileMap: TileMapType) => {
-      const newTileMaps = cloneDeep(maps);
+      // mapsRefから最新のmapsを取得（stale closure対策）
+      const currentMaps = mapsRef.current;
+      const newTileMaps = cloneDeep(currentMaps);
       const index = newTileMaps.findIndex(({ id }) => id === tileMap.id);
       newTileMaps[index].visible = visible;
 
-      const groupTileMapId = maps[index].id;
+      const groupTileMapId = currentMaps[index].id;
       newTileMaps.forEach((item) => {
         if (item.groupId === groupTileMapId) {
           item.visible = visible;
@@ -235,7 +237,7 @@ export const useMaps = (): UseMapsReturnType => {
       }
       dispatch(setTileMapsAction(newTileMaps));
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const changeExpand = useCallback(
@@ -386,11 +388,13 @@ export const useMaps = (): UseMapsReturnType => {
       if (to > data.length - 2) return;
       if (from > data.length - 3) return;
 
+      // mapsRefから最新のmapsを取得（stale closure対策）
+      const currentMaps = mapsRef.current;
       const draggedTileMap = data[from];
       const targetTileMap = to > 0 ? data[to - 1] : undefined;
-      const fromIndex = maps.findIndex(({ id }) => id === data[from].id);
-      const toIndex = maps.findIndex(({ id }) => id === data[to].id);
-      const newMaps = cloneDeep(maps);
+      const fromIndex = currentMaps.findIndex(({ id }) => id === data[from].id);
+      const toIndex = currentMaps.findIndex(({ id }) => id === data[to].id);
+      const newMaps = cloneDeep(currentMaps);
 
       //ドラッグするものがグループ親の場合
       if (draggedTileMap.isGroup) {
@@ -457,17 +461,19 @@ export const useMaps = (): UseMapsReturnType => {
 
       dispatch(setTileMapsAction(newMaps));
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const onDragBegin = useCallback(
     (tileMap: TileMapType) => {
       // ドラッグ開始時の処理
       //ドラッグしたものがグループの場合、グループの展開を閉じる
-      const index = maps.findIndex(({ id }) => id === tileMap.id);
-      const item = maps[index];
+      // mapsRefから最新のmapsを取得（stale closure対策）
+      const currentMaps = mapsRef.current;
+      const index = currentMaps.findIndex(({ id }) => id === tileMap.id);
+      const item = currentMaps[index];
       if (item.isGroup) {
-        const newMaps = maps.map((map) => {
+        const newMaps = currentMaps.map((map) => {
           if (map.groupId === item.id || map.id === item.id) {
             return { ...map, expanded: false };
           }
@@ -476,7 +482,7 @@ export const useMaps = (): UseMapsReturnType => {
         dispatch(setTileMapsAction(newMaps));
       }
     },
-    [maps, dispatch]
+    [dispatch]
   );
 
   const exportSingleMap = useCallback(async (tileMap: TileMapType) => {
@@ -553,7 +559,9 @@ export const useMaps = (): UseMapsReturnType => {
   const saveMap = useCallback(
     (newTileMap: TileMapType) => {
       //新規だったら追加、編集だったら置き換え
-      const index = maps.findIndex(({ id }) => id === newTileMap.id);
+      // mapsRefから最新のmapsを取得（stale closure対策）
+      const currentMaps = mapsRef.current;
+      const index = currentMaps.findIndex(({ id }) => id === newTileMap.id);
       if (index === -1) {
         dispatch(addTileMapAction(newTileMap));
       } else {
@@ -561,7 +569,7 @@ export const useMaps = (): UseMapsReturnType => {
       }
       setMapEditorOpen(false);
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const saveMapListURL = useCallback(
@@ -595,7 +603,8 @@ export const useMaps = (): UseMapsReturnType => {
   const updatePmtilesURL = useCallback(async () => {
     //URL.createObjectURLはセッションごとにリセットされるため、再度生成する必要がある
     if (Platform.OS !== 'web') return;
-    for (const tileMap of maps) {
+    const currentMaps = mapsRef.current;
+    for (const tileMap of currentMaps) {
       try {
         if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
           const pmtile = await db.pmtiles.get(tileMap.id);
@@ -608,7 +617,7 @@ export const useMaps = (): UseMapsReturnType => {
         console.log(e);
       }
     }
-  }, [dispatch, maps]);
+  }, [dispatch]);
 
   const importJsonMapFile = useCallback(
     async (uri: string) => {
@@ -740,8 +749,9 @@ export const useMaps = (): UseMapsReturnType => {
           dispatch(addTileMapAction(tileMap));
         } else if (id) {
           //単ページでファイルダウンロードの場合は置き換え
-          const index = maps.findIndex((item) => item.id === id);
-          const oldTileMap = maps[index];
+          const currentMaps = mapsRef.current;
+          const index = currentMaps.findIndex((item) => item.id === id);
+          const oldTileMap = currentMaps[index];
           tileMap.name = oldTileMap.name;
           tileMap.url = oldTileMap.url;
           tileMap.attribution = oldTileMap.attribution;
@@ -759,7 +769,7 @@ export const useMaps = (): UseMapsReturnType => {
 
       return { isOK: true, message: t('hooks.message.receiveFile') };
     },
-    [dispatch, maps]
+    [dispatch]
   );
 
   const getPmtilesBoundary = useCallback(

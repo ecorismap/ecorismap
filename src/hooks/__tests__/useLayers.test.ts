@@ -756,4 +756,189 @@ describe('useLayers', () => {
     expect(secondPayload.find((l: LayerType) => l.id === 'G2').expanded).toBe(false);
     expect(secondPayload.find((l: LayerType) => l.id === 'L5').expanded).toBe(false);
   });
+
+  // --- changeVisible のstale closure問題検出テスト ---
+
+  test('changeVisible: state更新後も古いコールバック参照で正しく動作する（stale closure対策）', () => {
+    // すべてのレイヤが表示されている状態でスタート
+    mockSelector.mockReturnValue(initialLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 初期状態でL1とL4が表示されていることを確認
+    expect(result.current.layers.find((l) => l.id === 'L1')?.visible).toBe(true);
+    expect(result.current.layers.find((l) => l.id === 'L4')?.visible).toBe(true);
+
+    // 古いコールバック参照を保存（メモ化コンポーネントがこれを保持する状況をシミュレート）
+    const oldChangeVisible = result.current.changeVisible;
+
+    // 1つ目のレイヤ(L1)を非表示にする
+    const layerL1 = result.current.layers.find((l) => l.id === 'L1')!;
+    act(() => {
+      oldChangeVisible(false, layerL1);
+    });
+
+    // dispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+
+    // L1が非表示になったことを確認
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+    // L4はまだ表示されている
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(true);
+
+    // Reduxのstate更新をシミュレート
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // ★重要: 古いコールバック参照を使って2つ目のレイヤを非表示にする
+    // useRefを使用しているので、古いコールバックでも最新のstateを参照できる
+    const layerL4 = initialLayers.find((l) => l.id === 'L4')!;
+    act(() => {
+      oldChangeVisible(false, layerL4);
+    });
+
+    // 2回目のdispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // L4が非表示になったことを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(false);
+
+    // ★重要: L1は非表示のままであることを確認
+    // stale closureがあると、L1がtrueに戻ってしまう
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+  });
+
+  test('changeVisible: 連続して異なるレイヤの表示を切り替えても、それぞれ独立して動作する', () => {
+    mockSelector.mockReturnValue(initialLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 初期状態でL1とL4が表示されていることを確認
+    expect(result.current.layers.find((l) => l.id === 'L1')?.visible).toBe(true);
+    expect(result.current.layers.find((l) => l.id === 'L4')?.visible).toBe(true);
+
+    // 1つ目のレイヤ(L1)を非表示にする
+    const layerL1 = result.current.layers.find((l) => l.id === 'L1')!;
+    act(() => {
+      result.current.changeVisible(false, layerL1);
+    });
+
+    // dispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+
+    // L1が非表示になったことを確認
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+
+    // Reduxのstate更新をシミュレート
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // 2つ目のレイヤ(L4)を非表示にする
+    const layerL4 = result.current.layers.find((l) => l.id === 'L4')!;
+    act(() => {
+      result.current.changeVisible(false, layerL4);
+    });
+
+    // 2回目のdispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // L4が非表示になったことを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L4').visible).toBe(false);
+
+    // 重要: L1は非表示のままであることを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').visible).toBe(false);
+  });
+
+  // --- changeActiveLayer のstale closure問題検出テスト ---
+
+  test('changeActiveLayer: state更新後も古いコールバック参照で正しく動作する（stale closure対策）', () => {
+    // L1がアクティブな状態でスタート
+    mockSelector.mockReturnValue(initialLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 初期状態でL1がアクティブであることを確認
+    expect(result.current.layers.find((l) => l.id === 'L1')?.active).toBe(true);
+    expect(result.current.layers.find((l) => l.id === 'L2')?.active).toBe(false);
+    expect(result.current.layers.find((l) => l.id === 'L5')?.active).toBe(false);
+
+    // 古いコールバック参照を保存
+    const oldChangeActiveLayer = result.current.changeActiveLayer;
+
+    // L2をアクティブにする（同じPOINTタイプなのでL1は非アクティブになる）
+    const layerL2 = result.current.layers.find((l) => l.id === 'L2')!;
+    act(() => {
+      oldChangeActiveLayer(layerL2);
+    });
+
+    // dispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(1);
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+
+    // L2がアクティブになり、L1が非アクティブになったことを確認
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+
+    // Reduxのstate更新をシミュレート
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // ★重要: 古いコールバック参照を使ってL5をアクティブにする
+    const layerL5 = initialLayers.find((l) => l.id === 'L5')!;
+    act(() => {
+      oldChangeActiveLayer(layerL5);
+    });
+
+    // 2回目のdispatch呼び出しを確認
+    expect(mockDispatch).toHaveBeenCalledTimes(2);
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // L5がアクティブになったことを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').active).toBe(true);
+
+    // ★重要: L2は非アクティブになることを確認（同じPOINTタイプなので）
+    // stale closureがあると、古いstateを参照してL1がアクティブに戻ったりする
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+  });
+
+  test('changeActiveLayer: 連続して異なるレイヤをアクティブにしても正しく動作する', () => {
+    mockSelector.mockReturnValue(initialLayers);
+
+    const { result, rerender } = renderHook(() => useLayers());
+
+    // 初期状態でL1がアクティブ
+    expect(result.current.layers.find((l) => l.id === 'L1')?.active).toBe(true);
+
+    // L2をアクティブにする
+    const layerL2 = result.current.layers.find((l) => l.id === 'L2')!;
+    act(() => {
+      result.current.changeActiveLayer(layerL2);
+    });
+
+    const firstDispatchPayload = mockDispatch.mock.calls[0][0].payload;
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(true);
+    expect(firstDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+
+    // state更新をシミュレート
+    mockSelector.mockReturnValue(firstDispatchPayload);
+    rerender();
+
+    // L5をアクティブにする
+    const layerL5 = result.current.layers.find((l) => l.id === 'L5')!;
+    act(() => {
+      result.current.changeActiveLayer(layerL5);
+    });
+
+    const secondDispatchPayload = mockDispatch.mock.calls[1][0].payload;
+
+    // L5がアクティブになり、L2は非アクティブになることを確認
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L5').active).toBe(true);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L2').active).toBe(false);
+    expect(secondDispatchPayload.find((l: LayerType) => l.id === 'L1').active).toBe(false);
+  });
 });

@@ -78,8 +78,10 @@ export const useLayers = (): UseLayersReturnType => {
   );
   const changeVisible = useCallback(
     (visible: boolean, layer: LayerType) => {
+      // layersRefから最新のlayersを取得（stale closure対策）
+      const currentLayers = layersRef.current;
       const layerId = layer.id;
-      const targetLayers = layers.map((l) => {
+      const targetLayers = currentLayers.map((l) => {
         if (l.id === layerId || l.groupId === layerId) {
           return { ...l, visible };
         }
@@ -87,7 +89,7 @@ export const useLayers = (): UseLayersReturnType => {
       });
       dispatch(setLayersAction(targetLayers));
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   const changeActiveLayer = useCallback(
@@ -95,17 +97,19 @@ export const useLayers = (): UseLayersReturnType => {
       //自分がアクティブになる場合、同じタイプの他のものはfalseにする。
       //Noneは排他処理はしない
 
-      const index = layers.findIndex((l) => l.id === layer.id);
+      // layersRefから最新のlayersを取得（stale closure対策）
+      const currentLayers = layersRef.current;
+      const index = currentLayers.findIndex((l) => l.id === layer.id);
       if (index === -1) return;
-      const newlayers = cloneDeep(layers);
+      const newlayers = cloneDeep(currentLayers);
 
-      if (layers[index].active) {
+      if (currentLayers[index].active) {
         newlayers[index].active = false;
-      } else if (layers[index].type === 'NONE') {
+      } else if (currentLayers[index].type === 'NONE') {
         newlayers[index].active = true;
       } else {
         newlayers.forEach((item, idx) => {
-          if (layers[index].type === item.type) {
+          if (currentLayers[index].type === item.type) {
             newlayers[idx].active = index === idx ? true : false;
           }
         });
@@ -113,7 +117,7 @@ export const useLayers = (): UseLayersReturnType => {
 
       dispatch(setLayersAction(newlayers));
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   const changeLayerOrder = useCallback(
@@ -303,10 +307,12 @@ export const useLayers = (): UseLayersReturnType => {
     (layer: LayerType) => {
       // ドラッグ開始時の処理
       //ドラッグしたものがグループの場合、グループの展開を閉じる
-      const index = layers.findIndex(({ id }) => id === layer.id);
-      const item = layers[index];
+      // layersRefから最新のlayersを取得（stale closure対策）
+      const currentLayers = layersRef.current;
+      const index = currentLayers.findIndex(({ id }) => id === layer.id);
+      const item = currentLayers[index];
       if (item.type === 'LAYERGROUP') {
-        const newLayers = layers.map((l) => {
+        const newLayers = currentLayers.map((l) => {
           if (l.groupId === item.id || l.id === item.id) {
             return { ...l, expanded: false };
           }
@@ -315,18 +321,20 @@ export const useLayers = (): UseLayersReturnType => {
         dispatch(setLayersAction(newLayers));
       }
     },
-    [layers, dispatch]
+    [dispatch]
   );
 
   const updateLayersOrder = useCallback(
     (data: LayerType[], from: number, to: number) => {
       if (from === to) return;
 
+      // layersRefから最新のlayersを取得（stale closure対策）
+      const currentLayers = layersRef.current;
       const draggedLayer = data[from];
       const targetLayer = to > 0 ? data[to - 1] : undefined;
-      const fromIndex = layers.findIndex(({ id }) => id === data[from].id);
-      const toIndex = to > data.length - 1 ? layers.length : layers.findIndex(({ id }) => id === data[to].id);
-      const newLayers = cloneDeep(layers);
+      const fromIndex = currentLayers.findIndex(({ id }) => id === data[from].id);
+      const toIndex = to > data.length - 1 ? currentLayers.length : currentLayers.findIndex(({ id }) => id === data[to].id);
+      const newLayers = cloneDeep(currentLayers);
 
       // グループ親の場合
       if (draggedLayer.type === 'LAYERGROUP') {
@@ -396,7 +404,7 @@ export const useLayers = (): UseLayersReturnType => {
 
       dispatch(setLayersAction(newLayers));
     },
-    [dispatch, layers]
+    [dispatch]
   );
 
   return {
