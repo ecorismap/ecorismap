@@ -2,6 +2,9 @@
 
 ## [0.5.4]　- UNRELEASED
 
+- Fixed a bug in proximity notifications firing multiple times after being killed
+- kill 後にも近接通知が複数回発火する不具合を修正
+
 ## [0.5.3]　- 2025-12-27
 
 - Fixed a bug in layer display
