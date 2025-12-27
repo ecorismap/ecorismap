@@ -52,7 +52,11 @@ const SortableMapRow = React.memo(
     changeExpand: (expanded: boolean, item: any) => void;
     pressMapOrder: (item: any, direction: 'up' | 'down') => void;
   }) => {
-    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const isGroupExpanded = item.isGroup && item.expanded;
+    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: item.id,
+      disabled: isGroupExpanded,
+    });
 
     const style = {
       transform: CSS.Transform.toString(transform),

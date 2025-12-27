@@ -82,7 +82,7 @@ export const MapTable = React.memo(() => {
           </View>
           <Pressable
             style={[styles.td, { flex: 4 }]}
-            onLongPress={drag}
+            onLongPress={item.isGroup && item.expanded ? undefined : drag}
             disabled={isActive}
             onPress={() => {
               if (item.isGroup) {
