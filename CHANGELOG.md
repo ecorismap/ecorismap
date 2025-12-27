@@ -1,6 +1,13 @@
 # Change Log
 
-## [0.5.3]　- UNRELEASED
+## [0.5.4]　- UNRELEASED
+
+## [0.5.3]　- 2025-12-27
+
+- Fixed a bug in layer display
+- Other minor bug fixes
+- レイヤ表示のバグ修正
+- その他細かなバグ修正
 
 ## [0.5.2]　- 2025-12-24
 
@@ -226,7 +233,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.3]: https://github.com/ecorismap/ecorismap/compare/57c4b971f94c6eff41fd857d81ee7fa48af2709b...HEAD
+  [0.5.4]: https://github.com/ecorismap/ecorismap/compare/a400ef19c0a56fff902837d4d8f5da31d1dde4a4...HEAD
+  [0.5.3]: https://github.com/ecorismap/ecorismap/compare/57c4b971f94c6eff41fd857d81ee7fa48af2709b...a400ef19c0a56fff902837d4d8f5da31d1dde4a4
   [0.5.2]: https://github.com/ecorismap/ecorismap/compare/bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc...57c4b971f94c6eff41fd857d81ee7fa48af2709b
   [0.5.1]: https://github.com/ecorismap/ecorismap/compare/169ec0287a8129c93c38d0d826170176242bd8ed...bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc
   [0.5.0]: https://github.com/ecorismap/ecorismap/compare/3e9b5a093965d8dd68a53b66b83962ad6a4cf594...169ec0287a8129c93c38d0d826170176242bd8ed

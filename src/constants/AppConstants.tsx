@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
-export const VERSION = 'Version 0.5.3';
+export const VERSION = 'Version 0.5.4';
 export const FUNC_LOGIN = true;
 export const FUNC_ENCRYPTION = true;
 export const FUNC_PURCHASE = false;
