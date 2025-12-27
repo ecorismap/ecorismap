@@ -120,7 +120,7 @@ const LayerRow = React.memo(
 
         <Pressable
           style={[styles.td, { flex: 5, width: 150, height: 60 }]}
-          onLongPress={drag}
+          onLongPress={item.type === 'LAYERGROUP' && item.expanded ? undefined : drag}
           disabled={isActive}
           onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
         >

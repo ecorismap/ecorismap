@@ -53,7 +53,11 @@ const SortableLayerRow = React.memo(
     gotoLayerEdit: (layer: LayerType) => void;
     pressLayerOrder: (layer: LayerType, direction: 'up' | 'down') => void;
   }) => {
-    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
+    const isGroupExpanded = item.type === 'LAYERGROUP' && item.expanded;
+    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+      id: item.id,
+      disabled: isGroupExpanded,
+    });
 
     const style = {
       transform: CSS.Transform.toString(transform),
