@@ -24,6 +24,7 @@ jest.mock('react-native-background-geolocation', () => {
     ready: jest.fn(),
     requestPermission: jest.fn(),
     getState: jest.fn(),
+    removeListeners: jest.fn(),
     setConfig: jest.fn(),
     start: jest.fn(),
     stop: jest.fn(),
@@ -160,6 +161,7 @@ describe('useLocation', () => {
     // Mock basic Location functions
     mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
     mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
     mockBackgroundGeolocation.requestPermission.mockResolvedValue(
       BackgroundGeolocation.AUTHORIZATION_STATUS_ALWAYS
     );

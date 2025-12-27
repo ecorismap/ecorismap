@@ -222,6 +222,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   );
 
   const ensureBackgroundGeolocation = useCallback(async () => {
+    // アプリプロセス再生成時に残るリスナーを初回だけクリアして重複通知を防ぐ
+    if (!bgReadyRef.current) {
+      try {
+        await BackgroundGeolocation.removeListeners();
+      } catch (error) {
+        console.warn('[tracking] Failed to remove existing background listeners', error);
+      }
+    }
+
     // 既存のサービス状態を確認（アプリキル後の再起動でサービスが動作中かどうか）
     const existingState = await BackgroundGeolocation.getState();
     const isServiceRunning = existingState.enabled;
