@@ -80,8 +80,8 @@ export const HomeDrawTools = React.memo(() => {
 
   return (
     <>
-      {/* 編集完了・キャンセルボタン */}
-      {isEditingObject && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
+      {/* 編集完了・キャンセルボタン（ポイントは追加時点で確定のため除外） */}
+      {isEditingObject && currentDrawTool !== 'PLOT_POINT' && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
         <View style={styles.editControlContainer}>
           <Button
             name="check"
