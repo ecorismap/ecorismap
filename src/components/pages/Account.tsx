@@ -7,6 +7,7 @@ import { AccountContext } from '../../contexts/Account';
 import { t } from '../../i18n/config';
 import { Button } from '../atoms';
 import { Loading } from '../molecules/Loading';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Account() {
   const {
@@ -38,6 +39,8 @@ export default function Account() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showOldPassword, setShowOldPassword] = useState(false);
 
   const styles = StyleSheet.create({
     container: {
@@ -117,11 +120,26 @@ export default function Account() {
       color: COLOR.BLUE,
       textDecorationLine: 'underline',
     },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: 250,
+    },
+    passwordInput: {
+      flex: 1,
+    },
+    eyeIcon: {
+      position: 'absolute',
+      right: 10,
+      padding: 5,
+    },
   });
 
   useEffect(() => {
     setPassword('');
     setOldPassword('');
+    setShowPassword(false);
+    setShowOldPassword(false);
   }, [accountFormState]);
 
   return (
@@ -190,18 +208,33 @@ export default function Account() {
             />
           )}
           {(accountFormState === 'changeUserPassword' || accountFormState === 'changeEncryptPassword') && (
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.modalTextInput, styles.passwordInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
+                secureTextEntry={!showOldPassword}
+                autoComplete={'password'}
+                placeholder={t('Account.placeholder.changePassword')}
+                placeholderTextColor={COLOR.GRAY3}
+                value={oldPassword}
+                onChangeText={(text) => setOldPassword(text)}
+              />
+              <Pressable style={styles.eyeIcon} onPress={() => setShowOldPassword(!showOldPassword)}>
+                <MaterialCommunityIcons name={showOldPassword ? 'eye-off' : 'eye'} size={20} color={COLOR.GRAY3} />
+              </Pressable>
+            </View>
+          )}
+          {accountFormState === 'signupUserAccount' && (
             <TextInput
               style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
-              secureTextEntry={true}
+              secureTextEntry={false}
               autoComplete={'password'}
-              placeholder={t('Account.placeholder.changePassword')}
+              placeholder={t('Account.placeholder.password')}
               placeholderTextColor={COLOR.GRAY3}
-              value={oldPassword}
-              onChangeText={(text) => setOldPassword(text)}
+              value={password}
+              onChangeText={(text) => setPassword(text)}
             />
           )}
           {(accountFormState === 'loginUserAccount' ||
-            accountFormState === 'signupUserAccount' ||
             accountFormState === 'changeUserPassword' ||
             accountFormState === 'deleteUserAccount' ||
             accountFormState === 'changeEncryptPassword' ||
@@ -210,25 +243,29 @@ export default function Account() {
             accountFormState === 'restoreEncryptKey' ||
             accountFormState === 'resetEncryptKey' ||
             accountFormState === 'deleteAllProjects') && (
-            <TextInput
-              style={[styles.modalTextInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
-              secureTextEntry={true}
-              autoComplete={'password'}
-              placeholder={
-                accountFormState === 'changeUserPassword'
-                  ? t('Account.placeholder.newPassword')
-                  : accountFormState === 'loginUserAccount' ||
-                    accountFormState === 'signupUserAccount' ||
-                    accountFormState === 'deleteUserAccount' ||
-                    accountFormState === 'resetEncryptKey' ||
-                    accountFormState === 'deleteAllProjects'
-                  ? t('Account.placeholder.password')
-                  : t('Account.placeholder.pin')
-              }
-              placeholderTextColor={COLOR.GRAY3}
-              value={password}
-              onChangeText={(text) => setPassword(text)}
-            />
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.modalTextInput, styles.passwordInput, { borderColor: message === '' ? COLOR.BLUE : COLOR.RED }]}
+                secureTextEntry={!showPassword}
+                autoComplete={'password'}
+                placeholder={
+                  accountFormState === 'changeUserPassword'
+                    ? t('Account.placeholder.newPassword')
+                    : accountFormState === 'loginUserAccount' ||
+                      accountFormState === 'deleteUserAccount' ||
+                      accountFormState === 'resetEncryptKey' ||
+                      accountFormState === 'deleteAllProjects'
+                    ? 'password'
+                    : t('Account.placeholder.pin')
+                }
+                placeholderTextColor={COLOR.GRAY3}
+                value={password}
+                onChangeText={(text) => setPassword(text)}
+              />
+              <Pressable style={styles.eyeIcon} onPress={() => setShowPassword(!showPassword)}>
+                <MaterialCommunityIcons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLOR.GRAY3} />
+              </Pressable>
+            </View>
           )}
 
           {accountFormState === 'updateUserProfile' && (
