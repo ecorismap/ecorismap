@@ -62,14 +62,20 @@ export const useProjects = (): UseProjectsReturnType => {
   const fetchProjects = useCallback(async () => {
     if (!isLoggedIn(user)) return { isOK: false, message: t('hooks.message.pleaseLogin') };
 
+    // const perfStart = performance.now();
     setIsLoading(true);
     try {
       // e3kitの初期化チェック
+      // const e3kitInitStart = performance.now();
       if (!e3kit.isInitialized()) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
         if (!initE3kitOK) {
           throw new Error(initE3kitMessage || t('hooks.message.failedInitializeEncrypt'));
         }
+        // const e3kitInitEnd = performance.now();
+        // console.log(`[PERF] e3kit.initializeUser: ${(e3kitInitEnd - e3kitInitStart).toFixed(0)}ms`);
+      } else {
+        // console.log(`[PERF] e3kit already initialized`);
       }
 
       dispatch(setProjectsAction([]));
@@ -86,6 +92,8 @@ export const useProjects = (): UseProjectsReturnType => {
         return 0; //同じ場合
       });
       dispatch(setProjectsAction(sortedProjects));
+      // const perfEnd = performance.now();
+      // console.log(`[PERF] === fetchProjects TOTAL: ${(perfEnd - perfStart).toFixed(0)}ms ===`);
       return { isOK: true, message };
     } catch (e: any) {
       return { isOK: false, message: e.message };

@@ -59,6 +59,7 @@ export const getUidsByEmails = async (emails: string[]) => {
 };
 
 export const getAllProjects = async (uid: string, excludeMember = false) => {
+  // const perfStart = performance.now();
   try {
     let q;
     if (excludeMember) {
@@ -68,24 +69,24 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     }
 
     // 常にサーバーから最新データを取得（プロジェクト一覧は最新情報が重要）
+    // const firebaseStart = performance.now();
     const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
       await getDocsFromServer(q);
+    // const firebaseEnd = performance.now();
+    // console.log(`[PERF] Firebase getDocsFromServer: ${(firebaseEnd - firebaseStart).toFixed(0)}ms (${querySnapshot.docs.length} projects)`);
 
-    // 設定取得と復号化を分離して最適化（全プラットフォーム共通）
+    // 設定取得と復号化を並列で実行（全プラットフォーム共通）
 
-    // 1. まず設定の更新日時を小さいバッチで順次取得
-    const SETTINGS_BATCH_SIZE = 5;
-    const settingsResults: (Date | undefined)[] = [];
-
-    for (let i = 0; i < querySnapshot.docs.length; i += SETTINGS_BATCH_SIZE) {
-      const batch = querySnapshot.docs.slice(i, Math.min(i + SETTINGS_BATCH_SIZE, querySnapshot.docs.length));
-      const batchResults = await Promise.all(
-        batch.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id))
-      );
-      settingsResults.push(...batchResults);
-    }
+    // 1. 設定の更新日時を全並列で取得
+    // const settingsStart = performance.now();
+    const settingsResults = await Promise.all(
+      querySnapshot.docs.map((docSnapshot) => getSettingsUpdatedAt(docSnapshot.id))
+    );
+    // const settingsEnd = performance.now();
+    // console.log(`[PERF] Settings fetch (parallel): ${(settingsEnd - settingsStart).toFixed(0)}ms`);
 
     // 2. 設定取得完了後、復号化を並列で実行
+    // const decryptStart = performance.now();
     const result = querySnapshot.docs.map(async (docSnapshot, index) => {
       const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
@@ -107,6 +108,12 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     });
 
     const projects = await Promise.all(result);
+    // const decryptEnd = performance.now();
+    // console.log(`[PERF] Decrypt all projects: ${(decryptEnd - decryptStart).toFixed(0)}ms`);
+
+    // const perfEnd = performance.now();
+    // console.log(`[PERF] === getAllProjects TOTAL: ${(perfEnd - perfStart).toFixed(0)}ms ===`);
+
     if (projects.includes(undefined)) {
       const filteredProjects = projects.filter((v): v is ProjectType => v !== undefined);
       return { isOK: true, message: t('common.message.cannotLoadProject'), projects: filteredProjects };

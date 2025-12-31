@@ -10,6 +10,27 @@ import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
 
+// 公開鍵のキャッシュ（findUsersのPromiseをキャッシュして並列呼び出しを防ぐ）
+const publicKeyCache = new Map<string, Promise<any>>();
+// グループのキャッシュ（loadGroupのPromiseをキャッシュして並列呼び出しを防ぐ）
+const groupCache = new Map<string, Promise<{ isOK: boolean; group?: any }>>();
+
+export const clearPublicKeyCache = () => {
+  publicKeyCache.clear();
+  groupCache.clear();
+};
+
+// キャッシュ付きfindUsers
+const findUsersWithCache = async (userId: string): Promise<any> => {
+  const cached = publicKeyCache.get(userId);
+  if (cached) {
+    return cached;
+  }
+  const promise = eThree.findUsers(userId);
+  publicKeyCache.set(userId, promise);
+  return promise;
+};
+
 export const isInitialized = (): boolean => {
   if (!FUNC_ENCRYPTION) return true;
   if (eThree === undefined) return false;
@@ -188,6 +209,7 @@ export const encryptEThree = async (data: any, userId: string, groupId: string) 
 };
 
 export const decryptEThree = async (encryptedAt: Date, dataString: string[], userId: string, groupId: string) => {
+  // const perfStart = performance.now();
   try {
     if (!FUNC_ENCRYPTION) {
       return JSON.parse(unzip(dataString[0]));
@@ -199,15 +221,29 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
       return undefined;
     }
 
-    const { isOK, group } = await loadGroup(groupId, userId);
+    // const loadGroupStart = performance.now();
+    // 復号化は読み取りのみなのでskipUpdate=trueで高速化
+    const { isOK, group } = await loadGroup(groupId, userId, true);
+    // const loadGroupEnd = performance.now();
     if (!isOK || group === undefined) {
       throw new Error('no group for encryption');
     }
-    const publicKey = await eThree.findUsers(userId);
+
+    // 公開鍵をキャッシュから取得（Promiseをキャッシュして並列呼び出しを1回に集約）
+    // const findUsersStart = performance.now();
+    // const cacheHit = publicKeyCache.has(userId);
+    const publicKey = await findUsersWithCache(userId);
+    // const findUsersEnd = performance.now();
+
+    // const decryptStart = performance.now();
     const dataArray = await Promise.all(
       dataString.map((d) => group.decrypt(d, publicKey, encryptedAt) as Promise<string>)
     );
+    // const decryptEnd = performance.now();
+
     const data = JSON.parse(dataArray.join(''));
+    // const perfEnd = performance.now();
+    // console.log(`[PERF] decryptEThree(${groupId.slice(0, 8)}): total=${(perfEnd - perfStart).toFixed(0)}ms, loadGroup=${(loadGroupEnd - loadGroupStart).toFixed(0)}ms, findUsers=${(findUsersEnd - findUsersStart).toFixed(0)}ms${cacheHit ? '(cached)' : ''}, decrypt=${(decryptEnd - decryptStart).toFixed(0)}ms`);
     return data;
   } catch (e) {
     console.log(e);
@@ -382,15 +418,21 @@ export const deleteGroupMembers = async (groupId: string, ownerUid: string, memb
   }
 };
 
-export const loadGroup = async (groupId: string, owner: ProjectType['ownerUid']) => {
+// 内部のloadGroup実装（キャッシュなし）
+const loadGroupInternal = async (
+  groupId: string,
+  owner: ProjectType['ownerUid'],
+  skipUpdate = false
+): Promise<{ isOK: boolean; group?: any }> => {
   if (!FUNC_ENCRYPTION) return { isOK: true };
   try {
     //console.log(groupId, owner);
     let group = await eThree.getGroup(groupId);
     if (group === null) {
-      const ownerCard = await eThree.findUsers(owner);
+      const ownerCard = await findUsersWithCache(owner);
       group = await eThree.loadGroup(groupId, ownerCard);
-    } else {
+    } else if (!skipUpdate) {
+      // skipUpdate=trueの場合、group.update()をスキップして高速化
       await group.update();
     }
     return { isOK: true, group };
@@ -398,6 +440,25 @@ export const loadGroup = async (groupId: string, owner: ProjectType['ownerUid'])
     console.log('loadGroup error:', e);
     return { isOK: false, group: undefined };
   }
+};
+
+// キャッシュ付きloadGroup（並列呼び出しを1回に集約）
+// skipUpdate=true: プロジェクト一覧取得など、読み取りのみの場合に高速化
+export const loadGroup = async (
+  groupId: string,
+  owner: ProjectType['ownerUid'],
+  skipUpdate = false
+): Promise<{ isOK: boolean; group?: any }> => {
+  if (!FUNC_ENCRYPTION) return { isOK: true };
+
+  const cacheKey = `${groupId}:${owner}:${skipUpdate}`;
+  const cached = groupCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  const promise = loadGroupInternal(groupId, owner, skipUpdate);
+  groupCache.set(cacheKey, promise);
+  return promise;
 };
 
 export const hasPrivateKeyBackup = async () => {
