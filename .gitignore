@@ -139,3 +139,6 @@ maplibre-native/
 keys/
 *.development
 *.production
+
+# Security
+SECURITY_TODO.md
