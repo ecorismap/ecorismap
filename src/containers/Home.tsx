@@ -663,7 +663,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   );
 
   const finishEditPosition = useCallback(() => {
-    bottomSheetRef.current?.snapToIndex(2);
+    // 位置編集後は地図も確認できるように10%で開く
+    bottomSheetRef.current?.snapToIndex(0);
     setTimeout(() => {
       //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
       selectFeatureButton('NONE');
@@ -1359,7 +1360,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const { layer, feature, recordSet, recordIndex } = selectSingleFeature(event);
 
       if (layer === undefined || feature === undefined || recordSet === undefined || recordIndex === undefined) {
-        unselectRecord();
+        // editPositionモード中は選択を外さない
+        if (route.params?.mode !== 'editPosition') {
+          unselectRecord();
+        }
         return true; // 何も見つからなかったのでtrueを返す
       }
 
@@ -1381,7 +1385,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
       return false; // フィーチャーが見つかったのでfalseを返す
     },
-    [isEditingRecord, isLandscape, navigateToSplit, selectSingleFeature, unselectRecord]
+    [isEditingRecord, isLandscape, navigateToSplit, route.params?.mode, selectSingleFeature, unselectRecord]
   );
 
   const handlePanResponderGrant = useCallback(
@@ -1402,10 +1406,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
       // 長押し検出タイマーを開始（800ms）
       // ドローツールが開いていても、特定のツールが選択されていない場合は長押しを有効にする
+      // editPositionモード中は長押しを無効にする
       if (
         (featureButton === 'NONE' || currentDrawTool === 'NONE') &&
         currentMapMemoTool === 'NONE' &&
-        featureButton !== 'MEMO'
+        featureButton !== 'MEMO' &&
+        route.params?.mode !== 'editPosition'
       ) {
         longPressTimerRef.current = setTimeout(async () => {
           // 長押しが検出された場合、地図の位置でGoogle Mapsへのポップアップを表示
@@ -1627,6 +1633,19 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
         bottomSheetRef.current?.close();
         navigateToSplit?.('Data', { targetLayer: layer });
+      } else if (currentDrawTool === 'MOVE_POINT' && route.params?.mode === 'editPosition') {
+        // editPositionモードでMOVE_POINTツール有効時：タップで位置変更
+        const { layer, record } = route.params;
+        if (layer === undefined || record === undefined) return;
+
+        const point = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
+        if (point === undefined || point.length === 0) return;
+
+        const ret = await ConfirmAsync(t('Home.confirm.drag'));
+        if (!ret) return;
+
+        updatePointPosition(layer, record, point[0]);
+        finishEditPosition();
       } else if (currentDrawTool === 'PLOT_POINT') {
         handleReleasePlotPoint();
         if (route.params?.mode === 'editPosition') {

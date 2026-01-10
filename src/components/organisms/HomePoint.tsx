@@ -119,9 +119,7 @@ const PointComponent = React.memo((props: PointComponentProps) => {
     onDragEndPoint,
     layer,
     zoom,
-    editPositionLayer,
     editPositionMode,
-    editPositionRecord,
     currentDrawTool,
   } = props;
   //console.log(feature.field[layer.label]);
@@ -133,15 +131,11 @@ const PointComponent = React.memo((props: PointComponentProps) => {
 
   const pointColor = useMemo(() => (selected ? COLOR.YELLOW : color), [color, selected]);
   const borderColor = useMemo(() => (selected ? COLOR.BLACK : COLOR.WHITE), [selected]);
+  // editPositionモードではタップで移動するため、長押しドラッグは無効
+  // 通常モードではMOVE_POINTツール有効時に長押しドラッグ可能
   const draggable = useMemo(
-    () =>
-      currentDrawTool === 'MOVE_POINT' &&
-      (!editPositionMode ||
-        (editPositionMode &&
-          editPositionRecord !== undefined &&
-          editPositionLayer?.id === layer.id &&
-          editPositionRecord.id === feature.id)),
-    [currentDrawTool, editPositionLayer?.id, editPositionMode, editPositionRecord, feature.id, layer.id]
+    () => currentDrawTool === 'MOVE_POINT' && !editPositionMode,
+    [currentDrawTool, editPositionMode]
   );
 
   if (!feature.coords) return null;
