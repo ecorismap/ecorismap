@@ -1575,16 +1575,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     ]
   );
 
-  const pressDeletePosition = useCallback(async () => {
-    if (route.params?.mode !== 'editPosition') return;
-    const { layer, record } = route.params;
-    if (layer === undefined || record === undefined) return;
-    const ret = await ConfirmAsync(t('DataEdit.confirm.deletePosition'));
-    if (!ret) return;
-    updatePointPosition(layer, record, undefined);
-    finishEditPosition();
-  }, [finishEditPosition, route.params, updatePointPosition]);
-
   const pressDeleteDraw = useCallback(async () => {
     if (drawLine.current.length === 0) return;
     const ret = await ConfirmAsync(t('DataEdit.confirm.deleteData'));
@@ -2202,7 +2192,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       memberLocations,
       pressTracking,
       pressSyncPosition,
-      pressDeletePosition,
       editPositionMode: route.params?.mode === 'editPosition',
       editPositionLayer: route.params?.layer,
       editPositionRecord: route.params?.record,
@@ -2214,7 +2203,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       memberLocations,
       pressTracking,
       pressSyncPosition,
-      pressDeletePosition,
       route.params?.mode,
       route.params?.layer,
       route.params?.record,

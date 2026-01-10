@@ -190,7 +190,6 @@ export const DRAWTOOL = {
   SELECT: 'cursor-default-click-outline',
   MOVE_POINT: 'map-marker-right',
   DELETE_POINT: 'map-marker-remove',
-  DELETE_POSITION: 'map-marker-remove-outline',
   MOVE: 'cursor-move',
   FINISH_EDIT_POSITION: 'undo-variant',
   UNDO: 'undo-variant',

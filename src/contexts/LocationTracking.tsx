@@ -7,7 +7,6 @@ export interface LocationTrackingContextType {
   memberLocations: MemberLocationType[];
   pressTracking: () => void;
   pressSyncPosition: () => void;
-  pressDeletePosition: () => void;
   editPositionMode: boolean;
   editPositionLayer: LayerType | undefined;
   editPositionRecord: RecordType | undefined;

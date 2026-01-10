@@ -32,7 +32,7 @@ export const HomeDrawTools = React.memo(() => {
     finishEditObject,
     pressSaveDraw,
   } = useContext(DrawingToolsContext);
-  const { editPositionMode, pressDeletePosition, finishEditPosition } = useContext(LocationTrackingContext);
+  const { editPositionMode, finishEditPosition } = useContext(LocationTrackingContext);
   const { params } = useRootRoute<'Home'>();
   const insets = useSafeAreaInsets();
 
@@ -226,18 +226,6 @@ export const HomeDrawTools = React.memo(() => {
               borderRadius={10}
               onPress={togglePencilMode}
               labelText={t('Home.label.pencilLock')}
-            />
-          </View>
-        )}
-        {featureButton === 'POINT' && editPositionWithCoord && (
-          <View style={styles.button}>
-            <Button
-              name={DRAWTOOL.DELETE_POSITION}
-              backgroundColor={COLOR.ALFABLUE}
-              borderRadius={10}
-              onPress={pressDeletePosition}
-              labelText={t('Home.label.deletePosition')}
-              labelFontSize={9}
             />
           </View>
         )}

@@ -100,7 +100,6 @@ export const mockLocationTrackingContextValue: LocationTrackingContextType = {
   memberLocations: [],
   pressTracking: jest.fn(),
   pressSyncPosition: jest.fn(),
-  pressDeletePosition: jest.fn(),
   editPositionMode: false,
   editPositionLayer: undefined,
   editPositionRecord: undefined,

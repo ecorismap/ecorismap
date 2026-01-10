@@ -277,7 +277,6 @@
       "select": "編集選択",
       "move": "地図移動",
       "pencilLock": "ロック",
-      "deletePosition": "座標削除",
       "undo": "元に戻す",
       "delete": "削除",
       "finishEditPosition": "戻る",
@@ -680,7 +679,6 @@
       "changeRecord": "変更を破棄しますか？",
       "gotoBack": "変更を破棄しますか？",
       "copyData": "データをコピーしますか？",
-      "deletePosition": "座標を削除しますか？データは削除されません。",
       "splitLine": "ラインを分割しますか？"
     },
     "alert": {
