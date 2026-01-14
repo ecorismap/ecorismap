@@ -12,7 +12,7 @@ export function splitStringsIntoChunksOfLen(str: string, len: number) {
 }
 
 export function isPlotTool(tool: string) {
-  return ['PLOT_POINT', 'PLOT_LINE', 'PLOT_POLYGON'].includes(tool);
+  return ['PLOT_POINT', 'PLOT_LINE', 'PLOT_POLYGON', 'ADD_LOCATION_POINT'].includes(tool);
 }
 
 export function isFreehandTool(tool: string) {

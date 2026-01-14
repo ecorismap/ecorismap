@@ -10,7 +10,7 @@ export interface LocationTrackingContextType {
   editPositionMode: boolean;
   editPositionLayer: LayerType | undefined;
   editPositionRecord: RecordType | undefined;
-  finishEditPosition: () => void;
+  finishEditPosition: (skipConfirm?: boolean) => Promise<void>;
   // 擬似GPS関連（開発用）
   useMockGps?: boolean;
   toggleMockGps?: (enabled: boolean, config?: any) => Promise<void>;

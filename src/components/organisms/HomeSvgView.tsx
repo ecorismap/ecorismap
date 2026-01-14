@@ -55,10 +55,10 @@ export const SvgView = React.memo(() => {
               : '';
           const endStyle = isFreehand
             ? ''
-            : properties.includes('POINT')
-            ? `url(#point)`
             : properties.includes('EDIT')
             ? `url(#firstPoint)`
+            : properties.includes('POINT')
+            ? `url(#point)`
             : '';
 
           const strokeColor = properties.includes('EDIT') ? 'lightblue' : '#F7C114';

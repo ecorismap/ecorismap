@@ -133,8 +133,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const routeName = currentSplitRoute;
 
   // BottomSheetNavigationContext からナビゲーション関数を取得
-  const { navigate: bottomSheetNavigate, currentScreen: bottomSheetCurrentScreen, isBottomSheetOpen } =
-    useBottomSheetNavigation();
+  const {
+    navigate: bottomSheetNavigate,
+    currentScreen: bottomSheetCurrentScreen,
+    isBottomSheetOpen,
+  } = useBottomSheetNavigation();
 
   // ボトムシートが開いた後にselectRecordを実行するためのペンディング状態
   const pendingSelectRecord = useRef<{ layerId: string; feature: RecordType } | null>(null);
@@ -287,7 +290,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     setIsModalMapMemoToolHidden,
   } = useMapMemo(mapViewRef.current);
   const { importPdfFile, importPmtilesFile, updatePmtilesURL } = useMaps();
-  const { addCurrentPoint, resetPointPosition, updatePointPosition, getCurrentPoint } = usePointTool();
+  const { addCurrentPoint, resetPointPosition, updatePointPosition } = usePointTool();
   //現在位置、GPS関連
   const {
     currentLocation,
@@ -499,7 +502,16 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       bottomSheetRef.current?.close();
     },
-    [dispatch, isEditingLayer, isEditingMap, isEditingRecord, route.params?.mode, routeName, setIsEditingRecord, unselectRecord]
+    [
+      dispatch,
+      isEditingLayer,
+      isEditingMap,
+      isEditingRecord,
+      route.params?.mode,
+      routeName,
+      setIsEditingRecord,
+      unselectRecord,
+    ]
   );
 
   // ダウンロードモードに入った時にBottomSheetを閉じる
@@ -662,16 +674,24 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     [setDrawTool, setMapMemoTool, toggleTerrain, setFeatureButton, resetDrawTools, clearMapMemoHistory, toggleHeadingUp]
   );
 
-  const finishEditPosition = useCallback(() => {
-    // 位置編集後は地図も確認できるように10%で開く
-    bottomSheetRef.current?.snapToIndex(0);
-    setTimeout(() => {
-      //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
-      selectFeatureButton('NONE');
-    }, 500);
+  const finishEditPosition = useCallback(
+    async (skipConfirm = false) => {
+      // 座標がある場合は確認メッセージを表示（skipConfirmがtrueの場合はスキップ）
+      if (!skipConfirm && route.params?.withCoord) {
+        const ret = await ConfirmAsync(t('Home.confirm.discardEditPosition'));
+        if (!ret) return;
+      }
 
-    navigation.setParams({ mode: undefined });
-  }, [navigation, selectFeatureButton]);
+      bottomSheetRef.current?.snapToIndex(2);
+      setTimeout(() => {
+        //onPressMapViewでInfoToolがアクティブになるのを防ぐためSetTimeoutで遅延させる
+        selectFeatureButton('NONE');
+      }, 500);
+
+      navigation.setParams({ mode: undefined });
+    },
+    [navigation, route.params?.withCoord, selectFeatureButton]
+  );
 
   const addLocationPoint = useCallback(async () => {
     if (Platform.OS === 'web') {
@@ -703,36 +723,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
   }, [addCurrentPoint, gpsState, navigateToSplit, trackingState]);
 
-  const addLocationPointInEditPosition = useCallback(
-    async (layer: LayerType, record: RecordType) => {
-      if (Platform.OS === 'web') {
-        await AlertAsync(t('Home.alert.gpsWeb'));
-        return;
-      }
-
-      // 確認アラートを表示
-      const ret = await ConfirmAsync(t('Home.confirm.addLocationPoint'));
-      if (!ret) {
-        return;
-      }
-
-      const point = await getCurrentPoint();
-      if (point === undefined) return;
-      updatePointPosition(layer, record, point);
-      finishEditPosition();
-    },
-    [finishEditPosition, getCurrentPoint, updatePointPosition]
-  );
-
   const handleAddLocationPoint = useCallback(async () => {
-    if (route.params?.mode === 'editPosition') {
-      const { layer, record } = route.params;
-      if (layer === undefined || record === undefined) return;
-      await addLocationPointInEditPosition(layer, record);
-    } else {
-      await addLocationPoint();
-    }
-  }, [addLocationPoint, addLocationPointInEditPosition, route.params]);
+    await addLocationPoint();
+  }, [addLocationPoint]);
 
   const selectDrawTool = useCallback(
     async (value: DrawToolType) => {
@@ -746,7 +739,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           //ドローツールをオフ
           resetDrawTools();
           setDrawTool('NONE');
-          if (route.params?.mode === 'editPosition') finishEditPosition();
+          if (route.params?.mode === 'editPosition') finishEditPosition(true);
         } else {
           //ドローツールをオン
 
@@ -756,10 +749,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               return;
             }
 
-            // ADD_LOCATION_POINTの場合は即座に確認アラートを表示してポイントを追加
+            // ADD_LOCATION_POINTの場合は現在地でポイント編集を開始
             if (value === 'ADD_LOCATION_POINT') {
               await handleAddLocationPoint();
-              return; // ツールを有効にしない
+              return; // handleAddLocationPoint内でsetDrawToolを呼んでいるため
             }
             //await runTutrial(`POINTTOOL_${value}`);
           } else if (isLineTool(value)) {
@@ -794,17 +787,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           //await runTutrial('SELECTIONTOOL');
         }
       } else if (value === 'DELETE_POINT') {
-        if (currentDrawTool === value) {
-          resetDrawTools();
-          setDrawTool('NONE');
-        } else {
-          if (activePointLayer === undefined) {
-            await AlertAsync(t('Home.alert.cannotEdit'));
-            return;
-          }
-          setDrawTool(value);
-        }
-      } else if (value === 'MOVE_POINT') {
         if (currentDrawTool === value) {
           resetDrawTools();
           setDrawTool('NONE');
@@ -862,13 +844,15 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const pressUndoDraw = useCallback(async () => {
     const finished = undoDraw();
     if (route.params?.mode === 'editPosition') {
-      if (finished) finishEditPosition();
+      if (finished) finishEditPosition(true);
     }
   }, [finishEditPosition, route.params?.mode, undoDraw]);
 
   const pressSaveDraw = useCallback(async () => {
     let result;
-    if (featureButton === 'LINE') {
+    if (featureButton === 'POINT') {
+      result = savePoint();
+    } else if (featureButton === 'LINE') {
       result = saveLine();
     } else if (featureButton === 'POLYGON') {
       result = savePolygon();
@@ -884,7 +868,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     if (route.params?.mode === 'editPosition') {
       navigation.setParams({ mode: undefined });
     }
-    if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
+    // 編集選択の場合はボトムシートを開かない
+    if (!isSelectedDraw && layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
       bottomSheetRef.current?.snapToIndex(2);
       navigateToSplit?.('DataEdit', {
         previous: 'Data',
@@ -893,7 +878,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       });
     }
     return true;
-  }, [featureButton, navigation, navigateToSplit, route.params?.mode, saveLine, savePolygon, setDrawTool]);
+  }, [featureButton, isSelectedDraw, navigation, navigateToSplit, route.params?.mode, savePoint, saveLine, savePolygon, setDrawTool]);
 
   const pressDownloadTiles = useCallback(async () => {
     if (zoom < 11) {
@@ -1337,7 +1322,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       }
       updatePointPosition(layer, feature, coordinate);
       if (route.params?.mode === 'editPosition') {
-        finishEditPosition();
+        finishEditPosition(true);
       }
     },
     [
@@ -1441,7 +1426,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           const ret = await ConfirmAsync(t('DataEdit.confirm.splitLine'));
           if (ret) {
             handleGrantSplitLine(pXY);
-            if (route.params?.mode === 'editPosition') finishEditPosition();
+            if (route.params?.mode === 'editPosition') finishEditPosition(true);
             setDrawTool('NONE');
           }
         }
@@ -1458,7 +1443,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               await AlertAsync(message);
               return;
             }
-            finishEditPosition();
+            finishEditPosition(true);
           } else {
             const result = currentDrawTool === 'FREEHAND_LINE' ? saveLine() : savePolygon();
             const { isOK, message, layer, recordSet } = result;
@@ -1616,8 +1601,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       if (isPinch) {
         showDrawLine();
         setIsPinch(false);
+        return;
       } else if (currentDrawTool === 'MOVE') {
         showDrawLine();
+        return;
       } else if (currentDrawTool === 'SELECT') {
         handleReleaseSelect(pXY);
       } else if (currentDrawTool === 'DELETE_POINT') {
@@ -1633,46 +1620,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
         bottomSheetRef.current?.close();
         navigateToSplit?.('Data', { targetLayer: layer });
-      } else if (currentDrawTool === 'MOVE_POINT' && route.params?.mode === 'editPosition') {
-        // editPositionモードでMOVE_POINTツール有効時：タップで位置変更
-        const { layer, record } = route.params;
-        if (layer === undefined || record === undefined) return;
-
-        const point = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
-        if (point === undefined || point.length === 0) return;
-
-        const ret = await ConfirmAsync(t('Home.confirm.drag'));
-        if (!ret) return;
-
-        updatePointPosition(layer, record, point[0]);
-        finishEditPosition();
-      } else if (currentDrawTool === 'PLOT_POINT') {
+      } else if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
         handleReleasePlotPoint();
-        if (route.params?.mode === 'editPosition') {
-          const point = xyArrayToLatLonObjects([pXY], mapRegion, mapSize, mapViewRef.current);
-          const { layer, record } = route.params;
-          if (layer === undefined || record === undefined || point === undefined) return;
-
-          updatePointPosition(layer, record, point[0]);
-          finishEditPosition();
-        } else {
-          const result = savePoint();
-          if (result === undefined) return;
-          const { isOK, message, layer, recordSet } = result;
-          if (!isOK) {
-            await AlertAsync(message);
-            return;
-          }
-          setDrawTool('NONE');
-          if (layer !== undefined && recordSet !== undefined && recordSet.length > 0) {
-            bottomSheetRef.current?.snapToIndex(2);
-            navigateToSplit?.('DataEdit', {
-              previous: 'Data',
-              targetData: recordSet[0],
-              targetLayer: layer,
-            });
-          }
-        }
       } else if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON') {
         const finished = handleReleasePlotLinePolygon();
         if (finished) {
@@ -1683,7 +1632,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
               await AlertAsync(message);
               return;
             }
-            finishEditPosition();
+            finishEditPosition(true);
           } else {
             const result = currentDrawTool === 'PLOT_LINE' ? saveLine() : savePolygon();
             const { isOK, message, layer, recordSet } = result;
@@ -1749,12 +1698,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       navigateToSplit,
       route.params,
       saveLine,
-      savePoint,
       savePolygon,
       setDrawTool,
       setIsPinch,
       showDrawLine,
-      updatePointPosition,
     ]
   );
 
@@ -1775,16 +1722,23 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     layer: LayerType;
     record: RecordType;
     featureType: FeatureButtonType;
+    withCoord?: boolean;
   } | null>(null);
 
   // pendingEditPositionが設定されたら、mapRegion更新後に実行
   useEffect(() => {
     if (pendingEditPosition) {
-      const { layer, record, featureType } = pendingEditPosition;
+      const { layer, record, featureType, withCoord } = pendingEditPosition;
       // 少し遅延を入れて確実にmapRegionが更新されてから実行
       const timer = setTimeout(() => {
         if (featureType === 'POINT') {
-          selectRecord(layer.id, record);
+          // 座標がない場合は従来通りレコード選択のみ（新規追加モード）
+          if (withCoord) {
+            selectObjectByFeature(layer, record, true);
+            setDrawTool('PLOT_POINT');
+          } else {
+            selectRecord(layer.id, record);
+          }
         } else if (featureType === 'LINE' || featureType === 'POLYGON') {
           // DataEditからの編集時は座標を再計算
           selectObjectByFeature(layer, record, true);
@@ -1857,11 +1811,17 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         if (jumpTo) {
           changeMapRegion(jumpTo, true);
           // mapRegion更新後に編集モードを開始するため、pendingEditPositionを設定
-          setPendingEditPosition({ layer, record, featureType });
+          setPendingEditPosition({ layer, record, featureType, withCoord: route.params?.withCoord });
         } else {
           // jumpToがない場合はすぐに編集モードを開始（座標再計算なし）
           if (featureType === 'POINT') {
-            selectRecord(layer.id, record);
+            // 座標がない場合は従来通りレコード選択のみ（新規追加モード）
+            if (route.params?.withCoord) {
+              selectObjectByFeature(layer, record, false);
+              setDrawTool('PLOT_POINT');
+            } else {
+              selectRecord(layer.id, record);
+            }
           } else if (featureType === 'LINE' || featureType === 'POLYGON') {
             selectObjectByFeature(layer, record, false);
             setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
@@ -2637,10 +2597,7 @@ export default function HomeContainers(props: Props_Home) {
   );
 
   return (
-    <BottomSheetNavigationProvider
-      onRouteChange={setCurrentSplitRoute}
-      onNavigateToHome={handleNavigateToHome}
-    >
+    <BottomSheetNavigationProvider onRouteChange={setCurrentSplitRoute} onNavigateToHome={handleNavigateToHome}>
       <HomeContainersInner {...props} />
     </BottomSheetNavigationProvider>
   );

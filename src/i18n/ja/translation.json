@@ -197,7 +197,8 @@
       "upload": "データを送信しますか？",
       "track_start": "トラックの記録を開始しますか？",
       "downloadAllUserData": "管理者として他のメンバーのプライベートデータもダウンロードしますか？",
-      "addLocationPoint": "現在地にポイントを追加しますか？"
+      "addLocationPoint": "現在地にポイントを追加しますか？",
+      "discardEditPosition": "位置の変更を破棄しますか？"
     },
     "alert": {
       "gps": "GPSをオンにしてください",

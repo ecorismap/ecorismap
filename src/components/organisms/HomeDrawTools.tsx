@@ -36,14 +36,14 @@ export const HomeDrawTools = React.memo(() => {
   const { params } = useRootRoute<'Home'>();
   const insets = useSafeAreaInsets();
 
-  //座標がある場合
-  const editPositionWithCoord = useMemo(() => {
-    return editPositionMode && params?.withCoord;
-  }, [editPositionMode, params?.withCoord]);
-
   //座標がない場合
   const editPositionWithoutCoord = useMemo(() => {
     return editPositionMode && !params?.withCoord;
+  }, [editPositionMode, params?.withCoord]);
+
+  //座標がある場合
+  const editPositionWithCoord = useMemo(() => {
+    return editPositionMode && params?.withCoord;
   }, [editPositionMode, params?.withCoord]);
 
   const styles = StyleSheet.create({
@@ -80,8 +80,8 @@ export const HomeDrawTools = React.memo(() => {
 
   return (
     <>
-      {/* 編集完了・キャンセルボタン（ポイントは追加時点で確定のため除外） */}
-      {isEditingObject && currentDrawTool !== 'PLOT_POINT' && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
+      {/* 編集完了・キャンセルボタン */}
+      {isEditingObject && (isPlotTool(currentDrawTool) || isFreehandTool(currentDrawTool)) && (
         <View style={styles.editControlContainer}>
           <Button
             name="check"
@@ -111,18 +111,22 @@ export const HomeDrawTools = React.memo(() => {
 
       <View style={styles.buttonContainer}>
         <View>
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
+          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isSelectedDraw && !isEditingDraw && (
             <View style={styles.button}>
               <Button
                 name={POINTTOOL.ADD_LOCATION_POINT}
-                disabled={isEditingDraw || isSelectedDraw}
-                backgroundColor={
-                  isEditingDraw || isSelectedDraw
-                    ? COLOR.ALFAGRAY
-                    : currentDrawTool === 'ADD_LOCATION_POINT'
-                    ? COLOR.ALFARED
-                    : COLOR.ALFABLUE
-                }
+                backgroundColor={COLOR.ALFABLUE}
+                borderRadius={10}
+                onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
+                labelText={t('Home.label.addLocationPoint')}
+              />
+            </View>
+          )}
+          {featureButton === 'POINT' && currentDrawTool === 'ADD_LOCATION_POINT' && isEditingDraw && (
+            <View style={styles.button}>
+              <Button
+                name={POINTTOOL.ADD_LOCATION_POINT}
+                backgroundColor={COLOR.ALFARED}
                 borderRadius={10}
                 onPress={() => selectDrawTool('ADD_LOCATION_POINT')}
                 labelText={t('Home.label.addLocationPoint')}
@@ -130,7 +134,7 @@ export const HomeDrawTools = React.memo(() => {
             </View>
           )}
 
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && (
+          {featureButton === 'POINT' && (!editPositionMode || editPositionWithoutCoord) && !isSelectedDraw && (
             <View style={styles.button}>
               <Button
                 id={'PLOT_POINT'}
@@ -142,33 +146,17 @@ export const HomeDrawTools = React.memo(() => {
               />
             </View>
           )}
-          {featureButton === 'POINT' && (!editPositionMode || editPositionWithCoord) && (
+          {featureButton === 'POINT' && (isSelectedDraw || editPositionWithCoord) && (
             <View style={styles.button}>
               <Button
                 name={DRAWTOOL.MOVE_POINT}
-                backgroundColor={currentDrawTool === 'MOVE_POINT' ? COLOR.ALFARED : COLOR.ALFABLUE}
+                backgroundColor={currentDrawTool === 'MOVE' ? COLOR.ALFABLUE : COLOR.ALFARED}
                 borderRadius={10}
-                disabled={false}
-                onPress={() => selectDrawTool('MOVE_POINT')}
+                onPress={() => selectDrawTool('PLOT_POINT')}
                 labelText={t('Home.label.movePoint')}
               />
             </View>
           )}
-          {featureButton === 'POINT' && !editPositionMode && (
-            <View style={styles.button}>
-              <Button
-                name={DRAWTOOL.DELETE_POINT}
-                backgroundColor={
-                  currentDrawTool === 'DELETE_POINT' ? COLOR.ALFARED : isEditingDraw ? COLOR.ALFAGRAY : COLOR.ALFABLUE
-                }
-                borderRadius={10}
-                disabled={isEditingDraw}
-                onPress={() => selectDrawTool('DELETE_POINT')}
-                labelText={t('Home.label.deletePoint')}
-              />
-            </View>
-          )}
-
           {featureButton === 'LINE' && (
             <HomeLineToolButton
               disabled={false}
@@ -190,22 +178,22 @@ export const HomeDrawTools = React.memo(() => {
           )}
         </View>
 
-        {featureButton !== 'POINT' && !editPositionMode && (
+        {!editPositionMode && !isSelectedDraw && !isEditingDraw && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.SELECT}
               backgroundColor={
-                currentDrawTool === 'SELECT' ? COLOR.ALFARED : (isEditingDraw || isEditingObject) ? COLOR.ALFAGRAY : COLOR.ALFABLUE
+                currentDrawTool === 'SELECT' ? COLOR.ALFARED : isEditingObject ? COLOR.ALFAGRAY : COLOR.ALFABLUE
               }
               borderRadius={10}
-              disabled={isEditingDraw || isEditingObject}
+              disabled={isEditingObject}
               onPress={() => selectDrawTool('SELECT')}
               labelText={t('Home.label.select')}
               labelFontSize={9}
             />
           </View>
         )}
-        {featureButton !== 'POINT' && (isEditingDraw || isEditingObject) && (
+        {(isEditingDraw || isEditingObject) && (
           <View style={styles.button}>
             <Button
               name={DRAWTOOL.MOVE}
@@ -261,7 +249,7 @@ export const HomeDrawTools = React.memo(() => {
               name={DRAWTOOL.FINISH_EDIT_POSITION}
               backgroundColor={COLOR.ALFABLUE}
               borderRadius={10}
-              onPress={finishEditPosition}
+              onPress={() => finishEditPosition()}
               labelText={t('Home.label.finishEditPosition')}
             />
           </View>

@@ -53,7 +53,7 @@ import { deleteRecordsAction } from '../modules/dataSet';
 import { MapRef } from 'react-map-gl/maplibre';
 import { editSettingsAction } from '../modules/settings';
 import { useRecord } from './useRecord';
-import { isPointTool } from '../utils/General';
+import { isPlotTool, isPointTool } from '../utils/General';
 import { Position } from 'geojson';
 import { RootState } from '../store';
 
@@ -322,7 +322,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       let features = [];
       if (featureButton === 'POINT') {
         features = selectPointFeatures(selectLineCoords, recordSet);
-        if (features.length > 0) convertPointFeatureToDrawLine(layer.id, features);
+        if (features.length > 0) convertPointFeatureToDrawLine(layer.id, [features[0]]);
       } else if (featureButton === 'LINE') {
         features = selectLineFeatures(selectLineCoords, recordSet);
         if (features.length > 0) convertLineFeatureToDrawLine(layer.id, [features[0]]);
@@ -453,9 +453,9 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         record: undefined,
         xy: [pXY],
         latlon: [],
-        properties: [currentDrawTool === 'PLOT_POINT' ? 'POINT' : 'EDIT'],
+        properties: ['EDIT'],
       });
-      if (currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON')
+      if (isPlotTool(currentDrawTool))
         undoLine.current.push({
           index: -1,
           latlon: [],
@@ -629,7 +629,7 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
     }
     drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY, mapRegion, mapSize, mapViewRef);
     editingLineXY.current = [];
-    if (currentDrawTool === 'PLOT_POINT') isEditingObject.current = false;
+    if (currentDrawTool === 'ADD_LOCATION_POINT') isEditingObject.current = false;
   }, [
     editingObjectIndex,
     drawLine,
@@ -1134,7 +1134,13 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
       if (isSelected) {
         isEditingDraw.current = true;
         setRedraw(ulid());
-        setDrawTool(featureButton === 'LINE' ? 'PLOT_LINE' : 'PLOT_POLYGON');
+        if (featureButton === 'POINT') {
+          setDrawTool('PLOT_POINT');
+        } else if (featureButton === 'LINE') {
+          setDrawTool('PLOT_LINE');
+        } else {
+          setDrawTool('PLOT_POLYGON');
+        }
       }
     },
     [featureButton, trySelectObjectAtPosition]
@@ -1150,17 +1156,27 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         　b.編集中のプロット（ノードもしくはライン）に近いか
           - 近ければ、ノードの修正もしくは途中にプロットを追加
           - 最初のノードをタッチするだけなら編集終了（ポリゴンは閉じる）
-          - 近くなければ、最後尾にプロットを追加
+          - 近くなければ、最後尾にプロットを追加（ポイントの場合は位置を更新）
       */
       if (!isEditingObject.current) {
         editStartNewPlotObject(pXY);
       } else {
         //プロット中なら、
         const isStartEditNode = tryStartEditNode(pXY);
-        if (!isStartEditNode) createNewNode(pXY);
+        if (!isStartEditNode) {
+          // ポイントの場合は新しいノードを作成せず、既存ポイントの位置を更新
+          if (currentDrawTool === 'PLOT_POINT' || currentDrawTool === 'ADD_LOCATION_POINT') {
+            const index = editingObjectIndex.current;
+            drawLine.current[index].xy = [pXY];
+            editingNodeIndex.current = 0;
+            editingNodeState.current = 'MOVE';
+          } else {
+            createNewNode(pXY);
+          }
+        }
       }
     },
-    [createNewNode, editStartNewPlotObject, isEditingObject, tryStartEditNode]
+    [createNewNode, currentDrawTool, editStartNewPlotObject, isEditingObject, tryStartEditNode]
   );
 
   const handleMovePlot = useCallback(
