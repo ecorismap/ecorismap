@@ -1265,26 +1265,44 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
   const handleGrantSplitLine = useCallback(
     (pXY: Position) => {
       const index = editingObjectIndex.current;
+      if (index === -1) return;
+
       const lineXY = drawLine.current[index].xy;
 
       let nodeIndex = findNearNodeIndex(pXY, lineXY);
       if (nodeIndex === -1) {
-        //console.log('make interporate node');
         const { index: idx } = getSnappedPositionWithLine(pXY, lineXY, {
           isXY: true,
         });
         lineXY.splice(idx + 1, 0, pXY);
         nodeIndex = idx + 1;
       }
+
       const record = drawLine.current[index].record;
+      const layerId = drawLine.current[index].layerId;
+
+      // 前半部分のxyとlatlonを作成
+      const frontXY = lineXY.slice(0, nodeIndex + 1);
+      const frontLatlon = xyArrayToLatLonArray(frontXY, mapRegion, mapSize, mapViewRef);
+
+      // 後半部分のxyとlatlonを作成
+      const backXY = lineXY.slice(nodeIndex);
+      const backLatlon = xyArrayToLatLonArray(backXY, mapRegion, mapSize, mapViewRef);
+
       const newLine = {
         ...drawLine.current[index],
         id: ulid(),
-        latlon: xyArrayToLatLonArray(lineXY.slice(0, nodeIndex + 1), mapRegion, mapSize, mapViewRef),
+        xy: frontXY,
+        latlon: frontLatlon,
+        layerId: layerId,
         record: record ? { ...record, id: ulid() } : undefined,
       };
       drawLine.current.push(newLine);
-      drawLine.current[index].latlon = xyArrayToLatLonArray(lineXY.slice(nodeIndex), mapRegion, mapSize, mapViewRef);
+
+      // 元のラインを後半部分に更新
+      drawLine.current[index].xy = backXY;
+      drawLine.current[index].latlon = backLatlon;
+
       //保存する
       saveLine();
     },

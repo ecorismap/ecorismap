@@ -35,8 +35,8 @@ export const SvgView = React.memo(() => {
           // フリーハンドツールの場合はマーカーを表示しない
           const isFreehand = isFreehandTool(currentDrawTool);
 
-          // 最初のポイントを強調表示（編集モード時、プロットツールのみ）
-          const isFirstPointHighlighted = properties.includes('EDIT') && isPlotTool(currentDrawTool);
+          // 最初のポイントを強調表示（編集モード時、プロットツールまたは分割ツール）
+          const isFirstPointHighlighted = properties.includes('EDIT') && (isPlotTool(currentDrawTool) || currentDrawTool === 'SPLIT_LINE');
 
           const startStyle = isFreehand
             ? ''
@@ -48,7 +48,7 @@ export const SvgView = React.memo(() => {
             ? ''
             : `url(#delete)`;
           const midStyle =
-            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON'
+            currentDrawTool === 'PLOT_LINE' || currentDrawTool === 'PLOT_POLYGON' || currentDrawTool === 'SPLIT_LINE'
               ? properties.includes('EDIT')
                 ? `url(#plot)`
                 : ''

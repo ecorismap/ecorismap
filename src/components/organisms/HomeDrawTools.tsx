@@ -21,8 +21,6 @@ export const HomeDrawTools = React.memo(() => {
     isSelectedDraw,
     isEditingObject,
     currentDrawTool,
-    currentLineTool,
-    currentPolygonTool,
     featureButton,
     selectDrawTool,
     setLineTool,
@@ -160,18 +158,16 @@ export const HomeDrawTools = React.memo(() => {
           {featureButton === 'LINE' && (
             <HomeLineToolButton
               disabled={false}
-              isPositionRight={false}
               currentDrawTool={currentDrawTool}
-              currentLineTool={currentLineTool}
+              isEditingDraw={isEditingDraw}
               selectDrawTool={selectDrawTool}
               setLineTool={setLineTool}
             />
           )}
           {featureButton === 'POLYGON' && (
             <HomePolygonToolButton
-              isPositionRight={false}
+              disabled={false}
               currentDrawTool={currentDrawTool}
-              currentPolygonTool={currentPolygonTool}
               selectDrawTool={selectDrawTool}
               setPolygonTool={setPolygonTool}
             />

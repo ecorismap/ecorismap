@@ -705,7 +705,8 @@
       "reOpenProject": "Would you like to open a project? \nData from the current project that you have not saved will be discarded.",
       "downloadAllUserData": "Do you also download private data from other members as an administrator?",
       "addLocationPoint": "Add a point at the current location?",
-      "discardEditPosition": "Discard position changes?"
+      "discardEditPosition": "Discard position changes?",
+      "splitLine": "Do you want to split the line?"
     },
     "navigation": {
       "download": "download",

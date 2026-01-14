@@ -368,6 +368,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [isLoading, setIsLoading] = useState(false);
   const [poiInfo, setPoiInfo] = useState<PoiInfoType | null>(null);
   const [mapLocationInfo, setMapLocationInfo] = useState<MapLocationInfoType | null>(null);
+  const [pendingSplitPosition, setPendingSplitPosition] = useState<Position | null>(null);
   const attribution = useMemo(
     () =>
       tileMaps
@@ -1423,12 +1424,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       } else if (currentDrawTool === 'SPLIT_LINE') {
         const isOK = checkSplitLine(pXY);
         if (isOK) {
-          const ret = await ConfirmAsync(t('DataEdit.confirm.splitLine'));
-          if (ret) {
-            handleGrantSplitLine(pXY);
-            if (route.params?.mode === 'editPosition') finishEditPosition(true);
-            setDrawTool('NONE');
-          }
+          // 確認ダイアログを表示するため、位置を保存してuseEffectで処理
+          setPendingSplitPosition(pXY);
+          return; // 他の処理をスキップ
         }
       } else if (isPlotTool(currentDrawTool)) {
         handleGrantPlot(pXY);
@@ -1480,7 +1478,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       handleGrantFreehand,
       handleGrantMapMemo,
       handleGrantPlot,
-      handleGrantSplitLine,
       hideDrawLine,
       isPencilModeActive,
       isPencilTouch,
@@ -1653,6 +1650,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       } else if (isFreehandTool(currentDrawTool)) {
         handleReleaseFreehand();
+      } else if (currentDrawTool === 'SPLIT_LINE') {
+        // 分割ツールの場合はリリース時に何もしない（確認ダイアログはGrantで処理）
+        return;
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
       } else if (!isMapDragging.current && !freehandFinishedRef.current) {
@@ -1742,7 +1742,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         } else if (featureType === 'LINE' || featureType === 'POLYGON') {
           // DataEditからの編集時は座標を再計算
           selectObjectByFeature(layer, record, true);
-          setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+          setDrawTool(featureType === 'LINE' ? 'PLOT_LINE' : 'PLOT_POLYGON');
         }
         setPendingEditPosition(null);
       }, 100);
@@ -1755,9 +1755,29 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     selectRecord,
     selectObjectByFeature,
     setDrawTool,
-    currentLineTool,
-    currentPolygonTool,
   ]);
+
+  // 分割確認ダイアログの処理
+  const isSplitConfirmingRef = useRef(false);
+  useEffect(() => {
+    if (pendingSplitPosition === null) return;
+    if (isSplitConfirmingRef.current) return; // 既に確認中なら何もしない
+
+    isSplitConfirmingRef.current = true;
+
+    const confirmAndSplit = async () => {
+      const confirmed = await ConfirmAsync(t('Home.confirm.splitLine'));
+      if (confirmed) {
+        handleGrantSplitLine(pendingSplitPosition);
+        if (route.params?.mode === 'editPosition') finishEditPosition(true);
+        setDrawTool('NONE');
+      }
+      setPendingSplitPosition(null);
+      isSplitConfirmingRef.current = false;
+    };
+
+    confirmAndSplit();
+  }, [pendingSplitPosition, handleGrantSplitLine, route.params?.mode, finishEditPosition, setDrawTool]);
 
   useEffect(() => {
     //coordsは深いオブジェクトのため値を変更しても変更したとみなされない。
@@ -1824,7 +1844,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             }
           } else if (featureType === 'LINE' || featureType === 'POLYGON') {
             selectObjectByFeature(layer, record, false);
-            setDrawTool(featureType === 'LINE' ? currentLineTool : currentPolygonTool);
+            setDrawTool(featureType === 'LINE' ? 'PLOT_LINE' : 'PLOT_POLYGON');
           }
         }
       }
