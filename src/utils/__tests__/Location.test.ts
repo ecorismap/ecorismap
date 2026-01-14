@@ -4,6 +4,8 @@ import {
   toLocationType,
   getLineLength,
   checkLocations,
+  isLowAccuracy,
+  splitTrackByAccuracy,
 } from '../Location';
 import { LocationType } from '../../types';
 
@@ -164,13 +166,13 @@ describe('checkLocations', () => {
     expect(result[0].timestamp).toBe(baseTime + 1000);
   });
 
-  it('filters out low accuracy when starting', () => {
+  it('filters out extremely low accuracy (>100m) when starting', () => {
     const locations: LocationObjectInput[] = [
       {
         coords: {
           latitude: 35,
           longitude: 135,
-          accuracy: 50, // 精度が悪い
+          accuracy: 150, // 精度が極端に悪い（>100m）
           altitude: 0,
           altitudeAccuracy: 5,
           heading: 0,
@@ -182,7 +184,7 @@ describe('checkLocations', () => {
         coords: {
           latitude: 35.01,
           longitude: 135.01,
-          accuracy: 10, // 精度が良い
+          accuracy: 50, // 精度が悪いが記録される（30-100m）
           altitude: 0,
           altitudeAccuracy: 5,
           heading: 0,
@@ -190,11 +192,24 @@ describe('checkLocations', () => {
         },
         timestamp: baseTime + 2000,
       },
+      {
+        coords: {
+          latitude: 35.02,
+          longitude: 135.02,
+          accuracy: 10, // 精度が良い
+          altitude: 0,
+          altitudeAccuracy: 5,
+          heading: 0,
+          speed: 0,
+        },
+        timestamp: baseTime + 3000,
+      },
     ];
 
     const result = checkLocations(0, locations); // lastTimeStamp = 0（開始時）
-    expect(result).toHaveLength(1);
-    expect(result[0].accuracy).toBe(10);
+    expect(result).toHaveLength(2); // 50mと10mの2つが記録される
+    expect(result[0].accuracy).toBe(50);
+    expect(result[1].accuracy).toBe(10);
   });
 
   it('rejects all data when timestamp reversal detected', () => {
@@ -274,5 +289,98 @@ describe('checkLocations', () => {
     expect(filtered[0].timestamp).toBe(baseTime + 1000);
     expect(filtered[1].timestamp).toBe(baseTime + 2000);
     expect(filtered[2].timestamp).toBe(baseTime + 3000);
+  });
+});
+
+describe('isLowAccuracy', () => {
+  it('returns true for accuracy > 30m', () => {
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 31 })).toBe(true);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 50 })).toBe(true);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 100 })).toBe(true);
+  });
+
+  it('returns false for accuracy <= 30m', () => {
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 30 })).toBe(false);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 10 })).toBe(false);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: 1 })).toBe(false);
+  });
+
+  it('returns false for null/undefined accuracy', () => {
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: null })).toBe(false);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135, accuracy: undefined })).toBe(false);
+    expect(isLowAccuracy({ latitude: 35, longitude: 135 })).toBe(false);
+  });
+});
+
+describe('splitTrackByAccuracy', () => {
+  it('returns empty array for empty input', () => {
+    expect(splitTrackByAccuracy([])).toEqual([]);
+  });
+
+  it('returns single segment for all high accuracy', () => {
+    const locations: LocationType[] = [
+      { latitude: 35, longitude: 135, accuracy: 10 },
+      { latitude: 35.01, longitude: 135.01, accuracy: 20 },
+      { latitude: 35.02, longitude: 135.02, accuracy: 30 },
+    ];
+    const result = splitTrackByAccuracy(locations);
+    expect(result).toHaveLength(1);
+    expect(result[0].isLowAccuracy).toBe(false);
+    expect(result[0].coordinates).toHaveLength(3);
+  });
+
+  it('returns single segment for all low accuracy', () => {
+    const locations: LocationType[] = [
+      { latitude: 35, longitude: 135, accuracy: 50 },
+      { latitude: 35.01, longitude: 135.01, accuracy: 70 },
+      { latitude: 35.02, longitude: 135.02, accuracy: 100 },
+    ];
+    const result = splitTrackByAccuracy(locations);
+    expect(result).toHaveLength(1);
+    expect(result[0].isLowAccuracy).toBe(true);
+    expect(result[0].coordinates).toHaveLength(3);
+  });
+
+  it('splits track by accuracy with overlapping points for continuity', () => {
+    const locations: LocationType[] = [
+      { latitude: 35, longitude: 135, accuracy: 10 }, // high
+      { latitude: 35.01, longitude: 135.01, accuracy: 20 }, // high
+      { latitude: 35.02, longitude: 135.02, accuracy: 50 }, // low
+      { latitude: 35.03, longitude: 135.03, accuracy: 70 }, // low
+      { latitude: 35.04, longitude: 135.04, accuracy: 15 }, // high
+    ];
+    const result = splitTrackByAccuracy(locations);
+    expect(result).toHaveLength(3);
+
+    // First segment: high accuracy
+    expect(result[0].isLowAccuracy).toBe(false);
+    expect(result[0].coordinates).toHaveLength(2);
+    expect(result[0].coordinates[0].accuracy).toBe(10);
+    expect(result[0].coordinates[1].accuracy).toBe(20);
+
+    // Second segment: low accuracy (includes overlapping point from previous segment)
+    expect(result[1].isLowAccuracy).toBe(true);
+    expect(result[1].coordinates).toHaveLength(3);
+    expect(result[1].coordinates[0].accuracy).toBe(20); // overlapping point
+    expect(result[1].coordinates[1].accuracy).toBe(50);
+    expect(result[1].coordinates[2].accuracy).toBe(70);
+
+    // Third segment: high accuracy (includes overlapping point from previous segment)
+    expect(result[2].isLowAccuracy).toBe(false);
+    expect(result[2].coordinates).toHaveLength(2);
+    expect(result[2].coordinates[0].accuracy).toBe(70); // overlapping point
+    expect(result[2].coordinates[1].accuracy).toBe(15);
+  });
+
+  it('handles null accuracy as high accuracy', () => {
+    const locations: LocationType[] = [
+      { latitude: 35, longitude: 135, accuracy: null },
+      { latitude: 35.01, longitude: 135.01 }, // undefined
+      { latitude: 35.02, longitude: 135.02, accuracy: 10 },
+    ];
+    const result = splitTrackByAccuracy(locations);
+    expect(result).toHaveLength(1);
+    expect(result[0].isLowAccuracy).toBe(false);
+    expect(result[0].coordinates).toHaveLength(3);
   });
 });
