@@ -15,6 +15,13 @@
       "command": "echo '💡 コミット前の型チェック推奨: npx tsc --noEmit'"
     },
     {
+      "name": "git-push-confirm",
+      "description": "git push前に確認を表示",
+      "type": "PreToolUse",
+      "matcher": "Bash(git push:*)",
+      "command": "echo '🚀 プッシュ前の確認:\n- テストは全てパスしていますか？\n- 型チェックは通っていますか？\n- センシティブ情報は含まれていませんか？'"
+    },
+    {
       "name": "platform-file-check",
       "description": "TSXファイル作成時にWeb版対応を確認",
       "type": "PostToolUse",
@@ -55,13 +62,51 @@
       "type": "PostToolUse",
       "matcher": "Write(**/APIKeys.ts)",
       "command": "echo '⚠️ APIKeys.tsは.gitignoreに含まれていることを確認してください'"
+    },
+    {
+      "name": "console-log-warning",
+      "description": "console.logを含むファイル書き込み時に警告",
+      "type": "PostToolUse",
+      "matcher": "Write(**/src/**/*.ts)",
+      "command": "echo '⚠️ console.logが含まれている場合は、本番コードから削除してください'"
+    },
+    {
+      "name": "console-log-warning-tsx",
+      "description": "console.logを含むTSXファイル書き込み時に警告",
+      "type": "PostToolUse",
+      "matcher": "Write(**/src/**/*.tsx)",
+      "command": "echo '⚠️ console.logが含まれている場合は、本番コードから削除してください'"
+    },
+    {
+      "name": "context-migration-reminder",
+      "description": "HomeContext変更時に移行ガイドを参照",
+      "type": "PostToolUse",
+      "matcher": "Write(**/HomeContext*.ts)",
+      "command": "echo '📋 HomeContext変更: docs/MIGRATION_GUIDE.mdを参照してContext移行を検討してください'"
+    },
+    {
+      "name": "virgil-encryption-check",
+      "description": "暗号化関連ファイル変更時にセキュリティ確認",
+      "type": "PostToolUse",
+      "matcher": "Write(**/virgil*.ts)",
+      "command": "echo '🔐 暗号化コード変更: セキュリティレビューを実施してください'"
+    },
+    {
+      "name": "geojson-validation-reminder",
+      "description": "GeoJSON関連ファイル変更時にバリデーション確認",
+      "type": "PostToolUse",
+      "matcher": "Write(**/geojson*.ts)",
+      "command": "echo '🗺️ GeoJSON処理変更: 座標系（WGS84）と座標順序（lon,lat）を確認してください'"
     }
   ],
   "notes": {
     "usage": "Claude Codeのhooks機能で使用するフック定義です",
     "types": {
       "PreToolUse": "ツール実行前に発動",
-      "PostToolUse": "ツール実行後に発動"
+      "PostToolUse": "ツール実行後に発動",
+      "PreCompact": "コンテキスト圧縮前に発動",
+      "SessionStart": "セッション開始時に発動",
+      "Stop": "セッション終了時に発動"
     },
     "integration": "これらのフックを有効にするには、.claude/settings.local.jsonのhooksプロパティに追加するか、Claude Codeの設定で参照してください"
   }

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://claude.ai/schemas/statusline.json",
+  "description": "EcorisMap用ステータスライン設定例",
+
+  "examples": [
+    {
+      "name": "minimal",
+      "description": "最小限の情報表示",
+      "config": {
+        "enabled": true,
+        "format": "minimal",
+        "items": ["mode", "status"]
+      }
+    },
+    {
+      "name": "standard",
+      "description": "標準的な情報表示",
+      "config": {
+        "enabled": true,
+        "format": "standard",
+        "items": ["mode", "model", "tokens", "status"],
+        "showTokenUsage": true,
+        "showModelInfo": true
+      }
+    },
+    {
+      "name": "detailed",
+      "description": "詳細な情報表示",
+      "config": {
+        "enabled": true,
+        "format": "detailed",
+        "items": ["mode", "model", "tokens", "context", "tools", "status"],
+        "showTokenUsage": true,
+        "showModelInfo": true,
+        "showContextSize": true,
+        "showActiveTools": true
+      }
+    },
+    {
+      "name": "developer",
+      "description": "開発者向け詳細表示",
+      "config": {
+        "enabled": true,
+        "format": "custom",
+        "items": ["mode", "model", "tokens", "context", "tools", "git", "status"],
+        "showTokenUsage": true,
+        "showModelInfo": true,
+        "showContextSize": true,
+        "showActiveTools": true,
+        "showGitBranch": true,
+        "customFormat": "[{mode}] {model} | Tokens: {tokens} | Context: {context}% | Branch: {git}"
+      }
+    }
+  ],
+
+  "ecorismap_recommended": {
+    "description": "EcorisMapプロジェクト推奨設定",
+    "config": {
+      "enabled": true,
+      "format": "standard",
+      "items": ["mode", "model", "tokens", "status"],
+      "showTokenUsage": true,
+      "showModelInfo": true,
+      "refreshInterval": 1000
+    }
+  },
+
+  "items_description": {
+    "mode": "現在のモード (normal/plan/など)",
+    "model": "使用中のモデル名",
+    "tokens": "使用トークン数",
+    "context": "コンテキスト使用率",
+    "tools": "アクティブなツール数",
+    "git": "現在のGitブランチ",
+    "status": "実行状態 (idle/running/error)"
+  },
+
+  "usage": {
+    "description": "設定方法",
+    "steps": [
+      "1. Claude Code設定画面を開く",
+      "2. 'statusline'セクションに移動",
+      "3. 上記の設定例からコピー",
+      "4. 保存して再起動"
+    ]
+  }
+}

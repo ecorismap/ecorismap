@@ -1,0 +1,15 @@
+{
+  "$schema": "https://claude.ai/schemas/settings.json",
+  "description": "EcorisMapプラグインのマーケットプレイス設定 - settings.jsonにコピーして使用",
+  "extraKnownMarketplaces": {
+    "ecorismap-claude-config": {
+      "source": {
+        "type": "local",
+        "path": ".claude"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ecorismap-claude-config": true
+  }
+}

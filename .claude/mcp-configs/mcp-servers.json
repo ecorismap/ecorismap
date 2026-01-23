@@ -1,0 +1,55 @@
+{
+  "$schema": "https://claude.ai/schemas/mcp-servers.json",
+  "description": "EcorisMap開発用MCP設定 - settings.jsonにコピーして使用",
+  "usage": "mcpServersセクションを~/.claude/settings.jsonまたは.claude/settings.local.jsonにコピー",
+  "warnings": [
+    "同時有効化は10個以下を推奨（コンテキストウィンドウ保護）",
+    "YOUR_*_HEREプレースホルダーを実際の値に置換"
+  ],
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/context7-mcp"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-playwright"]
+    },
+    "playwright-test": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-playwright-test"]
+    },
+    "mobile": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-mobile"]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
+      }
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "YOUR_PROJECT_PATH_HERE"]
+    }
+  },
+  "projectSpecific": {
+    "description": "EcorisMap固有の設定",
+    "firebaseEmulators": {
+      "auth": "localhost:9099",
+      "firestore": "localhost:8080",
+      "storage": "localhost:9199",
+      "functions": "localhost:5001"
+    },
+    "devServer": {
+      "expo": "localhost:8081",
+      "web": "localhost:19006"
+    }
+  }
+}

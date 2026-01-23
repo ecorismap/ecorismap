@@ -1,0 +1,35 @@
+# Claude Code設定用gitignore
+
+# ローカル設定
+CLAUDE.local.md
+settings.local.json
+
+# 一時ファイル
+*.tmp
+.tmp/
+temp/
+
+# テスト成果物
+tests/.tmp/
+coverage/
+
+# コードマップ（ローカル生成）
+codemaps/
+
+# エディタ設定
+.vscode/
+.idea/
+
+# OS固有ファイル
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+logs/
+
+# セッションデータ
+sessions/*.local.json
+
+# キャッシュ
+.cache/
