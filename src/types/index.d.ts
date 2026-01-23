@@ -100,6 +100,11 @@ export interface TrackLogType {
   distance: number;
   lastTimeStamp: number;
 }
+
+export interface TrackSegmentType {
+  coordinates: LocationType[];
+  isLowAccuracy: boolean;
+}
 export interface ProjectDataType extends DataType {
   userId: string;
   permission: PermissionType | 'TEMPLATE';

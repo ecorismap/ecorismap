@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Polyline } from 'react-native-maps';
 
-import { COLOR } from '../../constants/AppConstants';
-import { LocationType } from '../../types';
-import { getTrackChunkForDisplay } from '../../utils/Location';
+import { COLOR, TRACK_DASH_PATTERN } from '../../constants/AppConstants';
+import { TrackSegmentType } from '../../types';
+import { getTrackChunkForDisplay, splitTrackByAccuracy } from '../../utils/Location';
 import { AppStateContext } from '../../contexts/AppState';
 
 interface Props {
@@ -18,8 +18,8 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
 
 export const SavedTrackLog = React.memo((props: Props) => {
   const { savedChunkCount } = props;
-  const [loadedChunks, setLoadedChunks] = useState<Record<number, LocationType[]>>({});
-  const loadedChunksRef = useRef<Record<number, LocationType[]>>({});
+  const [loadedChunks, setLoadedChunks] = useState<Record<number, TrackSegmentType[]>>({});
+  const loadedChunksRef = useRef<Record<number, TrackSegmentType[]>>({});
   const { setLoading } = useContext(AppStateContext);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const loadingControlRef = useRef(false);
@@ -49,7 +49,7 @@ export const SavedTrackLog = React.memo((props: Props) => {
 
     // 余分なチャンクを削除（データ削減）
     setLoadedChunks((prev) => {
-      const next: Record<number, LocationType[]> = {};
+      const next: Record<number, TrackSegmentType[]> = {};
       let changed = false;
       for (const index of chunkIndices) {
         if (prev[index]) {
@@ -99,11 +99,13 @@ export const SavedTrackLog = React.memo((props: Props) => {
           if (!chunk || chunk.length === 0) {
             continue;
           }
+          // チャンクを精度でセグメント分割
+          const segments = splitTrackByAccuracy(chunk);
           setLoadedChunks((prev) => {
             if (isCancelled || prev[index]) {
               return prev;
             }
-            const next = { ...prev, [index]: chunk };
+            const next = { ...prev, [index]: segments };
             loadedChunksRef.current = next;
             return next;
           });
@@ -149,20 +151,21 @@ export const SavedTrackLog = React.memo((props: Props) => {
   // 各チャンクを個別のメモ化されたコンポーネントとして表示
   return (
     <>
-      {chunkIndices.map((index) => {
-        const chunk = loadedChunks[index];
-        if (!chunk || chunk.length === 0) return null;
-        return (
+      {chunkIndices.map((chunkIndex) => {
+        const segments = loadedChunks[chunkIndex];
+        if (!segments || segments.length === 0) return null;
+        return segments.map((segment, segmentIndex) => (
           <Polyline
-            key={`saved-track-${index}`}
+            key={`saved-track-${chunkIndex}-${segmentIndex}`}
             tappable={false}
-            coordinates={chunk}
+            coordinates={segment.coordinates}
             strokeColor={COLOR.TRACK}
             strokeWidth={4}
             lineCap="butt"
             zIndex={100}
+            lineDashPattern={segment.isLowAccuracy ? [...TRACK_DASH_PATTERN] : undefined}
           />
-        );
+        ));
       })}
     </>
   );

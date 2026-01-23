@@ -401,3 +401,10 @@ export const GPS_ACCURACY = {
   MEDIUM: t('constants.gpsaccuracy.medium'),
   LOW: t('constants.gpsaccuracy.low'),
 } as const;
+
+export const TRACK_ACCURACY = {
+  HIGH: 30, // 高精度閾値（m）- これ以下は実線表示
+  RECORD: 100, // 記録閾値（m）- これを超えると除外
+} as const;
+
+export const TRACK_DASH_PATTERN = [10, 5] as const;

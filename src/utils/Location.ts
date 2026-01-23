@@ -1,7 +1,8 @@
-import { LocationType, TrackLogType } from '../types';
+import { LocationType, TrackLogType, TrackSegmentType } from '../types';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 import { cleanupLine } from './Coords';
+import { TRACK_ACCURACY } from '../constants/AppConstants';
 
 // チャンク管理用の定数
 export const CHUNK_SIZE = 500;
@@ -117,8 +118,9 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObjectI
   let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
 
   // 4. 精度フィルタリング（常時適用）
-  // GPS精度が30m以上の場合はその点をスキップ（トンネル内などの精度悪化に対応）
-  filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= 30);
+  // GPS精度が100m超の場合はその点をスキップ（極端に悪いデータを除外）
+  // 30m〜100mの低精度データは記録し、表示時に破線で区別する
+  filteredLocations = filteredLocations.filter((v) => !v.accuracy || v.accuracy <= TRACK_ACCURACY.RECORD);
 
   return filteredLocations;
 };
@@ -349,4 +351,54 @@ export const clearAllChunks = (): void => {
 
   // MMKVに空のチャンクを保存して初期化
   saveTrackChunk(0, []);
+};
+
+/**
+ * 位置が低精度かどうかを判定
+ * @param location 位置情報
+ * @returns accuracy > 30m の場合は true
+ */
+export const isLowAccuracy = (location: LocationType): boolean => {
+  return location.accuracy != null && location.accuracy > TRACK_ACCURACY.HIGH;
+};
+
+/**
+ * トラックログを精度に基づいてセグメントに分割する
+ * - accuracy <= 30m: 高精度（実線表示）
+ * - 30m < accuracy <= 100m: 低精度（破線表示）
+ * セグメント境界では最後の点を次のセグメント先頭にも含める（連続性確保）
+ */
+export const splitTrackByAccuracy = (locations: LocationType[]): TrackSegmentType[] => {
+  if (locations.length === 0) return [];
+
+  const segments: TrackSegmentType[] = [];
+  let currentSegment: LocationType[] = [];
+  let currentIsLowAccuracy = isLowAccuracy(locations[0]);
+
+  for (let i = 0; i < locations.length; i++) {
+    const location = locations[i];
+    const locationIsLowAccuracy = isLowAccuracy(location);
+
+    if (locationIsLowAccuracy !== currentIsLowAccuracy && currentSegment.length > 0) {
+      // セグメントの切り替わり - 最後の点を次のセグメントの先頭にも含める（連続性確保）
+      segments.push({
+        coordinates: currentSegment,
+        isLowAccuracy: currentIsLowAccuracy,
+      });
+      currentSegment = [currentSegment[currentSegment.length - 1]];
+      currentIsLowAccuracy = locationIsLowAccuracy;
+    }
+
+    currentSegment.push(location);
+  }
+
+  // 最後のセグメントを追加
+  if (currentSegment.length > 0) {
+    segments.push({
+      coordinates: currentSegment,
+      isLowAccuracy: currentIsLowAccuracy,
+    });
+  }
+
+  return segments;
 };
