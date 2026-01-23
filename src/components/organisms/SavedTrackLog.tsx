@@ -151,9 +151,9 @@ export const SavedTrackLog = React.memo((props: Props) => {
   // 各チャンクを個別のメモ化されたコンポーネントとして表示
   return (
     <>
-      {chunkIndices.map((chunkIndex) => {
+      {chunkIndices.flatMap((chunkIndex) => {
         const segments = loadedChunks[chunkIndex];
-        if (!segments || segments.length === 0) return null;
+        if (!segments || segments.length === 0) return [];
         return segments.map((segment, segmentIndex) => (
           <Polyline
             key={`saved-track-${chunkIndex}-${segmentIndex}`}
@@ -163,7 +163,7 @@ export const SavedTrackLog = React.memo((props: Props) => {
             strokeWidth={4}
             lineCap="butt"
             zIndex={100}
-            lineDashPattern={segment.isLowAccuracy ? [...TRACK_DASH_PATTERN] : undefined}
+            lineDashPattern={segment.isLowAccuracy ? TRACK_DASH_PATTERN : undefined}
           />
         ));
       })}

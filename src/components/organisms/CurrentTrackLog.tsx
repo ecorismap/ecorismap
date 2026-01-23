@@ -58,7 +58,7 @@ export const CurrentTrackLog = React.memo((props: Props) => {
           strokeWidth={4}
           lineCap="butt"
           zIndex={101}
-          lineDashPattern={segment.isLowAccuracy ? [...TRACK_DASH_PATTERN] : undefined}
+          lineDashPattern={segment.isLowAccuracy ? TRACK_DASH_PATTERN : undefined}
         />
       ))}
     </>

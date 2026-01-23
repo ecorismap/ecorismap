@@ -407,4 +407,4 @@ export const TRACK_ACCURACY = {
   RECORD: 100, // 記録閾値（m）- これを超えると除外
 } as const;
 
-export const TRACK_DASH_PATTERN = [10, 5] as const;
+export const TRACK_DASH_PATTERN = [10, 5];
