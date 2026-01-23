@@ -1,0 +1,68 @@
+{
+  "hooks": [
+    {
+      "name": "prevent-secret-commit",
+      "description": "コミット時にセンシティブファイルの警告を表示",
+      "type": "PreToolUse",
+      "matcher": "Bash(git add:*)",
+      "command": "echo '⚠️ 以下のファイルがステージされていないか確認してください:\n- .env*\n- google-services.json\n- GoogleService-Info.plist\n- src/constants/APIKeys.ts'"
+    },
+    {
+      "name": "type-check-reminder",
+      "description": "コミット前に型チェックを推奨",
+      "type": "PreToolUse",
+      "matcher": "Bash(git commit:*)",
+      "command": "echo '💡 コミット前の型チェック推奨: npx tsc --noEmit'"
+    },
+    {
+      "name": "platform-file-check",
+      "description": "TSXファイル作成時にWeb版対応を確認",
+      "type": "PostToolUse",
+      "matcher": "Write(*.tsx)",
+      "command": "echo '📱 このコンポーネントにWeb版（.web.tsx）の対応が必要か確認してください'"
+    },
+    {
+      "name": "test-reminder-modules",
+      "description": "modulesディレクトリ変更時にテストを推奨",
+      "type": "PostToolUse",
+      "matcher": "Write(**/modules/*.ts)",
+      "command": "echo '🧪 modules変更: カバレッジ60%要件を満たすテストを追加してください'"
+    },
+    {
+      "name": "test-reminder-utils",
+      "description": "utilsディレクトリ変更時にテストを推奨",
+      "type": "PostToolUse",
+      "matcher": "Write(**/utils/*.ts)",
+      "command": "echo '🧪 utils変更: カバレッジ40%要件を満たすテストを追加してください'"
+    },
+    {
+      "name": "test-reminder-hooks",
+      "description": "hooksディレクトリ変更時にテストを推奨",
+      "type": "PostToolUse",
+      "matcher": "Write(**/hooks/*.ts)",
+      "command": "echo '🧪 hooks変更: カバレッジ30%要件を満たすテストを追加してください'"
+    },
+    {
+      "name": "firebase-rules-test",
+      "description": "Firebaseルール変更時にテストを推奨",
+      "type": "PostToolUse",
+      "matcher": "Write(**/firestore.rules)",
+      "command": "echo '🔒 Security Rules変更: yarn testemuでテストを実行してください'"
+    },
+    {
+      "name": "api-keys-warning",
+      "description": "APIKeysファイル変更時に警告",
+      "type": "PostToolUse",
+      "matcher": "Write(**/APIKeys.ts)",
+      "command": "echo '⚠️ APIKeys.tsは.gitignoreに含まれていることを確認してください'"
+    }
+  ],
+  "notes": {
+    "usage": "Claude Codeのhooks機能で使用するフック定義です",
+    "types": {
+      "PreToolUse": "ツール実行前に発動",
+      "PostToolUse": "ツール実行後に発動"
+    },
+    "integration": "これらのフックを有効にするには、.claude/settings.local.jsonのhooksプロパティに追加するか、Claude Codeの設定で参照してください"
+  }
+}
