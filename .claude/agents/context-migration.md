@@ -23,7 +23,7 @@ HomeContext（86 props）から小さなContextへの段階的移行を支援し
 ## 参照ドキュメント
 
 ```
-claude_docs/MIGRATION_GUIDE.md
+docs/MIGRATION_GUIDE.md
 ```
 
 このガイドに従って移行を行います。

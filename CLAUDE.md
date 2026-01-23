@@ -161,7 +161,7 @@ src/
 
 ## 重要な開発ノート
 
-1. **Context移行**: HomeContext（86 props）から小さなContextへ移行中。詳細は`claude_docs/MIGRATION_GUIDE.md`参照。
+1. **Context移行**: HomeContext（86 props）から小さなContextへ移行中。詳細は`docs/MIGRATION_GUIDE.md`参照。
 
 2. **ネイティブモジュール**: `react-native-gdalwarp`は手動インストール必要（GitHub Releasesからダウンロード）。
 

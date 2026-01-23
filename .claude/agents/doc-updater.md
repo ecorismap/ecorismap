@@ -1,6 +1,6 @@
 ---
 name: doc-updater
-description: "ドキュメントの同期と更新を行うエージェント。CLAUDE.md、claude_docs/、READMEの整合性を保ちます。\\n\\n<example>\\nuser: \"ドキュメントを更新して\"\\nassistant: \"ドキュメント更新エージェントでドキュメントを同期します\"\\n</example>\\n\\n<example>\\nuser: \"新機能のドキュメントを追加して\"\\nassistant: \"ドキュメント更新エージェントで関連ドキュメントを更新します\"\\n</example>"
+description: "ドキュメントの同期と更新を行うエージェント。CLAUDE.md、docs/、READMEの整合性を保ちます。\\n\\n<example>\\nuser: \"ドキュメントを更新して\"\\nassistant: \"ドキュメント更新エージェントでドキュメントを同期します\"\\n</example>\\n\\n<example>\\nuser: \"新機能のドキュメントを追加して\"\\nassistant: \"ドキュメント更新エージェントで関連ドキュメントを更新します\"\\n</example>"
 model: sonnet
 ---
 
@@ -11,7 +11,7 @@ EcorisMapプロジェクトのドキュメントを同期・更新します。
 ## 担当タスク
 
 1. CLAUDE.mdの更新
-2. claude_docs/の管理
+2. docs/の管理
 3. コード変更に伴うドキュメント更新
 4. ドキュメント間の整合性確認
 
@@ -28,13 +28,14 @@ EcorisMapプロジェクトのドキュメントを同期・更新します。
 - テスト要件
 - 重要な開発ノート
 
-### claude_docs/
+### docs/
 詳細なドキュメント群。
 
 | ファイル | 内容 |
 |----------|------|
 | MIGRATION_GUIDE.md | Context移行ガイド |
-| (その他) | 機能別詳細ドキュメント |
+| HILLSHADE_USAGE.md | Hillshade機能使用法 |
+| SECURITY_TODO.md | セキュリティTODO |
 
 ## 更新トリガー
 
@@ -68,7 +69,7 @@ EcorisMapプロジェクトのドキュメントを同期・更新します。
 ### 3. 更新実施
 ```
 - CLAUDE.mdの更新
-- claude_docs/の更新
+- docs/の更新
 - 相互参照の確認
 ```
 
@@ -92,7 +93,7 @@ EcorisMapプロジェクトのドキュメントを同期・更新します。
 - [変更箇所1]: [変更内容]
 - [変更箇所2]: [変更内容]
 
-#### claude_docs/
+#### docs/
 - [ファイル名]: [変更内容]
 
 ### 整合性確認
