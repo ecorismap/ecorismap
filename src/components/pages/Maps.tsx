@@ -8,6 +8,7 @@ import { MapsContext } from '../../contexts/Maps';
 import { Loading } from '../molecules/Loading';
 import { t } from '../../i18n/config';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function MapScreen() {
   //console.log('render Maps');
@@ -52,7 +53,19 @@ export default function MapScreen() {
       />
       <Loading visible={isLoading} text={t('common.processing') + '\n' + progress + '%'} />
       <View style={styles.tableContainer}>
-        <MapTable />
+        {Platform.OS === 'web' ? (
+          <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+            <ScrollView style={{ flex: 1 }}>
+              <MapTable />
+            </ScrollView>
+          </ScrollView>
+        ) : (
+          <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
+            <View style={{ flex: 1 }}>
+              <MapTable />
+            </View>
+          </ScrollView>
+        )}
       </View>
       <MapButtons />
     </View>

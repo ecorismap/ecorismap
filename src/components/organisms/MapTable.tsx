@@ -160,11 +160,14 @@ export const MapTable = React.memo(() => {
       renderItem={renderItem}
       ListHeaderComponent={ListHeader}
       stickyHeaderIndices={[0]}
-      initialNumToRender={filterdMaps.length}
+      initialNumToRender={10}
+      maxToRenderPerBatch={10}
+      windowSize={3}
+      removeClippedSubviews
+      activationDistance={5}
       onDragBegin={(index) => onDragBegin(filterdMaps[index])}
       onDragEnd={({ from, to }) => updateMapOrder(filterdMaps, from, to > from ? to + 1 : to)}
-      activationDistance={5}
-      removeClippedSubviews
+      getItemLayout={(_, index) => ({ length: 60, offset: 60 * index, index })}
     />
   );
 });
