@@ -9,6 +9,7 @@ import { LayersContext } from '../../contexts/Layers';
 import { LayerType } from '../../types';
 import { Pressable } from '../atoms/Pressable';
 import { useProject } from '../../hooks/useProject';
+import { usePermission } from '../../hooks/usePermission';
 
 // メモ化されたレイヤー行コンポーネント
 const LayerRow = React.memo(
@@ -16,6 +17,7 @@ const LayerRow = React.memo(
     item,
     drag,
     isActive,
+    isClosedProject,
     isSettingProject,
     hasCustomLabel,
     customLabelValue,
@@ -33,6 +35,7 @@ const LayerRow = React.memo(
     item: LayerType;
     drag: () => void;
     isActive: boolean;
+    isClosedProject: boolean;
     isSettingProject: boolean;
     hasCustomLabel: boolean;
     customLabelValue: string;
@@ -79,7 +82,7 @@ const LayerRow = React.memo(
               color={COLOR.GRAY4}
             />
           ) : (
-            (isSettingProject || item.permission !== 'COMMON') &&
+            (isClosedProject || isSettingProject || item.permission !== 'COMMON') &&
             item.id !== 'track' && (
               <Button
                 name={item.active ? 'square-edit-outline' : 'checkbox-blank-outline'}
@@ -230,6 +233,7 @@ export const LayersTable = React.memo(() => {
     onDragBegin,
   } = useContext(LayersContext);
   const { isSettingProject } = useProject();
+  const { isClosedProject } = usePermission();
   const hasCustomLabel = filterdLayers.some((layer) => layer.label === t('common.custom'));
   const [customLabel, setCustomLabel] = useState<{ [key: string]: string }>({});
 
@@ -248,6 +252,7 @@ export const LayersTable = React.memo(() => {
           item={item}
           drag={drag}
           isActive={isActive}
+          isClosedProject={isClosedProject}
           isSettingProject={isSettingProject}
           hasCustomLabel={hasCustomLabel}
           customLabelValue={customLabel[item.id] || ''}
@@ -265,6 +270,7 @@ export const LayersTable = React.memo(() => {
       );
     },
     [
+      isClosedProject,
       isSettingProject,
       hasCustomLabel,
       customLabel,

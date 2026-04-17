@@ -73,9 +73,10 @@ export const useData = (layerId: string): UseDataReturnType => {
     [sortedRecordSet]
   );
 
+  const isClosedProject = projectId === undefined;
   const isEditable = useMemo(
-    () => isSettingProject || targetLayer?.permission !== 'COMMON',
-    [isSettingProject, targetLayer?.permission]
+    () => isClosedProject || isSettingProject || targetLayer?.permission !== 'COMMON',
+    [isClosedProject, isSettingProject, targetLayer?.permission]
   );
 
   const changeOrder = useCallback(

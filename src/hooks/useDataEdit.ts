@@ -95,9 +95,10 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       dataSet.flatMap((d) => (d.layerId === layer.id ? d.data : [])).some((d) => d.field._strokeColor !== undefined),
     [dataSet, layer.id]
   );
+  const isClosedProject = projectId === undefined;
   const isEditable = useMemo(
-    () => isSettingProject || targetLayer.permission !== 'COMMON',
-    [isSettingProject, targetLayer.permission]
+    () => isClosedProject || isSettingProject || targetLayer.permission !== 'COMMON',
+    [isClosedProject, isSettingProject, targetLayer.permission]
   );
 
   const maxRecordNumber = targetRecordSet.length;
