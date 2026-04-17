@@ -47,6 +47,11 @@ export let functions: FirebaseFunctionsTypes.Module;
 export let storage: FirebaseStorageTypes.Module;
 export let auth: FirebaseAuthTypes.Module;
 
+let resolveFirebaseReady: () => void;
+export const firebaseReady: Promise<void> = new Promise((resolve) => {
+  resolveFirebaseReady = resolve;
+});
+
 const initialize = async (isEmulating = false) => {
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
@@ -74,6 +79,8 @@ const initialize = async (isEmulating = false) => {
     firestore.useEmulator('localhost', 8080);
     storage.useEmulator('localhost', 9199);
   }
+
+  resolveFirebaseReady();
 };
 
 if (FUNC_LOGIN) {

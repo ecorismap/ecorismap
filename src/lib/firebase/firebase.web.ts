@@ -46,6 +46,8 @@ export let storage: ReturnType<typeof getStorage>;
 
 export let auth: ReturnType<typeof getAuth>;
 
+export const firebaseReady: Promise<void> = Promise.resolve();
+
 const initialize = (isEmulating = false) => {
   const firebaseApp = initializeApp(firebaseConfig);
   //userがキャッシュになってimmerでエラーになる?からNONEにした

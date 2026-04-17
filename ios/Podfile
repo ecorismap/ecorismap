@@ -89,6 +89,66 @@ target 'ecorismap' do
       :mac_catalyst_enabled => false
     )
 
+    # Workaround for Xcode 26: newer Apple Clang breaks consteval in fmt 11.0.2.
+    fmt_base = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt', 'base.h')
+    if File.exist?(fmt_base)
+      content = File.read(fmt_base)
+      unless content.include?('Xcode 26 workaround')
+        patched = content.gsub(
+          /^(#elif defined\(__cpp_consteval\)\n#  define FMT_USE_CONSTEVAL) 1/,
+          "// Xcode 26 workaround: disable consteval\n\\1 0"
+        )
+        if patched != content
+          File.chmod(0644, fmt_base)
+          File.write(fmt_base, patched)
+        end
+      end
+    end
+
+    # Workaround for Swift 6.3 async let crash in FirebaseFunctions 12.2.0
+    # See: https://github.com/firebase/firebase-ios-sdk/pull/15991
+    functions_context = File.join(installer.sandbox.root, 'FirebaseFunctions', 'FirebaseFunctions', 'Sources', 'Internal', 'FunctionsContext.swift')
+    if File.exist?(functions_context)
+      content = File.read(functions_context)
+      if content.include?('async let authToken')
+        patched = content.sub(
+          /  func context\(options: HTTPSCallableOptions\?\) async throws -> FunctionsContext \{.*?^  \}/m,
+          <<~'SWIFT'
+  func context(options: HTTPSCallableOptions?) async throws -> FunctionsContext {
+    // Patched: async let -> Task to work around Swift 6.3 regression (Xcode 26.4)
+    // See: https://github.com/firebase/firebase-ios-sdk/pull/15991
+    let authToken = Task { try await auth?.getToken(forcingRefresh: false) }
+    let appCheckToken = Task { await getAppCheckToken(options: options) }
+    let limitedUseAppCheckToken = Task { await getLimitedUseAppCheckToken(options: options) }
+
+    return try await withTaskCancellationHandler {
+      defer {
+        authToken.cancel()
+        appCheckToken.cancel()
+        limitedUseAppCheckToken.cancel()
+      }
+      return try await FunctionsContext(
+        authToken: authToken.value,
+        fcmToken: messaging?.fcmToken,
+        appCheckToken: appCheckToken.value,
+        limitedUseAppCheckToken: limitedUseAppCheckToken.value
+      )
+    } onCancel: {
+      authToken.cancel()
+      appCheckToken.cancel()
+      limitedUseAppCheckToken.cancel()
+    }
+  }
+          SWIFT
+        )
+        if patched != content
+          File.chmod(0644, functions_context)
+          File.write(functions_context, patched)
+          Pod::UI.puts "Patched FunctionsContext.swift: async let -> Task workaround"
+        end
+      end
+    end
+
     installer.pods_project.targets.each do |target|
       if target.name == 'RNZipArchive'
         target.source_build_phase.files.each do |file|

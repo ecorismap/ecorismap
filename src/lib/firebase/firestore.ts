@@ -33,12 +33,14 @@ import {
   updateDoc,
   where,
   writeBatch,
+  firebaseReady,
 } from './firebase';
 import { t } from '../../i18n/config';
 import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 export const getUidByEmail = async (email: string) => {
   try {
+    await firebaseReady;
     const getUid = httpsCallable(functions, 'getUidByEmail');
     const { data } = await getUid({ email: email });
     if (data === null) throw new Error(t('common.message.failGetUids'));
@@ -50,6 +52,7 @@ export const getUidByEmail = async (email: string) => {
 
 export const getUidsByEmails = async (emails: string[]) => {
   try {
+    await firebaseReady;
     const getUids = httpsCallable(functions, 'getUidsByEmails');
     const { data } = await getUids({ emails: emails });
     return data as (string | null)[];

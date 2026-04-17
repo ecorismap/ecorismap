@@ -6,7 +6,7 @@ import { Buffer } from 'buffer';
 import { splitStringsIntoChunksOfLen } from '../../utils/General';
 import { FUNC_ENCRYPTION } from '../../constants/AppConstants';
 import { compressFileToTempUri, decompressFileToTempUri, gzip, unzip } from '../../utils/Zip';
-import { functions, httpsCallable } from '../firebase/firebase';
+import { functions, httpsCallable, firebaseReady } from '../firebase/firebase';
 
 let eThree: EThree;
 
@@ -59,6 +59,7 @@ export const initializeUser = async (userId: string) => {
       eThree = undefined as any;
     }
   }
+  await firebaseReady;
   const getToken = httpsCallable(functions, 'getVirgilJwt');
   //@ts-ignore
   const initializeFunction = () => getToken().then((result) => result.data.token);

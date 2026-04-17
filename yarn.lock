@@ -7187,7 +7187,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app-check@npm:^23.3.1":
+"@react-native-firebase/app-check@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/app-check@npm:23.3.1"
   peerDependencies:
@@ -7200,7 +7200,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/app@npm:^23.3.1":
+"@react-native-firebase/app@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/app@npm:23.3.1"
   dependencies:
@@ -7216,7 +7216,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/auth@npm:^23.3.1":
+"@react-native-firebase/auth@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/auth@npm:23.3.1"
   dependencies:
@@ -7231,7 +7231,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/firestore@npm:^23.3.1":
+"@react-native-firebase/firestore@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/firestore@npm:23.3.1"
   dependencies:
@@ -7242,7 +7242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/functions@npm:^23.3.1":
+"@react-native-firebase/functions@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/functions@npm:23.3.1"
   peerDependencies:
@@ -7251,7 +7251,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-firebase/storage@npm:^23.3.1":
+"@react-native-firebase/storage@npm:23.3.1":
   version: 23.3.1
   resolution: "@react-native-firebase/storage@npm:23.3.1"
   peerDependencies:
@@ -15208,12 +15208,12 @@ __metadata:
     "@react-native-community/image-editor": ^4.2.0
     "@react-native-community/netinfo": ^11.4.1
     "@react-native-community/slider": 4.5.5
-    "@react-native-firebase/app": ^23.3.1
-    "@react-native-firebase/app-check": ^23.3.1
-    "@react-native-firebase/auth": ^23.3.1
-    "@react-native-firebase/firestore": ^23.3.1
-    "@react-native-firebase/functions": ^23.3.1
-    "@react-native-firebase/storage": ^23.3.1
+    "@react-native-firebase/app": 23.3.1
+    "@react-native-firebase/app-check": 23.3.1
+    "@react-native-firebase/auth": 23.3.1
+    "@react-native-firebase/firestore": 23.3.1
+    "@react-native-firebase/functions": 23.3.1
+    "@react-native-firebase/storage": 23.3.1
     "@react-native-picker/picker": 2.11.1
     "@react-native-voice/voice": ^3.2.4
     "@react-native/babel-preset": 0.81.5
