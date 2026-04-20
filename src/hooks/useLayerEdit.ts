@@ -47,6 +47,7 @@ export const useLayerEdit = (
 ): UseLayerEditReturnType => {
   const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
+  const isSettingProject = useSelector((state: RootState) => state.settings.isSettingProject, shallowEqual);
   const layers = useSelector((state: RootState) => state.layers, shallowEqual);
   const user = useSelector((state: RootState) => state.user, shallowEqual);
   const dataSet = useSelector((state: RootState) => selectDataSet(state, layer.id), shallowEqual);
@@ -69,7 +70,10 @@ export const useLayerEdit = (
     [dataSet]
   );
 
-  const canChangePermission = useMemo(() => isNewLayer || !hasAnyRecord, [hasAnyRecord, isNewLayer]);
+  const canChangePermission = useMemo(
+    () => isNewLayer || !hasAnyRecord || isSettingProject,
+    [hasAnyRecord, isNewLayer, isSettingProject]
+  );
 
   useEffect(() => {
     setTargetLayer(layer);
