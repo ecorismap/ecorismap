@@ -118,51 +118,51 @@ export default function Projects() {
         />
       </Pressable>
       <Pressable style={[styles.th, { flex: 3, width: 140 }]} onPress={() => handleSort('name')}>
-        <Text>{`${t('common.projectName')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.projectName')}`}</Text>
         {sortField === 'name' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
         )}
         {sortField === 'name' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
       <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('abstract')}>
-        <Text>{`${t('common.overview')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.overview')}`}</Text>
         {sortField === 'abstract' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
         )}
         {sortField === 'abstract' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
       <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('encryptedAt')}>
-        <Text>{`${t('common.updatedAt')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.updatedAt')}`}</Text>
         {sortField === 'encryptedAt' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-calendar-ascending" size={16} color={COLOR.TEXT_DARK} />
         )}
         {sortField === 'encryptedAt' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-calendar-descending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-calendar-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
       <View style={[styles.th, { flex: 2, width: 100 }]}>
-        <Text>{`${t('common.owner')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.owner')}`}</Text>
       </View>
       <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('storage')}>
-        <Text>{`${t('common.usage')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.usage')}`}</Text>
         {sortField === 'storage' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-numeric-ascending" size={16} color={COLOR.TEXT_DARK} />
         )}
         {sortField === 'storage' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-numeric-descending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-numeric-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
       <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('license')}>
-        <Text>{`${t('common.license')}`}</Text>
+        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.license')}`}</Text>
         {sortField === 'license' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
         )}
         {sortField === 'license' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color="black" />
+          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
     </View>
@@ -196,17 +196,18 @@ export default function Projects() {
             numberOfLines={2}
             onPress={() => gotoProject(item.id)}
             testID={`project-${index}`}
+            style={{ color: COLOR.TEXT_DARK }}
           >
             {item.name}
           </Text>
         </View>
         <View style={[styles.td, { flex: 2, width: 120 }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
             {item.abstract}
           </Text>
         </View>
         <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
             {item.settingsEncryptedAt
               ? new Date(item.settingsEncryptedAt).toLocaleString('ja-JP', {
                   year: 'numeric',
@@ -224,12 +225,12 @@ export default function Projects() {
           )}
         </View>
         <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
             {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
           </Text>
         </View>
         <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2}>
+          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
             {item.license ?? 'Free'}
           </Text>
         </View>
@@ -245,7 +246,7 @@ export default function Projects() {
         <TouchableOpacity style={{ padding: 5 }} onPress={gotoBack}>
           <MaterialCommunityIcons name="chevron-left" size={28} color={COLOR.BLACK} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 16 }}>{t('Projects.navigation.title')}</Text>
+        <Text style={{ fontSize: 16, color: COLOR.TEXT_DARK }}>{t('Projects.navigation.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -285,6 +286,7 @@ export default function Projects() {
 
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: COLOR.MAIN,
     flex: 1,
   },
   header: {
@@ -296,6 +298,7 @@ const styles = StyleSheet.create({
   },
   td: {
     alignItems: 'flex-start',
+    backgroundColor: COLOR.MAIN,
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
     //flex: 1,
