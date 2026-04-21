@@ -4,31 +4,13 @@
 
 ## [0.5.4]　- 2026-04-20
 
-- Added password visibility toggle on the login screen
 - Improved track recording with low-accuracy GPS data
 - Improved line/polygon drawing tool UI
-- Improved point location editing mode
-- Improved performance of the project list
-- Hide the confirmation button when adding a point
-- Fixed a bug where proximity notifications fired multiple times after being killed
 - Fixed COMMON layer to be editable when not joined to a project
-- Fixed an issue where buttons overlapped the list on the map list screen
-- Fixed an iOS crash related to FirebaseFunctions
-- Fixed track display warnings
-- Fixed bugs in point editing
 
-- ログイン画面にパスワード表示機能を追加
-- 低精度 GPS データでのトラック記録を改善
 - ライン・ポリゴンツールの UI を改善
 - ポイント位置編集モードの動作を改善
-- プロジェクト一覧のパフォーマンスを改善
-- ポイント追加時に確定ボタンを表示しないよう変更
-- kill 後に近接通知が複数回発火する不具合を修正
 - プロジェクト未参加時に COMMON レイヤを編集できない不具合を修正
-- 地図一覧でボタンがリストと重なる不具合を修正
-- FirebaseFunctions に起因する iOS クラッシュを修正
-- トラック表示の警告を修正
-- ポイント編集の不具合を修正
 
 ## [0.5.3]　- 2025-12-27
 
