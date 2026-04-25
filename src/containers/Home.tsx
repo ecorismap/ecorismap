@@ -22,6 +22,7 @@ import {
   PoiInfoType,
   MapLocationInfoType,
   TileMapType,
+  LocationStateType,
 } from '../types';
 import Home from '../components/pages/Home';
 import { Alert } from '../components/atoms/Alert';
@@ -110,6 +111,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const freehandFinishedRef = useRef(false);
+  // iOS Google MapsでonPanDragが発火しないため、PanResponder側でGPS追従解除を行う用のref
+  const gpsStateRef = useRef<LocationStateType>('off');
+  const toggleGPSRef = useRef<((state: LocationStateType) => Promise<void>) | null>(null);
 
   const dispatch = useDispatch();
   const tileMaps = useSelector((state: RootState) => state.tileMaps);
@@ -522,6 +526,14 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     }
   }, [downloadMode]);
 
+  // PanResponder内から最新のgpsState/toggleGPSを参照するためのref同期
+  useEffect(() => {
+    gpsStateRef.current = gpsState;
+  }, [gpsState]);
+  useEffect(() => {
+    toggleGPSRef.current = toggleGPS;
+  }, [toggleGPS]);
+
   // ボトムシートが開いた後にpendingSelectRecordを処理
   // マーカーの色変更とボトムシートのアニメーションの競合（IllegalStateException）を避けるため
   // アニメーション完了を待つために遅延を追加
@@ -609,12 +621,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const onDragMapView = useCallback(async () => {
     //console.log('onDragMapView');
-    if (gpsState === 'follow') {
-      await toggleGPS('show');
+    // ref経由で参照することで、PanResponder側で先に追従解除済みなら二重呼び出しを回避（Android対策）
+    if (gpsStateRef.current === 'follow') {
+      await toggleGPSRef.current?.('show');
     }
     setPoiInfo(null);
     setMapLocationInfo(null);
-  }, [gpsState, toggleGPS, setPoiInfo, setMapLocationInfo]);
+  }, [setPoiInfo, setMapLocationInfo]);
 
   const togglePencilMode = useCallback(() => {
     runTutrial('PENCILMODE');
@@ -1513,7 +1526,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
           // 移動距離が閾値（5ピクセル）を超えた場合のみドラッグと判定
           if (distance > 5) {
+            const isNewDrag = !isMapDragging.current;
             isMapDragging.current = true;
+
+            // ドラッグ開始時にGPS追従モードを解除（iOS Google MapsのonPanDrag不発火対策）
+            if (isNewDrag && gpsStateRef.current === 'follow') {
+              toggleGPSRef.current?.('show');
+            }
 
             // 長押しタイマーをクリア（移動が検出されたため）
             if (longPressTimerRef.current) {
