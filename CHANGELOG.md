@@ -1,14 +1,14 @@
 # Change Log
 
-## [0.5.6] - Unreleased
+## [0.5.6]　- Unreleased
 
 ## [0.5.5]　- 2026-04-26
 
 - Fixed proximity notification audio to play through the speaker on iOS
 - Fixed map panning not disabling GPS follow mode on iOS
 
-- iOS で近接通知音がスピーカーから出ない不具合を修正
-- iOS で地図をドラッグしても GPS 追従モードが解除されない不具合を修正
+- iOS で近接通知の音声がスピーカーから出ない不具合を修正
+- iOS で地図のドラッグ操作で GPS 追従モードが解除されない不具合を修正
 
 ## [0.5.4]　- 2026-04-20
 
