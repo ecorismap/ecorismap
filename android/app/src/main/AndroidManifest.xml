@@ -16,6 +16,10 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
   <uses-permission android:name="android.permission.CAMERA"/>
+  <!-- expo-audioが追加するがアプリでは録音/メディア再生機能を使わないため除外 -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" tools:node="remove"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" tools:node="remove"/>
   <!-- END OPTIONAL PERMISSIONS -->
   <queries>
     <!-- Support checking for http(s) links via the Linking API -->
@@ -64,5 +68,8 @@
     <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}"/>
     <uses-library android:name="org.apache.http.legacy" android:required="false"/>
     <meta-data android:name="firebase_performance_logcat_enabled" android:value="true" />
+    <!-- expo-audioが追加するが使わないForeground Serviceを除外 -->
+    <service android:name="expo.modules.audio.service.AudioControlsService" tools:node="remove"/>
+    <service android:name="expo.modules.audio.service.AudioRecordingService" tools:node="remove"/>
   </application>
 </manifest>

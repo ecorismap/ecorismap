@@ -39,8 +39,9 @@ const NOTIFICATION_STEPS = [1000, 500, 100, 50, 20, 10, 5] as const;
 
 // iOSでSpeech再生時に音声がレシーバー（耳元）にルーティングされるのを防ぐ
 // allowsRecording: false + playsInSilentMode: true で playback カテゴリになりスピーカーから出力される
+// AndroidではSpeech.speakがデフォルトでスピーカーから出るため不要
 const configureAudioForSpeaker = async () => {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS !== 'ios') return;
   try {
     await setAudioModeAsync({
       allowsRecording: false,
