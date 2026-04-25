@@ -131,6 +131,7 @@
     "dayjs": "^1.11.11",
     "dexie": "^4.0.8",
     "expo": "^54.0.25",
+    "expo-audio": "~1.1.1",
     "expo-document-picker": "~14.0.7",
     "expo-file-system": "~19.0.19",
     "expo-image-manipulator": "~14.0.7",

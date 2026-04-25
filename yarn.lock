@@ -15267,6 +15267,7 @@ __metadata:
     eslint-plugin-react: ^7.26.1
     eslint-plugin-react-hooks: ^4.2.0
     expo: ^54.0.25
+    expo-audio: ~1.1.1
     expo-document-picker: ~14.0.7
     expo-file-system: ~19.0.19
     expo-image-manipulator: ~14.0.7
@@ -16366,6 +16367,18 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 26bfae0ce841909b797201766a2308e6ec9999fd83cf9bad9b4b62b421fd281d560d66468844a68ef189e0eae3260d1e7a28b1d46fd0c0bcce2a218bd5a3368e
+  languageName: node
+  linkType: hard
+
+"expo-audio@npm:~1.1.1":
+  version: 1.1.1
+  resolution: "expo-audio@npm:1.1.1"
+  peerDependencies:
+    expo: "*"
+    expo-asset: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 5ed753e0a43b63dbf1914352e30fe18667025936a79a776222cd50e1d1e821932fc55a56f7c63b465b864932d3bbb1277250e04880c9ba740a3b45784d4af645
   languageName: node
   linkType: hard
 

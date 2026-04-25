@@ -1,7 +1,8 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { Vibration } from 'react-native';
+import { Platform, Vibration } from 'react-native';
 import { useSelector } from 'react-redux';
 import * as Speech from 'expo-speech';
+import { setAudioModeAsync } from 'expo-audio';
 import { distance, point } from '@turf/turf';
 import { RootState } from '../store';
 import { LocationType, RecordType, LayerType, ProximityAlertSettingsType, DataType } from '../types';
@@ -35,6 +36,22 @@ const DEFAULT_PROXIMITY_ALERT: ProximityAlertSettingsType = {
 
 // 通知距離のステップ（メートル）- 大きい順
 const NOTIFICATION_STEPS = [1000, 500, 100, 50, 20, 10, 5] as const;
+
+// iOSでSpeech再生時に音声がレシーバー（耳元）にルーティングされるのを防ぐ
+// allowsRecording: false + playsInSilentMode: true で playback カテゴリになりスピーカーから出力される
+const configureAudioForSpeaker = async () => {
+  if (Platform.OS === 'web') return;
+  try {
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+      shouldPlayInBackground: false,
+    });
+  } catch {
+    // 失敗してもアプリの動作は継続
+  }
+};
 
 export const useProximityAlert = (): UseProximityAlertReturnType => {
   // Redux state
@@ -82,6 +99,11 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
   // 最小通知間隔（ミリ秒）
   const MIN_NOTIFICATION_INTERVAL = 3000; // 3秒
 
+  // マウント時に1回オーディオセッションをスピーカー出力に設定
+  useEffect(() => {
+    configureAudioForSpeaker();
+  }, []);
+
   /**
    * 音声で通知（国際化対応）
    */
@@ -93,10 +115,13 @@ export const useProximityAlert = (): UseProximityAlertReturnType => {
     // バイブレーション（短い振動パターン: 200ms振動、100ms休止、200ms振動）
     Vibration.vibrate([0, 200, 100, 200]);
 
-    Speech.speak(message, {
-      language: lang.startsWith('ja') ? 'ja' : 'en',
-      rate: 1.0,
-      pitch: 1.0,
+    // 念のため再生直前にもスピーカー出力に設定（他機能でセッションが変更されている可能性に備える）
+    configureAudioForSpeaker().finally(() => {
+      Speech.speak(message, {
+        language: lang.startsWith('ja') ? 'ja' : 'en',
+        rate: 1.0,
+        pitch: 1.0,
+      });
     });
   }, []);
 
