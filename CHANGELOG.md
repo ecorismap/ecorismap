@@ -1,6 +1,14 @@
 # Change Log
 
-## [0.5.5]　- Unreleased
+## [0.5.6] - Unreleased
+
+## [0.5.5]　- 2026-04-26
+
+- Fixed proximity notification sound to play through the speaker on iOS
+- Fixed an issue where panning the map did not disable GPS follow mode on iOS
+
+- iOS で近接通知音がスピーカーから出ない不具合を修正
+- iOS で地図をドラッグしても GPS 追従モードが解除されない不具合を修正
 
 ## [0.5.4]　- 2026-04-20
 
@@ -243,7 +251,8 @@
 ## [0.1.9] - 2022-11-13
 
 - App Release.
-  [0.5.5]: https://github.com/ecorismap/ecorismap/compare/030e239c0bc4f548926c3eba796cc67d48e96a95...HEAD
+  [0.5.6]: https://github.com/ecorismap/ecorismap/compare/b0753cddf1b8db8d05f540a32a621f37eff9c741...HEAD
+  [0.5.5]: https://github.com/ecorismap/ecorismap/compare/030e239c0bc4f548926c3eba796cc67d48e96a95...b0753cddf1b8db8d05f540a32a621f37eff9c741
   [0.5.4]: https://github.com/ecorismap/ecorismap/compare/a400ef19c0a56fff902837d4d8f5da31d1dde4a4...030e239c0bc4f548926c3eba796cc67d48e96a95
   [0.5.3]: https://github.com/ecorismap/ecorismap/compare/57c4b971f94c6eff41fd857d81ee7fa48af2709b...a400ef19c0a56fff902837d4d8f5da31d1dde4a4
   [0.5.2]: https://github.com/ecorismap/ecorismap/compare/bd97c8c1fe1cf029bee991ba56bbe9ebbc77d0fc...57c4b971f94c6eff41fd857d81ee7fa48af2709b
