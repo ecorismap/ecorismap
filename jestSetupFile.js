@@ -569,6 +569,10 @@ jest.mock('expo-image-picker', () => ({
   },
 }));
 
+jest.mock('expo-audio', () => ({
+  setAudioModeAsync: jest.fn(() => Promise.resolve()),
+}));
+
 //jest.mock('expo', () => require.requireMock('expo'));
 
 // jest.mock('expo-file-system', () => ({
