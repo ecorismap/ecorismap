@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
-import { useLocation } from '../useLocation';
+import { useLocation, shouldEmitAzimuth } from '../useLocation';
 import * as Location from 'expo-location';
 import BackgroundGeolocation from 'react-native-background-geolocation';
 import { ConfirmAsync, AlertAsync } from '../../components/molecules/AlertAsync';
@@ -296,5 +296,39 @@ describe('useLocation', () => {
 
     // Clean up
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe('shouldEmitAzimuth', () => {
+  const THROTTLE = 200;
+  const MIN_DELTA = 1;
+
+  it('初回(prev=null)は十分時間が経っていれば更新する', () => {
+    expect(shouldEmitAzimuth(null, 90, 1000, THROTTLE, MIN_DELTA)).toBe(true);
+  });
+
+  it('初回でもthrottle未満の間隔ではスキップする', () => {
+    expect(shouldEmitAzimuth(null, 90, 50, THROTTLE, MIN_DELTA)).toBe(false);
+  });
+
+  it('throttle間隔未満ではスキップする（頻度制限）', () => {
+    expect(shouldEmitAzimuth(10, 90, 50, THROTTLE, MIN_DELTA)).toBe(false);
+  });
+
+  it('角度差がしきい値未満ならスキップする', () => {
+    expect(shouldEmitAzimuth(10, 10.5, 300, THROTTLE, MIN_DELTA)).toBe(false);
+  });
+
+  it('角度差がしきい値以上なら更新する', () => {
+    expect(shouldEmitAzimuth(10, 12, 300, THROTTLE, MIN_DELTA)).toBe(true);
+  });
+
+  it('0/360のラップを考慮して角度差を計算する', () => {
+    // 359→1 は +2°
+    expect(shouldEmitAzimuth(359, 1, 300, THROTTLE, MIN_DELTA)).toBe(true);
+    // 359→359.5 は +0.5°（スキップ）
+    expect(shouldEmitAzimuth(359, 359.5, 300, THROTTLE, MIN_DELTA)).toBe(false);
+    // 0→359 は -1°（更新）
+    expect(shouldEmitAzimuth(0, 359, 300, THROTTLE, MIN_DELTA)).toBe(true);
   });
 });

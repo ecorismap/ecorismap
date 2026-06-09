@@ -52,6 +52,32 @@ type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
+// 方位(azimuth)の state 更新を間引くための設定。
+// 磁気センサーは毎秒数十回発火するため、そのまま setAzimuth すると Home 配下が高頻度再レンダリングして
+// 方位表示が「ふらふら」する/もたつく。頻度と最小角度差で間引いて再描画を抑制する。
+const AZIMUTH_THROTTLE_MS = 200; // 最大 5 回/秒
+const AZIMUTH_MIN_DELTA_DEG = 1; // 1°未満の変化は無視（静止時のノイズで再描画しない）
+
+/**
+ * 方位の state を更新すべきか判定する純粋関数。
+ * - 直前更新から throttleMs 未満ならスキップ（頻度制限）
+ * - 直前値との角度差（0-360のラップを考慮）が minDeltaDeg 未満ならスキップ
+ * - 初回（prevDeg が null）は常に更新
+ */
+export const shouldEmitAzimuth = (
+  prevDeg: number | null,
+  nextDeg: number,
+  msSinceLast: number,
+  throttleMs: number,
+  minDeltaDeg: number
+): boolean => {
+  if (msSinceLast < throttleMs) return false;
+  if (prevDeg === null) return true;
+  // 角度のラップを考慮した絶対差（0..180）
+  const delta = Math.abs(((nextDeg - prevDeg + 540) % 360) - 180);
+  return delta >= minDeltaDeg;
+};
+
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
   gpsState: LocationStateType;
@@ -100,6 +126,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const checkProximityRef = useRef(checkProximity);
   const [azimuth, setAzimuth] = useState(0);
   const headingSubscriber = useRef<LocationSubscription | null>(null);
+  // 方位スロットル用（最後に反映した角度と時刻）
+  const lastAzimuthRef = useRef<number | null>(null);
+  const lastAzimuthTsRef = useRef(0);
+  // heading購読の競合による二重購読を防ぐためのフラグ
+  const headingSubscribingRef = useRef(false);
   const bgReadyRef = useRef(false);
   const initializedRef = useRef(false);
   const trackingStateRef = useRef<TrackingStateType>('off');
@@ -134,6 +165,32 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High, distanceFilter: 2 };
     }
   }, [gpsAccuracy]);
+
+  // 方位を間引いて反映する（頻度制限＋最小角度差）。全てのheadingコールバックはこれを使う。
+  const pushAzimuth = useCallback((heading: number) => {
+    const now = Date.now();
+    if (!shouldEmitAzimuth(lastAzimuthRef.current, heading, now - lastAzimuthTsRef.current, AZIMUTH_THROTTLE_MS, AZIMUTH_MIN_DELTA_DEG)) {
+      return;
+    }
+    lastAzimuthRef.current = heading;
+    lastAzimuthTsRef.current = now;
+    setAzimuth(heading);
+  }, []);
+
+  // 通常（コンパスOFF）用のheading購読を保証する。既に購読中/購読処理中なら何もしない（多重購読防止）。
+  const ensureHeadingSubscription = useCallback(async () => {
+    if (headingSubscriber.current !== null || headingSubscribingRef.current) return;
+    headingSubscribingRef.current = true;
+    try {
+      headingSubscriber.current = await watchHeadingAsync((pos) => {
+        pushAzimuth(pos.trueHeading);
+      });
+    } catch (error) {
+      console.error('Failed to start heading subscriber:', error);
+    } finally {
+      headingSubscribingRef.current = false;
+    }
+  }, [pushAzimuth]);
 
   // checkProximityをrefで同期（onLocationコールバックがクロージャで古い参照を保持する問題を回避）
   useEffect(() => {
@@ -329,17 +386,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       }
 
-      if (headingSubscriber.current === null) {
-        try {
-          headingSubscriber.current = await watchHeadingAsync((pos) => {
-            setAzimuth(pos.trueHeading);
-          });
-        } catch (error) {
-          console.error('Failed to start heading subscriber:', error);
-        }
-      }
+      await ensureHeadingSubscription();
     },
-    [ensureBackgroundGeolocation]
+    [ensureBackgroundGeolocation, ensureHeadingSubscription]
   );
 
   const stopGPS = useCallback(async () => {
@@ -416,16 +465,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // トラッキング状態をMMKVに保存（kill後の復帰で正しく復元するため）
       trackLogMMKV.setTrackingState('on');
 
-      if (headingSubscriber.current === null) {
-        headingSubscriber.current = await watchHeadingAsync((pos) => {
-          setAzimuth(pos.trueHeading);
-        });
-      }
+      await ensureHeadingSubscription();
     } catch (error) {
       console.error('Error in startTracking:', error);
       throw error;
     }
-  }, [ensureBackgroundGeolocation]);
+  }, [ensureBackgroundGeolocation, ensureHeadingSubscription]);
 
   const moveCurrentPosition = useCallback(async () => {
     try {
@@ -515,7 +560,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const permissionStatus = await confirmLocationPermission();
         if (permissionStatus !== 'granted') return;
 
-        if (headingSubscriber.current !== null) headingSubscriber.current.remove();
+        if (headingSubscriber.current !== null) {
+          headingSubscriber.current.remove();
+          headingSubscriber.current = null;
+        }
 
         let lastHeading = 0;
         let lastUpdateTime = 0;
@@ -527,14 +575,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // 角度の変化が小さい場合はアニメーションをスキップ
           const headingDiff = Math.abs(newHeading - lastHeading);
           if (headingDiff < 2 && headingDiff > 0) {
-            setAzimuth(pos.trueHeading);
+            pushAzimuth(pos.trueHeading);
             return;
           }
 
           // 最小更新間隔を設定（ミリ秒）
           const minUpdateInterval = 100;
           if (currentTime - lastUpdateTime < minUpdateInterval) {
-            setAzimuth(pos.trueHeading);
+            pushAzimuth(pos.trueHeading);
             return;
           }
 
@@ -548,7 +596,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             { duration: 200 }
           );
 
-          setAzimuth(pos.trueHeading);
+          pushAzimuth(pos.trueHeading);
         });
       } else {
         // headingUpをfalseにする場合は権限不要
@@ -566,7 +614,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       }
       setHeadingUp(headingUp_);
     },
-    [confirmLocationPermission, mapViewRef]
+    [confirmLocationPermission, mapViewRef, pushAzimuth]
   );
 
   // フォアグラウンド復帰時にMMKVからデータを同期する関数
@@ -775,9 +823,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               if (permissionStatus !== 'granted') {
                 console.warn('[tracking] Heading subscription skipped: permission not granted');
               } else {
-                headingSubscriber.current = await watchHeadingAsync((pos) => {
-                  setAzimuth(pos.trueHeading);
-                });
+                await ensureHeadingSubscription();
               }
             } catch (error) {
               console.error('Error restoring heading subscriber:', error);
@@ -813,9 +859,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             try {
               const permissionStatus = await confirmLocationPermission();
               if (permissionStatus === 'granted') {
-                headingSubscriber.current = await watchHeadingAsync((pos) => {
-                  setAzimuth(pos.trueHeading);
-                });
+                await ensureHeadingSubscription();
               }
             } catch (error) {
               console.error('Error starting heading subscriber:', error);
@@ -847,6 +891,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     checkUnsavedTrackLog,
     confirmLocationPermission,
     ensureBackgroundGeolocation,
+    ensureHeadingSubscription,
     stopTracking,
     trackingState,
     moveCurrentPosition,
@@ -868,9 +913,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           try {
             const permissionStatus = await confirmLocationPermission();
             if (permissionStatus === 'granted') {
-              headingSubscriber.current = await watchHeadingAsync((pos) => {
-                setAzimuth(pos.trueHeading);
-              });
+              await ensureHeadingSubscription();
             } else {
               console.warn('[tracking] Skipped heading subscription on foreground: permission not granted');
             }
@@ -907,6 +950,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     trackingState,
     syncLocationFromMMKV,
     confirmLocationPermission,
+    ensureHeadingSubscription,
   ]);
 
   useEffect(() => {
