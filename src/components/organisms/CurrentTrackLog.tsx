@@ -30,17 +30,17 @@ const arePropsEqual = (prevProps: Props, nextProps: Props) => {
 export const CurrentTrackLog = React.memo((props: Props) => {
   // props.currentLocationとtotalPointsは再レンダリングのトリガーとして使用（arePropsEqualで比較）
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { currentLocation, totalPoints } = props;
 
-  // 実際のデータはMMKVから直接取得
-  const currentChunk = getDisplayBufferSimplified(400);
-
-  // セグメントをメモ化（精度に基づいて分割）
+  // 実際のデータはメモリ内キャッシュ（無ければMMKV）から取得。
+  // 毎レンダリングでの再取得/再簡略化を避けるため、再描画トリガー（点数・現在地）をキーにメモ化する。
   const segments = useMemo(() => {
+    const currentChunk = getDisplayBufferSimplified(400);
     if (!currentChunk || currentChunk.length === 0) return [];
     return splitTrackByAccuracy(currentChunk);
-  }, [currentChunk]);
+    // currentLocationの緯度経度を依存に含めることで、新しい点が来たときのみ再計算する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalPoints, currentLocation?.latitude, currentLocation?.longitude]);
 
   // データがない場合は何も表示しない
   if (segments.length === 0) {

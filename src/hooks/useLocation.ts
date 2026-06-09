@@ -21,6 +21,7 @@ import {
   getCurrentChunkInfo,
   getLineLength,
   toLocationObject,
+  flushTrackLog,
 } from '../utils/Location';
 import { trackLogMMKV } from '../utils/mmkvStorage';
 import { hasOpened } from '../utils/Project';
@@ -47,6 +48,9 @@ const openSettings = () => {
 // ネイティブAPIは依然としてフラットなトップレベルnotificationを要求する（型とランタイムの不整合）。
 // その差異を吸収するためのローカル型。
 type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig };
+
+// 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
+const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -103,6 +107,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const locationSubscription = useRef<BackgroundSubscription | null>(null);
   const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const appState = useRef(RNAppState.currentState);
+  // トラックメタデータ(=軌跡ライン再描画)の更新を約1秒にスロットルする。
+  // 現在地マーカーは setCurrentLocation で毎点更新するため滑らかさは維持される。
+  const lastTrackMetaUpdateRef = useRef(0);
+  // チャンクのrollover（savedChunkCount変化）時はスロットルを無視して即時反映する。
+  const lastSavedChunkIndexRef = useRef(0);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
@@ -183,19 +192,26 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
         // トラッキング中のみ軌跡を保存
         if (isTracking) {
-          checkAndStoreLocations([normalized]);
+          // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要
+          const result = checkAndStoreLocations([normalized]);
 
-          // メタデータを更新
-          const chunkInfo = getCurrentChunkInfo();
-          const metadata = getTrackMetadata();
-          setTrackMetadata({
-            distance: metadata.currentDistance,
-            lastTimeStamp: metadata.lastTimeStamp,
-            savedChunkCount: chunkInfo.currentChunkIndex,
-            currentChunkSize: chunkInfo.currentChunkSize,
-            totalPoints: metadata.totalPoints,
-            currentLocation: latest,
-          });
+          if (result) {
+            // 軌跡ラインの再描画は約1秒にスロットル（rollover=savedChunkCount変化時は即時反映）。
+            const now = Date.now();
+            const chunkChanged = result.metadata.lastChunkIndex !== lastSavedChunkIndexRef.current;
+            if (chunkChanged || now - lastTrackMetaUpdateRef.current >= TRACK_META_UPDATE_INTERVAL_MS) {
+              lastTrackMetaUpdateRef.current = now;
+              lastSavedChunkIndexRef.current = result.metadata.lastChunkIndex;
+              setTrackMetadata({
+                distance: result.metadata.currentDistance,
+                lastTimeStamp: result.metadata.lastTimeStamp,
+                savedChunkCount: result.metadata.lastChunkIndex,
+                currentChunkSize: result.chunk.length,
+                totalPoints: result.metadata.totalPoints,
+                currentLocation: latest,
+              });
+            }
+          }
         }
 
         // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
@@ -342,6 +358,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   const stopTracking = useCallback(async () => {
     try {
+      // メモリ内の未書き込みポイントをMMKVへ確定（停止後にsaveTrackLog/破棄で正しく読めるように）
+      flushTrackLog();
       await ensureBackgroundGeolocation();
       // 軌跡記録停止時はBackgroundGeolocationも停止
       const state: BackgroundState = await BackgroundGeolocation.getState();
@@ -865,6 +883,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
         // バックグラウンド移行時
         // BackgroundGeolocationは継続（onLocationで位置更新を続ける）
+
+        // メモリ内の未書き込みポイントをMMKVへ確定（この後アプリがkillされてもheadlessが続きから記録できるように）
+        flushTrackLog();
 
         // ヘディング購読を停止（バッテリー節約）
         if (headingSubscriber.current !== null) {
