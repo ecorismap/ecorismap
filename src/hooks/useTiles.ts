@@ -394,6 +394,8 @@ export const useTiles = (
       let totalCompleted = 0;
       const totalMaps = tileMapsToDownload.length;
       const errorMaps: string[] = [];
+      // 非同期ループ中はuseSelectorのtileRegionsが更新されないため、ローカルに累積して各地図の記録を保持する
+      let updatedTileRegions = [...tileRegions];
 
       for (let i = 0; i < tileMapsToDownload.length; i++) {
         if (pause.current) {
@@ -413,7 +415,8 @@ export const useTiles = (
         const tileRegion = cloneDeep(downloadArea);
         tileRegion.id = ulid();
         tileRegion.tileMapId = currentTileMap.id;
-        dispatch(editSettingsAction({ tileRegions: [...tileRegions, tileRegion] }));
+        updatedTileRegions = [...updatedTileRegions, tileRegion];
+        dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
 
         const tileType =
           getExt(currentTileMap.url) === 'pbf'
@@ -503,6 +506,9 @@ export const useTiles = (
           if (pause.current) {
             const ret = await ConfirmAsync(t('hooks.confirm.stopDownload'));
             if (ret) {
+              // ダウンロード未完了の地図の記録を削除（完了済み地図の記録は保持）
+              updatedTileRegions = updatedTileRegions.filter((r) => r.id !== tileRegion.id);
+              dispatch(editSettingsAction({ tileRegions: updatedTileRegions }));
               setIsDownloading(false);
               pause.current = false;
               return;
