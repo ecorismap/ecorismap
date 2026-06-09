@@ -6,7 +6,17 @@ import {
   checkLocations,
   isLowAccuracy,
   splitTrackByAccuracy,
+  addLocationsToChunks,
+  checkAndStoreLocations,
+  getDisplayBuffer,
+  getCurrentChunkInfo,
+  getTrackChunk,
+  clearAllChunks,
+  resetTrackLogCache,
+  flushTrackLog,
+  CHUNK_SIZE,
 } from '../Location';
+import { trackLogMMKV } from '../mmkvStorage';
 import { LocationType } from '../../types';
 
 // モジュールのモック
@@ -50,6 +60,10 @@ jest.mock('../mmkvStorage', () => {
         mockStorage.metadata = metadata;
       }),
       getMetadata: jest.fn(() => mockStorage.metadata || null),
+      setTrackingState: jest.fn((state) => {
+        mockStorage.trackingState = state;
+      }),
+      getTrackingState: jest.fn(() => mockStorage.trackingState ?? 'on'),
     },
     storage: {
       set: jest.fn(),
@@ -382,5 +396,131 @@ describe('splitTrackByAccuracy', () => {
     expect(result).toHaveLength(1);
     expect(result[0].isLowAccuracy).toBe(false);
     expect(result[0].coordinates).toHaveLength(3);
+  });
+});
+
+describe('addLocationsToChunks (cache, incremental distance, rollover)', () => {
+  const baseTime = 1_600_000_000_000;
+  // 35°付近で経度を一定刻みに増やした点列を生成
+  const makePoints = (n: number, startIndex = 0): LocationType[] =>
+    Array.from({ length: n }, (_, k) => {
+      const i = startIndex + k;
+      return { latitude: 35, longitude: 135 + i * 0.0001, timestamp: baseTime + i * 1000, accuracy: 10 };
+    });
+
+  beforeEach(() => {
+    clearAllChunks(); // メタデータ・チャンク・メモリ内キャッシュをリセット
+  });
+
+  it('returns updated metadata and current chunk', () => {
+    const result = addLocationsToChunks(makePoints(3));
+    expect(result.metadata.totalPoints).toBe(3);
+    expect(result.metadata.lastChunkIndex).toBe(0);
+    expect(result.chunk).toHaveLength(3);
+  });
+
+  it('accumulates distance across chunk boundaries without resetting (Cause C regression)', () => {
+    const distances: number[] = [];
+    const total = CHUNK_SIZE * 2 + 100; // CHUNK_SIZE(500)を2回跨ぐ
+    for (let i = 0; i < total; i++) {
+      const result = addLocationsToChunks(makePoints(1, i));
+      distances.push(result.metadata.currentDistance);
+    }
+
+    // 各点で正の距離が加算され単調増加する
+    for (let i = 1; i < distances.length; i++) {
+      expect(distances[i]).toBeGreaterThan(distances[i - 1]);
+    }
+
+    // チャンク境界(500, 1000)でリセットされない
+    expect(distances[CHUNK_SIZE]).toBeGreaterThan(distances[CHUNK_SIZE - 1]);
+    expect(distances[CHUNK_SIZE * 2]).toBeGreaterThan(distances[CHUNK_SIZE * 2 - 1]);
+
+    // 累積総距離は最後のチャンクのみの距離よりはるかに大きい（旧バグでは最後のチャンク分しか出なかった）
+    const lastChunkSpan = distances[total - 1] - distances[CHUNK_SIZE * 2 - 1];
+    expect(distances[total - 1]).toBeGreaterThan(lastChunkSpan * 5);
+  });
+
+  it('keeps the seam point at the head of the new chunk after rollover', () => {
+    const points = makePoints(CHUNK_SIZE + 1);
+    addLocationsToChunks(points);
+
+    // チャンク0は500点が保存される
+    expect(getTrackChunk(0)).toHaveLength(CHUNK_SIZE);
+    // 現在チャンクのインデックスは1
+    expect(getCurrentChunkInfo().currentChunkIndex).toBe(1);
+    // 表示バッファ先頭はつなぎ目（500番目=index CHUNK_SIZE-1 の点）
+    const buffer = getDisplayBuffer();
+    expect(buffer[0].timestamp).toBe(points[CHUNK_SIZE - 1].timestamp);
+    // 末尾は501番目（index CHUNK_SIZE）の点
+    expect(buffer[buffer.length - 1].timestamp).toBe(points[CHUNK_SIZE].timestamp);
+  });
+
+  it('throttles writes of the unfinished chunk and flushTrackLog forces a write', () => {
+    (trackLogMMKV.setChunk as jest.Mock).mockClear();
+    const n = 50; // CHUNK_SIZE未満（rolloverなし）
+    for (let i = 0; i < n; i++) {
+      addLocationsToChunks(makePoints(1, i));
+    }
+    // 未完成チャンク(track_chunk_0)への書き込みは点数より大幅に少ない（スロットル）
+    const chunk0Writes = (trackLogMMKV.setChunk as jest.Mock).mock.calls.filter(
+      (c: any[]) => c[0] === 'track_chunk_0'
+    ).length;
+    expect(chunk0Writes).toBeLessThan(n);
+    expect(chunk0Writes).toBeLessThanOrEqual(10);
+
+    // flushTrackLogで強制書き込み
+    (trackLogMMKV.setChunk as jest.Mock).mockClear();
+    flushTrackLog();
+    expect((trackLogMMKV.setChunk as jest.Mock).mock.calls.length).toBeGreaterThan(0);
+  });
+});
+
+describe('checkAndStoreLocations (tracking state + return value)', () => {
+  const baseTime = 1_600_000_000_000;
+  const makeInput = (n: number, startIndex = 0): LocationObjectInput[] =>
+    Array.from({ length: n }, (_, k) => {
+      const i = startIndex + k;
+      return { coords: { latitude: 35, longitude: 135 + i * 0.0001, accuracy: 10 }, timestamp: baseTime + i * 1000 };
+    });
+
+  beforeEach(() => {
+    clearAllChunks();
+    trackLogMMKV.setTrackingState('on');
+  });
+
+  it('returns null when tracking is off', () => {
+    trackLogMMKV.setTrackingState('off');
+    expect(checkAndStoreLocations(makeInput(1))).toBeNull();
+  });
+
+  it('stores points and returns metadata/chunk when tracking is on', () => {
+    const result = checkAndStoreLocations(makeInput(3));
+    expect(result).not.toBeNull();
+    expect(result!.metadata.totalPoints).toBe(3);
+    expect(result!.chunk).toHaveLength(3);
+  });
+});
+
+describe('resetTrackLogCache', () => {
+  const baseTime = 1_600_000_000_000;
+  const makePoints = (n: number, startIndex = 0): LocationType[] =>
+    Array.from({ length: n }, (_, k) => {
+      const i = startIndex + k;
+      return { latitude: 35, longitude: 135 + i * 0.0001, timestamp: baseTime + i * 1000, accuracy: 10 };
+    });
+
+  beforeEach(() => {
+    clearAllChunks();
+  });
+
+  it('re-reads from MMKV after reset (headless writes MMKV in a separate context)', () => {
+    addLocationsToChunks(makePoints(3));
+    flushTrackLog(); // MMKVへ確定
+    expect(getCurrentChunkInfo().currentChunkSize).toBe(3);
+
+    // 別コンテキスト相当: キャッシュを破棄 → 次回アクセスはMMKVから再構築
+    resetTrackLogCache();
+    expect(getDisplayBuffer()).toHaveLength(3);
   });
 });

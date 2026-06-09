@@ -10,7 +10,25 @@ interface Props {
   showDirectionLine?: boolean;
 }
 
-export const CurrentMarker = (props: Props) => {
+// 不要な再レンダリングを防ぐカスタム比較（HomeCompassButtonと同方針）。
+// azimuthは磁気センサー由来のノイズで頻繁に変わるため、約1°超の変化のみ再レンダリングする。
+const arePropsEqual = (prev: Props, next: Props) => {
+  if (prev.headingUp !== next.headingUp) return false;
+  if (prev.onPress !== next.onPress) return false;
+  if (prev.showDirectionLine !== next.showDirectionLine) return false;
+
+  const a = prev.currentLocation;
+  const b = next.currentLocation;
+  if (a.latitude !== b.latitude || a.longitude !== b.longitude || (a.accuracy ?? 0) !== (b.accuracy ?? 0)) {
+    return false;
+  }
+
+  if (Math.abs(prev.azimuth - next.azimuth) > 1) return false;
+
+  return true;
+};
+
+const CurrentMarkerComponent = (props: Props) => {
   const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
@@ -114,3 +132,5 @@ export const CurrentMarker = (props: Props) => {
     </>
   );
 };
+
+export const CurrentMarker = React.memo(CurrentMarkerComponent, arePropsEqual);

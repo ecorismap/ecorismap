@@ -14,8 +14,90 @@ export interface TrackChunkMetadata {
   totalPoints: number;
   lastChunkIndex: number;
   lastTimeStamp: number;
+  // 累積総距離(km)。記録開始からの合計（チャンクを跨いで増分加算する）。
   currentDistance: number;
 }
+
+// ---------------------------------------------------------------------------
+// 書き込みスルー型メモリ内キャッシュ
+// GPS 1点ごとのMMKV往復(getString/JSON.parse)とturf距離計算を排除するため、
+// 現在のチャンクとメタデータをメモリに保持する。MMKVへの書き込みはスロットルし、
+// rollover時とflush時、フォアグラウンド/停止/保存時には必ず書き込む。
+//
+// 重要: headlessタスク(アプリkill時)はメインとは別のJSコンテキストで動くため、
+// このキャッシュは共有されない。MMKVが唯一のコンテキスト間共有・永続の真実の源。
+// headless側ではタスク先頭でresetTrackLogCache()・末尾でflushTrackLog()を呼び、
+// 毎回MMKVから読み・書きすることでキャッシュのドリフトを避ける。
+// ---------------------------------------------------------------------------
+const WRITE_EVERY_N = 10; // 未完成チャンクの書き込みは最大Nポイントに1回
+const WRITE_INTERVAL_MS = 3000; // または数秒ごと
+
+interface TrackLogCache {
+  currentChunk: LocationType[]; // index>0 のときはつなぎ目を element0 に含む（getCurrentChunkと同形）
+  metadata: TrackChunkMetadata;
+  lastAppendedPoint: LocationType | null; // 増分距離計算用に最後に追加した点
+}
+
+let cache: TrackLogCache | null = null;
+let pendingWrites = 0;
+let lastFlushTs = 0;
+
+// turf非依存の軽量な大圏距離(km)。turf.length(getLineLength)と同じ地球半径6371kmを使用し、
+// ライブ表示の累積距離が保存時の最終距離とほぼ一致するようにする。
+const haversineKm = (a: LocationType, b: LocationType): number => {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+  const sinDLat = Math.sin(dLat / 2);
+  const sinDLon = Math.sin(dLon / 2);
+  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+// キャッシュを破棄する。次回アクセス時にMMKVから再ハイドレートされる。
+export const resetTrackLogCache = (): void => {
+  cache = null;
+  pendingWrites = 0;
+  lastFlushTs = 0;
+};
+
+// キャッシュが無ければMMKVから読み込んで構築する。
+const ensureCache = (): TrackLogCache => {
+  if (cache) return cache;
+  const metadata = getTrackMetadata();
+  const { chunk } = getCurrentChunk();
+  cache = {
+    currentChunk: chunk,
+    metadata,
+    lastAppendedPoint: chunk.length > 0 ? chunk[chunk.length - 1] : null,
+  };
+  return cache;
+};
+
+// キャッシュの現在チャンク+メタデータをMMKVへ書き込む。
+const persistCache = (): void => {
+  if (!cache) return;
+  const { currentChunk, metadata } = cache;
+  const currentChunkIndex = metadata.lastChunkIndex;
+  saveTrackMetadata(metadata);
+  if (currentChunk.length > 0) {
+    // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）
+    const chunkToSave = currentChunkIndex > 0 && currentChunk.length > 1 ? currentChunk.slice(1) : currentChunk;
+    saveTrackChunk(currentChunkIndex, chunkToSave);
+  } else {
+    saveTrackChunk(currentChunkIndex, []);
+  }
+  pendingWrites = 0;
+  lastFlushTs = Date.now();
+};
+
+// 未書き込みのキャッシュ内容を強制的にMMKVへ書き込む（バックグラウンド移行/停止/保存前に呼ぶ）。
+export const flushTrackLog = (): void => {
+  persistCache();
+};
 
 export const clearStoredLocations = (): void => {
   // すべてのチャンクデータをクリア
@@ -73,26 +155,30 @@ export const toLocationObject = (location: any): LocationObjectInput => {
   };
 };
 
-export const checkAndStoreLocations = (locations: LocationObjectInput[]): void => {
+export const checkAndStoreLocations = (
+  locations: LocationObjectInput[]
+): { metadata: TrackChunkMetadata; chunk: LocationType[] } | null => {
   // トラッキングがOFFの場合は軌跡を保存しない（GPSのみONでの記録を防止）
-  if (trackLogMMKV.getTrackingState() !== 'on') return;
+  if (trackLogMMKV.getTrackingState() !== 'on') return null;
 
-  // メタデータから最終タイムスタンプを取得
-  const metadata = getTrackMetadata();
+  // キャッシュ（無ければMMKVからハイドレート）から最終タイムスタンプを取得
+  const c = ensureCache();
 
   // 位置情報の検証とフィルタリング
-  const checkedLocations = checkLocations(metadata.lastTimeStamp, locations);
+  const checkedLocations = checkLocations(c.metadata.lastTimeStamp, locations);
 
-  if (checkedLocations.length > 0) {
-    // チャンクシステムに追加（これが唯一のデータ保存）
-    addLocationsToChunks(checkedLocations);
+  if (checkedLocations.length === 0) return null;
 
-    // 現在地を別途保存（互換性のため）
-    const displayData = getDisplayBuffer();
-    if (displayData.length > 0) {
-      trackLogMMKV.setCurrentLocation(displayData[displayData.length - 1]);
-    }
+  // チャンクシステムに追加（これが唯一のデータ保存）
+  const result = addLocationsToChunks(checkedLocations);
+
+  // 現在地を別途保存（互換性のため）
+  const lastPoint = result.chunk[result.chunk.length - 1];
+  if (lastPoint) {
+    trackLogMMKV.setCurrentLocation(lastPoint);
   }
+
+  return result;
 };
 
 // toLocationType関数を先に定義（checkLocationsで使用するため）
@@ -167,17 +253,29 @@ const getCurrentChunk = (): { chunk: LocationType[]; index: number } => {
 // LocationTypeをそのまま使用する
 
 // チャンクシステムに位置情報を追加
-export const addLocationsToChunks = (locations: LocationType[]): void => {
-  const metadata = getTrackMetadata();
-
-  // MMKVから現在のチャンク状態を取得（つなぎ目付き）
-  let { chunk: currentChunk, index: currentChunkIndex } = getCurrentChunk();
+// メモリ内キャッシュを更新し、戻り値で最新のmetadata/現在チャンクを返す。
+// MMKVへの書き込みは rollover時は必ず、未完成チャンクはスロットルして行う。
+export const addLocationsToChunks = (
+  locations: LocationType[]
+): { metadata: TrackChunkMetadata; chunk: LocationType[] } => {
+  const c = ensureCache();
+  const metadata = c.metadata;
+  let currentChunk = c.currentChunk;
+  let currentChunkIndex = metadata.lastChunkIndex;
+  let lastAppended = c.lastAppendedPoint;
 
   let totalPointsAdded = 0;
+  let distanceAdded = 0;
+  let rolledOver = false;
 
   for (const location of locations) {
+    // 増分距離（最後に追加した点からの大圏距離を加算）。チャンクを跨いでも連続して加算する。
+    if (lastAppended) {
+      distanceAdded += haversineKm(lastAppended, location);
+    }
+    lastAppended = location;
+
     // 現在のチャンクに追加（保存と表示を兼ねる）
-    // LocationTypeをそのまま使用
     currentChunk.push(location);
     totalPointsAdded++;
 
@@ -192,7 +290,7 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
       // つなぎ目を除いてチャンクを保存（2番目以降のチャンクは最初の点を除外）
       const chunkToSave = currentChunkIndex > 0 ? currentChunk.slice(1) : currentChunk;
 
-      // チャンクを保存（cleanupはトラック保存時に実行）
+      // 完成チャンクは即保存（cleanupはトラック保存時に実行）
       saveTrackChunk(currentChunkIndex, chunkToSave);
 
       // メタデータを更新
@@ -202,11 +300,9 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
 
       // 新しいチャンクを開始（前のチャンクの最後の点を含める）
       currentChunk = [lastPointOfCurrentChunk];
+      rolledOver = true;
     }
   }
-
-  // 距離を計算（現在のチャンクの距離）
-  const currentDistance = currentChunk.length >= 2 ? getLineLength(currentChunk) : 0;
 
   // メタデータを更新
   metadata.totalPoints += totalPointsAdded;
@@ -214,32 +310,42 @@ export const addLocationsToChunks = (locations: LocationType[]): void => {
   if (locations.length > 0) {
     metadata.lastTimeStamp = locations[locations.length - 1]?.timestamp || Date.now();
   }
-  metadata.currentDistance = currentDistance; // 距離を保存
-  metadata.lastChunkIndex = currentChunkIndex; // 現在のチャンクインデックスも保存
-  saveTrackMetadata(metadata);
+  metadata.currentDistance += distanceAdded; // 累積総距離に加算
+  metadata.lastChunkIndex = currentChunkIndex;
 
-  // 現在のチャンクを常に保存（表示用データとして使用される）
-  // 注意: 最後のチャンクはまだ完成していないのでcleanupしない
-  if (currentChunk.length > 0) {
-    // つなぎ目を除いて保存（2番目以降のチャンクは最初の点を除外）
-    const chunkToSave = currentChunkIndex > 0 && currentChunk.length > 1 ? currentChunk.slice(1) : currentChunk;
-    // 未完成のチャンクはcleanupしない（トラック保存時に処理）
-    saveTrackChunk(currentChunkIndex, chunkToSave);
-  } else {
-    // 空のチャンクも保存（新しいチャンクが作成されたが、まだポイントがない場合）
-    saveTrackChunk(currentChunkIndex, []);
+  // キャッシュを更新
+  c.currentChunk = currentChunk;
+  c.lastAppendedPoint = lastAppended;
+
+  // 書き込み: rollover時は必ず（metadata.lastChunkIndexとMMKV上のチャンクの整合のため）。
+  // それ以外はスロットル（Nポイントごと、または数秒ごと）。
+  pendingWrites += totalPointsAdded;
+  const now = Date.now();
+  if (rolledOver || pendingWrites >= WRITE_EVERY_N || now - lastFlushTs >= WRITE_INTERVAL_MS) {
+    persistCache();
   }
+
+  return { metadata, chunk: currentChunk };
 };
 
 // 表示用バッファを取得（現在のチャンクを取得）
 // 注意: パフォーマンスのため配列の参照を直接返す（コピーしない）
+// キャッシュがあればメモリから返す（MMKVのparseを回避）。無ければMMKVから読む。
 export const getDisplayBuffer = (): LocationType[] => {
+  if (cache) return cache.currentChunk;
   const { chunk } = getCurrentChunk();
   return chunk; // 配列のコピーを作らず直接返す
 };
 
 // 現在のチャンク情報を取得（デバッグ用）
 export const getCurrentChunkInfo = () => {
+  if (cache) {
+    return {
+      currentChunkIndex: cache.metadata.lastChunkIndex,
+      currentChunkSize: cache.currentChunk.length,
+      displayBufferSize: cache.currentChunk.length,
+    };
+  }
   const { chunk, index } = getCurrentChunk();
   return {
     currentChunkIndex: index,
@@ -317,6 +423,8 @@ export const saveTrackMetadata = (metadata: TrackChunkMetadata): void => {
 
 // 全チャンクを結合して取得（エクスポート用）
 export const getAllTrackPoints = (): LocationType[] => {
+  // メモリ内の未書き込みポイントもMMKVへ反映してから読み出す（保存の取りこぼし防止）
+  flushTrackLog();
   const metadata = getTrackMetadata();
   const allPoints: LocationType[] = [];
 
@@ -336,8 +444,10 @@ export const getAllTrackPoints = (): LocationType[] => {
 // チャンクデータをクリア
 export const clearAllChunks = (): void => {
   const metadata = getTrackMetadata();
+  // 未flushのキャッシュがMMKVより進んでいる可能性があるため、両者の大きい方まで削除する
+  const maxChunkIndex = Math.max(metadata.lastChunkIndex, cache?.metadata.lastChunkIndex ?? 0);
 
-  for (let i = 0; i <= metadata.lastChunkIndex; i++) {
+  for (let i = 0; i <= maxChunkIndex; i++) {
     trackLogMMKV.removeChunk(`track_chunk_${i}`);
   }
 
@@ -351,6 +461,9 @@ export const clearAllChunks = (): void => {
 
   // MMKVに空のチャンクを保存して初期化
   saveTrackChunk(0, []);
+
+  // メモリ内キャッシュも破棄（次回アクセス時にクリア済みのMMKVから再構築）
+  resetTrackLogCache();
 };
 
 /**

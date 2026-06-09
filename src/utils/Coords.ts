@@ -963,33 +963,34 @@ export const cleanupLine = (line: LocationType[]): LocationType[] => {
   const lineString = turf.lineString(smoothedLine.map((point) => [point.longitude, point.latitude]));
 
   const simplifiedLine = turf.simplify(lineString, { tolerance: 0.000001, highQuality: true });
-  
-  // 簡略化された座標に対して、最も近い元の点のtimestampとその他のプロパティを復元
+
+  // 簡略化後の座標に元の点のプロパティ(timestamp等)を復元する。
+  // turf.simplify(Douglas-Peucker)は元の座標値をそのまま部分集合として返すため、
+  // 座標をキーにしたMapでO(N)に対応付けできる（旧実装の最近傍線形探索O(N²)を回避）。
+  // 同一座標が複数ある場合は最初の点を優先（旧実装の strict `<` 比較=最初に見つかった最小と一致）。
+  const coordKey = (lon: number, lat: number) => `${lon.toFixed(8)}|${lat.toFixed(8)}`;
+  const pointByCoord = new Map<string, LocationType>();
+  for (const point of smoothedLine) {
+    const k = coordKey(point.longitude, point.latitude);
+    if (!pointByCoord.has(k)) pointByCoord.set(k, point);
+  }
+
+  let lastMatched = smoothedLine[0];
   const newTrack = simplifiedLine.geometry.coordinates.map((coord) => {
-    // 最も近い元の点を見つける
-    let minDistance = Infinity;
-    let closestPoint = smoothedLine[0];
-    
-    for (const point of smoothedLine) {
-      const distance = Math.sqrt(
-        Math.pow(coord[0] - point.longitude, 2) + 
-        Math.pow(coord[1] - point.latitude, 2)
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestPoint = point;
-      }
-    }
-    
+    // 簡略化座標は元の座標そのものなので完全一致でヒットする。
+    // 万一ヒットしない場合は直前に一致した点へフォールバック。
+    const matched = pointByCoord.get(coordKey(coord[0], coord[1])) ?? lastMatched;
+    lastMatched = matched;
+
     // 元の点のプロパティを含めて返す
     return {
       longitude: coord[0],
       latitude: coord[1],
-      timestamp: closestPoint.timestamp, // timestampを復元
-      ...(closestPoint.altitude !== undefined && { altitude: closestPoint.altitude }),
-      ...(closestPoint.accuracy !== undefined && { accuracy: closestPoint.accuracy }),
-      ...(closestPoint.speed !== undefined && { speed: closestPoint.speed }),
-      ...(closestPoint.heading !== undefined && { heading: closestPoint.heading }),
+      timestamp: matched.timestamp, // timestampを復元
+      ...(matched.altitude !== undefined && { altitude: matched.altitude }),
+      ...(matched.accuracy !== undefined && { accuracy: matched.accuracy }),
+      ...(matched.speed !== undefined && { speed: matched.speed }),
+      ...(matched.heading !== undefined && { heading: matched.heading }),
     };
   });
   return newTrack;
