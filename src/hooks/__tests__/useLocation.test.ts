@@ -12,12 +12,10 @@ import * as Notifications from 'expo-notifications';
 jest.mock('expo-location');
 jest.mock('expo-notifications');
 jest.mock('react-native-background-geolocation', () => {
+  // v5のenum名前空間に合わせる（値は実ライブラリのDesiredAccuracy/AuthorizationStatusと一致）
   const constants = {
-    DESIRED_ACCURACY_HIGH: 0,
-    DESIRED_ACCURACY_MEDIUM: 1,
-    DESIRED_ACCURACY_LOW: 2,
-    AUTHORIZATION_STATUS_ALWAYS: 3,
-    AUTHORIZATION_STATUS_WHEN_IN_USE: 2,
+    DesiredAccuracy: { Navigation: -2, High: -1, Medium: 10, Low: 100, VeryLow: 1000, Lowest: 3000 },
+    AuthorizationStatus: { NotDetermined: 0, Restricted: 1, Denied: 2, Always: 3, WhenInUse: 4 },
   };
   const subscription = { remove: jest.fn() };
   const mock = {
@@ -163,7 +161,7 @@ describe('useLocation', () => {
     mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
     mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
     mockBackgroundGeolocation.requestPermission.mockResolvedValue(
-      BackgroundGeolocation.AUTHORIZATION_STATUS_ALWAYS
+      BackgroundGeolocation.AuthorizationStatus.Always
     );
     mockBackgroundGeolocation.watchPosition.mockResolvedValue('watch-id' as any);
     mockBackgroundGeolocation.stopWatchPosition.mockResolvedValue(undefined);

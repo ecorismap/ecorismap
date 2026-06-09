@@ -94,6 +94,8 @@ Maps.plist
 Maps.plist.development
 Maps.plist.production
 Maps.plist.backup
+TSLicense.txt
+TSLicense.txt.backup
 src/constants/APIKeys.ts
 APIKeys.ts
 APIKeys.ts.development

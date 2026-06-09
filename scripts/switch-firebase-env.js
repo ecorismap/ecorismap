@@ -43,7 +43,11 @@ const configs = [
     type: 'local-properties',
     placeholder: 'YOUR-MAPS-API-KEY',
     keystoreConfig: path.join(keysDir, 'keystore-config'),
-    transistorsoftLicenseKey: path.join(keysDir, 'transistorsoft-license-key')
+    // Background Geolocation License（Android）。プラットフォーム別キーを優先し、
+    // 旧来の共通ファイル名（transistorsoft-license-key）にフォールバック。
+    transistorsoftLicenseKey: fs.existsSync(path.join(keysDir, 'transistorsoft-license-key-android'))
+      ? path.join(keysDir, 'transistorsoft-license-key-android')
+      : path.join(keysDir, 'transistorsoft-license-key')
   },
   {
     source: path.join(keysDir, 'maps-key-ios'),
@@ -52,6 +56,17 @@ const configs = [
     name: 'iOS Maps API',
     type: 'template',
     placeholder: 'YOUR-MAPS-API-KEY'
+  },
+  // Background Geolocation License（iOS）
+  // v5以降、iOSもライセンスキーが必須（Info.plistの TSLocationManagerLicense）。
+  // ここではキーをgitignore対象のファイルに書き出し、Xcodeのビルドフェーズ
+  // 「[TS] Inject Background Geolocation License」がビルド時にInfo.plistへ注入する。
+  {
+    source: path.join(keysDir, 'transistorsoft-license-key-ios'),
+    target: 'ios/ecorismap/Supporting/TSLicense.txt',
+    name: 'iOS Background Geolocation License',
+    type: 'ts-license-ios',
+    optional: true
   },
   // Web設定 - すべてのWeb設定を一度に処理
   {
@@ -91,6 +106,11 @@ configs.forEach(config => {
         }
       }
     } else if (!fs.existsSync(config.source)) {
+      // optional指定のソースは未配置でもエラーにせずスキップ
+      if (config.optional) {
+        console.log(`⏭️  ${config.name}: ソースファイル未配置のためスキップ (${config.source})`);
+        return;
+      }
       console.error(`❌ ${config.name}: ソースファイルが見つかりません: ${config.source}`);
       hasError = true;
       return;
@@ -157,6 +177,13 @@ configs.forEach(config => {
 
       fs.writeFileSync(targetPath, content);
       console.log(`✅ ${config.name}: 設定を更新しました（Keystore設定を含む）`);
+
+    } else if (config.type === 'ts-license-ios') {
+      // iOS Background Geolocationライセンスキーをgitignore対象ファイルに書き出す。
+      // 実際のInfo.plistへの注入はXcodeビルドフェーズが行う。
+      const licenseKey = fs.readFileSync(config.source, 'utf8').trim();
+      fs.writeFileSync(targetPath, `${licenseKey}\n`);
+      console.log(`✅ ${config.name}: ライセンスキーを書き出しました`);
 
     } else if (config.type === 'web-config') {
       // Web設定の特殊処理

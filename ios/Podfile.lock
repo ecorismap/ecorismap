@@ -1199,9 +1199,6 @@ PODS:
   - BoringSSL-GRPC/Implementation (0.0.37):
     - BoringSSL-GRPC/Interface (= 0.0.37)
   - BoringSSL-GRPC/Interface (0.0.37)
-  - CocoaLumberjack (3.8.5):
-    - CocoaLumberjack/Core (= 3.8.5)
-  - CocoaLumberjack/Core (3.8.5)
   - DoubleConversion (1.1.6)
   - EXApplication (7.0.8):
     - ExpoModulesCore
@@ -3976,11 +3973,64 @@ PODS:
     - React-utils (= 0.81.5)
     - SocketRocket
   - RecaptchaInterop (101.0.0)
-  - RNBackgroundFetch (4.2.8):
+  - RNBackgroundFetch (4.4.2):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
-  - RNBackgroundGeolocation (4.19.2):
-    - CocoaLumberjack (~> 3.8.5)
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - TSBackgroundFetch (~> 4.1.0)
+    - Yoga
+  - RNBackgroundGeolocation (5.1.1):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
     - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - TSLocationManager (~> 4.1.0)
+    - Yoga
   - RNCAsyncStorage (2.2.0):
     - React-Core
   - RNCPicker (2.11.1):
@@ -4268,6 +4318,9 @@ PODS:
     - SDWebImage/Core (~> 5.17)
   - SocketRocket (0.7.1)
   - SSZipArchive (2.4.3)
+  - TSBackgroundFetch (4.1.1)
+  - TSLocationManager (4.1.9):
+    - TSBackgroundFetch (~> 4.1.0)
   - UMAppLoader (6.0.8)
   - VirgilCrypto (5.3.0):
     - VirgilCryptoFoundation (~> 0.12.0)
@@ -4422,7 +4475,6 @@ SPEC REPOS:
     - abseil
     - AppCheckCore
     - BoringSSL-GRPC
-    - CocoaLumberjack
     - Firebase
     - FirebaseAppCheck
     - FirebaseAppCheckInterop
@@ -4454,6 +4506,8 @@ SPEC REPOS:
     - SDWebImageWebPCoder
     - SocketRocket
     - SSZipArchive
+    - TSBackgroundFetch
+    - TSLocationManager
     - VirgilCrypto
     - VirgilCryptoFoundation
     - VirgilCryptoPythia
@@ -4725,7 +4779,6 @@ SPEC CHECKSUMS:
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   BoringSSL-GRPC: dded2a44897e45f28f08ae87a55ee4bcd19bc508
-  CocoaLumberjack: 6a459bc897d6d80bd1b8c78482ec7ad05dffc3f0
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXApplication: 1e98d4b1dccdf30627f92917f4b2c5a53c330e5f
   EXConstants: c378c1b344ff1ecfbad27b90f0e48d1d0ead8cbb
@@ -4859,8 +4912,8 @@ SPEC CHECKSUMS:
   ReactCodegen: 2e921a931c5a4dd1d8ab37ade085fdf58fcfe1dd
   ReactCommon: 6d0fa86a4510730da7c72560e0ced14258292ab9
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  RNBackgroundFetch: e44c9e85d7fb3122c37d8a806278f62c7682d7ea
-  RNBackgroundGeolocation: 88e12142817290e7944717211eae65eeed86574b
+  RNBackgroundFetch: 3df05ba27216ff241ddc1a9321f14f6829982eea
+  RNBackgroundGeolocation: 3660967bceff46252fc9816be0fa9a34db665d69
   RNCAsyncStorage: b44e8a4e798c3e1f56bffccd0f591f674fb9198f
   RNCPicker: da0f1c9411208c1ca52bc98383db54a06e0a3862
   RNDeviceInfo: bcce8752b5043a623fe3c26789679b473f705d3c
@@ -4883,6 +4936,8 @@ SPEC CHECKSUMS:
   SDWebImageWebPCoder: 0e06e365080397465cc73a7a9b472d8a3bd0f377
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   SSZipArchive: fe6a26b2a54d5a0890f2567b5cc6de5caa600aef
+  TSBackgroundFetch: 18918b6449a1e3f01eb0f5b44d6d79ce6160a5a5
+  TSLocationManager: d8c3074f2dfc8f93eff7c64b69b61ff30a7f50e4
   UMAppLoader: 145337733539f9af9b3dd97eeaa7f3bd97cacb23
   VirgilCrypto: c2831582c5230eeb2adba2365336c768cd6d8c59
   VirgilCryptoFoundation: 79f23a7ab6db642268d31bc63b0cf54db416f089

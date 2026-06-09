@@ -4,6 +4,8 @@ import BackgroundGeolocation, {
   Location as BackgroundLocation,
   Subscription as BackgroundSubscription,
   State as BackgroundState,
+  Config as BackgroundConfig,
+  NotificationConfig,
 } from 'react-native-background-geolocation';
 import { watchHeadingAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
@@ -40,6 +42,11 @@ const openSettings = () => {
     // 設定ページを開けなかった場合
   });
 };
+
+// v5の型定義(@transistorsoft/background-geolocation-types)はnotificationをトップレベルに持たないが、
+// ネイティブAPIは依然としてフラットなトップレベルnotificationを要求する（型とランタイムの不整合）。
+// その差異を吸収するためのローカル型。
+type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig };
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
@@ -109,13 +116,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   const gpsAccuracyOption = useMemo(() => {
     switch (gpsAccuracy) {
       case 'HIGH':
-        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH, distanceFilter: 2 };
+        return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High, distanceFilter: 2 };
       case 'MEDIUM':
-        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_MEDIUM, distanceFilter: 10 };
+        return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.Medium, distanceFilter: 10 };
       case 'LOW':
-        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_LOW, distanceFilter: 50 };
+        return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.Low, distanceFilter: 50 };
       default:
-        return { desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH, distanceFilter: 2 };
+        return { desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High, distanceFilter: 2 };
     }
   }, [gpsAccuracy]);
 
@@ -146,8 +153,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       const authStatus = await BackgroundGeolocation.requestPermission();
       if (
-        authStatus === BackgroundGeolocation.AUTHORIZATION_STATUS_ALWAYS ||
-        authStatus === BackgroundGeolocation.AUTHORIZATION_STATUS_WHEN_IN_USE
+        authStatus === BackgroundGeolocation.AuthorizationStatus.Always ||
+        authStatus === BackgroundGeolocation.AuthorizationStatus.WhenInUse
       ) {
         return 'granted';
       }
@@ -265,7 +272,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     if (!locationSubscription.current) {
       locationSubscription.current = BackgroundGeolocation.onLocation(
         (location) => handleBackgroundLocation(location),
-        (error) => console.error('[tracking] location error', error)
+        (error) => {
+          // 499(Location request cancelled)と408(timeout)は一時的・非致命的。
+          // changePace直後のgetCurrentPositionで継続リクエストが横取りされた際などに発生するため無視する。
+          if (error === 499 || error === 408) return;
+          console.error('[tracking] location error', error);
+        }
       );
     }
 
@@ -283,7 +295,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const state = await BackgroundGeolocation.getState();
         if (!state.enabled) {
           // GPSのみオン時の通知メッセージを設定
-          await BackgroundGeolocation.setConfig({
+          const gpsNotificationConfig: FlatConfig = {
             notification: {
               sticky: true,
               title: 'EcorisMap',
@@ -293,7 +305,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
               smallIcon: 'drawable/ic_notification',
               largeIcon: 'mipmap/ic_launcher',
             },
-          });
+          };
+          await BackgroundGeolocation.setConfig(gpsNotificationConfig);
           await BackgroundGeolocation.start();
           // 移動モードにして位置更新を継続させる
           await BackgroundGeolocation.changePace(true);
@@ -360,7 +373,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       await ensureBackgroundGeolocation();
 
       // トラッキング用の通知メッセージを設定
-      await BackgroundGeolocation.setConfig({
+      const trackingNotificationConfig: FlatConfig = {
         notification: {
           sticky: true,
           title: 'EcorisMap',
@@ -370,7 +383,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           smallIcon: 'drawable/ic_notification',
           largeIcon: 'mipmap/ic_launcher',
         },
-      });
+      };
+      await BackgroundGeolocation.setConfig(trackingNotificationConfig);
 
       const state: BackgroundState = await BackgroundGeolocation.getState();
       if (!state.enabled) {

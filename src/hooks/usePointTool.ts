@@ -37,7 +37,7 @@ export const usePointTool = (): UsePointToolReturnType => {
       const location = await BackgroundGeolocation.getCurrentPosition({
         persist: false,
         samples: 1,
-        desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+        desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High,
         timeout: 30,
       });
       if (!location) return undefined;
