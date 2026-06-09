@@ -3,6 +3,22 @@ import { checkAndStoreLocations, toLocationObject, resetTrackLogCache, flushTrac
 import { trackLogMMKV } from './utils/mmkvStorage';
 
 BackgroundGeolocation.registerHeadlessTask(async (event) => {
+  // 端末再起動(boot)・タスクキル(terminate)後はプラグインがstationary状態で開始されることがあり、
+  // disableMotionActivityUpdates:trueではmoving復帰が不確実なため、明示的に移動モードへ戻して記録を継続する。
+  if (event.name === 'boot' || event.name === 'terminate') {
+    try {
+      if (trackLogMMKV.getTrackingState() === 'on' || trackLogMMKV.getGpsState() !== 'off') {
+        const state = await BackgroundGeolocation.getState();
+        if (state.enabled) {
+          await BackgroundGeolocation.changePace(true);
+        }
+      }
+    } catch (error) {
+      console.error('[tracking][headless] failed to resume moving state', error);
+    }
+    return;
+  }
+
   if (event.name !== 'location') return;
   try {
     const normalized = toLocationObject(event.params);

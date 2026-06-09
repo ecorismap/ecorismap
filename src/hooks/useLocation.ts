@@ -49,6 +49,21 @@ const openSettings = () => {
 // その差異を吸収するためのローカル型。
 type FlatConfig = Partial<BackgroundConfig> & { notification: NotificationConfig };
 
+// disableStopDetection等もv5の型ではgeolocation/activity配下にネストされているが、
+// ネイティブAPIはフラットなトップレベルキーを要求する（notificationと同様の不整合）。
+type FlatStopDetectionConfig = Partial<BackgroundConfig> & {
+  disableStopDetection: boolean;
+  pausesLocationUpdatesAutomatically: boolean;
+};
+
+// 静止しても記録が勝手に止まらないように静止検出を無効化する設定（常時記録方針）。
+// iOSは自動電源オフを完全に防ぐためにdisableStopDetectionとpausesLocationUpdatesAutomatically:false
+// の両方が必要（公式ドキュメント推奨の組み合わせ）。
+const STOP_DETECTION_DISABLED: FlatStopDetectionConfig = {
+  disableStopDetection: true,
+  pausesLocationUpdatesAutomatically: false,
+};
+
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
@@ -57,6 +72,13 @@ const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 // 方位表示が「ふらふら」する/もたつく。頻度と最小角度差で間引いて再描画を抑制する。
 const AZIMUTH_THROTTLE_MS = 200; // 最大 5 回/秒
 const AZIMUTH_MIN_DELTA_DEG = 1; // 1°未満の変化は無視（静止時のノイズで再描画しない）
+
+// コンパスモード（headingUp）でのカメラ回転の間引き設定
+const COMPASS_CAMERA_MIN_INTERVAL_MS = 100;
+const COMPASS_CAMERA_MIN_DELTA_DEG = 2;
+
+// 角度のラップ（0/360のまたぎ）を考慮した絶対差（0..180）
+export const angularDeltaDeg = (a: number, b: number): number => Math.abs(((b - a + 540) % 360) - 180);
 
 /**
  * 方位の state を更新すべきか判定する純粋関数。
@@ -73,9 +95,25 @@ export const shouldEmitAzimuth = (
 ): boolean => {
   if (msSinceLast < throttleMs) return false;
   if (prevDeg === null) return true;
-  // 角度のラップを考慮した絶対差（0..180）
-  const delta = Math.abs(((nextDeg - prevDeg + 540) % 360) - 180);
-  return delta >= minDeltaDeg;
+  return angularDeltaDeg(prevDeg, nextDeg) >= minDeltaDeg;
+};
+
+/**
+ * コンパスモードでカメラを回転すべきか判定する純粋関数。
+ * - 初回（prevDeg が null）は常に回転（カメラが任意の向きで止まっている可能性があるため）
+ * - 直前回転から minIntervalMs 未満ならスキップ
+ * - 直前値との角度差（0-360のラップを考慮）が minDeltaDeg 未満ならスキップ
+ */
+export const shouldRotateCompassCamera = (
+  prevDeg: number | null,
+  nextDeg: number,
+  msSinceLast: number,
+  minIntervalMs: number,
+  minDeltaDeg: number
+): boolean => {
+  if (prevDeg === null) return true;
+  if (msSinceLast < minIntervalMs) return false;
+  return angularDeltaDeg(prevDeg, nextDeg) >= minDeltaDeg;
 };
 
 export type UseLocationReturnType = {
@@ -247,12 +285,18 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const normalized = toLocationObject(location);
         const latest = { ...normalized.coords, timestamp: normalized.timestamp };
 
+        // バックグラウンド中は画面が見えないため、React state更新とカメラ移動をスキップして
+        // CPU/ブリッジ消費を抑える（MMKVへの保存と接近通知は継続。
+        // 表示はフォアグラウンド復帰時にsyncLocationFromMMKVで復元される）。
+        // 'inactive'（iOSのApp Switcher等、画面がまだ見える状態）はUI更新を継続する。
+        const isInBackground = RNAppState.currentState === 'background';
+
         // トラッキング中のみ軌跡を保存
         if (isTracking) {
           // checkAndStoreLocationsが更新後のmetadata/現在チャンクを返すため、ここでの再読み込みは不要
           const result = checkAndStoreLocations([normalized]);
 
-          if (result) {
+          if (result && !isInBackground) {
             // 軌跡ラインの再描画は約1秒にスロットル（rollover=savedChunkCount変化時は即時反映）。
             const now = Date.now();
             const chunkChanged = result.metadata.lastChunkIndex !== lastSavedChunkIndexRef.current;
@@ -274,25 +318,27 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
         trackLogMMKV.setCurrentLocation(latest);
 
-        // 常に現在地を更新
-        setCurrentLocation(latest);
+        if (!isInBackground) {
+          // 現在地を更新
+          setCurrentLocation(latest);
 
-        // カメラ移動（followモードまたはバックグラウンド時のトラッキング中）
-        if (gpsStateRef.current === 'follow' || (isTracking && RNAppState.currentState === 'background')) {
-          if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
-            (mapViewRef.current as MapView).animateCamera(
-              {
-                center: {
-                  latitude: latest.latitude,
-                  longitude: latest.longitude,
+          // カメラ移動（followモード時）
+          if (gpsStateRef.current === 'follow') {
+            if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+              (mapViewRef.current as MapView).animateCamera(
+                {
+                  center: {
+                    latitude: latest.latitude,
+                    longitude: latest.longitude,
+                  },
                 },
-              },
-              { duration: 5 }
-            );
+                { duration: 5 }
+              );
+            }
           }
         }
 
-        // 接近通知チェック（GPSオンまたはトラッキング中）
+        // 接近通知チェック（GPSオンまたはトラッキング中。バックグラウンドでも継続）
         checkProximityRef.current(latest);
       } catch (error) {
         console.error('[tracking] Failed to persist location', error);
@@ -325,6 +371,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       locationAuthorizationRequest: 'WhenInUse',
       disableLocationAuthorizationAlert: true,
       disableMotionActivityUpdates: true,
+      ...STOP_DETECTION_DISABLED,
       notification: {
         sticky: true,
         title: 'EcorisMap',
@@ -341,6 +388,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     } as const;
 
     const state = await BackgroundGeolocation.ready(config);
+
+    // reset:falseの場合（kill後復帰などサービス稼働中）はready()で設定が適用されないため、
+    // 稼働中のサービスにも静止検出の無効化を明示的に反映する。
+    if (isServiceRunning) {
+      await BackgroundGeolocation.setConfig(STOP_DETECTION_DISABLED);
+    }
 
     if (!locationSubscription.current) {
       locationSubscription.current = BackgroundGeolocation.onLocation(
@@ -423,6 +476,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       trackLogMMKV.setGpsState('off');
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
+      // heading購読を解除（stopGPSと対称。磁気センサーの購読が残るのを防ぐ）
+      if (headingSubscriber.current !== null) {
+        headingSubscriber.current.remove();
+        headingSubscriber.current = null;
+      }
     } catch (e) {
     } finally {
       if (isLoggedIn(dataUser) && hasOpened(projectId)) {
@@ -540,7 +598,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           setTrackingState(trackingState_);
           trackingStateRef.current = trackingState_;
           await stopTracking();
-          // GPSがオンの場合はstopTracking内でBackgroundGeolocationは継続している
+          // stopTrackingはGPSも停止する（UIフローでは続けてtoggleGPS('off')が呼ばれ状態が整合する）
         }
       } catch (error) {
         console.error('Error in toggleTracking:', error);
@@ -565,23 +623,25 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           headingSubscriber.current = null;
         }
 
-        let lastHeading = 0;
+        let lastHeading: number | null = null;
         let lastUpdateTime = 0;
 
         headingSubscriber.current = await watchHeadingAsync((pos) => {
-          const newHeading = Math.abs((-1.0 * pos.trueHeading) % 360);
+          // iOSでtrue headingが取得できない場合は-1が返る（不正値は無視）
+          if (pos.trueHeading < 0) return;
+          const newHeading = pos.trueHeading % 360;
           const currentTime = Date.now();
 
-          // 角度の変化が小さい場合はアニメーションをスキップ
-          const headingDiff = Math.abs(newHeading - lastHeading);
-          if (headingDiff < 2 && headingDiff > 0) {
-            pushAzimuth(pos.trueHeading);
-            return;
-          }
-
-          // 最小更新間隔を設定（ミリ秒）
-          const minUpdateInterval = 100;
-          if (currentTime - lastUpdateTime < minUpdateInterval) {
+          // 角度の変化が小さい/間隔が短い場合はカメラ回転をスキップ（方位stateは更新）
+          if (
+            !shouldRotateCompassCamera(
+              lastHeading,
+              newHeading,
+              currentTime - lastUpdateTime,
+              COMPASS_CAMERA_MIN_INTERVAL_MS,
+              COMPASS_CAMERA_MIN_DELTA_DEG
+            )
+          ) {
             pushAzimuth(pos.trueHeading);
             return;
           }
@@ -611,10 +671,15 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           },
           { duration: 500 }
         );
+
+        // GPS/トラッキング中はマーカーの向き表示にazimuthが必要なため、通常のheading購読を復元する
+        if (gpsStateRef.current !== 'off' || trackingStateRef.current === 'on') {
+          await ensureHeadingSubscription();
+        }
       }
       setHeadingUp(headingUp_);
     },
-    [confirmLocationPermission, mapViewRef, pushAzimuth]
+    [confirmLocationPermission, ensureHeadingSubscription, mapViewRef, pushAzimuth]
   );
 
   // フォアグラウンド復帰時にMMKVからデータを同期する関数
@@ -626,6 +691,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     if (trackingStateRef.current === 'on') {
       const chunkInfo = getCurrentChunkInfo();
       const metadata = getTrackMetadata();
+      // スロットル用refも同期（バックグラウンド中にrolloverしていた場合の余分な即時更新を防ぐ）
+      lastSavedChunkIndexRef.current = chunkInfo.currentChunkIndex;
+      lastTrackMetaUpdateRef.current = Date.now();
       setTrackMetadata({
         distance: metadata.currentDistance,
         lastTimeStamp: metadata.lastTimeStamp,
@@ -636,8 +704,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       });
     }
 
-    // カメラ移動（followモード時）
-    if (gpsStateRef.current === 'follow') {
+    // カメラ移動（followモード時、またはトラッキング中。
+    // バックグラウンド中はカメラ追従を止めているため、復帰時に1回だけ現在地へセンタリングしてUXを維持する）
+    if (gpsStateRef.current === 'follow' || trackingStateRef.current === 'on') {
       if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
         (mapViewRef.current as MapView).animateCamera(
           {
@@ -887,15 +956,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         locationSubscription.current = null;
       }
     };
-  }, [
-    checkUnsavedTrackLog,
-    confirmLocationPermission,
-    ensureBackgroundGeolocation,
-    ensureHeadingSubscription,
-    stopTracking,
-    trackingState,
-    moveCurrentPosition,
-  ]);
+    // 初期化はマウント時に1回だけ実行する（本体はinitializedRefで多重実行を防いでいる）。
+    // 依存配列に状態やコールバックを含めると、依存変化時の再実行でクリーンアップが
+    // heading/onLocation購読を破棄し（本体は早期returnするため）再購読されず、
+    // 追跡中に位置・方位の更新が止まる不具合の原因になる。クリーンアップはアンマウント時のみ実行する。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const subscription = RNAppState.addEventListener('change', async (nextAppState) => {
