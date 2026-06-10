@@ -110,6 +110,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dragStartPosition = useRef<{ x: number; y: number } | null>(null);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // 長押しポップアップが表示されたタッチでは、リリース時のフィーチャー選択を抑止する
+  const longPressFiredRef = useRef(false);
   const freehandFinishedRef = useRef(false);
   // iOS Google MapsでonPanDragが発火しないため、PanResponder側でGPS追従解除を行う用のref
   const gpsStateRef = useRef<LocationStateType>('off');
@@ -1400,6 +1402,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       // ドラッグ開始位置を記録
       dragStartPosition.current = { x: pXY[0], y: pXY[1] };
 
+      // 新しいタッチの開始時に長押し発火フラグをリセット
+      longPressFiredRef.current = false;
+
       // 長押しタイマーをクリア（既存のタイマーがある場合）
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
@@ -1419,6 +1424,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
           const xy = pXY;
           const latLonArray = xyArrayToLatLonObjects([xy], mapRegion, mapSize, mapViewRef.current);
           if (latLonArray && latLonArray.length > 0) {
+            longPressFiredRef.current = true;
             setMapLocationInfo({
               coordinate: {
                 latitude: latLonArray[0].latitude,
@@ -1676,8 +1682,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       } else if (currentMapMemoTool !== 'NONE') {
         handleReleaseMapMemo(event);
-      } else if (!isMapDragging.current && !freehandFinishedRef.current) {
-        // 地図をドラッグしていない場合のみ情報取得
+      } else if (!isMapDragging.current && !freehandFinishedRef.current && !longPressFiredRef.current) {
+        // 地図をドラッグしておらず、長押しポップアップを表示していない場合のみ情報取得
         // まずgetInfoOfFeatureを実行し、何も見つからなければgetInfoOfMapを実行
         const noFeatureFound = await getInfoOfFeature(event);
         if (noFeatureFound) {
@@ -1696,6 +1702,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       isMapDragging.current = false;
       // フリーハンド完了フラグをリセット
       freehandFinishedRef.current = false;
+      // 長押し発火フラグをリセット
+      longPressFiredRef.current = false;
     },
     [
       currentDrawTool,
