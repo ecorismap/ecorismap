@@ -2,6 +2,20 @@
 
 ## [0.5.6]　- Unreleased
 
+- Added straight-line distance from the current location to the long-pressed point in the map popup when GPS is on
+- Improved track recording reliability and battery consumption during long recordings
+- Improved map rendering performance with large datasets
+- Improved account-related screen navigation
+- Fixed an issue where the downloaded area was not saved per map in bulk map download
+- Fixed an issue where a feature was selected at the same time as the long-press popup
+
+- GPS が ON のとき、地図長押しのポップアップに現在地からの直線距離を表示するように追加
+- GPS 軌跡記録の不具合と長時間記録時の電池消費を改善（react-native-background-geolocation v5 へ更新）
+- 大量データ表示時の地図のパフォーマンスを改善
+- アカウント関連の画面遷移を改善
+- 地図の一括ダウンロードで取得範囲が地図ごとに記録されない不具合を修正
+- 長押しポップアップ表示時にフィーチャー選択が同時に起きる不具合を修正
+
 ## [0.5.5]　- 2026-04-26
 
 - Fixed proximity notification audio to play through the speaker on iOS
