@@ -144,3 +144,6 @@ keys/
 
 # Security
 SECURITY_TODO.md
+
+# Playwright MCP (作業用ログ・スナップショット)
+.playwright-mcp/
