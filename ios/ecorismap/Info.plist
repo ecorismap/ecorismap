@@ -109,7 +109,7 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>This permission is required to use voice analysis.</string>
 	<key>RCTNewArchEnabled</key>
-	<false/>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UISceneConfigurations</key>

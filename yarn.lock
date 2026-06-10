@@ -7187,10 +7187,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-native-community/slider@npm:4.5.5":
-  version: 4.5.5
-  resolution: "@react-native-community/slider@npm:4.5.5"
-  checksum: 8d818e7f505694269bf8009c8c5db89efc3e9bb56054a1835613b6d7431356370bef9ce23d269519163097fe506e3f5420b34ba2c553bf380d1f144277a11942
+"@react-native-community/slider@npm:5.2.0":
+  version: 5.2.0
+  resolution: "@react-native-community/slider@npm:5.2.0"
+  checksum: f6e6cac813351d990f56f9dba7d24bc9212ad69c13da4388458d130f143fdb0b5e3e1f271b93db765120c66c6ce8d442dbeb38ff43979841ba175cb0082a6a4d
   languageName: node
   linkType: hard
 
@@ -15228,7 +15228,7 @@ __metadata:
     "@react-native-community/hooks": ^3.0.0
     "@react-native-community/image-editor": ^4.2.0
     "@react-native-community/netinfo": ^11.4.1
-    "@react-native-community/slider": 4.5.5
+    "@react-native-community/slider": 5.2.0
     "@react-native-firebase/app": 23.3.1
     "@react-native-firebase/app-check": 23.3.1
     "@react-native-firebase/auth": 23.3.1
@@ -15357,7 +15357,7 @@ __metadata:
     react-native-image-zoom-viewer: ^3.0.1
     react-native-japanese-text-analyzer: ^0.1.3
     react-native-keychain: ^8.1.2
-    react-native-maps: 1.14.0
+    react-native-maps: 1.27.2
     react-native-mmkv: ^4.1.0
     react-native-modal-selector: ^2.1.2
     react-native-nitro-modules: ^0.31.10
@@ -25891,19 +25891,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-maps@npm:1.14.0":
-  version: 1.14.0
-  resolution: "react-native-maps@npm:1.14.0"
+"react-native-maps@npm:1.27.2":
+  version: 1.27.2
+  resolution: "react-native-maps@npm:1.27.2"
   dependencies:
     "@types/geojson": ^7946.0.13
   peerDependencies:
-    react: ">= 17.0.1"
-    react-native: ">= 0.64.3"
+    react: ">= 18.3.1"
+    react-native: ">= 0.76.0"
     react-native-web: ">= 0.11"
   peerDependenciesMeta:
     react-native-web:
       optional: true
-  checksum: 2fcbd3c191e0cd6146b1d4df20344475ff42a69c75f471045416e3e9beb081dacbfe70d9a266cc3f9293d30319ef59469acad67f5145cb8134ebf8f464fd0fc4
+  checksum: e6cf3faa7ce5d28ba66679781732ad429386773b1528b34c96c0a5bdd29d276af05a5058badbe03290b7eb89ded179b2768b9e8518946ff31741d2fc46ebd9e6
   languageName: node
   linkType: hard
 

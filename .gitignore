@@ -147,3 +147,5 @@ SECURITY_TODO.md
 
 # Playwright MCP (作業用ログ・スナップショット)
 .playwright-mcp/
+node_modules
+build-spike-baseline-ios/
