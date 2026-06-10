@@ -158,6 +158,54 @@ index 555ab38..b41b6b6 100644
      @Override
      public String getName() {
          return REACT_CLASS;
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
+index c2ea41f..0709a91 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/MarkerManager.java
+@@ -283,19 +283,32 @@ public class MarkerManager extends ViewGroupManager<MapMarker> implements RNMaps
+             parent.setCalloutView((MapCallout) child);
+         } else {
+             super.addView(parent, child, index);
+-            if (index == 0) {
+-                child.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+-                    @Override
+-                    public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+-                        int newWidth = right - left;
+-                        int newHeight = bottom - top;
+-                        MapMarker marker = (MapMarker) v.getParent();
+-                        if(marker != null){
+-                            marker.update(newWidth, newHeight);
++            // EcorisMap: 子が複数あるマーカー（ラベル＋シンボル等）では
++            // 先頭の子のサイズでビットマップを切り出すと他の子がクリップされる。
++            // マーカー自身のレイアウト済みサイズを優先し、全子ビューの
++            // レイアウト変化で再キャプチャする。
++            child.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
++                @Override
++                public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
++                    MapMarker marker = (MapMarker) v.getParent();
++                    if (marker != null) {
++                        // Fabricではマーカーコンテナ自体のonLayoutが走らないため、
++                        // 全子ビューのバウンディングボックスでビットマップサイズを決める
++                        int unionWidth = 0;
++                        int unionHeight = 0;
++                        for (int i = 0; i < marker.getChildCount(); i++) {
++                            View c = marker.getChildAt(i);
++                            unionWidth = Math.max(unionWidth, c.getRight());
++                            unionHeight = Math.max(unionHeight, c.getBottom());
++                        }
++                        if (unionWidth > 0 && unionHeight > 0) {
++                            marker.update(unionWidth, unionHeight);
++                        } else {
++                            marker.update(right - left, bottom - top);
+                         }
+                     }
+-                });
+-            }
++                }
++            });
+             parent.update(true);
+         }
+     }
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PMTileManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PMTileManager.java
 new file mode 100644
 index 0000000..c110784

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View } from 'react-native';
 import { Marker, MarkerDragStartEndEvent } from 'react-native-maps';
 import { COLOR } from '../../constants/AppConstants';
 import { LayerType, PointRecordType, RecordType } from '../../types';
@@ -155,9 +155,12 @@ const PointComponent = React.memo((props: PointComponentProps) => {
       {/*Textのcolorにcolorを適用しないとなぜかマーカーの色も変わらない*/}
       {/*labelの表示非表示でanchorがずれないようにzoom<=8でラベルを空白にする*/}
       {/*label表示で縦位置ずれるため、anchorで調整。sizeを変更すると調整必要 */}
-
-      <PointLabel label={zoom > 8 ? label : ''} size={15} color={color} borderColor={COLOR.WHITE} />
-      <PointView size={15} color={pointColor} borderColor={borderColor} />
+      {/*Markerの直接の子は単一のViewにまとめる（New ArchのAndroidで
+         先頭の子のサイズでビットマップが切り出され、他の子がクリップされるため）*/}
+      <View style={{ alignItems: 'center' }}>
+        <PointLabel label={zoom > 8 ? label : ''} size={15} color={color} borderColor={COLOR.WHITE} />
+        <PointView size={15} color={pointColor} borderColor={borderColor} />
+      </View>
     </Marker>
   );
 });
