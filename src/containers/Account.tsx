@@ -76,12 +76,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
 
       await AlertAsync(t('Account.alert.activate'));
       if (Platform.OS === 'web') {
-        navigation.navigate('Account', {});
+        //同一画面のためnavigateでは再マウントされない。フォーム状態を直接切り替える。
+        setAccountFormState('loginUserAccount');
+        setAccountMessage(t('Account.message.signupSent'));
       } else {
         navigation.navigate('Home');
       }
     },
-    [checkEmail, checkPassword, navigation, sendConfirmEMail, setAccountMessage, signUp]
+    [checkEmail, checkPassword, navigation, sendConfirmEMail, setAccountFormState, setAccountMessage, signUp]
   );
 
   const pressResetUserPassword = useCallback(
@@ -92,29 +94,35 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!resetUserPasswordResult.isOK) return;
       setAccountMessage('');
       await AlertAsync(t('Account.alert.resetPassword'));
-      navigation.navigate('Home');
+      setAccountFormState('loginUserAccount');
+      setAccountMessage(t('Account.message.resetPasswordSent'));
     },
-    [checkEmail, navigation, resetUserPassword, setAccountMessage]
+    [checkEmail, resetUserPassword, setAccountFormState, setAccountMessage]
   );
+
+  const navigateToPrevious = useCallback(() => {
+    if (route.params?.previous === 'AccountSettings') {
+      navigation.navigate('AccountSettings', { previous: 'Home' });
+    } else {
+      navigation.navigate('Home');
+    }
+  }, [navigation, route.params?.previous]);
 
   const pressClose = useCallback(async () => {
     if (accountFormState === 'registEncryptPassword' || accountFormState === 'backupEncryptPassword') {
       await AlertAsync(t('Account.alert.registEncryptKey'));
       await logout();
+      //ログアウト済みのためAccountSettingsには戻さない
+      if (Platform.OS === 'web') {
+        setAccountFormState('loginUserAccount');
+        setAccountMessage('');
+      } else {
+        navigation.navigate('Home');
+      }
+      return;
     }
-
-    // if (Platform.OS === 'web') {
-    //   if (route.params?.previous === 'AccountSettings') {
-    //     navigation.navigate('AccountSettings', { previous: 'Home' });
-    //   } else {
-    //     setAccountFormState('loginUserAccount');
-    //     navigation.navigate('Account', {});
-    //   }
-    //   //window.open('https://ecorismap-pro.web.app', '_self');
-    // } else {
-    navigation.navigate('Home');
-    // }
-  }, [accountFormState, logout, navigation]);
+    navigateToPrevious();
+  }, [accountFormState, logout, navigateToPrevious, navigation, setAccountFormState, setAccountMessage]);
 
   const pressUpdateUserProfile = useCallback(
     async (displayName: string, photoURL: string) => {
@@ -124,9 +132,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!updateUserProfileResult.isOK) return;
       setAccountMessage('');
       await AlertAsync(t('Account.alert.updateUserProfile'));
-      navigation.navigate('Home');
+      navigateToPrevious();
     },
-    [checkProfile, navigation, setAccountMessage, updateUserProfile]
+    [checkProfile, navigateToPrevious, setAccountMessage, updateUserProfile]
   );
 
   const pressChangeUserPassword = useCallback(
@@ -137,9 +145,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!isOK) return;
       setAccountMessage('');
       await AlertAsync(t('Account.alert.changeUserPassword'));
-      navigation.navigate('Home');
+      navigateToPrevious();
     },
-    [changeUserPassword, checkPassword, navigation, setAccountMessage]
+    [changeUserPassword, checkPassword, navigateToPrevious, setAccountMessage]
   );
 
   const pressChangeEncryptPassword = useCallback(
@@ -150,9 +158,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
       if (!isOK) return;
       setAccountMessage('');
       await AlertAsync(t('Account.alert.changeEncryptPassword'));
-      navigation.navigate('Home');
+      navigateToPrevious();
     },
-    [changeEncryptPassword, checkEncryptPassword, navigation, setAccountMessage]
+    [changeEncryptPassword, checkEncryptPassword, navigateToPrevious, setAccountMessage]
   );
 
   const pressRestoreEncryptKey = useCallback(
@@ -201,13 +209,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         await AlertAsync(t('Account.alert.backupEncryptPassword'));
         await logout();
         if (Platform.OS === 'web') {
-          navigation.navigate('Account', {});
+          //同一画面のためnavigateでは再マウントされない。フォーム状態を直接切り替える。
+          setAccountFormState('loginUserAccount');
         } else {
           navigation.navigate('Home');
         }
       }
     },
-    [backupEncryptPassword, checkEncryptPassword, logout, navigation, setAccountMessage]
+    [backupEncryptPassword, checkEncryptPassword, logout, navigation, setAccountFormState, setAccountMessage]
   );
 
   const pressResetEncryptKey = useCallback(
@@ -244,13 +253,14 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         await AlertAsync(t('Account.alert.deleteUserAccount'));
         await logout();
         if (Platform.OS === 'web') {
-          navigation.navigate('Account', {});
+          //同一画面のためnavigateでは再マウントされない。フォーム状態を直接切り替える。
+          setAccountFormState('loginUserAccount');
         } else {
           navigation.navigate('Home');
         }
       }
     },
-    [checkPassword, checkUserPassword, deleteUserAccount, logout, navigation, setAccountMessage]
+    [checkPassword, checkUserPassword, deleteUserAccount, logout, navigation, setAccountFormState, setAccountMessage]
   );
 
   const pressDeleteAllProjects = useCallback(
@@ -265,10 +275,10 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         await AlertAsync(message);
       } else {
         await AlertAsync(t('Account.alert.deleteAllProjects'));
-        navigation.navigate('Home');
+        navigateToPrevious();
       }
     },
-    [checkPassword, checkUserPassword, deleteAllProjects, navigation, setAccountMessage]
+    [checkPassword, checkUserPassword, deleteAllProjects, navigateToPrevious, setAccountMessage]
   );
 
   const changeResetForm = useCallback(() => {

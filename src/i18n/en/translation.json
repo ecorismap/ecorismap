@@ -383,7 +383,9 @@
     },
     "message": {
       "inputMail": "Please enter your e-mail address",
-      "inputPassword": "Please enter your login password."
+      "inputPassword": "Please enter your login password.",
+      "signupSent": "A confirmation email has been sent. Click the link in the email, then log in.",
+      "resetPasswordSent": "Check your email to reset your password, then log in."
     }
   },
   "AccountSettings": {
