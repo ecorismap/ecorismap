@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { LayerType, LocationType, RecordType } from '../types';
-import BackgroundGeolocation from 'react-native-background-geolocation';
+import BackgroundGeolocation from '../lib/backgroundGeolocation';
 import { toLocationType } from '../utils/Location';
 import { t } from '../i18n/config';
 import { useRecord } from './useRecord';

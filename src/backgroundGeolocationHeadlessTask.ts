@@ -1,4 +1,4 @@
-import BackgroundGeolocation from 'react-native-background-geolocation';
+import BackgroundGeolocation from './lib/backgroundGeolocation';
 import { checkAndStoreLocations, toLocationObject, resetTrackLogCache, flushTrackLog } from './utils/Location';
 import { trackLogMMKV } from './utils/mmkvStorage';
 

@@ -6,7 +6,7 @@ import BackgroundGeolocation, {
   State as BackgroundState,
   Config as BackgroundConfig,
   NotificationConfig,
-} from 'react-native-background-geolocation';
+} from '../lib/backgroundGeolocation';
 import { watchHeadingAsync, LocationSubscription } from 'expo-location';
 import MapView from 'react-native-maps';
 import { MapRef } from 'react-map-gl/maplibre';
