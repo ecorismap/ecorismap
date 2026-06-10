@@ -799,7 +799,8 @@
       "download": "DL"
     },
     "poi": {
-      "openInGoogleMaps": "To Google Maps"
+      "openInGoogleMaps": "To Google Maps",
+      "distanceFromCurrentLocation": "{{distance}} from here"
     }
   },
   "LayerEditFeatureStyle": {

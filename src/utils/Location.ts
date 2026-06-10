@@ -44,7 +44,7 @@ let lastFlushTs = 0;
 
 // turf非依存の軽量な大圏距離(km)。turf.length(getLineLength)と同じ地球半径6371kmを使用し、
 // ライブ表示の累積距離が保存時の最終距離とほぼ一致するようにする。
-const haversineKm = (a: LocationType, b: LocationType): number => {
+export const haversineKm = (a: LocationType, b: LocationType): number => {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(b.latitude - a.latitude);

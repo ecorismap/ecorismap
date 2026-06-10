@@ -4,18 +4,29 @@ import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
+import { haversineKm } from '../../utils/Location';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
 export const HomePoiPopup = React.memo(() => {
-  const { poiInfo, setPoiInfo, mapLocationInfo, setMapLocationInfo, mapViewRef } = useContext(MapViewContext);
+  const { poiInfo, setPoiInfo, mapLocationInfo, setMapLocationInfo, mapViewRef, currentLocation, gpsState } =
+    useContext(MapViewContext);
   const { mapRegion, mapSize } = useWindow();
   const WIDTH = 150;
-  const HEIGHT = 40;
-  
+
   // POIまたは通常の地図位置のいずれかを取得
   const locationInfo = poiInfo || mapLocationInfo;
   const isPOI = !!poiInfo;
+
+  // GPSがONのとき、長押し位置までの現在地からの直線距離を表示する
+  const distanceText = useMemo(() => {
+    if (isPOI || !locationInfo || gpsState === 'off' || !currentLocation) return null;
+    const km = haversineKm(currentLocation, locationInfo.coordinate);
+    const distance = km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(2)} km`;
+    return t('Home.poi.distanceFromCurrentLocation', { distance });
+  }, [isPOI, locationInfo, gpsState, currentLocation]);
+
+  const HEIGHT = distanceText ? 60 : 40;
   
   const openGoogleMaps = useCallback(() => {
     if (!locationInfo) return;
@@ -127,6 +138,9 @@ export const HomePoiPopup = React.memo(() => {
               {t('Home.poi.openInGoogleMaps')}
             </Text>
           </Pressable>
+          {distanceText && (
+            <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
+          )}
         </View>
       </View>
       

@@ -3,6 +3,7 @@ import {
   isLocationObject,
   toLocationType,
   getLineLength,
+  haversineKm,
   checkLocations,
   isLowAccuracy,
   splitTrackByAccuracy,
@@ -141,6 +142,29 @@ describe('getLineLength', () => {
 
     const result = getLineLength(locations);
     expect(result).toBe(0.1); // モックが返す値
+  });
+});
+
+describe('haversineKm', () => {
+  it('同一点は距離0', () => {
+    const p: LocationType = { latitude: 35, longitude: 135 };
+    expect(haversineKm(p, p)).toBe(0);
+  });
+
+  it('既知の2点間距離（km）を返す', () => {
+    // 東京駅 - 大阪駅: 約403km
+    const tokyo: LocationType = { latitude: 35.681236, longitude: 139.767125 };
+    const osaka: LocationType = { latitude: 34.702485, longitude: 135.495951 };
+    const result = haversineKm(tokyo, osaka);
+    expect(result).toBeGreaterThan(395);
+    expect(result).toBeLessThan(410);
+  });
+
+  it('近距離（緯度0.001度 ≒ 111m）を正しく計算する', () => {
+    const a: LocationType = { latitude: 35, longitude: 135 };
+    const b: LocationType = { latitude: 35.001, longitude: 135 };
+    const result = haversineKm(a, b);
+    expect(result).toBeCloseTo(0.111, 2);
   });
 });
 

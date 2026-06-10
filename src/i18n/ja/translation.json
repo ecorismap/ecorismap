@@ -310,7 +310,8 @@
       "download": "取得"
     },
     "poi": {
-      "openInGoogleMaps": "Google Mapsへ"
+      "openInGoogleMaps": "Google Mapsへ",
+      "distanceFromCurrentLocation": "現在地から {{distance}}"
     }
   },
   "AccountSettings": {
