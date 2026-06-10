@@ -73,11 +73,10 @@ const reducers = {
     } else {
       // 既存レコードは更新、存在しないレコードは追加
       const existingData = state[dataIndex].data;
-      const updatedData = existingData.map((d) => {
-        const updateData = data.find((v) => v.id === d.id);
-        return updateData ? updateData : d;
-      });
-      const newRecords = data.filter((v) => !existingData.find((d) => d.id === v.id));
+      const updateMap = new Map(data.map((v) => [v.id, v]));
+      const existingIds = new Set(existingData.map((d) => d.id));
+      const updatedData = existingData.map((d) => updateMap.get(d.id) ?? d);
+      const newRecords = data.filter((v) => !existingIds.has(v.id));
       state[dataIndex].data = [...updatedData, ...newRecords];
     }
   },
@@ -87,10 +86,11 @@ const reducers = {
     if (idx === -1) return;
 
     const existing = state[idx].data as RecordType[];
+    const deleteIds = new Set(toDelete.map((d) => d.id));
 
     // flatMap で「残すもの」「置き換えるもの」「除外するもの」を一度に処理
     state[idx].data = existing.flatMap((record) => {
-      const isTarget = toDelete.some((d) => d.id === record.id);
+      const isTarget = deleteIds.has(record.id);
       if (!isTarget) {
         return record;
       }

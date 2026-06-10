@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { RecordType, LayerType, LineRecordType, ArrowStyleType } from '../../types';
@@ -38,27 +38,31 @@ const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
 
 export const Line = React.memo((props: Props & { editingLineId?: string }) => {
   const { data, layer, zoom, selectedRecord, editingLineId } = props;
-  if (data === undefined || data.length === 0) return null;
 
-  const stampRecords: LineRecordType[] = [];
-  const brushRecords: LineRecordType[] = [];
-  const arrowRecords: LineRecordType[] = [];
-  const lineRecords: LineRecordType[] = [];
-  data.forEach((feature) => {
-    if (!feature.visible) return;
-    if (!feature.coords) return;
-    if (feature.coords.length === 1) {
-      stampRecords.push(feature);
-    } else if (isBrushTool(feature.field._strokeStyle as string)) {
-      brushRecords.push(feature);
-    } else {
-      const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
-      if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_END') {
-        arrowRecords.push(feature);
+  const { stampRecords, brushRecords, arrowRecords, lineRecords } = useMemo(() => {
+    const stamps: LineRecordType[] = [];
+    const brushes: LineRecordType[] = [];
+    const arrows: LineRecordType[] = [];
+    const lines: LineRecordType[] = [];
+    (data ?? []).forEach((feature) => {
+      if (!feature.visible) return;
+      if (!feature.coords) return;
+      if (feature.coords.length === 1) {
+        stamps.push(feature);
+      } else if (isBrushTool(feature.field._strokeStyle as string)) {
+        brushes.push(feature);
+      } else {
+        const arrowStyle = feature.field._strokeStyle as ArrowStyleType;
+        if (arrowStyle === 'ARROW_BOTH' || arrowStyle === 'ARROW_END') {
+          arrows.push(feature);
+        }
+        lines.push(feature);
       }
-      lineRecords.push(feature);
-    }
-  });
+    });
+    return { stampRecords: stamps, brushRecords: brushes, arrowRecords: arrows, lineRecords: lines };
+  }, [data]);
+
+  if (data === undefined || data.length === 0) return null;
 
   const displayName = data[0].displayName ? data[0].displayName : '';
   const userId = data[0].userId ? data[0].userId : '';
@@ -137,12 +141,21 @@ interface PolylineProps {
 const PolylineComponent = React.memo((props: PolylineProps) => {
   const { data, layer, userId, displayName, zoom, editingLineId } = props;
 
-  const labelStyle = getLabelStyle(layer, userId, displayName);
+  const labelStyle = useMemo(() => getLabelStyle(layer, userId, displayName), [layer, userId, displayName]);
 
-  const dataStyle = getDataStyleLine(layer, userId, displayName, editingLineId);
+  const dataStyle = useMemo(
+    () => getDataStyleLine(layer, userId, displayName, editingLineId),
+    [layer, userId, displayName, editingLineId]
+  );
 
-  const geojsonData = generateGeoJson(data, layer.field, 'LINE', layer.name, layer.permission);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'LINEEND', layer.name, layer.permission);
+  const geojsonData = useMemo(
+    () => generateGeoJson(data, layer.field, 'LINE', layer.name, layer.permission),
+    [data, layer]
+  );
+  const geojsonLabel = useMemo(
+    () => generateGeoJson(data, layer.field, 'LINEEND', layer.name, layer.permission),
+    [data, layer]
+  );
 
   return (
     <View>

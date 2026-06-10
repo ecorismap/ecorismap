@@ -202,6 +202,59 @@ describe('modules/dataSet', () => {
     ]);
   });
 
+  test('should keep order: updated records stay in place, new records appended', () => {
+    const baseState: DataType[] = [
+      {
+        layerId: '2',
+        userId: '0',
+        data: [
+          { id: '0', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+          { id: '1', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+          { id: '2', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+        ],
+      },
+    ];
+    const data: DataType = {
+      layerId: '2',
+      userId: '0',
+      data: [
+        { id: '1', userId: '0', displayName: 'updated', visible: false, redraw: false, field: {}, coords: undefined },
+        { id: '9', userId: '0', displayName: 'new', visible: true, redraw: false, field: {}, coords: undefined },
+      ],
+    };
+    const action = updateRecordsAction(data);
+    const result = reducer(baseState, action);
+    expect(result[0].data.map((d) => d.id)).toEqual(['0', '1', '2', '9']);
+    expect(result[0].data[1].displayName).toBe('updated');
+  });
+
+  test('should logically delete uploaded records and physically delete unsynced records', () => {
+    const baseState: DataType[] = [
+      {
+        layerId: '2',
+        userId: '0',
+        data: [
+          { id: '0', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined, uploaded: true },
+          { id: '1', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+          { id: '2', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+        ],
+      },
+    ];
+    const data: DataType = {
+      layerId: '2',
+      userId: '0',
+      data: [
+        { id: '0', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined, uploaded: true },
+        { id: '1', userId: '0', displayName: 'u', visible: true, redraw: false, field: {}, coords: undefined },
+      ],
+    };
+    const action = deleteRecordsAction(data);
+    const result = reducer(baseState, action);
+    expect(result[0].data.map((d) => d.id)).toEqual(['0', '2']);
+    expect(result[0].data[0]).toEqual(expect.objectContaining({ id: '0', deleted: true }));
+    expect(result[0].data[1].deleted).toBeUndefined();
+  });
+
   test('should delete the record from state', () => {
     const data: DataType = {
       layerId: '2',

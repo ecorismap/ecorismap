@@ -47,60 +47,34 @@ export const isPointInBounds = (point: LatLng, bounds: ViewportBounds): boolean 
 };
 
 export const isLineIntersectsBounds = (coordinates: LatLng[], bounds: ViewportBounds): boolean => {
-  // Check if any segment of the line intersects or is contained within bounds
-  for (let i = 0; i < coordinates.length; i++) {
-    // Check if point is in bounds
-    if (isPointInBounds(coordinates[i], bounds)) {
-      return true;
-    }
+  // 線分単位の厳密な交差判定はコストが高いうえ、以前の簡易判定は
+  // 「両端点がビューポート外でコーナーを斜めに横切る線分」を見落としていた。
+  // 偽陰性（表示すべき地物の欠落）を避けるため、地物全体のbboxと
+  // ビューポート矩形の重なりで保守的に判定する。
+  if (coordinates.length === 0) return false;
 
-    // Check if line segment intersects bounds (simplified check)
-    if (i > 0) {
-      const prev = coordinates[i - 1];
-      const curr = coordinates[i];
-
-      // If line segment spans the bounds, it intersects
-      if (
-        (prev.latitude < bounds.southWest.latitude && curr.latitude > bounds.northEast.latitude) ||
-        (prev.latitude > bounds.northEast.latitude && curr.latitude < bounds.southWest.latitude) ||
-        (prev.longitude < bounds.southWest.longitude && curr.longitude > bounds.northEast.longitude) ||
-        (prev.longitude > bounds.northEast.longitude && curr.longitude < bounds.southWest.longitude)
-      ) {
-        return true;
-      }
-    }
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  for (const p of coordinates) {
+    if (p.latitude < minLat) minLat = p.latitude;
+    if (p.latitude > maxLat) maxLat = p.latitude;
+    if (p.longitude < minLng) minLng = p.longitude;
+    if (p.longitude > maxLng) maxLng = p.longitude;
   }
 
-  return false;
+  return (
+    maxLat >= bounds.southWest.latitude &&
+    minLat <= bounds.northEast.latitude &&
+    maxLng >= bounds.southWest.longitude &&
+    minLng <= bounds.northEast.longitude
+  );
 };
 
 export const isPolygonIntersectsBounds = (coordinates: LatLng[][], bounds: ViewportBounds): boolean => {
-  // Check exterior ring (first array) and any holes
-  for (const ring of coordinates) {
-    // If any point of the polygon is in bounds
-    for (const point of ring) {
-      if (isPointInBounds(point, bounds)) {
-        return true;
-      }
-    }
-
-    // Check if polygon completely contains the bounds (simplified)
-    const minLat = Math.min(...ring.map((p) => p.latitude));
-    const maxLat = Math.max(...ring.map((p) => p.latitude));
-    const minLng = Math.min(...ring.map((p) => p.longitude));
-    const maxLng = Math.max(...ring.map((p) => p.longitude));
-
-    if (
-      minLat <= bounds.southWest.latitude &&
-      maxLat >= bounds.northEast.latitude &&
-      minLng <= bounds.southWest.longitude &&
-      maxLng >= bounds.northEast.longitude
-    ) {
-      return true;
-    }
-  }
-
-  return false;
+  // 外環・穴のいずれかのbboxがビューポートと重なれば表示対象とする（保守的判定）
+  return coordinates.some((ring) => isLineIntersectsBounds(ring, bounds));
 };
 
 export const cullPoints = (

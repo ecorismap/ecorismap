@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import { RecordType, LayerType } from '../../types';
@@ -17,16 +17,26 @@ export const Polygon = React.memo((props: Props) => {
   const displayName = data.length === 0 ? '' : data[0].displayName ? data[0].displayName : '';
   const userId = data.length === 0 ? '' : data[0].userId ? data[0].userId : '';
 
-  const labelStyle = getLabelStyle(layer, userId, displayName);
-  const dataStylePolygon = getDataStylePolygon(layer, userId, displayName);
+  const labelStyle = useMemo(() => getLabelStyle(layer, userId, displayName), [layer, userId, displayName]);
+  const dataStylePolygon = useMemo(
+    () => getDataStylePolygon(layer, userId, displayName),
+    [layer, userId, displayName]
+  );
+  const dataStyleOutline = useMemo(
+    () => getDataStylePolygonOutline(layer, userId, displayName),
+    [layer, userId, displayName]
+  );
 
-  const dataStyleOutline = getDataStylePolygonOutline(layer, userId, displayName);
+  const geojsonData = useMemo(
+    () => generateGeoJson(data, layer.field, 'POLYGON', layer.name, layer.permission),
+    [data, layer]
+  );
+  const geojsonLabel = useMemo(
+    () => generateGeoJson(data, layer.field, 'CENTROID', layer.name, layer.permission),
+    [data, layer]
+  );
 
   if (data === undefined || data.length === 0) return null;
-
-  const geojsonData = generateGeoJson(data, layer.field, 'POLYGON', layer.name, layer.permission);
-  const geojsonLabel = generateGeoJson(data, layer.field, 'CENTROID', layer.name, layer.permission);
-  //console.log(geojsonData);
   return (
     <View>
       {zoom >= 11 && (

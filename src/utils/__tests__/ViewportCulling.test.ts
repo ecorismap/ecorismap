@@ -100,6 +100,15 @@ describe('ViewportCulling', () => {
       expect(isLineIntersectsBounds([], defaultBounds)).toBe(false);
     });
 
+    it('should return true for line crossing a corner with both endpoints outside', () => {
+      // 両端点がビューポート外でNWコーナー付近を斜めに横切る線分（旧実装の偽陰性ケース）
+      const line = [
+        { latitude: 39, longitude: 129 },
+        { latitude: 41, longitude: 131 },
+      ];
+      expect(isLineIntersectsBounds(line, defaultBounds)).toBe(true);
+    });
+
     it('should handle single point line', () => {
       const line = [{ latitude: 35, longitude: 135 }];
       expect(isLineIntersectsBounds(line, defaultBounds)).toBe(true);

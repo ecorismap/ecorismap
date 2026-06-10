@@ -375,11 +375,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const [pendingSplitPosition, setPendingSplitPosition] = useState<Position | null>(null);
   const attribution = useMemo(
     () =>
-      tileMaps
-        .map((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
-        .filter((v) => v)
-        .filter((x, i, self) => self.indexOf(x) === i)
-        .join(', '),
+      Array.from(
+        new Set(
+          tileMaps
+            .filter((tileMap) => tileMap.visible && tileMap.url && tileMap.attribution)
+            .map((tileMap) => tileMap.attribution)
+        )
+      ).join(', '),
     [tileMaps]
   );
 

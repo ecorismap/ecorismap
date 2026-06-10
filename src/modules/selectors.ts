@@ -2,13 +2,22 @@ import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../store';
 import { DataType, LineDataType, PointDataType, PolygonDataType, RecordType } from '../types';
 
+// 元のgroupオブジェクトの参照が変わらない限り、filter済みgroupの参照を維持するキャッシュ。
+// Immerは未変更groupの参照を保つため、無関係なレイヤー編集時に下流のReact.memoが壊れない。
+const nonDeletedGroupCache = new WeakMap<DataType, DataType>();
+
+const getNonDeletedGroup = (group: DataType): DataType => {
+  const cached = nonDeletedGroupCache.get(group);
+  if (cached) return cached;
+  const data = group.data.filter((record) => !record.deleted);
+  const filtered = data.length === group.data.length ? group : { ...group, data };
+  nonDeletedGroupCache.set(group, filtered);
+  return filtered;
+};
+
 export const selectNonDeletedDataSet = createSelector(
   (state: RootState) => state.dataSet || [],
-  (dataSet) =>
-    dataSet.map((group) => ({
-      ...group,
-      data: group.data.filter((record) => !record.deleted),
-    }))
+  (dataSet) => dataSet.map(getNonDeletedGroup)
 );
 
 // メモ化されたセレクターを作成
@@ -35,18 +44,21 @@ const makeSelectDataByLayerType = (layerType: string) =>
   createSelector(
     (state: RootState) => state.dataSet || [], // 第一引数
     (state: RootState) => state.layers || [], // 第二引数
-    (dataSet, layers): DataType[] =>
-      layers
+    (dataSet, layers): DataType[] => {
+      const dataByLayerId = new Map<string, DataType[]>();
+      for (const d of dataSet) {
+        const list = dataByLayerId.get(d.layerId);
+        if (list) {
+          list.push(d);
+        } else {
+          dataByLayerId.set(d.layerId, [d]);
+        }
+      }
+      return layers
         .filter((l) => l.type === layerType)
-        .flatMap((l) =>
-          dataSet
-            .filter((d) => d.layerId === l.id)
-            .map((d) => ({
-              ...d,
-              // ここで論理削除レコードを除外
-              data: d.data.filter((record) => !record.deleted),
-            }))
-        )
+        // 論理削除レコードを除外（キャッシュにより未変更groupの参照は維持される）
+        .flatMap((l) => (dataByLayerId.get(l.id) ?? []).map(getNonDeletedGroup));
+    }
   );
 
 export const selectPointDataSet = makeSelectDataByLayerType('POINT') as (state: RootState) => PointDataType[];

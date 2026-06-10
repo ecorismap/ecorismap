@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Polyline, LatLng } from 'react-native-maps';
 import { ArrowStyleType, LayerType, LineRecordType, RecordType } from '../../types';
 import { LineLabel } from '../atoms';
@@ -8,6 +8,7 @@ import { isBrushTool } from '../../utils/General';
 import LineArrow from '../atoms/LineArrow';
 import { HomeMapMemoStamp } from './HomeMapMemoStamp';
 import { HomeMapMemoBrush } from './HomeMapMemoBrush';
+import { ViewportBounds, cullLines } from '../../utils/ViewportCulling';
 
 interface Props {
   data: LineRecordType[];
@@ -16,6 +17,7 @@ interface Props {
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
   editingLineId?: string; // 追加
+  bounds?: ViewportBounds | null;
 }
 
 const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
@@ -37,12 +39,22 @@ const getStrokeWidth = (layer: LayerType, feature: LineRecordType) => {
 export const Line = React.memo(
   (props: Props) => {
     //console.log('render Line', now());
-    const { data, layer, zoom, zIndex, selectedRecord, editingLineId } = props;
+    const { data, layer, zoom, zIndex, selectedRecord, editingLineId, bounds } = props;
+
+    const culledData = useMemo(() => {
+      const visibleData = (data ?? []).filter((feature) => feature.visible);
+      return cullLines(visibleData, bounds || null, zoom, {
+        buffer: 20, // 20% buffer around viewport
+        maxFeatures: 1000, // Maximum 1000 lines
+        minZoom: 10, // Only apply culling at zoom level 10 and above
+      });
+    }, [data, bounds, zoom]);
+
     if (data === undefined || data.length === 0) return null;
 
     return (
       <>
-        {data.map((feature) => {
+        {culledData.map((feature) => {
           if (feature.coords === undefined) return null;
           const color = getColor(layer, feature);
           const selected =
@@ -103,6 +115,7 @@ export const Line = React.memo(
     if (prevProps.zoom !== nextProps.zoom) return false;
     if (prevProps.zIndex !== nextProps.zIndex) return false;
     if (prevProps.editingLineId !== nextProps.editingLineId) return false;
+    if (prevProps.bounds !== nextProps.bounds) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
     if (
