@@ -514,6 +514,7 @@ export default function HomeScreen() {
                   zIndex={101}
                   selectedRecord={selectedRecord}
                   editingLineId={editingLineId}
+                  bounds={bounds}
                 />
               );
             })}
@@ -529,6 +530,7 @@ export default function HomeScreen() {
                   zoom={zoom}
                   zIndex={100}
                   selectedRecord={selectedRecord}
+                  bounds={bounds}
                 />
               );
             })}

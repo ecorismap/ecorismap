@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Platform, View } from 'react-native';
 import { LatLng, Marker, Polygon as Poly } from 'react-native-maps';
 import { LayerType, PolygonRecordType, RecordType } from '../../types';
 import { PointLabel, PointView, PolygonLabel } from '../atoms';
 import { COLOR } from '../../constants/AppConstants';
 import { generateLabel, getColor } from '../../utils/Layer';
+import { ViewportBounds, cullPolygons } from '../../utils/ViewportCulling';
 
 interface Props {
   data: PolygonRecordType[];
@@ -12,18 +13,28 @@ interface Props {
   zoom: number;
   zIndex: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
+  bounds?: ViewportBounds | null;
 }
 
 export const Polygon = React.memo(
   (props: Props) => {
     //console.log('render Polygon');
-    const { data, layer, zoom: currentZoom, zIndex, selectedRecord } = props;
+    const { data, layer, zoom: currentZoom, zIndex, selectedRecord, bounds } = props;
+
+    const culledData = useMemo(() => {
+      const visibleData = (data ?? []).filter((feature) => feature.visible);
+      return cullPolygons(visibleData, bounds || null, currentZoom, {
+        buffer: 20, // 20% buffer around viewport
+        maxFeatures: 1000, // Maximum 1000 polygons
+        minZoom: 10, // Only apply culling at zoom level 10 and above
+      });
+    }, [data, bounds, currentZoom]);
 
     if (data === undefined) return null;
 
     return (
       <>
-        {data.map((feature) => {
+        {culledData.map((feature) => {
           if (!feature.visible) return null;
           if (!feature.coords) return null;
           if (feature.coords.length < 3) return null;
@@ -81,6 +92,7 @@ export const Polygon = React.memo(
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
     if (prevProps.zIndex !== nextProps.zIndex) return false;
+    if (prevProps.bounds !== nextProps.bounds) return false;
 
     // もし以前選択されていたレコードが現在選択されていない場合、かつ、そのレコードが現在のレイヤと関連していたならば更新する
     if (
