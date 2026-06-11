@@ -62,6 +62,88 @@ import { HomeTileMapSelector } from '../organisms/HomeTileMapSelector';
 import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { HomePoiPopup } from '../organisms/HomePoiPopup';
 
+interface TileMapsProps {
+  tileMaps: TileMapType[];
+  isOffline: boolean;
+}
+
+// タイル描画を独立コンポーネント化（React.memo）。
+// GPS位置の毎秒更新でHomeが再レンダリングされても、tileMaps/isOfflineが
+// 変わらなければ再レンダリングされず、Fabric(New Arch)のchild再マウントループ
+// （featuresの破壊によりレイヤーが非表示にできなくなる問題）を防ぐ。
+const TileMaps = React.memo(({ tileMaps, isOffline }: TileMapsProps) => {
+  return (
+    <>
+      {tileMaps
+        .slice(0)
+        .reverse()
+        .map((tileMap: TileMapType, mapIndex: number) =>
+          tileMap.visible && !tileMap.isGroup && tileMap.url ? (
+            tileMap.url.startsWith('pmtiles://') ||
+            tileMap.url.includes('.pmtiles') ||
+            tileMap.url.includes('.pbf') ? (
+              <PMTile
+                key={
+                  Platform.OS === 'ios'
+                    ? `${tileMap.url}-${isOffline}-${tileMap.styleURL}`
+                    : `${tileMap.id}-${tileMap.styleURL}`
+                } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。urlの変更でキーを変更すると、キャッシュがクリアされる。
+                urlTemplate={tileMap.url.replace('pmtiles://', '')}
+                styleURL={tileMap.styleURL}
+                flipY={false}
+                opacity={1 - tileMap.transparency}
+                //tileSize={256} rasterは256、vectorは512で固定
+                minimumZ={0}
+                maximumZ={22}
+                zIndex={mapIndex}
+                doubleTileSize={false}
+                maximumNativeZ={
+                  //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする.
+                  //vectorタイルなら18
+                  isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
+                    ? 16
+                    : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
+                    ? 18
+                    : tileMap.overzoomThreshold
+                }
+                tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                //tileCacheMaxAge={604800}
+                offlineMode={isOffline}
+                isVector={tileMap.isVector}
+              />
+            ) : (
+              <UrlTile
+                key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}-${tileMap.redraw}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
+                urlTemplate={
+                  tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
+                    ? 'file://dummy/{z}/{x}/{y}.png'
+                    : tileMap.url
+                }
+                flipY={tileMap.flipY}
+                opacity={1 - tileMap.transparency}
+                tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
+                minimumZ={tileMap.minimumZ}
+                maximumZ={tileMap.maximumZ}
+                zIndex={mapIndex}
+                doubleTileSize={tileMap.highResolutionEnabled}
+                maximumNativeZ={
+                  //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする
+                  isOffline &&
+                  !(tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) &&
+                  tileMap.overzoomThreshold > 16
+                    ? 16
+                    : tileMap.overzoomThreshold
+                }
+                tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
+                offlineMode={isOffline}
+              />
+            )
+          ) : null
+        )}
+    </>
+  );
+});
+
 export default function HomeScreen() {
   //console.log('render HomeScreen');
 
@@ -534,72 +616,7 @@ export default function HomeScreen() {
               );
             })}
             {/************* TILE MAP ******************** */}
-            {tileMaps
-              .slice(0)
-              .reverse()
-              .map((tileMap: TileMapType, mapIndex: number) =>
-                tileMap.visible && !tileMap.isGroup && tileMap.url ? (
-                  tileMap.url.startsWith('pmtiles://') ||
-                  tileMap.url.includes('.pmtiles') ||
-                  tileMap.url.includes('.pbf') ? (
-                    <PMTile
-                      key={
-                        Platform.OS === 'ios'
-                          ? `${tileMap.url}-${isOffline}-${tileMap.styleURL}`
-                          : `${tileMap.id}-${tileMap.styleURL}`
-                      } //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。urlの変更でキーを変更すると、キャッシュがクリアされる。
-                      urlTemplate={tileMap.url.replace('pmtiles://', '')}
-                      styleURL={tileMap.styleURL}
-                      flipY={false}
-                      opacity={1 - tileMap.transparency}
-                      //tileSize={256} rasterは256、vectorは512で固定
-                      minimumZ={0}
-                      maximumZ={22}
-                      zIndex={mapIndex}
-                      doubleTileSize={false}
-                      maximumNativeZ={
-                        //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする.
-                        //vectorタイルなら18
-                        isOffline && tileMap.overzoomThreshold > 16 && !tileMap.isVector
-                          ? 16
-                          : isOffline && tileMap.overzoomThreshold > 18 && tileMap.isVector
-                          ? 18
-                          : tileMap.overzoomThreshold
-                      }
-                      tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                      //tileCacheMaxAge={604800}
-                      offlineMode={isOffline}
-                      isVector={tileMap.isVector}
-                    />
-                  ) : (
-                    <UrlTile
-                      key={Platform.OS === 'ios' ? `${tileMap.id}-${isOffline}-${tileMap.redraw}` : `${tileMap.id}`} //オンラインとオフラインでキーを変更しないとキャッシュがクリアされない。
-                      urlTemplate={
-                        tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')
-                          ? 'file://dummy/{z}/{x}/{y}.png'
-                          : tileMap.url
-                      }
-                      flipY={tileMap.flipY}
-                      opacity={1 - tileMap.transparency}
-                      tileSize={tileMap.tileSize ? tileMap.tileSize : 256}
-                      minimumZ={tileMap.minimumZ}
-                      maximumZ={tileMap.maximumZ}
-                      zIndex={mapIndex}
-                      doubleTileSize={tileMap.highResolutionEnabled}
-                      maximumNativeZ={
-                        //offlineで通常のタイルの場合、ダウンロードしたレベルの16にセットする
-                        isOffline &&
-                        !(tileMap.url.endsWith('.pdf') || tileMap.url.startsWith('pdf://')) &&
-                        tileMap.overzoomThreshold > 16
-                          ? 16
-                          : tileMap.overzoomThreshold
-                      }
-                      tileCachePath={`${TILE_FOLDER}/${tileMap.id}`}
-                      offlineMode={isOffline}
-                    />
-                  )
-                ) : null
-              )}
+            <TileMaps tileMaps={tileMaps} isOffline={isOffline} />
             {/************* download mode ******************** */}
             {downloadMode && (
               <DownloadArea

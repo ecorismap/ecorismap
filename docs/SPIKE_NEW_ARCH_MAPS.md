@@ -265,6 +265,49 @@
 
 - ベクタPMTiles（isVector＋styleURL）、hillshade://（DEM）、オフラインタイル、PDF地図、描画ツール、background-geolocation、gdalwarp、iOS実機
 
+## 追補: Androidタイル取得方式の再移植（2026-06-11）
+
+### 経緯（棚卸し誤判定の訂正）
+
+Phase 0棚卸しの「`MapTileProvider.java`の旧パッチ差分は整形のみ」という判定は**誤り**だった。3バージョン比較（素1.14 / 旧パッチ1.14 / 1.27.2）の結果:
+
+- **本家1.27.2は1.14素のまま**: キャッシュミス時に「WorkManagerへジョブ投入→最大1秒待ち＋固定`Thread.sleep(500)`→キャッシュ再読込」。タイルごとに最低500msのオーバーヘッド、間に合わないと空白タイル。
+- **旧パッチは別方式に書き換えていた**: 同期fetch（HEADで存在確認→直接ダウンロード→即表示）。WorkManager/sleepなし。加えて`generateTileFromHigherZoom`（minimumZ未満を上位ズームキャッシュから縮小生成＝**PDF地図表示に必須**）、可変タイルサイズの高解像度合成（`drawDoubleSizeTile`）を実装。
+- 1.27には`generateTileFromHigherZoom`相当が無く、AndroidのPDF地図が壊れる状態だった。
+
+### 実施内容
+
+旧パッチ版`MapTileProvider.java`（550行）をそのまま1.27.2へ再適用（セッターのシグネチャはint同士で完全一致、`MapDEMTileProvider`は元々この版を親として書かれているため整合）。パッチ再生成済み。
+
+### 検証結果（エミュレータ）
+
+- 未キャッシュ領域への連続パン: タイル空白なしで即表示、`urlTile`デバッグログ0件（=新コード稼働の証拠。本家方式はログ多数＋sleep）
+- 高解像度（doubleTileSize）有効レイヤーの表示: ✓
+- オーバーズーム（固定ズーム18超のz20相当）: ✓ 拡大描画
+- tsc/lint/テスト578件: ✓
+- PDF地図（`generateTileFromHigherZoom`経路）: 実データが必要なため実機確認待ち
+
+## 追補2: タイル地図のOFF不能（孤児TileOverlay）修正（2026-06-11）
+
+### 症状
+Androidで「起動時から表示中のタイル地図はOFFにしても消えない。後からONにしたものは正常」。PMTiles/XYZ両方。
+
+### 原因（upstream 1.27のFabricバグ）
+`MapView.java`の`addFeature`は`addToMap()`（TileOverlay生成）を先に実行してから`safeAddFeature`で`savedFeatures`へ退避する。MapViewのdetach→reattach（画面遷移・ライフサイクル）で`savedFeatures`が`addFeature`され直すと**`addToMap()`が二重実行され、TileOverlayが2個生成される**。`MapUrlTile.tileOverlay`は最後の1個しか保持しないため、OFF時の`removeFromMap()`は2個目のみremoveし、1個目が孤児として地図に残り続ける。起動時マウントがこの経路に乗りやすい／後からのONはmap準備済みで1回のみ、という症状と一致。
+
+### 修正
+タイル系feature（`MapUrlTile`／`MapPMTile`／`MapLocalTile`、`MapWMSTile`はUrlTile継承で自動適用）の`addToMap()`冒頭に、既存`tileOverlay`を`remove()`してnull化する**冪等化ガード**を追加。二重呼び出しされても地図上に常に1個だけになる。`savedFeatures`機構（本家のクラッシュ対策）には非干渉。
+
+### 検証（エミュレータ）
+- 起動時ON状態の衛星画像レイヤーをOFF → 地図から消えることを確認（修正前は消えなかった）
+- ON→OFF→ON→OFFの往復2回とも正常
+- tsc 0エラー
+
+iOSは`AIRGoogleMap`の`_pendingInsertsSubviews`が挿入自体を遅延する設計で二重addにならないため対象外（ユーザー報告でもiOS正常）。
+
+### 既知の残課題
+Marker/Polyline/Polygon/Circle等も理論上は同じ二重追加が起こり得るが、それぞれremove時のコレクション管理が異なり今回の修正スコープ外。実害が出たら同様の冪等化を検討。
+
 ## 総合結論（Go/No-Go判断材料）
 
 **Go推奨。** スパイクの主要リスクはすべて検証済みで、致命的なブロッカーは見つからなかった。

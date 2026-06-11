@@ -790,12 +790,28 @@ index 0000000..6da8001
 +  }
 +}
 \ No newline at end of file
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java
+index fe9b4cc..c5b683c 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapLocalTile.java
+@@ -141,6 +141,11 @@ public class MapLocalTile extends MapFeature {
+ 
+     @Override
+     public void addToMap(Object map) {
++        // EcorisMap: detach/reattachによる二重追加の冪等化
++        if (this.tileOverlay != null) {
++            this.tileOverlay.remove();
++            this.tileOverlay = null;
++        }
+         this.tileOverlay = ((GoogleMap) map).addTileOverlay(getTileOverlayOptions());
+     }
+ 
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
 new file mode 100644
-index 0000000..0452e29
+index 0000000..6edc929
 --- /dev/null
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTile.java
-@@ -0,0 +1,241 @@
+@@ -0,0 +1,249 @@
 +package com.rnmaps.maps;
 +
 +import android.content.Context;
@@ -1029,12 +1045,20 @@ index 0000000..0452e29
 +
 +  @Override
 +  public void addToMap(Object map) {
++    // EcorisMap: detach/reattachによる二重追加の冪等化
++    if (this.tileOverlay != null) {
++      this.tileOverlay.remove();
++      this.tileOverlay = null;
++    }
 +    this.tileOverlay = ((GoogleMap) map).addTileOverlay(getTileOverlayOptions());
 +  }
 +
 +  @Override
 +  public void removeFromMap(Object map) {
-+    tileOverlay.remove();
++    // EcorisMap: tileOverlay が未生成のケースに備えた null ガード
++    if (tileOverlay != null) {
++      tileOverlay.remove();
++    }
 +  }
 +}
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapPMTileProvider.java
@@ -2534,8 +2558,905 @@ index 0000000..08b3fbc
 +    this.customMode = customMode;
 +  }
 +}
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
+index a974311..044c72e 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapTileProvider.java
+@@ -1,49 +1,52 @@
+ package com.rnmaps.maps;
+ 
+ import android.content.Context;
+-
+-import android.util.Log;
+-import java.util.concurrent.TimeUnit;
+-import java.util.concurrent.Future;
+-import java.util.List;
+-
+ import android.graphics.Bitmap;
+ import android.graphics.BitmapFactory;
+ import android.graphics.Canvas;
+ import android.graphics.Color;
+ import android.graphics.Paint;
+ import android.graphics.Rect;
+-
+-import androidx.work.OneTimeWorkRequest;
+-import androidx.work.WorkManager;
+-import androidx.work.Data;
++import android.util.Log;
++import androidx.annotation.NonNull;
+ import androidx.work.Constraints;
+-import androidx.work.NetworkType;
++import androidx.work.Data;
+ import androidx.work.ExistingWorkPolicy;
++import androidx.work.NetworkType;
++import androidx.work.OneTimeWorkRequest;
+ import androidx.work.Operation;
+ import androidx.work.WorkInfo;
+-
++import androidx.work.WorkManager;
++import androidx.work.WorkRequest;
++import androidx.work.Worker;
++import androidx.work.WorkerParameters;
++import com.google.android.gms.maps.GoogleMap;
+ import com.google.android.gms.maps.model.Tile;
++import com.google.android.gms.maps.model.TileOverlay;
++import com.google.android.gms.maps.model.TileOverlayOptions;
+ import com.google.android.gms.maps.model.TileProvider;
+ import com.google.android.gms.maps.model.UrlTileProvider;
+-
+-import java.lang.System;
+-
+ import java.io.ByteArrayOutputStream;
+ import java.io.File;
+ import java.io.FileInputStream;
+ import java.io.FileOutputStream;
++import java.io.IOException;
+ import java.io.InputStream;
+ import java.io.OutputStream;
+-import java.io.IOException;
+-
++import java.lang.System;
++import java.net.HttpURLConnection;
+ import java.net.MalformedURLException;
+ import java.net.URL;
+ import java.net.URLConnection;
++import java.util.List;
++import java.util.Objects;
++import java.util.concurrent.Future;
++import java.util.concurrent.TimeUnit;
+ 
+ public class MapTileProvider implements TileProvider {
+ 
+-	class AIRMapUrlTileProvider extends UrlTileProvider {
++  class AIRMapUrlTileProvider extends UrlTileProvider {
++
+     private String urlTemplate;
+ 
+     public AIRMapUrlTileProvider(int width, int height, String urlTemplate) {
+@@ -53,23 +56,22 @@ public class MapTileProvider implements TileProvider {
+ 
+     @Override
+     public URL getTileUrl(int x, int y, int zoom) {
+-
+-      if (MapTileProvider.this.flipY) {
++      if (MapTileProvider.this.flipY == true) {
+         y = (1 << zoom) - y - 1;
+       }
+ 
+-      String s = this.urlTemplate
+-          .replace("{x}", Integer.toString(x))
++      String s =
++        this.urlTemplate.replace("{x}", Integer.toString(x))
+           .replace("{y}", Integer.toString(y))
+           .replace("{z}", Integer.toString(zoom));
+-      URL url;
++      URL url = null;
+ 
+-      if(MapTileProvider.this.maximumZ > 0 && zoom > MapTileProvider.this.maximumZ) {
+-        return null;
++      if (MapTileProvider.this.maximumZ > 0 && zoom > MapTileProvider.this.maximumZ) {
++        return url;
+       }
+ 
+-      if(MapTileProvider.this.minimumZ > 0 && zoom < MapTileProvider.this.minimumZ) {
+-        return null;
++      if (MapTileProvider.this.minimumZ > 0 && zoom < MapTileProvider.this.minimumZ) {
++        return url;
+       }
+ 
+       try {
+@@ -85,188 +87,236 @@ public class MapTileProvider implements TileProvider {
+     }
+   }
+ 
+-	protected static final int BUFFER_SIZE = 16 * 1024;
+-	protected static final int TARGET_TILE_SIZE = 512;
+-	protected UrlTileProvider tileProvider;
+-	protected String urlTemplate;
+-	protected int tileSize;
++  protected static final int BUFFER_SIZE = 16 * 1024;
++  // protected static final int TARGET_TILE_SIZE = 512;
++  protected UrlTileProvider tileProvider;
++  protected String urlTemplate;
++  protected int tileSize;
+   protected boolean doubleTileSize;
+-	protected int maximumZ;
++  protected int maximumZ;
+   protected int maximumNativeZ;
+   protected int minimumZ;
+   protected boolean flipY;
+-	protected String tileCachePath;
+-	protected int tileCacheMaxAge;
++  protected String tileCachePath;
++  protected int tileCacheMaxAge;
+   protected boolean offlineMode;
+-	protected Context context;
+-	protected boolean customMode;
+-
+-	public MapTileProvider(int tileSizet, boolean doubleTileSize, String urlTemplate,
+-                           int maximumZ, int maximumNativeZ, int minimumZ, boolean flipY, String tileCachePath,
+-                           int tileCacheMaxAge, boolean offlineMode, Context context, boolean customMode) {
+-		this.tileProvider = new AIRMapUrlTileProvider(tileSizet, tileSizet, urlTemplate);
+-
+-		this.tileSize = tileSizet;
++  protected Context context;
++  protected boolean customMode;
++
++  public MapTileProvider(
++    int tileSizet,
++    boolean doubleTileSize,
++    String urlTemplate,
++    int maximumZ,
++    int maximumNativeZ,
++    int minimumZ,
++    boolean flipY,
++    String tileCachePath,
++    int tileCacheMaxAge,
++    boolean offlineMode,
++    Context context,
++    boolean customMode
++  ) {
++    this.tileProvider = new AIRMapUrlTileProvider(tileSizet, tileSizet, urlTemplate);
++
++    this.tileSize = tileSizet;
+     this.doubleTileSize = doubleTileSize;
+-		this.urlTemplate = urlTemplate;
+-		this.maximumZ = maximumZ;
++    this.urlTemplate = urlTemplate;
++    this.maximumZ = maximumZ;
+     this.maximumNativeZ = maximumNativeZ;
+-		this.minimumZ = minimumZ;
+-		this.flipY = flipY;
+-		this.tileCachePath = tileCachePath;
+-		this.tileCacheMaxAge = tileCacheMaxAge;
++    this.minimumZ = minimumZ;
++    this.flipY = flipY;
++    this.tileCachePath = tileCachePath;
++    this.tileCacheMaxAge = tileCacheMaxAge;
+     this.offlineMode = offlineMode;
+-		this.context = context;
+-		this.customMode = customMode;
+-	}
+-
+-	@Override
+-	public Tile getTile(int x, int y, int zoom) {
+-		if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
+-
+-		byte[] image = null;
+-		int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
+-		
+-		if (this.tileSize == 256 && this.doubleTileSize && zoom + 1 <= this.maximumNativeZ && zoom + 1 <= maximumZ) {
+-      Log.d("urlTile", "pullTilesFromHigherZoom");
+-			image = pullTilesFromHigherZoom(x, y, zoom);      
+-		} 
+-
+-    if (zoom > this.maximumNativeZ) {
+-      Log.d("urlTile", "scaleLowerZoomTile");
+-			image = scaleLowerZoomTile(x, y, zoom, this.maximumNativeZ);
+-		}
+-
+-    if (image == null && zoom <= maximumZ) {
+-      Log.d("urlTile", "getTileImage");
+-			image = getTileImage(x, y, zoom);
+-		}
+-
+-    if (image == null && this.tileCachePath != null && this.offlineMode) {
+-      Log.d("urlTile", "findLowerZoomTileForScaling");
+-      int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1; 
+-      int minimumZoomToSearch = Math.max(this.minimumZ, zoom - 3);
+-      for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
+-  			image = scaleLowerZoomTile(x, y, zoom, tryZoom);
+-	  		if (image != null) {
+-		  		break;
+-			  }
++    this.context = context;
++    this.customMode = customMode;
++  }
++
++  @Override
++  public Tile getTile(int x, int y, int zoom) {
++    if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
++
++    byte[] image = null;
++    int maximumZ = this.maximumZ > 0 ? this.maximumZ : Integer.MAX_VALUE;
++
++    if (this.maximumZ == 0 || zoom > this.maximumZ) return null;
++    int drawType = 0; // 0:original 1:high-resolution 2:overzoom
++    if (zoom < this.minimumZ) {
++      //Log.d("RNM:", "A");
++      image = generateTileFromHigherZoom(x, y, zoom);
++      drawType = 1;
++    } else if (zoom > this.maximumNativeZ && !this.doubleTileSize) {
++      //Log.d("RNM:", "B");
++      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ);
++      drawType = 2;
++    } else if (zoom > this.maximumNativeZ - 1 && this.doubleTileSize) {
++      //Log.d("RNM:", "C");
++      image = drawOverZoomTile(x, y, zoom, this.maximumNativeZ);
++      drawType = 2;
++    } else if (zoom <= maximumZ && !this.doubleTileSize) {
++      //Log.d("RNM:", "D");
++      image = getTileImage(x, y, zoom);
++      drawType = 0;
++    } else if (zoom <= this.maximumNativeZ - 1 && this.doubleTileSize) {
++      //Log.d("RNM:", "E");
++      image = drawDoubleSizeTile(x, y, zoom);
++      drawType = 0;
++    }
++
++    // if (image == null && this.tileCachePath != null && this.offlineMode && drawType == 0) {
++    //   //Log.d("urlTile", "findLowerZoomTileForScaling");
++    //   int zoomLevelToStart = (zoom > this.maximumNativeZ) ? this.maximumNativeZ - 1 : zoom - 1;
++    //   int minimumZoomToSearch = this.minimumZ >= zoom - 3 ? this.minimumZ : zoom - 3;
++    //   for (int tryZoom = zoomLevelToStart; tryZoom >= minimumZoomToSearch; tryZoom--) {
++    //     image = drawOverZoomTile(x, y, zoom, tryZoom);
++    //     if (image != null) {
++    //       break;
++    //     }
++    //   }
++    // }
++
++    return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
++  }
++
++  byte[] getTileImage(int x, int y, int zoom) {
++    byte[] image = null;
++    if (this.tileCachePath != null) {
++      image = readTileImage(x, y, zoom);
++      // if (image != null && !this.offlineMode) {
++      //   boolean needRefresh = checkForRefresh(x, y, zoom);
++      //   if (needRefresh) {
++      //     image = null;
++      //   }
++      // }
++    }
++    if (image == null && !this.offlineMode && this.tileCachePath != null) {
++      // Log.d("urlTile", "Normal fetch");
++      image = fetchTile(x, y, zoom);
++      if (image != null) {
++        boolean success = writeTileImage(image, x, y, zoom);
+       }
+-		}
+-
+-		return image == null ? null : new Tile(this.tileSize, this.tileSize, image);
+-	}
+-
+-	byte[] getTileImage(int x, int y, int zoom) {
+-		byte[] image = null;
+-
+-		if (this.tileCachePath != null) {
+-			image = readTileImage(x, y, zoom);
+-			if (image != null) {
+-				Log.d("urlTile", "tile cache HIT for " + zoom +
+-					"/" + x + "/" + y);
+-			} else {
+-				Log.d("urlTile", "tile cache MISS for " + zoom +
+-        	"/" + x + "/" + y);
+-			}
+-			if (image != null && !this.offlineMode) {
+-				checkForRefresh(x, y, zoom);
+-			}
+-		}
+-
+-		if (image == null && !this.offlineMode && this.tileCachePath != null) {
+-			String fileName = getTileFilename(x, y, zoom);
+-			Constraints constraints = new Constraints.Builder()
+-				.setRequiredNetworkType(NetworkType.CONNECTED)
+-				.build();
+-			OneTimeWorkRequest tileRefreshWorkRequest = new OneTimeWorkRequest.Builder(MapTileWorker.class)
+-				.setConstraints(constraints)
+-				.addTag(fileName)
+-				.setInputData(
+-					new Data.Builder()
+-						.putString("url", getTileUrl(x, y, zoom).toString())
+-						.putString("filename", fileName)
+-						.putInt("maxAge", -1)
+-						.build()
+-					)
+-				.build();
+-			WorkManager workManager = WorkManager.getInstance(this.context.getApplicationContext());
+-			Operation fetchOperation = workManager
+-				.enqueueUniqueWork(fileName, ExistingWorkPolicy.KEEP, tileRefreshWorkRequest);
+-			Future<Operation.State.SUCCESS> operationFuture = fetchOperation.getResult();
+-			try {
+-				operationFuture.get(1L, TimeUnit.SECONDS);
+-				Thread.sleep(500);
+-				Future<List<WorkInfo>> fetchFuture = workManager.getWorkInfosByTag(fileName);
+-				List<WorkInfo> workInfo = fetchFuture.get(1L, TimeUnit.SECONDS);
+-				Log.d("urlTile: ", workInfo.get(0).toString());
+-				if (this.tileCachePath != null) {
+-					image = readTileImage(x, y, zoom);
+-					if (image != null) {
+-						Log.d("urlTile","tile cache fetch HIT for " + zoom +
+-							"/" + x + "/" + y);
+-					} else {
+-							Log.d("urlTile","tile cache fetch MISS for " + zoom +
+-								"/" + x + "/" + y);
+-					}
+-				}
+-			} catch (Exception e) {
+-			  e.printStackTrace();
+-			}
+-		} else if (image == null && !this.offlineMode) {
+-			Log.d("urlTile", "Normal fetch");
+-			image = fetchTile(x, y, zoom);
+-			if (image == null) {
+-				Log.d("urlTile", "tile fetch TIMEOUT / FAIL for " + zoom +
+-					"/" + x + "/" + y);
+-			}
+-		}
+-
+-		return image;
+-	}
+-
+-	byte[] pullTilesFromHigherZoom(int x, int y, int zoom) {
++    }
++    return image;
++  }
++
++  byte[] drawDoubleSizeTile(int x, int y, int zoom) {
+     byte[] data;
+-    Bitmap image = getNewBitmap();
++    Bitmap image = getNewBitmap(this.tileSize * 2, this.tileSize * 2);
+     Canvas canvas = new Canvas(image);
+     Paint paint = new Paint();
+ 
+-    x = x * 2;
+-    y = y * 2;
+-    byte[] leftTop = getTileImage(x, y, zoom + 1);
+-    byte[] leftBottom = getTileImage(x, y + 1, zoom + 1);
+-    byte[] rightTop = getTileImage(x + 1, y, zoom + 1);
+-    byte[] rightBottom = getTileImage(x + 1, y + 1, zoom + 1);
++    int X = x * 2;
++    int Y = y * 2;
++    int Z = zoom + 1;
++    byte[] leftTop = getTileImage(X, Y, Z);
++    byte[] leftBottom = getTileImage(X, Y + 1, Z);
++    byte[] rightTop = getTileImage(X + 1, Y, Z);
++    byte[] rightBottom = getTileImage(X + 1, Y + 1, Z);
+ 
+-    if (leftTop == null || leftBottom == null || rightTop == null || rightBottom == null) {
++    if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
+       return null;
+     }
+ 
+     Bitmap bitmap;
++    if (leftTop != null) {
++      bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
++      if (bitmap != null) {
++        canvas.drawBitmap(bitmap, 0, 0, paint);
++        bitmap.recycle();
++      }
++    }
++    if (leftBottom != null) {
++      bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
++      if (bitmap != null) {
++        canvas.drawBitmap(bitmap, 0, this.tileSize, paint);
++        bitmap.recycle();
++      }
++    }
++    if (rightTop != null) {
++      bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
++      if (bitmap != null) {
++        canvas.drawBitmap(bitmap, this.tileSize, 0, paint);
++        bitmap.recycle();
++      }
++    }
++    if (rightBottom != null) {
++      bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
++      if (bitmap != null) {
++        canvas.drawBitmap(bitmap, this.tileSize, this.tileSize, paint);
++        bitmap.recycle();
++      }
++    }
++    data = bitmapToByteArray(image);
++    image.recycle();
++    return data;
++  }
+ 
+-    bitmap = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
+-    canvas.drawBitmap(bitmap, 0, 0, paint);
+-    bitmap.recycle();
++  byte[] generateTileFromHigherZoom(int x, int y, int zoom) {
++    int X = x * 2;
++    int Y = y * 2;
++    int Z = zoom + 1;
++    byte[] leftTop = getTileImage(X, Y, Z);
++    byte[] leftBottom = getTileImage(X, Y + 1, Z);
++    byte[] rightTop = getTileImage(X + 1, Y, Z);
++    byte[] rightBottom = getTileImage(X + 1, Y + 1, Z);
++    // Log.d(
++    //   "urlTile",
++    //   "##" + x + " " + y + " " + zoom + " " + leftTop + " " + leftBottom + " " + rightTop + " " + rightBottom
++    // );
++
++    if (leftTop == null && leftBottom == null && rightTop == null && rightBottom == null) {
++      // Log.d("urlTile", "generateTileFromHigherZoom: null " + x + " " + y + " " + zoom);
++      return null;
++    }
+     
+-    bitmap = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
+-    canvas.drawBitmap(bitmap, 0, 256, paint);
+-    bitmap.recycle();
++    int width = this.tileSize;
++    int height = this.tileSize;
++    //Log.d("######urlTile 2", width + " " + height);
++    byte[] data;
++    Paint paint = new Paint();
++    Bitmap combinedBitmap = getNewBitmap(width, height);
++    Canvas canvas = new Canvas(combinedBitmap);
++
++    if (leftTop != null) {
++      //Log.d("urlTile", "$$" + X + " " + Y + " " + Z);
++      Bitmap bitmapLeftTop = BitmapFactory.decodeByteArray(leftTop, 0, leftTop.length);
++      if (bitmapLeftTop != null) {
++        canvas.drawBitmap(bitmapLeftTop, null, new Rect(0, 0, width / 2, height / 2), paint);
++      }
++    }
++    if (leftBottom != null) {
++      //Log.d("urlTile", "$$" + X + " " + (Y + 1) + " " + Z + " " + leftBottom.length);
++      Bitmap bitmapLeftBottom = BitmapFactory.decodeByteArray(leftBottom, 0, leftBottom.length);
++      if (bitmapLeftBottom != null) {
++        canvas.drawBitmap(bitmapLeftBottom, null, new Rect(0, height / 2, width / 2, height), paint);
++      }
++    }
++    if (rightTop != null) {
++      //Log.d("urlTile", "$$" + (X + 1) + " " + Y + " " + Z + " " + rightTop.length);
++      Bitmap bitmapRightTop = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
++      if (bitmapRightTop != null) {
++        canvas.drawBitmap(bitmapRightTop, null, new Rect(width / 2, 0, width, height / 2), paint);
++      }
++    }
++    if (rightBottom != null) {
++      //Log.d("urlTile", "$$" + (X + 1) + " " + (Y + 1) + " " + Z + " " + rightBottom.length);
++      Bitmap bitmapRightBottom = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
++      if (bitmapRightBottom != null) {
++        canvas.drawBitmap(bitmapRightBottom, null, new Rect(width / 2, height / 2, width, height), paint);
++      }
++    }
+     
+-    bitmap = BitmapFactory.decodeByteArray(rightTop, 0, rightTop.length);
+-    canvas.drawBitmap(bitmap, 256, 0, paint);
+-    bitmap.recycle();
++    data = bitmapToByteArray(combinedBitmap);
++    combinedBitmap.recycle();
+   
+-    bitmap = BitmapFactory.decodeByteArray(rightBottom, 0, rightBottom.length);
+-    canvas.drawBitmap(bitmap, 256, 256, paint);
+-    bitmap.recycle();
++    boolean success = writeTileImage(data, x, y, zoom);
+     
+-    data = bitmapToByteArray(image);
+-    image.recycle();
+     return data;
+   }
+ 
+-  Bitmap getNewBitmap() {
+-    Bitmap image = Bitmap.createBitmap(TARGET_TILE_SIZE, TARGET_TILE_SIZE, Bitmap.Config.ARGB_8888);
++  Bitmap getNewBitmap(int width, int height) {
++    Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+     image.eraseColor(Color.TRANSPARENT);
+     return image;
+   }
+@@ -279,12 +329,12 @@ public class MapTileProvider implements TileProvider {
+     try {
+       bos.close();
+     } catch (Exception e) {
+-      e.printStackTrace();
++      // e.printStackTrace();
+     }
+     return data;
+   }
+ 
+-	byte[] scaleLowerZoomTile(int x, int y, int zoom, int maximumZoom) {
++  byte[] drawOverZoomTile(int x, int y, int zoom, int maximumZoom) {
+     int overZoomLevel = zoom - maximumZoom;
+     int zoomFactor = 1 << overZoomLevel;
+     
+@@ -294,201 +344,208 @@ public class MapTileProvider implements TileProvider {
+     
+     int xOffset = x % zoomFactor;
+     int yOffset = y % zoomFactor;
+-
+     byte[] data;
+-    Bitmap image = getNewBitmap();
++
++    // if (overZoomLevel > 3) {
++    //   return null;
++    // }
++    Bitmap image = getNewBitmap(this.tileSize, this.tileSize);
+     Canvas canvas = new Canvas(image);
+     Paint paint = new Paint();
++    data = getTileImage(xParent, yParent, zoomParent);
+ 
+-		data = getTileImage(xParent, yParent, zoomParent);
+     if (data == null) return null;
+-    
+     Bitmap sourceImage;
+-    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
+ 
++    sourceImage = BitmapFactory.decodeByteArray(data, 0, data.length);
+     int subTileSize = this.tileSize / zoomFactor;
+-    Rect sourceRect = new Rect(xOffset * subTileSize, yOffset * subTileSize, xOffset * subTileSize + subTileSize , yOffset * subTileSize + subTileSize);
+-    Rect targetRect = new Rect(0,0,TARGET_TILE_SIZE, TARGET_TILE_SIZE);
++
++    Rect sourceRect = new Rect(
++      xOffset * subTileSize,
++      yOffset * subTileSize,
++      xOffset * subTileSize + subTileSize,
++      yOffset * subTileSize + subTileSize
++    );
++    Rect targetRect = new Rect(0, 0, this.tileSize, this.tileSize);
+     canvas.drawBitmap(sourceImage, sourceRect, targetRect, paint);
+     sourceImage.recycle();
+-
+     data = bitmapToByteArray(image);
++
+     image.recycle();
+     return data;
+-	} 
+-
+-	void checkForRefresh(int x, int y, int zoom) {
+-		String fileName =  getTileFilename(x, y, zoom);
+-		File file = new File(fileName);
+-		long lastModified = file.lastModified();
+-		long now = System.currentTimeMillis();
+-
+-		if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
+-      Log.d("urlTile", "Refreshing");
+-			Constraints constraints = new Constraints.Builder()
+-				.setRequiredNetworkType(NetworkType.CONNECTED)
+-				.build();
+-			OneTimeWorkRequest tileRefreshWorkRequest = new OneTimeWorkRequest.Builder(MapTileWorker.class)
+-				.setConstraints(constraints)
+-				.addTag(fileName)
+-				.setInputData(
+-					new Data.Builder()
+-						.putString("url", getTileUrl(x, y, zoom).toString())
+-						.putString("filename", fileName)
+-						.putInt("maxAge", this.tileCacheMaxAge)
+-						.build()
+-					)
+-				.build();
+-			WorkManager.getInstance(this.context.getApplicationContext())
+-			.enqueueUniqueWork(fileName, ExistingWorkPolicy.KEEP, tileRefreshWorkRequest);
+-		}
+-	}
+-
+-	byte[] fetchTile(int x, int y, int zoom) {
+-		URL url = getTileUrl(x, y, zoom);
+-		ByteArrayOutputStream buffer = null;
+-		InputStream in = null;
+-
+-		try {
+-			URLConnection conn = url.openConnection();
+-			in = conn.getInputStream();
+-			buffer = new ByteArrayOutputStream();
+-
+-			int nRead;
+-			byte[] data = new byte[BUFFER_SIZE];
+-
+-			while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
+-				buffer.write(data, 0, nRead);
+-			}
+-			buffer.flush();
+-
+-			return buffer.toByteArray();
+-		} catch (IOException | OutOfMemoryError e) {
+-			e.printStackTrace();
+-			return null;
+-		} finally {
+-			if (in != null) try { in.close(); } catch (Exception ignored) {}
+-			if (buffer != null) try { buffer.close(); } catch (Exception ignored) {}
+-		}
+-	}
+-	
+-	byte[] readTileImage(int x, int y, int zoom) {
+-		InputStream in = null;
+-		ByteArrayOutputStream buffer = null;
+-		String fileName = getTileFilename(x, y, zoom);
+-		if (fileName == null) {
+-			return null;
+-		}
+-
+-		File file = new File(fileName);
+-
+-		try {
+-			in = new FileInputStream(file);
+-			buffer = new ByteArrayOutputStream();
+-
+-			int nRead;
+-			byte[] data = new byte[BUFFER_SIZE];
+-
+-			while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
+-				buffer.write(data, 0, nRead);
+-			}
+-			buffer.flush();
+-
+-			if (this.tileCacheMaxAge == 0) {
+-				file.setLastModified(System.currentTimeMillis());
+-			}
+-
+-			return buffer.toByteArray();
+-		} catch (IOException | OutOfMemoryError e) {
+-			e.printStackTrace();
+-			return null;
+-		} finally {
+-			if (in != null) try { in.close(); } catch (Exception ignored) {}
+-			if (buffer != null) try { buffer.close(); } catch (Exception ignored) {}
+-		}
+-	}
+-
+-	boolean writeTileImage(byte[] image, int x, int y, int zoom) {
+-		OutputStream out = null;
+-		String fileName = getTileFilename(x, y, zoom);
+-		if (fileName == null) {
+-			return false;
+-		}
+-
+-		try {
+-			File file = new File(fileName);
+-			file.getParentFile().mkdirs();
+-			out = new FileOutputStream(file);
+-			out.write(image);
+-
+-			return true;
+-		} catch (IOException | OutOfMemoryError e) {
+-			e.printStackTrace();
+-			return false;
+-		} finally {
+-			if (out != null) try { out.close(); } catch (Exception ignored) {}
+-		}
+-	}
+-
+-	String getTileFilename(int x, int y, int zoom) {
+-		if (this.tileCachePath == null) {
+-			return null;
+-		}
+-		return this.tileCachePath + '/' + zoom +
+-			"/" + x + "/" + y;
+-	}
+-	
+-	protected URL getTileUrl(int x, int y, int zoom) {
+-		return this.tileProvider.getTileUrl(x, y, zoom);
+-	}
+-	
+-	public void setUrlTemplate(String urlTemplate) {
+-		if (this.urlTemplate != urlTemplate) {
+-			this.tileProvider = new AIRMapUrlTileProvider(tileSize, tileSize, urlTemplate);
+-		}
+-		
+-		this.urlTemplate = urlTemplate;
+-	}
+-
+-	public void setTileSize(int tileSize) {
+-		if (this.tileSize != tileSize) {
+-			this.tileProvider = new AIRMapUrlTileProvider(tileSize, tileSize, urlTemplate);
+-		}
+-		this.tileSize = tileSize;
+-	}
++  }
++
++  boolean checkForRefresh(int x, int y, int zoom) {
++    String fileName = getTileFilename(x, y, zoom);
++    File file = new File(fileName);
++    long lastModified = file.lastModified();
++    long now = System.currentTimeMillis();
++
++    if ((now - lastModified) / 1000 > this.tileCacheMaxAge) {
++      return true;
++    }
++    return false;
++  }
++
++  public static boolean doesFileExist(URL url) {
++    try {
++      HttpURLConnection connection = (HttpURLConnection) url.openConnection();
++      connection.setRequestMethod("HEAD");
++      int responseCode = connection.getResponseCode();
++
++      // ファイルが存在する場合、通常200か203が返されます
++      return (responseCode == HttpURLConnection.HTTP_OK);
++    } catch (Exception e) {
++      // 例外が発生した場合、ファイルは存在しないとみなします
++      System.err.println("Error checking file existence: " + e.getMessage());
++      return false;
++    }
++  }
++
++  byte[] fetchTile(int x, int y, int zoom) {
++    //headerでファイルの存在を確認する。getTileだとファイルが存在しない場合、レスポンスが遅くなるため。（S3であれば遅くないが通常のhttp serverだと遅い）
++    URL url = getTileUrl(x, y, zoom);
++    boolean fileExists = doesFileExist(url);
++    if (!fileExists) {
++      return null;
++    }
++    Tile tile = this.tileProvider.getTile(x, y, zoom);
++    if (Objects.isNull(tile)) {
++      // Log.d("urlTileA:NO_TILE", getTileFilename(x, y, zoom));
++      return null;
++    }
++    return tile.data;
++  }
++
++  byte[] readTileImage(int x, int y, int zoom) {
++    InputStream in = null;
++    ByteArrayOutputStream buffer = null;
++    String fileName = getTileFilename(x, y, zoom);
++    if (fileName == null) {
++      return null;
++    }
++
++    File file = new File(fileName);
++
++    try {
++      in = new FileInputStream(file);
++      buffer = new ByteArrayOutputStream();
++
++      int nRead;
++      byte[] data = new byte[BUFFER_SIZE];
++
++      while ((nRead = in.read(data, 0, BUFFER_SIZE)) != -1) {
++        buffer.write(data, 0, nRead);
++      }
++      buffer.flush();
++
++      if (this.tileCacheMaxAge == 0) {
++        file.setLastModified(System.currentTimeMillis());
++      }
++
++      return buffer.toByteArray();
++    } catch (IOException e) {
++      e.printStackTrace();
++      return null;
++    } catch (OutOfMemoryError e) {
++      e.printStackTrace();
++      return null;
++    } finally {
++      if (in != null) try {
++        in.close();
++      } catch (Exception ignored) {}
++      if (buffer != null) try {
++        buffer.close();
++      } catch (Exception ignored) {}
++    }
++  }
++
++  boolean writeTileImage(byte[] image, int x, int y, int zoom) {
++    OutputStream out = null;
++    String fileName = getTileFilename(x, y, zoom);
++    if (fileName == null) {
++      return false;
++    }
++
++    try {
++      File file = new File(fileName);
++      file.getParentFile().mkdirs();
++      out = new FileOutputStream(file);
++      out.write(image);
++
++      return true;
++    } catch (IOException e) {
++      Log.d("urlTile", "writeTileImage: " + e.getMessage());
++      e.printStackTrace();
++      return false;
++    } catch (OutOfMemoryError e) {
++      Log.d("urlTile", "writeTileImage: " + e.getMessage());
++      e.printStackTrace();
++      return false;
++    } finally {
++      if (out != null) try {
++        out.close();
++      } catch (Exception ignored) {}
++    }
++  }
++
++  String getTileFilename(int x, int y, int zoom) {
++    if (this.tileCachePath == null) {
++      return null;
++    }
++    String s =
++      this.tileCachePath + '/' + Integer.toString(zoom) + "/" + Integer.toString(x) + "/" + Integer.toString(y);
++    return s;
++  }
++
++  protected URL getTileUrl(int x, int y, int zoom) {
++    return this.tileProvider.getTileUrl(x, y, zoom);
++  }
++
++  public void setUrlTemplate(String urlTemplate) {
++    this.urlTemplate = urlTemplate;
++  }
++
++  public void setTileSize(int tileSize) {
++    if (this.tileSize != tileSize) {
++      this.tileProvider = new AIRMapUrlTileProvider(tileSize, tileSize, urlTemplate);
++    }
++    this.tileSize = tileSize;
++  }
+ 
+   public void setDoubleTileSize(boolean doubleTileSize) {
+-		this.doubleTileSize = doubleTileSize;
+-	}
++    this.doubleTileSize = doubleTileSize;
++  }
+ 
+-	public void setMaximumZ(int maximumZ) {
+-		this.maximumZ = maximumZ;
+-	}
++  public void setMaximumZ(int maximumZ) {
++    this.maximumZ = maximumZ;
++  }
+ 
+   public void setMaximumNativeZ(int maximumNativeZ) {
+-		this.maximumNativeZ = maximumNativeZ;
+-	}
++    this.maximumNativeZ = maximumNativeZ;
++  }
+ 
+-	public void setMinimumZ(int minimumZ) {
+-		this.minimumZ = minimumZ;
+-	}
++  public void setMinimumZ(int minimumZ) {
++    this.minimumZ = minimumZ;
++  }
+ 
+-	public void setFlipY(boolean flipY) {
+-		this.flipY = flipY;
+-	}
++  public void setFlipY(boolean flipY) {
++    this.flipY = flipY;
++  }
+ 
+-	public void setTileCachePath(String tileCachePath) {
+-		this.tileCachePath = tileCachePath;
+-	}
++  public void setTileCachePath(String tileCachePath) {
++    this.tileCachePath = tileCachePath;
++  }
+ 
+-	public void setTileCacheMaxAge(int tileCacheMaxAge) {
+-		this.tileCacheMaxAge = tileCacheMaxAge;
+-	}
++  public void setTileCacheMaxAge(int tileCacheMaxAge) {
++    this.tileCacheMaxAge = tileCacheMaxAge;
++  }
+ 
+   public void setOfflineMode(boolean offlineMode) {
+-		this.offlineMode = offlineMode;
+-	}
++    this.offlineMode = offlineMode;
++  }
+ 
+-	public void setCustomMode() {
+-	}
++  public void setCustomMode() {
++    this.customMode = customMode;
++  }
+ }
+\ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
-index 8c0a76c..0c83b47 100644
+index 8c0a76c..fc1a78a 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapUrlTile.java
 @@ -183,9 +183,16 @@ public class MapUrlTile extends MapFeature {
@@ -2558,12 +3479,18 @@ index 8c0a76c..0c83b47 100644
      options.tileProvider(this.tileProvider);
      return options;
    }
-@@ -197,11 +204,36 @@ public class MapUrlTile extends MapFeature {
+@@ -197,11 +204,42 @@ public class MapUrlTile extends MapFeature {
  
    @Override
    public void addToMap(Object map) {
 -    this.tileOverlay = ((GoogleMap) map).addTileOverlay(getTileOverlayOptions());
 +    GoogleMap googleMap = (GoogleMap) map;
++    // EcorisMap: MapViewのdetach/reattachでaddToMapが二重に呼ばれると
++    // 孤児TileOverlayが残り非表示にできなくなるため、冪等化する
++    if (this.tileOverlay != null) {
++      this.tileOverlay.remove();
++      this.tileOverlay = null;
++    }
 +    TileOverlayOptions overlayOptions = getTileOverlayOptions();
 +    // DEMタイルは回転に応じた再描画のためGoogleMap参照が必要
 +    if (tileProvider instanceof MapDEMTileProvider) {
@@ -2598,7 +3525,7 @@ index 8c0a76c..0c83b47 100644
    }
  }
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
-index ebf8780..f7a4962 100644
+index ebf8780..c5325f1 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
 +++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapView.java
 @@ -685,6 +685,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
@@ -2618,7 +3545,45 @@ index ebf8780..f7a4962 100644
          });
  
          map.setOnMapLoadedCallback(() -> {
-@@ -1242,6 +1252,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+@@ -1166,12 +1176,16 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     }
+ 
+     private void safeAddFeature(int index, MapFeature mapFeature){
+-        if(paused || features.size() < index){
++        // EcorisMap: 元の実装は features.size() < index のとき savedFeatures へ退避し
++        // features に登録しなかった。しかし addFeature は addToMap（描画）を先に実行するため、
++        // 描画済みのタイル/フィーチャーが features に入らず removeFeatureAt で削除できなくなる
++        // （New Arch + 頻繁な再マウントで Fabric の child index と features のサイズがずれると発生。
++        //  タイルが地図に残りOFF/切替できない問題の原因）。
++        // detach中（paused）のみ savedFeatures へ退避し、通常時は隙間を null 埋めして必ず登録する。
++        if(paused){
+             if (savedFeatures == null) {
+                 savedFeatures = new ArrayList<>();
+             }
+-
+-            // Ensure the list is large enough to set at the given index
+             while(savedFeatures.size() <= index){
+                 savedFeatures.add(null);
+             }
+@@ -1179,11 +1193,12 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+             return;
+         }
+ 
+-        // Ensure the list is large enough to set at the given index
+-        while(features.size() <= index){
+-            features.add(null);
+-        }
+-        features.set(index, mapFeature);
++        // EcorisMap: Fabric の child index は詰められた dense index のため、features も
++        // dense（位置挿入）で保つ。元の set+null埋め(sparse) は、remove(削除+シフト=dense)
++        // と非対称になり、ON/OFFを繰り返すと index がずれて誤ったfeatureを削除/登録漏れする
++        // （タイルが2〜3回で消せなくなる原因）。
++        int safeIndex = Math.min(index, features.size());
++        features.add(safeIndex, mapFeature);
+     }
+ 
+     public void addFeature(View child, int index) {
+@@ -1242,6 +1257,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
              MapUrlTile urlTileView = (MapUrlTile) child;
              urlTileView.addToMap(map);
              safeAddFeature(index, urlTileView);
@@ -2629,6 +3594,17 @@ index ebf8780..f7a4962 100644
          } else if (child instanceof MapWMSTile) {
              MapWMSTile urlTileView = (MapWMSTile) child;
              urlTileView.addToMap(map);
+@@ -1284,6 +1303,10 @@ public class MapView extends com.google.android.gms.maps.MapView implements Goog
+     }
+ 
+     public void removeFeatureAt(int index) {
++        // EcorisMap: index がずれた場合のクラッシュ/誤削除を防ぐ範囲外ガード
++        if (index < 0 || index >= features.size()) {
++            return;
++        }
+         MapFeature feature = features.remove(index);
+         if (feature instanceof MapMarker) {
+             markerMap.remove(feature.getFeature());
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java
 index c431fb9..0acf5d9 100644
 --- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapsPackage.java
