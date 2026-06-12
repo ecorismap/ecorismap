@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { COLOR, MAPS_BTN } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { MapButtons } from '../organisms/MapButttons';
@@ -13,6 +13,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 export default function MapScreen() {
   //console.log('render Maps');
   const { progress, isLoading, isOffline, pressToggleOnline, gotoDownload } = useContext(MapsContext);
+  const { width } = useWindowDimensions();
 
   const leftComponent =
     Platform.OS !== 'web' ? (
@@ -61,7 +62,7 @@ export default function MapScreen() {
           </ScrollView>
         ) : (
           <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
-            <View style={{ flex: 1 }}>
+            <View style={{ width, flex: 1 }}>
               <MapTable />
             </View>
           </ScrollView>

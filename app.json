@@ -3,6 +3,7 @@
     "name": "ecorismap",
     "slug": "ecorismap",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
