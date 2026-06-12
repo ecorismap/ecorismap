@@ -10,15 +10,15 @@ import { t } from 'i18next';
 // タイトル行
 const MapTableTitle = () => (
   <View style={{ flexDirection: 'row', height: 45 }}>
-    <View style={[styles.th, { flex: 1, width: 80 }]}>
-      <Text>{t('common.visible')}</Text>
+    <View style={[styles.th, { width: '13%' }]}>
+      <Text numberOfLines={1}>{t('common.visible')}</Text>
     </View>
-    <View style={[styles.th, { flex: 6 }]}>
-      <Text>{t('common.name')}</Text>
+    <View style={[styles.th, { width: '65%' }]}>
+      <Text numberOfLines={1}>{t('common.name')}</Text>
     </View>
 
-    <View style={[styles.th, { flex: 2, width: 80 }]}>
-      <Text>{t('common.move')}</Text>
+    <View style={[styles.th, { width: '22%' }]}>
+      <Text numberOfLines={1}>{t('common.move')}</Text>
     </View>
   </View>
 );
@@ -53,8 +53,7 @@ export const MapTable = React.memo(() => {
             style={[
               styles.td,
               {
-                flex: 1,
-                width: 80,
+                width: '13%',
                 borderRightWidth: item.groupId ? 1 : 0,
                 borderColor: COLOR.GRAY1,
               },
@@ -81,7 +80,7 @@ export const MapTable = React.memo(() => {
             </View>
           </View>
           <Pressable
-            style={[styles.td, { flex: 4 }]}
+            style={[styles.td, { width: '43%' }]}
             onLongPress={item.isGroup && item.expanded ? undefined : drag}
             disabled={isActive}
             onPress={() => {
@@ -92,11 +91,13 @@ export const MapTable = React.memo(() => {
               }
             }}
           >
-            <View style={{ flex: 1 }}>
-              <Text>{item.name}</Text>
+            <View style={{ width: '100%' }}>
+              <Text numberOfLines={2} ellipsizeMode="tail">
+                {item.name}
+              </Text>
             </View>
           </Pressable>
-          <View style={[styles.td, { flex: 1, width: 80 }]}>
+          <View style={[styles.td, { width: '11%' }]}>
             {item.id !== 'standard' &&
               item.id !== 'hybrid' &&
               !item.isGroup &&
@@ -111,7 +112,7 @@ export const MapTable = React.memo(() => {
                 />
               )}
           </View>
-          <View style={[styles.td, { flex: 1, width: 80 }]}>
+          <View style={[styles.td, { width: '11%' }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <Button
                 name="pencil"
@@ -123,7 +124,7 @@ export const MapTable = React.memo(() => {
               />
             )}
           </View>
-          <View style={[styles.td, { flex: 2, width: 80, flexDirection: 'row', justifyContent: 'center' }]}>
+          <View style={[styles.td, { width: '22%', flexDirection: 'row', justifyContent: 'center' }]}>
             {item.id !== 'standard' && item.id !== 'hybrid' && (
               <>
                 <Button
@@ -177,7 +178,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderColor: COLOR.GRAY2,
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     paddingHorizontal: 10,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     borderColor: COLOR.GRAY2,
     borderRightWidth: 1,
     justifyContent: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
     paddingVertical: 0,
   },
 });
