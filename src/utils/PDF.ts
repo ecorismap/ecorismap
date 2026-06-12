@@ -117,7 +117,8 @@ export const generateTilesFromPDF = async (
   tileSize: number,
   minimumZ: number,
   baseZoomLevel: number,
-  coordPerPixel: number
+  coordPerPixel: number,
+  onProgress?: (ratio: number) => void
 ) => {
   const tiles = [];
   for (let tileZ = baseZoomLevel; tileZ >= minimumZ; tileZ--) {
@@ -184,9 +185,11 @@ export const generateTilesFromPDF = async (
       batchCount = batchCount + BATCH_SIZE;
       await Promise.all(batch);
       batch = [];
+      onProgress?.(batchCount / tiles.length);
     }
   }
   await Promise.all(batch);
+  onProgress?.(1);
 
   unlink(pdfImage);
 };

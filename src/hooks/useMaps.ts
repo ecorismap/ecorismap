@@ -728,7 +728,22 @@ export const useMaps = (): UseMapsReturnType => {
         if (Platform.OS === 'web') {
           await db.geotiff.put({ mapId, blob: outputFile.blob!, boundary: boundaryJson, pdf: uri });
         } else {
-          generateTilesFromPDF(pdfImage, outputFile, mapId, tileSize, minimumZ, baseZoomLevel, coordPerPixel);
+          //タイル生成完了前にdispatchするとタイルレイヤーが空の状態で再マウントされ、
+          //存在しないタイルが「タイルなし」として確定キャッシュされて表示されないため、生成完了を待つ。
+          const pageStart =
+            PDF_PROGRESS.convertStart + ((page - 1) / totalPages) * (PDF_PROGRESS.convertEnd - PDF_PROGRESS.convertStart);
+          const pageEnd =
+            PDF_PROGRESS.convertStart + (page / totalPages) * (PDF_PROGRESS.convertEnd - PDF_PROGRESS.convertStart);
+          await generateTilesFromPDF(
+            pdfImage,
+            outputFile,
+            mapId,
+            tileSize,
+            minimumZ,
+            baseZoomLevel,
+            coordPerPixel,
+            (ratio) => setProgress(formatProgress(pageStart + ratio * (pageEnd - pageStart)))
+          );
           //${TILE_FOLDER}/${mapId}/boundary.jsonに保存.
           const boundaryUri = `${TILE_FOLDER}/${mapId}/boundary.json`;
           await FileSystem.writeAsStringAsync(boundaryUri, boundaryJson);
