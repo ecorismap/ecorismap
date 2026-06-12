@@ -12526,10 +12526,10 @@ index 0000000..1e08b53
 +#endif
 diff --git a/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
 new file mode 100644
-index 0000000..4c2da90
+index 0000000..7a5d9bf
 --- /dev/null
 +++ b/node_modules/react-native-maps/ios/AirGoogleMaps/AIRGoogleMapUrlTileOverlay.m
-@@ -0,0 +1,372 @@
+@@ -0,0 +1,471 @@
 +//
 +//  AIRGoogleMapURLTile.m
 +//  Created by Nick Italiano on 11/5/16.
@@ -12557,27 +12557,39 @@ index 0000000..4c2da90
 +  }
 +
 +  int drawType = 0; // 0:original 1:high-resolution 2:overzoom
++  // 一時的な失敗（タイムアウト・ネットワークエラー・5xx）かどうか。
++  // kGMSTileLayerNoTileを返すとSDKが「タイルなし」として確定キャッシュし
++  // 再リクエストされないため、一時的な失敗はnilを返して再試行させる。
++  BOOL transient = NO;
 +  NSData *data;
 +  if (zoom < self.minimumZ) {
 +    // minimumZより小さいズームレベルは一つ上のズームレベルのタイルから生成する
 +    // 現時点ではPDFの読み込み用。
 +    drawType = 1;
-+    data = [self drawFromHigherZoomTile:zoom x:x y:y];
++    data = [self drawFromHigherZoomTile:zoom x:x y:y transient:&transient];
 +  } else if (zoom > self.maximumNativeZ && !self.doubleTileSize) {
 +    drawType = 2;
-+    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ];
++    data = [self drawOverZoomTile:zoom
++                                x:x
++                                y:y
++                             minZ:self.maximumNativeZ
++                        transient:&transient];
 +  } else if (zoom > self.maximumNativeZ - 1 && self.doubleTileSize) {
 +    drawType = 2;
-+    data = [self drawOverZoomTile:zoom x:x y:y minZ:self.maximumNativeZ - 1];
++    data = [self drawOverZoomTile:zoom
++                                x:x
++                                y:y
++                             minZ:self.maximumNativeZ - 1
++                        transient:&transient];
 +  } else if (zoom <= self.maximumZ && !self.doubleTileSize) {
 +    drawType = 0;
-+    data = [self getTile:zoom x:x y:y];
++    data = [self getTile:zoom x:x y:y transient:&transient];
 +  } else if (zoom <= self.maximumZ - 1 && self.doubleTileSize) {
 +    // iOSの場合、doubleTileSizeがtrueの場合、tileSizeを小さくセットすることによって、
 +    // 一つ上のズームレベルのタイルを取得するという仕様になっている。
 +    // そのため、drawTypeは1でなく0でOK。
 +    drawType = 0;
-+    data = [self getTile:zoom x:x y:y];
++    data = [self getTile:zoom x:x y:y transient:&transient];
 +  }
 +  // NSLog(@"drawType %d,%ld,%ld,%ld", drawType, zoom, self.maximumNativeZ,
 +  //       self.minimumZ);
@@ -12606,12 +12618,51 @@ index 0000000..4c2da90
 +
 +  if (data) {
 +    UIImage *img = [[UIImage alloc] initWithData:data];
-+    return img;
++    if (img) {
++      return img;
++    }
 +  }
-+  return kGMSTileLayerNoTile;
++  // nilを返すとSDKがあとで再リクエストする。NoTileは確定（404・範囲外・オフライン未保存）のみ。
++  return transient ? nil : kGMSTileLayerNoTile;
 +}
 +
-+- (NSData *)getTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++// PNG/JPEG/GIF/WebPのマジックバイトで画像かどうかを簡易判定する。
++// HTTPステータスを確認しない旧実装が404のHTML本文などをキャッシュしている
++// 可能性があるため、キャッシュ読み込み時の検証にも使う。
++- (BOOL)isLikelyImageData:(NSData *)data {
++  if (data.length < 12) {
++    return NO;
++  }
++  const unsigned char *bytes = data.bytes;
++  if (bytes[0] == 0x89 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') {
++    return YES; // PNG
++  }
++  if (bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF) {
++    return YES; // JPEG
++  }
++  if (bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F') {
++    return YES; // GIF
++  }
++  if (bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F' &&
++      bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
++    return YES; // WebP
++  }
++  return NO;
++}
++
++- (void)deleteTileImage:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++  NSURL *tileCacheFilePath = [NSURL
++      URLWithString:[NSString stringWithFormat:@"%@/%ld/%ld/%ld",
++                                               self.tileCachePath, (long)zoom,
++                                               (long)x, (long)y]];
++  [[NSFileManager defaultManager] removeItemAtPath:[tileCacheFilePath path]
++                                             error:nil];
++}
++
++- (NSData *)getTile:(NSUInteger)zoom
++                  x:(NSUInteger)x
++                  y:(NSUInteger)y
++          transient:(BOOL *)transient {
 +
 +  if (self.flipY == YES) {
 +    y = (1 << zoom) - y - 1;
@@ -12619,8 +12670,20 @@ index 0000000..4c2da90
 +
 +  NSData *data;
 +  data = [self readTileImage:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y];
++  if (data && ![self isLikelyImageData:data]) {
++    // 旧実装が書き込んだ画像でないキャッシュ（404本文など）は削除して取り直す
++    [self deleteTileImage:zoom x:x y:y];
++    data = nil;
++  }
 +  if (data == nil && !self.offlineMode && self.tileCachePath) {
-+    data = [self fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y];
++    data = [self fetchTile:(NSUInteger)zoom
++                         x:(NSUInteger)x
++                         y:(NSUInteger)y
++                 transient:transient];
++    if (data && ![self isLikelyImageData:data]) {
++      // 画像でないレスポンスはキャッシュせず破棄
++      data = nil;
++    }
 +    if (data) {
 +      [self writeTileImage:(NSUInteger)zoom
 +                         x:(NSUInteger)x
@@ -12676,25 +12739,33 @@ index 0000000..4c2da90
 +  return [NSURL URLWithString:url];
 +}
 +
-+- (NSData *)fetchTile:(NSUInteger)zoom x:(NSUInteger)x y:(NSUInteger)y {
++- (NSData *)fetchTile:(NSUInteger)zoom
++                    x:(NSUInteger)x
++                    y:(NSUInteger)y
++            transient:(BOOL *)transient {
 +  __block NSData *data = nil;
 +  __block NSError *error = nil;
++  __block NSInteger statusCode = 0;
 +
 +  NSURL *url = [self generateURLwithTemplate:self.tileTemplate x:x y:y z:zoom];
 +  if (!url) {
 +    return nil;
 +  }
 +
++  static const NSTimeInterval kFetchTimeout = 5;
++
++  // セッションは毎回生成すると接続リソースを浪費するため共有する
++  static NSURLSession *session = nil;
++  static dispatch_once_t onceToken;
++  dispatch_once(&onceToken, ^{
++    NSURLSessionConfiguration *config =
++        [NSURLSessionConfiguration defaultSessionConfiguration];
++    config.timeoutIntervalForRequest = kFetchTimeout;
++    session = [NSURLSession sessionWithConfiguration:config];
++  });
++
 +  // セマフォを作成して非同期処理を待機
 +  dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-+
-+  // NSURLSessionConfigurationを作成し、タイムアウトを設定
-+  NSURLSessionConfiguration *config =
-+      [NSURLSessionConfiguration defaultSessionConfiguration];
-+  config.timeoutIntervalForRequest =
-+      1; // タイムアウト時間を秒単位で設定（ここでは10秒）
-+
-+  NSURLSession *session = [NSURLSession sessionWithConfiguration:config];
 +
 +  NSURLSessionDataTask *task =
 +      [session dataTaskWithURL:url
@@ -12703,32 +12774,48 @@ index 0000000..4c2da90
 +                                 NSError *_Nullable receivedError) {
 +               data = receivedData;
 +               error = receivedError;
++               if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
++                 statusCode = ((NSHTTPURLResponse *)response).statusCode;
++               }
 +               // 非同期処理が完了したことをセマフォに通知
 +               dispatch_semaphore_signal(semaphore);
 +             }];
 +
 +  [task resume];
 +
-+  // タイムアウト時間を設定してセマフォで待機
-+  dispatch_time_t timeout =
-+      dispatch_time(DISPATCH_TIME_NOW,
-+                    (int64_t)(config.timeoutIntervalForRequest * NSEC_PER_SEC));
++  // リクエストのタイムアウトより少し長く待つ（URLSession側のタイムアウトを先に効かせる）
++  dispatch_time_t timeout = dispatch_time(
++      DISPATCH_TIME_NOW, (int64_t)((kFetchTimeout + 1) * NSEC_PER_SEC));
 +  long waitResult = dispatch_semaphore_wait(semaphore, timeout);
 +
 +  if (waitResult != 0) {
-+    // タイムアウトが発生した場合
-+    // NSLog(@"Request timed out.");
-+    [task cancel]; // タスクをキャンセル
++    // タイムアウトが発生した場合は一時的な失敗として再試行させる
++    [task cancel];
++    if (transient) {
++      *transient = YES;
++    }
 +    return nil;
 +  }
 +
 +  if (error) {
-+    // エラーが発生した場合
-+    // NSLog(@"Error fetching tile: %@", [error localizedDescription]);
++    // ネットワークエラーは一時的な失敗として再試行させる
++    if (transient) {
++      *transient = YES;
++    }
 +    return nil;
-+  } else {
++  }
++  if (statusCode >= 200 && statusCode < 300 && data.length > 0) {
 +    return data;
 +  }
++  if (statusCode >= 400 && statusCode < 500) {
++    // タイルが存在しない（404など）は確定失敗
++    return nil;
++  }
++  // 5xxや想定外のレスポンスは一時的な失敗として再試行させる
++  if (transient) {
++    *transient = YES;
++  }
++  return nil;
 +}
 +
 +- (void)writeTileImage:(NSUInteger)zoom
@@ -12769,7 +12856,8 @@ index 0000000..4c2da90
 +- (NSData *)drawOverZoomTile:(NSUInteger)tryZ
 +                           x:(NSUInteger)x
 +                           y:(NSUInteger)y
-+                        minZ:(NSInteger)minZ {
++                        minZ:(NSInteger)minZ
++                   transient:(BOOL *)transient {
 +
 +  int overZoomLevel = tryZ - minZ;
 +  int zoomFactor = 1 << overZoomLevel;
@@ -12782,7 +12870,10 @@ index 0000000..4c2da90
 +  // if (overZoomLevel > 5) {
 +  //   return nil;
 +  // }
-+  NSData *data = [self getTile:zoomParent x:xParent y:yParent];
++  NSData *data = [self getTile:zoomParent
++                             x:xParent
++                             y:yParent
++                     transient:transient];
 +  if (!data) {
 +    return nil;
 +  }
@@ -12825,14 +12916,22 @@ index 0000000..4c2da90
 +
 +- (NSData *)drawFromHigherZoomTile:(NSUInteger)zoom
 +                                 x:(NSUInteger)x
-+                                 y:(NSUInteger)y {
++                                 y:(NSUInteger)y
++                         transient:(BOOL *)transient {
 +  // NSLog(@"RNM:fromHigher %ld,%ld,%ld", zoom, x, y);
 +  NSUInteger X = x * 2;
 +  NSUInteger Y = y * 2;
-+  NSData *leftTop = [self getTile:zoom + 1 x:X y:Y];
-+  NSData *leftBottom = [self getTile:zoom + 1 x:X y:Y + 1];
-+  NSData *rightTop = [self getTile:zoom + 1 x:X + 1 y:Y];
-+  NSData *rightBottom = [self getTile:zoom + 1 x:X + 1 y:Y + 1];
++  BOOL anyTransient = NO;
++  NSData *leftTop = [self getTile:zoom + 1 x:X y:Y transient:&anyTransient];
++  NSData *leftBottom = [self getTile:zoom + 1 x:X y:Y + 1 transient:&anyTransient];
++  NSData *rightTop = [self getTile:zoom + 1 x:X + 1 y:Y transient:&anyTransient];
++  NSData *rightBottom = [self getTile:zoom + 1
++                                    x:X + 1
++                                    y:Y + 1
++                            transient:&anyTransient];
++  if (anyTransient && transient) {
++    *transient = YES;
++  }
 +
 +  // 画像があるものからsizeを取得
 +  NSInteger width;
@@ -12889,8 +12988,8 @@ index 0000000..4c2da90
 +  UIGraphicsEndImageContext();
 +
 +  NSData *data = UIImagePNGRepresentation(combinedImage);
-+  // キャッシュに保存
-+  if (self.tileCachePath) {
++  // キャッシュに保存（一時的な取得失敗で欠けたタイルを含む場合は保存しない）
++  if (self.tileCachePath && !anyTransient) {
 +    [self writeTileImage:(NSUInteger)zoom
 +                       x:(NSUInteger)x
 +                       y:(NSUInteger)y
