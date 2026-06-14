@@ -556,7 +556,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   const onRegionChangeMapView = useCallback(
     (region: Region | ViewState) => {
       changeMapRegion(region);
-      !isDrawLineVisible && showDrawLine();
+      // Web(maplibre)は地図パン中にdrawLineのhide/showが起きず refreshDrawLine が false のままになり、
+      // 再計算useEffectが走らず描画オーバーレイ（マーカー/ライン）が旧位置に取り残される。
+      // Webでは地図移動のたびにshowDrawLine()でrefreshフラグを立て、xyを地図へ追従させる。
+      if (Platform.OS === 'web' || !isDrawLineVisible) showDrawLine();
       closeVectorTileInfo();
       setPoiInfo(null);
       setMapLocationInfo(null);
