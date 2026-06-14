@@ -264,7 +264,6 @@
     "metro-react-native-babel-preset": "0.76.8",
     "mockdate": "^3.0.5",
     "patch-package": "8.0.0",
-    "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.8.4",
     "react-test-renderer": "19.2.0",
     "redux-mock-store": "^1.5.5",

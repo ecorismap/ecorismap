@@ -5,10 +5,10 @@ jobs:
     name: Run Tests and Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: yarn
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

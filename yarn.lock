@@ -14596,7 +14596,6 @@ __metadata:
     pbf: ^5.1.0
     pdfjs-dist: 4.5.136
     pmtiles: 3.0.6
-    postinstall-postinstall: ^2.1.0
     prettier: ^3.8.4
     prop-types: ^15.8.1
     react: 19.2.3
@@ -23651,13 +23650,6 @@ __metadata:
   dependencies:
     xtend: ^4.0.0
   checksum: 746b71f93805ae33b03528e429dc624706d1f9b20ee81bf743263efb6a0cd79ae02a642a8a480dbc0f09547b4315ab7df6ce5ec0be77ed700bac42730f5c76b2
-  languageName: node
-  linkType: hard
-
-"postinstall-postinstall@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "postinstall-postinstall@npm:2.1.0"
-  checksum: e1d34252cf8d2c5641c7d2db7426ec96e3d7a975f01c174c68f09ef5b8327bc8d5a9aa2001a45e693db2cdbf69577094d3fe6597b564ad2d2202b65fba76134b
   languageName: node
   linkType: hard
 
