@@ -17,7 +17,10 @@ jest.mock('../useProject', () => ({
 }));
 
 // テスト用のストアを作成
-const createTestStore = (initialData: RecordType[] = []) => {
+const createTestStore = (
+  initialData: RecordType[] = [],
+  layerOverrides: Partial<LayerType> = {}
+) => {
   return configureStore({
     reducer: {
       dataSet: dataSetReducer,
@@ -42,6 +45,7 @@ const createTestStore = (initialData: RecordType[] = []) => {
             { id: 'field2', name: 'Value', format: 'DECIMAL' },
           ],
           active: true,
+          ...layerOverrides,
         } as LayerType,
       ],
       settings: {
@@ -583,6 +587,39 @@ describe('useData', () => {
       expect(result.current.sortedRecordSet[0].field.value).toBe(300);
       expect(result.current.sortedRecordSet[1].field.value).toBe(200);
       expect(result.current.sortedRecordSet[2].field.value).toBe(100);
+    });
+
+    it('列を並べ替えた状態で追加しても連番(SERIAL)が正しく採番される', () => {
+      // SERIALフィールドを持つレイヤーを用意（ストア順の末尾が最新追加レコード=連番3）
+      const records: RecordType[] = [
+        { ...createMockRecord('record1', 'A', 1), field: { serial: 1 } },
+        { ...createMockRecord('record2', 'B', 2), field: { serial: 2 } },
+        { ...createMockRecord('record3', 'C', 3), field: { serial: 3 } },
+      ];
+      const store = createTestStore(records, {
+        field: [{ id: 'fieldSerial', name: 'serial', format: 'SERIAL' }],
+      });
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <Provider store={store}>{children}</Provider>
+      );
+
+      const { result } = renderHook(() => useData('layer1'), { wrapper });
+
+      // serialで降順ソート（末尾が連番1のレコードになる）
+      act(() => {
+        result.current.changeOrder('serial', 'DESCENDING');
+      });
+      expect(result.current.sortedRecordSet[result.current.sortedRecordSet.length - 1].field.serial).toBe(1);
+
+      // ソート状態のまま新規追加
+      let newRecord: RecordType | undefined;
+      act(() => {
+        newRecord = result.current.addDefaultRecord();
+      });
+
+      // ソート末尾(連番1)+1=2 ではなく、最新追加レコード基準の 4 になること
+      expect(newRecord?.field.serial).toBe(4);
     });
   });
 

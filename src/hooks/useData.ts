@@ -165,7 +165,8 @@ export const useData = (layerId: string): UseDataReturnType => {
       currentLocation?: { latitude: number; longitude: number; altitude?: number }
     ) => {
       const id = ulid();
-      const ownRecordSet = sortedRecordSet.filter((d) => d.userId === dataUser.uid);
+      // 採番(連番/前回値引き継ぎ)はソート状態に依存しないよう、未ソートのストア順(末尾が最新追加)を使用する
+      const ownRecordSet = allUserRecordSet.filter((d) => d.userId === dataUser.uid);
       const field = getDefaultField(targetLayer, ownRecordSet, id);
 
       // GPS座標を使用する場合
@@ -192,7 +193,7 @@ export const useData = (layerId: string): UseDataReturnType => {
       setCheckList([]);
       return newData;
     },
-    [sortedRecordSet, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
+    [allUserRecordSet, targetLayer, dataUser.uid, dataUser.displayName, dispatch]
   );
 
   const deleteRecords = useCallback(() => {
