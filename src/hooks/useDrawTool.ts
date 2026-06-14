@@ -1330,6 +1330,10 @@ export const useDrawTool = (mapViewRef: MapView | MapRef | null): UseDrawToolRet
         return { ...line, xy: latLonArrayToXYArray(line.latlon, mapRegion, mapSize, mapViewRef) };
       });
       setDrawLineVisible(true);
+      // Web(maplibre)は地図移動中もisDrawLineVisibleがtrueのままで、setDrawLineVisible(true)が
+      // no-opになり再描画が起きない。再計算したxyを反映するため明示的に再描画を促す。
+      // （モバイルはhide/showのトグルで再マウントされるため不要）
+      if (Platform.OS === 'web') setRedraw(ulid());
       // 座標再計算後はフラグをリセット
       refreshDrawLine.current = false;
     }

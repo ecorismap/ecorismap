@@ -18,7 +18,6 @@ interface Props {
 
 export const Polygon = React.memo(
   (props: Props) => {
-    //console.log('render Polygon');
     const { data, layer, zoom: currentZoom, zIndex, selectedRecord, bounds } = props;
 
     const culledData = useMemo(() => {
@@ -129,10 +128,24 @@ interface PolygonComponentProps {
 const PolygonComponent = React.memo((props: PolygonComponentProps) => {
   const { label, strokeColor, fillColor, strokeWidth, zIndex, feature } = props;
   if (!feature.coords || !feature.centroid) return null;
+
+  // iOS（MapKit）のreact-native-maps Polygonは、coordinatesプロップを更新しても
+  // オーバーレイが再描画されない（編集確定後に旧形状が残る）。座標が変わったら
+  // keyを変えてPolyを再マウントし反映させる。Android/Web(maplibre)は更新が反映される
+  // ため、不要な再マウントを避けてfeature.idのみをkeyにする。
+  const polyKey =
+    Platform.OS === 'ios'
+      ? 'poly' +
+        feature.id +
+        '-' +
+        (feature.coords as LatLng[]).map((c) => `${c.latitude},${c.longitude}`).join(';') +
+        (feature.holes ? '|h' + JSON.stringify(Object.values(feature.holes)) : '')
+      : 'poly' + feature.id;
+
   return (
     <>
       <Poly
-        key={'poly' + feature.id}
+        key={polyKey}
         tappable={false}
         coordinates={feature.coords as LatLng[]}
         //Firestoreがネストした配列を受け付けないため、表示するときに一元から二次元配列に変換する
