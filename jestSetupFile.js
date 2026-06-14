@@ -474,6 +474,18 @@ jest.mock('react-native-japanese-text-analyzer', () => ({
   tokenize: jest.fn((text) => [{ surface: text, features: [] }]),
 }));
 
+// Mock expo-speech-recognition (辞書の音声入力)
+jest.mock('expo-speech-recognition', () => ({
+  ExpoSpeechRecognitionModule: {
+    start: jest.fn(),
+    stop: jest.fn(),
+    abort: jest.fn(),
+    requestPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true })),
+    getPermissionsAsync: jest.fn(() => Promise.resolve({ granted: true })),
+  },
+  useSpeechRecognitionEvent: jest.fn(),
+}));
+
 // Mock @react-native-community/image-editor
 jest.mock('@react-native-community/image-editor', () => ({
   __esModule: true,
@@ -571,6 +583,13 @@ jest.mock('expo-image-picker', () => ({
 
 jest.mock('expo-audio', () => ({
   setAudioModeAsync: jest.fn(() => Promise.resolve()),
+}));
+
+// SDK 56: expo-media-library's redesigned API extends native classes at module load,
+// which throws in jest ("Super expression must ..."). Mock the methods we use.
+jest.mock('expo-media-library', () => ({
+  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  createAssetAsync: jest.fn(() => Promise.resolve({ id: 'test-asset', uri: 'test://asset.jpg' })),
 }));
 
 //jest.mock('expo', () => require.requireMock('expo'));

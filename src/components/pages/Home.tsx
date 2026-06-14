@@ -287,7 +287,7 @@ export default function HomeScreen() {
       marginRight: 10,
     },
     map: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
       minHeight: 1,
       minWidth: 1,
     },

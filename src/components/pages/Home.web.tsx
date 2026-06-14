@@ -6,7 +6,7 @@ import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
 import { HomeButtons } from '../organisms/HomeButtons';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
-import Map, { AnyLayer, GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
+import Map, { GeolocateControl, MapRef, NavigationControl, ScaleControl } from 'react-map-gl/maplibre';
 import maplibregl, {
   BackgroundLayerSpecification,
   FillLayerSpecification,
@@ -343,7 +343,7 @@ export default function HomeScreen() {
    * @param tileMap 対象のタイルマップ
    * @returns ラスターレイヤー定義またはnull
    */
-  const getRasterLayer = useCallback((tileMap: TileMapType): AnyLayer | null => {
+  const getRasterLayer = useCallback((tileMap: TileMapType): LayerSpecification | null => {
     if (tileMap.url) {
       return {
         id: tileMap.id,
@@ -352,7 +352,7 @@ export default function HomeScreen() {
         minzoom: tileMap.minimumZ,
         maxzoom: 24,
         paint: { 'raster-opacity': 1 - (tileMap.transparency !== undefined ? tileMap.transparency : 0) },
-      } as AnyLayer;
+      } as LayerSpecification;
     } else if (tileMap.id === 'hybrid') {
       return {
         id: 'satellite',
@@ -380,7 +380,7 @@ export default function HomeScreen() {
    * @param tileMap 対象のタイルマップ
    * @returns ヒルシェードレイヤー定義
    */
-  const getHillshadeLayer = useCallback((tileMap: TileMapType): AnyLayer | AnyLayer[] => {
+  const getHillshadeLayer = useCallback((tileMap: TileMapType): LayerSpecification | LayerSpecification[] => {
     // transparencyが未定義の場合は0（不透明）をデフォルトとする
     const transparency = tileMap.transparency ?? 0;
     const opacity = 1 - transparency;
@@ -409,7 +409,7 @@ export default function HomeScreen() {
           'hillshade-exaggeration': 0.8,
           'hillshade-illumination-anchor': 'viewport' as const,
         },
-      } as AnyLayer,
+      } as LayerSpecification,
     ];
   }, []);
 
@@ -482,7 +482,7 @@ export default function HomeScreen() {
    * @returns レイヤー定義（単一または配列）またはnull
    */
   const getTileMapLayers = useCallback(
-    async (tileMap: TileMapType): Promise<AnyLayer | AnyLayer[] | null> => {
+    async (tileMap: TileMapType): Promise<LayerSpecification | LayerSpecification[] | null> => {
       // 非表示またはグループの場合はスキップ
       if (!tileMap.visible || tileMap.isGroup) {
         return null;
@@ -565,10 +565,10 @@ export default function HomeScreen() {
       .map((tileMap: TileMapType) => getTileMapLayers(tileMap));
 
     const layersResult = await Promise.all(layersPromise);
-    const dynamicLayers = layersResult.flat().filter((layer): layer is AnyLayer => !!layer);
+    const dynamicLayers = layersResult.flat().filter((layer): layer is LayerSpecification => !!layer);
 
     // 各レイヤーをマップに追加（features-placeholderの前に挿入）
-    dynamicLayers.forEach((layer: AnyLayer) => {
+    dynamicLayers.forEach((layer: LayerSpecification) => {
       if (!map.getLayer(layer.id)) {
         try {
           // features-placeholderレイヤーの前に挿入することで、
@@ -990,6 +990,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });

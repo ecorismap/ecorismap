@@ -13,6 +13,8 @@ import {
   httpsCallable,
   getDoc,
   orderBy,
+  addDoc,
+  onSnapshot,
 } from '../lib/firebase/firebase';
 
 export type UsePurchasesWebReturnType = {
@@ -65,6 +67,10 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
   }, [currentUser, getPortalLink]);
 
   const purchaseItem = async (price: string) => {
+    if (currentUser === undefined) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const checkoutSession = {
       automatic_tax: true,
@@ -79,13 +85,12 @@ export const usePurchasesWeb = (): UsePurchasesWebReturnType => {
       },
     };
 
-    const docRef = await firestore
-      .collection('customers')
-      .doc(currentUser)
-      .collection('checkout_sessions')
-      .add(checkoutSession);
+    const docRef = await addDoc(
+      collection(firestore, 'customers', currentUser, 'checkout_sessions'),
+      checkoutSession
+    );
 
-    docRef.onSnapshot((snap) => {
+    onSnapshot(docRef, (snap) => {
       const { error, url } = snap.data() as Checkout_sessions;
       if (error) {
         console.log('$$$$$$$$$', error.message);

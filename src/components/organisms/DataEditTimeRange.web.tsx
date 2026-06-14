@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import TextField from '@mui/material/TextField';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
@@ -81,37 +80,30 @@ export const DataEditTimeRange = (props: Props) => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
-          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
-              // @ts-ignore
               <TimePicker
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
                 ampm={false}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'date' && (
-              // @ts-ignore
               <DatePicker
-                inputFormat={LocalizedDateFormatForWeb}
+                format={LocalizedDateFormatForWeb}
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'datetime' && (
-              // @ts-ignore
               <DateTimePicker
-                inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
+                format={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue1}
                 onChange={(date) => onDateChange(date, 1)}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
           </LocalizationProvider>
@@ -121,37 +113,30 @@ export const DataEditTimeRange = (props: Props) => {
         </View>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
-          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
-              // @ts-ignore
               <TimePicker
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
                 ampm={false}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'date' && (
-              // @ts-ignore
               <DatePicker
-                inputFormat={LocalizedDateFormatForWeb}
+                format={LocalizedDateFormatForWeb}
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'datetime' && (
-              // @ts-ignore
               <DateTimePicker
-                inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
+                format={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue2}
                 onChange={(date) => onDateChange(date, 2)}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
           </LocalizationProvider>

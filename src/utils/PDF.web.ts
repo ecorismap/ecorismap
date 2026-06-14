@@ -1,10 +1,13 @@
 import { getTileRegion } from './Tile';
 import { TileMapType } from '../types';
-//@ts-ignore
-import * as pdfjs from 'pdfjs-dist/webpack';
+import * as pdfjs from 'pdfjs-dist';
 import initGdalJs from 'gdal3.js';
 import { warpedFileType } from 'react-native-gdalwarp';
 import { GeoInfo } from './PDF';
+
+// Metro では webpack 専用エントリ(pdfjs-dist/webpack)が使えないため、worker を明示指定する。
+// worker は scripts/copy-web-assets.js が public/static/ へコピーする。
+pdfjs.GlobalWorkerOptions.workerSrc = '/static/pdf.worker.min.mjs';
 
 export async function generateTileMap(
   tileMaps: TileMapType[],
@@ -200,7 +203,7 @@ export const convertPDFToGeoTiff = async (uri: string) => {
     }
     return outputFiles;
   } catch (e) {
-    //console.error('Error processing PDF:', e);
+    console.error('Error processing PDF:', e);
     return [];
   }
 };

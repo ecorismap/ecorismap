@@ -24,6 +24,11 @@ export default function DataContainer() {
 
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(params?.targetLayer as LayerType);
+  // Reduxから最新のレイヤーを取得（params.targetLayerは画面遷移時のスナップショットでactive状態が古くなるため）
+  const liveTargetLayer = useSelector(
+    (state: RootState) => state.layers.find((l) => l.id === params?.targetLayer?.id),
+    shallowEqual
+  );
   const [isExporting, setIsExporting] = useState(false);
 
   // MapViewContextから現在地とGPS状態を取得
@@ -94,12 +99,12 @@ export default function DataContainer() {
   }, [checkedRecords, sortedRecordSet, generateExportGeoData, isExporting, isMapMemoLayer, params?.targetLayer]);
 
   const pressDeleteData = useCallback(async () => {
-    if (!params?.targetLayer) return;
+    if (!params?.targetLayer || !liveTargetLayer) return;
 
     const ret = await ConfirmAsync(t('Data.confirm.deleteData'));
     if (!ret) return;
 
-    const checkResult = checkRecordEditable(params.targetLayer);
+    const checkResult = checkRecordEditable(liveTargetLayer);
 
     if (!checkResult.isOK) {
       if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -107,7 +112,7 @@ export default function DataContainer() {
         const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
         if (!confirmResult) return;
         // 編集モードにする
-        changeActiveLayer(params.targetLayer);
+        changeActiveLayer(liveTargetLayer);
       } else {
         // その他の編集不可理由（プロジェクトロックなど）
         Alert.alert('', checkResult.message);
@@ -115,12 +120,12 @@ export default function DataContainer() {
       }
     }
     deleteRecords();
-  }, [changeActiveLayer, checkRecordEditable, deleteRecords, params?.targetLayer]);
+  }, [changeActiveLayer, checkRecordEditable, deleteRecords, liveTargetLayer, params?.targetLayer]);
 
   const pressAddData = useCallback(async () => {
-    if (!params?.targetLayer) return;
+    if (!params?.targetLayer || !liveTargetLayer) return;
 
-    const checkResult = checkRecordEditable(params.targetLayer);
+    const checkResult = checkRecordEditable(liveTargetLayer);
 
     if (!checkResult.isOK) {
       if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -128,7 +133,7 @@ export default function DataContainer() {
         const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
         if (!confirmResult) return;
         // 編集モードにする
-        changeActiveLayer(params.targetLayer);
+        changeActiveLayer(liveTargetLayer);
       } else {
         // その他の編集不可理由（プロジェクトロックなど）
         Alert.alert('', checkResult.message);
@@ -148,6 +153,7 @@ export default function DataContainer() {
     addDefaultRecord,
     changeActiveLayer,
     checkRecordEditable,
+    liveTargetLayer,
     layer,
     navigate,
     params?.targetLayer,
@@ -157,9 +163,9 @@ export default function DataContainer() {
 
   const addDataByDictionary = useCallback(
     async (fieldId: string, value: string) => {
-      if (!params?.targetLayer) return;
+      if (!params?.targetLayer || !liveTargetLayer) return;
 
-      const checkResult = checkRecordEditable(params.targetLayer);
+      const checkResult = checkRecordEditable(liveTargetLayer);
 
       if (!checkResult.isOK) {
         if (checkResult.message === t('hooks.message.noEditMode')) {
@@ -167,7 +173,7 @@ export default function DataContainer() {
           const confirmResult = await ConfirmAsync(t('hooks.confirmEditModeMessage'));
           if (!confirmResult) return;
           // 編集モードにする
-          changeActiveLayer(params.targetLayer);
+          changeActiveLayer(liveTargetLayer);
         } else {
           // その他の編集不可理由（プロジェクトロックなど）
           Alert.alert('', checkResult.message);
@@ -181,7 +187,15 @@ export default function DataContainer() {
       const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
       addDefaultRecord({ [fieldName]: value }, locationToUse);
     },
-    [addDefaultRecord, changeActiveLayer, checkRecordEditable, params?.targetLayer, gpsState, currentLocation]
+    [
+      addDefaultRecord,
+      changeActiveLayer,
+      checkRecordEditable,
+      liveTargetLayer,
+      params?.targetLayer,
+      gpsState,
+      currentLocation,
+    ]
   );
   const gotoDataEdit = useCallback(
     (index: number) => {

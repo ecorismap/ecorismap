@@ -1,19 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as wanakana from 'wanakana';
-import Voice from '@react-native-voice/voice';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import { tokenize } from 'react-native-japanese-text-analyzer';
 import levenshtein from 'fast-levenshtein';
-import _ from 'lodash';
 
-import { LogBox, Platform } from 'react-native';
 import { Alert } from '../components/atoms/Alert';
 import { t } from 'i18next';
 import { getDatabase } from '../utils/SQLite';
 import { SQLiteDatabase } from 'expo-sqlite';
-// Safely ignore logs in non-test environment
-if (LogBox && LogBox.ignoreLogs) {
-  LogBox.ignoreLogs(['new NativeEventEmitter()']);
-}
 
 export type UseDictionaryInputReturnType = {
   queryString: string;
@@ -41,17 +35,29 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
   };
 
   const queryData = useCallback(
-    (query: string) => {
+    (rawQuery: string) => {
       try {
         //先頭からの完全一致と部分一致を取得する
         //完全一致は昇順、部分一致はスコア順に並べる
         //完全一致と部分一致で重複するものは完全一致のみにする
 
         if (db === undefined) return;
+
+        // 音声入力では文章ごと認識され長くなることがある。
+        // 2-gram展開でLIKE条件を大量にOR連結するとSQLiteの式深さ/変数数の上限を超えて
+        // getAllSyncが例外になる（特にiOS）。そのため2-gram生成は先頭の一定長に制限する。
+        const query = rawQuery.trim();
+        if (query === '') {
+          setFilteredData([]);
+          return;
+        }
+        const QUERY_PART_MAX_LEN = 30;
+        const partSource = query.slice(0, QUERY_PART_MAX_LEN);
+
         //console.log('B', query);
         const queryParts = [query];
-        for (let i = 0; i < query.length - 1; i++) {
-          queryParts.push(query.slice(i, i + 2));
+        for (let i = 0; i < partSource.length - 1; i++) {
+          queryParts.push(partSource.slice(i, i + 2));
         }
 
         const queryConditions = queryParts.map(() => `value LIKE ?`).join(' OR ');
@@ -77,7 +83,9 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
         const finalData = [...queriedDataExact, ...queriedDataPartial];
         setFilteredData([...finalData, query]);
       } catch (e) {
-        setFilteredData(["Can't access database!", query]);
+        // eslint-disable-next-line no-console
+        console.error('queryData failed:', e);
+        setFilteredData(["Can't access database!", rawQuery]);
       }
     },
     [db, filterString, table]
@@ -101,56 +109,76 @@ export const useDictionaryInput = (table: string, initialValue: string): UseDict
     setQueryString(initialValue);
   }, [initialValue]);
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    Voice.onSpeechResults = _.debounce(async (e: any) => {
-      const voiceInput = e.value[0];
-      const result = await tokenize(voiceInput);
-      if (result.length === 0) return;
-      const katakanaOutput = result
-        .map((item) => {
-          return item.pronunciation === '*' || item.pronunciation === '' ? item.surface_form : item.reading;
-        })
-        .join('')
-        .replace(/\s+/g, '')
-        .toLowerCase();
-      // 関数内で最新のステートを参照するために、ref を利用します。
+  // 音声認識結果を辞書検索用クエリへ変換する。
+  // 日本語形態素解析(tokenize)で漢字を読み(カタカナ)へ変換するが、
+  // Web等でネイティブ解析が使えない場合は認識テキストをそのまま使う。
+  const applyVoiceResult = useCallback(
+    async (voiceInput: string) => {
+      if (!voiceInput) return;
+      let katakanaOutput = voiceInput;
+      try {
+        const result = await tokenize(voiceInput);
+        if (result.length > 0) {
+          katakanaOutput = result
+            .map((item) => {
+              return item.pronunciation === '*' || item.pronunciation === '' ? item.surface_form : item.reading;
+            })
+            .join('')
+            .replace(/\s+/g, '')
+            .toLowerCase();
+        }
+      } catch {
+        // tokenizeが利用できない環境では認識テキストをそのまま使用する
+      }
       const formattedQuery = wanakana.toKatakana(katakanaOutput);
       queryData(formattedQuery);
       setQueryString(katakanaOutput);
-      await stopListening();
-      //Voice.destroy().then(Voice.removeAllListeners);
-    }, 400);
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, [queryData]); // この useEffect は最初のマウント時のみ実行します。
+    },
+    [queryData]
+  );
 
-  const startListening = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('', t('common.notSupported'));
-      return;
-    }
-    setIsListening(true);
-    setQueryString('');
-    try {
-      await Voice.start('ja-JP');
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
-    }
-    //setTimeout(async () => await stopListening(), 5000);
-  };
+  // expo-speech-recognitionのイベント購読（マウント中は自動でクリーンアップされる）
+  useSpeechRecognitionEvent('start', () => setIsListening(true));
+  useSpeechRecognitionEvent('end', () => setIsListening(false));
+  useSpeechRecognitionEvent('error', (event) => {
+    setIsListening(false);
+    // eslint-disable-next-line no-console
+    console.error('SpeechRecognition error:', event.error, event.message);
+  });
+  useSpeechRecognitionEvent('result', (event) => {
+    const transcript = event.results[0]?.transcript ?? '';
+    applyVoiceResult(transcript);
+  });
 
-  const stopListening = async () => {
+  const stopListening = useCallback(() => {
     setIsListening(false);
     try {
-      await Voice.stop();
+      ExpoSpeechRecognitionModule.stop();
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error(e);
     }
-  };
+  }, []);
+
+  const startListening = useCallback(async () => {
+    setQueryString('');
+    try {
+      const permission = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('', t('common.notSupported'));
+        return;
+      }
+      ExpoSpeechRecognitionModule.start({
+        lang: 'ja-JP',
+        interimResults: false,
+        continuous: false,
+      });
+    } catch (e) {
+      setIsListening(false);
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+  }, []);
 
   return {
     queryString,

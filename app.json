@@ -3,12 +3,28 @@
     "name": "ecorismap",
     "slug": "ecorismap",
     "version": "1.0.0",
-    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
     "plugins": [
-      "expo-audio"
-    ]
+      "expo-audio",
+      "expo-font",
+      "expo-asset",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "辞書の音声入力にマイクを使用します。",
+          "speechRecognitionPermission": "辞書の音声入力に音声認識を使用します。",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ]
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./public/favicon.ico"
+    }
   }
 }

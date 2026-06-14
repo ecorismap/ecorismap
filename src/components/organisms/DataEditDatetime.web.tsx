@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import TextField from '@mui/material/TextField';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
@@ -54,38 +53,30 @@ export const DataEditDatetime = (props: Props) => {
       <View style={styles.td}>
         <View style={styles.tr2}>
           {name && <Text style={styles.title}>{name}</Text>}
-          {/* @ts-ignore */}
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             {mode === 'time' && (
-              // @ts-ignore
               <TimePicker
                 value={dateValue}
                 onChange={onDateChange}
                 ampm={false}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'date' && (
-              // @ts-ignore
               <DatePicker
-                inputFormat={LocalizedDateFormatForWeb}
+                format={LocalizedDateFormatForWeb}
                 value={dateValue}
                 onChange={onDateChange}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
             {mode === 'datetime' && (
-              // @ts-ignore
               <DateTimePicker
-                disableMaskedInput
-                inputFormat={`${LocalizedDateFormatForWeb} HH:mm`}
+                format={`${LocalizedDateFormatForWeb} HH:mm`}
                 ampm={false}
                 value={dateValue}
                 onChange={onDateChange}
-                // @ts-ignore
-                renderInput={(params) => <TextField size="small" {...params} />}
+                slotProps={{ textField: { size: 'small' } }}
               />
             )}
           </LocalizationProvider>

@@ -45,9 +45,9 @@ jest.mock('../Home', () => ({
 }));
 
 describe('Home Component Unit Tests', () => {
-  it('should render all main UI elements', () => {
+  it('should render all main UI elements', async () => {
     const Home = require('../Home').default;
-    const { getByTestId } = render(<Home />);
+    const { getByTestId } = await render(<Home />);
 
     // Check that all main UI elements are rendered
     expect(getByTestId('home-container')).toBeTruthy();
@@ -60,9 +60,9 @@ describe('Home Component Unit Tests', () => {
     expect(getByTestId('project-label')).toBeTruthy();
   });
 
-  it('should render map view with correct text', () => {
+  it('should render map view with correct text', async () => {
     const Home = require('../Home').default;
-    const { getByText } = render(<Home />);
+    const { getByText } = await render(<Home />);
 
     expect(getByText('Map View')).toBeTruthy();
     expect(getByText('GPS')).toBeTruthy();
@@ -87,9 +87,9 @@ describe('Home Component Structure', () => {
     expect(typeof Home).toBe('function');
   });
 
-  it('should be renderable as a React component', () => {
+  it('should be renderable as a React component', async () => {
     const Home = require('../Home').default;
-    const component = render(<Home />);
+    const component = await render(<Home />);
     expect(component).toBeDefined();
   });
 });

@@ -17,6 +17,17 @@ import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
 import { exportFileFromData } from '../utils/File';
 
+// Web版のexpo-document-pickerはblob: URLを返すが、PDFインポート経路(importMapFile)はdata:を想定しているため変換する
+async function blobUriToDataUri(blobUri: string): Promise<string> {
+  const blob = await (await fetch(blobUri)).blob();
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function MapContainer() {
   const { navigate, navigateToHome } = useBottomSheetNavigation();
   const {
@@ -142,11 +153,15 @@ export default function MapContainer() {
     });
     if (file.assets === null) return;
     const name = file.assets[0].name;
-    const uri = file.assets[0].uri;
+    let uri = file.assets[0].uri;
     const ext = getExt(name)?.toLowerCase();
     if (!ext || !(ext === 'json' || ext === 'pdf' || ext === 'pmtiles')) {
       await AlertAsync(t('hooks.message.wrongExtension'));
       return;
+    }
+    // expo-document-picker(Web)はblob: URLを返すが、importMapFileはdata:を想定しているためdata:に変換する
+    if (Platform.OS === 'web' && uri.startsWith('blob:')) {
+      uri = await blobUriToDataUri(uri);
     }
     setIsLoading(true);
     setTimeout(async () => {

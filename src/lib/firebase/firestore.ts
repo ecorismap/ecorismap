@@ -36,7 +36,6 @@ import {
   firebaseReady,
 } from './firebase';
 import { t } from '../../i18n/config';
-import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 
 export const getUidByEmail = async (email: string) => {
   try {
@@ -73,8 +72,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
 
     // 常にサーバーから最新データを取得（プロジェクト一覧は最新情報が重要）
     // const firebaseStart = performance.now();
-    const querySnapshot: FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData> =
-      await getDocsFromServer(q);
+    const querySnapshot = await getDocsFromServer(q);
     // const firebaseEnd = performance.now();
     // console.log(`[PERF] Firebase getDocsFromServer: ${(firebaseEnd - firebaseStart).toFixed(0)}ms (${querySnapshot.docs.length} projects)`);
 
@@ -204,7 +202,7 @@ export const deleteAllData = async (projectId: string) => {
     // 1. サブコレクション 'data' への参照を取得
     const dataCol = collection(firestore, 'projects', projectId, 'data');
     // 2. 全ドキュメントを取得
-    const querySnapshot: FirebaseFirestoreTypes.DocumentData = await getDocs(dataCol);
+    const querySnapshot = await getDocs(dataCol);
     if (querySnapshot.empty) {
       return { isOK: true, message: '' };
     }
@@ -212,7 +210,7 @@ export const deleteAllData = async (projectId: string) => {
     // 3. バッチを作成して一括削除
     const batch = writeBatch(firestore);
     querySnapshot.docs.forEach(
-      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+      (docSnap) => {
         batch.delete(docSnap.ref);
       }
     );
@@ -261,7 +259,7 @@ export const deleteData = async (
     // バッチ処理で一括削除
     const batch = writeBatch(firestore);
     snapshot.docs.forEach(
-      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+      (docSnap) => {
         batch.delete(docSnap.ref);
       }
     );
@@ -482,7 +480,7 @@ export const deleteExistingData = async (
 
   // 5. バッチに削除操作を登録
   snapshot.docs.forEach(
-    (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+    (docSnap) => {
       batch.delete(docSnap.ref);
     }
   );
@@ -590,7 +588,7 @@ export const downloadPublicData = async (projectId: string, { excludeUserId }: {
     let docs = projectDataSet.docs;
     if (excludeUserId) {
       docs = docs.filter(
-        (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+        (docSnap) => {
           const data = docSnap.data() as DataFS;
           return data.userId !== excludeUserId;
         }
@@ -753,7 +751,7 @@ export const updateLayerDataPermission = async (
     // 3. バッチ作成＆更新操作を登録
     const batch = writeBatch(firestore);
     snapshot.docs.forEach(
-      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+      (docSnap) => {
         batch.update(docSnap.ref, { permission: newPermission });
       }
     );
@@ -801,7 +799,7 @@ export const getCloudDataSummary = async (
     >();
 
     snapshot.docs.forEach(
-      (docSnap: FirebaseFirestoreTypes.QueryDocumentSnapshot<FirebaseFirestoreTypes.DocumentData>) => {
+      (docSnap) => {
         const data = docSnap.data() as DataFS;
         const key = `${data.layerId}_${data.userId}_${data.permission}`;
 

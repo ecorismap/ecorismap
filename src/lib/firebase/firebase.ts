@@ -1,10 +1,10 @@
 import { getApp } from '@react-native-firebase/app';
 
 import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider } from '@react-native-firebase/app-check';
-import { FirebaseAuthTypes, getAuth } from '@react-native-firebase/auth';
-import { getFirestore, FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-import { getFunctions, FirebaseFunctionsTypes } from '@react-native-firebase/functions';
-import { getStorage, FirebaseStorageTypes } from '@react-native-firebase/storage';
+import { getAuth, connectAuthEmulator } from '@react-native-firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from '@react-native-firebase/firestore';
+import { getFunctions, connectFunctionsEmulator } from '@react-native-firebase/functions';
+import { getStorage, connectStorageEmulator } from '@react-native-firebase/storage';
 
 import { FUNC_LOGIN } from '../../constants/AppConstants';
 //import { Alert } from 'react-native';
@@ -32,6 +32,7 @@ export {
   getDoc,
   orderBy,
   doc,
+  addDoc,
   deleteDoc,
   writeBatch,
   onSnapshot,
@@ -42,10 +43,13 @@ export {
 export { httpsCallable } from '@react-native-firebase/functions';
 export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from '@react-native-firebase/storage';
 
-export let firestore: FirebaseFirestoreTypes.Module;
-export let functions: FirebaseFunctionsTypes.Module;
-export let storage: FirebaseStorageTypes.Module;
-export let auth: FirebaseAuthTypes.Module;
+// RNFB v24 aligned the modular API types with firebase-js-sdk: getFirestore()/getAuth()/etc.
+// now return the modular instance types (Firestore/Auth/...), not the legacy *.Module types.
+// Deriving from the getters keeps these in sync with what collection()/doc()/etc. expect.
+export let firestore: ReturnType<typeof getFirestore>;
+export let functions: ReturnType<typeof getFunctions>;
+export let storage: ReturnType<typeof getStorage>;
+export let auth: ReturnType<typeof getAuth>;
 
 let resolveFirebaseReady: () => void;
 export const firebaseReady: Promise<void> = new Promise((resolve) => {
@@ -54,6 +58,9 @@ export const firebaseReady: Promise<void> = new Promise((resolve) => {
 
 const initialize = async (isEmulating = false) => {
   //Alert.alert('', __DEV__ ? 'DEVモードです' : '本番モードです');
+  // RNFB v24's index.d.ts re-exports ReactNativeFirebaseAppCheckProvider as a type-only name,
+  // shadowing the runtime value from the modular API. The class exists at runtime, so construct it.
+  // @ts-ignore -- type-only export upstream; value is present at runtime
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
   rnfbProvider.configure({
     android: {
@@ -74,10 +81,10 @@ const initialize = async (isEmulating = false) => {
   storage = getStorage();
 
   if (isEmulating) {
-    auth.useEmulator('http://localhost:9099');
-    functions.useEmulator('localhost', 5001);
-    firestore.useEmulator('localhost', 8080);
-    storage.useEmulator('localhost', 9199);
+    connectAuthEmulator(auth, 'http://localhost:9099');
+    connectFunctionsEmulator(functions, 'localhost', 5001);
+    connectFirestoreEmulator(firestore, 'localhost', 8080);
+    connectStorageEmulator(storage, 'localhost', 9199);
   }
 
   resolveFirebaseReady();
