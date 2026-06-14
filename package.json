@@ -274,6 +274,11 @@
     "node": ">=22"
   },
   "packageManager": "yarn@3.6.4",
+  "dependenciesMeta": {
+    "canvas@2.11.2": {
+      "built": false
+    }
+  },
   "expo": {
     "doctor": {
       "reactNativeDirectoryCheck": {

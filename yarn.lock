@@ -14644,6 +14644,9 @@ __metadata:
     ulid: ^3.0.2
     wanakana: ^5.3.1
     xmlbuilder: ^15.1.1
+  dependenciesMeta:
+    canvas@2.11.2:
+      built: false
   languageName: unknown
   linkType: soft
 
