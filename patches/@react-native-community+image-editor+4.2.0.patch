@@ -1,8 +1,8 @@
 diff --git a/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt b/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
-index f2c2dbf..a6b2a5e 100644
+index 8fd6014..e75f0b7 100644
 --- a/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
 +++ b/node_modules/@react-native-community/image-editor/android/src/main/java/com/reactnativecommunity/imageeditor/ImageEditorModuleImpl.kt
-@@ -19,21 +19,15 @@ import android.net.Uri
+@@ -19,38 +19,30 @@
  import android.os.Build
  import android.provider.MediaStore
  import android.text.TextUtils
@@ -24,47 +24,35 @@ index f2c2dbf..a6b2a5e 100644
  import java.io.FileOutputStream
  import java.io.IOException
  import java.io.InputStream
-@@ -44,12 +38,11 @@ import kotlinx.coroutines.Dispatchers
+ import java.net.URL
+-import kotlin.math.roundToInt
+ import kotlinx.coroutines.CoroutineScope
+ import kotlinx.coroutines.Dispatchers
  import kotlinx.coroutines.cancel
  import kotlinx.coroutines.isActive
  import kotlinx.coroutines.launch
--
--object MimeType {
--    const val JPEG = "image/jpeg"
--    const val PNG = "image/png"
--    const val WEBP = "image/webp"
--}
 +import kotlin.math.max
 +import kotlin.math.min
 +import android.graphics.Canvas
 +import android.util.Log
 +import android.graphics.Paint
  
+-object MimeType {
+-    const val JPEG = "image/jpeg"
+-    const val PNG = "image/png"
+-    const val WEBP = "image/webp"
+-}
+-
  class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
      private val moduleCoroutineScope = CoroutineScope(Dispatchers.Default)
-@@ -87,15 +80,6 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
-         }
-     }
  
--    /**
--     * React Native
--     * - 0.77.x: toHashMap(): HashMap<String, Any?>?
--     * - 0.76.x: toHashMap(): HashMap<String, Any>?
--     */
--    fun <V> safeConvert(map: HashMap<String, V>?): HashMap<String, Any>? {
--        return map?.filterValues { it != null } as? HashMap<String, Any>
--    }
--
-     /**
-      * Crop an image. If all goes well, the promise will be resolved with the file:// URI of the new
-      * image as the only argument. This is a temporary file - consider using
-@@ -109,15 +93,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -100,15 +92,8 @@
       *   is passed to this is the file:// URI of the new image
       */
      fun cropImage(uri: String?, options: ReadableMap, promise: Promise) {
 -        val headers =
 -            if (options.hasKey("headers") && options.getType("headers") == ReadableType.Map)
--                safeConvert(options.getMap("headers")?.toHashMap())
+-                options.getMap("headers")?.toHashMap()
 -            else null
 -        val format = if (options.hasKey("format")) options.getString("format") else null
          val offset = if (options.hasKey("offset")) options.getMap("offset") else null
@@ -74,7 +62,7 @@ index f2c2dbf..a6b2a5e 100644
          val quality =
              if (options.hasKey("quality")) (options.getDouble("quality") * 100).toInt() else 90
          if (
-@@ -166,22 +143,25 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -157,22 +142,25 @@
                              width,
                              height,
                              targetWidth,
@@ -106,12 +94,12 @@ index f2c2dbf..a6b2a5e 100644
              } catch (e: Exception) {
                  promise.reject(e)
              }
-@@ -204,10 +184,11 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -195,10 +183,11 @@
          x: Int,
          y: Int,
          width: Int,
 -        height: Int,
--        headers: HashMap<String, Any>?
+-        headers: HashMap<String, Any?>?
 +        height: Int
      ): Bitmap? {
 -        return openBitmapInputStream(uri, headers)?.use {
@@ -121,28 +109,27 @@ index f2c2dbf..a6b2a5e 100644
              // Efficiently crops image without loading full resolution into memory
              // https://developer.android.com/reference/android/graphics/BitmapRegionDecoder.html
              val decoder =
-@@ -215,32 +196,34 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -206,32 +195,34 @@
                      BitmapRegionDecoder.newInstance(it)
                  } else {
                      @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(it, false)
 -                } ?: throw Error("Could not create bitmap decoder. Uri: $uri")
--
++                }
++            return@use try {
+ 
 -            val imageHeight: Int = decoder.height
 -            val imageWidth: Int = decoder.width
 -            val orientation = getOrientation(reactContext, Uri.parse(uri))
--
++                val cropStartX = if(x<0) 0 else x
++                val cropStartY = if(y<0) 0 else y
+ 
 -            val (left, top) =
 -                when (orientation) {
 -                    90 -> y to imageHeight - width - x
 -                    180 -> imageWidth - width - x to imageHeight - height - y
 -                    270 -> imageWidth - height - y to x
 -                    else -> x to y
-                 }
-+            return@use try {
-+
-+                val cropStartX = if(x<0) 0 else x
-+                val cropStartY = if(y<0) 0 else y
-+                
+-                }
  
 -            val (right, bottom) =
 -                when (orientation) {
@@ -152,8 +139,8 @@ index f2c2dbf..a6b2a5e 100644
 +                val cropEndX = if(x+width>decoder!!.width) decoder!!.width else (x+width)
 +                val cropEndY = if(y+height>decoder!!.height) decoder!!.height else (y+height)
 +                val cropWidth = cropEndX - cropStartX
-+                val cropHeight = cropEndY - cropStartY 
-+    
++                val cropHeight = cropEndY - cropStartY
++
 +                var rect: Rect
 +                if (cropWidth <= 0 || cropHeight <= 0){
 +                    rect = Rect(0, 0, 1, 1)
@@ -177,7 +164,7 @@ index f2c2dbf..a6b2a5e 100644
              }
          }
      }
-@@ -261,17 +244,24 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -252,17 +243,24 @@
      private fun cropAndResizeTask(
          outOptions: BitmapFactory.Options,
          uri: String,
@@ -187,7 +174,7 @@ index f2c2dbf..a6b2a5e 100644
 -        rectHeight: Int,
 -        outputWidth: Int,
 -        outputHeight: Int,
--        headers: HashMap<String, Any>?
+-        headers: HashMap<String, Any?>?
 +        x: Int,
 +        y: Int,
 +        width: Int,
@@ -205,12 +192,12 @@ index f2c2dbf..a6b2a5e 100644
 +        val filter = true
 +
 +        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
-+        
++
 +        val resultBitmap =  openBitmapInputStream(uri)?.use {
              // Efficiently crops image without loading full resolution into memory
              // https://developer.android.com/reference/android/graphics/BitmapRegionDecoder.html
              val decoder =
-@@ -279,86 +269,58 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -270,86 +268,58 @@
                      BitmapRegionDecoder.newInstance(it)
                  } else {
                      @Suppress("DEPRECATION") BitmapRegionDecoder.newInstance(it, false)
@@ -225,46 +212,21 @@ index f2c2dbf..a6b2a5e 100644
 -                    else -> xPos to yPos
                  }
 +            return@use try {
-+
-+                val cropStartX = if(x<0) 0 else x
-+                val cropStartY = if(y<0) 0 else y
-                 
+ 
 -            val (width, height) =
 -                when (orientation) {
 -                    90,
 -                    270 -> rectHeight to rectWidth
 -                    else -> rectWidth to rectHeight
-+              
-+                val cropEndX = if(x+width>decoder!!.width) decoder!!.width else (x+width)
-+                val cropEndY = if(y+height>decoder!!.height) decoder!!.height else (y+height)
-+                val cropWidth = cropEndX - cropStartX
-+                val cropHeight = cropEndY - cropStartY 
-+
-+                var rect: Rect
-+                if (cropWidth <= 0 || cropHeight <= 0){
-+                    rect = Rect(0, 0, 1, 1)
-+                }else{
-+                    rect = Rect(cropStartX, cropStartY, cropEndX, cropEndY)
-                 }
+-                }
 -            val (targetWidth, targetHeight) =
 -                when (orientation) {
 -                    90,
 -                    270 -> outputHeight to outputWidth
 -                    else -> outputWidth to outputHeight
-+                val croppedBitmap = decoder!!.decodeRegion(rect, outOptions)
-+        
-+                val posX = if(x<0) -1*x else 0
-+                val posY = if(y<0) -1*y else 0
-+                //scaleMatrixを使ってリサイズ
-+                Canvas(bitmap).apply {
-+                    val paint = Paint() // 描画に使用するPaintオブジェクトを作成
-+                    // 必要に応じてPaintオブジェクトをカスタマイズ
-+                    val matrix = Matrix().apply {
-+                        postTranslate(posX.toFloat(), posY.toFloat())
-+                        postScale(cropScaleX, cropScaleY)
-+                    }
-+                    drawBitmap(croppedBitmap, matrix, paint)
-                 }
+-                }
++                val cropStartX = if(x<0) 0 else x
++                val cropStartY = if(y<0) 0 else y
  
 -            val cropRectRatio = width / height.toFloat()
 -            val targetRatio = targetWidth / targetHeight.toFloat()
@@ -280,12 +242,16 @@ index f2c2dbf..a6b2a5e 100644
 -            val scale =
 -                if (isCropRatioLargerThanTargetRatio) targetHeight / height.toFloat()
 -                else targetWidth / width.toFloat()
--
+ 
 -            // Decode the bitmap. We have to open the stream again, like in the example linked
 -            // above.
 -            // Is there a way to just continue reading from the stream?
 -            outOptions.inSampleSize = getDecodeSampleSize(width, height, targetWidth, targetHeight)
--
++                val cropEndX = if(x+width>decoder!!.width) decoder!!.width else (x+width)
++                val cropEndY = if(y+height>decoder!!.height) decoder!!.height else (y+height)
++                val cropWidth = cropEndX - cropStartX
++                val cropHeight = cropEndY - cropStartY
+ 
 -            val cropX = (newX / outOptions.inSampleSize.toFloat()).roundToInt()
 -            val cropY = (newY / outOptions.inSampleSize.toFloat()).roundToInt()
 -            val cropWidth = (newWidth / outOptions.inSampleSize.toFloat()).roundToInt()
@@ -293,7 +259,14 @@ index f2c2dbf..a6b2a5e 100644
 -            val cropScale = scale * outOptions.inSampleSize
 -            val scaleMatrix = Matrix().apply { setScale(cropScale, cropScale) }
 -            val filter = true
--
++                var rect: Rect
++                if (cropWidth <= 0 || cropHeight <= 0){
++                    rect = Rect(0, 0, 1, 1)
++                }else{
++                    rect = Rect(cropStartX, cropStartY, cropEndX, cropEndY)
++                }
++                val croppedBitmap = decoder!!.decodeRegion(rect, outOptions)
+ 
 -            val rect = Rect(0, 0, decoder.width, decoder.height)
 -            val bitmap = decoder.decodeRegion(rect, outOptions)
 -
@@ -306,6 +279,19 @@ index f2c2dbf..a6b2a5e 100644
 -                scaleMatrix,
 -                filter
 -            )
++                val posX = if(x<0) -1*x else 0
++                val posY = if(y<0) -1*y else 0
++                //scaleMatrixを使ってリサイズ
++                Canvas(bitmap).apply {
++                    val paint = Paint() // 描画に使用するPaintオブジェクトを作成
++                    // 必要に応じてPaintオブジェクトをカスタマイズ
++                    val matrix = Matrix().apply {
++                        postTranslate(posX.toFloat(), posY.toFloat())
++                        postScale(cropScaleX, cropScaleY)
++                    }
++                    drawBitmap(croppedBitmap, matrix, paint)
++                }
++
 +                // Canvas(resultBitmap).apply {
 +                //     drawBitmap(croppedBitmap, posX.toFloat(), posY.toFloat(), null)
 +                // }
@@ -320,7 +306,7 @@ index f2c2dbf..a6b2a5e 100644
 +        //return Bitmap.createBitmap(bitmap, cropX, cropY, cropWidth, cropHeight, scaleMatrix, filter)
      }
  
--    private fun openBitmapInputStream(uri: String, headers: HashMap<String, Any>?): InputStream? {
+-    private fun openBitmapInputStream(uri: String, headers: HashMap<String, Any?>?): InputStream? {
 -        return if (uri.startsWith("data:")) {
 -            val src = uri.substring(uri.indexOf(",") + 1)
 -            ByteArrayInputStream(Base64.decode(src, Base64.DEFAULT))
@@ -338,7 +324,7 @@ index f2c2dbf..a6b2a5e 100644
              connection.getInputStream()
          }
      }
-@@ -376,163 +338,30 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -367,163 +337,30 @@
          @SuppressLint("InlinedApi")
          private val EXIF_ATTRIBUTES =
              arrayOf(
@@ -505,7 +491,7 @@ index f2c2dbf..a6b2a5e 100644
          @Throws(IOException::class)
          private fun copyExif(context: Context, oldImage: Uri, newFile: File) {
              val oldFile = getFileFromUri(context, oldImage)
-@@ -581,8 +410,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -572,8 +409,8 @@
  
          private fun getFileExtensionForType(mimeType: String?): String {
              return when (mimeType) {
@@ -516,7 +502,7 @@ index f2c2dbf..a6b2a5e 100644
                  else -> ".jpg"
              }
          }
-@@ -595,8 +424,8 @@ class ImageEditorModuleImpl(private val reactContext: ReactApplicationContext) {
+@@ -586,8 +423,8 @@
                      @Suppress("DEPRECATION") CompressFormat.WEBP
                  }
              return when (mimeType) {
@@ -528,7 +514,7 @@ index f2c2dbf..a6b2a5e 100644
              }
          }
 diff --git a/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm b/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
-index 75d4971..0df76bb 100644
+index 75d4971..7198b8d 100644
 --- a/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
 +++ b/node_modules/@react-native-community/image-editor/ios/RNCImageEditor.mm
 @@ -13,62 +13,22 @@
@@ -597,7 +583,7 @@ index 75d4971..0df76bb 100644
  /**
   * Crops an image and saves the result to temporary file. Consider using
   * CameraRoll API or other third-party module to save it in gallery.
-@@ -81,128 +41,174 @@ - (Params)adaptParamsWithFormat:(id)format
+@@ -81,128 +41,175 @@
   *        All units are in px (not points).
   */
  #ifdef RCT_NEW_ARCH_ENABLED
@@ -684,7 +670,7 @@ index 75d4971..0df76bb 100644
 -      [imageRequest addValue:[RCTConvert NSString:value] forHTTPHeaderField:key];
 -    }
 -  }];
--
+ 
    NSURL *url = [imageRequest URL];
 -  NSString *urlPath = [url path];
 -  NSString *extension = [urlPath pathExtension];
@@ -701,63 +687,6 @@ index 75d4971..0df76bb 100644
 -      reject(RCTErrorUnspecified, @("quality must be a number between 0 and 1"), nil);
 -      return;
 -    }
--
--    // Crop image
--    CGSize targetSize = params.size;
--    CGRect targetRect = {{-params.offset.x, -params.offset.y}, image.size};
--    CGAffineTransform transform = RCTTransformFromTargetRect(image.size, targetRect);
--    UIImage *croppedImage = RCTTransformImage(image, targetSize, image.scale, transform);
--
--    // Scale image
--    if (params.displaySize.width != DEFAULT_DISPLAY_SIZE && params.displaySize.height != DEFAULT_DISPLAY_SIZE) {
--      targetSize = params.displaySize;
--      targetRect = RCTTargetRect(croppedImage.size, targetSize, 1, params.resizeMode);
--      transform = RCTTransformFromTargetRect(croppedImage.size, targetRect);
--      croppedImage = RCTTransformImage(croppedImage, targetSize, image.scale, transform);
--    }
--
--    // Store image
--    NSString *type = @"image/jpeg";
--    NSString *path = NULL;
--    NSData *imageData = NULL;
--
--    if([extension isEqualToString:@"png"]){
--      type = @"image/png";
--      imageData = UIImagePNGRepresentation(croppedImage);
--      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".png"];
--    } else{
--      imageData = UIImageJPEGRepresentation(croppedImage, params.quality);
--      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".jpg"];
--    }
--
--    NSError *writeError;
--    NSString *uri = [RNCImageUtils writeImage:imageData toPath:path error:&writeError];
--
--    if (writeError != nil) {
--      reject(@(writeError.code).stringValue, writeError.description, writeError);
--      return;
--    }
--
--    NSURL *fileurl = [[NSURL alloc] initFileURLWithPath:path];
--    NSString *filename = fileurl.lastPathComponent;
--    NSError *attributesError = nil;
--    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:&attributesError];
--    NSNumber *fileSize = fileAttributes == nil ? 0 : [fileAttributes objectForKey:NSFileSize];
--
--    NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
--    response[@"path"] = path;
--    response[@"uri"] = uri;
--    response[@"name"] = filename;
--    response[@"type"] = type;
--    response[@"size"] = fileSize ?: @(0);
--    response[@"width"] = @(croppedImage.size.width);
--    response[@"height"] = @(croppedImage.size.height);
--    if (params.includeBase64) {
--      response[@"base64"] = [imageData base64EncodedStringWithOptions:0];
--    }
--
--    resolve(response);
--  }];
 +  [[_bridge moduleForName:@"ImageLoader" lazilyLoadIfNecessary:YES]
 +      loadImageWithURLRequest:imageRequest
 +                     callback:^(NSError *error, UIImage *image) {
@@ -772,7 +701,12 @@ index 75d4971..0df76bb 100644
 +                                nil);
 +                         return;
 +                       }
-+
+ 
+-    // Crop image
+-    CGSize targetSize = params.size;
+-    CGRect targetRect = {{-params.offset.x, -params.offset.y}, image.size};
+-    CGAffineTransform transform = RCTTransformFromTargetRect(image.size, targetRect);
+-    UIImage *croppedImage = RCTTransformImage(image, targetSize, image.scale, transform);
 +                       // Create a new image with a transparent background and
 +                       // the specified size
 +                       UIGraphicsBeginImageContextWithOptions(targetSize, NO,
@@ -781,23 +715,44 @@ index 75d4971..0df76bb 100644
 +                       CGContextClearRect(context,
 +                                          CGRectMake(0, 0, targetSize.width,
 +                                                     targetSize.height));
-+
+ 
+-    // Scale image
+-    if (params.displaySize.width != DEFAULT_DISPLAY_SIZE && params.displaySize.height != DEFAULT_DISPLAY_SIZE) {
+-      targetSize = params.displaySize;
+-      targetRect = RCTTargetRect(croppedImage.size, targetSize, 1, params.resizeMode);
+-      transform = RCTTransformFromTargetRect(croppedImage.size, targetRect);
+-      croppedImage = RCTTransformImage(croppedImage, targetSize, image.scale, transform);
+-    }
 +                       // Calculate the rect to crop the original image
-+
+ 
+-    // Store image
+-    NSString *type = @"image/jpeg";
+-    NSString *path = NULL;
+-    NSData *imageData = NULL;
 +                       CGFloat cropStartX = offset.x < 0 ? 0 : offset.x;
 +                       CGFloat cropEndX =
 +                           offset.x + size.width > image.size.width
 +                               ? image.size.width
 +                               : offset.x + size.width;
 +                       CGFloat cropWidth = cropEndX - cropStartX;
-+
+ 
+-    if([extension isEqualToString:@"png"]){
+-      type = @"image/png";
+-      imageData = UIImagePNGRepresentation(croppedImage);
+-      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".png"];
+-    } else{
+-      imageData = UIImageJPEGRepresentation(croppedImage, params.quality);
+-      path = [RNCFileSystem generatePathInDirectory:[[RNCFileSystem cacheDirectoryPath] stringByAppendingPathComponent:@"ReactNative_cropped_image_"] withExtension:@".jpg"];
+-    }
 +                       CGFloat cropStartY = offset.y < 0 ? 0 : offset.y;
 +                       CGFloat cropEndY =
 +                           offset.y + size.height > image.size.height
 +                               ? image.size.height
 +                               : offset.y + size.height;
 +                       CGFloat cropHeight = cropEndY - cropStartY;
-+
+ 
+-    NSError *writeError;
+-    NSString *uri = [RNCImageUtils writeImage:imageData toPath:path error:&writeError];
 +                       if (cropWidth < 0 || cropHeight < 0) {
 +                         reject(RCTErrorUnspecified, @"Invalid crop rectangle",
 +                                nil);
@@ -810,11 +765,20 @@ index 75d4971..0df76bb 100644
 +                           [image CGImage], cropRect);
 +                       UIImage *croppedImage =
 +                           [UIImage imageWithCGImage:imageRef];
-+
+ 
+-    if (writeError != nil) {
+-      reject(@(writeError.code).stringValue, writeError.description, writeError);
+-      return;
+-    }
 +                       // Draw the cropped image on the transparent background
 +                       CGFloat scaleX = targetSize.width / size.width;
 +                       CGFloat scaleY = targetSize.height / size.height;
-+
+ 
+-    NSURL *fileurl = [[NSURL alloc] initFileURLWithPath:path];
+-    NSString *filename = fileurl.lastPathComponent;
+-    NSError *attributesError = nil;
+-    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:&attributesError];
+-    NSNumber *fileSize = fileAttributes == nil ? 0 : [fileAttributes objectForKey:NSFileSize];
 +                       CGRect drawRect = CGRectMake(
 +                           (offset.x < 0 ? fabs(offset.x) : 0) *
 +                               scaleX, // X座標をスケーリング
@@ -824,12 +788,25 @@ index 75d4971..0df76bb 100644
 +                           croppedImage.size.height *
 +                               scaleY // 高さをスケーリング
 +                       );
-+
+ 
+-    NSMutableDictionary *response = [[NSMutableDictionary alloc] init];
+-    response[@"path"] = path;
+-    response[@"uri"] = uri;
+-    response[@"name"] = filename;
+-    response[@"type"] = type;
+-    response[@"size"] = fileSize ?: @(0);
+-    response[@"width"] = @(croppedImage.size.width);
+-    response[@"height"] = @(croppedImage.size.height);
+-    if (params.includeBase64) {
+-      response[@"base64"] = [imageData base64EncodedStringWithOptions:0];
+-    }
 +                       [croppedImage drawInRect:drawRect];
 +                       UIImage *finalImage =
 +                           UIGraphicsGetImageFromCurrentImageContext();
 +                       UIGraphicsEndImageContext();
-+
+ 
+-    resolve(response);
+-  }];
 +                       CGImageRelease(imageRef);
 +
 +                       // Continue with the original code to scale the image if
