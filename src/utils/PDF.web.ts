@@ -7,7 +7,8 @@ import { GeoInfo } from './PDF';
 
 // Metro では webpack 専用エントリ(pdfjs-dist/webpack)が使えないため、worker を明示指定する。
 // worker は scripts/copy-web-assets.js が public/static/ へコピーする。
-pdfjs.GlobalWorkerOptions.workerSrc = '/static/pdf.worker.min.mjs';
+// document.baseURI 基準の絶対URLに解決し、サブディレクトリ配信でも正しく参照させる(dev はルート配信)。
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('static/pdf.worker.min.mjs', document.baseURI).href;
 
 export async function generateTileMap(
   tileMaps: TileMapType[],

@@ -75,7 +75,7 @@
     "android:device": "emulator @Pixel_7_API_34 -no-snapshot-load & expo run:android",
     "ios": "expo run:ios",
     "web": "node scripts/copy-web-assets.js && GENERATE_SOURCEMAP=false expo start --web",
-    "build:web": "node scripts/copy-web-assets.js && expo export -p web --output-dir web-build",
+    "build:web": "node scripts/copy-web-assets.js && expo export -p web --output-dir web-build && node scripts/web-relative-paths.js",
     "test": "jest --detectOpenHandles --runInBand --forceExit",
     "test:coverage": "jest --coverage --detectOpenHandles --runInBand --forceExit",
     "test:coverage:watch": "jest --coverage --watchAll --detectOpenHandles --runInBand --forceExit",

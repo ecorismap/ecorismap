@@ -33,8 +33,9 @@ class WebSQLiteDatabase implements SQLiteDatabase {
       // Metro バンドルでは sqlite3.wasm がバンドル隣に配置されないため、
       // public/static/ へコピーした wasm を locateFile で参照する
       // （scripts/copy-web-assets.js がコピー）。
+      // document.baseURI 基準の絶対URLに解決し、サブディレクトリ配信でも正しく参照させる(dev はルート配信)。
       WebSQLiteDatabase.sqlite3 = await sqlite3InitModule({
-        locateFile: (file: string) => `/static/${file}`,
+        locateFile: (file: string) => new URL(`static/${file}`, document.baseURI).href,
       });
     }
     return WebSQLiteDatabase.sqlite3;
