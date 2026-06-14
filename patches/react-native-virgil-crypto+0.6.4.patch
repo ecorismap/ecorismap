@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-virgil-crypto/android/build.gradle b/node_modules/react-native-virgil-crypto/android/build.gradle
-index f7d6a33..b7bf86e 100644
+index ccc6f11..6fece5c 100644
 --- a/node_modules/react-native-virgil-crypto/android/build.gradle
 +++ b/node_modules/react-native-virgil-crypto/android/build.gradle
 @@ -105,12 +105,12 @@ afterEvaluate { project ->

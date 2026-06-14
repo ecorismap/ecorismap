@@ -25,6 +25,7 @@ export {
   getDoc,
   orderBy,
   doc,
+  addDoc,
   deleteDoc,
   writeBatch,
   onSnapshot,
@@ -63,9 +64,9 @@ const initialize = (isEmulating = false) => {
   const isDebugMode = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost' || isEmulating;
 
   if (isDebugMode) {
-    // デバッグモード時はwindowにDEBUG_TOKENを設定
-    // コンソールに表示されるデバッグトークンをFirebaseコンソールに登録する必要がある
-    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    // デバッグモード時は固定のデバッグトークンを設定（Firebaseコンソールに登録済み）。
+    // ネイティブ(firebase.ts apple.debugToken)と同じ値を使い、リロードごとの再登録を避ける。
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = '80DDE922-1624-49D9-9AAD-0AE776C91BCE';
     console.log('🔧 Firebase App Check: Debug mode enabled');
   }
 

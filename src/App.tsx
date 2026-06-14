@@ -20,8 +20,9 @@ export default function App() {
 
   useEffect(() => {
     if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#00000000');
-      NavigationBar.setButtonStyleAsync('light');
+      // SDK 56: setBackgroundColorAsync/setButtonStyleAsync are removed. With edge-to-edge
+      // (now the default) the navigation bar is transparent automatically; setStyle controls button icons.
+      NavigationBar.setStyle('light');
     }
   }, []);
 

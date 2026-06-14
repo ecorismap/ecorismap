@@ -8,7 +8,7 @@ import dayjs from '../i18n/dayjs';
 import { decryptEThree as dec } from '../lib/virgilsecurity/e3kit';
 import { isLoggedIn } from '../utils/Account';
 import { hasOpened } from '../utils/Project';
-import { firestore } from '../lib/firebase/firebase';
+import { firestore, collection, onSnapshot } from '../lib/firebase/firebase';
 
 export type UseSyncLocationReturnType = { uploadLocation: (currentLocation: LocationType | null) => void };
 
@@ -22,12 +22,11 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
   const syncCurrentPosition = useCallback(
     (userId: string, projectId_: string) => {
       try {
-        const syncSubscriber_ = firestore
-          .collection(`projects/${projectId_}/position`)
+        const syncSubscriber_ = onSnapshot(
+          collection(firestore, `projects/${projectId_}/position`),
           //データがない場合エラーになるのでだめ
           //.where(firestore.FieldPath.documentId(), '!=', userId)
-          //@ts-ignore
-          .onSnapshot(async (snapshot) => {
+          async (snapshot) => {
             let positions: MemberLocationType[] = await Promise.all(
               snapshot.docs.map(async (v: any) => {
                 const { encdata, encryptedAt } = v.data() as PositionFS;

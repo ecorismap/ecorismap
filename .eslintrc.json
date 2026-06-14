@@ -26,6 +26,10 @@
     "react-native/no-inline-styles": 0,
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "caughtErrors": "none", "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
     "react-native/sort-styles": "off"
     //"complexity": ["error", 10]
   }

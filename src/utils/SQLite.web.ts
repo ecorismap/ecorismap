@@ -30,7 +30,12 @@ class WebSQLiteDatabase implements SQLiteDatabase {
 
   private static async initSqlite() {
     if (!WebSQLiteDatabase.sqlite3) {
-      WebSQLiteDatabase.sqlite3 = await sqlite3InitModule();
+      // Metro バンドルでは sqlite3.wasm がバンドル隣に配置されないため、
+      // public/static/ へコピーした wasm を locateFile で参照する
+      // （scripts/copy-web-assets.js がコピー）。
+      WebSQLiteDatabase.sqlite3 = await sqlite3InitModule({
+        locateFile: (file: string) => `/static/${file}`,
+      });
     }
     return WebSQLiteDatabase.sqlite3;
   }

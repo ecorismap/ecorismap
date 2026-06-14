@@ -20,9 +20,9 @@ jest.mock('../Home', () => {
 });
 
 describe('Home Component (Simplified)', () => {
-  it('should render the mocked component', () => {
+  it('should render the mocked component', async () => {
     const Home = require('../Home').default;
-    const { getByTestId, getByText } = render(<Home />);
+    const { getByTestId, getByText } = await render(<Home />);
 
     expect(getByTestId('mocked-home')).toBeTruthy();
     expect(getByText('Mocked Home Component')).toBeTruthy();

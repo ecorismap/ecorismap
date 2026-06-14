@@ -1,5 +1,5 @@
-import Pbf from 'pbf';
-import VectorTile from '@mapbox/vector-tile';
+import { PbfReader } from 'pbf';
+import { VectorTile } from '@mapbox/vector-tile';
 import { pointToLineDistance, booleanPointInPolygon, distance, polygon, point, lineString } from '@turf/turf';
 import * as FileSystem from 'expo-file-system/legacy';
 import { TILE_FOLDER } from '../constants/AppConstants';
@@ -28,8 +28,8 @@ export const fetchVectorTileInfo = async (
 
     const binaryData = Buffer.from(base64String, 'base64');
 
-    const pbf = new Pbf(new Uint8Array(binaryData));
-    const layers = new VectorTile.VectorTile(pbf).layers;
+    const pbf = new PbfReader(new Uint8Array(binaryData));
+    const layers = new VectorTile(pbf).layers;
     const propertyList: { [key: string]: any }[] = [];
     for (const layerName of Object.keys(layers).reverse()) {
       const layer = layers[layerName];

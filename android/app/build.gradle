@@ -62,6 +62,9 @@ android {
         versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "2205")
         versionName '0.5.6'
 
+        // RN 0.85: MainApplication reads this to set DefaultNewArchitectureEntryPoint.releaseLevel.
+        buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+
         // Google Play用：ARM64とARM32のみに限定
         // react-native-virgil-cryptoのx86_64ライブラリが16KB page size非対応のため
         // x86/x86_64を除外（実機はほぼ全てARM）

@@ -1,5 +1,4 @@
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -23,7 +22,12 @@ export const saveToStorage = async (fileUri: string, fileName: string, folder: s
   });
   const newUri = folder + '/' + fileName;
   await FileSystem.copyAsync({ from: fileUri, to: newUri });
-  if (options && options.copy) {
+  if (options && options.copy && Platform.OS !== 'web') {
+    // SDK 56: expo-media-library eagerly requires the native ExpoMediaLibraryNext module at
+    // import time, which throws on web. Require it lazily and only on native (camera-roll save
+    // is native-only anyway); the module factory then never runs in the web bundle.
+     
+    const MediaLibrary = require('expo-media-library');
     const res = await MediaLibrary.requestPermissionsAsync();
     if (res.status === 'granted') {
       await MediaLibrary.createAssetAsync(newUri);

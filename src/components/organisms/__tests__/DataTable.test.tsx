@@ -145,7 +145,7 @@ describe('DataTable', () => {
       const initialRecord = createMockRecord('record1', 'Initial Name', 100, 1000);
       const updatedRecord = createMockRecord('record1', 'Updated Name', 200, 2000);
 
-      const { rerender, getByText } = render(
+      const { rerender, getByText } = await render(
         <DataContext.Provider
           value={{
             ...mockContextValue,
@@ -162,7 +162,7 @@ describe('DataTable', () => {
       expect(getByText('100')).toBeTruthy();
 
       // データを更新して再レンダリング
-      rerender(
+      await rerender(
         <DataContext.Provider
           value={{
             ...mockContextValue,
@@ -190,7 +190,7 @@ describe('DataTable', () => {
         checkList: [{ id: 0, checked: false }],
       };
 
-      const { rerender, getByText, queryByText } = render(
+      const { rerender, getByText, queryByText } = await render(
         <DataContext.Provider value={contextValue}>
           <DataTable />
         </DataContext.Provider>
@@ -216,7 +216,7 @@ describe('DataTable', () => {
         checkList: [{ id: 0, checked: false }],
       };
 
-      rerender(
+      await rerender(
         <DataContext.Provider value={contextValue}>
           <DataTable />
         </DataContext.Provider>
@@ -243,7 +243,7 @@ describe('DataTable', () => {
         createMockRecord('record3', 'Updated 3', 350, 2002),
       ];
 
-      const { rerender, getByText } = render(
+      const { rerender, getByText } = await render(
         <DataContext.Provider
           value={{
             ...mockContextValue,
@@ -265,7 +265,7 @@ describe('DataTable', () => {
       expect(getByText('Name 3')).toBeTruthy();
 
       // データを更新して再レンダリング
-      rerender(
+      await rerender(
         <DataContext.Provider
           value={{
             ...mockContextValue,
@@ -305,14 +305,14 @@ describe('DataTable', () => {
         checkList: [{ id: 0, checked: false }],
       };
 
-      const { rerender } = render(
+      const { rerender } = await render(
         <DataContext.Provider value={contextWithVisible}>
           <DataTable />
         </DataContext.Provider>
       );
 
       // visibleの変更をトリガー
-      rerender(
+      await rerender(
         <DataContext.Provider value={contextWithHidden}>
           <DataTable />
         </DataContext.Provider>
@@ -326,7 +326,7 @@ describe('DataTable', () => {
   });
 
   describe('メモ化の動作確認', () => {
-    it('データが変更されていない場合は再レンダリングされない', () => {
+    it('データが変更されていない場合は再レンダリングされない', async () => {
       const record = createMockRecord('record1', 'Test Name', 100);
       const renderSpy = jest.fn();
 
@@ -345,24 +345,24 @@ describe('DataTable', () => {
         );
       };
 
-      const { rerender } = render(<TestWrapper data={[record]} />);
+      const { rerender } = await render(<TestWrapper data={[record]} />);
 
       // 初回レンダリング
       expect(renderSpy).toHaveBeenCalledTimes(1);
 
       // 同じデータで再レンダリング
-      rerender(<TestWrapper data={[record]} />);
+      await rerender(<TestWrapper data={[record]} />);
 
       // メモ化により追加のレンダリングは発生しない
       expect(renderSpy).toHaveBeenCalledTimes(2); // rerenderは新しいpropsで呼ばれるため2回
     });
 
-    it('浅い比較と深い比較の動作の違いを確認', () => {
+    it('浅い比較と深い比較の動作の違いを確認', async () => {
       const fixedTime = 1234567890;
       const record = createMockRecord('record1', 'Initial Name', 100, fixedTime);
       
       // 浅い比較版のテスト
-      const { rerender: rerenderShallow, getByText: getByTextShallow } = render(
+      const { rerender: rerenderShallow, getByText: getByTextShallow } = await render(
         <TestMemoComponentShallow item={record} />
       );
 
@@ -373,21 +373,21 @@ describe('DataTable', () => {
       // 同じIDだがフィールドが異なる新しいオブジェクト
       const updatedRecord = createMockRecord('record1', 'Updated Name', 200, fixedTime + 1);
       
-      rerenderShallow(<TestMemoComponentShallow item={updatedRecord} />);
+      await rerenderShallow(<TestMemoComponentShallow item={updatedRecord} />);
 
       // 異なるオブジェクトなので再レンダリングされる
       expect(getByTextShallow('2')).toBeTruthy();
       expect(getByTextShallow('Updated Name')).toBeTruthy();
       
       // 同じ参照で再レンダリング
-      rerenderShallow(<TestMemoComponentShallow item={updatedRecord} />);
+      await rerenderShallow(<TestMemoComponentShallow item={updatedRecord} />);
       
       // 同じ参照なので再レンダリングされない（回数は2のまま）
       expect(getByTextShallow('2')).toBeTruthy();
 
       // 深い比較版のテスト
       const record2 = createMockRecord('record2', 'Initial Name', 100, fixedTime);
-      const { rerender: rerenderDeep, getByText: getByTextDeep } = render(
+      const { rerender: rerenderDeep, getByText: getByTextDeep } = await render(
         <TestMemoComponentDeep item={record2} />
       );
 
@@ -397,20 +397,20 @@ describe('DataTable', () => {
       // 同じIDだがフィールドが異なる新しいオブジェクト
       const updatedRecord2 = createMockRecord('record2', 'Updated Name', 200, fixedTime + 1);
       
-      rerenderDeep(<TestMemoComponentDeep item={updatedRecord2} />);
+      await rerenderDeep(<TestMemoComponentDeep item={updatedRecord2} />);
 
       // 深い比較では内容が違うので再レンダリングされる
       expect(getByTextDeep('2')).toBeTruthy();
       
       // 同じ参照で再レンダリング
-      rerenderDeep(<TestMemoComponentDeep item={updatedRecord2} />);
+      await rerenderDeep(<TestMemoComponentDeep item={updatedRecord2} />);
       
       // 深い比較では内容が同じなので再レンダリングされない（回数は2のまま）
       expect(getByTextDeep('2')).toBeTruthy();
 
       // 同じ内容の新しいオブジェクト（updatedAtも同じ）
       const sameContentRecord = createMockRecord('record2', 'Updated Name', 200, fixedTime + 1);
-      rerenderDeep(<TestMemoComponentDeep item={sameContentRecord} />);
+      await rerenderDeep(<TestMemoComponentDeep item={sameContentRecord} />);
       
       // 深い比較では内容が完全に同じなので再レンダリングされない（回数は2のまま）
       expect(getByTextDeep('2')).toBeTruthy();
@@ -422,7 +422,7 @@ describe('DataTable', () => {
       const record = createMockRecord('record1', 'Test Name', 100);
       const changeCheckedMock = jest.fn();
 
-      const { UNSAFE_root } = render(
+      const { queryAllByRole } = await render(
         <DataContext.Provider
           value={{
             ...mockContextValue,
@@ -436,7 +436,7 @@ describe('DataTable', () => {
       );
 
       // FlatListのrenderItemで生成されるButtonを探す
-      const buttons = UNSAFE_root.findAll((node: any) => node.type === 'View' && node.props.accessibilityRole === 'button');
+      const buttons = queryAllByRole('button');
 
       if (buttons.length > 1) {
         // 2番目のボタンがチェックボックス
@@ -449,7 +449,7 @@ describe('DataTable', () => {
       const record = createMockRecord('record1', 'Test Name', 100);
       const gotoDataEditMock = jest.fn();
 
-      const { getByText } = render(
+      const { getByText } = await render(
         <DataContext.Provider
           value={{
             ...mockContextValue,

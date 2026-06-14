@@ -17,7 +17,6 @@ const locales = getLocales();
 const deviceLanguage = locales[0]?.languageTag || 'en';
 
 i18n.use(initReactI18next).init({
-  compatibilityJSON: 'v3',
   lng: deviceLanguage,
   fallbackLng: 'en',
   interpolation: {

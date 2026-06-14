@@ -103,8 +103,8 @@ describe('Home Component', () => {
     jest.clearAllMocks();
   });
 
-  it('should render without crashing', () => {
-    const { getByTestId } = render(
+  it('should render without crashing', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -113,8 +113,8 @@ describe('Home Component', () => {
     expect(getByTestId('map-view')).toBeTruthy();
   });
 
-  it('should show GPS button', () => {
-    const { getByTestId } = render(
+  it('should show GPS button', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -124,8 +124,8 @@ describe('Home Component', () => {
     expect(gpsButton).toBeTruthy();
   });
 
-  it('should show zoom buttons', () => {
-    const { getByTestId } = render(
+  it('should show zoom buttons', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -138,8 +138,8 @@ describe('Home Component', () => {
     expect(zoomOutButton).toBeTruthy();
   });
 
-  it('should show layers button', () => {
-    const { getByTestId } = render(
+  it('should show layers button', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -149,8 +149,8 @@ describe('Home Component', () => {
     expect(layersButton).toBeTruthy();
   });
 
-  it('should show project name when available', () => {
-    const { getByTestId } = render(
+  it('should show project name when available', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -160,8 +160,8 @@ describe('Home Component', () => {
     expect(projectName).toBeTruthy();
   });
 
-  it('should show map view', () => {
-    const { getByTestId } = render(
+  it('should show map view', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -171,8 +171,8 @@ describe('Home Component', () => {
     expect(mapView).toBeTruthy();
   });
 
-  it('should show loading indicator', () => {
-    const { getByTestId } = render(
+  it('should show loading indicator', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -182,8 +182,8 @@ describe('Home Component', () => {
     expect(loadingIndicator).toBeTruthy();
   });
 
-  it('should show feature button', () => {
-    const { getByTestId } = render(
+  it('should show feature button', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -193,8 +193,8 @@ describe('Home Component', () => {
     expect(featureButton).toBeTruthy();
   });
 
-  it('should render map markers', () => {
-    const { getByTestId } = render(
+  it('should render map markers', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>
@@ -204,8 +204,8 @@ describe('Home Component', () => {
     expect(marker).toBeTruthy();
   });
 
-  it('should handle button interactions', () => {
-    const { getByTestId } = render(
+  it('should handle button interactions', async () => {
+    const { getByTestId } = await render(
       <Provider store={store}>
         <Home />
       </Provider>

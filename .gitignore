@@ -70,6 +70,9 @@ buck-out/
 web-build/
 dist/
 
+# Web静的アセット（scripts/copy-web-assets.js が node_modules から生成）
+public/static/
+
 
 #firebase
 .env
