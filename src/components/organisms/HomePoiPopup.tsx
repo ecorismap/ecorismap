@@ -1,10 +1,11 @@
-import React, { useContext, useCallback, useMemo } from 'react';
+import React, { useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, Linking, Platform } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MapViewContext } from '../../contexts/MapView';
 import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { haversineKm } from '../../utils/Location';
+import { getGsiElevation } from '../../utils/Elevation';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
@@ -26,8 +27,34 @@ export const HomePoiPopup = React.memo(() => {
     return t('Home.poi.distanceFromCurrentLocation', { distance });
   }, [isPOI, locationInfo, gpsState, currentLocation]);
 
-  const HEIGHT = distanceText ? 60 : 40;
-  
+  // 長押し/POI位置の標高を国土地理院APIから取得する
+  // undefined: 取得中, null: 取得失敗（範囲外等）, number: 標高(m)
+  const lat = locationInfo?.coordinate.latitude;
+  const lon = locationInfo?.coordinate.longitude;
+  const [elevation, setElevation] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (lat == null || lon == null) {
+      setElevation(undefined);
+      return;
+    }
+    let cancelled = false;
+    setElevation(undefined);
+    getGsiElevation(lat, lon).then((e) => {
+      if (!cancelled) setElevation(e);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lat, lon]);
+
+  const elevationText = useMemo(() => {
+    if (elevation === undefined) return t('Home.poi.elevation', { elevation: '…' });
+    if (elevation === null) return t('Home.poi.elevationUnavailable');
+    return t('Home.poi.elevation', { elevation: elevation.toFixed(1) });
+  }, [elevation]);
+
+  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20;
+
   const openGoogleMaps = useCallback(() => {
     if (!locationInfo) return;
     
@@ -141,6 +168,7 @@ export const HomePoiPopup = React.memo(() => {
           {distanceText && (
             <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
           )}
+          <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
         </View>
       </View>
       

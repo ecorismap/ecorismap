@@ -800,7 +800,9 @@
     },
     "poi": {
       "openInGoogleMaps": "To Google Maps",
-      "distanceFromCurrentLocation": "{{distance}} from here"
+      "distanceFromCurrentLocation": "{{distance}} from here",
+      "elevation": "Elevation {{elevation}} m",
+      "elevationUnavailable": "Elevation unavailable"
     }
   },
   "LayerEditFeatureStyle": {
