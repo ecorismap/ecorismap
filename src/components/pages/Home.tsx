@@ -558,7 +558,12 @@ export default function HomeScreen() {
                 showDirectionLine={showDirectionLine}
               />
             )}
-            {/* 表示を正しく更新するには順番とzIndexが重要 */}
+            {/* 表示を正しく更新するには順番とzIndexが重要。
+                Android(Google Maps)は宣言順が後の要素を上に描画するため、タイル地図を
+                フィーチャ(Point/Line/Polygon)より先に宣言してフィーチャを上に表示する。
+                iOSはzIndexで順序付けされるため、この順序でも従来どおり正しく重なる。 */}
+            {/************* TILE MAP ******************** */}
+            <TileMaps tileMaps={tileMaps} isOffline={isOffline} />
             {/************** Point Line Polygon ****************** */}
             {pointDataSet.map((d) => {
               const layer = layers.find((v) => v.id === d.layerId);
@@ -615,8 +620,6 @@ export default function HomeScreen() {
                 />
               );
             })}
-            {/************* TILE MAP ******************** */}
-            <TileMaps tileMaps={tileMaps} isOffline={isOffline} />
             {/************* download mode ******************** */}
             {downloadMode && (
               <DownloadArea
