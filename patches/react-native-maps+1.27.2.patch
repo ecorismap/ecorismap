@@ -339,6 +339,22 @@ index 0000000..c110784
 +        view.setOpacity(opacity);
 +    }
 +}
+diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PolygonManager.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PolygonManager.java
+index e4010de..e9a07ad 100644
+--- a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PolygonManager.java
++++ b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/fabric/PolygonManager.java
+@@ -93,4 +93,10 @@ public class PolygonManager extends ViewGroupManager<MapPolygon> implements RNMa
+     public void setTappable(MapPolygon view, boolean value) {
+             view.setTappable(value);
+     }
++
++    @Override
++    public void setZIndex(MapPolygon view, float value) {
++        super.setZIndex(view, value);
++        view.setZIndex(value);
++    }
+ }
+\ No newline at end of file
 diff --git a/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java b/node_modules/react-native-maps/android/src/main/java/com/rnmaps/maps/MapDEMTileProvider.java
 new file mode 100644
 index 0000000..6da8001
