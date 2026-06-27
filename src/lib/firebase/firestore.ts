@@ -429,12 +429,15 @@ export const uploadChunks = async (
   userId: string,
   layerId: string,
   permission: PermissionType | 'TEMPLATE'
-): Promise<void> => {
+): Promise<Timestamp> => {
   // モジュラー API でバッチを作成
   const batch = writeBatch(firestore);
 
   // data サブコレクション参照
   const dataCol = collection(firestore, 'projects', projectId, 'data');
+
+  // 全チャンクで同一の encryptedAt を使う（楽観的ロックの基準値を決定的にするため）
+  const encryptedAt = Timestamp.now();
 
   // 各チャンクをバッチに追加
   chunks.forEach((chunk, index) => {
@@ -443,7 +446,7 @@ export const uploadChunks = async (
       layerId,
       permission,
       encdata: chunk,
-      encryptedAt: Timestamp.now(),
+      encryptedAt,
       chunkIndex: index,
     };
     // 自動 ID のドキュメント参照を作成
@@ -453,6 +456,8 @@ export const uploadChunks = async (
 
   // コミットして一括書き込みを実行
   await batch.commit();
+
+  return encryptedAt;
 };
 
 export const deleteExistingData = async (
@@ -489,7 +494,10 @@ export const deleteExistingData = async (
   await batch.commit();
 };
 
-export const uploadDataHelper = async (projectId: string, data: ProjectDataType) => {
+export const uploadDataHelper = async (
+  projectId: string,
+  data: ProjectDataType
+): Promise<{ isOK: boolean; message: string; encryptedAt?: number }> => {
   const { userId, layerId, permission, ...others } = data;
   const encdataArray = await enc(others, userId, projectId);
   const KBytes = sizeof(encdataArray) / 1024;
@@ -500,9 +508,10 @@ export const uploadDataHelper = async (projectId: string, data: ProjectDataType)
 
   const chunks = chunkData(encdataArray, CHUNK_SIZE);
   await deleteExistingData(projectId, userId, layerId, permission);
-  await uploadChunks(projectId, chunks, userId, layerId, permission);
+  const encryptedAt = await uploadChunks(projectId, chunks, userId, layerId, permission);
 
-  return { isOK: true, message: '' };
+  // チャンクが無い（空データ）場合はクラウドにドキュメントが存在しないため基準値は未確立(undefined)とする
+  return { isOK: true, message: '', encryptedAt: chunks.length > 0 ? encryptedAt.toMillis() : undefined };
 };
 
 export const downloadCommonData = async (projectId: string) => {
@@ -834,6 +843,40 @@ export const getCloudDataSummary = async (
       isOK: false,
       message: t('CloudDataManagement.message.failGetData'),
     };
+  }
+};
+
+/**
+ * 自分のデータの「クラウド最終更新時刻(encryptedAt)」を軽量に取得する。
+ * 楽観的ロックの衝突検知に使う。復号は行わない。
+ * userId 限定クエリにすることで一般メンバーでもSecurity Rules上読み取り可能
+ * （getCloudDataSummary はフィルタ無し全件読みのため管理者しか実行できない点に注意）。
+ * 返り値: `${layerId}_${permission}` -> encryptedAt(ms) の Map
+ */
+export const getMyDataUpdatedAt = async (
+  projectId: string,
+  userId: string
+): Promise<{ isOK: boolean; message: string; data?: Map<string, number> }> => {
+  try {
+    const dataCol = collection(firestore, 'projects', projectId, 'data');
+    const q = query(dataCol, where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+
+    const result = new Map<string, number>();
+    snapshot.docs.forEach((docSnap) => {
+      const data = docSnap.data() as DataFS;
+      const key = `${data.layerId}_${data.permission}`;
+      const ms = toDate(data.encryptedAt).getTime();
+      const existing = result.get(key);
+      if (existing === undefined || ms > existing) {
+        result.set(key, ms);
+      }
+    });
+
+    return { isOK: true, message: '', data: result };
+  } catch (error) {
+    console.error('getMyDataUpdatedAt Error:', error);
+    return { isOK: false, message: t('CloudDataManagement.message.failGetData') };
   }
 };
 

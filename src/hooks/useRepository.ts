@@ -15,6 +15,7 @@ import * as projectStorage from '../lib/firebase/storage';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
+import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
 import { tileMapsInitialState, setTileMapsAction } from '../modules/tileMaps';
 import { editSettingsAction } from '../modules/settings';
@@ -26,7 +27,7 @@ import { getTargetRecordSet, mergeLayerData } from '../utils/Data';
 import dayjs from '../i18n/dayjs';
 import { Platform } from 'react-native';
 import { t } from '../i18n/config';
-import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
+import { AlertAsync, ConfirmAsync, DataConflictConfirmAsync } from '../components/molecules/AlertAsync';
 import { exportDatabase, importDictionary } from '../utils/SQLite';
 import { db } from '../utils/db';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -165,6 +166,21 @@ export type ConflictState = {
   visible: boolean;
 };
 
+/**
+ * クラウドの自分データに「ローカルへ反映されていない変更」があるか判定する。
+ * （ローカルに無いレコード、またはローカルより updatedAt が新しいレコードがクラウドにあれば true）
+ * true の場合、ローカルでそのまま上書きアップロードすると別端末の変更が失われる＝衝突。
+ */
+const hasCloudOnlyChanges = (cloudRecords: RecordType[], localRecords: RecordType[]): boolean => {
+  const localById = new Map(localRecords.map((r) => [r.id, r.updatedAt ?? 0]));
+  for (const cr of cloudRecords) {
+    const lu = localById.get(cr.id);
+    if (lu === undefined) return true; // クラウドにあるがローカルに無い
+    if ((cr.updatedAt ?? 0) > lu) return true; // クラウドの方が新しい
+  }
+  return false;
+};
+
 export const useRepository = (): UseRepositoryReturnType & {
   conflictState: any;
   setConflictState: any;
@@ -181,6 +197,7 @@ export const useRepository = (): UseRepositoryReturnType & {
   //const drawTools = useSelector((state: RootState) => state.settings.drawTools);
   const plugins = useSelector((state: RootState) => state.settings.plugins, shallowEqual);
   const updatedAt = useSelector((state: RootState) => state.settings.updatedAt, shallowEqual);
+  const dataSyncBaselines = useSelector((state: RootState) => state.dataSync);
 
   const [conflictState, setConflictState] = useState<ConflictState>({
     queue: [],
@@ -511,6 +528,71 @@ export const useRepository = (): UseRepositoryReturnType & {
 
       const targetLayers = getTargetLayers(layers, uploadType);
 
+      // --- 同一アカウント・複数端末での上書き消失防止（衝突検知→確認→対処） ---
+      // アップロードは (userId, layerId, permission) 単位の「全削除→全置換」のため、別端末で更新された
+      // 自分のデータを後勝ちで消してしまう。これを防ぐ。手順:
+      //  1) getMyDataUpdatedAt でクラウドの自分データの最終更新(encryptedAt)を軽量取得し、基準値(前回アップ時)と比較。
+      //     基準値==クラウド なら確実に衝突なし → 取得もマージもせず従来どおりアップロード（高速パス）。
+      //  2) 基準値≠クラウド（基準値が無いがクラウドにデータがある場合＝2台目の初回アップロード等を含む）は
+      //     「候補」とし、クラウドの自分データを取得して内容比較。ローカルに無い/ローカルより新しいレコードが
+      //     クラウドにあれば衝突（そのまま上書きすると別端末の変更が失われる）。
+      //  3) 衝突があれば 3択（マージ/上書き/キャンセル）で対処。
+      // 対象は各端末で編集される PRIVATE / PUBLIC（Templateアップロードを除く）。COMMON/TEMPLATEは管理者専用。
+      const isConflictTarget = (l: LayerType) =>
+        uploadType !== 'Template' && (l.permission === 'PRIVATE' || l.permission === 'PUBLIC');
+      const conflictTargetLayers = targetLayers.filter(isConflictTarget);
+
+      const baselines = dataSyncBaselines[project.id] ?? {};
+      const candidateLayers: LayerType[] = [];
+      if (conflictTargetLayers.length > 0) {
+        const cloudRes = await projectStore.getMyDataUpdatedAt(project.id, user.uid);
+        if (cloudRes.isOK && cloudRes.data) {
+          for (const l of conflictTargetLayers) {
+            const baseline = baselines[dataSyncKey(l.id, l.permission)];
+            const cloudVer = cloudRes.data.get(dataSyncKey(l.id, l.permission));
+            // 基準値==クラウド → 衝突なし。それ以外でクラウドにデータがあれば内容比較の候補にする。
+            if (baseline === cloudVer) continue;
+            if (cloudVer !== undefined) candidateLayers.push(l);
+          }
+        }
+      }
+
+      // 候補があればクラウドの自分データを取得（マージにも再利用）し、内容比較で本当の衝突を判定する
+      let cloudOwnDataSet: DataType[] = [];
+      const conflictedKeys = new Set<string>();
+      if (candidateLayers.length > 0) {
+        if (candidateLayers.some((l) => l.permission === 'PRIVATE')) {
+          const res = await projectStore.downloadPrivateData(project.id, { userId: user.uid });
+          if (res.isOK && res.data) cloudOwnDataSet = cloudOwnDataSet.concat(res.data);
+        }
+        if (candidateLayers.some((l) => l.permission === 'PUBLIC')) {
+          // PUBLICは自分限定取得APIが無いため全件取得し、自分のuserId分のみ抽出する。
+          const res = await projectStore.downloadPublicData(project.id);
+          if (res.isOK && res.data) {
+            cloudOwnDataSet = cloudOwnDataSet.concat(res.data.filter((d) => d.userId === user.uid));
+          }
+        }
+        for (const l of candidateLayers) {
+          const cloudOwn = cloudOwnDataSet.find((d) => d.layerId === l.id && d.userId === user.uid);
+          const localOwn = getTargetRecordSet(fullDataSet, l, user);
+          if (hasCloudOnlyChanges(cloudOwn?.data ?? [], localOwn)) {
+            conflictedKeys.add(dataSyncKey(l.id, l.permission));
+          }
+        }
+      }
+
+      // 衝突があればユーザーに対処（マージ / 上書き / キャンセル）を確認
+      let conflictChoice: 'merge' | 'overwrite' | 'none' = 'none';
+      if (conflictedKeys.size > 0) {
+        const choice = await DataConflictConfirmAsync();
+        if (choice === 'cancel') {
+          return { isOK: false, message: '' };
+        }
+        conflictChoice = choice;
+      }
+
+      const newBaselineEntries: { [key: string]: number | undefined } = {};
+
       for (const layer of targetLayers) {
         const photoFields = layer.field.filter((f) => f.format === 'PHOTO');
         const isTemplate = uploadType === 'Template';
@@ -523,15 +605,40 @@ export const useRepository = (): UseRepositoryReturnType & {
           })
         );
 
-        const { isOK, message } = await projectStore.uploadDataHelper(project.id, {
+        const key = dataSyncKey(layer.id, layer.permission);
+
+        // 衝突レイヤを「マージ」する場合のみ、クラウドの自分のデータと updatedAt 最新優先でマージ
+        // （両方の変更を保持。削除トムストーンも updatedAt で勝敗判定）。
+        let dataToUpload = updatedData;
+        if (conflictChoice === 'merge' && conflictedKeys.has(key)) {
+          const cloudOwn = cloudOwnDataSet.find((d) => d.layerId === layer.id && d.userId === user.uid);
+          if (cloudOwn) {
+            const localOwn: DataType = { layerId: layer.id, userId: user.uid, data: updatedData };
+            const [mergedUserData] = await mergeLayerData({
+              layerData: [cloudOwn, localOwn],
+              templateData: undefined,
+              ownUserId: user.uid,
+              strategy: 'latest',
+            });
+            const mergedOwn = mergedUserData.find((d) => d.userId === user.uid);
+            if (mergedOwn) dataToUpload = mergedOwn.data;
+          }
+        }
+
+        const { isOK, message, encryptedAt } = await projectStore.uploadDataHelper(project.id, {
           layerId: layer.id,
           userId: user.uid,
           permission: uploadType === 'Template' ? 'TEMPLATE' : layer.permission,
-          data: updatedData,
+          data: dataToUpload,
         });
         if (!isOK) {
           //ToDo 処理続けるかどうか？
           return { isOK: false, message: `${message} (${layer.name})` };
+        }
+
+        // PRIVATE/PUBLIC は基準値を更新（次回以降の衝突検知に使用。空アップロード時は undefined＝未確立）
+        if (isConflictTarget(layer)) {
+          newBaselineEntries[key] = encryptedAt;
         }
 
         if (!isSettingProject) {
@@ -539,14 +646,30 @@ export const useRepository = (): UseRepositoryReturnType & {
             updateRecordsAction({
               layerId: layer.id,
               userId: user.uid,
-              data: updatedData,
+              data: dataToUpload,
             })
           );
         }
       }
+
+      // 基準値をまとめて保存
+      if (Object.keys(newBaselineEntries).length > 0) {
+        dispatch(setDataSyncTimestampsAction({ projectId: project.id, entries: newBaselineEntries }));
+      }
+
       return { isOK: true, message: '' };
     },
-    [dispatch, fullDataSet, isSettingProject, layers, mergeTemplateRecords, updateStoragePhoto, updatedAt, user]
+    [
+      dataSyncBaselines,
+      dispatch,
+      fullDataSet,
+      isSettingProject,
+      layers,
+      mergeTemplateRecords,
+      updateStoragePhoto,
+      updatedAt,
+      user,
+    ]
   );
 
   const uploadTileMaps = useCallback(

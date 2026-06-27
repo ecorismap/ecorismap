@@ -393,3 +393,93 @@ describe('mergeLayerData', () => {
     expect(tmpl).toBeUndefined();
   });
 });
+
+// 同一アカウント・複数端末でのアップロード時マージ（merge-on-upload）。
+// クラウド側(自分)とローカル(自分)を同一userId・strategy:'latest'でマージし、
+// conflictsResolverを渡さない（ダイアログを出さずupdatedAt最新優先）動作を検証する。
+describe('mergeLayerData（同一userId・merge-on-upload）', () => {
+  const userId = 'user1';
+  const layerId = 'layer1';
+
+  it('各IDでupdatedAtが新しい方が採用される', async () => {
+    // id 'a': クラウドが新しい / id 'b': ローカルが新しい
+    const cloud = {
+      layerId,
+      userId,
+      data: [
+        { id: 'a', userId, field: { value: 'cloud-a' }, coords: null, updatedAt: 200 } as any,
+        { id: 'b', userId, field: { value: 'cloud-b' }, coords: null, updatedAt: 100 } as any,
+      ],
+    };
+    const local = {
+      layerId,
+      userId,
+      data: [
+        { id: 'a', userId, field: { value: 'local-a' }, coords: null, updatedAt: 100 } as any,
+        { id: 'b', userId, field: { value: 'local-b' }, coords: null, updatedAt: 200 } as any,
+      ],
+    };
+    const [merged] = await mergeLayerData({
+      layerData: [cloud, local],
+      templateData: undefined,
+      ownUserId: userId,
+      strategy: 'latest',
+    });
+    const own = merged.find((d) => d.userId === userId)!;
+    expect(own.data.find((r) => r.id === 'a')!.field.value).toBe('cloud-a');
+    expect(own.data.find((r) => r.id === 'b')!.field.value).toBe('local-b');
+  });
+
+  it('片方のみに存在する追加レコードは消えずに残る（他端末の追加を保持）', async () => {
+    // クラウドに端末Aが追加した #cloudOnly、ローカルに端末Bが追加した #localOnly
+    const cloud = {
+      layerId,
+      userId,
+      data: [{ id: 'cloudOnly', userId, field: { value: 'A' }, coords: null, updatedAt: 100 } as any],
+    };
+    const local = {
+      layerId,
+      userId,
+      data: [{ id: 'localOnly', userId, field: { value: 'B' }, coords: null, updatedAt: 100 } as any],
+    };
+    const [merged] = await mergeLayerData({
+      layerData: [cloud, local],
+      templateData: undefined,
+      ownUserId: userId,
+      strategy: 'latest',
+    });
+    const ids = merged.find((d) => d.userId === userId)!.data.map((r) => r.id);
+    expect(ids).toEqual(expect.arrayContaining(['cloudOnly', 'localOnly']));
+    expect(ids.length).toBe(2);
+  });
+
+  it('削除トムストーンはupdatedAtで勝敗判定される（後の操作が勝つ）', async () => {
+    // id 'x': ローカルで後から削除 → deleted:true(updatedAt新) がクラウドの編集(updatedAt旧)に勝つ
+    // id 'y': クラウドで後から削除 → deleted:true(updatedAt新) がローカルの編集(updatedAt旧)に勝つ
+    const cloud = {
+      layerId,
+      userId,
+      data: [
+        { id: 'x', userId, field: { value: 'edited' }, coords: null, updatedAt: 100 } as any,
+        { id: 'y', userId, field: { value: 'gone' }, coords: null, updatedAt: 200, deleted: true } as any,
+      ],
+    };
+    const local = {
+      layerId,
+      userId,
+      data: [
+        { id: 'x', userId, field: { value: 'gone' }, coords: null, updatedAt: 200, deleted: true } as any,
+        { id: 'y', userId, field: { value: 'edited' }, coords: null, updatedAt: 100 } as any,
+      ],
+    };
+    const [merged] = await mergeLayerData({
+      layerData: [cloud, local],
+      templateData: undefined,
+      ownUserId: userId,
+      strategy: 'latest',
+    });
+    const own = merged.find((d) => d.userId === userId)!;
+    expect(own.data.find((r) => r.id === 'x')!.deleted).toBe(true);
+    expect(own.data.find((r) => r.id === 'y')!.deleted).toBe(true);
+  });
+});

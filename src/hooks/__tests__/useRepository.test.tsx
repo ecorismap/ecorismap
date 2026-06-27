@@ -10,8 +10,11 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { useRepository } from '../useRepository';
 import { updateDataAction } from '../../modules/dataSet';
+import { setDataSyncTimestampsAction } from '../../modules/dataSync';
 
 import * as DataUtils from '../../utils/Data';
+import * as projectStore from '../../lib/firebase/firestore';
+import * as AlertAsyncModule from '../../components/molecules/AlertAsync';
 
 // spy を仕掛ける前にオリジナルを退避
 const realMergeLayerData = DataUtils.mergeLayerData;
@@ -381,5 +384,161 @@ describe('createMergedDataSet', () => {
     expect(store.dispatch).toHaveBeenCalledTimes(2);
     expect(store.dispatch).toHaveBeenNthCalledWith(1, updateDataAction([publicData[0]]));
     expect(store.dispatch).toHaveBeenNthCalledWith(2, updateDataAction([{ layerId, userId: 'test-user', data: [] }]));
+  });
+});
+
+// 同一アカウント・複数端末での上書き消失防止（データ版の楽観的ロック: 検知→確認→対処）
+describe('uploadDataToRepository（楽観的ロック）', () => {
+  const project = { id: 'proj1' } as any;
+  const layer = { id: 'l1', name: 'L1', permission: 'PRIVATE', field: [] } as any;
+  const conflictKey = 'l1_PRIVATE';
+
+  const localRecord = {
+    id: 'local',
+    userId: 'test-user',
+    displayName: 'U',
+    visible: true,
+    redraw: false,
+    coords: [],
+    field: {},
+    updatedAt: 100,
+  };
+
+  const makeStore = (dataSync: any) => {
+    const initialState = {
+      user: { uid: 'test-user', email: 'a@b.c', displayName: 'U' },
+      dataSet: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }],
+      layers: [layer],
+      settings: { isSettingProject: false, updatedAt: undefined },
+      tileMaps: [],
+      dataSync,
+    };
+    const store = configureStore({
+      reducer: {
+        user: (state = initialState.user) => state,
+        dataSet: (state = initialState.dataSet) => state,
+        layers: (state = initialState.layers) => state,
+        settings: (state = initialState.settings) => state,
+        tileMaps: (state = initialState.tileMaps) => state,
+        dataSync: (state = initialState.dataSync) => state,
+      } as any,
+      preloadedState: initialState,
+    });
+    store.dispatch = jest.fn();
+    return store;
+  };
+
+  const renderWithStore = (store: any) =>
+    renderHook(() => useRepository(), {
+      wrapper: (props: any) => <Provider store={store}>{props.children}</Provider>,
+    });
+
+  const uploadedIdsOf = (uploadSpy: jest.SpyInstance, callIdx = 0) =>
+    (uploadSpy.mock.calls[callIdx][1] as any).data.map((r: any) => r.id);
+
+  const dispatchedTypes = (store: any) => (store.dispatch as jest.Mock).mock.calls.map((c) => c[0].type);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(projectStore, 'getSettingsUpdatedAt').mockResolvedValue(undefined);
+  });
+
+  test('基準値なし & クラウド内容がローカルに含まれる → 衝突なしでアップロード（内容確認のため取得はする）', async () => {
+    // クラウドにはデータがあるが、内容はローカルと同じ（ローカルが先行/同等）→ 衝突ではない
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map([[conflictKey, 555]]) });
+    const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync');
+    const downloadSpy = jest
+      .spyOn(projectStore, 'downloadPrivateData')
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [localRecord] }] });
+    const uploadSpy = jest
+      .spyOn(projectStore, 'uploadDataHelper')
+      .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+
+    const store = makeStore({}); // 基準値なし
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, true, 'All');
+    });
+
+    expect(downloadSpy).toHaveBeenCalledTimes(1); // 内容確認のため取得する
+    expect(dialogSpy).not.toHaveBeenCalled(); // 内容が同じなのでダイアログは出ない
+    expect(uploadSpy).toHaveBeenCalledTimes(1);
+    expect(uploadedIdsOf(uploadSpy)).toEqual(['local']); // ローカルのみ（マージしない）
+    // 基準値が保存される
+    expect(dispatchedTypes(store)).toContain(setDataSyncTimestampsAction({ projectId: 'p', entries: {} }).type);
+  });
+
+  test('基準値==クラウド（衝突なし） → 従来アップロードのみ（download/merge しない・高速パス）', async () => {
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map([[conflictKey, 555]]) });
+    const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync');
+    const downloadSpy = jest.spyOn(projectStore, 'downloadPrivateData');
+    const uploadSpy = jest
+      .spyOn(projectStore, 'uploadDataHelper')
+      .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+
+    const store = makeStore({ proj1: { [conflictKey]: 555 } }); // 基準値==クラウド
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, true, 'All');
+    });
+
+    expect(dialogSpy).not.toHaveBeenCalled();
+    expect(downloadSpy).not.toHaveBeenCalled(); // 高速パス：取得しない
+    expect(uploadSpy).toHaveBeenCalledTimes(1);
+    expect(uploadedIdsOf(uploadSpy)).toEqual(['local']);
+  });
+
+  test('2台目の初回アップロード（基準値なし）でクラウドに他端末の変更がある → ダイアログ表示＋マージでユニオン', async () => {
+    // ★ ユーザー報告シナリオ: 端末Aがアップ済み、端末B(基準値なし)がアップ → 検知してメッセージを出す
+    const cloudOnly = { ...localRecord, id: 'cloudOnly' };
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map([[conflictKey, 777]]) });
+    const dialogSpy = jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('merge');
+    const downloadSpy = jest
+      .spyOn(projectStore, 'downloadPrivateData')
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }] });
+    const uploadSpy = jest
+      .spyOn(projectStore, 'uploadDataHelper')
+      .mockResolvedValue({ isOK: true, message: '', encryptedAt: 999 });
+    (DataUtils.mergeLayerData as jest.Mock).mockImplementationOnce((args: any) => realMergeLayerData(args));
+
+    const store = makeStore({}); // 基準値なし（2台目の初回）
+    const { result } = renderWithStore(store);
+    await act(async () => {
+      await result.current.uploadDataToRepository(project, true, 'All');
+    });
+
+    expect(downloadSpy).toHaveBeenCalledTimes(1);
+    expect(dialogSpy).toHaveBeenCalledTimes(1); // ★ メッセージが出る
+    expect(uploadSpy).toHaveBeenCalledTimes(1);
+    expect(uploadedIdsOf(uploadSpy)).toEqual(expect.arrayContaining(['local', 'cloudOnly']));
+    expect(uploadedIdsOf(uploadSpy).length).toBe(2);
+  });
+
+  test('衝突あり＋キャンセル → アップロードしない', async () => {
+    const cloudOnly = { ...localRecord, id: 'cloudOnly' };
+    jest
+      .spyOn(projectStore, 'getMyDataUpdatedAt')
+      .mockResolvedValue({ isOK: true, message: '', data: new Map([[conflictKey, 777]]) });
+    jest.spyOn(AlertAsyncModule, 'DataConflictConfirmAsync').mockResolvedValue('cancel');
+    jest
+      .spyOn(projectStore, 'downloadPrivateData')
+      .mockResolvedValue({ isOK: true, message: '', data: [{ layerId: 'l1', userId: 'test-user', data: [cloudOnly] }] });
+    const uploadSpy = jest.spyOn(projectStore, 'uploadDataHelper');
+
+    const store = makeStore({ proj1: { [conflictKey]: 555 } });
+    const { result } = renderWithStore(store);
+    let res: any;
+    await act(async () => {
+      res = await result.current.uploadDataToRepository(project, true, 'All');
+    });
+
+    expect(uploadSpy).not.toHaveBeenCalled();
+    expect(res.isOK).toBe(false);
   });
 });
