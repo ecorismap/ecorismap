@@ -12,6 +12,7 @@ import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
 import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
+import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
 import dayjs from '../i18n/dayjs';
@@ -189,7 +190,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       const includePhoto = true;
       const exportData = await generateEcorisMapData(data, { includePhoto, fromProject: true });
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const exportDataName = `${targetProject.name}_${time}`;
+      const exportDataName = `${truncateForFileName(targetProject.name)}_${time}`;
 
       const isOK = await exportGeoFile(exportData, exportDataName, 'zip');
       if (!isOK) await AlertAsync(t('hooks.message.failExport'));

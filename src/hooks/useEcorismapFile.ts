@@ -24,14 +24,13 @@ import { cloneDeep } from 'lodash';
 import { setTileMapsAction } from '../modules/tileMaps';
 import { setSettingsAction } from '../modules/settings';
 import { t } from '../i18n/config';
-import { getExt } from '../utils/General';
+import { findDictionaryFileKey, findPhotoFileKey, getExt, truncateMiddle } from '../utils/General';
 
 import dayjs from '../i18n/dayjs';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
 import { unzipFromUri } from '../utils/Zip';
 import JSZip from 'jszip';
 import { useRepository } from './useRepository';
-import sanitize from 'sanitize-filename';
 import { ulid } from 'ulid';
 import { deleteDatabase, importDictionary } from '../utils/SQLite';
 import { useGeoFile } from './useGeoFile';
@@ -145,8 +144,16 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
       for (const layer of data.layers) {
         if (layer.type === 'LAYERGROUP') continue;
-        const fileNameBase = `${layer.name.normalize('NFC')}_${time}`;
-        const exportFolder = `${sanitize(layer.name.normalize('NFC'))}_${layer.id}`;
+        // 長いレイヤ名でzip内部パスがWindowsのMAX_PATH(260文字)を超えると、
+        // Windows標準の圧縮フォルダー機能で解凍に失敗する。識別性を保ちつつ短くするため:
+        //  ・レイヤ名は中略（先頭＋末尾）で切り詰め、フォルダ名・ファイル名の両方に付与
+        //  ・フォルダ名末尾に layer.id を付けて一意性を担保
+        //  ・ファイル名には時刻を入れない（zip名が日付付き＋拡張子で種別が分かる＝冗長回避）
+        // フォルダ名のサニタイズはFile.ts/File.web.ts側で行われる。
+        // インポートはlayer.id基準で照合するため新旧バックアップとも互換。
+        const safeLayerName = truncateMiddle(layer.name.normalize('NFC'));
+        const fileNameBase = safeLayerName;
+        const exportFolder = `${safeLayerName}_${layer.id}`;
         //mapMemoの場合はグループ化されたデータをソートしてエクスポート
         const records = data.dataSet.map((d) => (d.layerId === layer.id ? d.data.map((v) => v) : [])).flat();
         const isMapMemoLayer = records.some((r) => r.field._strokeColor !== undefined);
@@ -229,8 +236,11 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
             for (const photoField of photoFields) {
               const photos = (record.field[photoField.name] as PhotoType[]).map(async (photo) => {
                 if (photo.uri) {
-                  const fromFolder = `${sanitize(layer.name)}_${layer.id}`;
-                  const from = `${fromFolder}/${photo.name}`;
+                  // zip内の写真ファイルを layer.id 基準で探す。
+                  // エクスポート時にレイヤ名を切り詰めてもフォルダ名には layer.id が
+                  // 含まれるため、新旧どちらのバックアップでもヒットする。
+                  const from = findPhotoFileKey(Object.keys(files), layer.id, photo.name);
+                  if (from === undefined) return photo;
                   const to = `${toFolder}/${photo.name}`;
                   const newUri = await importPhotos(files, from, to);
                   return { ...photo, uri: newUri };
@@ -256,9 +266,9 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
     const files = loaded.files;
 
     for (const layer of layers) {
-      const sqliteFile = Object.keys(files).find((f) => {
-        return getExt(f) === 'sqlite' && f.includes(layer.name) && f.includes(layer.id);
-      });
+      // sqliteはレイヤ別フォルダ（layer.idを含む）配下に置かれる。
+      // レイヤ名はエクスポート時に切り詰められる可能性があるため layer.id で照合する。
+      const sqliteFile = findDictionaryFileKey(Object.keys(files), layer.id);
 
       if (sqliteFile !== undefined) {
         const sqlite =

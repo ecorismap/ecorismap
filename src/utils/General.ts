@@ -37,6 +37,73 @@ export function getExt(filename: string) {
   return ext;
 }
 
+// zip内のフォルダ名/ファイル名にレイヤ名を使う際の最大長（文字数）。
+// レイヤ名はフォルダ名とファイル名の両方に入り、さらにUUIDや時刻が付くため、
+// 長いとzip内部パスがWindowsのMAX_PATH(260文字)を超えて標準解凍に失敗する。
+// レイヤ名そのものはzip内のJSONに完全な形で保存されるため、ここでの切り詰めは
+// ファイル名ラベルの見た目だけに影響する。
+export const MAX_FILENAME_LABEL_LENGTH = 50;
+
+/**
+ * ファイル名/フォルダ名に使う文字列を安全な長さに切り詰める。
+ * @param name 元の名前（レイヤ名・プロジェクト名など）
+ * @param maxLen 最大文字数（デフォルト MAX_FILENAME_LABEL_LENGTH）
+ */
+export function truncateForFileName(name: string, maxLen: number = MAX_FILENAME_LABEL_LENGTH): string {
+  return name.length > maxLen ? name.slice(0, maxLen) : name;
+}
+
+// バックアップzipのフォルダ名/ファイル名にレイヤ名を入れる際の最大長（文字数）。
+// レイヤ名はフォルダ名とファイル名の両方に入るため、2か所ぶんとULID・拡張子を足しても
+// zip内部パスがWindowsで安全な範囲（実測で126文字は解凍可）に収まる長さにする。
+// 42文字 → 内部パス約120文字（実証OKの126に少し余裕）。
+export const MAX_BACKUP_LABEL_LENGTH = 42;
+
+/**
+ * 長い名前を「先頭＋末尾」を残して中略する。日本語レイヤ名は区別する情報が末尾
+ * （日付や枝番など）にあることが多いため、先頭だけ残す単純切り詰めより識別しやすい。
+ * @param name 元の名前
+ * @param maxLen 最大文字数（マーカー含む。デフォルト MAX_BACKUP_LABEL_LENGTH）
+ */
+export function truncateMiddle(name: string, maxLen: number = MAX_BACKUP_LABEL_LENGTH): string {
+  if (name.length <= maxLen) return name;
+  const marker = '…';
+  if (maxLen <= marker.length + 1) return name.slice(0, maxLen);
+  const available = maxLen - marker.length;
+  const head = Math.ceil(available * 0.6);
+  const tail = available - head;
+  return name.slice(0, head) + marker + (tail > 0 ? name.slice(name.length - tail) : '');
+}
+
+/**
+ * パス文字列のベース名（最後の'/'以降）を返す。
+ */
+export function getBaseName(path: string): string {
+  return path.split('/').pop() ?? path;
+}
+
+/**
+ * バックアップzip内から、指定レイヤの写真ファイルのキーを探す。
+ * レイヤ別フォルダ名には layer.id が必ず含まれるため、レイヤ名の切り詰め有無や
+ * 新旧フォーマットに関わらず layer.id とベース名（photo.name）で一意に特定できる。
+ * @param fileKeys zip内の全エントリのパス一覧（JSZipのfilesのキー）
+ * @param layerId レイヤID
+ * @param photoName 写真ファイル名（photo.name）
+ */
+export function findPhotoFileKey(fileKeys: string[], layerId: string, photoName: string): string | undefined {
+  return fileKeys.find((f) => f.includes(layerId) && getBaseName(f) === photoName);
+}
+
+/**
+ * バックアップzip内から、指定レイヤの辞書(sqlite)ファイルのキーを探す。
+ * sqliteは layer.id を含むレイヤ別フォルダ配下に置かれるため layer.id で照合する。
+ * @param fileKeys zip内の全エントリのパス一覧
+ * @param layerId レイヤID
+ */
+export function findDictionaryFileKey(fileKeys: string[], layerId: string): string | undefined {
+  return fileKeys.find((f) => getExt(f) === 'sqlite' && f.includes(layerId));
+}
+
 export function isPenTool(tool: string) {
   return tool === 'PEN';
 }

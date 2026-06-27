@@ -17,6 +17,13 @@ import {
   toPDFCoordinate,
   isLocationType,
   isLocationTypeArray,
+  truncateForFileName,
+  truncateMiddle,
+  getBaseName,
+  findPhotoFileKey,
+  findDictionaryFileKey,
+  MAX_FILENAME_LABEL_LENGTH,
+  MAX_BACKUP_LABEL_LENGTH,
 } from '../General';
 import { POINTTOOL, LINETOOL, POLYGONTOOL, BRUSH, STAMP, ERASER } from '../../constants/AppConstants';
 
@@ -267,5 +274,137 @@ describe('isLocationTypeArray', () => {
     expect(isLocationTypeArray({ latitude: 35.0, longitude: 135.0 })).toBe(false);
     // @ts-ignore - Testing with invalid object
     expect(isLocationTypeArray([{ other: 'property' }])).toBe(false);
+  });
+});
+
+describe('truncateForFileName', () => {
+  it('returns the name unchanged when within the limit', () => {
+    expect(truncateForFileName('layer')).toBe('layer');
+    const exact = 'a'.repeat(MAX_FILENAME_LABEL_LENGTH);
+    expect(truncateForFileName(exact)).toBe(exact);
+  });
+
+  it('truncates names longer than the limit', () => {
+    const longName = 'a'.repeat(MAX_FILENAME_LABEL_LENGTH + 10);
+    const result = truncateForFileName(longName);
+    expect(result).toHaveLength(MAX_FILENAME_LABEL_LENGTH);
+    expect(result).toBe('a'.repeat(MAX_FILENAME_LABEL_LENGTH));
+  });
+
+  it('handles Japanese (multibyte) names by character count', () => {
+    const jp = 'あ'.repeat(MAX_FILENAME_LABEL_LENGTH + 5);
+    const result = truncateForFileName(jp);
+    expect(result).toHaveLength(MAX_FILENAME_LABEL_LENGTH);
+    expect(result).toBe('あ'.repeat(MAX_FILENAME_LABEL_LENGTH));
+  });
+
+  it('respects a custom maxLen', () => {
+    expect(truncateForFileName('abcdef', 3)).toBe('abc');
+    expect(truncateForFileName('ab', 3)).toBe('ab');
+  });
+
+  it('handles empty string', () => {
+    expect(truncateForFileName('')).toBe('');
+  });
+});
+
+describe('truncateMiddle', () => {
+  it('returns the name unchanged when within the limit', () => {
+    expect(truncateMiddle('layer', 38)).toBe('layer');
+    const exact = 'a'.repeat(MAX_BACKUP_LABEL_LENGTH);
+    expect(truncateMiddle(exact)).toBe(exact);
+  });
+
+  it('keeps head and tail with a marker when too long', () => {
+    const name = '先頭部分_対象事業実施区域_中間の説明がとても長い部分_末尾の枝番_251120';
+    const r = truncateMiddle(name, 20);
+    expect(r.length).toBe(20);
+    expect(r).toContain('…');
+    expect(r.startsWith('先頭部分')).toBe(true);
+    // 区別に重要な末尾（枝番）が残る
+    expect(r.endsWith('251120')).toBe(true);
+  });
+
+  it('preserves both ends so similar names stay distinguishable', () => {
+    const base = '小田野沢_対象事業実施区域_251107配置から300mバッファー_から300mバッファー_';
+    const a = truncateMiddle(base + '現地調査用_251120', 38);
+    const b = truncateMiddle(base + '251118', 38);
+    expect(a).not.toBe(b);
+    expect(a.endsWith('251120')).toBe(true);
+    expect(b.endsWith('251118')).toBe(true);
+  });
+
+  it('falls back to a simple slice for very small maxLen', () => {
+    expect(truncateMiddle('abcdef', 2)).toBe('ab');
+  });
+});
+
+describe('getBaseName', () => {
+  it('returns the last path segment', () => {
+    expect(getBaseName('folder_123/photo.jpg')).toBe('photo.jpg');
+    expect(getBaseName('a/b/c/file.geojson')).toBe('file.geojson');
+  });
+
+  it('returns the input when there is no separator', () => {
+    expect(getBaseName('photo.jpg')).toBe('photo.jpg');
+  });
+
+  it('handles trailing slash', () => {
+    expect(getBaseName('folder/')).toBe('');
+  });
+});
+
+describe('findPhotoFileKey / findDictionaryFileKey (zip import compatibility)', () => {
+  const layerId = '01H8XYZABCDEFGHIJKLMNOPQRS';
+  // 旧フォーマット: 完全なレイヤ名フォルダ（切り詰めなし）
+  const oldFormatKeys = [
+    'local_2024-01-01_00-00-00.json',
+    `とても長いレイヤ名がここに続く完全な名前_${layerId}/とても長いレイヤ名がここに続く完全な名前_2024-01-01_00-00-00.json`,
+    `とても長いレイヤ名がここに続く完全な名前_${layerId}/とても長いレイヤ名がここに続く完全な名前_2024-01-01_00-00-00.sqlite`,
+    `とても長いレイヤ名がここに続く完全な名前_${layerId}/photo001.jpg`,
+  ];
+  // 新フォーマット: フォルダ名は「中略レイヤ名_ULID」、データファイル名は「中略レイヤ名.ext」
+  const newFormatKeys = [
+    'local_2024-01-01_00-00-00.json',
+    `とても長いレイヤ名_${layerId}/とても長いレイヤ名.json`,
+    `とても長いレイヤ名_${layerId}/とても長いレイヤ名.sqlite`,
+    `とても長いレイヤ名_${layerId}/photo001.jpg`,
+  ];
+
+  it('finds the photo by layer.id and base name in OLD format', () => {
+    expect(findPhotoFileKey(oldFormatKeys, layerId, 'photo001.jpg')).toBe(
+      `とても長いレイヤ名がここに続く完全な名前_${layerId}/photo001.jpg`
+    );
+  });
+
+  it('finds the photo by layer.id and base name in NEW format', () => {
+    expect(findPhotoFileKey(newFormatKeys, layerId, 'photo001.jpg')).toBe(
+      `とても長いレイヤ名_${layerId}/photo001.jpg`
+    );
+  });
+
+  it('returns undefined when the photo is missing', () => {
+    expect(findPhotoFileKey(newFormatKeys, layerId, 'notexist.jpg')).toBeUndefined();
+  });
+
+  it('does not match a photo belonging to a different layer', () => {
+    expect(findPhotoFileKey(newFormatKeys, 'OTHER_LAYER_ID', 'photo001.jpg')).toBeUndefined();
+  });
+
+  it('finds the sqlite dictionary by layer.id in OLD format', () => {
+    expect(findDictionaryFileKey(oldFormatKeys, layerId)).toBe(
+      `とても長いレイヤ名がここに続く完全な名前_${layerId}/とても長いレイヤ名がここに続く完全な名前_2024-01-01_00-00-00.sqlite`
+    );
+  });
+
+  it('finds the sqlite dictionary by layer.id in NEW format', () => {
+    expect(findDictionaryFileKey(newFormatKeys, layerId)).toBe(
+      `とても長いレイヤ名_${layerId}/とても長いレイヤ名.sqlite`
+    );
+  });
+
+  it('returns undefined when there is no sqlite for the layer', () => {
+    const keysWithoutSqlite = newFormatKeys.filter((k) => !k.endsWith('.sqlite'));
+    expect(findDictionaryFileKey(keysWithoutSqlite, layerId)).toBeUndefined();
   });
 });
