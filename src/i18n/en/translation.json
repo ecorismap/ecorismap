@@ -573,6 +573,12 @@
       "replace": "Replace",
       "newLayer": "New Layer"
     },
+    "dataConflict": {
+      "title": "Updated on Another Device",
+      "message": "This data has been updated on another device. What would you like to do?\n\nMerge: Keep changes from both\nOverwrite: Overwrite with this device's data (changes from the other device will be lost)",
+      "merge": "Merge",
+      "overwrite": "Overwrite"
+    },
     "confirm": {
       "stopDownload": "Do you want to stop the download?",
       "sendMailForActivate": "Your account has not been activated. \nWould you like to send an activation email?"

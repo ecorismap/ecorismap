@@ -1133,7 +1133,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const { isOK, message } = await uploadData(storageLicenseResult.isOK);
       setIsLoading(false);
       if (!isOK) {
-        await AlertAsync(message);
+        // キャンセル時など message が空の場合は不要なダイアログを出さない
+        if (message) await AlertAsync(message);
       } else {
         await AlertAsync(t('Home.alert.upload'));
       }

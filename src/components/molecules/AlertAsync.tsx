@@ -17,6 +17,26 @@ export const DuplicateLayerConfirmAsync = async (layerName: string): Promise<Dup
     );
   });
 
+export type DataConflictChoice = 'merge' | 'overwrite' | 'cancel';
+
+/**
+ * 別端末で同じデータが更新されていた場合の対処をユーザーに確認する。
+ * マージ（両方の変更を保持）/ 上書き（クラウドの別端末変更を破棄）/ キャンセル の3択。
+ */
+export const DataConflictConfirmAsync = async (): Promise<DataConflictChoice> =>
+  new Promise((resolve) => {
+    Alert.alert(
+      t('hooks.dataConflict.title'),
+      t('hooks.dataConflict.message'),
+      [
+        { text: t('hooks.dataConflict.merge'), swalType: 'confirm', onPress: () => resolve('merge') },
+        { text: t('hooks.dataConflict.overwrite'), swalType: 'deny', onPress: () => resolve('overwrite') },
+        { text: t('common.cancel'), swalType: 'cancel', onPress: () => resolve('cancel') },
+      ],
+      { cancelable: false }
+    );
+  });
+
 export const ConfirmAsync = async (
   message: string,
   text: { true: string; false: string } = { true: 'Yes', false: 'No' }

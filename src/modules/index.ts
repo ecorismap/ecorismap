@@ -5,6 +5,7 @@ import userReducer from './user';
 import projectsReducer from './projects';
 import tileMapsReducer from './tileMaps';
 import favoriteProjectsReducer from './favoriteProjects';
+import dataSyncReducer from './dataSync';
 import { combineReducers } from '@reduxjs/toolkit';
 
 export default combineReducers({
@@ -15,4 +16,5 @@ export default combineReducers({
   projects: projectsReducer,
   tileMaps: tileMapsReducer,
   favoriteProjects: favoriteProjectsReducer,
+  dataSync: dataSyncReducer,
 });
