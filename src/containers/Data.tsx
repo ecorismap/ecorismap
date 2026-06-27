@@ -9,6 +9,7 @@ import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { DataContext } from '../contexts/Data';
 import { exportGeoFile } from '../utils/File';
+import { truncateForFileName } from '../utils/General';
 import { usePermission } from '../hooks/usePermission';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
@@ -81,7 +82,7 @@ export default function DataContainer() {
       }
 
       const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-      const fileNameBase = `${params.targetLayer.name}_${time}`;
+      const fileNameBase = `${truncateForFileName(params.targetLayer.name)}_${time}`;
       const exportData = await generateExportGeoData(params.targetLayer, exportedRecords, fileNameBase, {
         exportPhoto: true,
       });

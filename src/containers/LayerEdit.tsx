@@ -10,6 +10,7 @@ import { LayerEditContext } from '../contexts/LayerEdit';
 import { checkLayerInputs } from '../utils/Layer';
 import { usePermission } from '../hooks/usePermission';
 import { exportGeoFile } from '../utils/File';
+import { truncateForFileName } from '../utils/General';
 import { useGeoFile } from '../hooks/useGeoFile';
 import dayjs from 'dayjs';
 
@@ -74,7 +75,7 @@ export default function LayerEditContainer() {
 
   const pressExportLayer = useCallback(async () => {
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
-    const fileNameBase = `${targetLayer.name}_${time}`;
+    const fileNameBase = `${truncateForFileName(targetLayer.name)}_${time}`;
     const exportData = await generateExportGeoData(targetLayer, [], fileNameBase, {
       settingsOnly: true,
       exportDictionary: true,
