@@ -113,7 +113,7 @@ export default function ProjectEditScreen() {
           onEndEditing={() => null}
         />
 
-        {(isOwner || isNew) && (
+        {(isOwnerAdmin || isNew) && (
           <EditString
             name={t('common.addMembers')}
             value={emails}

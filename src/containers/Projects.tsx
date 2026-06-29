@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from '../components/atoms/Alert';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
@@ -115,13 +115,21 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     setIsEncryptPasswordModalOpen(false);
   }, []);
 
+  const didInitialLoadRef = useRef(false);
   useEffect(() => {
-    // プロジェクト一覧の読み込み
-    if (isLoggedIn(user) && (projects.length === 0 || route.params?.reload)) {
+    // プロジェクト一覧の読み込み。
+    // 0件アカウントでは projects.length===0 が真のままになり、fetch後の navigation.setParams による
+    // 依存変化で useEffect が再発火して無限ループ（画面の点滅）になっていた。
+    // 初回の自動ロードは ref で1回に限定し、明示的な reload 指定時のみ再取得する。
+    if (!isLoggedIn(user)) return;
+    if (route.params?.reload) {
       (async () => {
         await reloadProjects();
         navigation.setParams({ reload: undefined });
       })();
+    } else if (!didInitialLoadRef.current && projects.length === 0) {
+      didInitialLoadRef.current = true;
+      reloadProjects();
     }
   }, [navigation, projects.length, reloadProjects, route.params?.reload, user]);
 

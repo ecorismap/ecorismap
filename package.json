@@ -80,6 +80,7 @@
     "test:coverage": "jest --coverage --detectOpenHandles --runInBand --forceExit",
     "test:coverage:watch": "jest --coverage --watchAll --detectOpenHandles --runInBand --forceExit",
     "testemu": "firebase emulators:exec 'yarn jest'",
+    "testrules": "firebase emulators:exec --only firestore 'npx jest --config jest.rules.config.js firestore_rules --runInBand'",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --fix --ext .tsx --ext .ts src/",
     "audit": "yarn npm audit",
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",

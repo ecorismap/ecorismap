@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { toDate, uploadCurrentPosition } from '../lib/firebase/firestore';
+import { decryptProjectData as dec, toDate, uploadCurrentPosition } from '../lib/firebase/firestore';
 import { LocationType, MemberLocationType, PositionFS } from '../types';
 import { editSettingsAction } from '../modules/settings';
 import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import dayjs from '../i18n/dayjs';
-import { decryptEThree as dec } from '../lib/virgilsecurity/e3kit';
 import { isLoggedIn } from '../utils/Account';
 import { hasOpened } from '../utils/Project';
 import { firestore, collection, onSnapshot } from '../lib/firebase/firebase';

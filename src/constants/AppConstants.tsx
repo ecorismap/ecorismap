@@ -5,6 +5,15 @@ export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.5.6';
 export const FUNC_LOGIN = true;
 export const FUNC_ENCRYPTION = true;
+// 新規プロジェクトをエンベロープ暗号(DEK・管理者によるメンバー追加可)で作成するか。
+// false の間も DEK プロジェクトの「読み込み(復号)」は可能。安全なロールアウトのため、
+// 全クライアント(モバイル/Web)に読み込み対応版が行き渡ってから true にして展開する。
+export const CREATE_DEK_PROJECTS = false;
+// 既存のグループ暗号プロジェクトを、管理者のメンバー追加操作を引き金にDEK方式へ遅延移行(Phase ii)するか。
+// false の間は移行を行わず従来どおり（メンバー追加はオーナーのみ）。dual-read(DEK→グループのフォールバック)
+// 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
+// 行き渡ってから true にする。
+export const ENABLE_DEK_MIGRATION = false;
 export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
 
