@@ -12,13 +12,19 @@ service cloud.firestore {
         function verifyUpdateFields(fields) {
           return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
         }
-        allow create: if isSignedIn() 
-        && request.auth.uid == request.resource.data.ownerUid 
-        && verifyFields(["ownerUid", "adminsUid", "membersUid","encdata","encryptedAt"],[]);
+        allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.ownerUid
+        && verifyFields(["ownerUid", "adminsUid", "membersUid","encdata","encryptedAt"],["cryptoScheme","dekPublicKey"]);
 
-        allow update: if isSignedIn() 
-        && request.auth.uid == request.resource.data.ownerUid 
-        && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt"]);
+        // 更新: オーナーは常に可。更新後がDEK方式(エンベロープ暗号)になるなら管理者も可。
+        // request.resource(更新後)を見ることで、管理者による「メンバー追加(既にdek)」と
+        // 「group→dekへの移行(Phase ii)」の両方を許可する。
+        allow update: if isSignedIn()
+        && verifyUpdateFields(["adminsUid", "membersUid","encdata","encryptedAt","cryptoScheme","dekPublicKey"])
+        && (
+             request.auth.uid == resource.data.ownerUid
+          || (request.resource.data.cryptoScheme == "dek" && request.auth.uid in resource.data.adminsUid)
+        );
  
 
         allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerUid;
@@ -30,18 +36,25 @@ service cloud.firestore {
           && verifyFields(["editorUid","encdata","encryptedAt"],[]);
         }
         match /data/{data} {
-          allow create,update: if isSignedIn() 
+          allow create,update: if isSignedIn()
           && (
              (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PRIVATE")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid && request.resource.data.permission == "PUBLIC")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "COMMON")
           || (request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid && request.resource.data.permission == "TEMPLATE"))
-          && request.auth.uid == request.resource.data.userId 
+          && request.auth.uid == request.resource.data.userId
           && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"])
           || (
               request.method == "update"
               && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
               && verifyUpdateFields(["permission"])
+            )
+          // Phase ii(移行)用: 管理者は共有データ(COMMON/TEMPLATE)を任意ユーザーのuserIdで再暗号化・書き戻しできる。
+          // COMMON/TEMPLATEは管理者管理の共有データであり、所有者本人でなくても書ける（移行/再暗号化のため）。
+          || (
+              request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+              && (request.resource.data.permission == "COMMON" || request.resource.data.permission == "TEMPLATE")
+              && verifyFields(["layerId", "userId", "permission","encdata","encryptedAt"],["chunkIndex"])
             )
           
           allow delete: if isSignedIn() 
@@ -61,6 +74,28 @@ service cloud.firestore {
         }
         match /position/{position} {
           allow read,write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
+        }
+        // DEK（エンベロープ暗号）の鍵配布。各メンバー宛てにラップされたDEK秘密鍵を格納する。
+        match /keys/{uid} {
+          // 自分宛ての鍵は読める。管理者は全メンバーの鍵を読める（移行・ローテーション用）。
+          allow read: if isSignedIn()
+          && (
+               request.auth.uid == uid
+            || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+          );
+          // 鍵の作成/更新は管理者またはオーナーのみ（オーナーは新規作成時のために許可）。
+          allow create, update: if isSignedIn()
+          && (
+               request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+            || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+          )
+          && verifyFields(["encDek","wrapperUid","encryptedAt"],[]);
+          // 削除は管理者またはオーナー（メンバー削除時）。
+          allow delete: if isSignedIn()
+          && (
+               request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
+            || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+          );
         }
     }
 

@@ -13,6 +13,11 @@ import { functions, httpsCallable } from '../firebase/firebase';
 
 let eThree: EThree;
 
+/** API整合のための関数。Web版は findUsers をキャッシュしていないため実体は何もしない。 */
+export const clearPublicKeyCache = () => {
+  // no-op (Web版はキャッシュなし)
+};
+
 export const isInitialized = (): boolean => {
   if (!FUNC_ENCRYPTION) return true;
   if (eThree === undefined) return false;
@@ -173,6 +178,40 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
     console.log(e);
     //一部のメンバーのデータがローテーションのため復号できない場合がある。
     //他の処理は継続させるためにundefineを返す。
+    return undefined;
+  }
+};
+
+/**
+ * DEK 秘密鍵を指定メンバーの公開鍵でラップする（Web版）。詳細は e3kit.ts を参照。
+ */
+export const wrapDEKForMember = async (dekPrivateKeyB64: string, memberUid: string): Promise<string> => {
+  if (!FUNC_ENCRYPTION) return dekPrivateKeyB64;
+  if (!eThree) throw new Error('E3Kit not initialized');
+  const memberCard = await eThree.findUsers(memberUid);
+  const wrapped = await eThree.authEncrypt(dekPrivateKeyB64, memberCard);
+  return wrapped as string;
+};
+
+/**
+ * 自分宛てにラップされた DEK 秘密鍵を開封する（Web版）。
+ */
+export const unwrapDEK = async (
+  wrapped: string,
+  wrapperUid: string,
+  encryptedAt?: Date
+): Promise<string | undefined> => {
+  if (!FUNC_ENCRYPTION) return wrapped;
+  if (!eThree) {
+    console.log('[unwrapDEK] E3Kit not initialized');
+    return undefined;
+  }
+  try {
+    const wrapperCard = await eThree.findUsers(wrapperUid);
+    const dekPrivateKeyB64 = await eThree.authDecrypt(wrapped, wrapperCard, encryptedAt);
+    return dekPrivateKeyB64 as string;
+  } catch (e) {
+    console.log('[unwrapDEK] error', e);
     return undefined;
   }
 };

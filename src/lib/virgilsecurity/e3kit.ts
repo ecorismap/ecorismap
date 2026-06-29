@@ -254,6 +254,47 @@ export const decryptEThree = async (encryptedAt: Date, dataString: string[], use
   }
 };
 
+/**
+ * DEK（プロジェクトデータ鍵）の秘密鍵を、指定メンバーの公開鍵でラップする。
+ * eThree.authEncrypt を使うため、現ユーザー（ラップ実行者＝管理者）の署名付きで暗号化され、
+ * メンバーは authDecrypt で開封できる。保存側は wrapperUid と encryptedAt を併せて記録すること。
+ * @returns ラップ済み文字列（base64）。
+ */
+export const wrapDEKForMember = async (dekPrivateKeyB64: string, memberUid: string): Promise<string> => {
+  if (!FUNC_ENCRYPTION) return dekPrivateKeyB64;
+  if (!eThree) throw new Error('E3Kit not initialized');
+  const memberCard = await findUsersWithCache(memberUid);
+  const wrapped = await eThree.authEncrypt(dekPrivateKeyB64, memberCard);
+  return wrapped as string;
+};
+
+/**
+ * 自分宛てにラップされた DEK 秘密鍵を開封する。
+ * @param wrapped ラップ済み文字列
+ * @param wrapperUid ラップを実行したユーザー（署名検証用）
+ * @param encryptedAt ラップ時刻（ラップ実行者の鍵ローテーション対応）
+ * @returns DEK 秘密鍵（base64）。開封できない場合は undefined。
+ */
+export const unwrapDEK = async (
+  wrapped: string,
+  wrapperUid: string,
+  encryptedAt?: Date
+): Promise<string | undefined> => {
+  if (!FUNC_ENCRYPTION) return wrapped;
+  if (!eThree) {
+    console.log('[unwrapDEK] E3Kit not initialized');
+    return undefined;
+  }
+  try {
+    const wrapperCard = await findUsersWithCache(wrapperUid);
+    const dekPrivateKeyB64 = await eThree.authDecrypt(wrapped, wrapperCard, encryptedAt);
+    return dekPrivateKeyB64 as string;
+  } catch (e) {
+    console.log('[unwrapDEK] error', e);
+    return undefined;
+  }
+};
+
 export const encryptFileEThree = async (
   uri: string
 ): Promise<

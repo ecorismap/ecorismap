@@ -9,7 +9,12 @@ import {
   initializeUser,
   loadGroup,
 } from '../lib/virgilsecurity/e3kit';
+import { addMemberKey, removeMemberKey, migrateProjectToDEK } from '../lib/firebase/firestore';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_MIGRATION } from '../constants/AppConstants';
 import { ProjectType, VerifiedType } from '../types';
+
+/** DEK（エンベロープ暗号）方式のプロジェクトか。未設定は従来のグループ暗号。 */
+const isDek = (project: ProjectType) => project.cryptoScheme === 'dek';
 
 export type UseE3kitGroupReturnType = {
   loadE3kitGroup: (project: ProjectType) => Promise<{
@@ -52,6 +57,9 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
       return { isOK: false, message: initResult.message };
     }
 
+    // DEK方式はグループをロードしない（DEKは復号時に keys/{uid} から遅延取得される）。
+    if (isDek(project)) return { isOK: true, message: '' };
+
     const { isOK } = await loadGroup(project.id, project.ownerUid);
     if (!isOK) {
       return { isOK: false, message: t('hooks.message.failLoadE3kitGroup') };
@@ -60,24 +68,29 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
   };
 
   const createE3kitGroup = useCallback(async (project: ProjectType) => {
-    const addedMembers = project.members.map((d) => d.verified === 'HOLD' && d.uid).filter((v): v is string => !!v);
-    const result = await createGroup(project.id, addedMembers);
-    if (!result.isOK) {
-      return { isOK: false, message: t('hooks.message.failCreateE3kitGroup'), project };
-    }
-    const members = cloneDeep(project.members);
-    const updatedMembers = members.map((d) => {
-      if (d.verified === 'HOLD') {
-        return { ...d, verified: 'OK' as VerifiedType };
-      } else {
-        return d;
+    const useDek = FUNC_ENCRYPTION && CREATE_DEK_PROJECTS;
+    if (!useDek) {
+      // 従来のグループ暗号方式（フラグOFF/暗号無効時）: Virgilグループを作成する。
+      const addedMembers = project.members.map((d) => d.verified === 'HOLD' && d.uid).filter((v): v is string => !!v);
+      const result = await createGroup(project.id, addedMembers);
+      if (!result.isOK) {
+        return { isOK: false, message: t('hooks.message.failCreateE3kitGroup'), project };
       }
-    });
-
-    return { isOK: true, message: '', project: { ...project, members: updatedMembers } };
+    }
+    // DEK方式ではグループを作らない（DEKの生成・配布は addProject が行う）。
+    // 共通: HOLD のメンバーを OK に更新し、暗号方式をin-memoryでも一致させる。
+    const members = cloneDeep(project.members);
+    const updatedMembers = members.map((d) =>
+      d.verified === 'HOLD' ? { ...d, verified: 'OK' as VerifiedType } : d
+    );
+    const cryptoScheme: ProjectType['cryptoScheme'] = useDek ? 'dek' : 'group';
+    return { isOK: true, message: '', project: { ...project, members: updatedMembers, cryptoScheme } };
   }, []);
 
   const deleteE3kitGroup = useCallback(async (project: ProjectType) => {
+    // DEK方式: keys サブコレクションはプロジェクト削除時に Cloud Functions が連鎖削除するため何もしない。
+    if (isDek(project)) return { isOK: true, message: '' };
+
     const participants = project.membersUid.filter((v) => v !== project.ownerUid);
     if (participants.length > 0) {
       const { isOK } = await deleteGroupMembers(project.id, project.ownerUid, participants);
@@ -93,9 +106,8 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
   }, []);
 
   const deleteE3kitGroupMembers = useCallback(async (projectId: string, ownerUid: string, uid: string) => {
-    //まだグループに入っていないかもしれないが、ローテーションしたユーザーのために一旦削除処理する。エラーは無視。
-    //グループに入っているかどうか確認できれば良いが、その方法はない？
-
+    // DEKのkeysを削除しつつ、旧グループからも除去を試みる（どちらかは存在しないがエラーは無視）。
+    await removeMemberKey(projectId, uid);
     const { isOK } = await deleteGroupMembers(projectId, ownerUid, [uid]);
     if (!isOK) {
       return { isOK: false, message: t('hooks.message.failDeleteGroupMembers') };
@@ -107,28 +119,69 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
     const addedMembers = updateProject.membersUid.filter((d) => originalProject.membersUid.indexOf(d) === -1);
     const deletedMembers = originalProject.membersUid.filter((d) => updateProject.membersUid.indexOf(d) === -1);
 
-    if (addedMembers.length > 0) {
-      const addedResult = await addGroupMembers(updateProject.id, updateProject.ownerUid, addedMembers);
-      if (!addedResult.isOK) {
-        return { isOK: false, message: t('hooks.message.failAddGroupMembers'), project: updateProject };
+    // Phase ii(遅延移行): 旧グループ方式のプロジェクトで管理者がメンバーを増減した時にDEKへ移行する。
+    // 移行後はDEK方式として以降の鍵配布(addMemberKey/removeMemberKey)に進む。
+    let project = updateProject;
+    if (
+      FUNC_ENCRYPTION &&
+      ENABLE_DEK_MIGRATION &&
+      !isDek(project) &&
+      (addedMembers.length > 0 || deletedMembers.length > 0)
+    ) {
+      const initResult = await initializeUser(project.ownerUid);
+      if (!initResult.isOK) {
+        return { isOK: false, message: initResult.message, project };
       }
+      // 既存メンバーへの配布は originalProject を基準にする（新メンバーは後段の addMemberKey で追加）。
+      const migrateRes = await migrateProjectToDEK(originalProject);
+      if (!migrateRes.isOK) {
+        return { isOK: false, message: migrateRes.message, project };
+      }
+      project = { ...project, cryptoScheme: 'dek' };
     }
-    if (deletedMembers.length > 0) {
-      const deletedResult = await deleteGroupMembers(updateProject.id, updateProject.ownerUid, deletedMembers);
-      if (!deletedResult.isOK) {
-        return { isOK: false, message: t('hooks.message.failDeleteGroupMembers'), project: updateProject };
-      }
-    }
-    const members = cloneDeep(updateProject.members);
-    const updatedMembers = members.map((d) => {
-      if (d.verified === 'HOLD') {
-        return { ...d, verified: 'OK' as VerifiedType };
-      } else {
-        return d;
-      }
-    });
 
-    return { isOK: true, message: '', project: { ...updateProject, members: updatedMembers } };
+    if (isDek(project)) {
+      // DEK方式: 任意の管理者が新メンバーの公開鍵でDEKをラップする（オーナー不要）。
+      // unwrap/wrap に eThree を使うため初期化を保証する。
+      const initResult = await initializeUser(project.ownerUid);
+      if (!initResult.isOK) {
+        return { isOK: false, message: initResult.message, project };
+      }
+      for (const uid of addedMembers) {
+        const res = await addMemberKey(project.id, uid);
+        if (!res.isOK) {
+          return {
+            isOK: false,
+            message: res.message || t('hooks.message.failAddGroupMembers'),
+            project,
+          };
+        }
+      }
+      for (const uid of deletedMembers) {
+        await removeMemberKey(project.id, uid);
+      }
+    } else {
+      // 従来のグループ暗号（既存プロジェクト）: 参加者変更はオーナーのみ可能。
+      if (addedMembers.length > 0) {
+        const addedResult = await addGroupMembers(project.id, project.ownerUid, addedMembers);
+        if (!addedResult.isOK) {
+          return { isOK: false, message: t('hooks.message.failAddGroupMembers'), project };
+        }
+      }
+      if (deletedMembers.length > 0) {
+        const deletedResult = await deleteGroupMembers(project.id, project.ownerUid, deletedMembers);
+        if (!deletedResult.isOK) {
+          return { isOK: false, message: t('hooks.message.failDeleteGroupMembers'), project };
+        }
+      }
+    }
+
+    const members = cloneDeep(project.members);
+    const updatedMembers = members.map((d) =>
+      d.verified === 'HOLD' ? { ...d, verified: 'OK' as VerifiedType } : d
+    );
+
+    return { isOK: true, message: '', project: { ...project, members: updatedMembers } };
   }, []);
 
   return {

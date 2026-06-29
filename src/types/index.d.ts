@@ -323,6 +323,8 @@ export interface ProjectType {
   license: License;
   encryptedAt?: Date;
   settingsEncryptedAt?: Date;
+  /** 暗号方式（平文フィールド由来）。未設定は従来のグループ暗号として扱う。 */
+  cryptoScheme?: 'group' | 'dek';
   // Grouping properties
   isGroup?: boolean;
   groupId?: string;
@@ -409,8 +411,24 @@ export interface ProjectFS {
   encryptedAt: Timestamp;
   storage?: { count: number };
   license?: License;
+  /** 暗号方式。未設定/'group' は従来の Virgil グループ暗号、'dek' はエンベロープ暗号（管理者追加可）。 */
+  cryptoScheme?: 'group' | 'dek';
+  /** DEK 公開鍵（base64・平文保存可）。cryptoScheme === 'dek' のときデータ暗号化に使う。 */
+  dekPublicKey?: string;
 }
 export type UpdateProjectFS = Omit<ProjectFS, 'ownerUid'>;
+
+/**
+ * projects/{projectId}/keys/{uid} の形。
+ * DEK 秘密鍵を当該メンバーの公開鍵でラップしたもの（エンベロープ暗号）。
+ */
+export interface ProjectKeyFS {
+  /** DEK 秘密鍵を当該メンバーの公開鍵でラップした文字列 */
+  encDek: string;
+  /** ラップを実行したユーザー（unwrap 時の署名検証に使う） */
+  wrapperUid: string;
+  encryptedAt: Timestamp;
+}
 
 export interface ProjectSettingsFS {
   editorUid: string;

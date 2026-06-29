@@ -6,6 +6,7 @@ import {
   PositionFS,
   ProjectDataType,
   ProjectFS,
+  ProjectKeyFS,
   ProjectSettingsFS,
   ProjectSettingsType,
   ProjectType,
@@ -15,8 +16,16 @@ import {
 //@ts-ignore
 import sizeof from 'firestore-size';
 import obj_sizeof from 'object-sizeof';
-import { decryptEThree as dec, encryptEThree as enc } from '../virgilsecurity/e3kit';
 import {
+  decryptEThree as decGroup,
+  encryptEThree as encGroup,
+  wrapDEKForMember,
+  unwrapDEK,
+} from '../virgilsecurity/e3kit';
+import { createProjectDEK, encryptWithDEK, decryptWithDEK, ExportedDEK } from '../virgilsecurity/dek';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../../constants/AppConstants';
+import {
+  auth,
   collection,
   deleteDoc,
   doc,
@@ -36,6 +45,159 @@ import {
   firebaseReady,
 } from './firebase';
 import { t } from '../../i18n/config';
+
+// ============================================================================
+// 暗号方式（group | dek）の分岐とDEK（エンベロープ暗号）の鍵管理
+//
+// enc/dec はプロジェクトの暗号方式に応じて分岐する:
+//  - 'group'（従来）: Virgil グループ暗号（encGroup/decGroup）。参加者追加はオーナー専用。
+//  - 'dek'（新方式）: プロジェクト毎のDEK公開鍵で暗号化し、DEK秘密鍵を各メンバーの公開鍵で
+//    ラップして projects/{id}/keys/{uid} に保存。任意の管理者がメンバー追加可能。
+// crypto層（dek.ts/e3kit.ts）は純粋に保ち、Firestore結合（keys読み取り・方式判別）はここに置く。
+// ============================================================================
+
+type ProjectCrypto = { scheme: 'group' | 'dek'; dekPublicKey?: string; dekPrivateKey?: string };
+const projectCryptoCache = new Map<string, ProjectCrypto>();
+
+/** プロジェクトの暗号情報キャッシュをクリア（ログアウト・プロジェクト切替時に呼ぶ）。 */
+export const clearProjectCryptoCache = () => projectCryptoCache.clear();
+
+/** 既知のDEKをキャッシュへ事前登録する（新規作成・移行直後に enc が即使えるように）。 */
+export const setProjectCryptoCache = (projectId: string, crypto: ProjectCrypto) => {
+  projectCryptoCache.set(projectId, crypto);
+};
+
+/** 現在ユーザー宛ての keys/{uid} を読み、unwrap してDEK秘密鍵(base64)を得る。無ければ undefined。 */
+const loadProjectDEKForCurrentUser = async (projectId: string): Promise<string | undefined> => {
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return undefined;
+  const keyRef = doc(firestore, 'projects', projectId, 'keys', uid);
+  const snap = await getDoc(keyRef);
+  const keyData = snap.data() as ProjectKeyFS | undefined;
+  if (!keyData) return undefined;
+  return unwrapDEK(keyData.encDek, keyData.wrapperUid, toDate(keyData.encryptedAt));
+};
+
+/** プロジェクトの暗号方式とDEK鍵を取得（キャッシュ付き）。 */
+const getProjectCrypto = async (projectId: string): Promise<ProjectCrypto> => {
+  // 暗号無効モードでは常にgroup経路（gzipのみ）に委譲する。
+  if (!FUNC_ENCRYPTION) return { scheme: 'group' };
+  const cached = projectCryptoCache.get(projectId);
+  if (cached) return cached;
+  const snap = await getDoc(doc(firestore, 'projects', projectId));
+  const pdata = snap.data() as ProjectFS | undefined;
+  if (pdata?.cryptoScheme !== 'dek') {
+    const crypto: ProjectCrypto = { scheme: 'group' };
+    projectCryptoCache.set(projectId, crypto);
+    return crypto;
+  }
+  // dek: 公開鍵は平文、秘密鍵は keys/{uid} を unwrap して取得
+  const dekPrivateKey = await loadProjectDEKForCurrentUser(projectId);
+  const crypto: ProjectCrypto = { scheme: 'dek', dekPublicKey: pdata.dekPublicKey, dekPrivateKey };
+  projectCryptoCache.set(projectId, crypto);
+  return crypto;
+};
+
+/** 方式分岐つき暗号化（従来 enc と同シグネチャ）。 */
+const enc = async (data: any, userId: string, projectId: string): Promise<string[]> => {
+  const crypto = await getProjectCrypto(projectId);
+  if (crypto.scheme === 'dek') {
+    if (!crypto.dekPublicKey) throw new Error('DEK public key not available');
+    return encryptWithDEK(data, crypto.dekPublicKey);
+  }
+  return encGroup(data, userId, projectId);
+};
+
+/** 方式分岐つき復号（従来 dec と同シグネチャ。復号できなければ undefined）。 */
+const dec = async (encryptedAt: Date, encdata: string[], userId: string, projectId: string): Promise<any> => {
+  const crypto = await getProjectCrypto(projectId);
+  if (crypto.scheme === 'dek') {
+    if (crypto.dekPrivateKey) {
+      try {
+        // try内でawaitしないと復号エラーをcatchできない（rejectされたPromiseをそのまま返してしまう）。
+        return await decryptWithDEK(encdata, crypto.dekPrivateKey);
+      } catch (e) {
+        // 移行(Phase ii)プロジェクトでは一部データ(PRIVATE/PUBLIC等)が旧グループ暗号のまま残る。
+        // DEKで復号できない場合はグループ暗号へフォールバックする(dual-read)。
+      }
+    }
+    return decGroup(encryptedAt, encdata, userId, projectId);
+  }
+  return decGroup(encryptedAt, encdata, userId, projectId);
+};
+
+/** 方式分岐つき復号の公開ラッパー（firestore.ts 外から使う場合）。 */
+export const decryptProjectData = (
+  encryptedAt: Date,
+  encdata: string[],
+  userId: string,
+  projectId: string
+): Promise<any> => dec(encryptedAt, encdata, userId, projectId);
+
+/**
+ * 生成済みDEKを全メンバーの公開鍵でラップして projects/{id}/keys/{uid} に保存する。
+ * プロジェクト doc 作成後に呼ぶこと（Rulesが project の adminsUid/membersUid を参照するため）。
+ */
+export const distributeProjectDEK = async (
+  projectId: string,
+  memberUids: string[],
+  dek: ExportedDEK,
+  wrapperUid: string
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    const encryptedAt = Timestamp.now();
+    const batch = writeBatch(firestore);
+    for (const uid of memberUids) {
+      const encDek = await wrapDEKForMember(dek.privateKey, uid);
+      const keyFS: ProjectKeyFS = { encDek, wrapperUid, encryptedAt };
+      batch.set(doc(firestore, 'projects', projectId, 'keys', uid), keyFS);
+    }
+    await batch.commit();
+    return { isOK: true, message: '' };
+  } catch (e) {
+    console.log('[distributeProjectDEK] error', e);
+    return { isOK: false, message: t('hooks.message.failAddGroupMembers') };
+  }
+};
+
+/**
+ * 管理者が新メンバーを追加する: 既存DEKを取得し、新メンバーの公開鍵でラップして keys/{newUid} を書く。
+ * オーナー不要（DEKを開封できる任意の管理者が実行可能）。
+ */
+export const addMemberKey = async (
+  projectId: string,
+  newMemberUid: string
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    const wrapperUid = auth?.currentUser?.uid;
+    if (!wrapperUid) return { isOK: false, message: t('hooks.message.pleaseLogin') };
+    const crypto = await getProjectCrypto(projectId);
+    if (crypto.scheme !== 'dek' || !crypto.dekPrivateKey) {
+      return { isOK: false, message: 'project not in dek scheme or DEK unavailable' };
+    }
+    const encDek = await wrapDEKForMember(crypto.dekPrivateKey, newMemberUid);
+    const keyFS: ProjectKeyFS = { encDek, wrapperUid, encryptedAt: Timestamp.now() };
+    await setDoc(doc(firestore, 'projects', projectId, 'keys', newMemberUid), keyFS);
+    return { isOK: true, message: '' };
+  } catch (e) {
+    console.log('[addMemberKey] error', e);
+    return { isOK: false, message: t('hooks.message.failAddGroupMembers') };
+  }
+};
+
+/** メンバーのDEKコピーを削除する（メンバー削除時。真の失効にはDEKローテーションが別途必要）。 */
+export const removeMemberKey = async (
+  projectId: string,
+  uid: string
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    await deleteDoc(doc(firestore, 'projects', projectId, 'keys', uid));
+    return { isOK: true, message: '' };
+  } catch (e) {
+    console.log('[removeMemberKey] error', e);
+    return { isOK: false, message: '' };
+  }
+};
 
 export const getUidByEmail = async (email: string) => {
   try {
@@ -89,7 +251,14 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
     // 2. 設定取得完了後、復号化を並列で実行
     // const decryptStart = performance.now();
     const result = querySnapshot.docs.map(async (docSnapshot, index) => {
-      const { encdata, ownerUid, encryptedAt, license, storage, ...others } = docSnapshot.data() as ProjectFS;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { encdata, ownerUid, encryptedAt, license, storage, cryptoScheme, dekPublicKey, ...others } =
+        docSnapshot.data() as ProjectFS;
+      // group方式は方式が確定しているのでキャッシュへ事前登録し、dec内での余分なproject doc再読み取りを防ぐ
+      // （既存プロジェクトの読み取り回数を従来どおりに保つ）。dek方式はDEK秘密鍵の遅延取得が要るので事前登録しない。
+      if (cryptoScheme !== 'dek') {
+        setProjectCryptoCache(docSnapshot.id, { scheme: 'group' });
+      }
       const data = await dec(toDate(encryptedAt), encdata, ownerUid, docSnapshot.id);
       if (data === undefined) {
         return undefined;
@@ -102,6 +271,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           ...data,
           ...others,
           encryptedAt: toDate(encryptedAt),
+          cryptoScheme: cryptoScheme ?? 'group',
           // 事前に取得した設定の更新日時を使用
           settingsEncryptedAt: settingsResults[index],
         } as ProjectType;
@@ -130,6 +300,34 @@ export const addProject = async (project: ProjectType) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, ownerUid, adminsUid, membersUid, storage, license, settingsEncryptedAt, ...others } = project;
+
+    // 新規プロジェクトはエンベロープ暗号（DEK）方式で作成する（管理者によるメンバー追加を可能にするため）。
+    // CREATE_DEK_PROJECTS が有効な場合のみ、新規プロジェクトをエンベロープ暗号(DEK)方式で作成する。
+    // （ロールアウト安全のため。false の間は従来のグループ暗号で作成し、旧クライアントでも開ける。）
+    if (FUNC_ENCRYPTION && CREATE_DEK_PROJECTS) {
+      const dek = await createProjectDEK();
+      // enc が即DEKを使えるようキャッシュへ事前登録
+      setProjectCryptoCache(id, { scheme: 'dek', dekPublicKey: dek.publicKey, dekPrivateKey: dek.privateKey });
+      const encdata = await enc(others, ownerUid, id);
+      const projectFS: ProjectFS = {
+        ownerUid,
+        adminsUid,
+        membersUid,
+        encdata,
+        encryptedAt: Timestamp.now(),
+        cryptoScheme: 'dek',
+        dekPublicKey: dek.publicKey,
+      };
+      await setDoc(doc(firestore, 'projects', id), projectFS);
+      // プロジェクト doc 作成後に keys を配布（Rulesが project の adminsUid/membersUid を参照するため）
+      const distRes = await distributeProjectDEK(id, membersUid, dek, ownerUid);
+      if (!distRes.isOK) return { isOK: false, message: distRes.message };
+      return { isOK: true, message: '' };
+    }
+
+    // 従来のグループ暗号方式（フラグOFF）または暗号無効モード(gzip)。
+    // グループ暗号の場合、Virgilグループは createE3kitGroup で作成済み。
+    setProjectCryptoCache(id, { scheme: 'group' });
     const encdata = await enc(others, ownerUid, id);
     const projectFS: ProjectFS = {
       ownerUid,
@@ -139,7 +337,6 @@ export const addProject = async (project: ProjectType) => {
       encryptedAt: Timestamp.now(),
     };
     await setDoc(doc(firestore, 'projects', id), projectFS);
-
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);
@@ -671,6 +868,79 @@ export const downloadTemplateData = async (projectId: string) => {
   } catch (error) {
     console.error('テンプレートデータダウンロードエラー:', error);
     return { isOK: false, message: 'データのダウンロードに失敗しました' };
+  }
+};
+
+/**
+ * 既存のグループ暗号プロジェクトをDEK(エンベロープ暗号)方式へ移行する（Phase ii / 遅延移行）。
+ * 管理者端末で実行する（E2Eのためクラウド関数では復号できない）。
+ *
+ * 方針:
+ *  - 再暗号化する(DEK化): プロジェクトメタ・設定・COMMON・TEMPLATE（新メンバーに必要な共有データ）。
+ *  - そのまま残す: PRIVATE/PUBLIC（各メンバー所有）。Virgilグループも残し、これらは dual-read で復号する。
+ *  - DEK秘密鍵は引数 project の membersUid 全員へラップして keys/{uid} に保存する。
+ * 冪等: 既にDEK方式なら何もしない。
+ */
+export const migrateProjectToDEK = async (
+  project: ProjectType
+): Promise<{ isOK: boolean; message: string }> => {
+  try {
+    const wrapperUid = auth?.currentUser?.uid;
+    if (!wrapperUid) return { isOK: false, message: t('hooks.message.pleaseLogin') };
+
+    const { id, ownerUid, membersUid } = project;
+
+    // 既にDEK方式なら多重移行しない。
+    const current = await getProjectCrypto(id);
+    if (current.scheme === 'dek') return { isOK: true, message: '' };
+
+    // 1. まだgroup方式のうちに、移行対象データを復号して取り出す（このdecはグループ暗号で動く）。
+    const settingsRes = await downloadProjectSettings(id);
+    const commonRes = await downloadCommonData(id);
+    const templateRes = await downloadTemplateData(id);
+    if (!commonRes.isOK || !templateRes.isOK) {
+      return { isOK: false, message: t('common.message.cannotLoadProject') };
+    }
+
+    // 2. DEKを生成し、以降の暗号化がDEKを使うようキャッシュを切り替える。
+    const dek = await createProjectDEK();
+    setProjectCryptoCache(id, { scheme: 'dek', dekPublicKey: dek.publicKey, dekPrivateKey: dek.privateKey });
+
+    // 3. 既存の全メンバーへDEKを配布（keys/{uid}）。新メンバーは呼び出し側が addMemberKey で追加する。
+    const distRes = await distributeProjectDEK(id, membersUid, dek, wrapperUid);
+    if (!distRes.isOK) return { isOK: false, message: distRes.message };
+
+    // 4. プロジェクトメタをDEKで再暗号化し、cryptoScheme/dekPublicKey を設定（管理者更新としてRulesを通す）。
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: _id, ownerUid: _o, adminsUid: _a, membersUid: _m, storage, license, settingsEncryptedAt, ...others } =
+      project;
+    const encdata = await enc(others, ownerUid, id);
+    await updateDoc(doc(firestore, 'projects', id), {
+      encdata,
+      encryptedAt: Timestamp.now(),
+      cryptoScheme: 'dek',
+      dekPublicKey: dek.publicKey,
+    });
+
+    // 5. 設定・COMMON・TEMPLATE をDEKで再暗号化して書き戻す。
+    if (settingsRes.isOK) {
+      await uploadProjectSettings(id, wrapperUid, settingsRes.data);
+    }
+    for (const d of commonRes.data ?? []) {
+      if (d.userId === undefined) continue;
+      await uploadDataHelper(id, { userId: d.userId, layerId: d.layerId, data: d.data, permission: 'COMMON' });
+    }
+    for (const d of templateRes.data ?? []) {
+      if (d.userId === undefined) continue;
+      await uploadDataHelper(id, { userId: d.userId, layerId: d.layerId, data: d.data, permission: 'TEMPLATE' });
+    }
+
+    return { isOK: true, message: '' };
+  } catch (e) {
+    console.log('[migrateProjectToDEK] error', e);
+    // 失敗時はキャッシュを破棄し、次回読み込みでサーバの確定状態に同期させる。
+    clearProjectCryptoCache();
+    return { isOK: false, message: t('common.message.failGetProjects') };
   }
 };
 

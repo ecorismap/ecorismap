@@ -160,7 +160,8 @@ export const useAccount = (): UseAccountReturnType => {
         setUserAction({
           uid: authUser.uid,
           email: authUser.email,
-          displayName: authUser.displayName,
+          // displayName 未設定(null)のアカウントでも isLoggedIn を満たすよう email でフォールバックする。
+          displayName: authUser.displayName || authUser.email || '',
           photoURL: authUser.photoURL,
         })
       );
@@ -172,6 +173,9 @@ export const useAccount = (): UseAccountReturnType => {
 
   const logout = useCallback(async () => {
     await FBsignOut();
+    // アカウント切替時に前ユーザーの公開鍵・DEK（復号済み秘密鍵を含む）をキャッシュに残さない。
+    e3kit.clearPublicKeyCache();
+    projectStore.clearProjectCryptoCache();
     dispatch(setUserAction(userInitialState));
     dispatch(setProjectsAction(projectsInitialState));
   }, [dispatch]);
@@ -247,7 +251,8 @@ export const useAccount = (): UseAccountReturnType => {
         setUserAction({
           uid: authUser.uid,
           email: authUser.email,
-          displayName: authUser.displayName,
+          // displayName 未設定(null)でも isLoggedIn を満たすよう email でフォールバックする。
+          displayName: authUser.displayName || authUser.email || '',
           photoURL: authUser.photoURL,
         })
       );

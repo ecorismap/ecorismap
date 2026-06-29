@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as firebase from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 let testEnv: firebase.RulesTestEnvironment;
 const projectID = 'ecorismap';
@@ -437,7 +437,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -446,7 +446,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -483,7 +483,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -492,7 +492,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -521,7 +521,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -530,7 +530,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -549,17 +549,17 @@ describe('data subcollection', () => {
     });
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context1.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Common'))
+        query(collection(context1.firestore(), `projects/${documentId}/data`), where('permission', '==', 'COMMON'))
       )
     );
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context2.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Common'))
+        query(collection(context2.firestore(), `projects/${documentId}/data`), where('permission', '==', 'COMMON'))
       )
     );
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context3.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Common'))
+        query(collection(context3.firestore(), `projects/${documentId}/data`), where('permission', '==', 'COMMON'))
       )
     );
   });
@@ -581,7 +581,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -594,12 +594,12 @@ describe('data subcollection', () => {
 
     await firebase.assertFails(
       getDocs(
-        query(collection(context4.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Common'))
+        query(collection(context4.firestore(), `projects/${documentId}/data`), where('permission', '==', 'COMMON'))
       )
     );
     await firebase.assertFails(
       getDocs(
-        query(collection(context5.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Common'))
+        query(collection(context5.firestore(), `projects/${documentId}/data`), where('permission', '==', 'COMMON'))
       )
     );
   });
@@ -620,7 +620,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Public',
+        permission: 'PUBLIC',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -629,7 +629,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -649,17 +649,17 @@ describe('data subcollection', () => {
 
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context1.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Public'))
+        query(collection(context1.firestore(), `projects/${documentId}/data`), where('permission', '==', 'PUBLIC'))
       )
     );
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context2.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Public'))
+        query(collection(context2.firestore(), `projects/${documentId}/data`), where('permission', '==', 'PUBLIC'))
       )
     );
     await firebase.assertSucceeds(
       getDocs(
-        query(collection(context3.firestore(), `projects/${documentId}/data`), where('permission', '==', 'Public'))
+        query(collection(context3.firestore(), `projects/${documentId}/data`), where('permission', '==', 'PUBLIC'))
       )
     );
   });
@@ -680,7 +680,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -689,7 +689,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -704,7 +704,7 @@ describe('data subcollection', () => {
         query(
           collection(context3.firestore(), `projects/${documentId}/data`),
           where('userId', '==', uid3),
-          where('permission', '==', 'Private')
+          where('permission', '==', 'PRIVATE')
         )
       )
     );
@@ -726,7 +726,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Public',
+        permission: 'PUBLIC',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -735,7 +735,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -750,7 +750,7 @@ describe('data subcollection', () => {
         query(
           collection(context3.firestore(), `projects/${documentId}/data`),
           where('userId', '==', uid2),
-          where('permission', '==', 'Private')
+          where('permission', '==', 'PRIVATE')
         )
       )
     );
@@ -775,7 +775,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       })
     );
@@ -791,7 +791,8 @@ describe('data subcollection', () => {
         encryptedAt: '2022年1月2日',
       });
     });
-    const context3 = testEnv.authenticatedContext(uid2, {
+    // uid3 は一般メンバー（adminsUidに含まれない）。COMMONの作成は管理者専用なので失敗する。
+    const context3 = testEnv.authenticatedContext(uid3, {
       email: 'test3@example.com',
       email_verified: true,
     });
@@ -800,7 +801,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       })
     );
@@ -825,7 +826,7 @@ describe('data subcollection', () => {
         wrongdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       })
     );
@@ -850,7 +851,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       })
     );
@@ -875,7 +876,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid2,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       })
     );
@@ -896,7 +897,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid3,
         layerId: layerId,
-        permission: 'Private',
+        permission: 'PRIVATE',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -905,7 +906,7 @@ describe('data subcollection', () => {
         encdata: '',
         userId: uid1,
         layerId: layerId,
-        permission: 'Common',
+        permission: 'COMMON',
         encryptedAt: '2022年1月2日',
       });
     });
@@ -914,5 +915,202 @@ describe('data subcollection', () => {
       email_verified: true,
     });
     await firebase.assertSucceeds(deleteDoc(doc(context3.firestore(), `projects/${documentId}/data/${dataId1}`)));
+  });
+});
+
+describe('DEK(エンベロープ暗号): keys サブコレクションと管理者によるメンバー追加', () => {
+  const ctx = (uid: string, n: string) => testEnv.authenticatedContext(uid, { email: `${n}@example.com`, email_verified: true });
+
+  // DEK方式のプロジェクトを準備
+  const seedDekProject = async (membersUid = [uid1, uid2, uid3]) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid,
+        encdata: [''],
+        encryptedAt: '2022年1月1日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+      });
+    });
+  };
+  // 従来のグループ方式（cryptoScheme無し）のプロジェクトを準備
+  const seedGroupProject = async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1, uid2],
+        membersUid: [uid1, uid2, uid3],
+        encdata: [''],
+        encryptedAt: '2022年1月1日',
+      });
+    });
+  };
+  const seedKey = async (uid: string) => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}/keys/${uid}`), {
+        encDek: 'wrapped',
+        wrapperUid: uid1,
+        encryptedAt: '2022年1月1日',
+      });
+    });
+  };
+
+  it('keys read: メンバーは自分宛ての鍵を読める', async () => {
+    await seedDekProject();
+    await seedKey(uid3);
+    await firebase.assertSucceeds(getDoc(doc(ctx(uid3, 'test3').firestore(), `projects/${documentId}/keys/${uid3}`)));
+  });
+
+  it('keys read: メンバーは他人宛ての鍵を読めない', async () => {
+    await seedDekProject();
+    await seedKey(uid1);
+    // uid3(一般メンバー)が uid1宛ての鍵を読もうとする → 拒否
+    await firebase.assertFails(getDoc(doc(ctx(uid3, 'test3').firestore(), `projects/${documentId}/keys/${uid1}`)));
+  });
+
+  it('keys read: 管理者は他メンバーの鍵を読める', async () => {
+    await seedDekProject();
+    await seedKey(uid3);
+    await firebase.assertSucceeds(getDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}/keys/${uid3}`)));
+  });
+
+  it('keys create: 管理者は新メンバーの鍵を作成できる（オーナー不要）', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}/keys/${uid5}`), {
+        encDek: 'wrapped',
+        wrapperUid: uid2,
+        encryptedAt: '2022年1月1日',
+      })
+    );
+  });
+
+  it('keys create: 一般メンバーは鍵を作成できない', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid3, 'test3').firestore(), `projects/${documentId}/keys/${uid5}`), {
+        encDek: 'wrapped',
+        wrapperUid: uid3,
+        encryptedAt: '2022年1月1日',
+      })
+    );
+  });
+
+  it('keys delete: 管理者は鍵を削除できる', async () => {
+    await seedDekProject();
+    await seedKey(uid3);
+    await firebase.assertSucceeds(deleteDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}/keys/${uid3}`)));
+  });
+
+  it('project update: DEK方式では管理者がメンバーを追加できる', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        membersUid: [uid1, uid2, uid3, uid5],
+      })
+    );
+  });
+
+  it('project update: グループ方式では管理者はメンバーを追加できない（オーナーのみ）', async () => {
+    await seedGroupProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        membersUid: [uid1, uid2, uid3, uid5],
+      })
+    );
+  });
+
+  it('project update: グループ方式でもオーナーはメンバーを追加できる', async () => {
+    await seedGroupProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid1, 'test1').firestore(), `projects/${documentId}`), {
+        membersUid: [uid1, uid2, uid3, uid5],
+      })
+    );
+  });
+
+  it('project create: オーナーは cryptoScheme/dekPublicKey 付きで作成できる', async () => {
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid1, 'test1').firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1],
+        membersUid: [uid1],
+        encdata: [''],
+        encryptedAt: '2022年1月1日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+      })
+    );
+  });
+
+  // ---- Phase ii(遅延移行): group → dek 移行 ----
+
+  it('migration: 管理者はグループ方式をDEK方式へ移行できる（cryptoScheme=dekを設定）', async () => {
+    await seedGroupProject();
+    await firebase.assertSucceeds(
+      updateDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}`), {
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+      })
+    );
+  });
+
+  it('migration: 一般メンバーはDEKへ移行できない', async () => {
+    await seedGroupProject();
+    await firebase.assertFails(
+      updateDoc(doc(ctx(uid3, 'test3').firestore(), `projects/${documentId}`), {
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        cryptoScheme: 'dek',
+        dekPublicKey: 'PUBKEY',
+      })
+    );
+  });
+
+  it('migration: 管理者はCOMMONデータを他人のuserIdで再暗号化・書き戻しできる', async () => {
+    await seedDekProject();
+    // 管理者 uid2 が、所有者 uid1 のCOMMONデータを書き戻す（移行時の再暗号化）。
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}/data/common1`), {
+        layerId: 'layer1',
+        userId: uid1,
+        permission: 'COMMON',
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        chunkIndex: 0,
+      })
+    );
+  });
+
+  it('migration: 管理者はTEMPLATEデータを他人のuserIdで再暗号化・書き戻しできる', async () => {
+    await seedDekProject();
+    await firebase.assertSucceeds(
+      setDoc(doc(ctx(uid2, 'test2').firestore(), `projects/${documentId}/data/template1`), {
+        layerId: 'layer1',
+        userId: uid1,
+        permission: 'TEMPLATE',
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        chunkIndex: 0,
+      })
+    );
+  });
+
+  it('migration: 一般メンバーは他人userIdのCOMMONを書けない（緩和は管理者限定）', async () => {
+    await seedDekProject();
+    await firebase.assertFails(
+      setDoc(doc(ctx(uid3, 'test3').firestore(), `projects/${documentId}/data/common2`), {
+        layerId: 'layer1',
+        userId: uid1,
+        permission: 'COMMON',
+        encdata: ['reenc'],
+        encryptedAt: '2022年2月2日',
+        chunkIndex: 0,
+      })
+    );
   });
 });
