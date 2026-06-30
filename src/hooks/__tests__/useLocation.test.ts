@@ -466,6 +466,35 @@ describe('バックグラウンド中のUI更新スキップ', () => {
       { duration: 5 }
     );
   });
+
+  it('age が大きい古いキャッシュ位置は現在地マーカー・カメラ・MMKV保存に使わない（iOSキャッシュ対策）', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const mockMapRef = { current: { animateCamera: jest.fn() } };
+    const { result } = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+    });
+
+    const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+    const locationBefore = result.current.currentLocation;
+    mockMapRef.current.animateCamera.mockClear();
+    (trackLogMMKV.setCurrentLocation as jest.Mock).mockClear();
+
+    // age=120000ms（2分前）= STALE_LOCATION_AGE_MS(30s) 超過の古いキャッシュ位置
+    act(() => {
+      onLocationCallback({
+        coords: { latitude: 1.0, longitude: 1.0, altitude: 0, accuracy: 5, heading: 0, speed: 0 },
+        timestamp: Date.now() - 120000,
+        age: 120000,
+      });
+    });
+
+    // 現在地・カメラ・MMKVのいずれも古い位置で更新されない
+    expect(result.current.currentLocation).toEqual(locationBefore);
+    expect(mockMapRef.current.animateCamera).not.toHaveBeenCalled();
+    expect(trackLogMMKV.setCurrentLocation).not.toHaveBeenCalled();
+  });
 });
 
 describe('heading購読のライフサイクル', () => {
