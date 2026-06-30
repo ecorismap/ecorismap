@@ -67,6 +67,12 @@ const STOP_DETECTION_DISABLED: FlatStopDetectionConfig = {
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
+// iOSのCLLocationManagerは位置サービス開始時にキャッシュ済みの古い位置を即配信する。
+// transistorsoft/react-native-background-geolocation の getCurrentPosition はこれを
+// maximumAge を無視して返す既知のiOS不具合（issue #113、iOSは未修正）があるため、
+// ライブラリが各位置に付与する age(ms) でこの古いキャッシュ位置を検出して表示系から弾く。
+const STALE_LOCATION_AGE_MS = 30000;
+
 // 方位(azimuth)の state 更新を間引くための設定。
 // 磁気センサーは毎秒数十回発火するため、そのまま setAzimuth すると Home 配下が高頻度再レンダリングして
 // 方位表示が「ふらふら」する/もたつく。頻度と最小角度差で間引いて再描画を抑制する。
@@ -285,6 +291,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         const normalized = toLocationObject(location);
         const latest = { ...normalized.coords, timestamp: normalized.timestamp };
 
+        // iOSが開始直後に流す古いキャッシュ位置（age が大きい）は、現在地マーカー/カメラ/接近通知に
+        // 使うと誤った場所へ飛ぶため弾く。軌跡保存（checkAndStoreLocations）は独自のフィルタ
+        // （timestamp単調性・accuracy≤100m）に任せるため、ここでは表示系のみ抑止する。
+        const isStaleLocation = typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS;
+
         // バックグラウンド中は画面が見えないため、React state更新とカメラ移動をスキップして
         // CPU/ブリッジ消費を抑える（MMKVへの保存と接近通知は継続。
         // 表示はフォアグラウンド復帰時にsyncLocationFromMMKVで復元される）。
@@ -315,31 +326,34 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
         }
 
-        // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
-        trackLogMMKV.setCurrentLocation(latest);
+        // 古いキャッシュ位置（isStaleLocation）は現在地表示・カメラ・接近通知には使わない。
+        if (!isStaleLocation) {
+          // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
+          trackLogMMKV.setCurrentLocation(latest);
 
-        if (!isInBackground) {
-          // 現在地を更新
-          setCurrentLocation(latest);
+          if (!isInBackground) {
+            // 現在地を更新
+            setCurrentLocation(latest);
 
-          // カメラ移動（followモード時）
-          if (gpsStateRef.current === 'follow') {
-            if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
-              (mapViewRef.current as MapView).animateCamera(
-                {
-                  center: {
-                    latitude: latest.latitude,
-                    longitude: latest.longitude,
+            // カメラ移動（followモード時）
+            if (gpsStateRef.current === 'follow') {
+              if (mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+                (mapViewRef.current as MapView).animateCamera(
+                  {
+                    center: {
+                      latitude: latest.latitude,
+                      longitude: latest.longitude,
+                    },
                   },
-                },
-                { duration: 5 }
-              );
+                  { duration: 5 }
+                );
+              }
             }
           }
-        }
 
-        // 接近通知チェック（GPSオンまたはトラッキング中。バックグラウンドでも継続）
-        checkProximityRef.current(latest);
+          // 接近通知チェック（GPSオンまたはトラッキング中。バックグラウンドでも継続）
+          checkProximityRef.current(latest);
+        }
       } catch (error) {
         console.error('[tracking] Failed to persist location', error);
       }
@@ -534,12 +548,32 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     try {
       const location = await BackgroundGeolocation.getCurrentPosition({
         persist: false,
-        samples: 1,
+        samples: 3, // 複数fixを集めて最良を返す（ライブラリ既定）。samples:1だとiOSは最初のキャッシュを返す。
+        maximumAge: 0, // キャッシュ位置を採用しない（best-effort。iOSでは無視され得るため下のageで再判定）。
         desiredAccuracy: gpsAccuracyOption.desiredAccuracy,
         timeout: 30,
       } as any);
-      if (!location) return;
-      const coords = location.coords;
+
+      // iOSは maximumAge を無視して古いキャッシュ位置を返すことがある（issue #113）。
+      // 戻り値の age を見て、古ければ採用せず直近の新鮮な現在地（MMKV）にフォールバックする。
+      let coords: LocationType | undefined;
+      const isFresh = !!location && !(typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS);
+      if (location && isFresh) {
+        coords = location.coords as LocationType;
+      } else {
+        const latestCached = trackLogMMKV.getCurrentLocation();
+        if (
+          latestCached &&
+          typeof latestCached.timestamp === 'number' &&
+          Date.now() - latestCached.timestamp <= STALE_LOCATION_AGE_MS
+        ) {
+          coords = latestCached;
+        }
+      }
+      // 新鮮な現在地が得られなければカメラを動かさない（誤った場所へ飛ぶより安全。
+      // startGPS内のchangePace(true)で間もなく新鮮なonLocationが来てfollowで追従する）。
+      if (!coords) return;
+
       setCurrentLocation(coords);
       if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
       mapViewRef.current.animateCamera(

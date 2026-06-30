@@ -10,8 +10,12 @@ import { deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { LatLng } from 'react-native-maps';
 import { RootState } from '../store';
 
+// iOSの getCurrentPosition はキャッシュされた古い位置を返すことがある（issue #113）。
+// ライブラリが付与する age(ms) がこの閾値を超える位置は古いキャッシュとみなして採用しない。
+const STALE_LOCATION_AGE_MS = 30000;
+
 export type UsePointToolReturnType = {
-  addCurrentPoint: () => Promise<{
+  addCurrentPoint: (preferredLocation?: LocationType | null) => Promise<{
     isOK: boolean;
     message: string;
     layer: LayerType | undefined;
@@ -36,11 +40,17 @@ export const usePointTool = (): UsePointToolReturnType => {
     try {
       const location = await BackgroundGeolocation.getCurrentPosition({
         persist: false,
-        samples: 1,
+        samples: 3, // 複数fixを集めて最良を返す（ライブラリ既定）。samples:1だとiOSは最初のキャッシュを返す。
+        maximumAge: 0, // キャッシュ位置を採用しない（best-effort。iOSでは無視され得るため下のageで再判定）。
         desiredAccuracy: BackgroundGeolocation.DesiredAccuracy.High,
         timeout: 30,
-      });
+      } as any);
       if (!location) return undefined;
+      // iOSは maximumAge を無視して古いキャッシュ位置を返すことがある（issue #113）。
+      // age が大きい古い位置は採用しない（呼び出し側でGPS ON/記録中はライブ現在地が優先される）。
+      if (typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS) {
+        return undefined;
+      }
       return toLocationType({
         coords: {
           latitude: location.coords.latitude,
@@ -60,13 +70,24 @@ export const usePointTool = (): UsePointToolReturnType => {
     }
   }, []);
 
-  const addCurrentPoint = useCallback(async () => {
-    const location = await getCurrentPoint();
-    if (location === undefined) {
-      return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, record: undefined };
-    }
-    return addRecordWithCheck('POINT', location);
-  }, [addRecordWithCheck, getCurrentPoint]);
+  const addCurrentPoint = useCallback(
+    async (preferredLocation?: LocationType | null) => {
+      // 軌跡記録中・GPS ON中は、すでにストリーミングされているライブ現在地（地図上の現在地マーカーと同じ位置）を使う。
+      // 記録中に getCurrentPosition を別途呼ぶと、iOSで位置更新ストリームと競合してキャッシュされた古い位置
+      // （軌跡の開始地点など）が返ることがあるため。ライブ現在地が無いときのみ getCurrentPosition にフォールバックする。
+      const location =
+        preferredLocation &&
+        typeof preferredLocation.latitude === 'number' &&
+        typeof preferredLocation.longitude === 'number'
+          ? preferredLocation
+          : await getCurrentPoint();
+      if (location === undefined || location === null) {
+        return { isOK: false, message: t('hooks.message.turnOnGPS'), layer: undefined, record: undefined };
+      }
+      return addRecordWithCheck('POINT', location);
+    },
+    [addRecordWithCheck, getCurrentPoint]
+  );
 
   const resetPointPosition = useCallback(
     (targetLayer: LayerType, feature: RecordType) => {

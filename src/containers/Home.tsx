@@ -730,7 +730,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       return;
     }
 
-    const { isOK, message, layer, record } = await addCurrentPoint();
+    // GPS ON（follow/show）または軌跡記録中は、保持済みのライブ現在地を渡す。
+    // 記録中に getCurrentPosition を呼ぶとiOSで古い位置（軌跡開始地点）が返る不具合の回避。
+    const preferred = gpsState !== 'off' || trackingState === 'on' ? currentLocation : undefined;
+    const { isOK, message, layer, record } = await addCurrentPoint(preferred);
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);
     } else {
@@ -742,7 +745,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
-  }, [addCurrentPoint, gpsState, navigateToSplit, trackingState]);
+  }, [addCurrentPoint, currentLocation, gpsState, navigateToSplit, trackingState]);
 
   const handleAddLocationPoint = useCallback(async () => {
     await addLocationPoint();
