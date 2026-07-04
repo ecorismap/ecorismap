@@ -25,6 +25,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     isOwner,
     isOwnerAdmin,
     isNew,
+    user,
     targetProject,
     originalProject,
     isEdited,
@@ -41,7 +42,8 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const [isLoading, setIsLoading] = useState(false);
   const { ownerProjectsCount } = useProjects();
-  const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup } = useE3kitGroup();
+  const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup, reshareMemberKey } =
+    useE3kitGroup();
   const {
     deleteProject,
     fetchProjectSettings,
@@ -291,6 +293,29 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     [deleteMember]
   );
 
+  const pressReshareMemberKey = useCallback(
+    async (idx: number) => {
+      try {
+        const member = targetProject.members[idx];
+        if (!member || !member.uid) {
+          await AlertAsync(t('ProjectEdit.alert.reshareKeyNoUid'));
+          return;
+        }
+        const ret = await ConfirmAsync(t('ProjectEdit.confirm.reshareKey'));
+        if (!ret) return;
+        setIsLoading(true);
+        const res = await reshareMemberKey(targetProject, member.uid);
+        setIsLoading(false);
+        if (!res.isOK) throw new Error(res.message);
+        await AlertAsync(t('ProjectEdit.alert.reshareKey'));
+      } catch (e: any) {
+        setIsLoading(false);
+        await AlertAsync(e.message);
+      }
+    },
+    [reshareMemberKey, targetProject]
+  );
+
   const gotoBack = useCallback(async () => {
     if (isEdited) {
       const ret = await ConfirmAsync(t('ProjectEdit.confirm.gotoBack'));
@@ -326,11 +351,13 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
         isOwnerAdmin,
         isLoading,
         isNew,
+        userUid: user.uid,
         changeText,
         changeMemberText,
         changeAdmin,
         pressAddMembers,
         pressDeleteMember,
+        pressReshareMemberKey,
         pressSaveProject,
         pressOpenProject,
         pressExportProject,

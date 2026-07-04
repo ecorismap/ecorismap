@@ -28,11 +28,13 @@ export default function ProjectEditScreen() {
     isOwner,
     isOwnerAdmin,
     isLoading,
+    userUid,
     changeText,
     changeMemberText,
     changeAdmin,
     pressAddMembers,
     pressDeleteMember,
+    pressReshareMemberKey,
     pressSaveProject,
     pressOpenProject,
     pressExportProject,
@@ -68,6 +70,10 @@ export default function ProjectEditScreen() {
     </View>
   );
 
+  // DEK方式のプロジェクトのみ、管理者向けに暗号化キーの再共有ボタン列を表示する。
+  // （メンバーが暗号化キーをリセットした場合の復旧用。全行同値で判定して列ズレを防ぐ）
+  const showReshareKey = project.cryptoScheme === 'dek' && isOwnerAdmin && !isNew;
+
   const renderMemberItem = useCallback(
     ({ item, index }: { item: MemberType; index: number }) => (
       <ProjectEditMembers
@@ -78,12 +84,25 @@ export default function ProjectEditScreen() {
         role={item.role}
         editable={(isOwner && !isProjectOpen && index !== 0) || (isNew && index !== 0)}
         visibleMinus={item.role !== 'OWNER' && !isProjectOpen && (isOwner || isNew)}
+        visibleReshareKey={showReshareKey}
+        enableReshareKey={item.verified === 'OK' && !!item.uid && item.uid !== userUid}
         onCheckAdmin={(checked) => changeAdmin(checked, index)}
         onChangeText={(value) => changeMemberText(value, index)}
         pressDeleteMember={(isOwner && !isProjectOpen) || isNew ? () => pressDeleteMember(index) : () => null}
+        pressReshareMemberKey={() => pressReshareMemberKey(index)}
       />
     ),
-    [changeAdmin, changeMemberText, isNew, isOwner, isProjectOpen, pressDeleteMember]
+    [
+      changeAdmin,
+      changeMemberText,
+      isNew,
+      isOwner,
+      isProjectOpen,
+      pressDeleteMember,
+      pressReshareMemberKey,
+      showReshareKey,
+      userUid,
+    ]
   );
 
   return (

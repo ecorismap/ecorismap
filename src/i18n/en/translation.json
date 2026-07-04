@@ -420,7 +420,7 @@
       "text": "Delete all projects"
     },
     "confirm": {
-      "resetEncryptKey": "Are you sure you want to reset the encryption key? \nYou will no longer be able to access existing projects, so please ask the owner to re-register after the reset.",
+      "resetEncryptKey": "Are you sure you want to reset the encryption key? \nYou will no longer be able to access existing projects, so please ask the project owner or an administrator to re-share the encryption key after the reset.",
       "deleteUserAccount": "Do you really want to delete your account?",
       "deleteAllProjects": "Do you want to delete all projects?"
     },
@@ -485,11 +485,14 @@
       "addMemberWeb": "Please upgrade to add members.",
       "addMember": "Cannot be added because the maximum number of members has been exceeded. \nCheck the web version for details.",
       "settingProject": "You can change the project settings.",
-      "deleteProjectOpen": "Please close the project before running it."
+      "deleteProjectOpen": "Please close the project before running it.",
+      "reshareKey": "The encryption key has been re-shared. Ask the member to reopen the project.",
+      "reshareKeyNoUid": "Cannot re-share because this member has not registered an account."
     },
     "confirm": {
       "deleteProject": "Do you want to delete the project?",
-      "gotoBack": "Do you want to discard your changes?"
+      "gotoBack": "Do you want to discard your changes?",
+      "reshareKey": "Do you want to re-share the project's encryption key with this member? Run this when the member has reset their encryption key and can no longer decrypt data."
     },
     "navigation": {
       "title": "project"
@@ -611,7 +614,9 @@
       "failDeleteProject": "Failed to delete the project. \nThis is an unexpected error.",
       "failExport": "Export failed.",
       "failGetData": "Failed to get the data.",
+      "failGetDekForReshare": "Cannot obtain the project's encryption key. If you have reset your own encryption key, ask another administrator to re-share it with you.",
       "failLoadE3kitGroup": "Unable to load group.",
+      "failReshareKey": "Failed to re-share the encryption key.",
       "failSetProfile": "Failed to set the profile.",
       "failUpdateProfile": "Failed to update your profile.",
       "failUserCheck": "User check failed.",
