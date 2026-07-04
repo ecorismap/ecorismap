@@ -3,13 +3,14 @@ import { useCallback } from 'react';
 import { t } from '../i18n/config';
 import {
   addGroupMembers,
+  clearPublicKeyCache,
   createGroup,
   deleteGroup,
   deleteGroupMembers,
   initializeUser,
   loadGroup,
 } from '../lib/virgilsecurity/e3kit';
-import { addMemberKey, removeMemberKey, migrateProjectToDEK } from '../lib/firebase/firestore';
+import { addMemberKey, clearProjectCryptoCache, removeMemberKey, migrateProjectToDEK } from '../lib/firebase/firestore';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS, ENABLE_DEK_MIGRATION } from '../constants/AppConstants';
 import { ProjectType, VerifiedType } from '../types';
 
@@ -46,10 +47,20 @@ export type UseE3kitGroupReturnType = {
     isOK: boolean;
     message: string;
   }>;
+  reshareMemberKey: (
+    project: ProjectType,
+    uid: string
+  ) => Promise<{
+    isOK: boolean;
+    message: string;
+  }>;
 };
 
 export const useE3kitGroup = (): UseE3kitGroupReturnType => {
   const loadE3kitGroup = async (project: ProjectType) => {
+    // プロジェクトを開くたびにDEKキャッシュをクリアして keys/{uid} を再unwrapさせる。
+    // （鍵の再共有を受けた後、開き直すだけで復号が回復するようにするため）
+    clearProjectCryptoCache();
     // まずE3Kitが初期化されているか確認
     const initResult = await initializeUser(project.ownerUid);
     if (!initResult.isOK) {
@@ -184,11 +195,37 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
     return { isOK: true, message: '', project: { ...project, members: updatedMembers } };
   }, []);
 
+  const reshareMemberKey = useCallback(async (project: ProjectType, uid: string) => {
+    if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
+    // DEK方式専用: メンバーが暗号化キーをリセットした場合に、管理者が新しい公開鍵でDEKを再ラップする。
+    if (!isDek(project)) {
+      return { isOK: false, message: t('hooks.message.failReshareKey') };
+    }
+    // unwrap/wrap に eThree を使うため初期化を保証する。
+    const initResult = await initializeUser(project.ownerUid);
+    if (!initResult.isOK) {
+      return { isOK: false, message: initResult.message };
+    }
+    // 対象メンバーの旧公開鍵がキャッシュに残っていると旧鍵で再ラップしてしまうため必ずクリアする。
+    clearPublicKeyCache();
+    let res = await addMemberKey(project.id, uid);
+    if (!res.isOK) {
+      // 実行者側のDEKキャッシュに開封失敗(undefined)が焼き付いている場合を救済して1回だけ再試行する。
+      clearProjectCryptoCache();
+      res = await addMemberKey(project.id, uid);
+    }
+    if (!res.isOK) {
+      return { isOK: false, message: res.message || t('hooks.message.failReshareKey') };
+    }
+    return { isOK: true, message: '' };
+  }, []);
+
   return {
     loadE3kitGroup,
     createE3kitGroup,
     updateE3kitGroupMembers,
     deleteE3kitGroupMembers,
     deleteE3kitGroup,
+    reshareMemberKey,
   } as const;
 };

@@ -14,13 +14,29 @@ interface Props {
   verified: 'OK' | 'HOLD' | 'NO_ACCOUNT';
   role: RoleType;
   visibleMinus: boolean;
+  visibleReshareKey: boolean;
+  enableReshareKey: boolean;
   onChangeText: (name: string, value: string) => void;
   onCheckAdmin: (checked: boolean) => void;
   pressDeleteMember: () => void;
+  pressReshareMemberKey: () => void;
 }
 
 export const ProjectEditMembers = (props: Props) => {
-  const { name, value, editable, verified, role, visibleMinus, onCheckAdmin, onChangeText, pressDeleteMember } = props;
+  const {
+    name,
+    value,
+    editable,
+    verified,
+    role,
+    visibleMinus,
+    visibleReshareKey,
+    enableReshareKey,
+    onCheckAdmin,
+    onChangeText,
+    pressDeleteMember,
+    pressReshareMemberKey,
+  } = props;
 
   return (
     <View style={styles.tr}>
@@ -45,6 +61,21 @@ export const ProjectEditMembers = (props: Props) => {
           onCheck={(checked) => onCheckAdmin(checked)}
         />
       </View>
+
+      {visibleReshareKey && (
+        <View style={[styles.td, { flex: 1 }]}>
+          <Button
+            style={{
+              backgroundColor: enableReshareKey ? COLOR.BLUE : COLOR.GRAY2,
+              padding: 0,
+            }}
+            disabled={!enableReshareKey}
+            name="key-change"
+            size={14}
+            onPress={pressReshareMemberKey}
+          />
+        </View>
+      )}
 
       <View style={[styles.td, { flex: 1 }]}>
         <Button

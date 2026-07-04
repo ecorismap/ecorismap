@@ -9,11 +9,13 @@ interface ProjectEditContextType {
   isOwnerAdmin: boolean;
   isEdited: boolean;
   isLoading: boolean;
+  userUid: string | undefined;
   changeText: (name: string, value: string) => void;
   changeMemberText: (value: string, idx: number) => void;
   changeAdmin: (checked: boolean, idx: number) => void;
   pressAddMembers: (emails: string) => void;
   pressDeleteMember: (idx: number) => void;
+  pressReshareMemberKey: (idx: number) => void;
   pressSaveProject: () => void;
   pressOpenProject: (isSetting: boolean) => void;
   pressExportProject: () => void;

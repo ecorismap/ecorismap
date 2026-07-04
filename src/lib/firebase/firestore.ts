@@ -173,7 +173,7 @@ export const addMemberKey = async (
     if (!wrapperUid) return { isOK: false, message: t('hooks.message.pleaseLogin') };
     const crypto = await getProjectCrypto(projectId);
     if (crypto.scheme !== 'dek' || !crypto.dekPrivateKey) {
-      return { isOK: false, message: 'project not in dek scheme or DEK unavailable' };
+      return { isOK: false, message: t('hooks.message.failGetDekForReshare') };
     }
     const encDek = await wrapDEKForMember(crypto.dekPrivateKey, newMemberUid);
     const keyFS: ProjectKeyFS = { encDek, wrapperUid, encryptedAt: Timestamp.now() };
