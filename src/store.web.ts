@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import reducer from './modules/';
 import { persistStore, persistReducer } from 'redux-persist';
-import storageSession from 'redux-persist/lib/storage/session';
+import { reduxPersistWebStorage } from './utils/reduxPersistWebStorage';
 
 const persistConfig = {
   key: 'root',
-  storage: storageSession,
+  // sessionStorage(約5MB制限)からIndexedDBへ移行。タブごとの独立DBにより
+  // 「タブを閉じたらデータが消える」セッションスコープは従来どおり維持される
+  storage: reduxPersistWebStorage,
   // dataSetを含む全stateをdispatchごとにシリアライズすると大量データ時に重いため間引く
   throttle: 1000,
 };
