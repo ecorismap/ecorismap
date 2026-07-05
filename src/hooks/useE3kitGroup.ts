@@ -197,7 +197,8 @@ export const useE3kitGroup = (): UseE3kitGroupReturnType => {
 
   const reshareMemberKey = useCallback(async (project: ProjectType, uid: string) => {
     if (!FUNC_ENCRYPTION) return { isOK: true, message: '' };
-    // DEK方式専用: メンバーが暗号化キーをリセットした場合に、管理者が新しい公開鍵でDEKを再ラップする。
+    // DEK方式専用: 暗号化キーをリセットした相手の新しい公開鍵でDEKを再ラップする。
+    // 管理者は任意のメンバーへ、一般メンバーはオーナー宛てのみ実行できる（Rulesで制限）。
     if (!isDek(project)) {
       return { isOK: false, message: t('hooks.message.failReshareKey') };
     }

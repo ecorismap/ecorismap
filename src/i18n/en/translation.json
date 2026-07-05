@@ -125,7 +125,7 @@
     "polygon": "polygon",
     "message": {
       "failGetUids": "Failed to retrieve user ID",
-      "cannotLoadProject": "There are some projects that cannot be loaded. \nAsk the project owner to reset your account.",
+      "cannotLoadProject": "There are some projects that cannot be loaded. \nIf you have reset your encryption key, ask a project administrator or member to re-share the encryption key.",
       "failGetProjects": "Failed to retrieve project"
     },
     "project": "project",
@@ -509,7 +509,8 @@
     "confirm": {
       "deleteProject": "Do you want to delete the project?",
       "gotoBack": "Do you want to discard your changes?",
-      "reshareKey": "Do you want to re-share the project's encryption key with this member? Run this when the member has reset their encryption key and can no longer decrypt data."
+      "reshareKey": "Do you want to re-share the project's encryption key with this member? Run this when the member has reset their encryption key and can no longer decrypt data.",
+      "singleAdmin": "The owner is the only administrator. It is recommended to assign another administrator in case the owner resets their encryption key. Do you want to save anyway?"
     },
     "navigation": {
       "title": "project"

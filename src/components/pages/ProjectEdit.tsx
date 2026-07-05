@@ -70,9 +70,10 @@ export default function ProjectEditScreen() {
     </View>
   );
 
-  // DEK方式のプロジェクトのみ、管理者向けに暗号化キーの再共有ボタン列を表示する。
-  // （メンバーが暗号化キーをリセットした場合の復旧用。全行同値で判定して列ズレを防ぐ）
-  const showReshareKey = project.cryptoScheme === 'dek' && isOwnerAdmin && !isNew;
+  // DEK方式のプロジェクトのみ、暗号化キーの再共有ボタン列を表示する。
+  // 管理者は任意のメンバーへ、一般メンバーはオーナー宛てのみ再共有できる
+  // （オーナーが鍵をリセットし管理者が他にいない場合の復旧用）。全行同値で判定して列ズレを防ぐ。
+  const showReshareKey = project.cryptoScheme === 'dek' && !isNew;
 
   const renderMemberItem = useCallback(
     ({ item, index }: { item: MemberType; index: number }) => (
@@ -85,7 +86,9 @@ export default function ProjectEditScreen() {
         editable={(isOwner && !isProjectOpen && index !== 0) || (isNew && index !== 0)}
         visibleMinus={item.role !== 'OWNER' && !isProjectOpen && (isOwner || isNew)}
         visibleReshareKey={showReshareKey}
-        enableReshareKey={item.verified === 'OK' && !!item.uid && item.uid !== userUid}
+        enableReshareKey={
+          item.verified === 'OK' && !!item.uid && item.uid !== userUid && (isOwnerAdmin || item.role === 'OWNER')
+        }
         onCheckAdmin={(checked) => changeAdmin(checked, index)}
         onChangeText={(value) => changeMemberText(value, index)}
         pressDeleteMember={(isOwner && !isProjectOpen) || isNew ? () => pressDeleteMember(index) : () => null}
@@ -97,6 +100,7 @@ export default function ProjectEditScreen() {
       changeMemberText,
       isNew,
       isOwner,
+      isOwnerAdmin,
       isProjectOpen,
       pressDeleteMember,
       pressReshareMemberKey,
@@ -146,16 +150,15 @@ export default function ProjectEditScreen() {
           />
         )}
 
-        {/* メンバーリスト（スクロール可能） */}
+        {/* メンバーリスト（スクロール可能）。一般メンバーにも読み取り専用で表示する
+            （DEK方式でオーナーへ暗号化キーを再共有できるようにするため） */}
         <View style={styles.memberTableContainer}>
-          {isOwnerAdmin && (
-            <FlatList
-              data={project.members}
-              renderItem={renderMemberItem}
-              keyExtractor={(_, index) => index.toString()}
-              style={Platform.OS === 'web' ? { maxHeight: memberListMaxHeight } : undefined}
-            />
-          )}
+          <FlatList
+            data={project.members}
+            renderItem={renderMemberItem}
+            keyExtractor={(_, index) => index.toString()}
+            style={Platform.OS === 'web' ? { maxHeight: memberListMaxHeight } : undefined}
+          />
         </View>
 
         <Loading visible={isLoading} text="" />

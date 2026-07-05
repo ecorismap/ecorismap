@@ -84,10 +84,16 @@ service cloud.firestore {
             || request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
           );
           // 鍵の作成/更新は管理者またはオーナーのみ（オーナーは新規作成時のために許可）。
+          // 例外: メンバーは「オーナー宛ての鍵」のみ書ける。管理者不在のプロジェクトでオーナーが
+          // 鍵をリセットした場合の復旧用。メンバーは元々DEKを開封できるため機密性は変わらない。
           allow create, update: if isSignedIn()
           && (
                request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.adminsUid
             || request.auth.uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+            || (
+                 uid == get(/databases/$(database)/documents/projects/$(project)).data.ownerUid
+              && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid
+            )
           )
           && verifyFields(["encDek","wrapperUid","encryptedAt"],[]);
           // 削除は管理者またはオーナー（メンバー削除時）。
