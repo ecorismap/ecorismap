@@ -6,6 +6,8 @@ import { reduxMMKVStorage } from './utils/mmkvStorage';
 const persistConfig: any = {
   key: 'root',
   storage: reduxMMKVStorage, // MMKVを使用（大容量対応、2MB制限なし）
+  // dataSetを含む全stateをdispatchごとにシリアライズすると大量データ時に重いため間引く
+  throttle: 1000,
 };
 
 const persistedReducer = persistReducer(persistConfig, reducer);

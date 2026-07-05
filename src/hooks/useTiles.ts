@@ -378,12 +378,14 @@ export const useTiles = (
   const clearTiles = useCallback(
     async (tileMap_: TileMapType) => {
       try {
-        // console.log(`${TILE_FOLDER}/${tileMap_.id}/`);
-        await FileSystem.deleteAsync(`${TILE_FOLDER}/${tileMap_.id}/`);
+        // idempotent: フォルダが存在しない場合（未ダウンロード）はエラーにしない
+        await FileSystem.deleteAsync(`${TILE_FOLDER}/${tileMap_.id}/`, { idempotent: true });
         const newTileRegions = tileRegions.filter((tileRegion) => tileRegion.tileMapId !== tileMap_.id);
         dispatch(editSettingsAction({ tileRegions: newTileRegions }));
         setTileSize('0');
-      } catch (error) {}
+      } catch (error) {
+        await AlertAsync(t('hooks.message.failClearTiles'));
+      }
     },
     [dispatch, tileRegions]
   );
@@ -410,7 +412,9 @@ export const useTiles = (
         }
 
         const currentTileMap = tileMapsToDownload[i];
-        setProgress(`地図 ${i + 1}/${totalMaps}: ${currentTileMap.name} 0%`);
+        setProgress(
+          t('hooks.progress.downloadingMap', { current: i + 1, total: totalMaps, name: currentTileMap.name, progress: 0 })
+        );
 
         const tileRegion = cloneDeep(downloadArea);
         tileRegion.id = ulid();
@@ -458,7 +462,10 @@ export const useTiles = (
                   encoding: FileSystem.EncodingType.UTF8,
                 });
               })
-              .catch(() => {});
+              .catch(() => {
+                // スタイルが無いとベクタ地図が表示できないため、完了時のサマリで通知する
+                errorMaps.push(`${currentTileMap.name} (style.json)`);
+              });
           }
         } else if (tileType === 'pbf' && currentTileMap.styleURL) {
           const folder = `${TILE_FOLDER}/${currentTileMap.id}`;
@@ -472,7 +479,9 @@ export const useTiles = (
                 encoding: FileSystem.EncodingType.UTF8,
               });
             })
-            .catch(() => {});
+            .catch(() => {
+              errorMaps.push(`${currentTileMap.name} (style.json)`);
+            });
         }
 
         const minZoom = tileType === 'png' || tileType === 'hillshade' ? 0 : zoom;
@@ -614,7 +623,14 @@ export const useTiles = (
           if (batchDownload.length >= BATCH_SIZE) {
             d = d + BATCH_SIZE;
             const mapProgress = ((d / tiles.length) * 100).toFixed();
-            setProgress(`地図 ${i + 1}/${totalMaps}: ${currentTileMap.name} ${mapProgress}%`);
+            setProgress(
+              t('hooks.progress.downloadingMap', {
+                current: i + 1,
+                total: totalMaps,
+                name: currentTileMap.name,
+                progress: mapProgress,
+              })
+            );
             await Promise.all(batchDownload);
             batchDownload = [];
           }
@@ -631,9 +647,9 @@ export const useTiles = (
 
       setIsDownloading(false);
 
-      let message = `${totalCompleted}個の地図のダウンロードが完了しました`;
+      let message = t('hooks.message.completeDownloadMaps', { total: totalCompleted });
       if (errorMaps.length > 0) {
-        message += `\n\nエラーが発生した地図:\n${errorMaps.join('\n')}`;
+        message += `\n\n${t('hooks.message.mapsWithError')}\n${errorMaps.join('\n')}`;
       }
       await AlertAsync(message);
     },

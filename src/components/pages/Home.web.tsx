@@ -29,6 +29,7 @@ import { t } from '../../i18n/config';
 import { maptilerKey } from '../../constants/APIKeys';
 import { useDropzone } from 'react-dropzone';
 import { useWindow } from '../../hooks/useWindow';
+import { useViewportBounds } from '../../hooks/useViewportBounds';
 import { HomeDrawTools } from '../organisms/HomeDrawTools';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -134,6 +135,7 @@ export default function HomeScreen() {
   const layers = useSelector((state: RootState) => state.layers);
 
   const { mapRegion, windowWidth, isLandscape } = useWindow();
+  const { bounds } = useViewportBounds(mapRegion);
   const { getRootProps, getInputProps } = useDropzone({ onDrop, noClick: true });
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
@@ -884,6 +886,7 @@ export default function HomeScreen() {
                       data={d.data as PointRecordType[]}
                       layer={layer!}
                       zoom={zoom}
+                      bounds={bounds}
                       selectedRecord={selectedRecord}
                       onDragEndPoint={onDragEndPoint}
                       currentDrawTool={currentDrawTool}
@@ -897,8 +900,6 @@ export default function HomeScreen() {
                   const layer = layers.find((v) => v.id === d.layerId);
                   if (!layer?.visible) return null;
 
-                  // HomeContextからisEditingLine, editingLineIdを取得
-                  // ここではuseContext(HomeContext)のスコープ内なので直接参照可能
                   // isEditingLineがtrueのときのみeditingLineIdを渡す
                   return (
                     <Line

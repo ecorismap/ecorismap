@@ -153,9 +153,9 @@ const ProductPage = (props: ProductPage_Props) => {
               padding: 50,
             }}
           >
-            <Text>■　返金はしません</Text>
-            <Text>■　更新してください</Text>
-            <Text>■　更新してください</Text>
+            <Text>{`${t('Purchases.note1')}`}</Text>
+            <Text>{`${t('Purchases.note2')}`}</Text>
+            <Text>{`${t('Purchases.note2')}`}</Text>
           </View>
         </View>
       </View>

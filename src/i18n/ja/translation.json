@@ -166,6 +166,9 @@
     "useLastValue": "最後の値を使用する",
     "useOutline": "枠線のみ表示",
     "termsUpdated": "利用規約を更新しました。",
+    "enterText": "入力してください...",
+    "newEntry": "(新規入力)",
+    "directInput": "(入力)",
     "addGroup": "グループ作成",
     "option": "オプション",
     "useAdd": "データ追加に使用",
@@ -379,7 +382,9 @@
     "errorMessage1": "大変ご迷惑をおかけします。",
     "errorMessage2": "通信エラーのため、もう一度やり直してください。",
     "applicationChange": "お申し込み情報の確認、領収書の発行、プラン変更、キャンセルはこちら",
-    "applicationInfo": "お申し込み情報"
+    "applicationInfo": "お申し込み情報",
+    "note1": "■　返金はしません",
+    "note2": "■　更新してください"
   },
   "Settings": {
     "navigation": {
@@ -691,6 +696,8 @@
     },
     "alert": {
       "referenceData": "一旦変更を保存してください。",
+      "saveChangesFirst": "一旦変更を保存してください。",
+      "confirmInput": "入力を確定してください",
       "copyData": "コピーしました。"
     },
     "label": {
@@ -719,7 +726,17 @@
       "failUploadDictionary": "辞書のアップロードに失敗しました",
       "failGetDictionary": "辞書のダウンロードに失敗しました",
       "failEncryptStyle": "Styleの暗号化に失敗しました",
-      "failUploadStyle": "Styleのアップロードに失敗しました。"
+      "failUploadStyle": "Styleのアップロードに失敗しました。",
+      "failAddProject": "プロジェクトの追加に失敗しました",
+      "failUpdateProject": "プロジェクトの更新に失敗しました",
+      "failDeleteProject": "プロジェクトの削除に失敗しました",
+      "failUploadProjectSettings": "プロジェクトの設定のアップロードに失敗しました",
+      "failDownloadProjectSettings": "プロジェクトの設定のダウンロードに失敗しました",
+      "failDownloadCommonData": "コモンデータのダウンロードに失敗しました",
+      "failDownloadData": "データのダウンロードに失敗しました",
+      "failUploadCurrentPosition": "現在位置のアップロードに失敗しました",
+      "failDeleteCurrentPosition": "現在位置の削除に失敗しました",
+      "failUpdatePermission": "権限の一括更新に失敗しました"
     }
   },
   "Account": {
@@ -855,6 +872,9 @@
       "failInitializeUser": "セッションが切れました。ログインし直してください。",
       "receiveFile": "ファイルをインポートしました。",
       "failReceiveFile": "ファイルの読み込みに失敗しました。",
+      "failClearTiles": "ダウンロードしたタイルの削除に失敗しました。",
+      "failUpdatePmtilesURL": "以下の地図の再読み込みに失敗しました。",
+      "stopSyncPosition": "メンバー位置の同期が停止しました。プロジェクトを開き直してください。",
       "corsError": "外部サーバーのPDFはWeb版では取得できません。モバイル版をご利用ください。",
       "wrongInput": "入力内容が正しくありません。",
       "wrongExtension": "ファイルの種類が正しくありません。",
@@ -876,7 +896,13 @@
       "updateMap": "地図の設定を更新しました。",
       "addMap": "地図を追加しました。",
       "dataSizeTooLarge": "データのサイズが大きいためアップロードできません",
-      "failDeleteFile": "プロジェクトのファイルの削除に失敗しました"
+      "failDeleteFile": "プロジェクトのファイルの削除に失敗しました",
+      "completeDownloadMaps": "{{total}}個の地図のダウンロードが完了しました",
+      "mapsWithError": "エラーが発生した地図:",
+      "excludedInvalidLocation": "{{invalidCount}}個の無効な位置データを除外しました。",
+      "insufficientTrackLog": "有効なトラックデータが不足しています",
+      "failUpdateLoginPassword": "パスワードの変更に失敗しました。\n変更前のパスワードは正しいですか？",
+      "wrongPassword": "パスワードが違います。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。",
@@ -884,6 +910,12 @@
     },
     "pdf": {
       "comment": "この地図はウェブメルカトル図法で作成しています。スケールの長さは図の中心位置での目安です。"
+    },
+    "progress": {
+      "downloadingMap": "地図 {{current}}/{{total}}: {{name}} {{progress}}%",
+      "mergingTrackLog": "トラックデータを結合中...",
+      "validatingTrackLog": "データを検証中...",
+      "savingTrackLog": "データを保存中..."
     },
     "confirmEditModeMessage": " 編集モードに切り替えますか？"
   },
@@ -938,7 +970,8 @@
     "postponeMessage": "次回アプリ起動時に再度確認します。",
     "cancelButton": "キャンセル",
     "okButton": "OK",
-    "exportFailed": "エクスポートに失敗しました"
+    "exportFailed": "エクスポートに失敗しました",
+    "saveBackupTitle": "バックアップファイルを保存"
   },
   "settings": {
     "proximityAlert": {

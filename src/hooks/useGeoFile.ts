@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
 import { addDataAction, deleteDataAction } from '../modules/dataSet';
 import { cloneDeep } from 'lodash';
 import { t } from '../i18n/config';
-import { getExt } from '../utils/General';
+import { getExt, runAsync } from '../utils/General';
 import { kml } from '@tmcw/togeojson';
 import { DOMParser } from '@xmldom/xmldom';
 
@@ -123,12 +123,33 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     [dispatch, dataUser.displayName, dataUser.uid]
   );
 
+  // KMLは全フィーチャータイプを走査するため、含まれるジオメトリタイプだけ処理して無駄な走査を省く
+  const presentFeatureTypes = useCallback((geojson: FeatureCollection<Geometry | null, GeoJsonProperties>) => {
+    // geometryがnullのフィーチャーはPOINTとして扱われる（geoJson2Dataの仕様に合わせる）
+    const geometryTypes = new Set<string>(
+      geojson.features.map((f) => (f.geometry === null ? 'Point' : f.geometry.type))
+    );
+    const typeMap: Partial<Record<GeoJsonFeatureType, string>> = {
+      POINT: 'Point',
+      MULTIPOINT: 'MultiPoint',
+      LINE: 'LineString',
+      MULTILINE: 'MultiLineString',
+      POLYGON: 'Polygon',
+      MULTIPOLYGON: 'MultiPolygon',
+    };
+    return geoJsonFeatureTypes.filter((featureType) => {
+      const geometryType = typeMap[featureType];
+      return geometryType !== undefined && geometryTypes.has(geometryType);
+    });
+  }, []);
+
   const loadGeojson = useCallback(
     async (uri: string, name: string) => {
       const geojsonStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      const geojson = JSON.parse(geojsonStrings);
+      // parseと変換は重いのでrunAsyncでUIスレッドをブロックしないようにする
+      const geojson = await runAsync(() => JSON.parse(geojsonStrings));
       const featureType = detectGeoJsonType(geojson);
-      return importGeoJson(geojson, featureType, name);
+      return await runAsync(() => importGeoJson(geojson, featureType, name));
     },
     [importGeoJson]
   );
@@ -136,8 +157,8 @@ export const useGeoFile = (): UseGeoFileReturnType => {
   const loadGpx = useCallback(
     async (uri: string, name: string) => {
       const gpx = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      importGPX(gpx, 'POINT', name);
-      importGPX(gpx, 'LINE', name);
+      await runAsync(() => importGPX(gpx, 'POINT', name));
+      await runAsync(() => importGPX(gpx, 'LINE', name));
     },
     [importGPX]
   );
@@ -150,11 +171,11 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       const parser = new DOMParser();
       for (const file of files) {
         const kmlString = await file.async('string');
-        const xml = parser.parseFromString(kmlString, 'text/xml');
+        const xml = await runAsync(() => parser.parseFromString(kmlString, 'text/xml'));
         //@ts-ignore
-        const geojson = kml(xml);
+        const geojson = await runAsync(() => kml(xml));
         const featureType = detectGeoJsonType(geojson);
-        importGeoJson(geojson, featureType, name);
+        await runAsync(() => importGeoJson(geojson, featureType, name));
       }
     },
     [importGeoJson]
@@ -164,22 +185,22 @@ export const useGeoFile = (): UseGeoFileReturnType => {
     async (uri: string, name: string) => {
       const kmlString = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
       const parser = new DOMParser();
-      const xml = parser.parseFromString(kmlString, 'text/xml');
+      const xml = await runAsync(() => parser.parseFromString(kmlString, 'text/xml'));
       //@ts-ignore
-      const geojson = kml(xml);
+      const geojson = await runAsync(() => kml(xml));
 
-      geoJsonFeatureTypes.forEach((featureType) => {
-        importGeoJson(geojson, featureType, name);
-      });
+      for (const featureType of presentFeatureTypes(geojson)) {
+        await runAsync(() => importGeoJson(geojson, featureType, name));
+      }
     },
-    [importGeoJson]
+    [importGeoJson, presentFeatureTypes]
   );
 
   const loadCsv = useCallback(
     async (uri: string, name: string) => {
       //ToDo:スマホではcsvの文字コードがShift-JISの場合の対応が必要。webでは対応済み
       const csvStrings = Platform.OS === 'web' ? await decodeUri(uri) : await FileSystem.readAsStringAsync(uri);
-      importCsv(csvStrings, name);
+      await runAsync(() => importCsv(csvStrings, name));
     },
     [importCsv]
   );

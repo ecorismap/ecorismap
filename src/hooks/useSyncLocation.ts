@@ -8,6 +8,8 @@ import dayjs from '../i18n/dayjs';
 import { isLoggedIn } from '../utils/Account';
 import { hasOpened } from '../utils/Project';
 import { firestore, collection, onSnapshot } from '../lib/firebase/firebase';
+import { AlertAsync } from '../components/molecules/AlertAsync';
+import { t } from '../i18n/config';
 
 export type UseSyncLocationReturnType = { uploadLocation: (currentLocation: LocationType | null) => void };
 
@@ -26,20 +28,37 @@ export const useSyncLocation = (projectId: string | undefined): UseSyncLocationR
           //データがない場合エラーになるのでだめ
           //.where(firestore.FieldPath.documentId(), '!=', userId)
           async (snapshot) => {
-            let positions: MemberLocationType[] = await Promise.all(
-              snapshot.docs.map(async (v: any) => {
-                const { encdata, encryptedAt } = v.data() as PositionFS;
-                const dataString = await dec(toDate(encryptedAt), encdata, v.id, projectId_);
-                return {
-                  uid: v.id,
-                  icon: dataString.icon,
-                  coords: dataString.coords,
-                };
+            // レコード単位で復号し、失敗したメンバーの位置だけスキップする（全滅させない）
+            const results = await Promise.all(
+              snapshot.docs.map(async (v: any): Promise<MemberLocationType | undefined> => {
+                try {
+                  const { encdata, encryptedAt } = v.data() as PositionFS;
+                  const dataString = await dec(toDate(encryptedAt), encdata, v.id, projectId_);
+                  if (dataString === undefined) return undefined;
+                  return {
+                    uid: v.id,
+                    icon: dataString.icon,
+                    coords: dataString.coords,
+                  };
+                } catch (e) {
+                  console.log('syncCurrentPosition decrypt error:', e);
+                  return undefined;
+                }
               })
             );
-            positions = positions.filter((d: MemberLocationType) => d.uid !== userId);
+            const positions = results.filter(
+              (d): d is MemberLocationType => d !== undefined && d.uid !== userId
+            );
             dispatch(editSettingsAction({ memberLocation: positions }));
-          });
+          },
+          (error) => {
+            // 権限エラー等でリスナーが停止した場合、無言で同期が止まらないよう通知する
+            console.log('syncCurrentPosition listener error:', error);
+            dispatch(editSettingsAction({ isSynced: false, memberLocation: [] }));
+            // onSnapshotのエラーコールバックは同期関数のためawaitできない。unhandled rejection防止のcatch
+            AlertAsync(t('hooks.message.stopSyncPosition')).catch(() => undefined);
+          }
+        );
         return syncSubscriber_;
       } catch (error) {
         console.log(error);

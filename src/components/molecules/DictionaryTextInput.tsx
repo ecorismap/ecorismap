@@ -5,6 +5,7 @@ import { useDictionaryInput } from '../../hooks/useDictionaryInput';
 import { COLOR } from '../../constants/AppConstants';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Pressable } from '../atoms/Pressable';
+import { t } from '../../i18n/config';
 
 interface DictionaryTextInputProp {
   editable?: boolean;
@@ -80,7 +81,7 @@ export const DictionaryTextInput = React.memo((prop: DictionaryTextInputProp) =>
                   style={[styles.listText, { color: index === filteredData.length - 1 ? COLOR.GRAY4 : COLOR.BLACK }]}
                 >
                   {item}
-                  {index === filteredData.length - 1 && item.length > 0 && ' (入力)'}
+                  {index === filteredData.length - 1 && item.length > 0 && ` ${t('common.directInput')}`}
                 </Text>
               </Pressable>
             );

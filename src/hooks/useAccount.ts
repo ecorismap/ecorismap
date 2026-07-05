@@ -266,8 +266,7 @@ export const useAccount = (): UseAccountReturnType => {
     const { isOK } = await firebase.changePassword(oldPassword, password);
     setIsLoading(false);
     if (!isOK) {
-      setAccountMessage(`パスワードの変更に失敗しました。
-変更前のパスワードは正しいですか？`);
+      setAccountMessage(t('hooks.message.failUpdateLoginPassword'));
       return { isOK: false };
     }
     return { isOK: true };
@@ -289,7 +288,7 @@ export const useAccount = (): UseAccountReturnType => {
     const { isOK } = await firebase.checkPassword(password);
     setIsLoading(false);
     if (!isOK) {
-      setAccountMessage(`パスワードが違います。`);
+      setAccountMessage(t('hooks.message.wrongPassword'));
       return { isOK: false };
     }
     return { isOK: true };
@@ -353,13 +352,21 @@ export const useAccount = (): UseAccountReturnType => {
       await e3kit.deleteGroup(project.id);
     }
 
+    // Storage Rulesがprojectドキュメントを参照するため、ドキュメント削除より先にStorageを削除する。
+    // getAllProjectsは復号失敗プロジェクトを除外するため、IDはクエリで直接取得して漏れを防ぐ。
+    const { isOK: idsOK, message: idsMessage, ids: ownedProjectIds } = await projectStore.getOwnedProjectIds(user.uid);
+    if (!idsOK || ownedProjectIds === undefined) {
+      return { isOK: false, message: idsMessage };
+    }
+    const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteAllProjectStorageData(
+      ownedProjectIds
+    );
+    if (!photoOK) {
+      return { isOK: false, message: photoMessage };
+    }
     const { isOK: projectOK, message: projectMessage, deletedIds } = await projectStore.deleteAllProjects(user.uid);
     if (!projectOK || deletedIds === undefined) {
       return { isOK: false, message: projectMessage };
-    }
-    const { isOK: photoOK, message: photoMessage } = await projectStorage.deleteAllProjectStorageData(deletedIds);
-    if (!photoOK) {
-      return { isOK: false, message: photoMessage };
     }
     dispatch(setProjectsAction([]));
 

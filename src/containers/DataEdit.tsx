@@ -88,7 +88,7 @@ export default function DataEditContainer() {
         if (keyboardShown) {
           //TABLEを入力途中で保存を押した場合、isEditingRecordがfalseになったあとに、changeFieldが走って再びTrueになる。
           //そのため入力を確定してキーボードを閉じるまで保存できないようにする。
-          Alert.alert('', '入力を確定してください');
+          Alert.alert('', t('DataEdit.alert.confirmInput'));
           return;
         }
       }
@@ -479,7 +479,7 @@ export default function DataEditContainer() {
       fields: { [key: string]: string | number | PhotoType[] }
     ) => {
       if (isEditingRecord) {
-        Alert.alert('', '一旦変更を保存してください。');
+        Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
         return;
       }
       //参照データを追加して、referenceKeyを設定する
@@ -499,7 +499,7 @@ export default function DataEditContainer() {
 
   const pressEditPosition = useCallback(async () => {
     if (isEditingRecord) {
-      Alert.alert('', '一旦変更を保存してください。');
+      Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
       return;
     }
     const checkResult = checkRecordEditable(targetLayer);
@@ -547,7 +547,7 @@ export default function DataEditContainer() {
       text: string
     ) => {
       if (isEditingRecord) {
-        Alert.alert('', '一旦変更を保存してください。');
+        Alert.alert('', t('DataEdit.alert.saveChangesFirst'));
         return;
       }
       const fieldName = referenceLayer.field.find((f) => f.id === referenceLayer.dictionaryFieldId)?.name;

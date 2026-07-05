@@ -11,6 +11,7 @@ import { addTileMapAction, deleteTileMapAction, setTileMapsAction, updateTileMap
 import { cloneDeep } from 'lodash';
 import { csvToJsonArray, isMapListArray, isTileMapType, isValidMapListURL } from '../utils/Map';
 import { t } from '../i18n/config';
+import { AlertAsync } from '../components/molecules/AlertAsync';
 import { decodeUri } from '../utils/File.web';
 import { blobToBase64 } from '../utils/blob';
 import { convert, warpedFileType } from 'react-native-gdalwarp';
@@ -613,6 +614,7 @@ export const useMaps = (): UseMapsReturnType => {
     // We use a simple dispatch pattern here since each update is independent
     dispatch(async (thunkDispatch, getState) => {
       const currentMaps = (getState() as RootState).tileMaps;
+      const failedMaps: string[] = [];
       for (const tileMap of currentMaps) {
         try {
           if (tileMap.url && tileMap.url.startsWith('pmtiles://')) {
@@ -624,7 +626,12 @@ export const useMaps = (): UseMapsReturnType => {
           }
         } catch (e) {
           console.log(e);
+          failedMaps.push(tileMap.name);
         }
+      }
+      // 起動時に呼ばれるためアラート連発を避け、失敗をまとめて1回だけ通知する
+      if (failedMaps.length > 0) {
+        await AlertAsync(`${t('hooks.message.failUpdatePmtilesURL')}\n${failedMaps.join('\n')}`);
       }
     });
   }, [dispatch]);

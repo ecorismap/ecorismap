@@ -759,7 +759,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   // トラックログをトラック用のレコードに追加する
   const saveTrackLog = useCallback(async () => {
     try {
-      setSavingTrackStatus({ isSaving: true, phase: 'merging', message: 'トラックデータを結合中...' });
+      setSavingTrackStatus({ isSaving: true, phase: 'merging', message: t('hooks.progress.mergingTrackLog') });
 
       // 全チャンクを結合（重い処理の可能性）
       const allPoints = await new Promise<ReturnType<typeof getAllTrackPoints>>((resolve) => {
@@ -769,7 +769,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }, 0);
       });
 
-      setSavingTrackStatus({ isSaving: true, phase: 'filtering', message: 'データを検証中...' });
+      setSavingTrackStatus({ isSaving: true, phase: 'filtering', message: t('hooks.progress.validatingTrackLog') });
 
       // isLocationTypeを使って有効な点のみをフィルタリング
       const validPoints = await new Promise<LocationType[]>((resolve) => {
@@ -785,14 +785,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // 除外された点があれば警告メッセージを作成
       let warningMessage = '';
       if (invalidCount > 0) {
-        warningMessage = `${invalidCount}個の無効な位置データを除外しました。`;
+        warningMessage = t('hooks.message.excludedInvalidLocation', { invalidCount });
       }
 
       if (validPoints.length < 2) {
-        return { isOK: true, message: warningMessage || '有効なトラックデータが不足しています' };
+        return { isOK: true, message: warningMessage || t('hooks.message.insufficientTrackLog') };
       }
 
-      setSavingTrackStatus({ isSaving: true, phase: 'saving', message: 'データを保存中...' });
+      setSavingTrackStatus({ isSaving: true, phase: 'saving', message: t('hooks.progress.savingTrackLog') });
 
       // 全トラックの総距離を計算
       const totalDistance = getLineLength(validPoints);

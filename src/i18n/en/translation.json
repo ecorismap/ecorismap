@@ -104,6 +104,8 @@
     },
     "alert": {
       "referenceData": "Please save your changes once.",
+      "saveChangesFirst": "Please save your changes first.",
+      "confirmInput": "Please confirm your input.",
       "copyData": "I copied it."
     },
     "label": {
@@ -220,6 +222,9 @@
     "useLastValue": "use last value",
     "useOutline": "Show frame only",
     "termsUpdated": "Terms of use have been updated.",
+    "enterText": "Enter text...",
+    "newEntry": "(new entry)",
+    "directInput": "(input)",
     "addMembers": "Add Members (Enter your email address separated by commas and press Enter)",
     "addGroup": "Group creation",
     "option": "option",
@@ -255,7 +260,17 @@
       "failUploadDictionary": "Failed to upload dictionary",
       "failGetDictionary": "Failed to download dictionary",
       "failEncryptStyle": "Style encryption failed",
-      "failUploadStyle": "Failed to upload Style."
+      "failUploadStyle": "Failed to upload Style.",
+      "failAddProject": "Failed to add project",
+      "failUpdateProject": "Failed to update project",
+      "failDeleteProject": "Failed to delete project",
+      "failUploadProjectSettings": "Failed to upload project settings",
+      "failDownloadProjectSettings": "Failed to download project settings",
+      "failDownloadCommonData": "Failed to download common data",
+      "failDownloadData": "Failed to download data",
+      "failUploadCurrentPosition": "Failed to upload current location",
+      "failDeleteCurrentPosition": "Failed to delete current location",
+      "failUpdatePermission": "Failed to update permissions"
     }
   },
   "Settings": {
@@ -331,6 +346,8 @@
     "errorMessage2": "Please try again due to a communication error.",
     "applicationChange": "Click here to confirm application information, issue receipts, change plans, and cancel",
     "applicationInfo": "Application information",
+    "note1": "■ No refunds",
+    "note2": "■ Please renew your subscription",
     "navigation": {
       "title": " "
     }
@@ -649,6 +666,9 @@
       "failInitializeUser": "Your session has expired. \nPlease log in again.",
       "receiveFile": "The file has been imported.",
       "failReceiveFile": "Failed to load file.",
+      "failClearTiles": "Failed to delete downloaded tiles.",
+      "failUpdatePmtilesURL": "Failed to reload the following maps.",
+      "stopSyncPosition": "Member location sync has stopped. Please reopen the project.",
       "corsError": "PDFs from external servers cannot be accessed on the web version. Please use the mobile version.",
       "wrongInput": "Invalid input.",
       "wrongExtension": "Incorrect file type.",
@@ -670,7 +690,13 @@
       "updateMap": "Map settings have been updated.",
       "addMap": "Map has been added.",
       "dataSizeTooLarge": "Cannot upload data due to large size",
-      "failDeleteFile": "Failed to delete files in the project"
+      "failDeleteFile": "Failed to delete files in the project",
+      "completeDownloadMaps": "Download of {{total}} maps completed",
+      "mapsWithError": "Maps with errors:",
+      "excludedInvalidLocation": "Excluded {{invalidCount}} invalid location points.",
+      "insufficientTrackLog": "Not enough valid track data",
+      "failUpdateLoginPassword": "Failed to change the password.\nIs the current password correct?",
+      "wrongPassword": "The password is incorrect."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish.",
@@ -678,6 +704,12 @@
     },
     "pdf": {
       "comment": "This map is created using the Web Mercator projection. \nThe scale length is a guideline at the center of the diagram."
+    },
+    "progress": {
+      "downloadingMap": "Map {{current}}/{{total}}: {{name}} {{progress}}%",
+      "mergingTrackLog": "Merging track data...",
+      "validatingTrackLog": "Validating data...",
+      "savingTrackLog": "Saving data..."
     },
     "confirmEditModeMessage": "Do you want to switch to edit mode?"
   },
@@ -938,7 +970,8 @@
     "postponeMessage": "You will be asked again next time you launch the app.",
     "cancelButton": "Cancel",
     "okButton": "OK",
-    "exportFailed": "Export failed"
+    "exportFailed": "Export failed",
+    "saveBackupTitle": "Save backup file"
   },
   "settings": {
     "proximityAlert": {

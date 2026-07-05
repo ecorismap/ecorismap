@@ -162,3 +162,19 @@ export function isLocationType(coords: unknown): coords is LocationType {
 export function isLocationTypeArray(coords: RecordType['coords']): coords is LocationType[] {
   return Array.isArray(coords) && coords.length > 0 && 'latitude' in coords[0] && 'longitude' in coords[0];
 }
+
+/**
+ * 重い同期処理をイベントループに逃がして実行する。
+ * インポートのparse等でUIスレッドをブロックしないよう、処理の合間にレンダリングの機会を作る。
+ */
+export function runAsync<T>(fn: () => T): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    setTimeout(() => {
+      try {
+        resolve(fn());
+      } catch (e) {
+        reject(e);
+      }
+    }, 0);
+  });
+}

@@ -83,6 +83,40 @@ describe('projects collection', () => {
     await firebase.assertFails(getDoc(doc(context5.firestore(), `projects/${documentId}`)));
   });
 
+  it('get: メール未承認のオーナーは取得できない（演算子優先順位の回帰テスト）', async () => {
+    // オーナーをmembersUidに含めず、read条件のオーナー分岐だけを検証する。
+    // 括弧が無いと (isSignedIn && member) || owner と解釈され、未承認オーナーが通ってしまう。
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid4,
+        adminsUid: [uid4],
+        membersUid: [uid1, uid2],
+      });
+    });
+
+    const unverifiedOwner = testEnv.authenticatedContext(uid4, {
+      email: 'test4@example.com',
+      email_verified: false,
+    });
+    await firebase.assertFails(getDoc(doc(unverifiedOwner.firestore(), `projects/${documentId}`)));
+  });
+
+  it('get: メール承認済みのオーナーはmembersUidに含まれなくても取得できる', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), `projects/${documentId}`), {
+        ownerUid: uid1,
+        adminsUid: [uid1],
+        membersUid: [uid2, uid3],
+      });
+    });
+
+    const verifiedOwner = testEnv.authenticatedContext(uid1, {
+      email: 'test1@example.com',
+      email_verified: true,
+    });
+    await firebase.assertSucceeds(getDoc(doc(verifiedOwner.firestore(), `projects/${documentId}`)));
+  });
+
   it('create: 自身のドキュメントなら作成できる', async () => {
     const context1 = testEnv.authenticatedContext(uid1, {
       email: 'test@example.com',

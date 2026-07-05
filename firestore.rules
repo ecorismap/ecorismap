@@ -28,7 +28,7 @@ service cloud.firestore {
  
 
         allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerUid;
-        allow read: if isSignedIn() && (request.auth.uid in resource.data.membersUid) || (request.auth.uid == resource.data.ownerUid);
+        allow read: if isSignedIn() && ((request.auth.uid in resource.data.membersUid) || (request.auth.uid == resource.data.ownerUid));
         match /settings/{settings} {
           allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/projects/$(project)).data.membersUid;
           allow write: if isSignedIn() 

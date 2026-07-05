@@ -6,6 +6,8 @@ import storageSession from 'redux-persist/lib/storage/session';
 const persistConfig = {
   key: 'root',
   storage: storageSession,
+  // dataSetを含む全stateをdispatchごとにシリアライズすると大量データ時に重いため間引く
+  throttle: 1000,
 };
 
 const persistedReducer = persistReducer(persistConfig, reducer);

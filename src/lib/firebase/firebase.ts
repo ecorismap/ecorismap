@@ -62,13 +62,18 @@ const initialize = async (isEmulating = false) => {
   // shadowing the runtime value from the modular API. The class exists at runtime, so construct it.
   // @ts-ignore -- type-only export upstream; value is present at runtime
   const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
+  // デバッグトークンは.env（EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN）から注入する。
+  // 未設定の場合はRNFBが自動生成したトークンをコンソール登録する運用。
+  const appCheckDebugToken = process.env.EXPO_PUBLIC_APPCHECK_DEBUG_TOKEN;
   rnfbProvider.configure({
     android: {
       provider: __DEV__ ? 'debug' : 'playIntegrity',
+      // iOS/Webと同一トークンに統一（端末ごとのlogcat確認・再登録を不要にする）
+      ...(appCheckDebugToken ? { debugToken: appCheckDebugToken } : {}),
     },
     apple: {
       provider: __DEV__ ? 'debug' : 'appAttest',
-      debugToken: '80DDE922-1624-49D9-9AAD-0AE776C91BCE',
+      ...(appCheckDebugToken ? { debugToken: appCheckDebugToken } : {}),
     },
     isTokenAutoRefreshEnabled: true,
   });

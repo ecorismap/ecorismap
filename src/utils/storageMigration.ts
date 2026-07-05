@@ -4,6 +4,7 @@ import * as Sharing from 'expo-sharing';
 import * as RNFS from 'react-native-fs';
 import JSZip from 'jszip';
 import { exportFileFromUri } from './File';
+import { t } from '../i18n/config';
 
 export interface MigrationResult {
   success: boolean;
@@ -225,7 +226,7 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(`file://${encodeURI(fallbackPath)}`, {
             mimeType: 'application/json',
-            dialogTitle: 'バックアップファイルを保存',
+            dialogTitle: t('storageMigration.saveBackupTitle'),
           });
         }
         

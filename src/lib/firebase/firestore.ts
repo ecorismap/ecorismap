@@ -215,8 +215,14 @@ export const getUidsByEmails = async (emails: string[]) => {
   try {
     await firebaseReady;
     const getUids = httpsCallable(functions, 'getUidsByEmails');
-    const { data } = await getUids({ emails: emails });
-    return data as (string | null)[];
+    // Functions側の1リクエスト上限(50件)に合わせてチャンク分割する
+    const CHUNK_SIZE = 50;
+    const results: (string | null)[] = [];
+    for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
+      const { data } = await getUids({ emails: emails.slice(i, i + CHUNK_SIZE) });
+      results.push(...(data as (string | null)[]));
+    }
+    return results;
   } catch (e) {
     throw new Error(t('common.message.failGetUids'));
   }
@@ -340,7 +346,7 @@ export const addProject = async (project: ProjectType) => {
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: 'プロジェクトの追加に失敗しました' };
+    return { isOK: false, message: t('firebase.message.failAddProject') };
   }
 };
 
@@ -359,7 +365,20 @@ export const updateProject = async (project: ProjectType) => {
     return { isOK: true, message: '' };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: 'プロジェクトの更新に失敗しました' };
+    return { isOK: false, message: t('firebase.message.failUpdateProject') };
+  }
+};
+
+// 復号処理を伴わずにオーナーのプロジェクトIDだけを取得する。
+// アカウント削除時のStorage掃除用（復号に失敗するプロジェクトも漏らさないため）。
+export const getOwnedProjectIds = async (uid: string) => {
+  try {
+    const q = query(collection(firestore, 'projects'), where('ownerUid', '==', uid));
+    const querySnapshot = await getDocs(q);
+    return { isOK: true, message: '', ids: querySnapshot.docs.map((v) => v.id) };
+  } catch (error) {
+    console.log(error);
+    return { isOK: false, message: t('common.message.failGetProjects'), ids: undefined };
   }
 };
 
@@ -377,7 +396,7 @@ export const deleteAllProjects = async (uid: string) => {
     return { isOK: true, message: '', deletedIds };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: 'プロジェクトの削除に失敗しました', deletedIds: undefined };
+    return { isOK: false, message: t('firebase.message.failDeleteProject'), deletedIds: undefined };
   }
 };
 
@@ -390,7 +409,7 @@ export const deleteProject = async (projectId: string) => {
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('プロジェクト削除エラー:', error);
-    return { isOK: false, message: 'プロジェクトの削除に失敗しました' };
+    return { isOK: false, message: t('firebase.message.failDeleteProject') };
   }
 };
 
@@ -416,7 +435,7 @@ export const deleteAllData = async (projectId: string) => {
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('データ削除エラー:', error);
-    return { isOK: false, message: 'データの削除に失敗しました' };
+    return { isOK: false, message: t('CloudDataManagement.message.failDeleteData') };
   }
 };
 export const deleteData = async (
@@ -465,7 +484,7 @@ export const deleteData = async (
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('データ削除エラー:', error);
-    return { isOK: false, message: 'データの削除に失敗しました' };
+    return { isOK: false, message: t('CloudDataManagement.message.failDeleteData') };
   }
 };
 
@@ -478,7 +497,7 @@ export const uploadProjectSettings = async (projectId: string, editorUid: string
     return { isOK: true, message: '', timestamp: toDate(timestamp) };
   } catch (error) {
     console.log(error);
-    return { isOK: false, message: 'プロジェクトの設定のアップロードに失敗しました', timestamp: undefined };
+    return { isOK: false, message: t('firebase.message.failUploadProjectSettings'), timestamp: undefined };
   }
 };
 
@@ -533,7 +552,7 @@ export const downloadProjectSettings = async (
     console.error('プロジェクト設定ダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'プロジェクトの設定のダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadProjectSettings'),
     };
   }
 };
@@ -730,7 +749,7 @@ export const downloadCommonData = async (projectId: string) => {
     console.error('コモンデータダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'コモンデータのダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadCommonData'),
     };
   }
 };
@@ -751,7 +770,7 @@ export const downloadAllData = async (projectId: string) => {
     console.error('データダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'データのダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadData'),
     };
   }
 };
@@ -771,7 +790,7 @@ export const downloadPublicAndCommonData = async (projectId: string) => {
     console.error('データダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'データのダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadData'),
     };
   }
 };
@@ -809,7 +828,7 @@ export const downloadPublicData = async (projectId: string, { excludeUserId }: {
     console.error('データダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'データのダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadData'),
     };
   }
 };
@@ -851,7 +870,7 @@ export const downloadPrivateData = async (
     console.error('プライベートデータダウンロードエラー:', error);
     return {
       isOK: false,
-      message: 'データのダウンロードに失敗しました',
+      message: t('firebase.message.failDownloadData'),
     };
   }
 };
@@ -867,7 +886,7 @@ export const downloadTemplateData = async (projectId: string) => {
     return { isOK: true, message: '', data: dataSet };
   } catch (error) {
     console.error('テンプレートデータダウンロードエラー:', error);
-    return { isOK: false, message: 'データのダウンロードに失敗しました' };
+    return { isOK: false, message: t('firebase.message.failDownloadData') };
   }
 };
 
@@ -967,7 +986,7 @@ export const uploadCurrentPosition = async (
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('現在位置アップロードエラー:', error);
-    return { isOK: false, message: '現在位置のアップロードに失敗しました' };
+    return { isOK: false, message: t('firebase.message.failUploadCurrentPosition') };
   }
 };
 
@@ -980,7 +999,7 @@ export const deleteCurrentPosition = async (userId: string, projectId: string) =
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('現在位置削除エラー:', error);
-    return { isOK: false, message: '現在位置の削除に失敗しました' };
+    return { isOK: false, message: t('firebase.message.failDeleteCurrentPosition') };
   }
 };
 
@@ -1040,7 +1059,7 @@ export const updateLayerDataPermission = async (
     return { isOK: true, message: '' };
   } catch (error) {
     console.error('権限一括更新エラー:', error);
-    return { isOK: false, message: '権限の一括更新に失敗しました' };
+    return { isOK: false, message: t('firebase.message.failUpdatePermission') };
   }
 };
 

@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { COLOR } from '../../constants/AppConstants';
-import { RecordType, LayerType } from '../../types';
+import { RecordType, LayerType, PointRecordType } from '../../types';
 import { PointView, PointLabel } from '../atoms';
 import { Marker, MarkerDragEvent } from 'react-map-gl/maplibre';
 import { generateLabel, getColor } from '../../utils/Layer';
+import { ViewportBounds, cullPoints } from '../../utils/ViewportCulling';
 
 interface Props {
-  data: RecordType[];
+  data: PointRecordType[];
   layer: LayerType;
   zoom: number;
   selectedRecord: { layerId: string; record: RecordType } | undefined;
@@ -16,6 +17,7 @@ interface Props {
   editPositionRecord: RecordType | undefined;
   editPositionLayer: LayerType | undefined;
   currentDrawTool: string;
+  bounds?: ViewportBounds | null;
   onDragEndPoint: (e: MarkerDragEvent, layer: LayerType, feature: RecordType) => void;
 }
 
@@ -32,13 +34,24 @@ export const Point = React.memo(
       editPositionMode,
       editPositionRecord,
       currentDrawTool,
+      bounds,
     } = props;
+
+    // 各ポイントがDOM要素(Marker)になるため、モバイル版と同様にviewport cullingで描画数を制限する
+    const culledData = useMemo(() => {
+      const visibleData = (data ?? []).filter((feature) => feature.visible);
+      return cullPoints(visibleData, bounds || null, zoom, {
+        buffer: 20,
+        maxFeatures: 1000,
+        minZoom: 10,
+      });
+    }, [data, bounds, zoom]);
+
     if (data === undefined) return null;
 
     return (
       <>
-        {data.map((feature) => {
-          if (!feature.visible) return null;
+        {culledData.map((feature) => {
           if (!feature.coords) return null;
           const label = generateLabel(layer, feature);
 
@@ -80,6 +93,7 @@ export const Point = React.memo(
     if (prevProps.data !== nextProps.data) return false;
     if (prevProps.layer !== nextProps.layer) return false;
     if (prevProps.zoom !== nextProps.zoom) return false;
+    if (prevProps.bounds !== nextProps.bounds) return false;
     if (prevProps.editPositionMode !== nextProps.editPositionMode) return false;
     if (prevProps.editPositionRecord !== nextProps.editPositionRecord) return false;
     if (prevProps.editPositionLayer !== nextProps.editPositionLayer) return false;

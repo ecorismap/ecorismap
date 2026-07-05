@@ -5,6 +5,7 @@ import { useDynamicDictionaryInput } from '../../hooks/useDynamicDictionaryInput
 import { COLOR } from '../../constants/AppConstants';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Pressable } from '../atoms/Pressable';
+import { t } from '../../i18n/config';
 
 interface DynamicDictionaryTextInputProps {
   editable?: boolean;
@@ -51,7 +52,7 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
         <TextInput
           style={styles.input}
           value={queryString}
-          placeholder="入力してください..."
+          placeholder={t('common.enterText')}
           onChangeText={(text) => {
             setFocused(true);
             handleSearch(text);
@@ -89,7 +90,7 @@ export const DynamicDictionaryTextInput = React.memo((props: DynamicDictionaryTe
               <Pressable key={`${item}-${index}`} onPress={() => handleSelectItem(item)} style={styles.separator}>
                 <Text style={[styles.listText, { color: isNewEntry ? COLOR.GRAY4 : COLOR.BLACK }]}>
                   {item}
-                  {isNewEntry && ' (新規入力)'}
+                  {isNewEntry && ` ${t('common.newEntry')}`}
                 </Text>
               </Pressable>
             );

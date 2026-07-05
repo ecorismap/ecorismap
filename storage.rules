@@ -2,43 +2,65 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /projects/{projectId}/PHOTO/{layerId}/{userId}/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId
+      allow get: if isMember(projectId);
+      allow create: if isMember(projectId) && request.auth.uid == userId
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
-      allow delete: if isSignedIn()
+      // 本人に加え、管理者も削除可（クラウドデータ管理・メンバー削除時に他人の写真を消すため）
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin(projectId));
     }
     match /projects/{projectId}/PDF/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn()
+      allow get: if isMember(projectId);
+      allow create: if isAdmin(projectId)
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
-      allow delete: if isSignedIn()
+      allow delete: if isAdmin(projectId);
     }
     match /projects/{projectId}/STYLE/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn()
+      allow get: if isMember(projectId);
+      allow create: if isAdmin(projectId)
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
-      allow delete: if isSignedIn()
+      allow delete: if isAdmin(projectId);
     }
     match /projects/{projectId}/DICTIONARY/{layerId}/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn()
+      allow get: if isMember(projectId);
+      allow create: if isAdmin(projectId)
         && isValidContentType(request.resource)
         && isValidFileSize(request.resource);
-      allow delete: if isSignedIn()
+      allow delete: if isAdmin(projectId);
     }
+    // list/deleteの一括操作（プロジェクト削除・設定アップロード時の掃除）は管理者のみ
     match /projects/{projectId}/{allPaths=**} {
-      allow list: if isSignedIn();
-      allow delete: if isSignedIn()
+      allow list: if isAdmin(projectId);
+      allow delete: if isAdmin(projectId);
     }
   }
 
   function isSignedIn() {
     return request.auth != null && request.auth.token.email_verified;
   }
- 
+
+  // クロスサービスRules: Firestoreのprojectドキュメントを参照してメンバーシップを検証する。
+  // プロジェクト削除フローはStorage削除→Firestoreドキュメント削除の順であること
+  //（逆だとprojectDataの取得に失敗し削除できなくなる）。
+  function projectData(projectId) {
+    return firestore.get(/databases/(default)/documents/projects/$(projectId)).data;
+  }
+
+  // membersUid/adminsUidフィールドが無い古いドキュメントでも評価エラーにならないようget()でデフォルト値を使う
+  function isMember(projectId) {
+    return isSignedIn()
+      && (request.auth.uid == projectData(projectId).ownerUid
+        || request.auth.uid in projectData(projectId).get('membersUid', []));
+  }
+
+  function isAdmin(projectId) {
+    return isSignedIn()
+      && (request.auth.uid == projectData(projectId).ownerUid
+        || request.auth.uid in projectData(projectId).get('adminsUid', []));
+  }
+
   function isValidContentType(data) {
     return data.contentType in ['image/png',"image/jpeg","application/pdf","application/x-sqlite3","application/json"];
   }

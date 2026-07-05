@@ -209,4 +209,8 @@ export const convertPDFToGeoTiff = async (uri: string) => {
   }
 };
 
-export const generateTilesFromPDF = {};
+// Web版ではタイル生成はIndexedDB(db.geotiff)経由で行うため未対応。
+// モバイル版とシグネチャを型で一致させ、乖離をtscで検出できるようにする。
+export const generateTilesFromPDF: typeof import('./PDF').generateTilesFromPDF = async () => {
+  throw new Error('generateTilesFromPDF is not supported on web');
+};

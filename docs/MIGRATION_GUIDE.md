@@ -1,139 +1,38 @@
 # HomeContext Split Migration Guide
 
-## Overview
-This guide explains how to migrate from the monolithic HomeContext to smaller, focused contexts.
+## Status: 移行完了（2026-07）
 
-## Benefits of Splitting
-1. **Performance**: Components only re-render when their specific context changes
-2. **Maintainability**: Easier to understand what each context is responsible for
-3. **Testing**: Smaller contexts are easier to mock and test
-4. **Type Safety**: More focused interfaces reduce confusion
+モノリシックな `HomeContext`（約86 props）から小さなContextへの分割は**完了済み**です。
+旧 `src/contexts/Home.tsx` は削除されました。本ドキュメントは現在のContext構成のリファレンスと、
+新しいContextを追加する際のベストプラクティスとして残しています。
 
-## New Context Structure
+## 現在のContext構成（11分割）
 
-### 1. TileManagementContext
-Manages tile download functionality:
-- Download states (mode, progress, areas)
-- Tile download actions
-- Tile maps configuration
+`src/containers/Home.tsx` が全Contextのプロバイダを構成しています。
 
-### 2. MapMemoContext
-Handles map annotation tools:
-- Drawing tool states (pen, eraser, stamps)
-- Color and width settings
-- Undo/redo functionality
-- Map memo lines data
+| Context | ファイル | 責務 |
+|---------|---------|------|
+| MapViewContext | `src/contexts/MapView.tsx` | 地図表示状態・地図操作 |
+| DrawingToolsContext | `src/contexts/DrawingTools.tsx` | 描画ツール（ポイント/ライン/ポリゴン編集） |
+| PDFExportContext | `src/contexts/PDFExport.tsx` | PDF出力設定 |
+| LocationTrackingContext | `src/contexts/LocationTracking.tsx` | GPS・トラッキング状態 |
+| ProjectContext | `src/contexts/Project.tsx` | プロジェクト状態・操作 |
+| SVGDrawingContext | `src/contexts/SVGDrawing.tsx` | SVG描画 |
+| TileManagementContext | `src/contexts/TileManagement.tsx` | タイルダウンロード管理 |
+| MapMemoContext | `src/contexts/MapMemo.tsx` | 地図メモ（ペン・スタンプ・消しゴム） |
+| DataSelectionContext | `src/contexts/DataSelection.tsx` | データ選択状態 |
+| InfoToolContext | `src/contexts/InfoTool.tsx` | 情報表示ツール |
+| AppStateContext | `src/contexts/AppState.tsx` | アプリ全般状態・ナビゲーション |
 
-### 3. InfoToolContext
-Manages information display tools:
-- Info tool selection
-- Vector tile information
-- Modal visibility states
+## 残課題
 
-### 4. DataSelectionContext
-Handles data selection states:
-- Point, line, and polygon datasets (read-only)
-- Selected record information
-- Editing state
+- `DrawingToolsContext`（約49フィールド）は依然大きく、再分割の余地がある
+- `src/containers/Home.tsx`（2600行超）に全フックとプロバイダが集中しており、
+  コンテナ分割は中期課題
 
-### 5. AppStateContext
-General application states and navigation:
-- Online/offline status
-- Loading states
-- Navigation functions
-- User information
-- Bottom sheet reference
+## ベストプラクティス（新Context追加時）
 
-## Migration Steps
-
-### Step 1: Create New Context Files
-Create the new context files as shown in the examples above.
-
-### Step 2: Update Container (Backward Compatible)
-```tsx
-// Keep HomeContext for backward compatibility
-import { HomeContext } from '../contexts/Home';
-// Import new contexts
-import { TileManagementContext } from '../contexts/TileManagement';
-// ... other imports
-
-// In your container:
-return (
-  // Existing providers...
-  <HomeContext.Provider value={homeContextValue}>
-    {/* Add new context providers inside */}
-    <TileManagementContext.Provider value={tileManagementValue}>
-      <MapMemoContext.Provider value={mapMemoValue}>
-        {/* ... other new providers */}
-        <Home />
-      </MapMemoContext.Provider>
-    </TileManagementContext.Provider>
-  </HomeContext.Provider>
-);
-```
-
-### Step 3: Gradually Update Components
-Update components one by one to use the new contexts:
-
-#### Before:
-```tsx
-import { useContext } from 'react';
-import { HomeContext } from '../../contexts/Home';
-
-const MyComponent = () => {
-  const { 
-    currentMapMemoTool,
-    penColor,
-    downloadProgress,
-    user,
-    // ... many other values
-  } = useContext(HomeContext);
-  
-  // Component logic
-};
-```
-
-#### After:
-```tsx
-import { useContext } from 'react';
-import { MapMemoContext } from '../../contexts/MapMemo';
-import { TileManagementContext } from '../../contexts/TileManagement';
-import { AppStateContext } from '../../contexts/AppState';
-
-const MyComponent = () => {
-  // Only import what you need
-  const { currentMapMemoTool, penColor } = useContext(MapMemoContext);
-  const { downloadProgress } = useContext(TileManagementContext);
-  const { user } = useContext(AppStateContext);
-  
-  // Component logic
-};
-```
-
-### Step 4: Remove HomeContext
-Once all components are migrated:
-1. Remove HomeContext.Provider from the container
-2. Delete the old HomeContext file
-3. Remove any remaining imports
-
-## Best Practices
-
-### 1. Use Custom Hooks
-Create custom hooks for common context combinations:
-
-```tsx
-// hooks/useMapMemo.ts
-export const useMapMemoContext = () => {
-  const context = useContext(MapMemoContext);
-  if (!context) {
-    throw new Error('useMapMemoContext must be used within MapMemoProvider');
-  }
-  return context;
-};
-```
-
-### 2. Memoize Context Values
-Always memoize context values to prevent unnecessary re-renders:
+### 1. Context値は必ずuseMemoでメモ化する
 
 ```tsx
 const tileManagementValue = useMemo(
@@ -144,22 +43,34 @@ const tileManagementValue = useMemo(
 );
 ```
 
-### 3. Group Related Data
-Keep related data together to minimize the number of contexts a component needs:
+### 2. コンポーネントは必要なContextだけを購読する
 
 ```tsx
-// Good: All map memo data in one context
-const { penColor, penWidth, currentTool } = useContext(MapMemoContext);
+import { useContext } from 'react';
+import { MapMemoContext } from '../../contexts/MapMemo';
+import { AppStateContext } from '../../contexts/AppState';
 
-// Avoid: Spreading related data across contexts
-const { penColor } = useContext(ColorContext);
-const { penWidth } = useContext(WidthContext);
-const { currentTool } = useContext(ToolContext);
+const MyComponent = () => {
+  const { currentMapMemoTool, penColor } = useContext(MapMemoContext);
+  const { user } = useContext(AppStateContext);
+};
 ```
 
-## Testing
+### 3. 関連するデータは同じContextにまとめる
 
-### Mocking Split Contexts
+```tsx
+// Good: 地図メモ関連は1つのContextに
+const { penColor, penWidth, currentTool } = useContext(MapMemoContext);
+
+// Avoid: 関連データを複数Contextに分散させる
+const { penColor } = useContext(ColorContext);
+const { penWidth } = useContext(WidthContext);
+```
+
+## テスト
+
+### Contextのモック
+
 ```tsx
 const mockMapMemoContext = {
   currentMapMemoTool: 'PEN',
@@ -173,18 +84,12 @@ const wrapper = ({ children }) => (
   </MapMemoContext.Provider>
 );
 
-const { result } = renderHook(() => useMapMemoContext(), { wrapper });
+const { result } = renderHook(() => useSomething(), { wrapper });
 ```
 
-## Troubleshooting
+### パフォーマンス確認
 
-### Common Issues
-1. **Missing Provider Error**: Ensure all contexts are provided at the appropriate level
-2. **Stale Values**: Check that all dependencies are included in useMemo
-3. **Type Errors**: Update imports to use the new context types
-
-### Performance Monitoring
-Use React DevTools Profiler to verify that splitting contexts reduces re-renders:
-1. Record a profile before migration
-2. Record after migration
-3. Compare render counts for components
+React DevTools Profilerで再レンダリング数を確認する:
+1. 変更前のプロファイルを記録
+2. 変更後のプロファイルを記録
+3. コンポーネントのレンダー回数を比較
