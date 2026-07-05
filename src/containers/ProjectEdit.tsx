@@ -15,6 +15,7 @@ import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
 import { updateLicense } from '../lib/firebase/firestore';
+import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { ConflictResolverModal } from '../components/organisms/HomeModalConflictResolver';
@@ -251,6 +252,14 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const pressSaveProject = useCallback(async () => {
     try {
+      // DEK方式でメンバーがいるのに管理者がオーナー1人だけの場合は注意を促す
+      // （オーナーが暗号化キーを失った際の通常の復旧経路は管理者による再共有のため）。
+      const willBeDek = isNew ? FUNC_ENCRYPTION && CREATE_DEK_PROJECTS : targetProject.cryptoScheme === 'dek';
+      const adminCount = targetProject.members.filter((m) => m.role === 'OWNER' || m.role === 'ADMIN').length;
+      if (willBeDek && targetProject.members.length >= 2 && adminCount === 1) {
+        const ret = await ConfirmAsync(t('ProjectEdit.confirm.singleAdmin'));
+        if (!ret) return;
+      }
       setIsLoading(true);
       const checkedProjectResult = await checkedProject();
       if (!checkedProjectResult.isOK || !checkedProjectResult.project) throw new Error(checkedProjectResult.message);
@@ -268,7 +277,7 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [checkedProject, isNew, navigation, saveNewProject, saveUpdatedProject]);
+  }, [checkedProject, isNew, navigation, saveNewProject, saveUpdatedProject, targetProject]);
 
   const pressAddMembers = useCallback(
     (emails: string) => {
