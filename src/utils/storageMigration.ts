@@ -195,11 +195,11 @@ export const exportAsyncStorageData = async (): Promise<string | null> => {
         const normalizedFileName = 'local.json'.normalize('NFC');
         jszip.file(normalizedFileName, jsonString);
         
-        // ZIPを生成
+        // ZIPを生成（level 6: 圧縮率の差は僅少でCPU時間を大幅に削減できる）
         const zipContent = await jszip.generateAsync({
           type: 'base64',
           compression: 'DEFLATE',
-          compressionOptions: { level: 9 }
+          compressionOptions: { level: 6 }
         });
         
         // ファイルを保存

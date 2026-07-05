@@ -451,21 +451,26 @@ export const useGeoFile = (): UseGeoFileReturnType => {
       if (option?.settingsOnly) return exportData;
 
       //GeoJSON
+      // 各形式の変換は全レコードを走査する重い同期処理のため、runAsyncで形式ごとにUIへyieldする
       if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-        const geojson = generateGeoJson(
-          exportedRecords,
-          targetLayer.field,
-          targetLayer.type,
-          targetLayer.name,
-          targetLayer.permission
-        );
-        const geojsonData = JSON.stringify(geojson);
+        // クロージャ内ではnarrowingが失われるため、narrow済みの型をconstに束縛する
+        const geometryType = targetLayer.type;
+        const geojsonData = await runAsync(() => {
+          const geojson = generateGeoJson(
+            exportedRecords,
+            targetLayer.field,
+            geometryType,
+            targetLayer.name,
+            targetLayer.permission
+          );
+          return JSON.stringify(geojson);
+        });
         const geojsonName = `${fileNameBase}.geojson`;
         exportData.push({ data: geojsonData, name: geojsonName, type: 'GeoJSON', folder: exportFolder });
       }
       //KML
       if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE' || targetLayer.type === 'POLYGON') {
-        const kmlData = generateKML(exportedRecords, targetLayer);
+        const kmlData = await runAsync(() => generateKML(exportedRecords, targetLayer));
         const kmlName = `${fileNameBase}.kml`;
         exportData.push({ data: kmlData, name: kmlName, type: 'KML', folder: exportFolder });
       }
@@ -476,15 +481,15 @@ export const useGeoFile = (): UseGeoFileReturnType => {
         targetLayer.type === 'POLYGON' ||
         targetLayer.type === 'NONE'
       ) {
-        const csv = generateCSV(exportedRecords, targetLayer.field, targetLayer.type);
-        const csvData = csv;
+        const csvType = targetLayer.type;
+        const csvData = await runAsync(() => generateCSV(exportedRecords, targetLayer.field, csvType));
         const csvName = `${fileNameBase}.csv`;
         exportData.push({ data: csvData, name: csvName, type: 'CSV', folder: exportFolder });
       }
       //GPX
       if (targetLayer.type === 'POINT' || targetLayer.type === 'LINE') {
-        const gpx = generateGPX(exportedRecords, targetLayer.type);
-        const gpxData = gpx;
+        const gpxType = targetLayer.type;
+        const gpxData = await runAsync(() => generateGPX(exportedRecords, gpxType));
         const gpxName = `${fileNameBase}.gpx`;
         exportData.push({ data: gpxData, name: gpxName, type: 'GPX', folder: exportFolder });
       }

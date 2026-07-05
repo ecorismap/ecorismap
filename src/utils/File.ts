@@ -71,10 +71,11 @@ async function createZipWithJSZipDirect(
     }
     
     // ZIPファイルを生成
-    const zipContent = await jszip.generateAsync({ 
+    // level 6: 写真(JPEG)は再圧縮がほぼ効かないため、level 9との差は僅少でCPU時間を大幅に削減できる
+    const zipContent = await jszip.generateAsync({
       type: 'base64',
       compression: 'DEFLATE',
-      compressionOptions: { level: 9 }
+      compressionOptions: { level: 6 }
     });
     
     // ZIPファイルを保存
