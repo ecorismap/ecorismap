@@ -54,11 +54,11 @@ export const HomePoiPopup = React.memo(() => {
     return t('Home.poi.elevation', { elevation: elevation.toFixed(1) });
   }, [elevation]);
 
-  // 長押し時のみ緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー
+  // 緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー
   const coordinateText = useMemo(() => {
-    if (isPOI || lat == null || lon == null) return null;
+    if (lat == null || lon == null) return null;
     return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-  }, [isPOI, lat, lon]);
+  }, [lat, lon]);
 
   const [copied, setCopied] = useState(false);
   useEffect(() => {
