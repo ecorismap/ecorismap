@@ -6,6 +6,7 @@ import { COLOR } from '../../constants/AppConstants';
 import { latLonToXY } from '../../utils/Coords';
 import { haversineKm } from '../../utils/Location';
 import { getGsiElevation } from '../../utils/Elevation';
+import { copyToClipboard } from '../../utils/Clipboard';
 import { useWindow } from '../../hooks/useWindow';
 import { t } from '../../i18n/config';
 
@@ -53,7 +54,29 @@ export const HomePoiPopup = React.memo(() => {
     return t('Home.poi.elevation', { elevation: elevation.toFixed(1) });
   }, [elevation]);
 
-  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20;
+  // 長押し時のみ緯度経度を表示（小数5桁 ≒ 1m精度）。タップでクリップボードにコピー
+  const coordinateText = useMemo(() => {
+    if (isPOI || lat == null || lon == null) return null;
+    return `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  }, [isPOI, lat, lon]);
+
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    setCopied(false);
+  }, [lat, lon]);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const handleCopyCoordinate = useCallback(async () => {
+    if (!coordinateText) return;
+    const success = await copyToClipboard(coordinateText);
+    if (success) setCopied(true);
+  }, [coordinateText]);
+
+  const HEIGHT = 40 + (distanceText ? 20 : 0) + 20 + (coordinateText ? 20 : 0);
 
   const openGoogleMaps = useCallback(() => {
     if (!locationInfo) return;
@@ -169,6 +192,13 @@ export const HomePoiPopup = React.memo(() => {
             <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{distanceText}</Text>
           )}
           <Text style={{ color: COLOR.GRAY4, fontSize: 12, paddingBottom: 4 }}>{elevationText}</Text>
+          {coordinateText && (
+            <Pressable onPress={handleCopyCoordinate} style={{ paddingBottom: 4 }}>
+              <Text style={{ color: copied ? COLOR.GRAY4 : COLOR.BLUE, fontSize: 12 }}>
+                {copied ? t('Home.poi.copied') : coordinateText}
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
       

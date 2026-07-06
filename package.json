@@ -131,6 +131,7 @@
     "expo": "^56.0.0",
     "expo-asset": "~56.0.17",
     "expo-audio": "~56.0.12",
+    "expo-clipboard": "~56.0.4",
     "expo-document-picker": "~56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.6",

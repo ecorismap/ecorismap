@@ -14549,6 +14549,7 @@ __metadata:
     expo: ^56.0.0
     expo-asset: ~56.0.17
     expo-audio: ~56.0.12
+    expo-clipboard: ~56.0.4
     expo-document-picker: ~56.0.4
     expo-file-system: ~56.0.8
     expo-font: ~56.0.6
@@ -15743,6 +15744,17 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 3fac3aefb97217ff72aead4892f32619a8c0d7691193521bfa169ebf5a8a3b254271256ae220d7cc56525a510b146c603644d20c48a72c81d9f8308009b3e1a3
+  languageName: node
+  linkType: hard
+
+"expo-clipboard@npm:~56.0.4":
+  version: 56.0.4
+  resolution: "expo-clipboard@npm:56.0.4"
+  peerDependencies:
+    expo: "*"
+    react: "*"
+    react-native: "*"
+  checksum: 75aeddcafa2218901e4c24d98ca9d15e1e150477ee9af2a83daa2bd286908507335f2c5ff057d6c0d971921bab794621b6204bef67839c1995fbdb142de285dc
   languageName: node
   linkType: hard
 
