@@ -425,14 +425,29 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     return state;
   }, [gpsAccuracyOption.desiredAccuracy, gpsAccuracyOption.distanceFilter, handleBackgroundLocation]);
 
+  // 「GPS OFFかつ非トラッキング」という最新の意図をrefから読む。
+  // gpsStateRef/trackingStateRefは各toggleの冒頭で同期更新されるため常に最新の意図を指す。
+  // await境界を跨いだ再チェックに関数呼び出しで使う（直接比較するとTSのnarrowingで矛盾扱いになる）。
+  const isGpsOffIntended = useCallback(
+    () => gpsStateRef.current === 'off' && trackingStateRef.current !== 'on',
+    []
+  );
+
   const startGPS = useCallback(
     async (mode: LocationStateType) => {
       if (mode === 'off') return;
       await ensureBackgroundGeolocation();
 
+      // ここまでのawait中（toggleGPSのmoveCurrentPositionは最大30秒かかり得る）にOFFへ
+      // 変わっていたら開始しない。OFF中に保留していたstart()が実行されると、
+      // UIはOFFのままforeground serviceの通知が残留する。
+      if (isGpsOffIntended()) return;
+
       // トラッキング中でなければBackgroundGeolocationを開始
       if (trackingStateRef.current !== 'on') {
         const state = await BackgroundGeolocation.getState();
+        // getState待ちの間にOFFへ変わった場合も開始しない
+        if (isGpsOffIntended()) return;
         if (!state.enabled) {
           // GPSのみオン時の通知メッセージを設定
           const gpsNotificationConfig: FlatConfig = {
@@ -448,22 +463,32 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           };
           await BackgroundGeolocation.setConfig(gpsNotificationConfig);
           await BackgroundGeolocation.start();
+          // start()完了までの間にOFFへ変わっていた場合は即停止して通知を残さない
+          if (isGpsOffIntended()) {
+            await BackgroundGeolocation.stop();
+            return;
+          }
           // 移動モードにして位置更新を継続させる
           await BackgroundGeolocation.changePace(true);
         }
       }
 
+      // OFFへ変わっていたらheading購読も開始しない
+      if (isGpsOffIntended()) return;
       await ensureHeadingSubscription();
     },
-    [ensureBackgroundGeolocation, ensureHeadingSubscription]
+    [ensureBackgroundGeolocation, ensureHeadingSubscription, isGpsOffIntended]
   );
 
   const stopGPS = useCallback(async () => {
-    // トラッキング中でなければBackgroundGeolocationを停止
+    // トラッキング中でなければBackgroundGeolocationを停止。
+    // getState().enabledはネイティブのforeground service実体と乖離することがあり、
+    // ガードするとstop()が呼ばれず通知が残留するため無条件で停止する（stop()は冪等）。
     if (trackingStateRef.current !== 'on') {
-      const state = await BackgroundGeolocation.getState();
-      if (state.enabled) {
+      try {
         await BackgroundGeolocation.stop();
+      } catch (error) {
+        console.error('[gps] stop error', error);
       }
     }
     if (headingSubscriber.current !== null) {
@@ -477,11 +502,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       // メモリ内の未書き込みポイントをMMKVへ確定（停止後にsaveTrackLog/破棄で正しく読めるように）
       flushTrackLog();
       await ensureBackgroundGeolocation();
-      // 軌跡記録停止時はBackgroundGeolocationも停止
-      const state: BackgroundState = await BackgroundGeolocation.getState();
-      if (state.enabled) {
-        await BackgroundGeolocation.stop();
-      }
+      // 軌跡記録停止時はBackgroundGeolocationも停止。
+      // enabledガードは実体と乖離し得るため無条件で停止する（stop()は冪等）。
+      await BackgroundGeolocation.stop();
       // トラッキング状態をMMKVからクリア
       trackLogMMKV.setTrackingState('off');
       // GPSも停止
@@ -903,6 +926,17 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       if (state.enabled) {
         if (Platform.OS === 'android') {
+          if (!wasTracking && gpsStateRef.current === 'off') {
+            // 保存状態はGPS OFF・非トラッキングなのにサービスが稼働している
+            // （Activity再生成をまたいだ乖離など）。changePaceで生かし続けず
+            // 停止してforeground service通知を消す。
+            await BackgroundGeolocation.stop();
+            const { isOK, message } = await checkUnsavedTrackLog();
+            if (!isOK) {
+              await AlertAsync(message);
+            }
+            return;
+          }
           // MMKVから保存されたトラッキング状態を取得して復元
           if (wasTracking) {
             const chunkInfo = getCurrentChunkInfo();
@@ -1005,6 +1039,20 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           syncLocationFromMMKV();
         } catch (error) {
           console.error('Failed to refresh current location on foreground:', error);
+        }
+
+        // Android: GPS OFF・非トラッキングなのにサービスが稼働していれば停止する
+        // （foreground service通知が残留した場合の自己修復）。
+        // クロージャのstateではなくrefで判定する（ON操作のawait中に復帰しても誤停止しない）。
+        if (Platform.OS === 'android' && gpsStateRef.current === 'off' && trackingStateRef.current !== 'on') {
+          try {
+            const bgState = await BackgroundGeolocation.getState();
+            if (bgState.enabled) {
+              await BackgroundGeolocation.stop();
+            }
+          } catch (error) {
+            console.error('[gps] reconcile on foreground failed:', error);
+          }
         }
 
         // ヘディング再購読

@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { useLocation, shouldEmitAzimuth, angularDeltaDeg, shouldRotateCompassCamera } from '../useLocation';
 import * as Location from 'expo-location';
 import BackgroundGeolocation from 'react-native-background-geolocation';
@@ -589,5 +589,256 @@ describe('heading購読のライフサイクル', () => {
       });
     });
     expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 36.1, longitude: 136.1 }));
+  });
+});
+
+describe('GPS OFF時の通知残留対策', () => {
+  let store: any;
+  let wrapper: any;
+  const originalPlatformOS = Platform.OS;
+  // 連鎖するawait（ensureBackgroundGeolocation内の複数のネイティブ呼び出し等）を全て消化する
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
+  beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    // clearAllMocksはmockImplementationを消さないため、保留Promiseを仕掛けるテストの後始末として明示的に戻す
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+    (AppState as any).currentState = 'active';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getGpsState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    Platform.OS = originalPlatformOS;
+    (AppState as any).currentState = 'active';
+  });
+
+  it('follow切替のmoveCurrentPosition中にOFFにすると保留中のstartが実行されない', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    // init effectの完了を待ってから保留Promiseを仕掛ける（initとtoggleの混線防止）
+    await act(async () => {
+      await flushPromises();
+    });
+    let resolvePosition!: (v: any) => void;
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(
+      () => new Promise((resolve) => { resolvePosition = resolve; })
+    );
+
+    let followPromise!: Promise<void>;
+    await act(async () => {
+      followPromise = result.current.toggleGPS('follow'); // getCurrentPositionで保留
+      await flushPromises();
+    });
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+    mockBackgroundGeolocation.start.mockClear();
+
+    await act(async () => {
+      resolvePosition({
+        coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, heading: 0, speed: 0 },
+        timestamp: Date.now(),
+      });
+      await followPromise;
+    });
+
+    expect(mockBackgroundGeolocation.start).not.toHaveBeenCalled();
+    expect(result.current.gpsState).toBe('off');
+  });
+
+  it('start()完了前にOFFへ変わった場合、start完了後に即stopされる', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    // init effectの完了を待ってから保留Promiseを仕掛ける（initとtoggleの混線防止）
+    await act(async () => {
+      await flushPromises();
+    });
+    let resolveStart!: () => void;
+    mockBackgroundGeolocation.start.mockImplementation(() => new Promise<void>((resolve) => { resolveStart = resolve; }));
+
+    let showPromise!: Promise<void>;
+    await act(async () => {
+      showPromise = result.current.toggleGPS('show'); // start()で保留
+      await flushPromises();
+    });
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+    mockBackgroundGeolocation.stop.mockClear();
+    mockBackgroundGeolocation.changePace.mockClear();
+
+    await act(async () => {
+      resolveStart();
+      await showPromise;
+    });
+
+    // 保留していたstartの完了後、意図がOFFなので後始末のstopが呼ばれ、changePaceは呼ばれない
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.changePace).not.toHaveBeenCalled();
+  });
+
+  it('OFF時はgetStateのenabledに関わらずstopを呼ぶ（enabled乖離対策）', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await result.current.toggleGPS('show');
+    });
+    // ネイティブ実体は動いているがenabled:falseと報告される乖離を再現
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.stop.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+  });
+
+  it('Android: 保存状態がGPS OFF・非トラッキングでサービス稼働中なら初期化時にstopする', async () => {
+    Platform.OS = 'android';
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+
+    renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.changePace).not.toHaveBeenCalled();
+  });
+
+  it('Android: 保存状態がGPS ONでサービス稼働中ならstopせずchangePaceで継続する（kill後復元の回帰）', async () => {
+    Platform.OS = 'android';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getGpsState as jest.Mock).mockReturnValue('follow');
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledWith(true);
+    expect(result.current.gpsState).toBe('follow');
+  });
+
+  it('Android: トラッキング中でサービス稼働中ならstopせずchangePaceで継続する（kill後復元の回帰）', async () => {
+    Platform.OS = 'android';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledWith(true);
+    expect(result.current.trackingState).toBe('on');
+  });
+
+  it('Android: フォアグラウンド復帰時、GPS OFFなのにサービス稼働中なら停止する（自己修復）', async () => {
+    Platform.OS = 'android';
+    const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+    (AppState as any).currentState = 'background';
+
+    renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    // サービスだけが稼働している乖離を再現
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.stop.mockClear();
+
+    const handler = addEventListenerSpy.mock.calls.find(([type]) => type === 'change')?.[1] as (
+      state: string
+    ) => Promise<void>;
+    await act(async () => {
+      await handler('active');
+    });
+
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
+  });
+
+  it('Android: フォアグラウンド復帰時、GPS ON中は停止しない', async () => {
+    Platform.OS = 'android';
+    const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+    });
+
+    (AppState as any).currentState = 'background';
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.stop.mockClear();
+
+    const handler = addEventListenerSpy.mock.calls.find(([type]) => type === 'change')?.[1] as (
+      state: string
+    ) => Promise<void>;
+    await act(async () => {
+      // 一度backgroundへ遷移させてからactiveへ復帰
+      await handler('background');
+      (AppState as any).currentState = 'active';
+      await handler('active');
+    });
+
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
+  });
+
+  it('Android: フォアグラウンド復帰時、トラッキング中は停止しない', async () => {
+    Platform.OS = 'android';
+    const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+      await result.current.toggleTracking('on');
+    });
+
+    (AppState as any).currentState = 'background';
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: true } as any);
+    mockBackgroundGeolocation.stop.mockClear();
+
+    const handler = addEventListenerSpy.mock.calls.find(([type]) => type === 'change')?.[1] as (
+      state: string
+    ) => Promise<void>;
+    await act(async () => {
+      await handler('background');
+      (AppState as any).currentState = 'active';
+      await handler('active');
+    });
+
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
   });
 });
