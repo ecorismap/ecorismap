@@ -316,7 +316,8 @@
       "openInGoogleMaps": "Google Mapsへ",
       "distanceFromCurrentLocation": "現在地から {{distance}}",
       "elevation": "標高 {{elevation}} m",
-      "elevationUnavailable": "標高 取得できません"
+      "elevationUnavailable": "標高 取得できません",
+      "copied": "コピーしました"
     }
   },
   "AccountSettings": {

@@ -846,7 +846,8 @@
       "openInGoogleMaps": "To Google Maps",
       "distanceFromCurrentLocation": "{{distance}} from here",
       "elevation": "Elevation {{elevation}} m",
-      "elevationUnavailable": "Elevation unavailable"
+      "elevationUnavailable": "Elevation unavailable",
+      "copied": "Copied"
     }
   },
   "LayerEditFeatureStyle": {

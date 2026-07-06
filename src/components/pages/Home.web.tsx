@@ -51,6 +51,7 @@ import * as pmtiles from 'pmtiles';
 import { MapMemoView } from '../organisms/HomeMapMemoView';
 import { HomeMapMemoTools } from '../organisms/HomeMapMemoTools';
 import { HomePopup } from '../organisms/HomePopup';
+import { HomePoiPopup } from '../organisms/HomePoiPopup';
 import { isMapMemoDrawTool } from '../../utils/General';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -813,6 +814,7 @@ export default function HomeScreen() {
           />
           <MapMemoView />
           <HomePopup />
+          <HomePoiPopup />
           {isDrawLineVisible && <SvgView />}
 
           <div {...getRootProps({ className: 'dropzone' })}>
