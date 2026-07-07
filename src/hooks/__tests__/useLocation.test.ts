@@ -665,7 +665,7 @@ describe('GPS OFF時の通知残留対策', () => {
     expect(result.current.gpsState).toBe('off');
   });
 
-  it('start()完了前にOFFへ変わった場合、start完了後に即stopされる', async () => {
+  it('start()保留中にOFFを発行しても、最終的にstopに収束する（stopはstartより後）', async () => {
     const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
     // init effectの完了を待ってから保留Promiseを仕掛ける（initとtoggleの混線防止）
     await act(async () => {
@@ -675,24 +675,28 @@ describe('GPS OFF時の通知残留対策', () => {
     mockBackgroundGeolocation.start.mockImplementation(() => new Promise<void>((resolve) => { resolveStart = resolve; }));
 
     let showPromise!: Promise<void>;
+    let offPromise!: Promise<void>;
     await act(async () => {
       showPromise = result.current.toggleGPS('show'); // start()で保留
       await flushPromises();
-    });
-    await act(async () => {
-      await result.current.toggleGPS('off');
+      // OFFはawaitしない（直列化キューでstart完了待ちの後ろに積まれるため、awaitするとデッドロック）
+      offPromise = result.current.toggleGPS('off');
+      await flushPromises();
     });
     mockBackgroundGeolocation.stop.mockClear();
-    mockBackgroundGeolocation.changePace.mockClear();
 
     await act(async () => {
       resolveStart();
       await showPromise;
+      await offPromise;
     });
 
-    // 保留していたstartの完了後、意図がOFFなので後始末のstopが呼ばれ、changePaceは呼ばれない
+    // 最後の意図=OFFに収束: stopが呼ばれ、かつstartより後に実行される
     expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
-    expect(mockBackgroundGeolocation.changePace).not.toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.stop.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mockBackgroundGeolocation.start.mock.invocationCallOrder[0]
+    );
+    expect(result.current.gpsState).toBe('off');
   });
 
   it('OFF時はgetStateのenabledに関わらずstopを呼ぶ（enabled乖離対策）', async () => {
@@ -813,6 +817,129 @@ describe('GPS OFF時の通知残留対策', () => {
 
     expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
     addEventListenerSpy.mockRestore();
+  });
+
+  it('レースA: OFFのstop処理中にONを発行しても最終的にサービスが起動する', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+    await act(async () => {
+      await result.current.toggleGPS('show');
+    });
+
+    // OFFのstopを保留Promise化（処理中のstopを再現）
+    let resolveStop!: () => void;
+    mockBackgroundGeolocation.stop.mockImplementation(() => new Promise<void>((resolve) => { resolveStop = resolve; }));
+    mockBackgroundGeolocation.start.mockClear();
+    mockBackgroundGeolocation.changePace.mockClear();
+
+    let offPromise!: Promise<void>;
+    let onPromise!: Promise<void>;
+    await act(async () => {
+      offPromise = result.current.toggleGPS('off'); // stopで保留
+      await flushPromises();
+      onPromise = result.current.toggleGPS('show'); // 直列化キューに積まれる
+      await flushPromises();
+    });
+    // stopが保留中の間、後続ONのstartは実行されない（直列化）
+    expect(mockBackgroundGeolocation.start).not.toHaveBeenCalled();
+
+    await act(async () => {
+      resolveStop();
+      await offPromise;
+      await onPromise;
+    });
+
+    // 最終意図=ONに収束: startがstopより後に実行され、サービスは起動状態で終わる
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.start.mock.invocationCallOrder[0]).toBeGreaterThan(
+      mockBackgroundGeolocation.stop.mock.invocationCallOrder[0]
+    );
+    expect(mockBackgroundGeolocation.changePace).toHaveBeenCalledWith(true);
+    // start後にstopは呼ばれていない
+    const lastStopOrder = mockBackgroundGeolocation.stop.mock.invocationCallOrder.at(-1) ?? 0;
+    const lastStartOrder = mockBackgroundGeolocation.start.mock.invocationCallOrder.at(-1) ?? 0;
+    expect(lastStartOrder).toBeGreaterThan(lastStopOrder);
+    expect(result.current.gpsState).toBe('show');
+  });
+
+  it('レースB: 復帰時reconcileがサービス稼働を検知した直後にONにしても停止されない', async () => {
+    Platform.OS = 'android';
+    const addEventListenerSpy = jest.spyOn(AppState, 'addEventListener');
+    (AppState as any).currentState = 'background';
+
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    // reconcileの事前フィルタgetStateだけが「サービス稼働中」を観測する状況を再現
+    mockBackgroundGeolocation.getState.mockResolvedValueOnce({ enabled: true } as any);
+    mockBackgroundGeolocation.stop.mockClear();
+    mockBackgroundGeolocation.start.mockClear();
+
+    const handler = addEventListenerSpy.mock.calls.find(([type]) => type === 'change')?.[1] as (
+      state: string
+    ) => Promise<void>;
+    let handlerPromise!: Promise<void>;
+    let onPromise!: Promise<void>;
+    await act(async () => {
+      handlerPromise = handler('active'); // reconcileが動き出す
+      // その直後にユーザーがGPS ON（意図refは同期で'show'になる）
+      onPromise = result.current.toggleGPS('show');
+      await handlerPromise;
+      await onPromise;
+    });
+
+    // reconcileのsyncは実行時に最新意図(ON)を読むため停止せず、サービスは起動される
+    expect(mockBackgroundGeolocation.stop).not.toHaveBeenCalled();
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
+  });
+
+  it('ON/OFF連打は最終意図（OFF）に収束する', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+    mockBackgroundGeolocation.start.mockClear();
+    mockBackgroundGeolocation.stop.mockClear();
+
+    await act(async () => {
+      const p1 = result.current.toggleGPS('show');
+      const p2 = result.current.toggleGPS('off');
+      const p3 = result.current.toggleGPS('show');
+      const p4 = result.current.toggleGPS('off');
+      await Promise.all([p1, p2, p3, p4]);
+    });
+
+    // 最後のサービス遷移がstop（=通知は残らない）で、UIもOFF
+    const lastStartOrder = mockBackgroundGeolocation.start.mock.invocationCallOrder.at(-1) ?? 0;
+    const lastStopOrder = mockBackgroundGeolocation.stop.mock.invocationCallOrder.at(-1) ?? 0;
+    expect(lastStopOrder).toBeGreaterThan(lastStartOrder);
+    expect(result.current.gpsState).toBe('off');
+  });
+
+  it('start()が失敗しても直列化キューは継続し、後続のstopが実行される', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+    mockBackgroundGeolocation.start.mockRejectedValueOnce(new Error('start failed'));
+
+    await act(async () => {
+      await result.current.toggleGPS('show').catch(() => {
+        // startの失敗はtoggleGPSの呼び出し元へ伝播する（ここでは無視）
+      });
+    });
+    mockBackgroundGeolocation.stop.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+
+    expect(mockBackgroundGeolocation.stop).toHaveBeenCalled();
   });
 
   it('Android: フォアグラウンド復帰時、トラッキング中は停止しない', async () => {
