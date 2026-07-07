@@ -65,6 +65,21 @@ const STOP_DETECTION_DISABLED: FlatStopDetectionConfig = {
   pausesLocationUpdatesAutomatically: false,
 };
 
+// foreground service通知の設定を生成（textのみ可変。title/channel/色/アイコンは共通）。
+// 「トラックの記録中」テキストはトラッキング開始時に明示的にsetConfigする場合のみ使い、
+// 既定（ready）はGPS用テキストにする。既定をトラッキング用にすると、設定なしのstart()や
+// プラグイン停止中のgetCurrentPosition（Androidは一時的にFGSを起動）で
+// GPSのみONなのに「記録中」通知が表示されてしまう。
+const makeNotification = (text: string): NotificationConfig => ({
+  sticky: true,
+  title: 'EcorisMap',
+  text,
+  channelName: 'EcorisMap Tracking',
+  color: '#0F5FBA',
+  smallIcon: 'drawable/ic_notification',
+  largeIcon: 'mipmap/ic_launcher',
+});
+
 // 軌跡ライン（trailing polyline）の再描画を約1秒ごとにスロットルするための間隔
 const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 
@@ -410,15 +425,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       disableLocationAuthorizationAlert: true,
       disableMotionActivityUpdates: true,
       ...STOP_DETECTION_DISABLED,
-      notification: {
-        sticky: true,
-        title: 'EcorisMap',
-        text: t('hooks.notification.inTracking'),
-        channelName: 'EcorisMap Tracking',
-        color: '#0F5FBA',
-        smallIcon: 'drawable/ic_notification',
-        largeIcon: 'mipmap/ic_launcher',
-      },
+      // 既定はGPS用テキスト。トラッキング用テキストはstartTracking/init復帰で明示設定する。
+      notification: makeNotification(t('hooks.notification.gpsOn')),
       allowsBackgroundLocationUpdates: true,
       // サービスが動作中（アプリキル後の再起動）の場合はresetしない
       // resetするとバックグラウンドで継続中の記録が途切れる
@@ -475,15 +483,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (!state.enabled) {
           // GPSのみオン時の通知メッセージを設定
           const gpsNotificationConfig: FlatConfig = {
-            notification: {
-              sticky: true,
-              title: 'EcorisMap',
-              text: t('hooks.notification.gpsOn'),
-              channelName: 'EcorisMap Tracking',
-              color: '#0F5FBA',
-              smallIcon: 'drawable/ic_notification',
-              largeIcon: 'mipmap/ic_launcher',
-            },
+            notification: makeNotification(t('hooks.notification.gpsOn')),
           };
           await BackgroundGeolocation.setConfig(gpsNotificationConfig);
           await BackgroundGeolocation.start();
@@ -561,15 +561,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       // トラッキング用の通知メッセージを設定
       const trackingNotificationConfig: FlatConfig = {
-        notification: {
-          sticky: true,
-          title: 'EcorisMap',
-          text: t('hooks.notification.inTracking'),
-          channelName: 'EcorisMap Tracking',
-          color: '#0F5FBA',
-          smallIcon: 'drawable/ic_notification',
-          largeIcon: 'mipmap/ic_launcher',
-        },
+        notification: makeNotification(t('hooks.notification.inTracking')),
       };
       await BackgroundGeolocation.setConfig(trackingNotificationConfig);
 
@@ -1066,6 +1058,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         if (gpsStateRef.current !== 'off' || wasTracking) {
           const bgState = await BackgroundGeolocation.getState();
           if (!bgState.enabled) {
+            // 復元する状態に応じた通知テキストを明示設定する
+            // （設定なしでstartするとready既定のテキストのまま通知が表示されるため）。
+            const restoreNotificationConfig: FlatConfig = {
+              notification: makeNotification(
+                wasTracking ? t('hooks.notification.inTracking') : t('hooks.notification.gpsOn')
+              ),
+            };
+            await BackgroundGeolocation.setConfig(restoreNotificationConfig);
             await BackgroundGeolocation.start();
             await BackgroundGeolocation.changePace(true);
           }

@@ -843,6 +843,130 @@ describe('GPS OFF時の通知残留対策', () => {
   });
 });
 
+describe('通知テキストの整合', () => {
+  let store: any;
+  let wrapper: any;
+  const originalPlatformOS = Platform.OS;
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+  const { t } = require('../../i18n/config');
+  const GPS_TEXT = t('hooks.notification.gpsOn');
+  const TRACKING_TEXT = t('hooks.notification.inTracking');
+
+  // notification付きのsetConfig呼び出しからtextを抽出
+  const setConfigNotificationTexts = () =>
+    mockBackgroundGeolocation.setConfig.mock.calls
+      .map(([cfg]: any[]) => cfg?.notification?.text)
+      .filter((text: any) => text !== undefined);
+
+  beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+    (AppState as any).currentState = 'active';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getGpsState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    Platform.OS = originalPlatformOS;
+  });
+
+  it('GPSのみONではready既定もsetConfigもGPS用テキストになる', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await result.current.toggleGPS('show');
+    });
+
+    // ready既定のnotificationテキストがGPS用（トラッキング用が既定だと、
+    // 設定なしstartやプラグイン停止中のgetCurrentPositionで誤表示される）
+    const readyConfig = mockBackgroundGeolocation.ready.mock.calls.at(-1)[0];
+    expect(readyConfig.notification.text).toBe(GPS_TEXT);
+    // start前のsetConfigもGPS用テキスト
+    expect(setConfigNotificationTexts()).toContain(GPS_TEXT);
+    expect(setConfigNotificationTexts()).not.toContain(TRACKING_TEXT);
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+  });
+
+  it('Android: GPSのみON復元時はstart()前にGPS用テキストをsetConfigする', async () => {
+    Platform.OS = 'android';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getGpsState as jest.Mock).mockReturnValue('follow');
+    // サービス停止状態からの復元（enabled: false）
+
+    renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+    expect(setConfigNotificationTexts()).toContain(GPS_TEXT);
+    expect(setConfigNotificationTexts()).not.toContain(TRACKING_TEXT);
+
+    // setConfig（notification付き）がstartより前に呼ばれていること
+    const setConfigOrder = mockBackgroundGeolocation.setConfig.mock.invocationCallOrder[
+      mockBackgroundGeolocation.setConfig.mock.calls.findIndex(([cfg]: any[]) => cfg?.notification)
+    ];
+    const startOrder = mockBackgroundGeolocation.start.mock.invocationCallOrder[0];
+    expect(setConfigOrder).toBeLessThan(startOrder);
+  });
+
+  it('Android: トラッキング復元時（サービス停止）はstart()前にトラッキング用テキストをsetConfigする', async () => {
+    Platform.OS = 'android';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('on');
+    // サービス停止状態からの復元（enabled: false）
+
+    renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(mockBackgroundGeolocation.start).toHaveBeenCalled();
+    expect(setConfigNotificationTexts()).toContain(TRACKING_TEXT);
+
+    const setConfigOrder = mockBackgroundGeolocation.setConfig.mock.invocationCallOrder[
+      mockBackgroundGeolocation.setConfig.mock.calls.findIndex(([cfg]: any[]) => cfg?.notification)
+    ];
+    const startOrder = mockBackgroundGeolocation.start.mock.invocationCallOrder[0];
+    expect(setConfigOrder).toBeLessThan(startOrder);
+  });
+
+  it('トラッキング開始時はトラッキング用テキストをsetConfigする（既存挙動の回帰）', async () => {
+    const { result } = renderHook(() => useLocation(createMockMapRef() as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+
+    await act(async () => {
+      await result.current.toggleTracking('on');
+    });
+
+    expect(setConfigNotificationTexts()).toContain(TRACKING_TEXT);
+  });
+});
+
 describe('GPSオン直後のキャッシュ位置表示', () => {
   let store: any;
   let wrapper: any;
