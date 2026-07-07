@@ -300,6 +300,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
   //現在位置、GPS関連
   const {
     currentLocation,
+    isLocationStale,
     gpsState,
     trackingState,
     headingUp,
@@ -732,7 +733,10 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
     // GPS ON（follow/show）または軌跡記録中は、保持済みのライブ現在地を渡す。
     // 記録中に getCurrentPosition を呼ぶとiOSで古い位置（軌跡開始地点）が返る不具合の回避。
-    const preferred = gpsState !== 'off' || trackingState === 'on' ? currentLocation : undefined;
+    // 衛星捕捉中（stale=キャッシュ位置表示中）は古い座標を登録しないよう渡さない
+    // （従来この時間帯はcurrentLocationがnullだったため挙動維持）。
+    const preferred =
+      (gpsState !== 'off' || trackingState === 'on') && !isLocationStale ? currentLocation : undefined;
     const { isOK, message, layer, record } = await addCurrentPoint(preferred);
     if (!isOK || layer === undefined || record === undefined) {
       await AlertAsync(message);
@@ -745,7 +749,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         targetLayer: layer,
       });
     }
-  }, [addCurrentPoint, currentLocation, gpsState, navigateToSplit, trackingState]);
+  }, [addCurrentPoint, currentLocation, isLocationStale, gpsState, navigateToSplit, trackingState]);
 
   const handleAddLocationPoint = useCallback(async () => {
     await addLocationPoint();
@@ -1971,10 +1975,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   useEffect(() => {
     //Web版は自分の位置は共有しない。取得はする。
-    if (Platform.OS !== 'web') {
+    //衛星捕捉中（stale=キャッシュ位置表示中）は古い位置をメンバーへ配信しない。
+    if (Platform.OS !== 'web' && !isLocationStale) {
       uploadLocation(currentLocation);
     }
-  }, [currentLocation, uploadLocation]);
+  }, [currentLocation, isLocationStale, uploadLocation]);
 
   useEffect(() => {
     return bottomSheetRef.current?.close();
@@ -2082,6 +2087,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
             accuracy: currentLocation.accuracy ?? undefined,
           }
         : null,
+      isLocationStale,
       gpsState,
       pressGPS,
       isPinch,
@@ -2108,6 +2114,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       headingUp,
       azimuth,
       currentLocation,
+      isLocationStale,
       gpsState,
       pressGPS,
       panResponder,

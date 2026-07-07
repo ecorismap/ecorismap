@@ -99,6 +99,7 @@ export default function HomeScreen() {
     mapViewRef,
     gpsState,
     currentLocation,
+    isLocationStale,
     zoom,
     onRegionChangeMapView,
     onDrop,
@@ -873,6 +874,7 @@ export default function HomeScreen() {
                 {(gpsState !== 'off' || trackingState !== 'off') && currentLocation && (
                   <CurrentMarker
                     currentLocation={currentLocation}
+                    isStale={isLocationStale}
                     //angle={magnetometer && northUp ? magnetometer!.trueHeading : 0}
                   />
                 )}

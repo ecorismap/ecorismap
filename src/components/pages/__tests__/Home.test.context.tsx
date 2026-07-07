@@ -28,6 +28,7 @@ export const mockMapViewContextValue: MapViewContextType = {
   headingUp: false,
   azimuth: 0,
   currentLocation: null,
+  isLocationStale: false,
   gpsState: 'off',
   pressGPS: jest.fn().mockResolvedValue(undefined),
   isPinch: false,

@@ -8,11 +8,14 @@ interface Props {
   headingUp: boolean;
   onPress?: () => void;
   showDirectionLine?: boolean;
+  // キャッシュ由来の古い位置（衛星捕捉中）。灰色マーカーで表示し精度円は出さない。
+  isStale?: boolean;
 }
 
 // 不要な再レンダリングを防ぐカスタム比較（HomeCompassButtonと同方針）。
 // azimuthは磁気センサー由来のノイズで頻繁に変わるため、約1°超の変化のみ再レンダリングする。
 const arePropsEqual = (prev: Props, next: Props) => {
+  if (prev.isStale !== next.isStale) return false;
   if (prev.headingUp !== next.headingUp) return false;
   if (prev.onPress !== next.onPress) return false;
   if (prev.showDirectionLine !== next.showDirectionLine) return false;
@@ -29,16 +32,17 @@ const arePropsEqual = (prev: Props, next: Props) => {
 };
 
 const CurrentMarkerComponent = (props: Props) => {
-  const { currentLocation, azimuth, headingUp, onPress, showDirectionLine } = props;
+  const { currentLocation, azimuth, headingUp, onPress, showDirectionLine, isStale } = props;
   const accuracy = currentLocation.accuracy ?? 0;
   const fillColor = accuracy > 30 ? '#bbbbbbaa' : accuracy > 15 ? '#ff9900aa' : '#ff0000aa';
 
-  // マーカー画像の選択
+  // マーカー画像の選択（stale=キャッシュ由来の古い位置は精度に関わらず灰色）
   const markerImage = useMemo(() => {
+    if (isStale) return require('../../assets/marker_gray.png');
     if (accuracy > 30) return require('../../assets/marker_gray.png');
     if (accuracy > 15) return require('../../assets/marker_orange.png');
     return require('../../assets/marker_red.png');
-  }, [accuracy]);
+  }, [accuracy, isStale]);
 
   // Low-pass filter to smooth azimuth values
   const filteredAzimuthRef = useRef(azimuth);
@@ -102,7 +106,9 @@ const CurrentMarkerComponent = (props: Props) => {
 
   return (
     <>
-      {accuracy > 0 && (
+      {/* staleのとき精度円は出さない: キャッシュのaccuracyは取得当時の精度であり
+          現在位置の不確かさを表さない（小さい円が誤った確信を与える）ため */}
+      {!isStale && accuracy > 0 && (
         <Circle
           center={{
             latitude: currentLocation.latitude,

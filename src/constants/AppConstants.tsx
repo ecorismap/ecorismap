@@ -416,4 +416,10 @@ export const TRACK_ACCURACY = {
   RECORD: 100, // 記録閾値（m）- これを超えると除外
 } as const;
 
+// 位置情報を「古い（stale）」とみなす閾値（ms）。
+// 表示系のstale判定（灰色マーカー・カメラ抑止）と軌跡記録開始直後の
+// キャッシュ位置除外フィルタが同じ閾値を共有する（片方だけ変えると
+// 「灰色表示なのに記録される」等の不整合が生じるため）。
+export const STALE_LOCATION_AGE_MS = 30000;
+
 export const TRACK_DASH_PATTERN = [10, 5];
