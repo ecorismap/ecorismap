@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import BackgroundGeolocation, {
   Location as BackgroundLocation,
   Subscription as BackgroundSubscription,
-  State as BackgroundState,
   Config as BackgroundConfig,
   NotificationConfig,
 } from '../lib/backgroundGeolocation';
@@ -465,76 +464,91 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     []
   );
 
+  // --- サービス遷移の直列化キュー ---
+  // start/stop/getStateの交錯レース（ON→OFF→ON連打、復帰reconcileとON操作の競合等）を防ぐため、
+  // enabled状態を変える操作はすべてこのキューを通す。getStateは即時に状態を読むが
+  // start/stopの効果は非同期適用のため、直列化しないとスナップショットが処理中の操作を反映しない。
+  const serviceOpChain = useRef<Promise<void>>(Promise.resolve());
+  const runExclusive = useCallback((op: () => Promise<void>): Promise<void> => {
+    const result = serviceOpChain.current.then(op);
+    // チェーン自体は失敗を飲み込んで継続（エラーは呼び出し元のresultへ伝播）
+    serviceOpChain.current = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  }, []);
+
+  // サービス状態を「実行時点の最新意図（gpsStateRef/trackingStateRef）」に収束させるreconciler。
+  // すべてのstart/stop遷移はここを通る。opが実行時に意図を読み直すため、連打しても最終意図に
+  // 収束する（古いstopが新しいstartを殺せない）。キュー内では前opのstart/stopが完了済みのため
+  // getStateスナップショットは整合する。
+  // 注意: キュー内からsyncBackgroundServiceを再帰呼び出しするとデッドロックする。
+  const syncBackgroundService = useCallback(
+    () =>
+      runExclusive(async () => {
+        await ensureBackgroundGeolocation();
+        const isTracking = trackingStateRef.current === 'on';
+        const wantOn = gpsStateRef.current !== 'off' || isTracking;
+        if (wantOn) {
+          // 意図に応じた通知テキストを常に反映（start前の設定と、GPS→トラッキング昇格時の
+          // 稼働中サービスのテキスト書き換えを兼ねる）
+          const notificationConfig: FlatConfig = {
+            notification: makeNotification(
+              isTracking ? t('hooks.notification.inTracking') : t('hooks.notification.gpsOn')
+            ),
+          };
+          await BackgroundGeolocation.setConfig(notificationConfig);
+          const state = await BackgroundGeolocation.getState();
+          if (!state.enabled) {
+            await BackgroundGeolocation.start();
+          }
+          // 静止モードで開始される/kill復帰で静止モードの可能性があるため常に移動モードへ
+          await BackgroundGeolocation.changePace(true);
+        } else {
+          // enabledガードは実体と乖離し得るため無条件stop（冪等）。通知残留対策を維持
+          await BackgroundGeolocation.stop();
+        }
+      }),
+    [ensureBackgroundGeolocation, runExclusive]
+  );
+
   const startGPS = useCallback(
     async (mode: LocationStateType) => {
       if (mode === 'off') return;
-      await ensureBackgroundGeolocation();
-
-      // ここまでのawait中（toggleGPSのmoveCurrentPositionは最大30秒かかり得る）にOFFへ
-      // 変わっていたら開始しない。OFF中に保留していたstart()が実行されると、
-      // UIはOFFのままforeground serviceの通知が残留する。
-      if (isGpsOffIntended()) return;
-
-      // トラッキング中でなければBackgroundGeolocationを開始
-      if (trackingStateRef.current !== 'on') {
-        const state = await BackgroundGeolocation.getState();
-        // getState待ちの間にOFFへ変わった場合も開始しない
-        if (isGpsOffIntended()) return;
-        if (!state.enabled) {
-          // GPSのみオン時の通知メッセージを設定
-          const gpsNotificationConfig: FlatConfig = {
-            notification: makeNotification(t('hooks.notification.gpsOn')),
-          };
-          await BackgroundGeolocation.setConfig(gpsNotificationConfig);
-          await BackgroundGeolocation.start();
-          // start()完了までの間にOFFへ変わっていた場合は即停止して通知を残さない
-          if (isGpsOffIntended()) {
-            await BackgroundGeolocation.stop();
-            return;
-          }
-          // 移動モードにして位置更新を継続させる
-          await BackgroundGeolocation.changePace(true);
-        }
-      }
-
-      // OFFへ変わっていたらheading購読も開始しない
+      await syncBackgroundService();
+      // sync完了までにOFFへ変わっていたらheading購読は開始しない
       if (isGpsOffIntended()) return;
       await ensureHeadingSubscription();
     },
-    [ensureBackgroundGeolocation, ensureHeadingSubscription, isGpsOffIntended]
+    [syncBackgroundService, ensureHeadingSubscription, isGpsOffIntended]
   );
 
   const stopGPS = useCallback(async () => {
-    // トラッキング中でなければBackgroundGeolocationを停止。
-    // getState().enabledはネイティブのforeground service実体と乖離することがあり、
-    // ガードするとstop()が呼ばれず通知が残留するため無条件で停止する（stop()は冪等）。
-    if (trackingStateRef.current !== 'on') {
-      try {
-        await BackgroundGeolocation.stop();
-      } catch (error) {
-        console.error('[gps] stop error', error);
-      }
+    try {
+      // トラッキング中はsyncがwantOn=trueと判定するため停止されない（従来のtrackingガードを包含）
+      await syncBackgroundService();
+    } catch (error) {
+      console.error('[gps] stop error', error);
     }
     if (headingSubscriber.current !== null) {
       headingSubscriber.current.remove();
       headingSubscriber.current = null;
     }
-  }, []);
+  }, [syncBackgroundService]);
 
   const stopTracking = useCallback(async () => {
     try {
       // メモリ内の未書き込みポイントをMMKVへ確定（停止後にsaveTrackLog/破棄で正しく読めるように）
       flushTrackLog();
-      await ensureBackgroundGeolocation();
-      // 軌跡記録停止時はBackgroundGeolocationも停止。
-      // enabledガードは実体と乖離し得るため無条件で停止する（stop()は冪等）。
-      await BackgroundGeolocation.stop();
-      // トラッキング状態をMMKVからクリア
+      // 先に意図（ref/state/MMKV）を確定させる。syncBackgroundServiceは「実行時点の意図」を
+      // 読むため、意図の更新を後置するとwantOn=trueと誤判定して停止されない。
       trackLogMMKV.setTrackingState('off');
-      // GPSも停止
       setGpsState('off');
       gpsStateRef.current = 'off';
       trackLogMMKV.setGpsState('off');
+      // 軌跡記録停止時はBackgroundGeolocationも停止（意図off/offなのでstopに収束）
+      await syncBackgroundService();
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
       setLocationStale(false);
@@ -550,29 +564,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setCurrentLocation(null);
       }
     }
-  }, [projectId, dataUser, ensureBackgroundGeolocation, setLocationStale]);
+  }, [projectId, dataUser, syncBackgroundService, setLocationStale]);
 
   const startTracking = useCallback(async () => {
     try {
       // チャンクシステムを初期化
       clearStoredLocations();
 
-      await ensureBackgroundGeolocation();
-
-      // トラッキング用の通知メッセージを設定
-      const trackingNotificationConfig: FlatConfig = {
-        notification: makeNotification(t('hooks.notification.inTracking')),
-      };
-      await BackgroundGeolocation.setConfig(trackingNotificationConfig);
-
-      const state: BackgroundState = await BackgroundGeolocation.getState();
-      if (!state.enabled) {
-        await BackgroundGeolocation.start();
-      }
-
-      // 強制的に移動モードにして位置更新を継続させる
-      // BackgroundGeolocationはデフォルトで静止モード(isMoving:false)で開始されるため必須
-      await BackgroundGeolocation.changePace(true);
+      // サービス開始（通知テキストinTracking・start・changePaceはsyncが意図から導出して実行。
+      // 呼び出し前にtoggleTrackingがtrackingStateRef='on'を同期設定済みであることが前提）
+      await syncBackgroundService();
 
       // トラッキング状態をMMKVに保存（kill後の復帰で正しく復元するため）
       trackLogMMKV.setTrackingState('on');
@@ -582,7 +583,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       console.error('Error in startTracking:', error);
       throw error;
     }
-  }, [ensureBackgroundGeolocation, ensureHeadingSubscription]);
+  }, [syncBackgroundService, ensureHeadingSubscription]);
 
   // 最後に取得済みの位置（MMKVキャッシュ・年齢無制限）を即座にマーカー表示する。
   // GPS/トラッキングONの直後、衛星捕捉までの「無反応」を避けるための即時フィードバック。
@@ -1009,8 +1010,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           if (!wasTracking && gpsStateRef.current === 'off') {
             // 保存状態はGPS OFF・非トラッキングなのにサービスが稼働している
             // （Activity再生成をまたいだ乖離など）。changePaceで生かし続けず
-            // 停止してforeground service通知を消す。
-            await BackgroundGeolocation.stop();
+            // 停止してforeground service通知を消す（意図off/offなのでstopに収束）。
+            await syncBackgroundService();
             const { isOK, message } = await checkUnsavedTrackLog();
             if (!isOK) {
               await AlertAsync(message);
@@ -1031,8 +1032,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             await moveCurrentPosition();
           }
 
-          // 移動モードを確実に有効化（アプリキル後の再起動で静止モードになっている可能性があるため）
-          await BackgroundGeolocation.changePace(true);
+          // 移動モードの再有効化と通知テキストの整合（キル後再起動で静止モード/テキスト不整合の可能性）。
+          // サービス稼働中のためsyncはsetConfig+changePaceになる（stopは呼ばれない）。
+          await syncBackgroundService();
 
           if (headingSubscriber.current === null) {
             try {
@@ -1064,20 +1066,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
 
         // GPSまたは軌跡がオンの場合はBackgroundGeolocationを開始
+        // （通知テキスト・start・changePaceはsyncが意図から導出。ref復元済みが前提）
         if (gpsStateRef.current !== 'off' || wasTracking) {
-          const bgState = await BackgroundGeolocation.getState();
-          if (!bgState.enabled) {
-            // 復元する状態に応じた通知テキストを明示設定する
-            // （設定なしでstartするとready既定のテキストのまま通知が表示されるため）。
-            const restoreNotificationConfig: FlatConfig = {
-              notification: makeNotification(
-                wasTracking ? t('hooks.notification.inTracking') : t('hooks.notification.gpsOn')
-              ),
-            };
-            await BackgroundGeolocation.setConfig(restoreNotificationConfig);
-            await BackgroundGeolocation.start();
-            await BackgroundGeolocation.changePace(true);
-          }
+          await syncBackgroundService();
           if (headingSubscriber.current === null) {
             try {
               const permissionStatus = await confirmLocationPermission();
@@ -1128,11 +1119,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         // Android: GPS OFF・非トラッキングなのにサービスが稼働していれば停止する
         // （foreground service通知が残留した場合の自己修復）。
         // クロージャのstateではなくrefで判定する（ON操作のawait中に復帰しても誤停止しない）。
+        // getStateは毎復帰のsync実行を避ける安価な事前フィルタ。古い値を読んでも、
+        // syncBackgroundServiceが実行時に意図を再読するため直後のON操作を誤停止しない。
         if (Platform.OS === 'android' && gpsStateRef.current === 'off' && trackingStateRef.current !== 'on') {
           try {
             const bgState = await BackgroundGeolocation.getState();
             if (bgState.enabled) {
-              await BackgroundGeolocation.stop();
+              await syncBackgroundService();
             }
           } catch (error) {
             console.error('[gps] reconcile on foreground failed:', error);
@@ -1183,6 +1176,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     syncLocationFromMMKV,
     confirmLocationPermission,
     ensureHeadingSubscription,
+    syncBackgroundService,
   ]);
 
   useEffect(() => {
