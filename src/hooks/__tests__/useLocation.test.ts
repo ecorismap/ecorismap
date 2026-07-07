@@ -1038,6 +1038,96 @@ describe('GPSオン直後のキャッシュ位置表示', () => {
       { center: { latitude: 34.5, longitude: 134.5 } },
       { duration: 5 }
     );
+    // 古いキャッシュのときはfreshなfixを狙ってワンショット取得が実行される
+    expect(mockBackgroundGeolocation.getCurrentPosition).toHaveBeenCalled();
+  });
+
+  it('show→followの切替では即カメラ移動し、freshキャッシュがあればワンショット取得を省略する', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result, mockMapRef } = await renderAndInit();
+
+    // GPS稼働中はonLocationがキャッシュを毎点更新している状態を再現（freshキャッシュ）
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue({
+      latitude: 35.3,
+      longitude: 135.3,
+      accuracy: 5,
+      timestamp: Date.now() - 3000,
+    });
+
+    await act(async () => {
+      await result.current.toggleGPS('show');
+    });
+    mockBackgroundGeolocation.getCurrentPosition.mockClear();
+    mockMapRef.current.animateCamera.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+    });
+
+    // 即座にキャッシュ座標へカメラ移動し、冗長なワンショット取得（数秒かかる）は行わない
+    expect(mockMapRef.current.animateCamera).toHaveBeenCalledWith(
+      { center: { latitude: 35.3, longitude: 135.3 } },
+      { duration: 5 }
+    );
+    expect(mockBackgroundGeolocation.getCurrentPosition).not.toHaveBeenCalled();
+    expect(result.current.isLocationStale).toBe(false);
+  });
+
+  it('OFF→follow（freshキャッシュ）でも即カメラ移動しワンショット取得を省略する', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result, mockMapRef } = await renderAndInit();
+
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue({
+      latitude: 35.4,
+      longitude: 135.4,
+      accuracy: 5,
+      timestamp: Date.now() - 5000,
+    });
+    mockBackgroundGeolocation.getCurrentPosition.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+    });
+
+    expect(mockMapRef.current.animateCamera).toHaveBeenCalledWith(
+      { center: { latitude: 35.4, longitude: 135.4 } },
+      { duration: 5 }
+    );
+    expect(mockBackgroundGeolocation.getCurrentPosition).not.toHaveBeenCalled();
+    expect(result.current.isLocationStale).toBe(false);
+  });
+
+  it('キャッシュなしのfollow切替では従来どおりワンショット取得する', async () => {
+    const { result } = await renderAndInit();
+    // getCurrentLocationはデフォルトでnull
+    mockBackgroundGeolocation.getCurrentPosition.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+    });
+
+    expect(mockBackgroundGeolocation.getCurrentPosition).toHaveBeenCalled();
+  });
+
+  it('トラッキング開始時もfreshキャッシュがあればワンショット取得を省略する', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue({
+      latitude: 35.5,
+      longitude: 135.5,
+      accuracy: 5,
+      timestamp: Date.now() - 2000,
+    });
+    mockBackgroundGeolocation.getCurrentPosition.mockClear();
+
+    await act(async () => {
+      await result.current.toggleGPS('follow');
+      await result.current.toggleTracking('on');
+    });
+
+    expect(mockBackgroundGeolocation.getCurrentPosition).not.toHaveBeenCalled();
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 35.5, longitude: 135.5 }));
   });
 
   it('fresh位置をonLocationで受信するとstaleが解除されfresh位置に切り替わる', async () => {

@@ -586,12 +586,14 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   // 最後に取得済みの位置（MMKVキャッシュ・年齢無制限）を即座にマーカー表示する。
   // GPS/トラッキングONの直後、衛星捕捉までの「無反応」を避けるための即時フィードバック。
-  // キャッシュが古い（STALE超）場合はstale=trueで灰色マーカーになる。
+  // キャッシュが古い（STALE超）場合はstale扱いで灰色マーカーになる。
   // 表示専用でありトラックログには一切書き込まない（記録側はcheckLocationsのstaleフィルタで防護）。
+  // 戻り値: 'fresh'=30秒以内のキャッシュを表示 / 'stale'=古いキャッシュを表示 / 'none'=キャッシュなし。
+  // 呼び出し側は'fresh'ならワンショット取得（getCurrentPosition）を省略できる。
   const showLastKnownLocation = useCallback(
-    (moveCamera: boolean): boolean => {
+    (moveCamera: boolean): 'fresh' | 'stale' | 'none' => {
       const cached = trackLogMMKV.getCurrentLocation();
-      if (!cached || !isLocationType(cached)) return false;
+      if (!cached || !isLocationType(cached)) return 'none';
       const isFreshCache =
         typeof cached.timestamp === 'number' && Date.now() - cached.timestamp <= STALE_LOCATION_AGE_MS;
       setCurrentLocation(cached);
@@ -607,7 +609,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           { duration: 5 }
         );
       }
-      return true;
+      return isFreshCache ? 'fresh' : 'stale';
     },
     [mapViewRef, setLocationStale]
   );
@@ -692,12 +694,16 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         }
       } else {
         if (wasOff) {
-          // OFF→ONの瞬間に最後の既知位置を即表示（衛星捕捉までの無反応を避ける）。
-          // awaitより前に同期実行する（moveCurrentPositionは最大30秒かかり得るため）。
+          // OFF→ONではfresh受信済みフラグをリセット（stale巻き戻り防止ガードの基準）
           hasFreshFixRef.current = false;
-          showLastKnownLocation(gpsState_ === 'follow');
         }
-        if (gpsState_ === 'follow') {
+        // ON系遷移では常に最後の既知位置へ即センタリング（show→followの追従復帰を含む）。
+        // GPS稼働中はonLocationがキャッシュを毎点更新しているため実質「現在地」への即移動になる。
+        // awaitより前に同期実行する（moveCurrentPositionは最大30秒かかり得るため）。
+        const known = showLastKnownLocation(gpsState_ === 'follow');
+        if (gpsState_ === 'follow' && known !== 'fresh') {
+          // 新鮮な位置が手元に無いときだけワンショット取得する
+          // （samples:3は数秒かかり、稼働中の位置ストリームとも競合するため、freshキャッシュがあれば冗長）。
           await moveCurrentPosition();
         }
         await startGPS(gpsState_);
@@ -716,9 +722,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // 最後の既知位置を即表示（衛星捕捉までの無反応を避ける）。
           // startTracking内のclearStoredLocationsがMMKVの現在地キャッシュを消すため、
           // 必ずstartTrackingより前に読むこと（順序が重要）。
-          showLastKnownLocation(true);
+          const known = showLastKnownLocation(true);
           await startTracking();
-          await moveCurrentPosition();
+          if (known !== 'fresh') {
+            // 新鮮な位置が手元に無いときだけワンショット取得（toggleGPSと同方針）
+            await moveCurrentPosition();
+          }
         } else if (trackingState_ === 'off') {
           // 先にUIを更新（ボタンの色を即座に変更）
           setTrackingState(trackingState_);
@@ -1081,8 +1090,8 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           }
 
           // 現在位置設定（GPS/軌跡共通）: キャッシュ位置を即表示（古ければ灰色マーカー）
-          const shown = showLastKnownLocation(false);
-          if (!shown && wasTracking) {
+          const known = showLastKnownLocation(false);
+          if (known === 'none' && wasTracking) {
             await moveCurrentPosition();
           }
         }
