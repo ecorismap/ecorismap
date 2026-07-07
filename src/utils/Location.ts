@@ -2,7 +2,7 @@ import { LocationType, TrackLogType, TrackSegmentType } from '../types';
 import * as turf from '@turf/turf';
 import { trackLogMMKV } from './mmkvStorage';
 import { cleanupLine } from './Coords';
-import { TRACK_ACCURACY } from '../constants/AppConstants';
+import { TRACK_ACCURACY, STALE_LOCATION_AGE_MS } from '../constants/AppConstants';
 
 // チャンク管理用の定数
 export const CHUNK_SIZE = 500;
@@ -202,6 +202,15 @@ export const checkLocations = (lastTimeStamp: number, locations: LocationObjectI
 
   // 3. lastTimeStampより新しいデータのみをフィルタリング
   let filteredLocations = convertedLocations.filter((location) => location.timestamp! > lastTimeStamp);
+
+  // 3.5 記録開始直後（lastTimeStamp===0）は、GPS開始時にOSが流す古いキャッシュ位置が
+  // 軌跡の最初の点になり現在位置と線で結ばれるのを防ぐため、現在時刻から
+  // STALE_LOCATION_AGE_MS より古い点を除外する。記録中(lastTimeStamp>0)は
+  // トンネル等での遅延バッチ配信を保持するため適用しない（古い点は単調性フィルタで落ちる）。
+  if (lastTimeStamp === 0) {
+    const staleCutoff = Date.now() - STALE_LOCATION_AGE_MS;
+    filteredLocations = filteredLocations.filter((v) => v.timestamp! > staleCutoff);
+  }
 
   // 4. 精度フィルタリング（常時適用）
   // GPS精度が100m超の場合はその点をスキップ（極端に悪いデータを除外）

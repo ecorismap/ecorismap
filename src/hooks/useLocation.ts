@@ -37,6 +37,7 @@ import { useRecord } from './useRecord';
 import { Linking } from 'react-native';
 import { isLocationType } from '../utils/General';
 import { useProximityAlert } from './useProximityAlert';
+import { STALE_LOCATION_AGE_MS } from '../constants/AppConstants';
 
 const openSettings = () => {
   Linking.openSettings().catch(() => {
@@ -70,8 +71,8 @@ const TRACK_META_UPDATE_INTERVAL_MS = 1000;
 // iOSのCLLocationManagerは位置サービス開始時にキャッシュ済みの古い位置を即配信する。
 // transistorsoft/react-native-background-geolocation の getCurrentPosition はこれを
 // maximumAge を無視して返す既知のiOS不具合（issue #113、iOSは未修正）があるため、
-// ライブラリが各位置に付与する age(ms) でこの古いキャッシュ位置を検出して表示系から弾く。
-const STALE_LOCATION_AGE_MS = 30000;
+// ライブラリが各位置に付与する age(ms) でこの古いキャッシュ位置を検出してstale扱いにする。
+// 閾値は軌跡記録開始直後のstale除外フィルタ（utils/Location.ts）と共有（AppConstants参照）。
 
 // 方位(azimuth)の state 更新を間引くための設定。
 // 磁気センサーは毎秒数十回発火するため、そのまま setAzimuth すると Home 配下が高頻度再レンダリングして
@@ -124,6 +125,9 @@ export const shouldRotateCompassCamera = (
 
 export type UseLocationReturnType = {
   currentLocation: LocationType | null;
+  // currentLocationが「最後に取得済みのキャッシュ位置（古い）」であることを示す。
+  // GPS ON直後の衛星捕捉中に灰色マーカー表示に使い、新鮮な位置の受信で解除される。
+  isLocationStale: boolean;
   gpsState: LocationStateType;
   trackingState: TrackingStateType;
   headingUp: boolean;
@@ -188,6 +192,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   // チャンクのrollover（savedChunkCount変化）時はスロットルを無視して即時反映する。
   const lastSavedChunkIndexRef = useRef(0);
   const [currentLocation, setCurrentLocation] = useState<LocationType | null>(null);
+  // 表示中のcurrentLocationがキャッシュ由来の古い位置かどうか（灰色マーカー表示用）
+  const [isLocationStale, setIsLocationStale] = useState(false);
+  const isLocationStaleRef = useRef(false);
+  // GPS/トラッキングON以降にfresh位置を1回でも表示したか。
+  // getCurrentPosition（最大30秒）が遅れて解決した際に、onLocationで表示済みの
+  // fresh位置を古いキャッシュで巻き戻さないためのガード。
+  const hasFreshFixRef = useRef(false);
   const [headingUp, setHeadingUp] = useState(false);
   const [gpsState, setGpsState] = useState<LocationStateType>('off');
   const [trackingState, setTrackingState] = useState<TrackingStateType>('off');
@@ -240,6 +251,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
   useEffect(() => {
     checkProximityRef.current = checkProximity;
   }, [checkProximity]);
+
+  // stale表示状態を更新する（値が変わらないときはsetStateを呼ばず再レンダリングを避ける）
+  const setLocationStale = useCallback((stale: boolean) => {
+    if (isLocationStaleRef.current === stale) return;
+    isLocationStaleRef.current = stale;
+    setIsLocationStale(stale);
+  }, []);
 
   const confirmLocationPermission = useCallback(async () => {
     try {
@@ -328,6 +346,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
         // 古いキャッシュ位置（isStaleLocation）は現在地表示・カメラ・接近通知には使わない。
         if (!isStaleLocation) {
+          // fresh位置を受信したのでstale表示（灰色マーカー）を解除する。
+          // isInBackground分岐の外に置き、バックグラウンド中でもfresh受信の事実を記録して
+          // 復帰時のsyncLocationFromMMKV表示がstale扱いにならないようにする。
+          hasFreshFixRef.current = true;
+          setLocationStale(false);
+
           // GPSオンまたはトラッキング中は現在地をMMKVに保存（フォアグラウンド復帰時の同期用）
           trackLogMMKV.setCurrentLocation(latest);
 
@@ -358,7 +382,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         console.error('[tracking] Failed to persist location', error);
       }
     },
-    [mapViewRef]
+    [mapViewRef, setLocationStale]
   );
 
   const ensureBackgroundGeolocation = useCallback(async () => {
@@ -513,6 +537,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       trackLogMMKV.setGpsState('off');
       // React Stateをクリア（メモリ解放を促進）
       setCurrentLocation(null);
+      setLocationStale(false);
       // heading購読を解除（stopGPSと対称。磁気センサーの購読が残るのを防ぐ）
       if (headingSubscriber.current !== null) {
         headingSubscriber.current.remove();
@@ -525,7 +550,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         setCurrentLocation(null);
       }
     }
-  }, [projectId, dataUser, ensureBackgroundGeolocation]);
+  }, [projectId, dataUser, ensureBackgroundGeolocation, setLocationStale]);
 
   const startTracking = useCallback(async () => {
     try {
@@ -567,6 +592,34 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     }
   }, [ensureBackgroundGeolocation, ensureHeadingSubscription]);
 
+  // 最後に取得済みの位置（MMKVキャッシュ・年齢無制限）を即座にマーカー表示する。
+  // GPS/トラッキングONの直後、衛星捕捉までの「無反応」を避けるための即時フィードバック。
+  // キャッシュが古い（STALE超）場合はstale=trueで灰色マーカーになる。
+  // 表示専用でありトラックログには一切書き込まない（記録側はcheckLocationsのstaleフィルタで防護）。
+  const showLastKnownLocation = useCallback(
+    (moveCamera: boolean): boolean => {
+      const cached = trackLogMMKV.getCurrentLocation();
+      if (!cached || !isLocationType(cached)) return false;
+      const isFreshCache =
+        typeof cached.timestamp === 'number' && Date.now() - cached.timestamp <= STALE_LOCATION_AGE_MS;
+      setCurrentLocation(cached);
+      setLocationStale(!isFreshCache);
+      if (moveCamera && mapViewRef.current !== null && isMapView(mapViewRef.current)) {
+        (mapViewRef.current as MapView).animateCamera(
+          {
+            center: {
+              latitude: cached.latitude,
+              longitude: cached.longitude,
+            },
+          },
+          { duration: 5 }
+        );
+      }
+      return true;
+    },
+    [mapViewRef, setLocationStale]
+  );
+
   const moveCurrentPosition = useCallback(async () => {
     try {
       const location = await BackgroundGeolocation.getCurrentPosition({
@@ -578,25 +631,36 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       } as any);
 
       // iOSは maximumAge を無視して古いキャッシュ位置を返すことがある（issue #113）。
-      // 戻り値の age を見て、古ければ採用せず直近の新鮮な現在地（MMKV）にフォールバックする。
+      // 戻り値の age を見て、古ければ最後に取得済みの位置（MMKV・年齢無制限）へ
+      // フォールバックし、stale表示（灰色マーカー）で即時フィードバックする。
       let coords: LocationType | undefined;
+      let stale = false;
       const isFresh = !!location && !(typeof location.age === 'number' && location.age > STALE_LOCATION_AGE_MS);
       if (location && isFresh) {
         coords = location.coords as LocationType;
       } else {
+        // fresh取得失敗。onLocationで既にfresh位置を表示済みなら古いキャッシュへ巻き戻さない
+        // （getCurrentPositionはtimeout 30秒で解決が遅れることがあるため）。
+        if (hasFreshFixRef.current) return;
         const latestCached = trackLogMMKV.getCurrentLocation();
-        if (
-          latestCached &&
-          typeof latestCached.timestamp === 'number' &&
-          Date.now() - latestCached.timestamp <= STALE_LOCATION_AGE_MS
-        ) {
+        if (latestCached && isLocationType(latestCached)) {
           coords = latestCached;
+          stale = !(
+            typeof latestCached.timestamp === 'number' &&
+            Date.now() - latestCached.timestamp <= STALE_LOCATION_AGE_MS
+          );
+        } else if (location) {
+          // MMKVも空（初回起動等）: OSキャッシュ由来のstale位置をlast-knownとして灰色表示
+          coords = location.coords as LocationType;
+          stale = true;
         }
       }
-      // 新鮮な現在地が得られなければカメラを動かさない（誤った場所へ飛ぶより安全。
-      // startGPS内のchangePace(true)で間もなく新鮮なonLocationが来てfollowで追従する）。
       if (!coords) return;
 
+      if (isFresh) {
+        hasFreshFixRef.current = true;
+      }
+      setLocationStale(stale);
       setCurrentLocation(coords);
       if (mapViewRef.current === null || !isMapView(mapViewRef.current)) return;
       mapViewRef.current.animateCamera(
@@ -611,10 +675,12 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
     } catch (error) {
       console.error('moveCurrentPosition error', error);
     }
-  }, [gpsAccuracyOption.desiredAccuracy, mapViewRef]);
+  }, [gpsAccuracyOption.desiredAccuracy, mapViewRef, setLocationStale]);
 
   const toggleGPS = useCallback(
     async (gpsState_: LocationStateType) => {
+      const wasOff = gpsStateRef.current === 'off';
+
       // GPSのみONのケースでもトラッキング状態を確実にOFFにしておく（キル復帰での誤保存防止）
       if (trackingStateRef.current !== 'on') {
         trackLogMMKV.setTrackingState('off');
@@ -626,19 +692,26 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
       gpsStateRef.current = gpsState_;
 
       if (gpsState_ === 'off') {
+        setLocationStale(false);
         await stopGPS();
         if (isLoggedIn(dataUser) && hasOpened(projectId)) {
           projectStore.deleteCurrentPosition(dataUser.uid!, projectId);
           setCurrentLocation(null);
         }
       } else {
+        if (wasOff) {
+          // OFF→ONの瞬間に最後の既知位置を即表示（衛星捕捉までの無反応を避ける）。
+          // awaitより前に同期実行する（moveCurrentPositionは最大30秒かかり得るため）。
+          hasFreshFixRef.current = false;
+          showLastKnownLocation(gpsState_ === 'follow');
+        }
         if (gpsState_ === 'follow') {
           await moveCurrentPosition();
         }
         await startGPS(gpsState_);
       }
     },
-    [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS]
+    [stopGPS, dataUser, projectId, moveCurrentPosition, startGPS, setLocationStale, showLastKnownLocation]
   );
 
   const toggleTracking = useCallback(
@@ -648,6 +721,10 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
           // 先にUIを更新（ボタンの色を即座に変更）
           setTrackingState(trackingState_);
           trackingStateRef.current = trackingState_;
+          // 最後の既知位置を即表示（衛星捕捉までの無反応を避ける）。
+          // startTracking内のclearStoredLocationsがMMKVの現在地キャッシュを消すため、
+          // 必ずstartTrackingより前に読むこと（順序が重要）。
+          showLastKnownLocation(true);
           await startTracking();
           await moveCurrentPosition();
         } else if (trackingState_ === 'off') {
@@ -663,7 +740,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
         trackingStateRef.current = trackingState_;
       }
     },
-    [moveCurrentPosition, startTracking, stopTracking]
+    [moveCurrentPosition, startTracking, stopTracking, showLastKnownLocation]
   );
 
   const toggleHeadingUp = useCallback(
@@ -848,12 +925,13 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
       // 現在地もクリア（メモリ解放）
       setCurrentLocation(null);
+      setLocationStale(false);
 
       return { isOK: true, message: warningMessage };
     } finally {
       setSavingTrackStatus({ isSaving: false, phase: '', message: '' });
     }
-  }, [addTrackRecord]);
+  }, [addTrackRecord, setLocationStale]);
 
   const checkUnsavedTrackLog = useCallback(async () => {
     // メタデータからデータの有無を確認
@@ -881,10 +959,11 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
         // 現在地もクリア（表示更新のトリガー）
         setCurrentLocation(null);
+        setLocationStale(false);
       }
     }
     return { isOK: true, message: '' };
-  }, [saveTrackLog, trackMetadata.totalPoints]);
+  }, [saveTrackLog, trackMetadata.totalPoints, setLocationStale]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -967,11 +1046,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             }
           }
 
-          // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）
-          const latestCoords = trackLogMMKV.getCurrentLocation();
-          if (latestCoords) {
-            setCurrentLocation(latestCoords);
-          }
+          // 最新の位置を設定して軌跡を表示（CurrentTrackLogは currentLocation の変更をトリガーに再レンダリングする）。
+          // キャッシュが古ければstale（灰色マーカー）として表示する。
+          showLastKnownLocation(false);
         } else {
           await stopTracking();
           const { isOK, message } = await checkUnsavedTrackLog();
@@ -1003,11 +1080,9 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
             }
           }
 
-          // 現在位置設定（GPS/軌跡共通）
-          const latestCoords = trackLogMMKV.getCurrentLocation();
-          if (latestCoords) {
-            setCurrentLocation(latestCoords);
-          } else if (wasTracking) {
+          // 現在位置設定（GPS/軌跡共通）: キャッシュ位置を即表示（古ければ灰色マーカー）
+          const shown = showLastKnownLocation(false);
+          if (!shown && wasTracking) {
             await moveCurrentPosition();
           }
         }
@@ -1111,6 +1186,7 @@ export const useLocation = (mapViewRef: React.RefObject<MapView | MapRef | null>
 
   return {
     currentLocation,
+    isLocationStale,
     gpsState,
     trackingState,
     headingUp,

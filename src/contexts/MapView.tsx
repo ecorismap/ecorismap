@@ -22,6 +22,8 @@ export interface MapViewContextType {
     altitude?: number;
     accuracy?: number;
   } | null;
+  // currentLocationがキャッシュ由来の古い位置（衛星捕捉中の灰色マーカー表示）かどうか
+  isLocationStale: boolean;
   gpsState: LocationStateType;
   pressGPS: () => void;
   isPinch: boolean;

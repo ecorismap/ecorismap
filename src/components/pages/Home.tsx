@@ -210,6 +210,7 @@ export default function HomeScreen() {
     mapType,
     gpsState,
     currentLocation,
+    isLocationStale,
     azimuth,
     headingUp,
     zoom,
@@ -556,6 +557,7 @@ export default function HomeScreen() {
                 headingUp={headingUp}
                 onPress={toggleDirectionLine}
                 showDirectionLine={showDirectionLine}
+                isStale={isLocationStale}
               />
             )}
             {/* 表示を正しく更新するには順番とzIndexが重要。

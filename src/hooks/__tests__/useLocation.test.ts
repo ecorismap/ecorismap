@@ -842,3 +842,256 @@ describe('GPS OFF時の通知残留対策', () => {
     addEventListenerSpy.mockRestore();
   });
 });
+
+describe('GPSオン直後のキャッシュ位置表示', () => {
+  let store: any;
+  let wrapper: any;
+  const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
+  // 1時間前の古いキャッシュ位置
+  const staleCached = {
+    latitude: 34.5,
+    longitude: 134.5,
+    accuracy: 8,
+    timestamp: Date.now() - 3600_000,
+  };
+
+  beforeEach(() => {
+    store = createTestStore();
+    wrapper = createWrapper(store);
+    jest.clearAllMocks();
+    (ConfirmAsync as jest.Mock).mockResolvedValue(false);
+    mockBackgroundGeolocation.ready.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.getState.mockResolvedValue({ enabled: false } as any);
+    mockBackgroundGeolocation.removeListeners.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.requestPermission.mockResolvedValue(BackgroundGeolocation.AuthorizationStatus.Always);
+    mockBackgroundGeolocation.getCurrentPosition.mockResolvedValue({
+      coords: { latitude: 35.0, longitude: 135.0, altitude: 0, accuracy: 10, altitudeAccuracy: 5, heading: 0, speed: 0 },
+      timestamp: Date.now(),
+    } as any);
+    // clearAllMocksはmockImplementationを消さないため、保留Promiseを仕掛けるテストの後始末として明示的に戻す
+    mockBackgroundGeolocation.start.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.stop.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.setConfig.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.changePace.mockResolvedValue(undefined);
+    mockBackgroundGeolocation.onLocation.mockReturnValue({ remove: jest.fn() } as any);
+    mockLocation.watchHeadingAsync.mockResolvedValue({ remove: jest.fn() });
+    mockNotifications.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as any);
+    (AppState as any).currentState = 'active';
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    (trackLogMMKV.getGpsState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getTrackingState as jest.Mock).mockReturnValue('off');
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(null);
+  });
+
+  // renderHookしてinit effect完了まで待つ共通処理
+  const renderAndInit = async () => {
+    const mockMapRef = { current: { animateCamera: jest.fn() } };
+    const rendered = renderHook(() => useLocation(mockMapRef as any), { wrapper });
+    await act(async () => {
+      await flushPromises();
+    });
+    return { ...rendered, mockMapRef };
+  };
+
+  it('古いキャッシュがあれば、GPS ON直後に即座にstaleマーカー表示とカメラ移動が行われる', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result, mockMapRef } = await renderAndInit();
+
+    // 衛星捕捉に時間がかかる状況を再現（getCurrentPositionが解決しない）
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+
+    // getCurrentPosition未解決でも、キャッシュ位置がstaleとして即表示される
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 34.5, longitude: 134.5 }));
+    expect(result.current.isLocationStale).toBe(true);
+    expect(mockMapRef.current.animateCamera).toHaveBeenCalledWith(
+      { center: { latitude: 34.5, longitude: 134.5 } },
+      { duration: 5 }
+    );
+  });
+
+  it('fresh位置をonLocationで受信するとstaleが解除されfresh位置に切り替わる', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+    expect(result.current.isLocationStale).toBe(true);
+
+    // fresh位置（age小）を受信
+    const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+    act(() => {
+      onLocationCallback({
+        coords: { latitude: 36.0, longitude: 136.0, altitude: 0, accuracy: 5, heading: 0, speed: 1 },
+        timestamp: Date.now(),
+        age: 100,
+      });
+    });
+
+    expect(result.current.isLocationStale).toBe(false);
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 36.0, longitude: 136.0 }));
+  });
+
+  it('getCurrentPositionがfresh解決した場合もstaleが解除される', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    let resolvePosition!: (v: any) => void;
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(
+      () => new Promise((resolve) => { resolvePosition = resolve; })
+    );
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    let followPromise!: Promise<void>;
+    await act(async () => {
+      followPromise = result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+    expect(result.current.isLocationStale).toBe(true);
+
+    await act(async () => {
+      resolvePosition({
+        coords: { latitude: 35.5, longitude: 135.5, altitude: 0, accuracy: 10, heading: 0, speed: 0 },
+        timestamp: Date.now(),
+        age: 500,
+      });
+      await followPromise;
+    });
+
+    expect(result.current.isLocationStale).toBe(false);
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 35.5, longitude: 135.5 }));
+  });
+
+  it('fresh受信後に遅れて解決したstaleなgetCurrentPositionで巻き戻らない', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    let resolvePosition!: (v: any) => void;
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(
+      () => new Promise((resolve) => { resolvePosition = resolve; })
+    );
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    let followPromise!: Promise<void>;
+    await act(async () => {
+      followPromise = result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+
+    // 先にfresh位置をonLocationで受信
+    const onLocationCallback = mockBackgroundGeolocation.onLocation.mock.calls[0][0];
+    act(() => {
+      onLocationCallback({
+        coords: { latitude: 36.0, longitude: 136.0, altitude: 0, accuracy: 5, heading: 0, speed: 1 },
+        timestamp: Date.now(),
+        age: 100,
+      });
+    });
+    expect(result.current.isLocationStale).toBe(false);
+
+    // その後getCurrentPositionがstale位置（age大）で遅延解決しても巻き戻らない
+    await act(async () => {
+      resolvePosition({
+        coords: { latitude: 34.5, longitude: 134.5, altitude: 0, accuracy: 8, heading: 0, speed: 0 },
+        timestamp: Date.now() - 3600_000,
+        age: 3600_000,
+      });
+      await followPromise;
+    });
+
+    expect(result.current.isLocationStale).toBe(false);
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 36.0, longitude: 136.0 }));
+  });
+
+  it('トラッキング開始時はclearStoredLocationsより前にキャッシュ位置を読む', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { clearStoredLocations } = require('../../utils/Location');
+    const { result } = await renderAndInit();
+
+    // 衛星捕捉前の状態を維持（fresh位置で上書きされないように保留）
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockClear();
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+      result.current.toggleTracking('on');
+      await flushPromises();
+    });
+
+    // clearStoredLocations（MMKVの現在地キャッシュを消す）より前にgetCurrentLocationが呼ばれていること
+    const getOrder = (trackLogMMKV.getCurrentLocation as jest.Mock).mock.invocationCallOrder[0];
+    const clearOrder = (clearStoredLocations as jest.Mock).mock.invocationCallOrder[0];
+    expect(getOrder).toBeLessThan(clearOrder);
+    // キャッシュ位置がマーカー表示されている
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 34.5, longitude: 134.5 }));
+  });
+
+  it('GPS OFFでstale状態がリセットされる', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue(staleCached);
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+    expect(result.current.isLocationStale).toBe(true);
+
+    await act(async () => {
+      await result.current.toggleGPS('off');
+    });
+
+    expect(result.current.isLocationStale).toBe(false);
+  });
+
+  it('キャッシュが無ければ従来どおりcurrentLocationはnullのまま', async () => {
+    const { result } = await renderAndInit();
+
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    // getCurrentLocationはデフォルトでnull
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+
+    expect(result.current.currentLocation).toBeNull();
+    expect(result.current.isLocationStale).toBe(false);
+  });
+
+  it('キャッシュが30秒以内ならstale扱いにしない（既存挙動維持）', async () => {
+    const { trackLogMMKV } = require('../../utils/mmkvStorage');
+    const { result } = await renderAndInit();
+
+    mockBackgroundGeolocation.getCurrentPosition.mockImplementation(() => new Promise(() => {}));
+    (trackLogMMKV.getCurrentLocation as jest.Mock).mockReturnValue({
+      latitude: 35.2,
+      longitude: 135.2,
+      accuracy: 5,
+      timestamp: Date.now() - 5000, // 5秒前 = fresh
+    });
+
+    await act(async () => {
+      result.current.toggleGPS('follow');
+      await flushPromises();
+    });
+
+    expect(result.current.currentLocation).toEqual(expect.objectContaining({ latitude: 35.2, longitude: 135.2 }));
+    expect(result.current.isLocationStale).toBe(false);
+  });
+});

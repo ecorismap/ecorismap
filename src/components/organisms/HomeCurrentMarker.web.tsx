@@ -5,11 +5,13 @@ import { Marker } from 'react-map-gl/maplibre';
 
 interface Props {
   currentLocation: LocationType;
+  // キャッシュ由来の古い位置（衛星捕捉中）。灰色で表示する。
+  isStale?: boolean;
   //angle: number;
 }
 
 export const CurrentMarker = (props: Props) => {
-  const { currentLocation } = props;
+  const { currentLocation, isStale } = props;
 
   //console.log(angle);
 
@@ -20,7 +22,7 @@ export const CurrentMarker = (props: Props) => {
           transform: 'rotate(-45deg)',
         }}
       >
-        <FontAwesome name="location-arrow" size={20} color={'red'} />
+        <FontAwesome name="location-arrow" size={20} color={isStale ? '#888888' : 'red'} />
       </div>
     </Marker>
   );

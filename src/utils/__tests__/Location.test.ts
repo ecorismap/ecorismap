@@ -328,6 +328,50 @@ describe('checkLocations', () => {
     expect(filtered[1].timestamp).toBe(baseTime + 2000);
     expect(filtered[2].timestamp).toBe(baseTime + 3000);
   });
+
+  // 記録開始直後（lastTimeStamp===0）のstale位置除外フィルタ
+  describe('記録開始直後のstale位置除外', () => {
+    const makeLocation = (timestamp: number, lat = 35, lon = 135): LocationObjectInput => ({
+      coords: {
+        latitude: lat,
+        longitude: lon,
+        accuracy: 10,
+        altitude: 0,
+        altitudeAccuracy: 5,
+        heading: 0,
+        speed: 0,
+      },
+      timestamp,
+    });
+
+    it('開始直後(lastTimeStamp=0)は1時間前の古いキャッシュ位置を除外する', () => {
+      const result = checkLocations(0, [makeLocation(Date.now() - 3600_000)]);
+      expect(result).toHaveLength(0);
+    });
+
+    it('開始直後(lastTimeStamp=0)はstale点を除外しfresh点のみ残す（軌跡がfresh点から始まる）', () => {
+      const now = Date.now();
+      const result = checkLocations(0, [
+        makeLocation(now - 3600_000, 35, 135), // 1時間前のキャッシュ位置
+        makeLocation(now - 1000, 35.01, 135.01), // 現在の位置
+      ]);
+      expect(result).toHaveLength(1);
+      expect(result[0].latitude).toBe(35.01);
+    });
+
+    it('開始直後(lastTimeStamp=0)でも30秒以内の点は全件通過する（既存挙動維持）', () => {
+      const now = Date.now();
+      const result = checkLocations(0, [makeLocation(now - 20000), makeLocation(now - 10000), makeLocation(now)]);
+      expect(result).toHaveLength(3);
+    });
+
+    it('記録中(lastTimeStamp>0)は30秒超古い点でも保持する（遅延バッチ配信の回帰）', () => {
+      const now = Date.now();
+      // 2時間前から記録中で、60秒前の点が遅延配信されたケース
+      const result = checkLocations(now - 7200_000, [makeLocation(now - 60000)]);
+      expect(result).toHaveLength(1);
+    });
+  });
 });
 
 describe('isLowAccuracy', () => {
@@ -501,7 +545,8 @@ describe('addLocationsToChunks (cache, incremental distance, rollover)', () => {
 });
 
 describe('checkAndStoreLocations (tracking state + return value)', () => {
-  const baseTime = 1_600_000_000_000;
+  // 記録開始直後(lastTimeStamp=0)のstaleフィルタに掛からないよう現在時刻ベースにする
+  const baseTime = Date.now();
   const makeInput = (n: number, startIndex = 0): LocationObjectInput[] =>
     Array.from({ length: n }, (_, k) => {
       const i = startIndex + k;
