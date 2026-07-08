@@ -18,6 +18,8 @@ import { usePermission } from '../hooks/usePermission';
 import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
+import { SettingsModalStorageSelect } from '../components/organisms/SettingsModalStorageSelect';
+import { FUNC_GOOGLE_DRIVE } from '../constants/AppConstants';
 import { editSettingsAction } from '../modules/settings';
 import { GpsAccuracyType, ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
@@ -41,6 +43,7 @@ export default function SettingsContainers() {
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isGPSSettingsOpen, setIsGPSSettingsOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
+  const [storageSelectMode, setStorageSelectMode] = useState<'save' | 'open' | undefined>(undefined);
 
   // ポイントレイヤーのみ抽出
   const pointLayers = useMemo(() => layers.filter((l) => l.type === 'POINT'), [layers]);
@@ -54,16 +57,16 @@ export default function SettingsContainers() {
     });
   }, [navigateToHome]);
 
-  const pressFileSave = useCallback(async () => {
+  const saveFileToLocal = useCallback(async () => {
     // if (isRunningProject) {
     //   //ToDo バックアップできた方がいいかも？もしくは裏で自動
     //   await AlertAsync(t('hooks.message.cannotInRunningProject'));
     //   return;
     // }
-    
+
     // 写真を常に含める（確認なし）
     const includePhoto = true;
-    
+
     setIsLoading(true);
     const time = dayjs().format('YYYY-MM-DD_HH-mm-ss');
     const fileName = `ecorismap_${time}`;
@@ -76,14 +79,9 @@ export default function SettingsContainers() {
     } else {
       await AlertAsync(t('hooks.message.successSaveFile'));
     }
-  }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);;
+  }, [createExportSettings, dataSet, generateEcorisMapData, layers, maps]);
 
-  const pressFileOpen = useCallback(async () => {
-    if (isRunningProject) {
-      await AlertAsync(t('hooks.message.cannotInRunningProject'));
-      return;
-    }
-
+  const openFileFromLocal = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileOpen'));
     if (ret) {
       const file = await DocumentPicker.getDocumentAsync({});
@@ -108,7 +106,46 @@ export default function SettingsContainers() {
         });
       }
     }
-  }, [isRunningProject, navigateToHome, openEcorisMapFile]);
+  }, [navigateToHome, openEcorisMapFile]);
+
+  const pressFileSave = useCallback(async () => {
+    if (!FUNC_GOOGLE_DRIVE) {
+      await saveFileToLocal();
+      return;
+    }
+    setStorageSelectMode('save');
+  }, [saveFileToLocal]);
+
+  const pressFileOpen = useCallback(async () => {
+    if (isRunningProject) {
+      await AlertAsync(t('hooks.message.cannotInRunningProject'));
+      return;
+    }
+    if (!FUNC_GOOGLE_DRIVE) {
+      await openFileFromLocal();
+      return;
+    }
+    setStorageSelectMode('open');
+  }, [isRunningProject, openFileFromLocal]);
+
+  const pressStorageSelectLocal = useCallback(async () => {
+    const mode = storageSelectMode;
+    setStorageSelectMode(undefined);
+    if (mode === 'save') {
+      await saveFileToLocal();
+    } else if (mode === 'open') {
+      await openFileFromLocal();
+    }
+  }, [openFileFromLocal, saveFileToLocal, storageSelectMode]);
+
+  const pressStorageSelectDrive = useCallback(() => {
+    setStorageSelectMode(undefined);
+    navigate('GoogleDriveProjects', { previous: 'Settings' });
+  }, [navigate]);
+
+  const pressStorageSelectCancel = useCallback(() => {
+    setStorageSelectMode(undefined);
+  }, []);
 
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
@@ -288,6 +325,13 @@ export default function SettingsContainers() {
         pointLayers={pointLayers}
         pressOK={pressProximityAlertSettingsOK}
         pressCancel={pressProximityAlertSettingsCancel}
+      />
+      <SettingsModalStorageSelect
+        visible={storageSelectMode !== undefined}
+        mode={storageSelectMode ?? 'save'}
+        pressLocal={pressStorageSelectLocal}
+        pressDrive={pressStorageSelectDrive}
+        pressCancel={pressStorageSelectCancel}
       />
     </SettingsContext.Provider>
   );

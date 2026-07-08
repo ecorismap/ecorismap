@@ -16,6 +16,9 @@ export const CREATE_DEK_PROJECTS = false;
 export const ENABLE_DEK_MIGRATION = false;
 export const FUNC_PURCHASE = false;
 export const FUNC_CHECK_LICENSE = false;
+// Google Drive個人プロジェクト管理機能。OAuthクライアント設定(APIKeys.tsのgoogleDriveOAuth)が
+// 未設定の環境では接続時にエラーメッセージを表示するのみで他機能に影響しない。
+export const FUNC_GOOGLE_DRIVE = true;
 
 export const CURRENT_TERMS_VERSION = '2024-08-16';
 export const PLUGIN = {
@@ -378,6 +381,16 @@ export const SETTINGS_BTN = {
   TERMSOFUSE: 'book-open-variant',
   OSSLICENSE: 'star',
   VERSION: 'clock-time-four-outline',
+  GOOGLE_DRIVE: 'google-drive',
+} as const;
+
+export const GOOGLEDRIVE_BTN = {
+  CONNECT: 'google-drive',
+  DISCONNECT: 'logout',
+  RELOAD: 'refresh',
+  SAVE: 'cloud-upload',
+  LOAD: 'cloud-download',
+  DELETE: 'delete',
 } as const;
 
 export const ACCOUNT_SETTINGS_BTN = {

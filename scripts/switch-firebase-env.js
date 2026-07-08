@@ -191,11 +191,18 @@ configs.forEach(config => {
       const recaptureKey = fs.readFileSync(config.sources.recapture, 'utf8').trim();
       const maptilerKey = fs.readFileSync(config.sources.maptiler, 'utf8').trim();
 
+      // Google Drive OAuth設定（keys/{env}/googleDriveOAuth.ts が未配置なら空値で生成）
+      const driveOAuthPath = path.join(keysDir, 'googleDriveOAuth.ts');
+      const driveOAuthContent = fs.existsSync(driveOAuthPath)
+        ? fs.readFileSync(driveOAuthPath, 'utf8').trim()
+        : "export const googleDriveOAuth = { webClientId: '', iosClientId: '' };";
+
       // APIKeys.tsを生成
       const apiKeysContent = `// ${env === 'production' ? 'Production' : 'Development'} environment API keys
 ${firebaseConfigContent.trim()}
 export const reCaptureSiteKey = '${recaptureKey}';
 export const maptilerKey = '${maptilerKey}';
+${driveOAuthContent}
 `;
 
       fs.writeFileSync(targetPath, apiKeysContent);

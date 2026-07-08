@@ -20,7 +20,7 @@ export const exportFileFromData = async (data: string, fileName: string) => {
   FileSaver.saveAs(blob, sanitize(fileName));
 };
 
-export const exportGeoFile = async (
+export const generateZipBlob = async (
   exportData: {
     data: string;
     name: string;
@@ -28,12 +28,9 @@ export const exportGeoFile = async (
     type: ExportType;
     url?: string | null;
     key?: string | null;
-  }[],
-  exportFileName: string,
-  ext: string
-) => {
+  }[]
+): Promise<Blob | undefined> => {
   try {
-    const targetPath = `${sanitize(exportFileName)}.${ext}`;
     const zip = new JSZip();
     const folder = zip.folder('');
     if (folder == null) return;
@@ -105,13 +102,47 @@ export const exportGeoFile = async (
       }
     }
 
-    const zipFile = await zip.generateAsync({ type: 'blob' });
-    FileSaver.saveAs(zipFile, targetPath);
-    return true;
+    return await zip.generateAsync({ type: 'blob' });
   } catch (e) {
     console.log(e);
-    return false;
+    return undefined;
   }
+};
+
+export const exportGeoFile = async (
+  exportData: {
+    data: string;
+    name: string;
+    folder: string;
+    type: ExportType;
+    url?: string | null;
+    key?: string | null;
+  }[],
+  exportFileName: string,
+  ext: string
+) => {
+  const zipFile = await generateZipBlob(exportData);
+  if (zipFile === undefined) return false;
+  FileSaver.saveAs(zipFile, `${sanitize(exportFileName)}.${ext}`);
+  return true;
+};
+
+// Google Driveアップロード等、ダウンロードUIを介さずzipの実体が必要な場合に使う。
+// native: cache内のファイルパス / web: Blob を返す（シグネチャは両プラットフォーム共通）
+export const generateEcorisMapZip = async (
+  exportData: {
+    data: string;
+    name: string;
+    folder: string;
+    type: ExportType;
+    url?: string | null;
+    key?: string | null;
+  }[],
+  _exportFileName: string
+): Promise<{ source: string | Blob; size: number } | undefined> => {
+  const blob = await generateZipBlob(exportData);
+  if (blob === undefined) return undefined;
+  return { source: blob, size: blob.size };
 };
 
 export const clearCacheData = async () => {};

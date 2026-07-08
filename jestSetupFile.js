@@ -349,6 +349,21 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
+// Mock @react-native-google-signin/google-signin (native module)
+jest.mock('@react-native-google-signin/google-signin', () => ({
+  GoogleSignin: {
+    configure: jest.fn(),
+    hasPlayServices: jest.fn(() => Promise.resolve(true)),
+    signIn: jest.fn(() => Promise.resolve({ type: 'success', data: { user: { email: 'test@example.com' } } })),
+    signInSilently: jest.fn(() => Promise.resolve({ type: 'noSavedCredentialFound', data: null })),
+    signOut: jest.fn(() => Promise.resolve(null)),
+    getTokens: jest.fn(() => Promise.resolve({ idToken: 'id-token', accessToken: 'access-token' })),
+    clearCachedAccessToken: jest.fn(() => Promise.resolve(null)),
+    getCurrentUser: jest.fn(() => null),
+    hasPreviousSignIn: jest.fn(() => false),
+  },
+}));
+
 // Mock expo-task-manager
 jest.mock('expo-task-manager', () => ({
   defineTask: jest.fn(),
