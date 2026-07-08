@@ -1022,5 +1022,26 @@
     "alert": {
       "saved": "Google Driveに保存しました。"
     }
+  },
+  "GpsSettings": {
+    "navigation": {
+      "title": "GPSの設定"
+    },
+    "sectionTitle": "位置精度とバッテリー消費",
+    "note": "設定はGPSの起動時に反映されます。",
+    "accuracy": {
+      "high": {
+        "title": "高精度",
+        "description": "最も正確な位置情報を取得します。バッテリー消費は大きくなります。"
+      },
+      "medium": {
+        "title": "バランス",
+        "description": "位置精度とバッテリー消費のバランスを取ります。"
+      },
+      "low": {
+        "title": "省電力",
+        "description": "バッテリー消費を抑えます。位置精度は低くなります。"
+      }
+    }
   }
 }

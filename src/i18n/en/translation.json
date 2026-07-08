@@ -1022,5 +1022,26 @@
     "alert": {
       "saved": "Saved to Google Drive."
     }
+  },
+  "GpsSettings": {
+    "navigation": {
+      "title": "GPS settings"
+    },
+    "sectionTitle": "Accuracy and battery",
+    "note": "The setting takes effect the next time GPS starts.",
+    "accuracy": {
+      "high": {
+        "title": "High accuracy",
+        "description": "Uses the most accurate location. Consumes more battery."
+      },
+      "medium": {
+        "title": "Balanced",
+        "description": "Balances location accuracy and battery consumption."
+      },
+      "low": {
+        "title": "Battery saver",
+        "description": "Reduces battery consumption. Location accuracy is lower."
+      }
+    }
   }
 }
