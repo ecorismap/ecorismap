@@ -86,7 +86,8 @@ export default function HomeScreen() {
   const isEditingMap = useSelector((state: RootState) => state.settings.isEditingMap);
 
   // AppStateContext
-  const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL } = useContext(AppStateContext);
+  const { restored, isLoading, bottomSheetRef, onCloseBottomSheet, updatePmtilesURL, gotoHome } =
+    useContext(AppStateContext);
 
   // BottomSheetNavigationContext
   const { currentRouteName, setIsBottomSheetOpen } = useBottomSheetNavigation();
@@ -142,6 +143,8 @@ export default function HomeScreen() {
   const { selectFeatureWeb } = useFeatureSelectionWeb(mapViewRef.current);
   const snapPoints = useMemo(() => ['10%', '50%', '100%'], []);
   const animatedIndex = useSharedValue(0);
+
+  const pressPDFBack = useCallback(() => gotoHome(), [gotoHome]);
 
   const skyStyle = {
     'sky-color': '#79bffc',
@@ -959,6 +962,7 @@ export default function HomeScreen() {
               pdfScale={pdfScale as ScaleType}
               onPress={pressExportPDF}
               pressPDFSettingsOpen={pressPDFSettingsOpen}
+              pressBack={pressPDFBack}
             />
           )}
         </View>
