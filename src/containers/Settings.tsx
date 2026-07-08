@@ -15,13 +15,12 @@ import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
 import { exportGeoFile } from '../utils/File';
 import { usePermission } from '../hooks/usePermission';
-import { SettingsModalGPS } from '../components/organisms/SettingsModalGPS';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
 import { SettingsModalStorageSelect } from '../components/organisms/SettingsModalStorageSelect';
 import { FUNC_GOOGLE_DRIVE } from '../constants/AppConstants';
 import { editSettingsAction } from '../modules/settings';
-import { GpsAccuracyType, ProximityAlertSettingsType } from '../types';
+import { ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
 import dayjs from '../i18n/dayjs';
 
@@ -31,7 +30,6 @@ export default function SettingsContainers() {
   const layers = useSelector((state: RootState) => state.layers);
   const dataSet = useSelector(selectNonDeletedDataSet);
   const maps = useSelector((state: RootState) => state.tileMaps);
-  const gpsAccuracy = useSelector((state: RootState) => state.settings.gpsAccuracy);
   const proximityAlert = useSelector((state: RootState) => state.settings.proximityAlert ?? {
     enabled: false,
     targetLayerIds: [],
@@ -41,7 +39,6 @@ export default function SettingsContainers() {
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
-  const [isGPSSettingsOpen, setIsGPSSettingsOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
   const [storageSelectMode, setStorageSelectMode] = useState<'save' | 'open' | undefined>(undefined);
 
@@ -238,20 +235,8 @@ export default function SettingsContainers() {
   }, []);
 
   const pressGPSSettingsOpen = useCallback(() => {
-    setIsGPSSettingsOpen(true);
-  }, []);
-
-  const pressGPSSettingsOK = useCallback(
-    (value: GpsAccuracyType) => {
-      dispatch(editSettingsAction({ gpsAccuracy: value }));
-      setIsGPSSettingsOpen(false);
-    },
-    [dispatch]
-  );
-
-  const pressGPSSettingsCancel = useCallback(() => {
-    setIsGPSSettingsOpen(false);
-  }, []);
+    navigate('GpsSettings', { previous: 'Settings' });
+  }, [navigate]);
 
   const pressProximityAlertSettingsOpen = useCallback(() => {
     setIsProximityAlertSettingsOpen(true);
@@ -306,12 +291,6 @@ export default function SettingsContainers() {
       }}
     >
       <Settings />
-      <SettingsModalGPS
-        visible={isGPSSettingsOpen}
-        gpsAccuracy={gpsAccuracy}
-        pressOK={pressGPSSettingsOK}
-        pressCancel={pressGPSSettingsCancel}
-      />
       <SettingsModalMapListURL
         visible={isMapListURLOpen}
         mapListURL={mapListURL}
