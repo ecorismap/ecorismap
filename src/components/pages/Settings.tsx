@@ -57,10 +57,15 @@ export default function Settings() {
         <TextButton name={SETTINGS_BTN.CACHE_DELETE} text={t('Settings.cachedelete.text')} onPress={pressClearCache} />
 
         {/* 情報・ヘルプ */}
-        <TextButton name={SETTINGS_BTN.MANUAL} text={t('Settings.manual.text')} onPress={pressGotoManual} />
+        <TextButton
+          name={SETTINGS_BTN.MANUAL}
+          text={t('Settings.manual.text')}
+          isExternalLink
+          onPress={pressGotoManual}
+        />
         <TextButton name={SETTINGS_BTN.OSSLICENSE} text={t('Settings.OSSLicense.txt')} onPress={pressOSSLicense} />
 
-        <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} onPress={pressVersion} />
+        <TextButton name={SETTINGS_BTN.VERSION} text={VERSION} isExternalLink onPress={pressVersion} />
       </ScrollView>
     </View>
   );

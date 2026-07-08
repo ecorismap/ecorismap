@@ -5,16 +5,18 @@ import { Pressable } from '../atoms/Pressable';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { Alert } from '../atoms/Alert';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 interface Props {
   name: string;
   text: string;
   info?: string;
+  isExternalLink?: boolean;
   onPress: () => void;
 }
 
 export const TextButton = React.memo((props: Props) => {
-  const { name, text, info, onPress } = props;
+  const { name, text, info, isExternalLink, onPress } = props;
 
   return (
     <View style={styles.tr}>
@@ -24,7 +26,12 @@ export const TextButton = React.memo((props: Props) => {
         </View>
         <View style={{ marginLeft: 10, flex: 9 }}>
           <Pressable onPress={onPress} style={{ height: 50, justifyContent: 'center' }}>
-            <Text style={styles.text}>{text}</Text>
+            <View style={styles.textRow}>
+              <Text style={styles.text}>{text}</Text>
+              {isExternalLink && (
+                <MaterialCommunityIcons name="open-in-new" size={18} color={COLOR.GRAY4} style={styles.externalIcon} />
+              )}
+            </View>
           </Pressable>
         </View>
       </View>
@@ -60,9 +67,16 @@ const styles = StyleSheet.create({
     //borderRightWidth: 1,
   },
 
+  externalIcon: {
+    marginLeft: 5,
+  },
   text: {
     //color: COLOR.BLACK,
     //textDecorationLine: 'underline',
+  },
+  textRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
   },
   tr: {
     flexDirection: 'row',
