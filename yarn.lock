@@ -7409,6 +7409,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-google-signin/google-signin@npm:^16.1.2":
+  version: 16.1.2
+  resolution: "@react-native-google-signin/google-signin@npm:16.1.2"
+  peerDependencies:
+    expo: ">=52.0.40"
+    react: "*"
+    react-native: "*"
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  checksum: d29da95ec0136c66ffded9f7c8e40e88a609e03d0913f7a559d35942a9b05576d6b9d85a00d59e78127b507bacc8b2936735eb0c907270c9c2f81991ae26f723
+  languageName: node
+  linkType: hard
+
 "@react-native-picker/picker@npm:2.11.4":
   version: 2.11.4
   resolution: "@react-native-picker/picker@npm:2.11.4"
@@ -14496,6 +14510,7 @@ __metadata:
     "@react-native-firebase/firestore": 24.1.1
     "@react-native-firebase/functions": 24.1.1
     "@react-native-firebase/storage": 24.1.1
+    "@react-native-google-signin/google-signin": ^16.1.2
     "@react-native-picker/picker": 2.11.4
     "@react-native/babel-preset": 0.85.3
     "@react-native/eslint-config": 0.85.3

@@ -445,6 +445,12 @@
     },
     "proximity_alert": {
       "text": "接近通知"
+    },
+    "storage": {
+      "saveTitle": "保存先を選択",
+      "loadTitle": "読み込み元を選択",
+      "local": "この端末",
+      "drive": "Google Drive"
     }
   },
   "Projects": {
@@ -904,7 +910,11 @@
       "excludedInvalidLocation": "{{invalidCount}}個の無効な位置データを除外しました。",
       "insufficientTrackLog": "有効なトラックデータが不足しています",
       "failUpdateLoginPassword": "パスワードの変更に失敗しました。\n変更前のパスワードは正しいですか？",
-      "wrongPassword": "パスワードが違います。"
+      "wrongPassword": "パスワードが違います。",
+      "googleDriveReauth": "Google Driveへの接続が期限切れです。再接続してください。",
+      "googleDriveApiError": "Google Driveとの通信に失敗しました。",
+      "googleDriveConnectFailed": "Googleアカウントに接続できませんでした。",
+      "googleDriveScopeDenied": "Google ドライブへのアクセスが許可されませんでした。接続時の同意画面で「Google ドライブ」の項目にチェックを入れて続行してください。"
     },
     "notification": {
       "inTracking": "トラックの記録中。終了するには、トラックのボタンを押してください。",
@@ -983,6 +993,34 @@
       "targetLayers": "対象レイヤー",
       "noPointLayers": "ポイントレイヤーがありません",
       "speechMessage": "{{name}}まで{{distance}}メートル"
+    }
+  },
+  "GoogleDriveProjects": {
+    "navigation": {
+      "title": "Google Drive"
+    },
+    "description": "Googleアカウントに接続すると、現在のデータをGoogle Driveに保存したり、保存したプロジェクトを読み込んだりできます。ログイン不要で利用できます。",
+    "connect": {
+      "text": "Googleアカウントに接続"
+    },
+    "save": {
+      "text": "現在のデータをDriveに保存"
+    },
+    "label": {
+      "connectedTo": "接続中: "
+    },
+    "modal": {
+      "saveTitle": "プロジェクト名",
+      "savePlaceholder": "プロジェクト名を入力"
+    },
+    "confirm": {
+      "overwrite": "同じ名前のプロジェクトがDriveにあります。上書きしますか？（以前の内容はDriveの版履歴から復元できます）",
+      "load": "プロジェクトを読み込みますか？現在のデータと設定は上書きされます。",
+      "delete": "プロジェクトを削除しますか？（Driveのゴミ箱に移動します）",
+      "disconnect": "Googleアカウントとの接続を解除しますか？"
+    },
+    "alert": {
+      "saved": "Google Driveに保存しました。"
     }
   }
 }

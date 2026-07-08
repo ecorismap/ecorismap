@@ -62,6 +62,7 @@ export type BottomSheetScreenParams = {
   };
   Settings: { previous: 'Home' };
   Licenses: { previous: 'Settings' };
+  GoogleDriveProjects: { previous: 'Settings' };
 };
 
 export type BottomSheetScreenName = keyof BottomSheetScreenParams;

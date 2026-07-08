@@ -113,6 +113,7 @@
     "@react-native-firebase/firestore": "24.1.1",
     "@react-native-firebase/functions": "24.1.1",
     "@react-native-firebase/storage": "24.1.1",
+    "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-native-picker/picker": "2.11.4",
     "@reduxjs/toolkit": "^2.2.6",
     "@sqlite.org/sqlite-wasm": "^3.46.1-build3",

@@ -331,6 +331,12 @@
     },
     "proximity_alert": {
       "text": "Proximity Alert"
+    },
+    "storage": {
+      "saveTitle": "Select destination",
+      "loadTitle": "Select source",
+      "local": "This device",
+      "drive": "Google Drive"
     }
   },
   "Purchases": {
@@ -697,7 +703,11 @@
       "excludedInvalidLocation": "Excluded {{invalidCount}} invalid location points.",
       "insufficientTrackLog": "Not enough valid track data",
       "failUpdateLoginPassword": "Failed to change the password.\nIs the current password correct?",
-      "wrongPassword": "The password is incorrect."
+      "wrongPassword": "The password is incorrect.",
+      "googleDriveReauth": "The Google Drive connection has expired. Please reconnect.",
+      "googleDriveApiError": "Failed to communicate with Google Drive.",
+      "googleDriveConnectFailed": "Could not connect to your Google account.",
+      "googleDriveScopeDenied": "Access to Google Drive was not granted. Please check the Google Drive checkbox on the consent screen when connecting."
     },
     "notification": {
       "inTracking": "Recording a track. \nPress the button on the track to finish.",
@@ -983,6 +993,34 @@
       "targetLayers": "Target layers",
       "noPointLayers": "No point layers available",
       "speechMessage": "{{distance}} meters to {{name}}"
+    }
+  },
+  "GoogleDriveProjects": {
+    "navigation": {
+      "title": "Google Drive"
+    },
+    "description": "Connect your Google account to save the current data to Google Drive and load saved projects. No login required.",
+    "connect": {
+      "text": "Connect Google account"
+    },
+    "save": {
+      "text": "Save current data to Drive"
+    },
+    "label": {
+      "connectedTo": "Connected: "
+    },
+    "modal": {
+      "saveTitle": "Project name",
+      "savePlaceholder": "Enter project name"
+    },
+    "confirm": {
+      "overwrite": "A project with the same name exists on Drive. Overwrite it? (Previous versions can be restored from Drive revision history.)",
+      "load": "Load this project? The current data and settings will be overwritten.",
+      "delete": "Delete this project? (It will be moved to the Drive trash.)",
+      "disconnect": "Disconnect from your Google account?"
+    },
+    "alert": {
+      "saved": "Saved to Google Drive."
     }
   }
 }

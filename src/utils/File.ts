@@ -88,7 +88,7 @@ async function createZipWithJSZipDirect(
   }
 }
 
-export const exportGeoFile = async (
+export const generateZipFile = async (
   exportData: {
     data: string;
     name: string;
@@ -99,12 +99,10 @@ export const exportGeoFile = async (
   }[],
   exportFileName: string,
   ext: 'zip' | 'ecorismap'
-) => {
+): Promise<string | undefined> => {
   const fileName = sanitize(exportFileName.normalize('NFC'));
   const sourcePath = `${RNFS.CachesDirectoryPath}/export/${fileName}`;
   const targetPath = `${RNFS.CachesDirectoryPath}/export/${fileName}.${ext}`;
-  // console.log(sourcePath);
-  // console.log(targetPath);
   try {
     await RNFS.mkdir(sourcePath);
     //データ、写真を出力フォルダにコピー
@@ -187,11 +185,36 @@ export const exportGeoFile = async (
 
     // すべてのプラットフォームでJSZipを使用（Web版と同じ方式）
     const path = await createZipWithJSZipDirect(exportData, sourcePath, targetPath);
-    
+
+    if (path !== undefined) {
+      await RNFS.unlink(sourcePath);
+    }
+    return path;
+  } catch (e) {
+    console.log(e);
+    return undefined;
+  }
+};
+
+export const exportGeoFile = async (
+  exportData: {
+    data: string;
+    name: string;
+    folder: string;
+    type: ExportType;
+    url?: string | null;
+    key?: string | null;
+  }[],
+  exportFileName: string,
+  ext: 'zip' | 'ecorismap'
+) => {
+  try {
+    const fileName = sanitize(exportFileName.normalize('NFC'));
+    const path = await generateZipFile(exportData, exportFileName, ext);
+
     if (path !== undefined) {
       await exportFileFromUri(path, `${fileName}.${ext}`);
-      await RNFS.unlink(sourcePath);
-      await RNFS.unlink(targetPath);
+      await RNFS.unlink(path);
     }
     return true;
   } catch (e) {
@@ -199,6 +222,25 @@ export const exportGeoFile = async (
     return false;
   }
   //Memo: expoのSharingはキャンセルしたかどうか値を返さない.objectは常に{}
+};
+
+// Google Driveアップロード等、共有UIを介さずzipの実体が必要な場合に使う。
+// native: cache内のファイルパス / web: Blob を返す（シグネチャは両プラットフォーム共通）
+export const generateEcorisMapZip = async (
+  exportData: {
+    data: string;
+    name: string;
+    folder: string;
+    type: ExportType;
+    url?: string | null;
+    key?: string | null;
+  }[],
+  exportFileName: string
+): Promise<{ source: string | Blob; size: number } | undefined> => {
+  const path = await generateZipFile(exportData, exportFileName, 'ecorismap');
+  if (path === undefined) return undefined;
+  const stat = await RNFS.stat(path);
+  return { source: path, size: Number(stat.size) };
 };
 
 export async function exportFileFromUri(uri: string, fileName: string, options?: Sharing.SharingOptions) {
