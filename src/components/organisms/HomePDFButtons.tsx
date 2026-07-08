@@ -13,10 +13,13 @@ interface Props {
   pdfScale: ScaleType;
   onPress: () => void;
   pressPDFSettingsOpen: () => void;
+  // Web版はモバイルの戻る付きヘッダーが無いため、ここに戻るボタンを表示する
+  pressBack?: () => void;
 }
 
 export const HomePDFButtons = React.memo((props: Props) => {
-  const { pdfTileMapZoomLevel, pdfOrientation, pdfPaperSize, pdfScale, onPress, pressPDFSettingsOpen } = props;
+  const { pdfTileMapZoomLevel, pdfOrientation, pdfPaperSize, pdfScale, onPress, pressPDFSettingsOpen, pressBack } =
+    props;
   const scaleText = `1:${parseInt(pdfScale, 10).toLocaleString('en-US')}`;
 
   return (
@@ -36,6 +39,17 @@ export const HomePDFButtons = React.memo((props: Props) => {
       >
         <Text>{`${pdfPaperSize} ${ORIENTATIONTYPE[pdfOrientation]} ${scaleText} ${pdfTileMapZoomLevel}`}</Text>
       </Pressable>
+      {pressBack !== undefined && (
+        <View style={{ margin: 5, marginTop: 20 }}>
+          <Button
+            size={30}
+            name="arrow-left"
+            backgroundColor={COLOR.GRAY3}
+            onPress={pressBack}
+            labelText={t('common.back')}
+          />
+        </View>
+      )}
     </View>
   );
 });
