@@ -50,10 +50,15 @@ export async function uploadDriveProject(args: {
     ecorismapProjectId: projectId,
     ecorismapUpdatedAt: new Date().toISOString(),
   };
-  const metadata =
-    args.existingFileId === undefined
-      ? { name: fileName, parents: [await ensureAppFolder()], appProperties, mimeType: 'application/zip' }
-      : { name: fileName, appProperties };
+  // Hermes(RN 0.81)のバグ回避: 三項演算子の分岐内のオブジェクトリテラルにawaitを書くと
+  // 式全体が数値0に評価される。awaitは必ず式の外に出すこと。
+  let metadata: { name: string; parents?: string[]; appProperties: Record<string, string>; mimeType?: string };
+  if (args.existingFileId === undefined) {
+    const folderId = await ensureAppFolder();
+    metadata = { name: fileName, parents: [folderId], appProperties, mimeType: 'application/zip' };
+  } else {
+    metadata = { name: fileName, appProperties };
+  }
 
   const sessionUrl = await initiateResumableUpload({
     fileId: args.existingFileId,
