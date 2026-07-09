@@ -16,6 +16,8 @@ jobs:
           bun-version: latest
       - name: Install dependencies
         run: yarn install
+      - name: Create APIKeys.ts from template
+        run: cp template/APIKeys.ts src/constants/APIKeys.ts
       - name: Run Tests
         run: TZ=Asia/Tokyo yarn jest --detectOpenHandles --runInBand --forceExit --coverage=false
       - name: Run ESLint
