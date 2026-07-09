@@ -56,6 +56,11 @@ target 'ecorismap' do
     # 1.27.x: react-native-google-maps.podspecは廃止され、Googleサブスペックに統合された
     rn_maps_path = '../node_modules/react-native-maps'
     pod 'react-native-maps/Google', :path => rn_maps_path
+
+    # VSCCrypto 0.12.0の公式配布はfat framework（arm64は実機用のみ）で、
+    # arm64シミュレーターにリンクできない。ローカルpodspecのprepare_commandで
+    # vtoolによりシミュレーター用スライスを生成しXCFramework化する
+    pod 'VSCCrypto', :podspec => './vendor/VSCCrypto.podspec.json'
     #pod 'Firebase/Analytics'
 
     ####
@@ -167,7 +172,9 @@ target 'ecorismap' do
       end
       target.build_configurations.each do |config|
         config.build_settings["ONLY_ACTIVE_ARCH"] = "NO"
-        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64 i386'
+        # arm64シミュレーターを除外するとRosetta実行になり、iOS 18シミュレーターで
+        # Googleサインイン等のASWebAuthenticationSessionが白画面になるため除外しない
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'i386'
         # RN 0.85 enables explicit Clang modules, which turns react-native-firebase's
         # `#import <React/...>` (non-modular includes inside its framework module) into hard
         # errors during module precompilation. Allow non-modular includes so the framework
@@ -185,9 +192,12 @@ target 'ecorismap' do
     end
 
     framework_paths = [
-      "Pods/VSCCrypto/Carthage/iOS/VSCCommon.framework/VSCCommon",
-      "Pods/VSCCrypto/Carthage/iOS/VSCFoundation.framework/VSCFoundation",
-      "Pods/VSCCrypto/Carthage/iOS/VSCPythia.framework/VSCPythia",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCCommon.xcframework/ios-arm64/VSCCommon.framework/VSCCommon",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCFoundation.xcframework/ios-arm64/VSCFoundation.framework/VSCFoundation",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCPythia.xcframework/ios-arm64/VSCPythia.framework/VSCPythia",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCCommon.xcframework/ios-arm64_x86_64-simulator/VSCCommon.framework/VSCCommon",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCFoundation.xcframework/ios-arm64_x86_64-simulator/VSCFoundation.framework/VSCFoundation",
+      "Pods/VSCCrypto/XCFrameworks/iOS/VSCPythia.xcframework/ios-arm64_x86_64-simulator/VSCPythia.framework/VSCPythia",
     ]
 
     framework_paths.each do |framework_relative_path|
