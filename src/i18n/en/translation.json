@@ -586,7 +586,7 @@
     },
     "label": {
       "add": "add",
-      "export": "DL",
+      "export": "export",
       "delete": "delete"
     },
     "message": {

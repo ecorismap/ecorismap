@@ -24,7 +24,7 @@ export const DataButton = () => {
       )}
       {!exportDisabled && (
         <Button
-          name={DATA_BTN.DOWNLOAD}
+          name={DATA_BTN.EXPORT}
           onPress={pressExportData}
           backgroundColor={isChecked && isEditable && !isExporting ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!(isChecked && isEditable) || isExporting}
