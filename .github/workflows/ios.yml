@@ -37,6 +37,17 @@ jobs:
         run: |
           echo "${{ secrets.GOOGLE_SERVICE_INFO_PLIST }}" | base64 --decode > ios/ecorismap/GoogleService-Info.plist
 
+      - name: Create APIKeys.ts
+        env:
+          APIKEYS_TS_BASE64: ${{ secrets.APIKEYS_TS_BASE64 }}
+        run: |
+          if [ -n "$APIKEYS_TS_BASE64" ]; then
+            echo "$APIKEYS_TS_BASE64" | base64 --decode > src/constants/APIKeys.ts
+          else
+            echo "APIKEYS_TS_BASE64 secret is not set; falling back to template (Google Drive連携は無効になります)"
+            cp template/APIKeys.ts src/constants/APIKeys.ts
+          fi
+
       - name: Create ExportOptions.plist
         run: |
           echo '${{ secrets.EXPORT_OPTIONS }}' > ExportOptions.plist
