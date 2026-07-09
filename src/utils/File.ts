@@ -98,7 +98,8 @@ export const generateZipFile = async (
     key?: string | null;
   }[],
   exportFileName: string,
-  ext: 'zip' | 'ecorismap'
+  // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
+  ext: 'zip'
 ): Promise<string | undefined> => {
   const fileName = sanitize(exportFileName.normalize('NFC'));
   const sourcePath = `${RNFS.CachesDirectoryPath}/export/${fileName}`;
@@ -206,7 +207,8 @@ export const exportGeoFile = async (
     key?: string | null;
   }[],
   exportFileName: string,
-  ext: 'zip' | 'ecorismap'
+  // ecorismap拡張子は廃止済み（読み込みのみ互換維持）
+  ext: 'zip'
 ) => {
   try {
     const fileName = sanitize(exportFileName.normalize('NFC'));
@@ -237,7 +239,7 @@ export const generateEcorisMapZip = async (
   }[],
   exportFileName: string
 ): Promise<{ source: string | Blob; size: number } | undefined> => {
-  const path = await generateZipFile(exportData, exportFileName, 'ecorismap');
+  const path = await generateZipFile(exportData, exportFileName, 'zip');
   if (path === undefined) return undefined;
   const stat = await RNFS.stat(path);
   return { source: path, size: Number(stat.size) };

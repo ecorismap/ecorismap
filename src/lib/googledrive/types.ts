@@ -1,6 +1,8 @@
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 export const APP_FOLDER_NAME = 'EcorisMap';
-export const ECORISMAP_FILE_EXT = 'ecorismap';
+export const DRIVE_FILE_EXT = 'zip';
+// 旧形式の拡張子。既存ファイルの表示名変換にのみ使用（廃止予定）
+export const LEGACY_DRIVE_FILE_EXT = 'ecorismap';
 export const DRIVE_SCHEMA_VERSION = '1';
 
 export type DriveFileMeta = {
