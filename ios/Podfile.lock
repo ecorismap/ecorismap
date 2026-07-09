@@ -4180,6 +4180,10 @@ PODS:
     - VSCCrypto/Common (= 0.12.0)
     - VSCCrypto/Foundation (= 0.12.0)
     - VSCCrypto/Pythia (= 0.12.0)
+  - VSCCrypto (0.12.0):
+    - VSCCrypto/Common (= 0.12.0)
+    - VSCCrypto/Foundation (= 0.12.0)
+    - VSCCrypto/Pythia (= 0.12.0)
   - VSCCrypto/Common (0.12.0)
   - VSCCrypto/Foundation (0.12.0)
   - VSCCrypto/Pythia (0.12.0)
@@ -4325,6 +4329,7 @@ DEPENDENCIES:
   - RNWorklets (from `../node_modules/react-native-worklets`)
   - RNZipArchive (from `../node_modules/react-native-zip-archive`)
   - UMAppLoader (from `../node_modules/unimodules-app-loader/ios`)
+  - VSCCrypto (from `./vendor/VSCCrypto.podspec.json`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -4371,7 +4376,6 @@ SPEC REPOS:
     - VirgilCrypto
     - VirgilCryptoFoundation
     - VirgilCryptoPythia
-    - VSCCrypto
 
 EXTERNAL SOURCES:
   EXApplication:
@@ -4649,6 +4653,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-zip-archive"
   UMAppLoader:
     :path: "../node_modules/unimodules-app-loader/ios"
+  VSCCrypto:
+    :podspec: "./vendor/VSCCrypto.podspec.json"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -4832,9 +4838,9 @@ SPEC CHECKSUMS:
   VirgilCrypto: c2831582c5230eeb2adba2365336c768cd6d8c59
   VirgilCryptoFoundation: 79f23a7ab6db642268d31bc63b0cf54db416f089
   VirgilCryptoPythia: 4234b6f84de6fd2448faf6628ecdce84f43650a4
-  VSCCrypto: e2c8df89e0dc348c2713554f6a2c8864e1cf412d
+  VSCCrypto: 5924a94432beefae096387521d9910126ca618f2
   Yoga: 9d8e8094a2bed6a175d9e6001a0546d5dae663ee
 
-PODFILE CHECKSUM: 76eddb741414ec7d3454f4a8e4c145337c85527a
+PODFILE CHECKSUM: 439bb1b4da0765ad483b0ef6f54bcb911bd64d1e
 
 COCOAPODS: 1.16.2

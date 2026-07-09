@@ -1,0 +1,40 @@
+{
+  "name": "VSCCrypto",
+  "version": "0.12.0",
+  "license": {
+    "type": "BSD",
+    "file": "Carthage/LICENSE"
+  },
+  "summary": "Contains basic c functions classes for creating key pairs, encrypting/decrypting data, signing data and verifying signatures.",
+  "homepage": "https://github.com/VirgilSecurity/virgil-crypto-c",
+  "authors": {
+    "Virgil Security": "https://virgilsecurity.com/"
+  },
+  "source": {
+    "http": "https://github.com/VirgilSecurity/virgil-crypto-c/releases/download/v0.12.0/VSCCrypto.framework.zip"
+  },
+  "platforms": {
+    "ios": "9.0"
+  },
+  "prepare_command": "set -eu\nSRC=\"Carthage/iOS\"\nOUT=\"XCFrameworks/iOS\"\nWORK=$(mktemp -d)\nmkdir -p \"$OUT\"\nfor FW_PATH in \"$SRC\"/*.framework; do\n  NAME=$(basename \"$FW_PATH\" .framework)\n  BIN=\"$FW_PATH/$NAME\"\n  [ -f \"$BIN\" ] || continue\n  DEV=\"$WORK/dev\"; SIM=\"$WORK/sim\"\n  rm -rf \"$DEV\" \"$SIM\"; mkdir -p \"$DEV\" \"$SIM\"\n  cp -R \"$FW_PATH\" \"$DEV/\"; cp -R \"$FW_PATH\" \"$SIM/\"\n  lipo -thin arm64 \"$BIN\" -output \"$DEV/$NAME.framework/$NAME\"\n  lipo -thin arm64 \"$BIN\" -output \"$WORK/dev_arm64\"\n  lipo -thin x86_64 \"$BIN\" -output \"$WORK/dev_x86_64\"\n  xcrun vtool -set-build-version 7 12.0 13.2 -replace -output \"$WORK/sim_arm64\" \"$WORK/dev_arm64\"\n  xcrun vtool -set-build-version 7 12.0 13.2 -replace -output \"$WORK/sim_x86_64\" \"$WORK/dev_x86_64\"\n  lipo -create \"$WORK/sim_arm64\" \"$WORK/sim_x86_64\" -output \"$SIM/$NAME.framework/$NAME\"\n  rm -rf \"$OUT/$NAME.xcframework\"\n  xcodebuild -create-xcframework -framework \"$DEV/$NAME.framework\" -framework \"$SIM/$NAME.framework\" -output \"$OUT/$NAME.xcframework\"\ndone\nrm -rf \"$WORK\"",
+  "subspecs": [
+    {
+      "name": "Common",
+      "ios": {
+        "vendored_frameworks": "XCFrameworks/iOS/VSCCommon.xcframework"
+      }
+    },
+    {
+      "name": "Foundation",
+      "ios": {
+        "vendored_frameworks": "XCFrameworks/iOS/VSCFoundation.xcframework"
+      }
+    },
+    {
+      "name": "Pythia",
+      "ios": {
+        "vendored_frameworks": "XCFrameworks/iOS/VSCPythia.xcframework"
+      }
+    }
+  ]
+}
