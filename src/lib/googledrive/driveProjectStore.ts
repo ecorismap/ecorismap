@@ -3,11 +3,12 @@ import { getAccessToken } from './auth';
 import { ensureAppFolder, initiateResumableUpload, listFiles, trashFile, uploadChunk } from './driveApi';
 import { downloadToUri, readChunk } from './driveTransfer';
 import {
+  DRIVE_FILE_EXT,
   DRIVE_SCHEMA_VERSION,
   DriveApiError,
   DriveFileMeta,
   DriveProjectItem,
-  ECORISMAP_FILE_EXT,
+  LEGACY_DRIVE_FILE_EXT,
 } from './types';
 
 // 256KiBの倍数必須（Google Drive resumable uploadの仕様）
@@ -16,7 +17,7 @@ const CHUNK_SIZE = 8 * 1024 * 1024;
 function toItem(f: DriveFileMeta): DriveProjectItem {
   return {
     fileId: f.id,
-    name: f.name.replace(new RegExp(`\\.${ECORISMAP_FILE_EXT}$`), ''),
+    name: f.name.replace(new RegExp(`\\.(${DRIVE_FILE_EXT}|${LEGACY_DRIVE_FILE_EXT})$`), ''),
     projectId: f.appProperties?.ecorismapProjectId ?? '',
     updatedAt: f.modifiedTime ?? f.appProperties?.ecorismapUpdatedAt ?? '',
     size: f.size !== undefined ? Number(f.size) : 0,
@@ -44,7 +45,7 @@ export async function uploadDriveProject(args: {
   await getAccessToken({ minTtlSec: 600 });
 
   const projectId = args.projectId ?? ulid();
-  const fileName = `${args.name}.${ECORISMAP_FILE_EXT}`;
+  const fileName = `${args.name}.${DRIVE_FILE_EXT}`;
   const appProperties = {
     ecorismapSchema: DRIVE_SCHEMA_VERSION,
     ecorismapProjectId: projectId,

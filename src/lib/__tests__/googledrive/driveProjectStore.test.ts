@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 describe('listDriveProjects', () => {
-  test('拡張子を除いた名前でマップし更新日時の降順に並べる', async () => {
+  test('拡張子（zipと旧ecorismap）を除いた名前でマップし更新日時の降順に並べる', async () => {
     mockListFiles.mockResolvedValue([
       {
         id: 'f1',
@@ -46,7 +46,7 @@ describe('listDriveProjects', () => {
       },
       {
         id: 'f2',
-        name: 'new.ecorismap',
+        name: 'new.zip',
         size: '200',
         modifiedTime: '2026-07-08T00:00:00Z',
         headRevisionId: 'r2',
@@ -81,7 +81,7 @@ describe('uploadDriveProject', () => {
         nextOffset: size,
         file: {
           id: 'f1',
-          name: 'test.ecorismap',
+          name: 'test.zip',
           size: String(size),
           modifiedTime: '2026-07-08T00:00:00Z',
           headRevisionId: 'r1',
@@ -96,7 +96,7 @@ describe('uploadDriveProject', () => {
     expect(item.name).toBe('test');
     const initArgs = mockInitiate.mock.calls[0][0];
     expect(initArgs.fileId).toBeUndefined();
-    expect(initArgs.metadata.name).toBe('test.ecorismap');
+    expect(initArgs.metadata.name).toBe('test.zip');
     expect(initArgs.metadata.parents).toEqual(['folder-1']);
     expect(initArgs.metadata.appProperties?.ecorismapSchema).toBe('1');
     expect(initArgs.metadata.appProperties?.ecorismapProjectId).toBeTruthy();
@@ -112,7 +112,7 @@ describe('uploadDriveProject', () => {
     mockUploadChunk.mockResolvedValueOnce({
       done: true,
       nextOffset: 100,
-      file: { id: 'f1', name: 'test.ecorismap', appProperties: { ecorismapProjectId: 'P-EXIST' } },
+      file: { id: 'f1', name: 'test.zip', appProperties: { ecorismapProjectId: 'P-EXIST' } },
     });
 
     await uploadDriveProject({

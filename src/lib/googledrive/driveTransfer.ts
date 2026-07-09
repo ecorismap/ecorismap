@@ -2,7 +2,7 @@ import * as RNFS from 'react-native-fs';
 import { Buffer } from 'buffer';
 import { getAccessToken } from './auth';
 import { downloadFileUrl } from './driveApi';
-import { DriveApiError, ECORISMAP_FILE_EXT } from './types';
+import { DRIVE_FILE_EXT, DriveApiError } from './types';
 
 export async function readChunk(source: string | Blob, offset: number, size: number): Promise<Blob | Uint8Array> {
   if (typeof source !== 'string') {
@@ -16,7 +16,7 @@ export async function readChunk(source: string | Blob, offset: number, size: num
 export async function downloadToUri(fileId: string): Promise<string> {
   // ダウンロードに時間がかかってもトークンが切れないよう、残寿命を確保してから開始する
   const token = await getAccessToken({ minTtlSec: 600 });
-  const toFile = `${RNFS.CachesDirectoryPath}/drive_${fileId}.${ECORISMAP_FILE_EXT}`;
+  const toFile = `${RNFS.CachesDirectoryPath}/drive_${fileId}.${DRIVE_FILE_EXT}`;
   const result = await RNFS.downloadFile({
     fromUrl: downloadFileUrl(fileId),
     toFile,
