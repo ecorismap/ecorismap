@@ -6,7 +6,6 @@ import { getFirestore, connectFirestoreEmulator } from '@react-native-firebase/f
 import { getFunctions, connectFunctionsEmulator } from '@react-native-firebase/functions';
 import { getStorage, connectStorageEmulator } from '@react-native-firebase/storage';
 
-import { FUNC_LOGIN } from '../../constants/AppConstants';
 //import { Alert } from 'react-native';
 
 export {
@@ -95,9 +94,7 @@ const initialize = async (isEmulating = false) => {
   resolveFirebaseReady();
 };
 
-if (FUNC_LOGIN) {
-  const isEmulating = false;
-  (async () => {
-    await initialize(isEmulating);
-  })();
-}
+const isEmulating = false;
+(async () => {
+  await initialize(isEmulating);
+})();

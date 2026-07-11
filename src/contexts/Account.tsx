@@ -9,6 +9,9 @@ interface AccountContextType {
   changeResetPasswordForm: () => void;
   changeResetEncryptForm: () => void;
   changeSignUpForm: () => void;
+  changeLoginForm: () => void;
+  changeSelectLoginMethodForm: () => void;
+  pressConnectGoogle: () => void;
   pressLoginUserAccount: (email: string, password: string) => void;
   pressSignupUserAccount: (email: string, password: string) => void;
   pressResetUserPassword: (email: string) => void;

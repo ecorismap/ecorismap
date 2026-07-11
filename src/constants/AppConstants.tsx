@@ -3,7 +3,6 @@ import { t } from '../i18n/config';
 
 export const AppID = 'jp.co.ecoris.ecorismap';
 export const VERSION = 'Version 0.5.6';
-export const FUNC_LOGIN = true;
 export const FUNC_ENCRYPTION = true;
 // 新規プロジェクトをエンベロープ暗号(DEK・管理者によるメンバー追加可)で作成するか。
 // false の間も DEK プロジェクトの「読み込み(復号)」は可能。安全なロールアウトのため、
@@ -14,14 +13,7 @@ export const CREATE_DEK_PROJECTS = false;
 // 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
 // 行き渡ってから true にする。
 export const ENABLE_DEK_MIGRATION = false;
-// Google Drive個人プロジェクト管理機能。OAuthクライアント設定(APIKeys.tsのgoogleDriveOAuth)が
-// 未設定の環境では接続時にエラーメッセージを表示するのみで他機能に影響しない。
-export const FUNC_GOOGLE_DRIVE = true;
-
 export const CURRENT_TERMS_VERSION = '2024-08-16';
-export const PLUGIN = {
-  HISYOUTOOL: true,
-};
 
 export const COLOR = {
   MAIN: '#f2f2f2',
@@ -116,7 +108,7 @@ export const FEATURETYPE = {
 export const COLORTYPE = {
   SINGLE: t('constants.colortype.single'),
   CATEGORIZED: t('constants.colortype.categorized'),
-  ...(FUNC_LOGIN ? { USER: t('constants.colortype.user') } : {}),
+  USER: t('constants.colortype.user'),
   INDIVIDUAL: t('constants.colortype.individual'),
 } as const;
 

@@ -31,6 +31,13 @@ export const signInWithEmail = async (email: string, password: string) => {
   }
 };
 
+// beforeUserCreated blocking function（組織アカウント制限）による拒否かどうか。
+// SDKはコードをinternal-error等に丸めるため、サーバー応答のBLOCKING_FUNCTION_ERROR_RESPONSEで判定する。
+const isSignupRestrictedError = (error: any): boolean => {
+  const text = `${error?.code ?? ''} ${error?.message ?? ''}`;
+  return text.includes('BLOCKING_FUNCTION_ERROR_RESPONSE') || text.includes('Signup is restricted');
+};
+
 export const signUpWithEmail = async (email: string, password: string, displayName: string) => {
   try {
     await createUserWithEmailAndPassword(auth, email, password);
@@ -41,7 +48,8 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
     return { isOK: true, message: '', authUser };
   } catch (error: any) {
     console.log(error);
-    return { isOK: false, message: error.code, authUser: undefined };
+    const message = isSignupRestrictedError(error) ? 'auth/signup-restricted' : error.code;
+    return { isOK: false, message, authUser: undefined };
   }
 };
 

@@ -38,7 +38,6 @@ export { httpsCallable } from 'firebase/functions';
 export { ref, uploadBytes, uploadString, getDownloadURL, deleteObject, listAll } from 'firebase/storage';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
-import { FUNC_LOGIN } from '../../constants/AppConstants';
 import { firebaseConfig, reCaptureSiteKey } from '../../constants/APIKeys';
 
 export let firestore: Firestore;
@@ -85,7 +84,5 @@ const initialize = (isEmulating = false) => {
   }
 };
 
-if (FUNC_LOGIN) {
-  const isEmulating = false;
-  initialize(isEmulating);
-}
+const isEmulating = false;
+initialize(isEmulating);

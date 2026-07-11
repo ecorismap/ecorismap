@@ -24,12 +24,6 @@ jest.mock('redux-persist', () => {
   };
 });
 
-// Mock AppConstants FIRST to set FUNC_LOGIN to false in tests
-jest.mock('./src/constants/AppConstants.tsx', () => ({
-  ...jest.requireActual('./src/constants/AppConstants.tsx'),
-  FUNC_LOGIN: false,
-}));
-
 // Mock Firebase modules FIRST before anything else imports them
 jest.mock('@react-native-firebase/app', () => ({
   __esModule: true,
@@ -151,9 +145,8 @@ jest.mock('./src/utils/mmkvStorage.ts', () => {
   };
 });
 
-jest.mock('@react-native-firebase/auth', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
+jest.mock('@react-native-firebase/auth', () => {
+  const mockAuthInstance = {
     currentUser: null,
     signInWithEmailAndPassword: jest.fn(),
     createUserWithEmailAndPassword: jest.fn(),
@@ -169,12 +162,18 @@ jest.mock('@react-native-firebase/auth', () => ({
     reauthenticateWithCredential: jest.fn(),
     deleteUser: jest.fn(),
     useEmulator: jest.fn(),
-  })),
-}));
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockAuthInstance),
+    // モジュラーAPI（firebase.tsのモジュールトップ初期化で使用）
+    getAuth: jest.fn(() => mockAuthInstance),
+    connectAuthEmulator: jest.fn(),
+  };
+});
 
-jest.mock('@react-native-firebase/firestore', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
+jest.mock('@react-native-firebase/firestore', () => {
+  const mockFirestoreInstance = {
     collection: jest.fn(() => ({
       doc: jest.fn(() => ({
         get: jest.fn(() => Promise.resolve({ exists: false })),
@@ -206,21 +205,27 @@ jest.mock('@react-native-firebase/firestore', () => ({
     })),
     runTransaction: jest.fn(),
     useEmulator: jest.fn(),
-  })),
-  Timestamp: {
-    now: jest.fn(() => ({ toDate: () => new Date() })),
-    fromDate: jest.fn(date => ({ toDate: () => date })),
-  },
-  FieldValue: {
-    serverTimestamp: jest.fn(),
-    delete: jest.fn(),
-    increment: jest.fn(),
-  },
-}));
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockFirestoreInstance),
+    // モジュラーAPI（firebase.tsのモジュールトップ初期化で使用）
+    getFirestore: jest.fn(() => mockFirestoreInstance),
+    connectFirestoreEmulator: jest.fn(),
+    Timestamp: {
+      now: jest.fn(() => ({ toDate: () => new Date() })),
+      fromDate: jest.fn(date => ({ toDate: () => date })),
+    },
+    FieldValue: {
+      serverTimestamp: jest.fn(),
+      delete: jest.fn(),
+      increment: jest.fn(),
+    },
+  };
+});
 
-jest.mock('@react-native-firebase/storage', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
+jest.mock('@react-native-firebase/storage', () => {
+  const mockStorageInstance = {
     ref: jest.fn(() => ({
       child: jest.fn(() => ({
         put: jest.fn(() => ({
@@ -240,16 +245,29 @@ jest.mock('@react-native-firebase/storage', () => ({
       })),
     })),
     useEmulator: jest.fn(),
-  })),
-}));
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockStorageInstance),
+    // モジュラーAPI（firebase.tsのモジュールトップ初期化で使用）
+    getStorage: jest.fn(() => mockStorageInstance),
+    connectStorageEmulator: jest.fn(),
+  };
+});
 
-jest.mock('@react-native-firebase/functions', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
+jest.mock('@react-native-firebase/functions', () => {
+  const mockFunctionsInstance = {
     httpsCallable: jest.fn(() => jest.fn(() => Promise.resolve({ data: {} }))),
     useEmulator: jest.fn(),
-  })),
-}));
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => mockFunctionsInstance),
+    // モジュラーAPI（firebase.tsのモジュールトップ初期化で使用）
+    getFunctions: jest.fn(() => mockFunctionsInstance),
+    connectFunctionsEmulator: jest.fn(),
+  };
+});
 
 // Mock LogBox before importing react-native
 jest.mock('react-native', () => {

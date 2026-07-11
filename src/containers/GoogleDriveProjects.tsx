@@ -59,9 +59,14 @@ export default function GoogleDriveProjectsContainers() {
     if (!isOK && message !== '') await AlertAsync(message);
   }, [reloadProjects]);
 
-  const pressSaveToDrive = useCallback(() => {
+  const pressSaveToDrive = useCallback(async () => {
+    // 共有プロジェクト実行中は「チームへの共有(データ送信)」との混同を防ぐため確認を挟む
+    if (isRunningProject) {
+      const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.saveInRunningProject'));
+      if (!ret) return;
+    }
     setIsSaveModalOpen(true);
-  }, []);
+  }, [isRunningProject]);
 
   const pressSaveCancel = useCallback(() => {
     setIsSaveModalOpen(false);

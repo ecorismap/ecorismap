@@ -3,26 +3,36 @@ import { View, Image, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, SelectionalButton } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
-import { HOME_ACCOUNT_BTN, COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
+import { HOME_ACCOUNT_BTN, COLOR } from '../../constants/AppConstants';
 import { AppStateContext } from '../../contexts/AppState';
 import { ProjectContext } from '../../contexts/Project';
 import { t } from '../../i18n/config';
 
 export const HomeAccountButton = React.memo(() => {
   const { user } = useContext(AppStateContext);
-  const { gotoLogin, gotoProjects, gotoAccount, pressLogout } = useContext(ProjectContext);
+  const { gotoLogin, gotoProjects, gotoAccount, pressLogout, googleAccountEmail, pressDisconnectDrive } =
+    useContext(ProjectContext);
   const insets = useSafeAreaInsets();
   const [valid, setValid] = useState(true);
 
+  const isLoggedIn = user.uid !== undefined;
+  const isDriveConnected = googleAccountEmail !== undefined;
+
+  // Firebaseログインを主アカウントとして優先表示。Drive接続のみの場合はGoogleメールのイニシャル
   const initial = useMemo(() => {
-    if (user.displayName && user.displayName !== '') {
-      return user.displayName[0].toUpperCase();
-    } else if (user.email && user.email !== null) {
-      return user.email[0].toUpperCase();
-    } else {
+    if (isLoggedIn) {
+      if (user.displayName && user.displayName !== '') {
+        return user.displayName[0].toUpperCase();
+      } else if (user.email && user.email !== null) {
+        return user.email[0].toUpperCase();
+      }
       return '@';
     }
-  }, [user]);
+    if (googleAccountEmail !== undefined && googleAccountEmail !== '') {
+      return googleAccountEmail[0].toUpperCase();
+    }
+    return '@';
+  }, [isLoggedIn, user, googleAccountEmail]);
 
   useEffect(() => setValid(true), [user.photoURL]);
 
@@ -53,7 +63,7 @@ export const HomeAccountButton = React.memo(() => {
   });
   return (
     <View style={styles.button}>
-      {user.uid === undefined ? (
+      {!isLoggedIn && !isDriveConnected ? (
         <Button
           name={HOME_ACCOUNT_BTN.ACCOUNT}
           //color={COLOR.WHITE}
@@ -65,7 +75,7 @@ export const HomeAccountButton = React.memo(() => {
       ) : (
         <>
           <SelectionalButton selectedButton={'ACCOUNT'} direction="topToDown">
-            {user.photoURL !== null && valid ? (
+            {isLoggedIn && user.photoURL !== null && valid ? (
               //@ts-ignore
               <Pressable id="ACCOUNT" name={HOME_ACCOUNT_BTN.ACCOUNT} onPressCustom={() => {}}>
                 <Image onError={() => setValid(false)} style={styles.icon} source={{ uri: user.photoURL }} />
@@ -88,7 +98,7 @@ export const HomeAccountButton = React.memo(() => {
                 </View>
               </Pressable>
             )}
-            {FUNC_LOGIN && (
+            {isLoggedIn && (
               <Button
                 id="PROJECTS"
                 name={HOME_ACCOUNT_BTN.PROJECTS}
@@ -98,18 +108,20 @@ export const HomeAccountButton = React.memo(() => {
                 labelFontSize={8}
               />
             )}
-            <Button
-              id="SETTING"
-              name={HOME_ACCOUNT_BTN.SETTING}
-              backgroundColor={COLOR.ORANGE}
-              onPressCustom={gotoAccount}
-              labelText={t('Home.label.setting')}
-            />
+            {isLoggedIn && (
+              <Button
+                id="SETTING"
+                name={HOME_ACCOUNT_BTN.SETTING}
+                backgroundColor={COLOR.ORANGE}
+                onPressCustom={gotoAccount}
+                labelText={t('Home.label.setting')}
+              />
+            )}
             <Button
               id="LOGOUT"
               name={HOME_ACCOUNT_BTN.LOGOUT}
               backgroundColor={COLOR.ORANGE}
-              onPressCustom={pressLogout}
+              onPressCustom={isLoggedIn ? pressLogout : pressDisconnectDrive}
               labelText={t('Home.label.logout')}
               labelFontSize={9}
             />

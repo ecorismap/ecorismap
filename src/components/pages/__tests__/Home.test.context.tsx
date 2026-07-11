@@ -124,6 +124,8 @@ export const mockProjectContextValue: ProjectContextType = {
   gotoProjects: jest.fn().mockResolvedValue(undefined),
   gotoAccount: jest.fn().mockResolvedValue(undefined),
   pressLogout: jest.fn().mockResolvedValue(undefined),
+  googleAccountEmail: undefined,
+  pressDisconnectDrive: jest.fn().mockResolvedValue(undefined),
 };
 
 // Mock implementation for PDFExportContext

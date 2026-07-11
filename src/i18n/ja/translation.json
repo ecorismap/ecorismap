@@ -707,7 +707,8 @@
       "changeEncryptPassword": "暗号化パスワード変更",
       "deleteUserAccount": "アカウントの削除",
       "deleteAllProjects": "すべてのプロジェクトを削除",
-      "createUserAccount": "アカウント作成"
+      "createUserAccount": "アカウント作成",
+      "selectLoginMethod": "ログイン"
     },
     "placeholder": {
       "changePassword": "変更前のパスワード",
@@ -720,7 +721,12 @@
     "text": {
       "forgetPassword": "パスワードをお忘れですか？",
       "createAccount": "アカウントを作成",
-      "next": "次へ"
+      "next": "次へ",
+      "connectGoogle": "Googleで接続",
+      "connectGoogleInfo": "設定の「データの保存・読み込み」で自分のGoogle Driveを利用できるようになります",
+      "orgAccountLogin": "組織アカウントでログイン",
+      "backToSelectLogin": "ログイン方法の選択に戻る",
+      "signupOrgNote": "アカウント登録は組織メンバー専用です。一般の方は「Googleで接続」をご利用ください。"
     },
     "alert": {
       "activate": "メールを確認して、アクティベートしてください。",
@@ -815,6 +821,7 @@
       "failedInitializeEncrypt": "暗号化の初期化に失敗しました",
       "noUser": "ユーザーが存在しません。",
       "emailInUse": "そのメールアドレスは既に使用されています。",
+      "signupRestricted": "組織のアカウントのみ登録できます。一般の方は「Googleで接続」をご利用ください。",
       "failSetProfile": "プロフィールの設定に失敗しました。",
       "inputValidDisplayName": "表示名を正しく入力してください",
       "inputValidIconURL": "icon画像のURLを正しく入力してください",
@@ -946,7 +953,7 @@
     "navigation": {
       "title": "Google Drive"
     },
-    "description": "Googleアカウントに接続すると、現在のデータをGoogle Driveに保存したり、保存したプロジェクトを読み込んだりできます。ログイン不要で利用できます。",
+    "description": "Googleアカウントに接続して使う、個人用の保存機能です。現在のデータを自分のGoogle Driveに保存したり、保存済みのデータを読み込んだりできます。",
     "connect": {
       "text": "Googleアカウントに接続"
     },
@@ -961,6 +968,7 @@
       "savePlaceholder": "プロジェクト名を入力"
     },
     "confirm": {
+      "saveInRunningProject": "共有プロジェクトの実行中です。この保存はチームには共有されず、現在のデータを個人のGoogle Driveにバックアップします。続けますか？",
       "overwrite": "同じ名前のプロジェクトがDriveにあります。上書きしますか？（以前の内容はDriveの版履歴から復元できます）",
       "load": "プロジェクトを読み込みますか？現在のデータと設定は上書きされます。",
       "delete": "プロジェクトを削除しますか？（Driveのゴミ箱に移動します）",

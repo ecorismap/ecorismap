@@ -512,6 +512,7 @@ export type PermissionType = keyof typeof PERMISSIONTYPE;
 export type ExportType = keyof typeof EXPORTTYPE;
 export type MapType = 'standard' | 'satellite' | 'hybrid' | 'terrain' | 'none';
 export type AccountFormStateType =
+  | 'selectLoginMethod'
   | 'loginUserAccount'
   | 'signupUserAccount'
   | 'deleteUserAccount'

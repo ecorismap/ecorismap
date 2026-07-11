@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useContext } from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../types';
 
-import { COLOR, FUNC_LOGIN } from '../../constants/AppConstants';
+import { COLOR } from '../../constants/AppConstants';
 import { HomeButtons } from '../organisms/HomeButtons';
 import HomeProjectLabel from '../organisms/HomeProjectLabel';
 import { HomeAccountButton } from '../organisms/HomeAccountButton';
@@ -946,7 +946,7 @@ export default function HomeScreen() {
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}
 
-          {!FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
+          {downloadMode ? null : <HomeAccountButton />}
 
           {/* HomeInfoToolButtonを非表示にする
           {!(downloadMode || exportPDFMode || editPositionMode) && <HomeInfoToolButton />}

@@ -174,6 +174,11 @@ export const signInGoogleDrive = async (): Promise<GoogleDriveAuthResult> => {
 export const trySilentSignIn = async (): Promise<GoogleDriveAuthResult> => {
   const storedEmail = loadStoredEmail();
   if (storedEmail === undefined) return { isOK: false, message: 'not-connected' };
+  // 有効なトークンがある間は再取得しない。GSIのトークン取得はサイレント指定(prompt:'')でも
+  // 一瞬ポップアップを開くため、不要な取得は画面のチラつきになる。
+  if (accessToken !== undefined && accessToken.expiresAt - Date.now() > 60 * 1000) {
+    return { isOK: true, message: '', email: connectedEmail ?? storedEmail };
+  }
   try {
     const token = await requestToken({ silent: true });
     connectedEmail = (await fetchEmail(token)) ?? storedEmail;

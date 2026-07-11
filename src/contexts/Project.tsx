@@ -20,6 +20,10 @@ export interface ProjectContextType {
   gotoAccount: () => void;
   gotoLogin: () => void;
   pressLogout: () => void;
+
+  // Google Drive account
+  googleAccountEmail: string | undefined;
+  pressDisconnectDrive: () => void;
 }
 
 export const ProjectContext = React.createContext<ProjectContextType>({} as ProjectContextType);

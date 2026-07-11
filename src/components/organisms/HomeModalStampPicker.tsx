@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
-import { COLOR, PLUGIN, STAMP } from '../../constants/AppConstants';
+import { COLOR, STAMP } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
 import Button from '../atoms/Button';
 import { CheckBox } from '../molecules/CheckBox';
 import { Pressable } from '../atoms/Pressable';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
 interface Props {
   currentMapMemoTool: MapMemoToolType;
@@ -26,6 +27,7 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
     setVisibleMapMemoStamp,
     selectMapMemoSnapWithLine,
   } = props;
+  const { hisyouTool } = useFeatureFlags();
   const [snapped, setSnapped] = useState(false);
 
   useEffect(() => {
@@ -156,10 +158,10 @@ export const HomeModalStampPicker = React.memo((props: Props) => {
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 320 : 200 }]}>
+          <View style={[styles.modalContents, { width: 200, height: hisyouTool ? 320 : 200 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectStamp')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10, width: 260 }}>
-              {PLUGIN.HISYOUTOOL && (
+              {hisyouTool && (
                 <View
                   style={{
                     flexDirection: 'column',

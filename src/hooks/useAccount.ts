@@ -15,7 +15,6 @@ import { projectsInitialState, setProjectsAction } from '../modules/projects';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
 import { t } from '../i18n/config';
-import { FUNC_LOGIN } from '../constants/AppConstants';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 export type UseAccountReturnType = {
@@ -212,6 +211,8 @@ export const useAccount = (): UseAccountReturnType => {
     if (!signUpOK || authUser === undefined) {
       if (signUpMessage === 'auth/email-already-in-use') {
         setAccountMessage(t('hooks.message.emailInUse'));
+      } else if (signUpMessage === 'auth/signup-restricted') {
+        setAccountMessage(t('hooks.message.signupRestricted'));
       } else if (signUpMessage === 'auth/invalid-email') {
         setAccountMessage(t('hooks.message.invalidEmail'));
       } else if (signUpMessage === 'profile/fail-update') {
@@ -408,7 +409,7 @@ export const useAccount = (): UseAccountReturnType => {
 
   useEffect(() => {
     (async () => {
-      if (FUNC_LOGIN && Platform.OS === 'web') {
+      if (Platform.OS === 'web') {
         await initFirebaseAuth();
       }
     })();
