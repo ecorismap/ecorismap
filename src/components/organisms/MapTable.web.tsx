@@ -38,7 +38,6 @@ const MapTableTitle = () => (
 const SortableMapRow = React.memo(
   ({
     item,
-    childCount,
     changeVisible,
     pressDownloadMap,
     gotoMapEdit,
@@ -47,7 +46,6 @@ const SortableMapRow = React.memo(
     pressMapOrder,
   }: {
     item: any;
-    childCount: number;
     changeVisible: (visible: boolean, item: any) => void;
     pressDownloadMap: (item: any) => void;
     gotoMapEdit: (item: any) => void;
@@ -125,7 +123,7 @@ const SortableMapRow = React.memo(
                 />
               )}
               <Text style={isParent ? { color: parentFg, fontWeight: 'bold', flexShrink: 1 } : undefined}>
-                {isParent ? `${item.name} (${childCount})` : item.name}
+                {item.name}
               </Text>
             </View>
           </Pressable>
@@ -182,7 +180,6 @@ const SortableMapRow = React.memo(
 
 export const MapTable = React.memo(() => {
   const {
-    maps,
     filterdMaps,
     changeVisible,
     pressDownloadMap,
@@ -227,15 +224,6 @@ export const MapTable = React.memo(() => {
 
   const itemIds = useMemo(() => filterdMaps.map((map: any) => map.id), [filterdMaps]);
 
-  // グループごとの子マップ数（折りたたみ時も数えるため全件のmapsから算出）
-  const childCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    maps.forEach((m) => {
-      if (m.groupId) counts[m.groupId] = (counts[m.groupId] ?? 0) + 1;
-    });
-    return counts;
-  }, [maps]);
-
   return (
     <View style={styles.container}>
       <MapTableTitle />
@@ -247,7 +235,6 @@ export const MapTable = React.memo(() => {
             <SortableMapRow
               key={item.id}
               item={item}
-              childCount={childCounts[item.id] ?? 0}
               changeVisible={changeVisible}
               pressDownloadMap={pressDownloadMap}
               gotoMapEdit={gotoMapEdit}

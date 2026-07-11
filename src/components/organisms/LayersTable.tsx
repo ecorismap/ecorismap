@@ -17,7 +17,6 @@ const LayerRow = React.memo(
     item,
     drag,
     isActive,
-    childCount,
     isClosedProject,
     isSettingProject,
     hasCustomLabel,
@@ -36,7 +35,6 @@ const LayerRow = React.memo(
     item: LayerType;
     drag: () => void;
     isActive: boolean;
-    childCount: number;
     isClosedProject: boolean;
     isSettingProject: boolean;
     hasCustomLabel: boolean;
@@ -144,7 +142,7 @@ const LayerRow = React.memo(
                 selectable={undefined}
               />
               <Text style={{ color: parentFg, flexShrink: 1, fontWeight: 'bold' }} numberOfLines={2}>
-                {`${item.name} (${childCount})`}
+                {item.name}
               </Text>
             </View>
           ) : (
@@ -233,7 +231,6 @@ const LayerRow = React.memo(
       prevProps.item.name === nextProps.item.name &&
       prevProps.item.colorStyle.color === nextProps.item.colorStyle.color &&
       prevProps.isActive === nextProps.isActive &&
-      prevProps.childCount === nextProps.childCount &&
       prevProps.hasCustomLabel === nextProps.hasCustomLabel &&
       prevProps.customLabelValue === nextProps.customLabelValue
     );
@@ -242,7 +239,6 @@ const LayerRow = React.memo(
 
 export const LayersTable = React.memo(() => {
   const {
-    layers,
     filterdLayers,
     changeExpand,
     changeVisible,
@@ -269,15 +265,6 @@ export const LayersTable = React.memo(() => {
     setCustomLabel(filterdLayers.reduce((obj, layer) => ({ ...obj, [layer.id]: layer.customLabel }), {}));
   }, [filterdLayers]);
 
-  // グループごとの子レイヤ数（折りたたみ時も数えるため全件のlayersから算出）
-  const childCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    layers.forEach((l) => {
-      if (l.groupId) counts[l.groupId] = (counts[l.groupId] ?? 0) + 1;
-    });
-    return counts;
-  }, [layers]);
-
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<LayerType>) => {
       return (
@@ -285,7 +272,6 @@ export const LayersTable = React.memo(() => {
           item={item}
           drag={drag}
           isActive={isActive}
-          childCount={childCounts[item.id] ?? 0}
           isClosedProject={isClosedProject}
           isSettingProject={isSettingProject}
           hasCustomLabel={hasCustomLabel}
@@ -304,7 +290,6 @@ export const LayersTable = React.memo(() => {
       );
     },
     [
-      childCounts,
       isClosedProject,
       isSettingProject,
       hasCustomLabel,

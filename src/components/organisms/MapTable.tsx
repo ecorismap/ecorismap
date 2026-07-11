@@ -1,4 +1,4 @@
-import React, { useContext, useCallback, useMemo } from 'react';
+import React, { useContext, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
@@ -26,7 +26,6 @@ const MapTableTitle = () => (
 
 export const MapTable = React.memo(() => {
   const {
-    maps,
     filterdMaps,
     changeVisible,
     pressDownloadMap,
@@ -38,15 +37,6 @@ export const MapTable = React.memo(() => {
     onDragBegin,
   } = useContext(MapsContext);
   //閉じたグループの子要素を除外する
-
-  // グループごとの子マップ数（折りたたみ時も数えるため全件のmapsから算出）
-  const childCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    maps.forEach((m) => {
-      if (m.groupId) counts[m.groupId] = (counts[m.groupId] ?? 0) + 1;
-    });
-    return counts;
-  }, [maps]);
 
   // 各行の描画
   const renderItem = useCallback(
@@ -112,7 +102,7 @@ export const MapTable = React.memo(() => {
                 numberOfLines={2}
                 ellipsizeMode="tail"
               >
-                {isParent ? `${item.name} (${childCounts[item.id] ?? 0})` : item.name}
+                {item.name}
               </Text>
             </View>
           </Pressable>
@@ -164,7 +154,7 @@ export const MapTable = React.memo(() => {
         </View>
       );
     },
-    [changeExpand, changeVisible, childCounts, gotoMapEdit, jumpToBoundary, pressMapOrder, pressDownloadMap]
+    [changeExpand, changeVisible, gotoMapEdit, jumpToBoundary, pressMapOrder, pressDownloadMap]
   );
 
   const keyExtractor = useCallback((item: any) => item.id, []);
