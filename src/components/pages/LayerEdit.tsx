@@ -40,10 +40,13 @@ export default function LayerEditScreen() {
       <LayerName />
       <LayerStyle />
       {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
-      {layer.type !== 'LAYERGROUP' && (
+      {layer.type !== 'LAYERGROUP' ? (
         <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
           <LayerEditFieldTable />
         </ScrollView>
+      ) : (
+        // グループはフィールドテーブルを表示しないため、スペーサーで名前・タイプを上寄せに保つ
+        <View style={{ flex: 1 }} />
       )}
       <LayerEditButton />
     </View>
