@@ -351,7 +351,8 @@
       "changeEncryptPassword": "Change encrypted password",
       "deleteUserAccount": "Account deletion",
       "deleteAllProjects": "Delete all projects",
-      "createUserAccount": "Create an account"
+      "createUserAccount": "Create an account",
+      "selectLoginMethod": "Sign in"
     },
     "placeholder": {
       "changePassword": "Password before change",
@@ -364,7 +365,12 @@
     "text": {
       "forgetPassword": "Did you forget your password?",
       "createAccount": "Create an account",
-      "next": "Next"
+      "next": "Next",
+      "connectGoogle": "Connect with Google",
+      "connectGoogleInfo": "Use your Google Drive from \"Save data\" and \"Load data\" in Settings",
+      "orgAccountLogin": "Sign in with an organization account",
+      "backToSelectLogin": "Back to sign-in options",
+      "signupOrgNote": "Account sign-up is for organization members only. Please use \"Connect with Google\"."
     },
     "alert": {
       "activate": "Please check your email and activate.",
@@ -595,6 +601,7 @@
       "changeProjectName": "There is a project with the same name. \nPlease change the project name.",
       "duplicateMembers": "Duplicate members.",
       "emailInUse": "That email address is already in use.",
+      "signupRestricted": "Sign-up is limited to organization accounts. Please use \"Connect with Google\".",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
       "failedInitializeEncrypt": "Failed to initialize encryption",
       "failAddGroupMembers": "Failed to add member",
@@ -946,7 +953,7 @@
     "navigation": {
       "title": "Google Drive"
     },
-    "description": "Connect your Google account to save the current data to Google Drive and load saved projects. No login required.",
+    "description": "A personal storage feature that works with your Google account. Save the current data to your Google Drive and load previously saved data.",
     "connect": {
       "text": "Connect Google account"
     },
@@ -961,6 +968,7 @@
       "savePlaceholder": "Enter project name"
     },
     "confirm": {
+      "saveInRunningProject": "A shared project is running. This backup is saved to your personal Google Drive and will not be shared with the team. Continue?",
       "overwrite": "A project with the same name exists on Drive. Overwrite it? (Previous versions can be restored from Drive revision history.)",
       "load": "Load this project? The current data and settings will be overwritten.",
       "delete": "Delete this project? (It will be moved to the Drive trash.)",

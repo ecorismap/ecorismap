@@ -5,7 +5,7 @@ import type { PointRecordType, LineRecordType, PolygonRecordType } from '../../t
 import MapView, { PMTile, PROVIDER_GOOGLE, UrlTile } from 'react-native-maps';
 // @ts-ignore
 import ScaleBar from 'react-native-scale-bar';
-import { COLOR, FUNC_LOGIN, TILE_FOLDER } from '../../constants/AppConstants';
+import { COLOR, TILE_FOLDER } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
 import { HomeButtons } from '../organisms/HomeButtons';
@@ -657,7 +657,7 @@ export default function HomeScreen() {
             <HomeProjectLabel name={projectName} onPress={pressProjectLabel} />
           )}
 
-          {downloadMode || exportPDFMode || !FUNC_LOGIN || downloadMode ? null : <HomeAccountButton />}
+          {downloadMode || exportPDFMode ? null : <HomeAccountButton />}
 
           {!(downloadMode || exportPDFMode) && (
             <HomeCompassButton azimuth={azimuth} headingUp={headingUp} onPressCompass={pressCompass} />

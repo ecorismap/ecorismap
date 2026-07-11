@@ -36,6 +36,7 @@ import { useMapView } from '../hooks/useMapView';
 import { useLocation } from '../hooks/useLocation';
 import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
+import { useGoogleAccount } from '../hooks/useGoogleAccount';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
 import {
@@ -318,6 +319,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   //Account関連
   const { logout } = useAccount();
+  //Google Drive接続状態（起動時のサイレント再接続を含む）
+  const { googleAccountEmail, disconnectGoogleAccount } = useGoogleAccount();
   //Project Buttons関連
   const {
     isSettingProject,
@@ -1197,7 +1200,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
   const gotoLogin = useCallback(() => {
     navigation.navigate('Account', {
-      accountFormState: 'loginUserAccount',
+      accountFormState: 'selectLoginMethod',
     });
   }, [navigation]);
 
@@ -1231,6 +1234,12 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     });
     bottomSheetRef.current?.snapToIndex(2);
   }, [navigateToSplit]);
+
+  const pressDisconnectDrive = useCallback(async () => {
+    const ret = await ConfirmAsync(t('GoogleDriveProjects.confirm.disconnect'));
+    if (!ret) return;
+    await disconnectGoogleAccount();
+  }, [disconnectGoogleAccount]);
 
   const gotoHome = useCallback(
     (params?: NavigateToHomeParams) => {
@@ -2252,6 +2261,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       gotoAccount,
       gotoLogin,
       pressLogout,
+      googleAccountEmail,
+      pressDisconnectDrive,
     }),
     [
       projectName,
@@ -2269,6 +2280,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       gotoAccount,
       gotoLogin,
       pressLogout,
+      googleAccountEmail,
+      pressDisconnectDrive,
     ]
   );
 

@@ -18,6 +18,9 @@ export default function Account() {
     changeResetPasswordForm,
     changeResetEncryptForm,
     changeSignUpForm,
+    changeLoginForm,
+    changeSelectLoginMethodForm,
+    pressConnectGoogle,
     pressLoginUserAccount,
     pressSignupUserAccount,
     pressResetUserPassword,
@@ -133,6 +136,42 @@ export default function Account() {
       right: 10,
       padding: 5,
     },
+    googleButton: {
+      alignItems: 'center',
+      backgroundColor: COLOR.WHITE,
+      borderColor: COLOR.GRAY2,
+      borderRadius: 5,
+      borderWidth: 1,
+      flexDirection: 'row',
+      height: 48,
+      justifyContent: 'center',
+      marginTop: 10,
+      width: 250,
+    },
+    googleButtonText: {
+      color: COLOR.BLACK,
+      fontSize: 16,
+      marginLeft: 10,
+    },
+    infoText: {
+      color: COLOR.GRAY3,
+      fontSize: 12,
+      marginTop: 8,
+      textAlign: 'center',
+      width: 250,
+    },
+    divider: {
+      backgroundColor: COLOR.GRAY1,
+      height: 1,
+      marginVertical: 20,
+      width: 250,
+    },
+    noteText: {
+      color: COLOR.GRAY3,
+      fontSize: 12,
+      marginTop: 5,
+      width: 250,
+    },
   });
 
   useEffect(() => {
@@ -165,7 +204,9 @@ export default function Account() {
           <Image style={{ width: 60, height: 60 }} source={require('../../assets/icon.png')} />
           <Text style={styles.modalTitle}>{'EcorisMap'}</Text>
           <Text style={styles.modalTitle}>
-            {accountFormState === 'loginUserAccount'
+            {accountFormState === 'selectLoginMethod'
+              ? `${t('Account.title.selectLoginMethod')}`
+              : accountFormState === 'loginUserAccount'
               ? `${t('Account.title.login')}`
               : accountFormState === 'resetUserPassword'
               ? `${t('Account.title.resetUserPassword')}`
@@ -189,6 +230,20 @@ export default function Account() {
               ? `${t('Account.title.deleteAllProjects')}`
               : `${t('Account.title.createUserAccount')}`}
           </Text>
+
+          {accountFormState === 'selectLoginMethod' && (
+            <View style={{ alignItems: 'center' }}>
+              <Pressable style={styles.googleButton} onPress={pressConnectGoogle}>
+                <MaterialCommunityIcons name="google" size={20} color={COLOR.BLACK} />
+                <Text style={styles.googleButtonText}>{`${t('Account.text.connectGoogle')}`}</Text>
+              </Pressable>
+              <Text style={styles.infoText}>{`${t('Account.text.connectGoogleInfo')}`}</Text>
+              <View style={styles.divider} />
+              <Pressable onPress={changeLoginForm}>
+                <Text style={styles.underline}>{`${t('Account.text.orgAccountLogin')}`}</Text>
+              </Pressable>
+            </View>
+          )}
 
           {(accountFormState === 'signupUserAccount' ||
             accountFormState === 'loginUserAccount' ||
@@ -233,6 +288,9 @@ export default function Account() {
               value={password}
               onChangeText={(text) => setPassword(text)}
             />
+          )}
+          {accountFormState === 'signupUserAccount' && (
+            <Text style={styles.noteText}>{`${t('Account.text.signupOrgNote')}`}</Text>
           )}
           {(accountFormState === 'loginUserAccount' ||
             accountFormState === 'changeUserPassword' ||
@@ -302,6 +360,7 @@ export default function Account() {
           )}
           <Loading visible={isLoading} text="" />
 
+          {accountFormState !== 'selectLoginMethod' && (
           <View style={styles.modalButtonContainer}>
             {accountFormState === 'loginUserAccount' ? (
               <Pressable style={styles.resetText} onPress={changeSignUpForm}>
@@ -341,6 +400,13 @@ export default function Account() {
               <Text style={{ color: COLOR.WHITE }}>{`${t('Account.text.next')}`}</Text>
             </Pressable>
           </View>
+          )}
+
+          {(accountFormState === 'loginUserAccount' || accountFormState === 'signupUserAccount') && (
+            <Pressable style={{ marginTop: 20 }} onPress={changeSelectLoginMethodForm}>
+              <Text style={{ fontSize: 12, color: COLOR.BLUE }}>{`${t('Account.text.backToSelectLogin')}`}</Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </View>

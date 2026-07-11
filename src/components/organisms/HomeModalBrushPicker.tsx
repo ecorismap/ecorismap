@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Modal } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
-import { BRUSH, COLOR, PLUGIN } from '../../constants/AppConstants';
+import { BRUSH, COLOR } from '../../constants/AppConstants';
 import { t } from '../../i18n/config';
 import { MapMemoToolType } from '../../types';
 import Button from '../atoms/Button';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
 interface Props {
   currentMapMemoTool: MapMemoToolType;
@@ -16,6 +17,7 @@ interface Props {
 
 export const HomeModalBrushPicker = React.memo((props: Props) => {
   const { currentMapMemoTool, modalVisible, selectMapMemoTool, setVisibleMapMemoBrush } = props;
+  const { hisyouTool } = useFeatureFlags();
   const [_brush, setBrush] = useState<MapMemoToolType | undefined>(undefined);
 
   useEffect(() => {
@@ -151,10 +153,10 @@ export const HomeModalBrushPicker = React.memo((props: Props) => {
           >
             <Text style={styles.closeButtonText}>×</Text>
           </Pressable>
-          <View style={[styles.modalContents, { width: 200, height: PLUGIN.HISYOUTOOL ? 380 : 180 }]}>
+          <View style={[styles.modalContents, { width: 200, height: hisyouTool ? 380 : 180 }]}>
             <Text style={styles.modalTitle}>{`${t('common.selectBrush')}`} </Text>
             <View style={{ flexDirection: 'column', margin: 10, width: 220 }}>
-              {PLUGIN.HISYOUTOOL && (
+              {hisyouTool && (
                 <View
                   style={{
                     alignItems: 'center',

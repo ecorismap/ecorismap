@@ -18,7 +18,6 @@ import { usePermission } from '../hooks/usePermission';
 import { SettingsModalMapListURL } from '../components/organisms/SettingsModalMapListURL';
 import { SettingsModalProximityAlert } from '../components/organisms/SettingsModalProximityAlert';
 import { SettingsModalStorageSelect } from '../components/organisms/SettingsModalStorageSelect';
-import { FUNC_GOOGLE_DRIVE } from '../constants/AppConstants';
 import { editSettingsAction } from '../modules/settings';
 import { ProximityAlertSettingsType } from '../types';
 import { selectNonDeletedDataSet } from '../modules/selectors';
@@ -105,25 +104,17 @@ export default function SettingsContainers() {
     }
   }, [navigateToHome, openEcorisMapFile]);
 
-  const pressFileSave = useCallback(async () => {
-    if (!FUNC_GOOGLE_DRIVE) {
-      await saveFileToLocal();
-      return;
-    }
+  const pressFileSave = useCallback(() => {
     setStorageSelectMode('save');
-  }, [saveFileToLocal]);
+  }, []);
 
   const pressFileOpen = useCallback(async () => {
     if (isRunningProject) {
       await AlertAsync(t('hooks.message.cannotInRunningProject'));
       return;
     }
-    if (!FUNC_GOOGLE_DRIVE) {
-      await openFileFromLocal();
-      return;
-    }
     setStorageSelectMode('open');
-  }, [isRunningProject, openFileFromLocal]);
+  }, [isRunningProject]);
 
   const pressStorageSelectLocal = useCallback(async () => {
     const mode = storageSelectMode;

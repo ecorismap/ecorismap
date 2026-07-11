@@ -1,13 +1,17 @@
 import React, { useCallback, useEffect } from 'react';
 import { Platform } from 'react-native';
+import { useDispatch } from 'react-redux';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Account from '../components/pages/Account';
 import { AccountContext } from '../contexts/Account';
 import { useAccount } from '../hooks/useAccount';
+import { signInGoogleDrive } from '../lib/googledrive/auth';
+import { setGoogleDriveConnectedEmailAction } from '../modules/googleDrive';
 import { t } from '../i18n/config';
 import { Props_Account } from '../routes';
 
 export default function AccountContainers({ navigation, route }: Props_Account) {
+  const dispatch = useDispatch();
   const {
     user,
     accountMessage,
@@ -281,6 +285,32 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
     [checkPassword, checkUserPassword, deleteAllProjects, navigateToPrevious, setAccountMessage]
   );
 
+  const pressConnectGoogle = useCallback(async () => {
+    const result = await signInGoogleDrive();
+    if (!result.isOK) {
+      if (result.message === 'cancelled') return;
+      const message =
+        result.message === 'scope-denied'
+          ? t('hooks.message.googleDriveScopeDenied')
+          : t('hooks.message.googleDriveConnectFailed');
+      await AlertAsync(message);
+      return;
+    }
+    dispatch(setGoogleDriveConnectedEmailAction(result.email));
+    setAccountMessage('');
+    navigation.navigate('Home');
+  }, [dispatch, navigation, setAccountMessage]);
+
+  const changeLoginForm = useCallback(() => {
+    setAccountMessage('');
+    setAccountFormState('loginUserAccount');
+  }, [setAccountFormState, setAccountMessage]);
+
+  const changeSelectLoginMethodForm = useCallback(() => {
+    setAccountMessage('');
+    setAccountFormState('selectLoginMethod');
+  }, [setAccountFormState, setAccountMessage]);
+
   const changeResetForm = useCallback(() => {
     setAccountMessage(t('Account.message.inputMail'));
     setAccountFormState('resetUserPassword');
@@ -320,6 +350,9 @@ export default function AccountContainers({ navigation, route }: Props_Account) 
         changeSignUpForm,
         changeResetPasswordForm: changeResetForm,
         changeResetEncryptForm,
+        changeLoginForm,
+        changeSelectLoginMethodForm,
+        pressConnectGoogle,
       }}
     >
       <Account />

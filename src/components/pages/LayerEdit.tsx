@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { FUNC_LOGIN } from '../../constants/AppConstants';
 import { LayerName } from '../organisms/LayerEditLayerName';
 import { LayerStyle } from '../organisms/LayerEditLayerStyle';
 import { LayerEditFieldTable } from '../organisms/LayerEditFieldTable';
@@ -39,7 +38,7 @@ export default function LayerEditScreen() {
       />
       <LayerName />
       <LayerStyle />
-      {FUNC_LOGIN && !isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
+      {!isClosedProject && layer.type !== 'LAYERGROUP' && <LayerEditRadio />}
       {layer.type !== 'LAYERGROUP' ? (
         <ScrollView horizontal={true} contentContainerStyle={{ flexGrow: 1 }}>
           <LayerEditFieldTable />

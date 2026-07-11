@@ -14,7 +14,7 @@ import {
 import * as turf from '@turf/helpers';
 import simplify from '@turf/simplify';
 import area from '@turf/area';
-import { COLOR, FUNC_LOGIN } from '../constants/AppConstants';
+import { COLOR } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import sanitize from 'sanitize-filename';
 import { formattedInputs } from './Format';
@@ -482,9 +482,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
   const mapMemoHeader = ['_group', '_strokeWidth', '_strokeColor', '_strokeStyle', '_stamp', '_zoom', '_visible'];
 
   let header = field.map((f) => f.name).join(',');
-  if (FUNC_LOGIN) {
-    header = 'displayName' + ',' + header;
-  }
+  header = 'displayName' + ',' + header;
   if (isMapMemoLayer) {
     header = header + ',' + '_id' + ',' + mapMemoHeader.join(',') + ',' + '_qgisColor';
   }
@@ -502,9 +500,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
       })
       .join(',');
 
-    if (FUNC_LOGIN) {
-      fieldCSV = (record.displayName === null ? '' : record.displayName) + ',' + fieldCSV;
-    }
+    fieldCSV = (record.displayName === null ? '' : record.displayName) + ',' + fieldCSV;
     if (isMapMemoLayer) {
       const mapMemoProperties = mapMemoHeader.map((name) => record.field[name] ?? '').join(',');
       const id = record.id;
@@ -568,9 +564,7 @@ export const generateCSV = (dataSet: RecordType[], field: LayerType['field'], ty
 };
 
 const generateDescription = (record: RecordType, field: FieldType[]) => {
-  const userInfo = FUNC_LOGIN && record.displayName 
-    ? `User: ${record.displayName}\n` 
-    : '';
+  const userInfo = record.displayName ? `User: ${record.displayName}\n` : '';
   
   const fieldInfo = field
     .map(({ name }) => {
@@ -718,7 +712,7 @@ export const generateGPX = (data: RecordType[], type: FeatureType) => {
     const descriptions: string[] = [];
     
     // Add user info first if available
-    if (FUNC_LOGIN && record.displayName) {
+    if (record.displayName) {
       descriptions.push(`User: ${record.displayName}`);
     }
     
@@ -824,7 +818,7 @@ const generateProperties = (
       }
     })
     .reduce((obj, userObj) => Object.assign(obj, userObj), {});
-  if (FUNC_LOGIN && permission !== 'COMMON') {
+  if (permission !== 'COMMON') {
     if ('displayName' in record) {
       properties.displayName === undefined
         ? (properties.displayName = record.displayName as string)

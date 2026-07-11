@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { View, StyleSheet, ScrollView, Platform, Text, TouchableOpacity } from 'react-native';
-import { ACCOUNT_SETTINGS_BTN, COLOR, FUNC_ENCRYPTION, FUNC_LOGIN } from '../../constants/AppConstants';
+import { ACCOUNT_SETTINGS_BTN, COLOR, FUNC_ENCRYPTION } from '../../constants/AppConstants';
 import { AccountSettingsContext } from '../../contexts/AccountSettings';
 import { t } from '../../i18n/config';
 import { TextButton } from '../molecules/TextButton';
@@ -81,7 +81,7 @@ export default function AccountSettings() {
             info={t('AccountSettings.account_delete.info')}
             onPress={pressDeleteUserAccount}
           />
-          {FUNC_LOGIN && Platform.OS === 'web' && (
+          {Platform.OS === 'web' && (
             <TextButton
               name={ACCOUNT_SETTINGS_BTN.PROJECT_DELETE_ALL}
               text={t('AccountSettings.project_delete_all.text')}
