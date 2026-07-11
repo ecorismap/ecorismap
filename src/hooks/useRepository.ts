@@ -122,7 +122,6 @@ export type UseRepositoryReturnType = {
 
   uploadDataToRepository: (
     project_: ProjectType,
-    isLicenseOK: boolean,
     uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
   ) => Promise<{
     isOK: boolean;
@@ -393,13 +392,7 @@ export const useRepository = (): UseRepositoryReturnType & {
   }, []);
 
   const updateStoragePhoto = useCallback(
-    async (
-      isLicenseOK: boolean,
-      data: RecordType,
-      project: ProjectType,
-      layerId: string,
-      photoField: LayerType['field']
-    ) => {
+    async (data: RecordType, project: ProjectType, layerId: string, photoField: LayerType['field']) => {
       if (user.uid === undefined) return data;
       const uid = user.uid;
       const newData = cloneDeep(data);
@@ -411,10 +404,6 @@ export const useRepository = (): UseRepositoryReturnType & {
             await projectStorage.deleteStoragePhoto(project.id, layerId, uid, photo.id);
           } else if (photo.uri !== null && photo.uri !== undefined && photo.url === null) {
             //アップロード
-            if (!isLicenseOK) {
-              //ライセンス制限あればアップロードしない
-              return photo;
-            }
             const { url, key } = await projectStorage.uploadPhoto(project.id, layerId, uid, photo.id, photo.uri);
             if (Platform.OS === 'web') {
               //Webはuriに直接写真データが入ってしまい重いのでアップロードしたら消す。
@@ -498,11 +487,7 @@ export const useRepository = (): UseRepositoryReturnType & {
   );
 
   const uploadDataToRepository = useCallback(
-    async (
-      project: ProjectType,
-      isLicenseOK: boolean,
-      uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template'
-    ) => {
+    async (project: ProjectType, uploadType: 'All' | 'PublicAndPrivate' | 'Common' | 'Template') => {
       //ToDo バッチアップロード?
       //firestore上の対象レイヤの自分のデータを一旦すべて削除
 
@@ -601,7 +586,7 @@ export const useRepository = (): UseRepositoryReturnType & {
         //写真の更新
         const updatedData = await Promise.all(
           targetRecordSet.map((d: RecordType) => {
-            return updateStoragePhoto(isLicenseOK, d, project, layer.id, photoFields);
+            return updateStoragePhoto(d, project, layer.id, photoFields);
           })
         );
 

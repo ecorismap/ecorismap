@@ -32,18 +32,6 @@ describe('pressDeleteUserAccount', () => {
     expect(true).toBe(true);
   });
 });
-describe('pressUpgradeAccount', () => {
-  test('', () => {
-    expect(true).toBe(true);
-  });
-});
-
-describe('アップグレード', () => {
-  test('', () => {
-    expect(true).toBe(true);
-  });
-});
-
 describe('pressDeleteAllProjects', () => {
   test('ログインパスワードを求められて削除する', () => {
     expect(true).toBe(true);

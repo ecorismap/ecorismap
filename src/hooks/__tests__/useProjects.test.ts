@@ -26,7 +26,6 @@
 //     membersUid: ['0123'],
 //     abstract: 'this is test0 project',
 //     storage: { count: 1000000 },
-//     license: 'Free',
 //   },
 // ];
 
@@ -40,7 +39,6 @@
 //     members: [{ uid: '4567', email: 'def@test.com', verified: 'OK', role: 'OWNER' }],
 //     abstract: 'this is test1 project',
 //     storage: { count: 1000000 },
-//     license: 'Free',
 //   },
 // ];
 

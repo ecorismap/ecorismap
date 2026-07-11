@@ -38,7 +38,6 @@ import { useSyncLocation } from '../hooks/useSyncLocation';
 import { useAccount } from '../hooks/useAccount';
 import { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { useProject } from '../hooks/useProject';
-import { validateStorageLicense } from '../utils/Project';
 import {
   getExt,
   isFreehandTool,
@@ -1111,15 +1110,6 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     try {
       const ret = await ConfirmAsync(t('Home.confirm.upload'));
       if (!ret) return;
-      const storageLicenseResult = validateStorageLicense(project);
-      if (!storageLicenseResult.isOK) {
-        if (Platform.OS === 'web') {
-          await AlertAsync(storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
-        } else {
-          await AlertAsync(t('Home.alert.uploadLicense'));
-        }
-        return;
-      }
       if (!isConnected) {
         await AlertAsync(t('Home.alert.noInternet'));
         return;
@@ -1137,7 +1127,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         }
       }
 
-      const { isOK, message } = await uploadData(storageLicenseResult.isOK);
+      const { isOK, message } = await uploadData();
       setIsLoading(false);
       if (!isOK) {
         // キャンセル時など message が空の場合は不要なダイアログを出さない
@@ -1149,7 +1139,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       setIsLoading(false);
       await AlertAsync(e.message);
     }
-  }, [isConnected, project, uploadData, user.uid]);
+  }, [isConnected, uploadData, user.uid]);
 
   const pressSyncPosition = useCallback(() => {
     if (isSynced === false) {
@@ -1172,16 +1162,8 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     try {
       const ret = await ConfirmAsync(t('Home.confirm.saveProject'));
       if (!ret) return;
-      const storageLicenseResult = validateStorageLicense(project);
-      if (!storageLicenseResult.isOK) {
-        if (Platform.OS === 'web') {
-          await AlertAsync(storageLicenseResult.message + t('Home.alert.uploadLicenseWeb'));
-        } else {
-          await AlertAsync(t('Home.alert.uploadLicense'));
-        }
-      }
       setIsLoading(true);
-      await saveProjectSetting(storageLicenseResult.isOK);
+      await saveProjectSetting();
       setIsLoading(false);
       await AlertAsync(t('Home.alert.saveProject'));
       navigateToSplit?.('Layers');

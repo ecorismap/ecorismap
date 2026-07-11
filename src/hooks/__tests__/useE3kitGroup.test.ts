@@ -54,7 +54,6 @@ const dekProject: ProjectType = {
   membersUid: ['owner-uid', 'member-uid'],
   abstract: '',
   storage: { count: 0 },
-  license: 'Free',
   cryptoScheme: 'dek',
 };
 

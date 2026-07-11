@@ -459,7 +459,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const store = makeStore({}); // 基準値なし
     const { result } = renderWithStore(store);
     await act(async () => {
-      await result.current.uploadDataToRepository(project, true, 'All');
+      await result.current.uploadDataToRepository(project, 'All');
     });
 
     expect(downloadSpy).toHaveBeenCalledTimes(1); // 内容確認のため取得する
@@ -483,7 +483,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const store = makeStore({ proj1: { [conflictKey]: 555 } }); // 基準値==クラウド
     const { result } = renderWithStore(store);
     await act(async () => {
-      await result.current.uploadDataToRepository(project, true, 'All');
+      await result.current.uploadDataToRepository(project, 'All');
     });
 
     expect(dialogSpy).not.toHaveBeenCalled();
@@ -510,7 +510,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const store = makeStore({}); // 基準値なし（2台目の初回）
     const { result } = renderWithStore(store);
     await act(async () => {
-      await result.current.uploadDataToRepository(project, true, 'All');
+      await result.current.uploadDataToRepository(project, 'All');
     });
 
     expect(downloadSpy).toHaveBeenCalledTimes(1);
@@ -535,7 +535,7 @@ describe('uploadDataToRepository（楽観的ロック）', () => {
     const { result } = renderWithStore(store);
     let res: any;
     await act(async () => {
-      res = await result.current.uploadDataToRepository(project, true, 'All');
+      res = await result.current.uploadDataToRepository(project, 'All');
     });
 
     expect(uploadSpy).not.toHaveBeenCalled();

@@ -19,7 +19,6 @@ export type UseProjectsReturnType = {
   projects: ProjectType[];
   favoriteProjectIds: string[];
   showOnlyFavorites: boolean;
-  ownerProjectsCount: () => number;
   fetchProjects: () => Promise<{
     isOK: boolean;
     message: string;
@@ -37,13 +36,7 @@ export const useProjects = (): UseProjectsReturnType => {
   const showOnlyFavorites = useSelector((state: RootState) => state.favoriteProjects?.showOnlyFavorites || false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const ownerProjectsCount = useCallback(() => {
-    if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
-    return projects.filter((project) => project.ownerUid === user.uid).length;
-  }, [projects, user]);
-
   const generateProject = useCallback(() => {
-    //ライセンスは不正防止のためadd後にfunctionsで更新するが、ひとまず入れておく。本当は、Listnerで更新した方が良い。
     if (!isLoggedIn(user)) throw new Error(t('hooks.message.pleaseLogin'));
     const project: ProjectType = {
       id: ulid(),
@@ -54,7 +47,6 @@ export const useProjects = (): UseProjectsReturnType => {
       membersUid: [user.uid],
       abstract: '',
       storage: { count: 0 },
-      license: 'Unknown',
     };
     return project;
   }, [user]);
@@ -119,7 +111,6 @@ export const useProjects = (): UseProjectsReturnType => {
     projects,
     favoriteProjectIds,
     showOnlyFavorites,
-    ownerProjectsCount,
     fetchProjects,
     generateProject,
     toggleFavorite,

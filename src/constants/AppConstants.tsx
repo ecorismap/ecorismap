@@ -14,8 +14,6 @@ export const CREATE_DEK_PROJECTS = false;
 // 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
 // 行き渡ってから true にする。
 export const ENABLE_DEK_MIGRATION = false;
-export const FUNC_PURCHASE = false;
-export const FUNC_CHECK_LICENSE = false;
 // Google Drive個人プロジェクト管理機能。OAuthクライアント設定(APIKeys.tsのgoogleDriveOAuth)が
 // 未設定の環境では接続時にエラーメッセージを表示するのみで他機能に影響しない。
 export const FUNC_GOOGLE_DRIVE = true;
@@ -399,7 +397,6 @@ export const ACCOUNT_SETTINGS_BTN = {
   ENCRYPTION_PASSWORD_CHANGE: 'file-key',
   ENCRYPTION_KEY_RESET: 'cellphone-key',
   ACCOUNT_DELETE: 'account-off',
-  UPGRADE: 'account-star',
   PROJECT_IMPORT: 'folder-open',
   PROJECT_DELETE_ALL: 'database-remove',
 } as const;

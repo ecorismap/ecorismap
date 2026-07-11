@@ -7808,26 +7808,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@stripe/react-stripe-js@npm:^6.6.0":
-  version: 6.6.0
-  resolution: "@stripe/react-stripe-js@npm:6.6.0"
-  dependencies:
-    prop-types: ^15.7.2
-  peerDependencies:
-    "@stripe/stripe-js": ">=9.5.0 <10.0.0"
-    react: ">=16.8.0 <20.0.0"
-    react-dom: ">=16.8.0 <20.0.0"
-  checksum: a0ba0fcba00e73f14db3869ab07e37315a150b5ad349a5234823f4ffdfce4aaa0803e28241daecbd2f5935936b4f30729831430b216e323c034340d892c54f29
-  languageName: node
-  linkType: hard
-
-"@stripe/stripe-js@npm:^9.8.0":
-  version: 9.8.0
-  resolution: "@stripe/stripe-js@npm:9.8.0"
-  checksum: 13e069fe2562142d7e4282e15e5b41546b31678940684f8fb685ae4b1eb8d6d89efcffa68f22e212fc4920c74f84f0cadb3c0e2eb387db4dc953ec1277dae11f
-  languageName: node
-  linkType: hard
-
 "@testing-library/dom@npm:^10.3.1":
   version: 10.4.1
   resolution: "@testing-library/dom@npm:10.4.1"
@@ -14519,8 +14499,6 @@ __metadata:
     "@react-native/typescript-config": 0.85.3
     "@reduxjs/toolkit": ^2.2.6
     "@sqlite.org/sqlite-wasm": ^3.46.1-build3
-    "@stripe/react-stripe-js": ^6.6.0
-    "@stripe/stripe-js": ^9.8.0
     "@testing-library/dom": ^10.3.1
     "@testing-library/jest-native": ^5.4.3
     "@testing-library/react-hooks": ^8.0.1

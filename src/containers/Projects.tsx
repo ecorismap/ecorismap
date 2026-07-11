@@ -3,10 +3,8 @@ import { Alert } from '../components/atoms/Alert';
 import { AlertAsync } from '../components/molecules/AlertAsync';
 import Projects from '../components/pages/Projects';
 import { useProjects } from '../hooks/useProjects';
-import { usePurchasesWeb } from '../hooks/usePurchasesWeb';
 import { t } from '../i18n/config';
 import { Props_Projects } from '../routes';
-import { validateProjectLicense } from '../utils/Project';
 import { ProjectsContext } from '../contexts/Projects';
 import { usePermission } from '../hooks/usePermission';
 import { useAccount } from '../hooks/useAccount';
@@ -23,26 +21,16 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     projects,
     favoriteProjectIds,
     showOnlyFavorites,
-    ownerProjectsCount,
     fetchProjects,
     generateProject,
     toggleFavorite,
     toggleShowOnlyFavorites,
   } = useProjects();
-  const { customerLicense } = usePurchasesWeb();
   const { restoreEncryptKey, cleanupEncryptKey } = useAccount();
   const pressAddProject = useCallback(() => {
     try {
       if (isSettingProject) {
         Alert.alert('', t('hooks.message.cannotAddProject'));
-        return;
-      }
-      const { isOK: licenseIsOK, message: licenseMessage } = validateProjectLicense(
-        customerLicense,
-        ownerProjectsCount()
-      );
-      if (!licenseIsOK) {
-        Alert.alert('', licenseMessage + t('Projects.alert.addProject'));
         return;
       }
       navigation.navigate('ProjectEdit', {
@@ -53,7 +41,7 @@ export default function ProjectsContainers({ navigation, route }: Props_Projects
     } catch (e: any) {
       Alert.alert('error', e.message);
     }
-  }, [customerLicense, generateProject, isSettingProject, navigation, ownerProjectsCount]);
+  }, [generateProject, isSettingProject, navigation]);
 
   const gotoBack = useCallback(async () => {
     navigation.navigate('Home', { previous: 'Projects', mode: undefined });

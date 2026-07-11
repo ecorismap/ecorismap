@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode, use
 import { AccountFormStateType, LayerType, ProjectType, RecordType, RegionType, TileMapType } from '../types';
 
 // RootStack画面の型定義
-export type RootScreenName = 'Home' | 'Account' | 'AccountSettings' | 'Purchases' | 'Projects' | 'ProjectEdit' | 'CloudDataManagement';
+export type RootScreenName = 'Home' | 'Account' | 'AccountSettings' | 'Projects' | 'ProjectEdit' | 'CloudDataManagement';
 
 // 各画面のパラメータ型
 export type RootScreenParams = {
@@ -27,7 +27,6 @@ export type RootScreenParams = {
       }
     | undefined;
   AccountSettings: { previous: RootScreenName };
-  Purchases: undefined;
   Projects: { reload: boolean } | undefined;
   ProjectEdit: {
     previous: RootScreenName;

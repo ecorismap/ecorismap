@@ -4,9 +4,6 @@ import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { useProjectEdit } from '../hooks/useProjectEdit';
 import { Props_ProjectEdit } from '../routes';
 import { Platform } from 'react-native';
-import { useProjects } from '../hooks/useProjects';
-import { validateMemberLicense, validateProjectLicense } from '../utils/Project';
-import { Alert } from '../components/atoms/Alert';
 import { t } from '../i18n/config';
 import { ProjectEditContext } from '../contexts/ProjectEdit';
 import { useE3kitGroup } from '../hooks/useE3kitGroup';
@@ -14,7 +11,6 @@ import { useRepository } from '../hooks/useRepository';
 import { exportGeoFile } from '../utils/File';
 import { truncateForFileName } from '../utils/General';
 import { ProjectType } from '../types';
-import { updateLicense } from '../lib/firebase/firestore';
 import { FUNC_ENCRYPTION, CREATE_DEK_PROJECTS } from '../constants/AppConstants';
 import dayjs from '../i18n/dayjs';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
@@ -42,7 +38,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
   } = useProjectEdit(route.params.project, route.params.isNew);
 
   const [isLoading, setIsLoading] = useState(false);
-  const { ownerProjectsCount } = useProjects();
   const { loadE3kitGroup, deleteE3kitGroup, updateE3kitGroupMembers, createE3kitGroup, reshareMemberKey } =
     useE3kitGroup();
   const {
@@ -105,14 +100,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
           if (!ret) return false;
         }
 
-        const projectLicenseResult = validateProjectLicense(targetProject.license, ownerProjectsCount());
-        if (!projectLicenseResult.isOK && isOwner) {
-          if (Platform.OS === 'web') {
-            await AlertAsync(projectLicenseResult.message + t('ProjectEdit.alert.openProjectWeb'));
-          } else {
-            await AlertAsync(t('ProjectEdit.alert.openProject'));
-          }
-        }
         //ユーザーとしてプロジェクトを開く。管理者は取得時に全てのデータを取得できる。
         const isAdmin = false;
 
@@ -148,8 +135,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
     [
       isProjectOpen,
       targetProject,
-      ownerProjectsCount,
-      isOwner,
       loadE3kitGroup,
       downloadProjectSettings,
       openProject,
@@ -244,8 +229,6 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
       if (!e3kitGroupResult.isOK || !e3kitGroupResult.project) throw new Error(e3kitGroupResult.message);
       const createProjectResult = await createProject(e3kitGroupResult.project);
       if (!createProjectResult.isOK) throw new Error(createProjectResult.message);
-      const updateLicenseResult = await updateLicense(e3kitGroupResult.project);
-      if (!updateLicenseResult.isOK) throw new Error(updateLicenseResult.message);
     },
     [createE3kitGroup, createProject]
   );
@@ -281,18 +264,9 @@ export default function ProjectEditContainer({ navigation, route }: Props_Projec
 
   const pressAddMembers = useCallback(
     (emails: string) => {
-      const { isOK, message } = validateMemberLicense(targetProject.license, targetProject.members.length);
-      if (!isOK) {
-        if (Platform.OS === 'web') {
-          Alert.alert('', message + t('ProjectEdit.alert.addMemberWeb'));
-        } else {
-          Alert.alert('', t('ProjectEdit.alert.addMember'));
-        }
-        return;
-      }
       addMembers(emails);
     },
-    [addMembers, targetProject.license, targetProject.members.length]
+    [addMembers]
   );
 
   const pressDeleteMember = useCallback(
