@@ -242,6 +242,7 @@ export default function Account() {
               <Pressable onPress={changeLoginForm}>
                 <Text style={styles.underline}>{`${t('Account.text.orgAccountLogin')}`}</Text>
               </Pressable>
+              <Text style={styles.infoText}>{`${t('Account.text.orgAccountLoginInfo')}`}</Text>
             </View>
           )}
 

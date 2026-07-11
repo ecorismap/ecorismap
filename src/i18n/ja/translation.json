@@ -725,8 +725,9 @@
       "connectGoogle": "Googleで接続",
       "connectGoogleInfo": "設定の「データの保存・読み込み」で自分のGoogle Driveを利用できるようになります",
       "orgAccountLogin": "組織アカウントでログイン",
+      "orgAccountLoginInfo": "※組織アカウントの登録・利用には運営元の許可が必要です",
       "backToSelectLogin": "ログイン方法の選択に戻る",
-      "signupOrgNote": "アカウント登録は組織メンバー専用です。一般の方は「Googleで接続」をご利用ください。"
+      "signupOrgNote": "アカウントの登録には運営元の許可が必要です。許可のない方は「Googleで接続」をご利用ください。"
     },
     "alert": {
       "activate": "メールを確認して、アクティベートしてください。",
@@ -821,7 +822,7 @@
       "failedInitializeEncrypt": "暗号化の初期化に失敗しました",
       "noUser": "ユーザーが存在しません。",
       "emailInUse": "そのメールアドレスは既に使用されています。",
-      "signupRestricted": "組織のアカウントのみ登録できます。一般の方は「Googleで接続」をご利用ください。",
+      "signupRestricted": "このメールアドレスでは登録できません。アカウントの登録には運営元の許可が必要です。「Googleで接続」もご利用いただけます。",
       "failSetProfile": "プロフィールの設定に失敗しました。",
       "inputValidDisplayName": "表示名を正しく入力してください",
       "inputValidIconURL": "icon画像のURLを正しく入力してください",
