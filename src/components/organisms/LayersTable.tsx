@@ -17,6 +17,7 @@ const LayerRow = React.memo(
     item,
     drag,
     isActive,
+    childCount,
     isClosedProject,
     isSettingProject,
     hasCustomLabel,
@@ -35,6 +36,7 @@ const LayerRow = React.memo(
     item: LayerType;
     drag: () => void;
     isActive: boolean;
+    childCount: number;
     isClosedProject: boolean;
     isSettingProject: boolean;
     hasCustomLabel: boolean;
@@ -50,13 +52,16 @@ const LayerRow = React.memo(
     gotoLayerEdit: (layer: LayerType) => void;
     pressLayerOrder: (layer: LayerType, direction: 'up' | 'down') => void;
   }) => {
+    const isParent = item.type === 'LAYERGROUP';
     const backgroundColor = isActive
       ? COLOR.WHITE
-      : item.type === 'LAYERGROUP'
-      ? COLOR.KHAKI
+      : isParent
+      ? COLOR.GROUP_PARENT_BG
       : item.groupId
-      ? COLOR.LIGHTKHAKI
+      ? COLOR.GROUP_CHILD_BG
       : COLOR.MAIN;
+    // 親行の文字・アイコン色。ドラッグ中は白背景になるため濃色に戻す
+    const parentFg = isActive ? COLOR.GRAY4 : COLOR.WHITE;
 
     // ラベル候補作成をメモ化
     const { labelNames, labelValues } = useMemo(() => {
@@ -73,13 +78,14 @@ const LayerRow = React.memo(
 
     return (
       <View style={[styles.row, { backgroundColor: backgroundColor }]}>
+        {!!item.groupId && !isActive && <View style={styles.childAccent} />}
         <View style={[styles.td, { flex: 2, width: 60 }]}>
-          {item.type === 'LAYERGROUP' ? (
+          {isParent ? (
             <Button
               name={item.expanded ? 'chevron-down' : 'chevron-right'}
               onPress={() => changeExpand(item)}
               style={[styles.iconBtn, { backgroundColor }]}
-              color={COLOR.GRAY4}
+              color={parentFg}
             />
           ) : (
             (isClosedProject || isSettingProject || item.permission !== 'COMMON') &&
@@ -98,7 +104,7 @@ const LayerRow = React.memo(
           <Button
             name={item.visible ? 'eye' : 'eye-off-outline'}
             onPress={() => changeVisible(!item.visible, item)}
-            color={COLOR.GRAY4}
+            color={isParent ? parentFg : COLOR.GRAY4}
             style={[styles.iconBtn, { backgroundColor }]}
           />
           {item.type === 'POINT' && (
@@ -122,27 +128,43 @@ const LayerRow = React.memo(
         </View>
 
         <Pressable
-          style={[styles.td, { flex: 5, width: 150, height: 60 }]}
+          // グループ親はラベル列を表示しないため、レイヤ名+ラベルの2列分の幅を使う
+          style={[styles.td, isParent ? { flex: 10, width: 310 } : { flex: 5, width: 150 }, { height: 60 }]}
           onLongPress={item.type === 'LAYERGROUP' && item.expanded ? undefined : drag}
           disabled={isActive}
           onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
         >
-          <Text style={styles.nameText} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5}>
-            {item.name}
-          </Text>
-          {item.type !== 'LAYERGROUP' && (
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={16}
-              color={COLOR.GRAY3}
-              style={styles.chevron}
-              selectable={undefined}
-            />
+          {isParent ? (
+            <View style={styles.groupName}>
+              <MaterialCommunityIcons
+                name={item.expanded ? 'folder-open' : 'folder'}
+                size={18}
+                color={parentFg}
+                style={{ marginRight: 6 }}
+                selectable={undefined}
+              />
+              <Text style={{ color: parentFg, flexShrink: 1, fontWeight: 'bold' }} numberOfLines={2}>
+                {`${item.name} (${childCount})`}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.nameText} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.5}>
+                {item.name}
+              </Text>
+              <MaterialCommunityIcons
+                name="chevron-right"
+                size={16}
+                color={COLOR.GRAY3}
+                style={styles.chevron}
+                selectable={undefined}
+              />
+            </>
           )}
         </Pressable>
 
-        <View style={[styles.td, { flex: 5, width: 160 }]}>
-          {item.type !== 'LAYERGROUP' && (
+        {!isParent && (
+          <View style={[styles.td, { flex: 5, width: 160 }]}>
             <Picker
               selectedValue={item.label}
               onValueChange={(val) => changeLabel(item, val as string)}
@@ -151,8 +173,8 @@ const LayerRow = React.memo(
               maxIndex={labelValues.length - 1}
               style={{ backgroundColor }}
             />
-          )}
-        </View>
+          </View>
+        )}
 
         {hasCustomLabel && (
           <View style={[styles.td, { flex: 5, width: 160 }]}>
@@ -175,7 +197,7 @@ const LayerRow = React.memo(
               name="table-cog"
               onPress={() => gotoLayerEdit(item)}
               style={{ backgroundColor }}
-              color={COLOR.GRAY4}
+              color={isParent ? parentFg : COLOR.GRAY4}
             />
           )}
         </View>
@@ -186,14 +208,14 @@ const LayerRow = React.memo(
           <Button
             name="chevron-up"
             onPress={() => pressLayerOrder(item, 'up')}
-            color={COLOR.GRAY2}
+            color={isParent ? parentFg : COLOR.GRAY2}
             style={[styles.iconBtn, { backgroundColor }]}
           />
           {/* 下へ */}
           <Button
             name="chevron-down"
             onPress={() => pressLayerOrder(item, 'down')}
-            color={COLOR.GRAY2}
+            color={isParent ? parentFg : COLOR.GRAY2}
             style={[styles.iconBtn, { backgroundColor }]}
           />
         </View>
@@ -211,6 +233,7 @@ const LayerRow = React.memo(
       prevProps.item.name === nextProps.item.name &&
       prevProps.item.colorStyle.color === nextProps.item.colorStyle.color &&
       prevProps.isActive === nextProps.isActive &&
+      prevProps.childCount === nextProps.childCount &&
       prevProps.hasCustomLabel === nextProps.hasCustomLabel &&
       prevProps.customLabelValue === nextProps.customLabelValue
     );
@@ -219,6 +242,7 @@ const LayerRow = React.memo(
 
 export const LayersTable = React.memo(() => {
   const {
+    layers,
     filterdLayers,
     changeExpand,
     changeVisible,
@@ -245,6 +269,15 @@ export const LayersTable = React.memo(() => {
     setCustomLabel(filterdLayers.reduce((obj, layer) => ({ ...obj, [layer.id]: layer.customLabel }), {}));
   }, [filterdLayers]);
 
+  // グループごとの子レイヤ数（折りたたみ時も数えるため全件のlayersから算出）
+  const childCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    layers.forEach((l) => {
+      if (l.groupId) counts[l.groupId] = (counts[l.groupId] ?? 0) + 1;
+    });
+    return counts;
+  }, [layers]);
+
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<LayerType>) => {
       return (
@@ -252,6 +285,7 @@ export const LayersTable = React.memo(() => {
           item={item}
           drag={drag}
           isActive={isActive}
+          childCount={childCounts[item.id] ?? 0}
           isClosedProject={isClosedProject}
           isSettingProject={isSettingProject}
           hasCustomLabel={hasCustomLabel}
@@ -270,6 +304,7 @@ export const LayersTable = React.memo(() => {
       );
     },
     [
+      childCounts,
       isClosedProject,
       isSettingProject,
       hasCustomLabel,
@@ -348,6 +383,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 60,
   },
+  childAccent: {
+    backgroundColor: COLOR.GROUP_ACCENT,
+    borderRadius: 2,
+    bottom: 8,
+    left: 6,
+    position: 'absolute',
+    top: 8,
+    width: 3,
+    zIndex: 1,
+  },
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -378,6 +423,13 @@ const styles = StyleSheet.create({
     flex: 4,
     padding: 5,
     textAlign: 'center',
+  },
+  groupName: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingLeft: 10,
   },
   chevron: {
     flex: 1,

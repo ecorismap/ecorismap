@@ -1,5 +1,6 @@
 import React, { useContext, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { COLOR } from '../../constants/AppConstants';
 import { Button } from '../atoms';
 import { Pressable } from '../atoms/Pressable';
@@ -37,6 +38,7 @@ const MapTableTitle = () => (
 const SortableMapRow = React.memo(
   ({
     item,
+    childCount,
     changeVisible,
     pressDownloadMap,
     gotoMapEdit,
@@ -45,6 +47,7 @@ const SortableMapRow = React.memo(
     pressMapOrder,
   }: {
     item: any;
+    childCount: number;
     changeVisible: (visible: boolean, item: any) => void;
     pressDownloadMap: (item: any) => void;
     gotoMapEdit: (item: any) => void;
@@ -64,34 +67,28 @@ const SortableMapRow = React.memo(
       opacity: isDragging ? 0.5 : 1,
     };
 
+    const isParent = item.isGroup;
     const backgroundColor = isDragging
       ? COLOR.WHITE
-      : item.isGroup
-      ? COLOR.KHAKI
+      : isParent
+      ? COLOR.GROUP_PARENT_BG
       : item.groupId
-      ? COLOR.LIGHTKHAKI
+      ? COLOR.GROUP_CHILD_BG
       : COLOR.MAIN;
+    // 親行の文字・アイコン色。ドラッグ中は白背景になるため濃色に戻す
+    const parentFg = isDragging ? COLOR.GRAY4 : COLOR.WHITE;
 
     return (
       <div ref={setNodeRef} style={style}>
         <View style={[styles.tr, { backgroundColor }]}>
-          <View
-            style={[
-              styles.td,
-              {
-                flex: 1,
-                width: 80,
-                borderRightWidth: item.groupId ? 1 : 0,
-                borderColor: COLOR.GRAY1,
-              },
-            ]}
-          >
+          {!!item.groupId && !isDragging && <View style={styles.childAccent} />}
+          <View style={[styles.td, { flex: 1, width: 80 }]}>
             <View style={{ alignItems: 'center', height: 56, justifyContent: 'center', flex: 1 }}>
-              {item.isGroup ? (
+              {isParent ? (
                 <Button
                   name={item.expanded ? 'chevron-down' : 'chevron-right'}
                   onPress={() => changeExpand(!item.expanded, item)}
-                  color={COLOR.GRAY4}
+                  color={parentFg}
                   size={25}
                   style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor }}
                 />
@@ -117,8 +114,19 @@ const SortableMapRow = React.memo(
             }}
             {...listeners}
           >
-            <View style={{ flex: 1 }}>
-              <Text>{item.name}</Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+              {isParent && (
+                <MaterialCommunityIcons
+                  name={item.expanded ? 'folder-open' : 'folder'}
+                  size={18}
+                  color={parentFg}
+                  style={{ marginRight: 4 }}
+                  selectable={undefined}
+                />
+              )}
+              <Text style={isParent ? { color: parentFg, fontWeight: 'bold', flexShrink: 1 } : undefined}>
+                {isParent ? `${item.name} (${childCount})` : item.name}
+              </Text>
             </View>
           </Pressable>
           <View style={[styles.td, { flex: 1, width: 80 }]}>
@@ -154,13 +162,13 @@ const SortableMapRow = React.memo(
                 <Button
                   name="chevron-up"
                   onPress={() => pressMapOrder(item, 'up')}
-                  color={COLOR.GRAY2}
+                  color={isParent ? parentFg : COLOR.GRAY2}
                   style={{ backgroundColor }}
                 />
                 <Button
                   name="chevron-down"
                   onPress={() => pressMapOrder(item, 'down')}
-                  color={COLOR.GRAY2}
+                  color={isParent ? parentFg : COLOR.GRAY2}
                   style={{ backgroundColor }}
                 />
               </>
@@ -174,6 +182,7 @@ const SortableMapRow = React.memo(
 
 export const MapTable = React.memo(() => {
   const {
+    maps,
     filterdMaps,
     changeVisible,
     pressDownloadMap,
@@ -218,6 +227,15 @@ export const MapTable = React.memo(() => {
 
   const itemIds = useMemo(() => filterdMaps.map((map: any) => map.id), [filterdMaps]);
 
+  // グループごとの子マップ数（折りたたみ時も数えるため全件のmapsから算出）
+  const childCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    maps.forEach((m) => {
+      if (m.groupId) counts[m.groupId] = (counts[m.groupId] ?? 0) + 1;
+    });
+    return counts;
+  }, [maps]);
+
   return (
     <View style={styles.container}>
       <MapTableTitle />
@@ -229,6 +247,7 @@ export const MapTable = React.memo(() => {
             <SortableMapRow
               key={item.id}
               item={item}
+              childCount={childCounts[item.id] ?? 0}
               changeVisible={changeVisible}
               pressDownloadMap={pressDownloadMap}
               gotoMapEdit={gotoMapEdit}
@@ -260,6 +279,16 @@ const styles = StyleSheet.create({
   tr: {
     flexDirection: 'row',
     height: 60,
+  },
+  childAccent: {
+    backgroundColor: COLOR.GROUP_ACCENT,
+    borderRadius: 2,
+    bottom: 8,
+    left: 6,
+    position: 'absolute',
+    top: 8,
+    width: 3,
+    zIndex: 1,
   },
   th: {
     alignItems: 'center',

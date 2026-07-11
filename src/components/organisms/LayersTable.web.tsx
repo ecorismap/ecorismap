@@ -25,6 +25,7 @@ import { usePermission } from '../../hooks/usePermission';
 const SortableLayerRow = React.memo(
   ({
     item,
+    childCount,
     isClosedProject,
     isSettingProject,
     hasCustomLabel,
@@ -41,6 +42,7 @@ const SortableLayerRow = React.memo(
     pressLayerOrder,
   }: {
     item: LayerType;
+    childCount: number;
     isClosedProject: boolean;
     isSettingProject: boolean;
     hasCustomLabel: boolean;
@@ -68,13 +70,16 @@ const SortableLayerRow = React.memo(
       opacity: isDragging ? 0.5 : 1,
     };
 
+    const isParent = item.type === 'LAYERGROUP';
     const backgroundColor = isDragging
       ? COLOR.WHITE
-      : item.type === 'LAYERGROUP'
-      ? COLOR.KHAKI
+      : isParent
+      ? COLOR.GROUP_PARENT_BG
       : item.groupId
-      ? COLOR.LIGHTKHAKI
+      ? COLOR.GROUP_CHILD_BG
       : COLOR.MAIN;
+    // 親行の文字・アイコン色。ドラッグ中は白背景になるため濃色に戻す
+    const parentFg = isDragging ? COLOR.GRAY4 : COLOR.WHITE;
 
     // ラベル候補作成をメモ化
     const { labelNames, labelValues } = useMemo(() => {
@@ -92,13 +97,14 @@ const SortableLayerRow = React.memo(
     return (
       <div ref={setNodeRef} style={style}>
         <View style={[styles.row, { backgroundColor: backgroundColor }]}>
+          {!!item.groupId && !isDragging && <View style={styles.childAccent} />}
           <View style={[styles.td, { flex: 2, width: 60 }]}>
-            {item.type === 'LAYERGROUP' ? (
+            {isParent ? (
               <Button
                 name={item.expanded ? 'chevron-down' : 'chevron-right'}
                 onPress={() => changeExpand(item)}
                 style={[styles.iconBtn, { backgroundColor }]}
-                color={COLOR.GRAY4}
+                color={parentFg}
               />
             ) : (
               (isClosedProject || isSettingProject || item.permission !== 'COMMON') &&
@@ -117,7 +123,7 @@ const SortableLayerRow = React.memo(
             <Button
               name={item.visible ? 'eye' : 'eye-off-outline'}
               onPress={() => changeVisible(!item.visible, item)}
-              color={COLOR.GRAY4}
+              color={isParent ? parentFg : COLOR.GRAY4}
               style={[styles.iconBtn, { backgroundColor }]}
             />
             {item.type === 'POINT' && (
@@ -141,26 +147,42 @@ const SortableLayerRow = React.memo(
           </View>
 
           <Pressable
-            style={[styles.td, { flex: 5, width: 150, height: 60, cursor: 'grab' } as any]}
+            // グループ親はラベル列を表示しないため、レイヤ名+ラベルの2列分の幅を使う
+            style={[styles.td, isParent ? { flex: 10, width: 310 } : { flex: 5, width: 150 }, { height: 60, cursor: 'grab' } as any]}
             onPress={() => (item.type === 'LAYERGROUP' ? changeExpand(item) : gotoData(item))}
             {...listeners}
           >
-            <Text style={styles.nameText} numberOfLines={3}>
-              {item.name}
-            </Text>
-            {item.type !== 'LAYERGROUP' && (
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={16}
-                color={COLOR.GRAY3}
-                style={styles.chevron}
-                selectable={undefined}
-              />
+            {isParent ? (
+              <View style={styles.groupName}>
+                <MaterialCommunityIcons
+                  name={item.expanded ? 'folder-open' : 'folder'}
+                  size={18}
+                  color={parentFg}
+                  style={{ marginRight: 6 }}
+                  selectable={undefined}
+                />
+                <Text style={{ color: parentFg, flexShrink: 1, fontWeight: 'bold' }} numberOfLines={2}>
+                  {`${item.name} (${childCount})`}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Text style={styles.nameText} numberOfLines={3}>
+                  {item.name}
+                </Text>
+                <MaterialCommunityIcons
+                  name="chevron-right"
+                  size={16}
+                  color={COLOR.GRAY3}
+                  style={styles.chevron}
+                  selectable={undefined}
+                />
+              </>
             )}
           </Pressable>
 
-          <View style={[styles.td, { flex: 5, width: 160 }]}>
-            {item.type !== 'LAYERGROUP' && (
+          {!isParent && (
+            <View style={[styles.td, { flex: 5, width: 160 }]}>
               <Picker
                 selectedValue={item.label}
                 onValueChange={(val) => changeLabel(item, val as string)}
@@ -169,8 +191,8 @@ const SortableLayerRow = React.memo(
                 maxIndex={labelValues.length - 1}
                 style={{ backgroundColor }}
               />
-            )}
-          </View>
+            </View>
+          )}
 
           {hasCustomLabel && (
             <View style={[styles.td, { flex: 5, width: 160 }]}>
@@ -193,7 +215,7 @@ const SortableLayerRow = React.memo(
                 name="table-cog"
                 onPress={() => gotoLayerEdit(item)}
                 style={{ backgroundColor }}
-                color={COLOR.GRAY4}
+                color={isParent ? parentFg : COLOR.GRAY4}
               />
             )}
           </View>
@@ -204,14 +226,14 @@ const SortableLayerRow = React.memo(
             <Button
               name="chevron-up"
               onPress={() => pressLayerOrder(item, 'up')}
-              color={COLOR.GRAY2}
+              color={isParent ? parentFg : COLOR.GRAY2}
               style={[styles.iconBtn, { backgroundColor }]}
             />
             {/* 下へ */}
             <Button
               name="chevron-down"
               onPress={() => pressLayerOrder(item, 'down')}
-              color={COLOR.GRAY2}
+              color={isParent ? parentFg : COLOR.GRAY2}
               style={[styles.iconBtn, { backgroundColor }]}
             />
           </View>
@@ -229,6 +251,7 @@ const SortableLayerRow = React.memo(
       prevProps.item.label === nextProps.item.label &&
       prevProps.item.name === nextProps.item.name &&
       prevProps.item.colorStyle.color === nextProps.item.colorStyle.color &&
+      prevProps.childCount === nextProps.childCount &&
       prevProps.hasCustomLabel === nextProps.hasCustomLabel &&
       prevProps.customLabelValue === nextProps.customLabelValue
     );
@@ -237,6 +260,7 @@ const SortableLayerRow = React.memo(
 
 export const LayersTable = React.memo(() => {
   const {
+    layers,
     filterdLayers,
     changeExpand,
     changeVisible,
@@ -293,6 +317,15 @@ export const LayersTable = React.memo(() => {
 
   const itemIds = useMemo(() => filterdLayers.map((layer) => layer.id), [filterdLayers]);
 
+  // グループごとの子レイヤ数（折りたたみ時も数えるため全件のlayersから算出）
+  const childCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    layers.forEach((l) => {
+      if (l.groupId) counts[l.groupId] = (counts[l.groupId] ?? 0) + 1;
+    });
+    return counts;
+  }, [layers]);
+
   return (
     <View style={styles.container}>
       <LayersTitle hasCustomLabel={hasCustomLabel} />
@@ -304,6 +337,7 @@ export const LayersTable = React.memo(() => {
             <SortableLayerRow
               key={item.id}
               item={item}
+              childCount={childCounts[item.id] ?? 0}
               isClosedProject={isClosedProject}
               isSettingProject={isSettingProject}
               hasCustomLabel={hasCustomLabel}
@@ -365,6 +399,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: 60,
   },
+  childAccent: {
+    backgroundColor: COLOR.GROUP_ACCENT,
+    borderRadius: 2,
+    bottom: 8,
+    left: 6,
+    position: 'absolute',
+    top: 8,
+    width: 3,
+    zIndex: 1,
+  },
   td: {
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -395,6 +439,13 @@ const styles = StyleSheet.create({
     flex: 4,
     padding: 5,
     textAlign: 'center',
+  },
+  groupName: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingLeft: 10,
   },
   chevron: {
     flex: 1,
