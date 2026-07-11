@@ -51,6 +51,7 @@ describe('Account (selectLoginMethod)', () => {
     expect(getByText('Account.text.connectGoogle')).toBeTruthy();
     expect(getByText('Account.text.connectGoogleInfo')).toBeTruthy();
     expect(getByText('Account.text.orgAccountLogin')).toBeTruthy();
+    expect(getByText('Account.text.orgAccountLoginInfo')).toBeTruthy();
     expect(queryByText('Account.text.next')).toBeNull();
   });
 

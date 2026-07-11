@@ -369,8 +369,9 @@
       "connectGoogle": "Connect with Google",
       "connectGoogleInfo": "Use your Google Drive from \"Save data\" and \"Load data\" in Settings",
       "orgAccountLogin": "Sign in with an organization account",
+      "orgAccountLoginInfo": "Creating and using an organization account requires approval from the operator.",
       "backToSelectLogin": "Back to sign-in options",
-      "signupOrgNote": "Account sign-up is for organization members only. Please use \"Connect with Google\"."
+      "signupOrgNote": "Account sign-up requires approval from the operator. If you don't have approval, please use \"Connect with Google\"."
     },
     "alert": {
       "activate": "Please check your email and activate.",
@@ -601,7 +602,7 @@
       "changeProjectName": "There is a project with the same name. \nPlease change the project name.",
       "duplicateMembers": "Duplicate members.",
       "emailInUse": "That email address is already in use.",
-      "signupRestricted": "Sign-up is limited to organization accounts. Please use \"Connect with Google\".",
+      "signupRestricted": "This email address cannot be registered. Account sign-up requires approval from the operator. You can also use \"Connect with Google\".",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
       "failedInitializeEncrypt": "Failed to initialize encryption",
       "failAddGroupMembers": "Failed to add member",
