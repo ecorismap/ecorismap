@@ -5,12 +5,6 @@
         "licenseUrl": "https://github.com/babel/babel/raw/master/LICENSE",
         "parents": "ecorismap"
     },
-    "@date-io/date-fns": {
-        "licenses": "MIT",
-        "repository": "https://github.com/dmtrKovalenko/date-io",
-        "licenseUrl": "https://github.com/dmtrKovalenko/date-io/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
     "@dnd-kit/core": {
         "licenses": "MIT",
         "repository": "https://github.com/clauderic/dnd-kit",
@@ -41,6 +35,12 @@
         "licenseUrl": "https://github.com/emotion-js/emotion/tree/main/packages/styled/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "@expo/vector-icons": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/vector-icons",
+        "licenseUrl": "https://github.com/expo/vector-icons/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "@gorhom/bottom-sheet": {
         "licenses": "MIT",
         "repository": "https://github.com/gorhom/react-native-bottom-sheet",
@@ -59,19 +59,7 @@
         "licenseUrl": "https://github.com/mapbox/vector-tile-js/raw/master/LICENSE.txt",
         "parents": "ecorismap"
     },
-    "@mui/lab": {
-        "licenses": "MIT",
-        "repository": "https://github.com/mui/material-ui",
-        "licenseUrl": "https://github.com/mui/material-ui/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
     "@mui/material": {
-        "licenses": "MIT",
-        "repository": "https://github.com/mui/material-ui",
-        "licenseUrl": "https://github.com/mui/material-ui/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@mui/styled-engine-sc": {
         "licenses": "MIT",
         "repository": "https://github.com/mui/material-ui",
         "licenseUrl": "https://github.com/mui/material-ui/raw/master/LICENSE",
@@ -149,16 +137,16 @@
         "licenseUrl": "https://github.com/invertase/react-native-firebase/tree/main/packages/storage/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "@react-native-google-signin/google-signin": {
+        "licenses": "MIT",
+        "repository": "https://github.com/react-native-google-signin/google-signin",
+        "licenseUrl": "https://github.com/react-native-google-signin/google-signin/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "@react-native-picker/picker": {
         "licenses": "MIT",
         "repository": "https://github.com/react-native-picker/picker",
         "licenseUrl": "https://github.com/react-native-picker/picker/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@react-native-voice/voice": {
-        "licenses": "MIT",
-        "repository": "https://github.com/react-native-voice/voice",
-        "licenseUrl": "https://github.com/react-native-voice/voice/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "@reduxjs/toolkit": {
@@ -171,18 +159,6 @@
         "licenses": "Apache-2.0",
         "repository": "https://github.com/sqlite/sqlite-wasm",
         "licenseUrl": "https://github.com/sqlite/sqlite-wasm",
-        "parents": "ecorismap"
-    },
-    "@stripe/react-stripe-js": {
-        "licenses": "MIT",
-        "repository": "https://github.com/stripe/react-stripe-js",
-        "licenseUrl": "https://github.com/stripe/react-stripe-js/raw/master/LICENSE",
-        "parents": "ecorismap"
-    },
-    "@stripe/stripe-js": {
-        "licenses": "MIT",
-        "repository": "github:stripe/stripe-js",
-        "licenseUrl": "github:stripe/stripe-js",
         "parents": "ecorismap"
     },
     "@tmcw/togeojson": {
@@ -245,112 +221,142 @@
         "licenseUrl": "https://github.com/dexie/Dexie.js/raw/master/LICENSE",
         "parents": "ecorismap"
     },
+    "expo-asset": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "expo-audio": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "expo-clipboard": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
     "expo-document-picker": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-file-system": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "expo-font": {
+        "licenses": "MIT",
+        "repository": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-image-manipulator": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-image-picker": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-linear-gradient": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-localization": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-location": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-media-library": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-navigation-bar": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-notifications": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-print": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-sharing": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "expo-speech-recognition": {
+        "licenses": "MIT",
+        "repository": "https://github.com/jamsch/expo-speech-recognition",
+        "licenseUrl": "https://github.com/jamsch/expo-speech-recognition/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-speech": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-splash-screen": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-sqlite": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-status-bar": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo-task-manager": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "expo": {
         "licenses": "MIT",
         "repository": "https://github.com/expo/expo",
-        "licenseUrl": "https://github.com/expo/expo",
+        "licenseUrl": "https://github.com/expo/expo/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "fast-levenshtein": {
@@ -420,8 +426,8 @@
     },
     "iconv-lite": {
         "licenses": "MIT",
-        "repository": "https://github.com/ashtuchkin/iconv-lite",
-        "licenseUrl": "https://github.com/ashtuchkin/iconv-lite/raw/master/LICENSE",
+        "repository": "https://github.com/pillarjs/iconv-lite",
+        "licenseUrl": "https://github.com/pillarjs/iconv-lite/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "jschardet": {
@@ -649,6 +655,12 @@
         "licenses": "MIT",
         "repository": "https://github.com/necolas/react-native-web",
         "licenseUrl": "https://github.com/necolas/react-native-web/raw/master/LICENSE",
+        "parents": "ecorismap"
+    },
+    "react-native-worklets": {
+        "licenses": "MIT",
+        "repository": "https://github.com/software-mansion/react-native-reanimated",
+        "licenseUrl": "https://github.com/software-mansion/react-native-reanimated/raw/master/LICENSE",
         "parents": "ecorismap"
     },
     "react-native-zip-archive": {

@@ -70,7 +70,6 @@
     "projectName": "プロジェクト名",
     "overview": "概要",
     "usage": "使用量",
-    "license": "ライセンス",
     "updatedAt": "更新日時",
     "member": "メンバー",
     "back": "戻る",
@@ -209,8 +208,6 @@
       "gpsWeb": "Web版では使用できません",
       "trackWeb": "Web版ではトラックログは使用できません",
       "download": "データを取得しました。",
-      "uploadLicenseWeb": "写真をアップロードするには、アップグレードしてください。",
-      "uploadLicense": "写真容量の上限を超えているためアップロードできません。Web版で詳細を確認してください。",
       "upload": "データをアップロードしました。",
       "sync": "現在地を共有します。",
       "saveProject": "プロジェクトの設定を変更しました",
@@ -345,10 +342,6 @@
       "text": "アカウント削除",
       "info": "アカウントを削除します。自分がオーナーのプロジェクトもすべて削除されます。"
     },
-    "upgrade": {
-      "text": "アップグレード（有料プラン）",
-      "info": "追加できるプロジェクト数、メンバー数を増やすことができます。"
-    },
     "project_import": {},
     "project_delete_all": {
       "text": "プロジェクト全削除",
@@ -367,25 +360,6 @@
     "alert": {
       "deleteAllProjects": "プロジェクトを閉じてから実行してください。"
     }
-  },
-  "Purchases": {
-    "navigation": {
-      "title": " "
-    },
-    "title": "アップグレード（有料プラン）のお申し込み",
-    "menu1": "1. プランの選択",
-    "menu2": "2. 注意事項の確認",
-    "confirmCheck": "下記の注意事項を確認しました。",
-    "apply": "申し込む",
-    "notes": "注意事項",
-    "accountInfo": "アカウント情報",
-    "currentPlan": "現在のプラン",
-    "errorMessage1": "大変ご迷惑をおかけします。",
-    "errorMessage2": "通信エラーのため、もう一度やり直してください。",
-    "applicationChange": "お申し込み情報の確認、領収書の発行、プラン変更、キャンセルはこちら",
-    "applicationInfo": "お申し込み情報",
-    "note1": "■　返金はしません",
-    "note2": "■　更新してください"
   },
   "Settings": {
     "navigation": {
@@ -457,9 +431,6 @@
     "navigation": {
       "title": "プロジェクト一覧"
     },
-    "alert": {
-      "addProject": "プロジェクトを追加するには、アップグレードしてください。"
-    },
     "label": {
       "createProject": "作成",
       "reloadProjects": "更新",
@@ -471,12 +442,8 @@
       "title": "プロジェクト"
     },
     "alert": {
-      "openProjectWeb": "プロジェクトを開くには、アップグレードするか、その他のプロジェクトを削除してください。",
-      "openProject": "プロジェクト数の上限を超えているため開けません。プロジェクトを削除するか、Web版で詳細を確認してください。",
       "exportProject": "プロジェクトデータのエクスポートはWeb版でしか使用できません",
       "deleteProject": "プロジェクトを削除しました。",
-      "addMemberWeb": "メンバーを追加するには、アップグレードしてください。",
-      "addMember": "メンバー数の上限を超えているため追加できません。Web版で詳細を確認してください。",
       "settingProject": "プロジェクトの設定を変更できます。",
       "deleteProjectOpen": "プロジェクトを閉じてから実行してください。",
       "reshareKey": "暗号化キーを再共有しました。メンバーにはプロジェクトを開き直すよう伝えてください。",
@@ -633,26 +600,6 @@
     "pencilmode": "描画はペンを使用します。指のタッチは移動になります。"
   },
   "utils": {
-    "Project": {
-      "message": {
-        "validateProjectFree": "フリープランで追加できるプロジェクトは1個です。",
-        "validateProjectBasic": "ベーシックプランで追加できるプロジェクトは5個です。",
-        "validateProjectPro": "プロプランで追加できるプロジェクトは10個です。",
-        "validateProjectBusinessA": "ビジネスAプランで追加できるプロジェクトは10個です。",
-        "validateBusinessB": "ビジネスBプランで追加できるプロジェクトは5個です。",
-        "validateUndefined": "ライセンスが不明です。",
-        "validateMemberFree": "フリープランで追加できるメンバーは3人です。",
-        "validateMemberBasic": "ベーシックプランで追加できるメンバーは5人です。",
-        "validateMemberPro": "プロプランで追加できるメンバーは10人です。",
-        "validateMemberBusinessA": "ビジネスAプランで追加できるメンバーは20人です。",
-        "validateMemberBusinessB": "ビジネスBプランで追加できるメンバーは40人です。",
-        "validateStorageFree": "フリープランで保存できる写真容量は100MBです。",
-        "validateStorageBasic": "ベーシックプランで保存できる写真容量は1GBです。",
-        "validateStoragePro": "プロプランで保存できる写真容量は5GBです。",
-        "validateStorageBusinessA": "ビジネスAプランで保存できる写真容量は10GBです。",
-        "validateStorageBusinessB": "ビジネスBプランで保存できる写真容量は20GBです。"
-      }
-    },
     "Layer": {
       "message": {
         "inputLayerName": "レイヤ名を入力してください。",

@@ -134,7 +134,6 @@
     "projectName": "project name",
     "overview": "overview",
     "usage": "usage amount",
-    "license": "license",
     "updatedAt": "updated at",
     "member": "member",
     "back": "Back",
@@ -339,25 +338,6 @@
       "drive": "Google Drive"
     }
   },
-  "Purchases": {
-    "title": "Apply for upgrade (paid plan)",
-    "menu1": "1. Plan selection",
-    "menu2": "2. Confirmation of precautions",
-    "confirmCheck": "I have confirmed the following notes.",
-    "apply": "apply",
-    "notes": "Notes",
-    "accountInfo": "account information",
-    "currentPlan": "Current plan",
-    "errorMessage1": "We apologize for the inconvenience.",
-    "errorMessage2": "Please try again due to a communication error.",
-    "applicationChange": "Click here to confirm application information, issue receipts, change plans, and cancel",
-    "applicationInfo": "Application information",
-    "note1": "■ No refunds",
-    "note2": "■ Please renew your subscription",
-    "navigation": {
-      "title": " "
-    }
-  },
   "Account": {
     "title": {
       "login": "Login",
@@ -433,10 +413,6 @@
       "text": "Account deletion",
       "info": "Delete the account. \nAll projects owned by you will also be deleted."
     },
-    "upgrade": {
-      "text": "Upgrade (paid plan)",
-      "info": "You can increase the number of projects and members that can be added."
-    },
     "project_import": {},
     "project_delete_all": {
       "info": "Erase all data in your own project.",
@@ -487,9 +463,6 @@
     }
   },
   "Projects": {
-    "alert": {
-      "addProject": "Please upgrade to add projects."
-    },
     "navigation": {
       "title": "Project list"
     },
@@ -501,12 +474,8 @@
   },
   "ProjectEdit": {
     "alert": {
-      "openProjectWeb": "To open the project, upgrade or remove the other project.",
-      "openProject": "Cannot open because the maximum number of projects has been exceeded. \nDelete the project or check the web version for more details.",
       "exportProject": "Project data export is only available in the web version",
       "deleteProject": "The project has been deleted.",
-      "addMemberWeb": "Please upgrade to add members.",
-      "addMember": "Cannot be added because the maximum number of members has been exceeded. \nCheck the web version for details.",
       "settingProject": "You can change the project settings.",
       "deleteProjectOpen": "Please close the project before running it.",
       "reshareKey": "The encryption key has been re-shared. Ask the member to reopen the project.",
@@ -734,8 +703,6 @@
       "sync": "Share your current location.",
       "trackWeb": "Track logs are not available in the web version",
       "upload": "Data uploaded.",
-      "uploadLicense": "You cannot upload because the photo capacity has been exceeded. \nCheck the web version for details.",
-      "uploadLicenseWeb": "Please upgrade to upload your photos.",
       "discardChanges": "The data is being edited. \nPlease save first.",
       "termsOfuse": "If you do not agree, please stop using it.",
       "individualColor": "Changed the layer style color type to [Individual].",
@@ -896,26 +863,6 @@
     }
   },
   "utils": {
-    "Project": {
-      "message": {
-        "validateBusinessB": "You can add 5 projects with the Business B plan.",
-        "validateProjectBasic": "You can add 5 projects in the basic plan.",
-        "validateProjectBusinessA": "You can add 10 projects in the Business A plan.",
-        "validateProjectFree": "Only one project can be added with the free plan.",
-        "validateProjectPro": "You can add 10 projects with Pro Plan.",
-        "validateUndefined": "The license is unknown.",
-        "validateMemberFree": "You can add 3 members in the free plan.",
-        "validateMemberBasic": "Up to 5 members can be added with the basic plan.",
-        "validateMemberPro": "You can add 10 members with the Pro plan.",
-        "validateMemberBusinessB": "You can add 40 members with the Business B plan.",
-        "validateStorageFree": "The photo capacity that can be saved in the free plan is 100MB.",
-        "validateStorageBasic": "The photo capacity that can be saved with the basic plan is 1 GB.",
-        "validateStoragePro": "The photo storage capacity of the Pro plan is 5GB.",
-        "validateStorageBusinessA": "The photo storage capacity that can be saved with the Business A plan is 10 GB.",
-        "validateStorageBusinessB": "The photo capacity that can be saved with the Business B plan is 20GB.",
-        "validateMemberBusinessA": "There are 20 members that can be added in the Business A plan."
-      }
-    },
     "Layer": {
       "message": {
         "inputLayerName": "Please enter a layer name.",

@@ -35,7 +35,6 @@ import {
   getDocs,
   getDocsFromServer,
   httpsCallable,
-  onSnapshot,
   query,
   setDoc,
   Timestamp,
@@ -273,7 +272,6 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
           id: docSnapshot.id,
           ownerUid,
           storage: storage ?? { count: 0 },
-          license: license ?? 'Free',
           ...data,
           ...others,
           encryptedAt: toDate(encryptedAt),
@@ -305,7 +303,7 @@ export const getAllProjects = async (uid: string, excludeMember = false) => {
 export const addProject = async (project: ProjectType) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ownerUid, adminsUid, membersUid, storage, license, settingsEncryptedAt, ...others } = project;
+    const { id, ownerUid, adminsUid, membersUid, storage, settingsEncryptedAt, ...others } = project;
 
     // 新規プロジェクトはエンベロープ暗号（DEK）方式で作成する（管理者によるメンバー追加を可能にするため）。
     // CREATE_DEK_PROJECTS が有効な場合のみ、新規プロジェクトをエンベロープ暗号(DEK)方式で作成する。
@@ -353,7 +351,7 @@ export const addProject = async (project: ProjectType) => {
 export const updateProject = async (project: ProjectType) => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id, ownerUid, adminsUid, membersUid, storage, license, settingsEncryptedAt, ...others } = project;
+    const { id, ownerUid, adminsUid, membersUid, storage, settingsEncryptedAt, ...others } = project;
     const encdata = await enc(others, ownerUid, id);
     const updateProjectFS: UpdateProjectFS = {
       adminsUid,
@@ -931,8 +929,7 @@ export const migrateProjectToDEK = async (
 
     // 4. プロジェクトメタをDEKで再暗号化し、cryptoScheme/dekPublicKey を設定（管理者更新としてRulesを通す）。
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { id: _id, ownerUid: _o, adminsUid: _a, membersUid: _m, storage, license, settingsEncryptedAt, ...others } =
-      project;
+    const { id: _id, ownerUid: _o, adminsUid: _a, membersUid: _m, storage, settingsEncryptedAt, ...others } = project;
     const encdata = await enc(others, ownerUid, id);
     await updateDoc(doc(firestore, 'projects', id), {
       encdata,
@@ -1005,26 +1002,6 @@ export const deleteCurrentPosition = async (userId: string, projectId: string) =
 
 export const toDate = (timestamp: Timestamp) => {
   return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 100000);
-};
-
-export const updateLicense = async (project: ProjectType) => {
-  // ドキュメント参照をモジュラー API で作成
-  const projectRef = doc(firestore, 'projects', project.id);
-
-  return new Promise<{ isOK: boolean; message: string }>((resolve) => {
-    // onSnapshot でリアルタイム監視を開始
-    const unsubscribe = onSnapshot(projectRef, (snapshot) => {
-      // フィールドを取得（snapshot.get() も使用可能）
-      const data = snapshot.data();
-      const license = data?.license as string | undefined;
-
-      // license が設定されていて 'Unknown' でなければ解決
-      if (license !== undefined && license !== 'Unknown') {
-        unsubscribe();
-        resolve({ isOK: true, message: '' });
-      }
-    });
-  });
 };
 
 // 指定したlayerIdの全データのpermissionを一括で更新

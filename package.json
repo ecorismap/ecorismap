@@ -117,8 +117,6 @@
     "@react-native-picker/picker": "2.11.4",
     "@reduxjs/toolkit": "^2.2.6",
     "@sqlite.org/sqlite-wasm": "^3.46.1-build3",
-    "@stripe/react-stripe-js": "^6.6.0",
-    "@stripe/stripe-js": "^9.8.0",
     "@tmcw/togeojson": "^7.1.2",
     "@turf/turf": "^7.1.0",
     "@virgilsecurity/e3kit-browser": "^2.5.4",

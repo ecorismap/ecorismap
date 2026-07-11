@@ -21,7 +21,7 @@ import { ProjectsModalEncryptPassword } from '../organisms/ProjectsModalEncryptP
 import { ProjectType } from '../../types';
 import { ListRenderItemInfo } from 'react-native';
 
-type SortField = 'name' | 'abstract' | 'storage' | 'license' | 'encryptedAt';
+type SortField = 'name' | 'abstract' | 'storage' | 'encryptedAt';
 type SortOrder = 'ASCENDING' | 'DESCENDING' | 'UNSORTED';
 
 export default function Projects() {
@@ -89,10 +89,6 @@ export default function Projects() {
           aValue = a.storage?.count || 0;
           bValue = b.storage?.count || 0;
           break;
-        case 'license':
-          aValue = a.license || '';
-          bValue = b.license || '';
-          break;
         case 'encryptedAt':
           aValue = a.settingsEncryptedAt ? new Date(a.settingsEncryptedAt).getTime() : 0;
           bValue = b.settingsEncryptedAt ? new Date(b.settingsEncryptedAt).getTime() : 0;
@@ -154,15 +150,6 @@ export default function Projects() {
         )}
         {sortField === 'storage' && sortOrder === 'DESCENDING' && (
           <MaterialCommunityIcons name="sort-numeric-descending" size={16} color={COLOR.TEXT_DARK} />
-        )}
-      </Pressable>
-      <Pressable style={[styles.th, { flex: 2, width: 120 }]} onPress={() => handleSort('license')}>
-        <Text style={{ color: COLOR.TEXT_DARK }}>{`${t('common.license')}`}</Text>
-        {sortField === 'license' && sortOrder === 'ASCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-ascending" size={16} color={COLOR.TEXT_DARK} />
-        )}
-        {sortField === 'license' && sortOrder === 'DESCENDING' && (
-          <MaterialCommunityIcons name="sort-alphabetical-descending" size={16} color={COLOR.TEXT_DARK} />
         )}
       </Pressable>
     </View>
@@ -227,11 +214,6 @@ export default function Projects() {
         <View style={[styles.td, { flex: 2, width: 120, alignItems: 'flex-end' }]}>
           <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
             {`${item.storage !== undefined ? (item.storage.count / (1024 * 1024 * 1024)).toFixed(2) : 0}GB`}
-          </Text>
-        </View>
-        <View style={[styles.td, { flex: 2, width: 120, alignItems: 'center' }]}>
-          <Text adjustsFontSizeToFit={true} numberOfLines={2} style={{ color: COLOR.TEXT_DARK }}>
-            {item.license ?? 'Free'}
           </Text>
         </View>
       </Pressable>

@@ -58,10 +58,6 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
     }
   }, [navigation, projectId]);
 
-  const pressUpgradeAccount = useCallback(async () => {
-    navigation.navigate('Purchases');
-  }, [navigation]);
-
   const pressGotoHome = useCallback(() => {
     navigation.navigate('Home', { previous: 'AccountSettings', mode: undefined });
   }, [navigation]);
@@ -74,7 +70,6 @@ export default function AccountSettingsContainers({ navigation }: Props_AccountS
         pressChangeEncryptPassword,
         pressResetEncryptKey,
         pressDeleteUserAccount,
-        pressUpgradeAccount,
         pressDeleteAllProjects,
         pressGotoHome,
       }}

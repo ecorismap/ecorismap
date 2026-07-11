@@ -19,13 +19,13 @@ export type UseProjectReturnType = {
   isOwnerAdmin: boolean;
   project: ProjectType | undefined;
   projectRegion: RegionType;
-  uploadData: (isLicenseOK: boolean) => Promise<{
+  uploadData: () => Promise<{
     isOK: boolean;
     message: string;
   }>;
   syncPosition: (shouldSync: boolean) => void;
   clearProject: () => void;
-  saveProjectSetting: (isLicenseOK: boolean) => Promise<void>;
+  saveProjectSetting: () => Promise<void>;
 };
 
 export const useProject = (): UseProjectReturnType => {
@@ -42,13 +42,10 @@ export const useProject = (): UseProjectReturnType => {
 
   const { uploadDataToRepository, uploadProjectSettings, deleteCommonAndTemplateData } = useRepository();
 
-  const uploadData = useCallback(
-    async (isLicenseOK: boolean) => {
-      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      return await uploadDataToRepository(project, isLicenseOK, 'PublicAndPrivate');
-    },
-    [project, uploadDataToRepository]
-  );
+  const uploadData = useCallback(async () => {
+    if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+    return await uploadDataToRepository(project, 'PublicAndPrivate');
+  }, [project, uploadDataToRepository]);
 
   const syncPosition = useCallback(
     (shouldSync: boolean) => {
@@ -81,21 +78,18 @@ export const useProject = (): UseProjectReturnType => {
     clearAllDynamicDictionaries();
   }, [dispatch]);
 
-  const saveProjectSetting = useCallback(
-    async (isLicenseOK: boolean) => {
-      //コモンデータの写真はあればアップロードする
-      if (project === undefined) throw new Error(t('hooks.message.unknownError'));
-      const deleteDataResult = await deleteCommonAndTemplateData(project);
-      if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
-      const projectSettingsResult = await uploadProjectSettings(project);
-      if (!projectSettingsResult.isOK) throw new Error(projectSettingsResult.message);
-      const dataToRepositoryResult = await uploadDataToRepository(project, isLicenseOK, 'Common');
-      if (!dataToRepositoryResult.isOK) throw new Error(dataToRepositoryResult.message);
-      const uploadTemplateResult = await uploadDataToRepository(project, isLicenseOK, 'Template');
-      if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
-    },
-    [deleteCommonAndTemplateData, project, uploadDataToRepository, uploadProjectSettings]
-  );
+  const saveProjectSetting = useCallback(async () => {
+    //コモンデータの写真はあればアップロードする
+    if (project === undefined) throw new Error(t('hooks.message.unknownError'));
+    const deleteDataResult = await deleteCommonAndTemplateData(project);
+    if (!deleteDataResult.isOK) throw new Error(deleteDataResult.message);
+    const projectSettingsResult = await uploadProjectSettings(project);
+    if (!projectSettingsResult.isOK) throw new Error(projectSettingsResult.message);
+    const dataToRepositoryResult = await uploadDataToRepository(project, 'Common');
+    if (!dataToRepositoryResult.isOK) throw new Error(dataToRepositoryResult.message);
+    const uploadTemplateResult = await uploadDataToRepository(project, 'Template');
+    if (!uploadTemplateResult.isOK) throw new Error(uploadTemplateResult.message);
+  }, [deleteCommonAndTemplateData, project, uploadDataToRepository, uploadProjectSettings]);
 
   return {
     isSettingProject,

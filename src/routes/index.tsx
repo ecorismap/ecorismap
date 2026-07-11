@@ -3,7 +3,6 @@ import { View, StyleSheet } from 'react-native';
 import Home from '../containers/Home';
 import Account from '../containers/Account';
 import AccountSettings from '../containers/AccountSettings';
-import Purchases from '../containers/Purchases';
 import ProjectEdit from '../containers/ProjectEdit';
 import Projects from '../containers/Projects';
 import CloudDataManagement from '../containers/CloudDataManagement';
@@ -30,11 +29,6 @@ export type Props_Home = {
 export type Props_AccountSettings = {
   navigation: Navigation;
   route: { params: RootScreenParams['AccountSettings'] };
-};
-
-export type Props_Purchases = {
-  navigation: Navigation;
-  route: { params: RootScreenParams['Purchases'] };
 };
 
 export type Props_Projects = {
@@ -71,8 +65,6 @@ function RootScreenRenderer() {
           route={{ params: currentParams as RootScreenParams['AccountSettings'] }}
         />
       );
-    case 'Purchases':
-      return <Purchases navigation={navigation} route={{ params: currentParams as RootScreenParams['Purchases'] }} />;
     case 'Projects':
       return <Projects navigation={navigation} route={{ params: currentParams as RootScreenParams['Projects'] }} />;
     case 'ProjectEdit':

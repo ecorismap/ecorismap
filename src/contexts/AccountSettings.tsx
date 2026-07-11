@@ -6,7 +6,6 @@ interface AccountSettingsContextType {
   pressChangeEncryptPassword: () => void;
   pressResetEncryptKey: () => void;
   pressDeleteUserAccount: () => void;
-  pressUpgradeAccount: () => void;
   pressDeleteAllProjects: () => void;
   pressGotoHome: () => void;
 }

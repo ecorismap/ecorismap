@@ -320,7 +320,6 @@ export interface ProjectType {
   membersUid: string[];
   abstract: string;
   storage: { count: number };
-  license: License;
   encryptedAt?: Date;
   settingsEncryptedAt?: Date;
   /** 暗号方式（平文フィールド由来）。未設定は従来のグループ暗号として扱う。 */
@@ -410,7 +409,8 @@ export interface ProjectFS {
   encdata: string[];
   encryptedAt: Timestamp;
   storage?: { count: number };
-  license?: License;
+  /** レガシー: 旧課金機能のFirestoreフィールド。既存ドキュメントに残存するため、読み込み時の除外用に型だけ残す。 */
+  license?: string;
   /** 暗号方式。未設定/'group' は従来の Virgil グループ暗号、'dek' はエンベロープ暗号（管理者追加可）。 */
   cryptoScheme?: 'group' | 'dek';
   /** DEK 公開鍵（base64・平文保存可）。cryptoScheme === 'dek' のときデータ暗号化に使う。 */
@@ -524,34 +524,6 @@ export type AccountFormStateType =
   | 'restoreEncryptKey'
   | 'resetEncryptKey'
   | 'deleteAllProjects';
-
-export interface Product {
-  active: boolean;
-  name: string;
-  description: string | null;
-  images: Array<string>;
-  [propName: string]: any;
-}
-
-export interface Price {
-  active: boolean;
-  currency: string;
-  unit_amount: number;
-  description: string | null;
-  type: 'one_time' | 'recurring';
-  interval: 'day' | 'month' | 'week' | 'year' | null;
-  interval_count: number | null;
-  trial_period_days: number | null;
-  [propName: string]: any;
-}
-
-export interface Checkout_sessions {
-  error: any;
-  url: string;
-  [propName: string]: any;
-}
-
-export type License = 'Free' | 'Basic' | 'Pro' | 'BusinessA' | 'BusinessB' | 'Unknown';
 
 export interface EcorisMapFileType {
   dataSet: DataType[];
