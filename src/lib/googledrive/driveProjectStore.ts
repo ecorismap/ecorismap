@@ -12,7 +12,7 @@ import {
 } from './types';
 
 // 256KiBの倍数必須（Google Drive resumable uploadの仕様）
-const CHUNK_SIZE = 8 * 1024 * 1024;
+export const UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024;
 
 function toItem(f: DriveFileMeta): DriveProjectItem {
   return {
@@ -71,7 +71,7 @@ export async function uploadDriveProject(args: {
   let offset = 0;
   let file: DriveFileMeta | undefined;
   while (offset < args.size) {
-    const chunk = await readChunk(args.source, offset, Math.min(CHUNK_SIZE, args.size - offset));
+    const chunk = await readChunk(args.source, offset, Math.min(UPLOAD_CHUNK_SIZE, args.size - offset));
     const result = await uploadChunk(sessionUrl, chunk, offset, args.size);
     if (result.done) {
       file = result.file;
