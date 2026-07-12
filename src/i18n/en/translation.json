@@ -953,7 +953,9 @@
   },
   "GoogleDriveProjects": {
     "navigation": {
-      "title": "Google Drive"
+      "title": "Google Drive",
+      "saveTitle": "Save to Google Drive",
+      "loadTitle": "Load from Google Drive"
     },
     "description": "A personal storage feature that works with your Google account. Save the current data to your Google Drive and load previously saved data.",
     "connect": {

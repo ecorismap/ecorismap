@@ -62,7 +62,7 @@ export type BottomSheetScreenParams = {
   };
   Settings: { previous: 'Home' };
   Licenses: { previous: 'Settings' };
-  GoogleDriveProjects: { previous: 'Settings' };
+  GoogleDriveProjects: { previous: 'Settings'; mode?: 'save' | 'open' };
   GpsSettings: { previous: 'Settings' };
 };
 

@@ -18,6 +18,7 @@ function formatSize(size: number) {
 
 export default function GoogleDriveProjects() {
   const {
+    mode,
     isLoading,
     progress,
     isConnected,
@@ -73,10 +74,16 @@ export default function GoogleDriveProjects() {
   });
 
   const loadingText = progress !== undefined ? `${Math.round(progress * 100)}%` : '';
+  const title =
+    mode === 'save'
+      ? t('GoogleDriveProjects.navigation.saveTitle')
+      : mode === 'open'
+      ? t('GoogleDriveProjects.navigation.loadTitle')
+      : t('GoogleDriveProjects.navigation.title');
 
   return (
     <View style={{ flex: 1 }}>
-      <BottomSheetHeader title={t('GoogleDriveProjects.navigation.title')} showBackButton onBack={gotoBack} />
+      <BottomSheetHeader title={title} showBackButton onBack={gotoBack} />
       <Loading visible={isLoading} text={loadingText} />
       {!isConnected ? (
         <View>
@@ -110,11 +117,13 @@ export default function GoogleDriveProjects() {
               />
             </View>
           </View>
-          <TextButton
-            name={GOOGLEDRIVE_BTN.SAVE}
-            text={t('GoogleDriveProjects.save.text')}
-            onPress={pressSaveToDrive}
-          />
+          {mode !== 'open' && (
+            <TextButton
+              name={GOOGLEDRIVE_BTN.SAVE}
+              text={t('GoogleDriveProjects.save.text')}
+              onPress={pressSaveToDrive}
+            />
+          )}
           <FlatList
             data={driveProjects}
             keyExtractor={(item) => item.fileId}
@@ -130,14 +139,16 @@ export default function GoogleDriveProjects() {
                     )}`}
                   </Text>
                 </View>
-                <View style={{ width: 33, marginRight: 15 }}>
-                  <Button
-                    name={GOOGLEDRIVE_BTN.LOAD}
-                    borderRadius={5}
-                    backgroundColor={COLOR.GRAY3}
-                    onPress={() => pressLoadProject(item)}
-                  />
-                </View>
+                {mode !== 'save' && (
+                  <View style={{ width: 33, marginRight: 15 }}>
+                    <Button
+                      name={GOOGLEDRIVE_BTN.LOAD}
+                      borderRadius={5}
+                      backgroundColor={COLOR.GRAY3}
+                      onPress={() => pressLoadProject(item)}
+                    />
+                  </View>
+                )}
                 <View style={{ width: 33 }}>
                   <Button
                     name={GOOGLEDRIVE_BTN.DELETE}

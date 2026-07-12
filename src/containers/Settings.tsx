@@ -127,9 +127,10 @@ export default function SettingsContainers() {
   }, [openFileFromLocal, saveFileToLocal, storageSelectMode]);
 
   const pressStorageSelectDrive = useCallback(() => {
+    const mode = storageSelectMode;
     setStorageSelectMode(undefined);
-    navigate('GoogleDriveProjects', { previous: 'Settings' });
-  }, [navigate]);
+    navigate('GoogleDriveProjects', { previous: 'Settings', mode });
+  }, [navigate, storageSelectMode]);
 
   const pressStorageSelectCancel = useCallback(() => {
     setStorageSelectMode(undefined);
