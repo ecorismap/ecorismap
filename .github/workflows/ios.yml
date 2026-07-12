@@ -28,7 +28,7 @@ jobs:
           <plist version="1.0">
           <dict>
             <key>APIKey</key>
-            <string>${{ secrets.MAPS_API_KEY }}</string>
+            <string>${{ secrets.MAPS_API_KEY_IOS }}</string>
           </dict>
           </plist>
           EOF

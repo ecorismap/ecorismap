@@ -3,11 +3,11 @@ EcorisMap
 EcorisMapは、野外調査で位置情報を記録、確認できるクロスプラットフォーム対応のフィールド調査アプリケーションです。
 
 ## 公式サイト
-- https://ecorismap-pro.web.app
+- https://ecorismap.web.app
 
 ## ドキュメント
-- [日本語版ドキュメント](https://ecorismap-pro.web.app/manual_ja.html)
-- [英語版ドキュメント](https://ecorismap-pro.web.app/manual_en.html)
+- [日本語版ドキュメント](https://ecorismap.web.app/manual_ja.html)
+- [英語版ドキュメント](https://ecorismap.web.app/manual_en.html)
 
 ---
 ## セットアップ（ログイン機能なし）
