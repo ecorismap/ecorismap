@@ -43,6 +43,8 @@ export type UseGoogleDriveProjectsReturnType = {
 };
 
 function toErrorMessage(e: unknown): string {
+  // eslint-disable-next-line no-console
+  console.log('GoogleDrive error:', e);
   if (e instanceof GoogleDriveAuthError) {
     if (e.reason === 'cancelled') return '';
     if (e.reason === 'scope-denied') return t('hooks.message.googleDriveScopeDenied');

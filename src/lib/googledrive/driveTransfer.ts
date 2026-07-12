@@ -1,4 +1,5 @@
 import * as RNFS from 'react-native-fs';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import { getAccessToken } from './auth';
 import { downloadFileUrl } from './driveApi';
@@ -8,8 +9,14 @@ export async function readChunk(source: string | Blob, offset: number, size: num
   if (typeof source !== 'string') {
     throw new DriveApiError(0, 'invalidSource', 'Native upload source must be a file path');
   }
-  const path = source.startsWith('file://') ? decodeURI(source.replace('file://', '')) : source;
-  const base64 = await RNFS.read(path, size, offset, 'base64');
+  // RNFS.read()はiOSネイティブ実装の引数型(NSInteger)がNew Architectureで変換できず例外になるため、
+  // expo-file-systemの部分読み込みを使う
+  const uri = source.startsWith('file://') ? source : `file://${encodeURI(source)}`;
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+    position: offset,
+    length: size,
+  });
   return new Uint8Array(Buffer.from(base64, 'base64'));
 }
 
