@@ -85,8 +85,7 @@
     "audit": "yarn npm audit",
     "emu": "firebase emulators:start --import=./emulatorExport --export-on-exit",
     "postinstall": "patch-package --verbose && node scripts/fix-bin-permissions.js",
-    "firebase:dev": "node scripts/switch-firebase-env.js development",
-    "firebase:prod": "node scripts/switch-firebase-env.js production",
+    "keys:apply": "node scripts/apply-keys.js",
     "licenses": "npx npm-license-crawler --dependencies --production --onlyDirectDependencies --omitVersion --json ./src/licenses.json"
   },
   "dependencies": {

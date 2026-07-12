@@ -95,7 +95,7 @@ export const googleDriveOAuth = {
 };
 ```
 
-`yarn firebase:dev` / `yarn firebase:prod` 実行時に `src/constants/APIKeys.ts` へ自動で組み込まれる
+`yarn keys:apply` 実行時に `src/constants/APIKeys.ts` へ自動で組み込まれる
 （未配置の場合は空値で生成され、接続ボタン押下時にエラーメッセージが出るだけで他機能に影響しない）。
 
 ## 3. iOS設定（Info.plist）
