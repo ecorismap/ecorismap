@@ -85,8 +85,9 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
   }, [fetchProjects]);
 
   const connect = useCallback(async () => {
-    setIsLoading(true);
     try {
+      // iOSではLoading Modalの提示中にサインインのネイティブVCを提示できずフリーズするため、
+      // Loadingはサインイン完了後のfetchProjectsに対してのみ表示する
       const result = await signInGoogleDrive();
       if (!result.isOK) {
         const message =
@@ -97,6 +98,7 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
             : t('hooks.message.googleDriveConnectFailed');
         return { isOK: false, message };
       }
+      setIsLoading(true);
       setIsConnected(true);
       setConnectedEmail(result.email);
       dispatch(setGoogleDriveConnectedEmailAction(result.email));
