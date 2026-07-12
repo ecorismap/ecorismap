@@ -1044,7 +1044,9 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       const ret = await ConfirmAsync(t('Home.confirm.discardLogout'));
       if (!ret) return;
     } else {
-      const ret = await ConfirmAsync(t('Home.confirm.logout'));
+      const message =
+        googleAccountEmail !== undefined ? t('Home.confirm.logoutWithGoogle') : t('Home.confirm.logout');
+      const ret = await ConfirmAsync(message);
       if (!ret) return;
     }
 
@@ -1058,8 +1060,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
 
     clearProject();
     await logout();
+    // LOGOUT=すべてサインアウト。組織ログアウト後にGoogle接続だけ残ると
+    // アカウントボタンが接続済み表示のままになり「ログアウトできていない」ように見えるため
+    if (googleAccountEmail !== undefined) {
+      await disconnectGoogleAccount();
+    }
     navigation.navigate('Home');
-  }, [clearProject, isSettingProject, logout, navigation]);
+  }, [clearProject, disconnectGoogleAccount, googleAccountEmail, isSettingProject, logout, navigation]);
 
   const pressZoomIn = useCallback(() => {
     hideDrawLine();
