@@ -728,6 +728,7 @@
       "discardProject": "Do you want to discard the changes in the project settings?",
       "drag": "Do you want to change the position?",
       "logout": "Do you want to log out? \nData will be discarded.",
+      "logoutWithGoogle": "Do you want to log out? \nData will be discarded and your Google account will be disconnected.",
       "saveProject": "Do you want to save the project settings?",
       "track": "Do you want to stop recording the track?",
       "track_start": "Do you want to start recording the track?",
