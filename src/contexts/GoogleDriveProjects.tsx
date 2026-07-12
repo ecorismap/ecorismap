@@ -2,6 +2,7 @@ import { createContext } from 'react';
 import { DriveProjectItem } from '../lib/googledrive/types';
 
 interface GoogleDriveProjectsContextType {
+  mode: 'save' | 'open' | undefined;
   isLoading: boolean;
   progress: number | undefined;
   isConnected: boolean;

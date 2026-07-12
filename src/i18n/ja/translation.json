@@ -953,7 +953,9 @@
   },
   "GoogleDriveProjects": {
     "navigation": {
-      "title": "Google Drive"
+      "title": "Google Drive",
+      "saveTitle": "Google Driveに保存",
+      "loadTitle": "Google Driveから読み込み"
     },
     "description": "Googleアカウントに接続して使う、個人用の保存機能です。現在のデータを自分のGoogle Driveに保存したり、保存済みのデータを読み込んだりできます。",
     "connect": {

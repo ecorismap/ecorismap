@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import GoogleDriveProjects from '../components/pages/GoogleDriveProjects';
 import { GoogleDriveProjectsContext } from '../contexts/GoogleDriveProjects';
-import { useBottomSheetNavigation } from '../contexts/BottomSheetNavigationContext';
+import { useBottomSheetNavigation, useBottomSheetRoute } from '../contexts/BottomSheetNavigationContext';
 import { useGoogleDriveProjects } from '../hooks/useGoogleDriveProjects';
 import { usePermission } from '../hooks/usePermission';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
@@ -13,6 +13,9 @@ import dayjs from '../i18n/dayjs';
 
 export default function GoogleDriveProjectsContainers() {
   const { goBack, navigateToHome } = useBottomSheetNavigation();
+  // 保存/読み込みどちらから開いたかで画面の機能を絞る（誤操作防止）
+  const { params } = useBottomSheetRoute<'GoogleDriveProjects'>();
+  const mode = params?.mode;
   const { isRunningProject } = usePermission();
   const lastSync = useSelector((state: RootState) => state.googleDrive.lastSync);
   const {
@@ -132,6 +135,7 @@ export default function GoogleDriveProjectsContainers() {
   return (
     <GoogleDriveProjectsContext.Provider
       value={{
+        mode,
         isLoading,
         progress,
         isConnected,

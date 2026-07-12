@@ -15,6 +15,7 @@ import {
   downloadDriveProject,
   listDriveProjects,
   uploadDriveProject,
+  UPLOAD_CHUNK_SIZE,
 } from '../lib/googledrive/driveProjectStore';
 import { DriveApiError, DriveProjectItem, GoogleDriveAuthError } from '../lib/googledrive/types';
 import {
@@ -43,6 +44,8 @@ export type UseGoogleDriveProjectsReturnType = {
 };
 
 function toErrorMessage(e: unknown): string {
+  // eslint-disable-next-line no-console
+  console.log('GoogleDrive error:', e);
   if (e instanceof GoogleDriveAuthError) {
     if (e.reason === 'cancelled') return '';
     if (e.reason === 'scope-denied') return t('hooks.message.googleDriveScopeDenied');
@@ -146,14 +149,17 @@ export const useGoogleDriveProjects = (): UseGoogleDriveProjectsReturnType => {
         if (zip === undefined) return { isOK: false, message: t('hooks.message.failSaveFile') };
         source = zip.source;
 
-        setProgress(0);
+        // 1チャンクで完了するサイズだと0%のまま完了して紛らわしいため、
+        // 複数チャンクになる場合のみ%を表示する（それ以外はスピナーのみ）
+        const showProgress = zip.size > UPLOAD_CHUNK_SIZE;
+        if (showProgress) setProgress(0);
         const item = await uploadDriveProject({
           name,
           source: zip.source,
           size: zip.size,
           existingFileId: existing?.fileId,
           projectId: existing !== undefined && existing.projectId !== '' ? existing.projectId : undefined,
-          onProgress: setProgress,
+          onProgress: showProgress ? setProgress : undefined,
         });
         dispatch(
           setGoogleDriveLastSyncAction({
