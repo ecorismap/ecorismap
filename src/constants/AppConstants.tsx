@@ -13,7 +13,7 @@ export const CREATE_DEK_PROJECTS = false;
 // 自体は常時有効なので、移行済みプロジェクトはこのフラグに関わらず読める。全クライアントにDEK読み込み対応版が
 // 行き渡ってから true にする。
 export const ENABLE_DEK_MIGRATION = false;
-export const CURRENT_TERMS_VERSION = '2024-08-16';
+export const CURRENT_TERMS_VERSION = '2026-07-12';
 
 export const COLOR = {
   MAIN: '#f2f2f2',

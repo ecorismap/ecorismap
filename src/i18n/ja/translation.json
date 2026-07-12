@@ -888,8 +888,8 @@
     "confirmEditModeMessage": " 編集モードに切り替えますか？"
   },
   "site": {
-    "manual": "https://ecorismap-pro.web.app/manual_ja.html",
-    "termsOfUse": "https://ecorismap-pro.web.app/terms_ja.html",
+    "manual": "https://ecorismap.web.app/manual_ja.html",
+    "termsOfUse": "https://ecorismap.web.app/terms_ja.html",
     "changelog": "https://github.com/ecorismap/ecorismap/blob/main/CHANGELOG.md"
   },
   "Format": {

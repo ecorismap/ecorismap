@@ -1,24 +1,20 @@
 #!/usr/bin/env node
 
 /**
- * Firebase環境設定切り替えスクリプト
+ * APIキー・設定ファイル反映スクリプト
+ * keys/ ディレクトリ（gitignore対象）の内容を各プラットフォームの設定ファイルへ反映する。
  * 使用方法:
- *   yarn firebase:dev  - development環境に切り替え
- *   yarn firebase:prod - production環境に切り替え
+ *   yarn keys:apply
+ *
+ * 旧 switch-firebase-env.js（development/production切り替え）は、
+ * Firebase環境がecorismapプロジェクトに一本化されたため廃止。
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const env = process.argv[2];
-
-if (!env || !['development', 'production'].includes(env)) {
-  console.error('❌ 使用方法: node switch-firebase-env.js [development|production]');
-  process.exit(1);
-}
-
 const projectRoot = path.resolve(__dirname, '..');
-const keysDir = path.join(projectRoot, 'keys', env);
+const keysDir = path.join(projectRoot, 'keys');
 const templateDir = path.join(projectRoot, 'template');
 
 // 設定ファイルのパス
@@ -81,7 +77,7 @@ const configs = [
   }
 ];
 
-console.log(`\n🔄 Firebase設定を${env}環境に切り替えています...\n`);
+console.log('\n🔄 keys/ の設定を反映しています...\n');
 
 let hasError = false;
 
@@ -116,13 +112,6 @@ configs.forEach(config => {
       return;
     }
 
-    // バックアップの作成（初回のみ）
-    const backupPath = targetPath + '.backup';
-    if (!fs.existsSync(backupPath) && fs.existsSync(targetPath)) {
-      fs.copyFileSync(targetPath, backupPath);
-      console.log(`📦 ${config.name}: バックアップを作成しました`);
-    }
-
     if (config.type === 'template') {
       // テンプレートを使用してファイルを生成
       if (!fs.existsSync(config.template)) {
@@ -133,10 +122,10 @@ configs.forEach(config => {
 
       const keyValue = fs.readFileSync(config.source, 'utf8').trim();
       let templateContent = fs.readFileSync(config.template, 'utf8');
-      
+
       // プレースホルダーを実際の値に置換
       templateContent = templateContent.replace(config.placeholder, keyValue);
-      
+
       fs.writeFileSync(targetPath, templateContent);
       console.log(`✅ ${config.name}: 設定を更新しました`);
 
@@ -191,14 +180,14 @@ configs.forEach(config => {
       const recaptureKey = fs.readFileSync(config.sources.recapture, 'utf8').trim();
       const maptilerKey = fs.readFileSync(config.sources.maptiler, 'utf8').trim();
 
-      // Google Drive OAuth設定（keys/{env}/googleDriveOAuth.ts が未配置なら空値で生成）
+      // Google Drive OAuth設定（keys/googleDriveOAuth.ts が未配置なら空値で生成）
       const driveOAuthPath = path.join(keysDir, 'googleDriveOAuth.ts');
       const driveOAuthContent = fs.existsSync(driveOAuthPath)
         ? fs.readFileSync(driveOAuthPath, 'utf8').trim()
         : "export const googleDriveOAuth = { webClientId: '', iosClientId: '' };";
 
       // APIKeys.tsを生成
-      const apiKeysContent = `// ${env === 'production' ? 'Production' : 'Development'} environment API keys
+      const apiKeysContent = `// API keys (generated from keys/ by scripts/apply-keys.js)
 ${firebaseConfigContent.trim()}
 export const reCaptureSiteKey = '${recaptureKey}';
 export const maptilerKey = '${maptilerKey}';
@@ -211,7 +200,7 @@ ${driveOAuthContent}
     } else {
       // 単純なファイルコピー
       fs.copyFileSync(config.source, targetPath);
-      console.log(`✅ ${config.name}: ${env}設定に切り替えました`);
+      console.log(`✅ ${config.name}: 反映しました`);
     }
   } catch (error) {
     console.error(`❌ ${config.name}: エラーが発生しました:`, error.message);
@@ -223,11 +212,5 @@ if (hasError) {
   console.log('\n⚠️  一部のファイルで問題が発生しました');
   process.exit(1);
 } else {
-  console.log('\n✨ Firebase設定の切り替えが完了しました!');
-  console.log(`📱 現在の環境: ${env === 'production' ? '本番環境' : '開発環境'}\n`);
-  
-  if (env === 'production') {
-    console.log('⚠️  注意: 本番環境の設定を使用しています。');
-    console.log('    開発作業を行う場合は、yarn firebase:dev で開発環境に戻してください。\n');
-  }
+  console.log('\n✨ keys/ の設定反映が完了しました!\n');
 }

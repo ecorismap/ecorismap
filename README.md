@@ -3,11 +3,11 @@ EcorisMap
 EcorisMap is a cross-platform field survey application that records locations and information on maps for outdoor surveys.
 
 ## Official Site
-- https://ecorismap-pro.web.app
+- https://ecorismap.web.app
 
 ## Documentation
-- [English Documentation](https://ecorismap-pro.web.app/manual_en.html)
-- [Japanese Documentation](https://ecorismap-pro.web.app/manual_ja.html)
+- [English Documentation](https://ecorismap.web.app/manual_en.html)
+- [Japanese Documentation](https://ecorismap.web.app/manual_ja.html)
 
 ---
 
@@ -241,36 +241,33 @@ Firebase Hosting is used to host the web version of the application.
 
 For detailed setup and deployment instructions, see [website/README.md](../website/README.md).
 
-## Environment Configuration Management
+## API Key Configuration Management
 
-This project supports both development and production Firebase environments. Configuration files are managed separately and can be switched using simple commands.
+API keys and platform configuration files are kept in the gitignored `keys/` directory and applied with a single command.
 
-### Setting up environment files
+### Setting up key files
 
 1. Place your configuration files in the `keys/` directory:
    ```
    keys/
-   ├── development/
-   │   ├── google-services.json
-   │   ├── GoogleService-Info.plist
-   │   ├── firebaseConfig.ts
-   │   ├── maps-key-android
-   │   ├── maps-key-ios
-   │   ├── maptilerKey
-   │   ├── reCaptureSiteKey
-   │   ├── keystore-config
-   │   └── transistorsoft-license-key
-   └── production/
-       └── (same files as development)
+   ├── google-services.json
+   ├── GoogleService-Info.plist
+   ├── firebaseConfig.ts
+   ├── googleDriveOAuth.ts
+   ├── maps-key-android
+   ├── maps-key-ios
+   ├── maptilerKey
+   ├── reCaptureSiteKey
+   ├── keystore-config
+   └── transistorsoft-license-key(-android/-ios)
    ```
 
-2. Switch between environments:
+2. Apply the keys:
    ```bash
-   yarn firebase:dev   # Switch to development environment
-   yarn firebase:prod  # Switch to production environment
+   yarn keys:apply
    ```
 
-   This command will automatically copy the appropriate configuration files to:
+   This command will automatically copy the configuration files to:
    - `android/app/google-services.json`
    - `android/local.properties` (Maps API key, Transistorsoft license, Keystore config)
    - `ios/ecorismap/GoogleService-Info.plist`
