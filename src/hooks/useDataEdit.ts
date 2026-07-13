@@ -149,6 +149,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
     // Reduxストアから最新のレコードを取得
     const updatedRecord = allUserRecordSet.find((d) => d.id === targetRecord.id);
+    //参照が同じなら未変更（immerは未変更レコードの参照を保持）。JSON比較のコストを避ける
+    if (updatedRecord === targetRecord) return;
     if (updatedRecord && layer.type === 'POINT') {
       const newLatLon = isLocationType(updatedRecord.coords) ? toLatLonDMS(updatedRecord.coords) : LatLonDMSEmptyTemplate;
       // 緯度経度が変更されている場合のみ更新
@@ -369,9 +371,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
 
   const changeField = useCallback(
     (name: string, value: string | number) => {
-      const m = cloneDeep(targetRecord);
-      if (m.field[name] !== value) {
-        m.field[name] = value;
+      //値はstring/numberなので浅コピーで十分。cloneDeepだと写真配列を含むレコードでキー入力ごとに重くなる
+      if (targetRecord.field[name] !== value) {
+        const m = { ...targetRecord, field: { ...targetRecord.field, [name]: value } };
         setTargetRecord(m);
         setIsEditingRecord(true);
       }
@@ -383,8 +385,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     (name: string, format: string) => {
       //console.log(targetRecord.field[name]);
       const formatted = formattedInputs(targetRecord.field[name], format);
-      const m = cloneDeep(targetRecord);
-      m.field[name] = formatted.result;
+      const m = { ...targetRecord, field: { ...targetRecord.field, [name]: formatted.result } };
       setTargetRecord(m);
     },
     [targetRecord]

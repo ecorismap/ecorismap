@@ -98,7 +98,10 @@ export const useData = (layerId: string): UseDataReturnType => {
       }
       setSortedOrder(order);
       setSortedName(colName);
-      dispatch(updateLayerAction({ ...targetLayer, sortedOrder: order, sortedName: colName }));
+      //ソート設定が変わったときのみdispatch（レコード更新のたびにlayers全体が再生成されるのを防ぐ）
+      if (targetLayer.sortedOrder !== order || targetLayer.sortedName !== colName) {
+        dispatch(updateLayerAction({ ...targetLayer, sortedOrder: order, sortedName: colName }));
+      }
     },
     [checkList, dispatch, allUserRecordSet, targetLayer]
   );
