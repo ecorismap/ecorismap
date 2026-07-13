@@ -42,6 +42,10 @@ const reducers = {
   clearDataSyncProjectAction: (state: DataSyncState, action: PayloadAction<string>) => {
     delete state[action.payload];
   },
+  /** 全体を置換する（バックアップからの復元用）。 */
+  setDataSyncAllAction: (_state: DataSyncState, action: PayloadAction<DataSyncState>) => {
+    return action.payload;
+  },
 };
 
 const dataSyncSlice = createSlice({
@@ -50,5 +54,6 @@ const dataSyncSlice = createSlice({
   reducers,
 });
 
-export const { setDataSyncTimestampsAction, clearDataSyncProjectAction } = dataSyncSlice.actions;
+export const { setDataSyncTimestampsAction, clearDataSyncProjectAction, setDataSyncAllAction } =
+  dataSyncSlice.actions;
 export default dataSyncSlice.reducer;

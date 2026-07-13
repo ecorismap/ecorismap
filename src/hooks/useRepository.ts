@@ -12,8 +12,9 @@ import {
 import { PHOTO_FOLDER, TILE_FOLDER } from '../constants/AppConstants';
 import * as projectStore from '../lib/firebase/firestore';
 import * as projectStorage from '../lib/firebase/storage';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
+import { saveProjectBackup } from '../utils/projectBackup';
 import { setDataSetAction, updateDataAction, updateRecordsAction } from '../modules/dataSet';
 import { setDataSyncTimestampsAction, dataSyncKey } from '../modules/dataSync';
 import { layersInitialState, setLayersAction } from '../modules/layers';
@@ -186,6 +187,7 @@ export const useRepository = (): UseRepositoryReturnType & {
   conflictsResolver: any;
 } => {
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
   const user = useSelector((state: RootState) => state.user);
   const fullDataSet = useSelector((state: RootState) => state.dataSet);
   const layers = useSelector((state: RootState) => state.layers);
@@ -873,6 +875,20 @@ export const useRepository = (): UseRepositoryReturnType & {
 
   const downloadProjectSettings = useCallback(
     async (project: ProjectType) => {
+      //プロジェクトを開く際の上書きで記録中データが失われないよう、破棄直前に自動バックアップ
+      const state = store.getState();
+      saveProjectBackup(
+        {
+          settings: state.settings,
+          layers: state.layers,
+          tileMaps: state.tileMaps,
+          dataSet: state.dataSet,
+          user: state.user,
+          projects: state.projects,
+          dataSync: state.dataSync,
+        },
+        'projectOpen'
+      );
       //データを最初に削除
       dispatch(setDataSetAction([]));
       const { isOK, message, data: projectSettings } = await projectStore.downloadProjectSettings(project.id);
@@ -904,7 +920,7 @@ export const useRepository = (): UseRepositoryReturnType & {
       dispatch(editSettingsAction({ ...settings, projectRegion }));
       return { isOK: true, message: '', region: projectRegion };
     },
-    [dispatch, downloadDictionaries, downloadStyle]
+    [dispatch, downloadDictionaries, downloadStyle, store]
   );
 
   const downloadPhoto = useCallback(

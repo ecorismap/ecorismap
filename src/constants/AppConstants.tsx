@@ -377,6 +377,7 @@ export const SETTINGS_BTN = {
   FILE_NEW: 'file',
   FILE_SAVE: 'content-save',
   FILE_OPEN: 'folder-open',
+  BACKUP_RESTORE: 'backup-restore',
   PDF_SAVE: 'file-image-marker',
   MAP_CACHE_DELETE: 'delete-variant',
   PHOTO_CACHE_DELETE: 'delete-circle',

@@ -305,14 +305,17 @@
       "clearPhotoCache": "Clear photo cache?",
       "clearCache": "Clear all cache (maps and photos)?",
       "fileNew": "Clear current data?",
-      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten."
+      "fileOpen": "Load data file (.ecorismap)? \nCurrent data and settings will be overwritten.",
+      "restoreBackup": "Restore the selected backup? \nCurrent data will be replaced. (The current state will also be backed up automatically.)"
     },
     "alert": {
       "loadEcorisMapFile": "File is loaded.",
       "clearTileCache": "Cleared the map cache.",
       "clearPhotoCache": "Cleared the photo cache.",
       "clearCache": "Cleared all cache.",
-      "clearCacheError": "An error occurred while clearing the cache."
+      "clearCacheError": "An error occurred while clearing the cache.",
+      "restoreBackupDone": "Backup restored.\nTo sync (upload/download) the project, you may need to log in again while online.",
+      "restoreBackupFailed": "Failed to restore the backup."
     },
     "navigation": {
       "title": "Setting"
@@ -339,6 +342,21 @@
       "loadTitle": "Select source",
       "local": "This device",
       "drive": "Google Drive"
+    },
+    "backup_restore": {
+      "text": "Restore from backup"
+    },
+    "backup": {
+      "title": "Select a backup to restore",
+      "noBackups": "No backups",
+      "localData": "Local data",
+      "records": " records",
+      "trigger": {
+        "projectClose": "before closing project",
+        "projectOpen": "before opening project",
+        "fileNew": "before clearing data",
+        "beforeRestore": "before restore"
+      }
     }
   },
   "Account": {
@@ -608,6 +626,7 @@
       "signupRestricted": "This email address cannot be registered. Account sign-up requires approval from the operator. You can also use \"Connect with Google\".",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
       "failedInitializeEncrypt": "Failed to initialize encryption",
+      "reloginRequired": "This data was restored after logging out, so syncing requires signing in again.\nPlease log out, log in, restore the backup again, and then retry download/upload.\n(Your current data will be backed up automatically when you log out.)",
       "failAddGroupMembers": "Failed to add member",
       "failCreateE3kitGroup": "Failed to create a group.",
       "failDeleteAccount": "Failed to delete the user account.",

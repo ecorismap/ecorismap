@@ -395,14 +395,17 @@
       "clearPhotoCache": "写真のキャッシュをクリアしますか？",
       "clearCache": "すべてのキャッシュ（地図と写真）をクリアしますか？",
       "fileNew": "現在のデータをクリアしますか？",
-      "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。"
+      "fileOpen": "データファイル(.ecorismap or .zip)を読み込みますか？現在のデータと設定は上書きされます。",
+      "restoreBackup": "選択したバックアップを復元しますか？現在のデータは置き換えられます。（現在の状態も自動バックアップされます）"
     },
     "alert": {
       "loadEcorisMapFile": "ファイルを読み込みました。",
       "clearTileCache": "地図のキャッシュをクリアしました。",
       "clearPhotoCache": "写真のキャッシュをクリアしました。",
       "clearCache": "すべてのキャッシュをクリアしました。",
-      "clearCacheError": "キャッシュのクリア中にエラーが発生しました。"
+      "clearCacheError": "キャッシュのクリア中にエラーが発生しました。",
+      "restoreBackupDone": "バックアップを復元しました。\nプロジェクトの同期（アップロード/ダウンロード）を行う場合は、オンラインで再ログインが必要なことがあります。",
+      "restoreBackupFailed": "バックアップの復元に失敗しました。"
     },
     "termsOfUse": {},
     "version": {},
@@ -426,6 +429,21 @@
       "loadTitle": "読み込み元を選択",
       "local": "この端末",
       "drive": "Google Drive"
+    },
+    "backup_restore": {
+      "text": "バックアップから復元"
+    },
+    "backup": {
+      "title": "復元するバックアップを選択",
+      "noBackups": "バックアップはありません",
+      "localData": "ローカルデータ",
+      "records": "件",
+      "trigger": {
+        "projectClose": "プロジェクトを閉じる前",
+        "projectOpen": "プロジェクトを開く前",
+        "fileNew": "データクリア前",
+        "beforeRestore": "復元前"
+      }
     }
   },
   "Projects": {
@@ -824,6 +842,7 @@
       "inputEncryptPassword": "暗号化パスワードを入力してください。",
       "errorInitEncrypt": "暗号の初期化に問題があります。",
       "failedInitializeEncrypt": "暗号化の初期化に失敗しました",
+      "reloginRequired": "ログアウト後に復元したデータのため、同期には再ログインが必要です。\nログアウト→ログイン後、もう一度「バックアップから復元」を実行してから、データの取得・送信をお試しください。\n（現在のデータはログアウト時に自動バックアップされます）",
       "noUser": "ユーザーが存在しません。",
       "emailInUse": "そのメールアドレスは既に使用されています。",
       "signupRestricted": "このメールアドレスでは登録できません。アカウントの登録には運営元の許可が必要です。「Googleで接続」もご利用いただけます。",
