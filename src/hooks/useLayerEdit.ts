@@ -285,6 +285,13 @@ export const useLayerEdit = (
     (index: number, itemValue: FormatType) => {
       const m = cloneDeep(targetLayer);
       if (m.field[index].format !== itemValue) {
+        //辞書型から他の形式に変更した場合は「データ追加に使用」の設定を解除する
+        if (m.field[index].format === 'STRING_DICTIONARY' && itemValue !== 'STRING_DICTIONARY') {
+          m.field[index].useDictionaryAdd = false;
+          if (m.dictionaryFieldId === m.field[index].id) {
+            m.dictionaryFieldId = undefined;
+          }
+        }
         m.field[index].format = itemValue;
         setTargetLayer(m);
         setIsEdited(true);
@@ -321,6 +328,10 @@ export const useLayerEdit = (
   const deleteField = useCallback(
     (id: number) => {
       const m = cloneDeep(targetLayer);
+      //辞書追加用のフィールドを削除した場合はdictionaryFieldIdも解除する
+      if (m.dictionaryFieldId === m.field[id]?.id) {
+        m.dictionaryFieldId = undefined;
+      }
       m.field.splice(id, 1);
 
       setTargetLayer(m);
