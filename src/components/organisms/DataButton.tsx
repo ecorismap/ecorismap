@@ -6,18 +6,8 @@ import { Button } from '../atoms';
 import { t } from '../../i18n/config';
 
 export const DataButton = () => {
-  const {
-    layer,
-    projectId,
-    isChecked,
-    isEditable,
-    isExporting,
-    isLocationEnabled,
-    pressAddData,
-    pressDeleteData,
-    pressExportData,
-    pressToggleLocation,
-  } = useContext(DataContext);
+  const { layer, projectId, isChecked, isEditable, isExporting, pressAddData, pressDeleteData, pressExportData } =
+    useContext(DataContext);
 
   const exportDisabled = useMemo(() => false && projectId !== undefined, [projectId]);
 
@@ -30,15 +20,6 @@ export const DataButton = () => {
           backgroundColor={isEditable ? COLOR.BLUE : COLOR.LIGHTBLUE}
           disabled={!isEditable}
           labelText={t('Data.label.add')}
-        />
-      )}
-      {layer.type === 'POINT' && (
-        <Button
-          name={isLocationEnabled ? DATA_BTN.LOCATION_ON : DATA_BTN.LOCATION_OFF}
-          onPress={pressToggleLocation}
-          backgroundColor={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY3}
-          disabled={!isEditable}
-          labelText={t('Data.label.location')}
         />
       )}
       {!exportDisabled && (

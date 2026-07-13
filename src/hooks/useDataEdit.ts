@@ -23,7 +23,6 @@ export type UseDataEditReturnType = {
   targetRecord: RecordType;
   targetLayer: LayerType;
   latlon: LatLonDMSType;
-  isLatLonDirty: boolean;
   selectedPhoto: SelectedPhotoType;
   isEditingRecord: boolean;
   isDecimal: boolean;
@@ -446,7 +445,6 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     targetRecord,
     targetLayer,
     latlon,
-    isLatLonDirty,
     selectedPhoto,
     isEditingRecord,
     isDecimal,

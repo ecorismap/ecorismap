@@ -1,5 +1,5 @@
 import { LatLonDMSType, RecordType } from '../../types';
-import { sortData, getInitialFieldValue, mergeLayerData, updateRecordCoords } from '../Data';
+import { sortData, getInitialFieldValue, mergeLayerData, updateRecordCoords, isLatLonEmpty } from '../Data';
 
 describe('sortData', () => {
   const recordExt: RecordType[] = [
@@ -535,5 +535,45 @@ describe('updateRecordCoords', () => {
     };
     const result = updateRecordCoords(lineRecord, latlon, true, true);
     expect(result).toBe(lineRecord);
+  });
+
+  it('位置ありレコードの座標欄を空欄にして保存すると位置なしになる', () => {
+    const recordWithCoords: RecordType = { ...baseRecord, coords: { latitude: 10, longitude: 20 } };
+    const result = updateRecordCoords(recordWithCoords, emptyLatlon, true, true);
+    expect(result.coords).toBeUndefined();
+  });
+
+  it('位置なしレコードで座標欄が空欄なら位置なしのまま', () => {
+    const result = updateRecordCoords(baseRecord, emptyLatlon, true, true);
+    expect(result).toBe(baseRecord);
+  });
+});
+
+describe('isLatLonEmpty', () => {
+  const emptyLatlon: LatLonDMSType = {
+    latitude: { decimal: '', deg: '', min: '', sec: '' },
+    longitude: { decimal: '', deg: '', min: '', sec: '' },
+  };
+
+  it('全欄空ならtrue（10進/度分秒とも）', () => {
+    expect(isLatLonEmpty(emptyLatlon, true)).toBe(true);
+    expect(isLatLonEmpty(emptyLatlon, false)).toBe(true);
+  });
+
+  it('10進モードは10進欄のみで判定する', () => {
+    const dmsOnly: LatLonDMSType = {
+      latitude: { decimal: '', deg: '35', min: '30', sec: '0' },
+      longitude: { decimal: '', deg: '135', min: '30', sec: '0' },
+    };
+    expect(isLatLonEmpty(dmsOnly, true)).toBe(true);
+    expect(isLatLonEmpty(dmsOnly, false)).toBe(false);
+  });
+
+  it('片方でも入力があればfalse', () => {
+    const partial: LatLonDMSType = {
+      latitude: { decimal: '35.5', deg: '', min: '', sec: '' },
+      longitude: { decimal: '', deg: '', min: '', sec: '' },
+    };
+    expect(isLatLonEmpty(partial, true)).toBe(false);
   });
 });

@@ -566,8 +566,7 @@
     "label": {
       "add": "add",
       "export": "export",
-      "delete": "delete",
-      "location": "location"
+      "delete": "delete"
     },
     "message": {
       "exporting": "Exporting data..."

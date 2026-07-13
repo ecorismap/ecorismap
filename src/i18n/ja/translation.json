@@ -630,8 +630,7 @@
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
       "delete": "削除",
-      "add": "追加",
-      "location": "位置"
+      "add": "追加"
     },
     "message": {
       "exporting": "データをエクスポートしています..."
