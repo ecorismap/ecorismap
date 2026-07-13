@@ -33,6 +33,8 @@ target 'ecorismap' do
 
   use_frameworks! :linkage => :static
   $RNFirebaseAsStaticFramework = true
+  # 広告ID(IDFA)なしのAnalyticsを使用（ATT許可ダイアログ不要の構成を維持）
+  $RNFirebaseAnalyticsWithoutAdIdSupport = true
 
   # Flags change depending on the env values.
   flags = get_default_flags()
