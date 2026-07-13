@@ -301,6 +301,7 @@ export const HOME_ACCOUNT_BTN = {
   ACCOUNT: 'account',
   PROJECTS: 'apps',
   SETTING: 'account-cog',
+  DRIVE: 'google-drive',
   LOGOUT: 'logout-variant',
 } as const;
 

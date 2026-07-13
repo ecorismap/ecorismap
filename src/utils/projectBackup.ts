@@ -14,7 +14,7 @@ import { DataSyncState } from '../modules/dataSync';
 // 注意: 動的辞書（SQLite）はスナップショット対象外のため復元されない。
 // ============================================================================
 
-export type BackupTriggerType = 'projectClose' | 'projectOpen' | 'fileNew' | 'beforeRestore';
+export type BackupTriggerType = 'projectClose' | 'projectOpen' | 'fileNew' | 'fileOpen' | 'beforeRestore';
 
 export type BackupMetaType = {
   id: string;

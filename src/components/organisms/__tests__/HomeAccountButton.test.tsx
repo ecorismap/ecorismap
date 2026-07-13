@@ -32,6 +32,7 @@ const createProjectValue = (googleAccountEmail: string | undefined): ProjectCont
     pressLogout: jest.fn(),
     googleAccountEmail,
     pressDisconnectDrive: jest.fn(),
+    gotoDriveProjects: jest.fn(),
   } as ProjectContextType);
 
 const renderButton = async (user: UserType, projectValue: ProjectContextType) =>
@@ -53,7 +54,7 @@ describe('HomeAccountButton', () => {
     expect(queryByText('Home.label.logout')).toBeNull();
   });
 
-  it('Drive接続のみ: Googleメールのイニシャルを表示し、メニューはLOGOUT（切断）のみ', async () => {
+  it('Drive接続のみ: Googleメールのイニシャルを表示し、メニューはDRIVEとLOGOUT（切断）', async () => {
     const projectValue = createProjectValue('mizutani@gmail.com');
     const { getByText, queryByText } = await renderButton(noUser, projectValue);
     // Googleメール由来のイニシャル
@@ -63,7 +64,12 @@ describe('HomeAccountButton', () => {
     expect(getByText('Home.label.logout')).toBeTruthy();
     expect(queryByText('Home.label.projects')).toBeNull();
     expect(queryByText('Home.label.setting')).toBeNull();
-    // LOGOUT = Drive切断
+    // 個人利用（Firebase未ログイン）ではDrive画面への導線を表示
+    expect(getByText('Home.label.drive')).toBeTruthy();
+    await fireEvent.press(getByText('Home.label.drive'));
+    expect(projectValue.gotoDriveProjects).toHaveBeenCalled();
+    // ボタン押下でメニューが閉じるため再展開してからLOGOUT（=Drive切断）を実行
+    await fireEvent.press(getByText('M'));
     await fireEvent.press(getByText('Home.label.logout'));
     expect(projectValue.pressDisconnectDrive).toHaveBeenCalled();
     expect(projectValue.pressLogout).not.toHaveBeenCalled();

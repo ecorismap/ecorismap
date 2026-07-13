@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
+import { saveProjectBackup } from '../utils/projectBackup';
 import {
   DataType,
   EcorisMapFileType,
@@ -72,6 +73,7 @@ export type UseEcorisMapFileReturnType = {
 
 export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
   const settings = useSelector((state: RootState) => state.settings);
   const [isLoading, setIsLoading] = useState(false);
   const { fetchAllPhotos } = useRepository();
@@ -350,6 +352,20 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
       if (loaded === undefined) {
         return { isOK: true, message: t('hooks.message.failGetData') };
       }
+      //ファイル読み込み（この端末/Google Drive）による上書きで現在のデータが失われないよう、直前に自動バックアップ
+      const state = store.getState();
+      saveProjectBackup(
+        {
+          settings: state.settings,
+          layers: state.layers,
+          tileMaps: state.tileMaps,
+          dataSet: state.dataSet,
+          user: state.user,
+          projects: state.projects,
+          dataSync: state.dataSync,
+        },
+        'fileOpen'
+      );
       //ToDo: データのサイズチェック。もともと書き出したものだからチェックいらない？
       dispatch(setDataSetAction(loaded.dataSet));
       dispatch(setLayersAction(loaded.layers));
@@ -360,7 +376,7 @@ export const useEcorisMapFile = (): UseEcorisMapFileReturnType => {
 
       return { isOK: true, message: '', region: loaded.settings.mapRegion };
     },
-    [dispatch, loadEcorisMapFile, settings]
+    [dispatch, loadEcorisMapFile, settings, store]
   );
 
   const clearEcorisMap = useCallback(async () => {

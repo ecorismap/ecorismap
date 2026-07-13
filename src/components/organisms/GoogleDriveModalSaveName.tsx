@@ -79,6 +79,12 @@ export const GoogleDriveModalSaveName = React.memo((props: Props) => {
       marginBottom: 10,
       textAlign: 'center',
     },
+    saveNote: {
+      color: COLOR.GRAY4,
+      fontSize: 12,
+      marginTop: 8,
+      width: windowWidth * modalWidthScale,
+    },
   });
 
   return (
@@ -96,6 +102,8 @@ export const GoogleDriveModalSaveName = React.memo((props: Props) => {
                 onChangeText={setValue}
               />
             </View>
+
+            <Text style={styles.saveNote}>{`${t('GoogleDriveProjects.modal.saveNote')}`}</Text>
 
             <View style={styles.modalButtonContainer}>
               <Pressable style={styles.modalOKCancelButton} onPress={() => pressOK(value)}>

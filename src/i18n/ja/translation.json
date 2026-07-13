@@ -295,6 +295,7 @@
       "projects": "ﾌﾟﾛｼﾞｪｸﾄ",
       "logout": "ﾛｸﾞｱｳﾄ",
       "setting": "設定",
+      "drive": "Drive",
       "saveProject": "保存",
       "discardProject": "破棄",
       "jumpProject": "ホーム",
@@ -442,6 +443,7 @@
         "projectClose": "プロジェクトを閉じる前",
         "projectOpen": "プロジェクトを開く前",
         "fileNew": "データクリア前",
+        "fileOpen": "ファイル読み込み前",
         "beforeRestore": "復元前"
       }
     }
@@ -980,6 +982,7 @@
       "loadTitle": "Google Driveから読み込み"
     },
     "description": "Googleアカウントに接続して使う、個人用の保存機能です。現在のデータを自分のGoogle Driveに保存したり、保存済みのデータを読み込んだりできます。",
+    "listNote": "一覧はGoogle Driveの「マイドライブ > EcorisMap」フォルダのファイルです。\n※ 表示されるのはEcorisMapから保存したファイルのみです。手動で置いたファイルは表示されません。",
     "connect": {
       "text": "Googleアカウントに接続"
     },
@@ -991,7 +994,8 @@
     },
     "modal": {
       "saveTitle": "プロジェクト名",
-      "savePlaceholder": "プロジェクト名を入力"
+      "savePlaceholder": "プロジェクト名を入力",
+      "saveNote": "Google Driveの「マイドライブ > EcorisMap」フォルダに保存されます。"
     },
     "confirm": {
       "saveInRunningProject": "共有プロジェクトの実行中です。この保存はチームには共有されず、現在のデータを個人のGoogle Driveにバックアップします。続けますか？",

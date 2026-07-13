@@ -71,6 +71,12 @@ export default function GoogleDriveProjects() {
       paddingHorizontal: 10,
       paddingVertical: 8,
     },
+    listNote: {
+      color: COLOR.GRAY4,
+      fontSize: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 8,
+    },
   });
 
   const loadingText = progress !== undefined ? `${Math.round(progress * 100)}%` : '';
@@ -124,6 +130,7 @@ export default function GoogleDriveProjects() {
               onPress={pressSaveToDrive}
             />
           )}
+          <Text style={styles.listNote}>{t('GoogleDriveProjects.listNote')}</Text>
           <FlatList
             data={driveProjects}
             keyExtractor={(item) => item.fileId}
@@ -149,14 +156,17 @@ export default function GoogleDriveProjects() {
                     />
                   </View>
                 )}
-                <View style={{ width: 33 }}>
-                  <Button
-                    name={GOOGLEDRIVE_BTN.DELETE}
-                    borderRadius={5}
-                    backgroundColor={COLOR.DARKRED}
-                    onPress={() => pressDeleteProject(item)}
-                  />
-                </View>
+                {/* 削除は管理画面（アカウントメニューから開いたモードなし表示）のみ。保存/読み込みの文脈では誤操作防止のため非表示 */}
+                {mode === undefined && (
+                  <View style={{ width: 33 }}>
+                    <Button
+                      name={GOOGLEDRIVE_BTN.DELETE}
+                      borderRadius={5}
+                      backgroundColor={COLOR.DARKRED}
+                      onPress={() => pressDeleteProject(item)}
+                    />
+                  </View>
+                )}
               </View>
             )}
           />
