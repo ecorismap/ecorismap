@@ -25,6 +25,8 @@ export const DataEditCoords = (props: Props) => {
             style={styles.input}
             label={label}
             value={latlon[latlonType].decimal}
+            placeholder={t('DataEdit.placeholder.noCoords')}
+            placeholderTextColor={COLOR.GRAY3}
             keyboardType="number-pad"
             onChangeText={(val: string) => onChangeText(val, latlonType, 'decimal')}
           />
@@ -34,6 +36,8 @@ export const DataEditCoords = (props: Props) => {
               style={styles.input}
               label={label}
               value={latlon[latlonType].deg}
+              placeholder={t('DataEdit.placeholder.noCoords')}
+              placeholderTextColor={COLOR.GRAY3}
               keyboardType="number-pad"
               onChangeText={(val: string) => onChangeText(val, latlonType, 'deg')}
             />

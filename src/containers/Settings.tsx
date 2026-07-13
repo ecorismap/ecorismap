@@ -9,8 +9,11 @@ import { t } from '../i18n/config';
 import { useMaps } from '../hooks/useMaps';
 import { SettingsContext } from '../contexts/Settings';
 import * as DocumentPicker from 'expo-document-picker';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
+import { saveProjectBackup } from '../utils/projectBackup';
+import { useProjectBackup } from '../hooks/useProjectBackup';
+import { SettingsModalBackupSelect } from '../components/organisms/SettingsModalBackupSelect';
 import { useEcorisMapFile } from '../hooks/useEcorismapFile';
 import { getExt } from '../utils/General';
 import { exportGeoFile } from '../utils/File';
@@ -36,9 +39,12 @@ export default function SettingsContainers() {
   });
   const { clearEcorisMap, generateEcorisMapData, openEcorisMapFile, createExportSettings } = useEcorisMapFile();
   const { mapListURL, saveMapListURL, clearTileCache } = useMaps();
+  const store = useStore<RootState>();
+  const { backupList, refreshBackupList, restoreBackup } = useProjectBackup();
 
   const [isMapListURLOpen, setIsMapListURLOpen] = useState(false);
   const [isProximityAlertSettingsOpen, setIsProximityAlertSettingsOpen] = useState(false);
+  const [isBackupSelectOpen, setIsBackupSelectOpen] = useState(false);
   const [storageSelectMode, setStorageSelectMode] = useState<'save' | 'open' | undefined>(undefined);
 
   // ポイントレイヤーのみ抽出
@@ -139,6 +145,20 @@ export default function SettingsContainers() {
   const pressClearData = useCallback(async () => {
     const ret = await ConfirmAsync(t('Settings.confirm.fileNew'));
     if (ret) {
+      //データ全消去の直前に自動バックアップ
+      const state = store.getState();
+      saveProjectBackup(
+        {
+          settings: state.settings,
+          layers: state.layers,
+          tileMaps: state.tileMaps,
+          dataSet: state.dataSet,
+          user: state.user,
+          projects: state.projects,
+          dataSync: state.dataSync,
+        },
+        'fileNew'
+      );
       const { isOK, message } = await clearEcorisMap();
 
       if (!isOK) {
@@ -147,7 +167,36 @@ export default function SettingsContainers() {
         navigateToHome?.({ previous: 'Settings', mode: 'clearEcorisMap' });
       }
     }
-  }, [clearEcorisMap, navigateToHome]);
+  }, [clearEcorisMap, navigateToHome, store]);
+
+  const pressBackupRestoreOpen = useCallback(() => {
+    refreshBackupList();
+    setIsBackupSelectOpen(true);
+  }, [refreshBackupList]);
+
+  const pressBackupSelect = useCallback(
+    async (id: string) => {
+      const ret = await ConfirmAsync(t('Settings.confirm.restoreBackup'));
+      if (!ret) return;
+      setIsBackupSelectOpen(false);
+      const { isOK, region } = restoreBackup(id);
+      if (!isOK) {
+        await AlertAsync(t('Settings.alert.restoreBackupFailed'));
+        return;
+      }
+      await AlertAsync(t('Settings.alert.restoreBackupDone'));
+      navigateToHome?.({
+        jumpTo: region,
+        previous: 'Settings',
+        mode: 'openEcorisMap',
+      });
+    },
+    [navigateToHome, restoreBackup]
+  );
+
+  const pressBackupSelectCancel = useCallback(() => {
+    setIsBackupSelectOpen(false);
+  }, []);
 
   // const pressResetAll = useCallback(async () => {
   //   const ret = await ConfirmAsync(t('Settings.confirm.clearLocalStorage'));
@@ -271,6 +320,7 @@ export default function SettingsContainers() {
         pressFileOpen,
         pressFileSave,
         pressClearData,
+        pressBackupRestoreOpen,
         pressClearTileCache,
         pressClearPhotoCache,
         pressClearCache,
@@ -303,6 +353,12 @@ export default function SettingsContainers() {
         pressLocal={pressStorageSelectLocal}
         pressDrive={pressStorageSelectDrive}
         pressCancel={pressStorageSelectCancel}
+      />
+      <SettingsModalBackupSelect
+        visible={isBackupSelectOpen}
+        backupList={backupList}
+        pressSelect={pressBackupSelect}
+        pressCancel={pressBackupSelectCancel}
       />
     </SettingsContext.Provider>
   );

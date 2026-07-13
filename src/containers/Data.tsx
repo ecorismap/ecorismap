@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useContext } from 'react';
 import { LayerType, RecordType } from '../types';
 import Data from '../components/pages/Data';
-import { shallowEqual, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../store';
+import { setAddLocationForLayerAction } from '../modules/settings';
 import { useData } from '../hooks/useData';
 import { AlertAsync, ConfirmAsync } from '../components/molecules/AlertAsync';
 import { Alert } from '../components/atoms/Alert';
@@ -23,8 +24,14 @@ export default function DataContainer() {
   const { navigate } = useBottomSheetNavigation();
   const { params } = useBottomSheetRoute<'Data'>();
 
+  const dispatch = useDispatch();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const [layer] = useState<LayerType>(params?.targetLayer as LayerType);
+  //レイヤごとの「追加時に現在地を付与するか」設定（デフォルトON）
+  const isLocationEnabled = useSelector(
+    (state: RootState) => state.settings.addLocationPerLayer?.[params?.targetLayer?.id ?? ''] ?? true,
+    shallowEqual
+  );
   // Reduxから最新のレイヤーを取得（params.targetLayerは画面遷移時のスナップショットでactive状態が古くなるため）
   const liveTargetLayer = useSelector(
     (state: RootState) => state.layers.find((l) => l.id === params?.targetLayer?.id),
@@ -142,8 +149,8 @@ export default function DataContainer() {
       }
     }
 
-    // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
-    const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
+    // 位置トグルがONかつGPSが有効で現在地が取得できている場合は、現在地を座標として使用
+    const locationToUse = isLocationEnabled && gpsState !== 'off' && currentLocation ? currentLocation : undefined;
     const addedData = addDefaultRecord(undefined, locationToUse);
     navigate('DataEdit', {
       previous: 'Data',
@@ -160,6 +167,7 @@ export default function DataContainer() {
     params?.targetLayer,
     gpsState,
     currentLocation,
+    isLocationEnabled,
   ]);
 
   const addDataByDictionary = useCallback(
@@ -184,8 +192,8 @@ export default function DataContainer() {
       const fieldName = params.targetLayer.field.find((f) => f.id === fieldId)?.name;
       if (!fieldName) return;
 
-      // GPSが有効で現在地が取得できている場合は、現在地を座標として使用
-      const locationToUse = gpsState !== 'off' && currentLocation ? currentLocation : undefined;
+      // 位置トグルがONかつGPSが有効で現在地が取得できている場合は、現在地を座標として使用
+      const locationToUse = isLocationEnabled && gpsState !== 'off' && currentLocation ? currentLocation : undefined;
       addDefaultRecord({ [fieldName]: value }, locationToUse);
     },
     [
@@ -196,8 +204,15 @@ export default function DataContainer() {
       params?.targetLayer,
       gpsState,
       currentLocation,
+      isLocationEnabled,
     ]
   );
+
+  const pressToggleLocation = useCallback(() => {
+    if (!params?.targetLayer) return;
+    dispatch(setAddLocationForLayerAction({ layerId: params.targetLayer.id, enabled: !isLocationEnabled }));
+  }, [dispatch, isLocationEnabled, params?.targetLayer]);
+
   const gotoDataEdit = useCallback(
     (index: number) => {
       navigate('DataEdit', {
@@ -227,6 +242,7 @@ export default function DataContainer() {
       sortedOrder,
       isEditable,
       isExporting,
+      isLocationEnabled,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -236,6 +252,7 @@ export default function DataContainer() {
       pressAddData,
       pressDeleteData,
       pressExportData,
+      pressToggleLocation,
       gotoDataEdit,
       gotoBack,
       updateRecordSetOrder,
@@ -252,6 +269,7 @@ export default function DataContainer() {
       sortedOrder,
       isEditable,
       isExporting,
+      isLocationEnabled,
       changeOrder,
       changeChecked,
       changeCheckedAll,
@@ -261,6 +279,7 @@ export default function DataContainer() {
       pressAddData,
       pressDeleteData,
       pressExportData,
+      pressToggleLocation,
       gotoDataEdit,
       gotoBack,
       updateRecordSetOrder,

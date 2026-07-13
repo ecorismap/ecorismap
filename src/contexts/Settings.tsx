@@ -6,6 +6,7 @@ interface SettingsContextType {
   pressFileOpen: () => void;
   pressFileSave: () => void;
   pressClearData: () => void;
+  pressBackupRestoreOpen: () => void;
   pressClearTileCache: () => void;
   pressClearPhotoCache: () => void;
   pressClearCache: () => void;
