@@ -993,8 +993,8 @@
       "connectedTo": "Connected: "
     },
     "modal": {
-      "saveTitle": "Project name",
-      "savePlaceholder": "Enter project name",
+      "saveTitle": "File name",
+      "savePlaceholder": "Enter file name",
       "saveNote": "Saved to the \"My Drive > EcorisMap\" folder in Google Drive."
     },
     "confirm": {

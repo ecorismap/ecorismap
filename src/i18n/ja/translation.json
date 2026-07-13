@@ -993,8 +993,8 @@
       "connectedTo": "接続中: "
     },
     "modal": {
-      "saveTitle": "プロジェクト名",
-      "savePlaceholder": "プロジェクト名を入力",
+      "saveTitle": "ファイル名",
+      "savePlaceholder": "ファイル名を入力",
       "saveNote": "Google Driveの「マイドライブ > EcorisMap」フォルダに保存されます。"
     },
     "confirm": {
