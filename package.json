@@ -106,6 +106,7 @@
     "@react-native-community/image-editor": "^4.2.0",
     "@react-native-community/netinfo": "12.0.1",
     "@react-native-community/slider": "5.2.0",
+    "@react-native-firebase/analytics": "24.1.1",
     "@react-native-firebase/app": "24.1.1",
     "@react-native-firebase/app-check": "24.1.1",
     "@react-native-firebase/auth": "24.1.1",

@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import { getStorage, connectStorageEmulator } from 'firebase/storage';
@@ -57,6 +58,15 @@ const initialize = (isEmulating = false) => {
   firestore = getFirestore(firebaseApp);
   functions = getFunctions(firebaseApp, 'asia-northeast1');
   storage = getStorage(firebaseApp);
+
+  // アクセス解析（GA4）。開発・エミュレータ時のノイズを避けるため本番ビルドのみ初期化
+  if (process.env.NODE_ENV === 'production' && !isEmulating) {
+    isAnalyticsSupported()
+      .then((supported) => {
+        if (supported) getAnalytics(firebaseApp);
+      })
+      .catch(() => undefined);
+  }
 
   // App Checkの初期化
   // デバッグモードの判定（開発環境またはlocalhost）

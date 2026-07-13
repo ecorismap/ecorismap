@@ -7336,6 +7336,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@react-native-firebase/analytics@npm:24.1.1":
+  version: 24.1.1
+  resolution: "@react-native-firebase/analytics@npm:24.1.1"
+  dependencies:
+    superstruct: ^2.0.2
+  peerDependencies:
+    "@react-native-firebase/app": 24.1.1
+    expo: ">=47.0.0"
+  peerDependenciesMeta:
+    expo:
+      optional: true
+  checksum: 1e2370d498377f238fda5f7e096e6d0aae582a8b867c15fd4af26f89f9085031461db83ac8d25c8beabbbb24bd866fbef9386566ed66151cd2f66be1cdecde09
+  languageName: node
+  linkType: hard
+
 "@react-native-firebase/app-check@npm:24.1.1":
   version: 24.1.1
   resolution: "@react-native-firebase/app-check@npm:24.1.1"
@@ -14484,6 +14499,7 @@ __metadata:
     "@react-native-community/image-editor": ^4.2.0
     "@react-native-community/netinfo": 12.0.1
     "@react-native-community/slider": 5.2.0
+    "@react-native-firebase/analytics": 24.1.1
     "@react-native-firebase/app": 24.1.1
     "@react-native-firebase/app-check": 24.1.1
     "@react-native-firebase/auth": 24.1.1
@@ -27166,6 +27182,13 @@ __metadata:
   bin:
     superstatic: lib/bin/server.js
   checksum: 238737a51925ab1e9021c9cf2e15291c64260a28ce94507f095309bdbd7ff0a834356f3c7be88ea1a1741258147ad1df166e878f0d90cc13420c3511a62c9580
+  languageName: node
+  linkType: hard
+
+"superstruct@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "superstruct@npm:2.0.2"
+  checksum: a5f75b72cb8b14b86f4f7f750dae8c5ab0e4e1d92414b55e7625bae07bbcafad81c92486e7e32ccacd6ae1f553caff2b92a50ff42ad5093fd35b9cb7f4e5ec86
   languageName: node
   linkType: hard
 

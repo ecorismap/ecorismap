@@ -38,6 +38,17 @@ jest.mock('@react-native-firebase/app', () => ({
   deleteApp: jest.fn(),
 }));
 
+jest.mock('@react-native-firebase/analytics', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    setAnalyticsCollectionEnabled: jest.fn(() => Promise.resolve()),
+    logEvent: jest.fn(() => Promise.resolve()),
+  })),
+  getAnalytics: jest.fn(() => ({})),
+  setAnalyticsCollectionEnabled: jest.fn(() => Promise.resolve()),
+  logEvent: jest.fn(() => Promise.resolve()),
+}));
+
 jest.mock('@react-native-firebase/app-check', () => {
   const mockProvider = {
     configure: jest.fn(),

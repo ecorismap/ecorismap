@@ -1,5 +1,6 @@
 import { getApp } from '@react-native-firebase/app';
 
+import { getAnalytics, setAnalyticsCollectionEnabled } from '@react-native-firebase/analytics';
 import { initializeAppCheck, ReactNativeFirebaseAppCheckProvider } from '@react-native-firebase/app-check';
 import { getAuth, connectAuthEmulator } from '@react-native-firebase/auth';
 import { getFirestore, connectFirestoreEmulator } from '@react-native-firebase/firestore';
@@ -77,6 +78,9 @@ const initialize = async (isEmulating = false) => {
     isTokenAutoRefreshEnabled: true,
   });
   await initializeAppCheck(getApp(), { provider: rnfbProvider });
+
+  // アクセス解析（GA4）。開発ビルドでは計測を止める（本番は自動収集のみ）
+  await setAnalyticsCollectionEnabled(getAnalytics(), !__DEV__).catch(() => undefined);
 
   auth = getAuth();
   firestore = getFirestore();
