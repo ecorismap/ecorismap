@@ -315,8 +315,30 @@ export const checkCoordsInput = (latlon: LatLonDMSType, isDecimal: boolean) => {
   return true;
 };
 
-export const updateRecordCoords = (record: RecordType, latlon: LatLonDMSType, isDecimal: boolean) => {
+//現在の表示形式（10進/度分秒）で座標欄がすべて空欄かどうか
+export const isLatLonEmpty = (latlon: LatLonDMSType, isDecimal: boolean) => {
+  const latlonTypes: LatLonDMSKey[] = ['latitude', 'longitude'];
+  if (isDecimal) {
+    return latlonTypes.every((latlonType) => latlon[latlonType].decimal === '');
+  }
+  const dmsTypes: DMSKey[] = ['deg', 'min', 'sec'];
+  return latlonTypes.every((latlonType) => dmsTypes.every((dmsType) => latlon[latlonType][dmsType] === ''));
+};
+
+export const updateRecordCoords = (
+  record: RecordType,
+  latlon: LatLonDMSType,
+  isDecimal: boolean,
+  isLatLonDirty: boolean = true
+) => {
+  //位置なしレコードは、座標欄が編集されていない限りcoordsを付与しない（テンプレート値(0,0)の書き込み防止）
+  if (record.coords === undefined && !isLatLonDirty) return record;
   if (isLocationType(record.coords) || record.coords === undefined) {
+    //座標欄をすべて空欄にして保存した場合は位置なしにする（位置ありレコードの位置解除）
+    if (isLatLonEmpty(latlon, isDecimal)) {
+      if (record.coords === undefined) return record;
+      return { ...record, coords: undefined };
+    }
     const latLonDms = latLonDMS(latlon, isDecimal);
     return {
       ...record,

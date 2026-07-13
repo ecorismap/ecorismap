@@ -48,6 +48,7 @@ export const settingsInitialState: SettingsType = {
     targetLayerIds: [],
     distanceThreshold: 10,
   } as ProximityAlertSettingsType,
+  addLocationPerLayer: {},
 };
 
 type SettingsEditType = Partial<SettingsType>;
@@ -59,6 +60,12 @@ const reducers = {
   editSettingsAction: (state: SettingsType, action: PayloadAction<SettingsEditType>) => {
     return { ...state, ...action.payload };
   },
+  setAddLocationForLayerAction: (state: SettingsType, action: PayloadAction<{ layerId: string; enabled: boolean }>) => {
+    return {
+      ...state,
+      addLocationPerLayer: { ...state.addLocationPerLayer, [action.payload.layerId]: action.payload.enabled },
+    };
+  },
 };
 
 const settingsSlice = createSlice({
@@ -67,5 +74,5 @@ const settingsSlice = createSlice({
   reducers,
 });
 
-export const { setSettingsAction, editSettingsAction } = settingsSlice.actions;
+export const { setSettingsAction, editSettingsAction, setAddLocationForLayerAction } = settingsSlice.actions;
 export default settingsSlice.reducer;

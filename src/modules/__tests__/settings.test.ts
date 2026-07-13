@@ -1,7 +1,12 @@
 import { DEFAULT_MAP_LIST_URL } from '../../constants/AppConstants';
 import { TUTRIALS } from '../../constants/Tutrials';
 import { MemberLocationType, RoleType, SettingsType, TileRegionType } from '../../types';
-import reducer, { editSettingsAction, setSettingsAction, settingsInitialState } from '../settings';
+import reducer, {
+  editSettingsAction,
+  setAddLocationForLayerAction,
+  setSettingsAction,
+  settingsInitialState,
+} from '../settings';
 describe('modules/settings', () => {
   const state: SettingsType = {
     tutrials: TUTRIALS,
@@ -98,6 +103,27 @@ describe('modules/settings', () => {
   test('should handle editSettingsAction with empty object', () => {
     const action = editSettingsAction({});
     expect(reducer(state, action)).toEqual(state);
+  });
+
+  test('should handle setAddLocationForLayerAction when addLocationPerLayer is undefined', () => {
+    const stateWithoutToggle: SettingsType = { ...state };
+    delete stateWithoutToggle.addLocationPerLayer;
+    const action = setAddLocationForLayerAction({ layerId: 'layer1', enabled: false });
+    const result = reducer(stateWithoutToggle, action);
+    expect(result.addLocationPerLayer).toEqual({ layer1: false });
+  });
+
+  test('should toggle addLocationPerLayer on and off', () => {
+    const offState = reducer(state, setAddLocationForLayerAction({ layerId: 'layer1', enabled: false }));
+    expect(offState.addLocationPerLayer).toEqual({ layer1: false });
+    const onState = reducer(offState, setAddLocationForLayerAction({ layerId: 'layer1', enabled: true }));
+    expect(onState.addLocationPerLayer).toEqual({ layer1: true });
+  });
+
+  test('should not affect other layers in addLocationPerLayer', () => {
+    const first = reducer(state, setAddLocationForLayerAction({ layerId: 'layer1', enabled: false }));
+    const second = reducer(first, setAddLocationForLayerAction({ layerId: 'layer2', enabled: true }));
+    expect(second.addLocationPerLayer).toEqual({ layer1: false, layer2: true });
   });
 
   test('should handle editSettingsAction with memberLocation', () => {

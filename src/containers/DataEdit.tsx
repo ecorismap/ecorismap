@@ -13,7 +13,7 @@ import { DataEditContext } from '../contexts/DataEdit';
 import { shallowEqual, useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { useKeyboard } from '@react-native-community/hooks';
-import { checkCoordsInput, checkFieldInput } from '../utils/Data';
+import { checkCoordsInput, checkFieldInput, isLatLonEmpty } from '../utils/Data';
 import { pickImage, takePhoto } from '../utils/Photo';
 import * as projectStorage from '../lib/firebase/storage';
 import { PHOTO_FOLDER } from '../constants/AppConstants';
@@ -98,7 +98,10 @@ export default function DataEditContainer() {
       Alert.alert('', checkInputResult.message);
       return;
     }
-    if (!checkCoordsInput(latlon, isDecimal)) {
+    //座標欄がすべて空欄の場合は「位置なし」として扱い座標チェックをスキップ
+    //（位置なしレコードの未編集時、および位置ありレコードの位置解除時）
+    const skipCoordsCheck = isLatLonEmpty(latlon, isDecimal);
+    if (!skipCoordsCheck && !checkCoordsInput(latlon, isDecimal)) {
       Alert.alert('', t('hooks.message.invalidCoordinate'));
       return;
     }

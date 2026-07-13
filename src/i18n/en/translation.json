@@ -115,6 +115,9 @@
       "copy": "copy",
       "delete": "delete",
       "save": "save"
+    },
+    "placeholder": {
+      "noCoords": "No location"
     }
   },
   "common": {

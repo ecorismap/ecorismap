@@ -378,6 +378,8 @@ export interface SettingsType {
   isModalMapMemoToolHidden: boolean;
   currentInfoTool: InfoToolType;
   proximityAlert: ProximityAlertSettingsType;
+  //レイヤごとの「レコード追加時に現在地を付与するか」（端末ローカル設定。プロジェクト設定には同期しない）
+  addLocationPerLayer?: { [layerId: string]: boolean };
 }
 
 export interface RegionType {

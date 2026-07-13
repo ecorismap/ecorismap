@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { View, StyleSheet, Platform, Text, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Platform, Text, ActivityIndicator, Switch } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { DataTable } from '../organisms/DataTable';
 import { DataButton } from '../organisms/DataButton';
@@ -9,13 +10,14 @@ import { DataContext } from '../../contexts/Data';
 import { ScrollView } from 'react-native-gesture-handler';
 import { DictionaryTextInput } from '../molecules/DictionaryTextInput';
 import { t } from '../../i18n/config';
-import { COLOR } from '../../constants/AppConstants';
+import { COLOR, DATA_BTN } from '../../constants/AppConstants';
 import { BottomSheetHeader } from '../molecules/BottomSheetHeader';
 
 export default function DataScreen() {
   //console.log('render Data');
 
-  const { layer, gotoBack, addDataByDictionary, isExporting } = useContext(DataContext);
+  const { layer, gotoBack, addDataByDictionary, isExporting, isLocationEnabled, pressToggleLocation, isEditable } =
+    useContext(DataContext);
 
   // useEffect(() => {
   //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;
@@ -34,13 +36,32 @@ export default function DataScreen() {
     <View style={styles.container}>
       <BottomSheetHeader title={layer.name} showBackButton onBack={gotoBack} />
       {layer.dictionaryFieldId !== undefined && (
-        <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
-          <DictionaryTextInput
-            initialValue=""
-            table={`_${layer.id}_${layer.dictionaryFieldId}`}
-            handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
-            clearOnSelect
-          />
+        <View style={styles.dictionaryContainer}>
+          {/* 位置あり/なし切替。辞書からのデータ追加時に現在地を付与するかを制御する */}
+          {layer.type === 'POINT' && (
+            <View style={styles.locationToggle}>
+              <MaterialCommunityIcons
+                name={isLocationEnabled ? DATA_BTN.LOCATION_ON : DATA_BTN.LOCATION_OFF}
+                size={22}
+                color={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY3}
+              />
+              <Switch
+                value={isLocationEnabled}
+                onValueChange={pressToggleLocation}
+                disabled={!isEditable}
+                trackColor={{ false: COLOR.GRAY2, true: COLOR.LIGHTBLUE }}
+                thumbColor={isLocationEnabled ? COLOR.BLUE : COLOR.GRAY1}
+              />
+            </View>
+          )}
+          <View style={styles.dictionaryInput}>
+            <DictionaryTextInput
+              initialValue=""
+              table={`_${layer.id}_${layer.dictionaryFieldId}`}
+              handleSelect={(text: string) => addDataByDictionary(layer.dictionaryFieldId!, text)}
+              clearOnSelect
+            />
+          </View>
         </View>
       )}
       <View style={styles.tableContainer}>
@@ -72,6 +93,20 @@ export default function DataScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  dictionaryContainer: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    margin: 10,
+  },
+  dictionaryInput: {
+    flex: 1,
+  },
+  locationToggle: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    height: 40,
+    marginRight: 8,
   },
   tableContainer: {
     flex: 1,
