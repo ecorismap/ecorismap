@@ -3,7 +3,7 @@ import { DMSKey, LatLonDMSKey, LatLonDMSType, LayerType, PhotoType, RecordType, 
 import { RootState } from '../store';
 import { addRecordsAction, deleteRecordsAction, updateRecordsAction } from '../modules/dataSet';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
+import { LatLonDMSEmptyTemplate, LatLonDMSTemplate, PHOTO_FOLDER, SelectedPhotoTemplate } from '../constants/AppConstants';
 import { Platform } from 'react-native';
 import { cloneDeep } from 'lodash';
 import { latLonDMS, toLatLonDMS } from '../utils/Coords';
@@ -23,6 +23,7 @@ export type UseDataEditReturnType = {
   targetRecord: RecordType;
   targetLayer: LayerType;
   latlon: LatLonDMSType;
+  isLatLonDirty: boolean;
   selectedPhoto: SelectedPhotoType;
   isEditingRecord: boolean;
   isDecimal: boolean;
@@ -70,6 +71,8 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   const [targetRecordSet, setTargetRecordSet] = useState<RecordType[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhotoType>(SelectedPhotoTemplate);
   const [latlon, setLatLon] = useState<LatLonDMSType>(LatLonDMSTemplate);
+  //座標欄をユーザーが編集したかどうか。位置なしレコードへのテンプレート値書き込み防止に使う。
+  const [isLatLonDirty, setIsLatLonDirty] = useState(false);
   const [recordNumber, setRecordNumber] = useState(1);
   const [isDecimal, setIsDecimal] = useState(true);
   const [temporaryDeletePhotoList, setTemporaryDeletePhotoList] = useState<{ photoId: string; uri: string }[]>([]);
@@ -114,8 +117,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTargetRecordSet(allUserRecordSet);
     setTargetLayer(layer);
     if (layer.type === 'POINT') {
-      const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSTemplate;
+      const newLatLon = isLocationType(newRecord.coords) ? toLatLonDMS(newRecord.coords) : LatLonDMSEmptyTemplate;
       setLatLon(newLatLon);
+      setIsLatLonDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordNumber]);
@@ -132,8 +136,9 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     setTargetLayer(layer);
     setRecordNumber(initialRecordNumber);
     if (layer.type === 'POINT') {
-      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSTemplate;
+      const newLatLon = isLocationType(record.coords) ? toLatLonDMS(record.coords) : LatLonDMSEmptyTemplate;
       setLatLon(newLatLon);
+      setIsLatLonDirty(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record]);
@@ -146,10 +151,11 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     // Reduxストアから最新のレコードを取得
     const updatedRecord = allUserRecordSet.find((d) => d.id === targetRecord.id);
     if (updatedRecord && layer.type === 'POINT') {
-      const newLatLon = isLocationType(updatedRecord.coords) ? toLatLonDMS(updatedRecord.coords) : LatLonDMSTemplate;
+      const newLatLon = isLocationType(updatedRecord.coords) ? toLatLonDMS(updatedRecord.coords) : LatLonDMSEmptyTemplate;
       // 緯度経度が変更されている場合のみ更新
       if (JSON.stringify(newLatLon) !== JSON.stringify(latlon)) {
         setLatLon(newLatLon);
+        setIsLatLonDirty(false);
         setTargetRecord(updatedRecord);
       }
     }
@@ -267,7 +273,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     const updatedField = updateReferenceFieldValue(targetLayer, targetRecord.field, targetRecord.id);
     const fieldUpdatedRecord = { ...targetRecord, field: updatedField };
 
-    const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal);
+    const updatedRecord = updateRecordCoords(fieldUpdatedRecord, latlon, isDecimal, isLatLonDirty);
     //unixTimeを更新
     updatedRecord.updatedAt = Date.now();
 
@@ -303,6 +309,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     );
 
     setIsEditingRecord(false);
+    setIsLatLonDirty(false);
     return { isOK: true, message: '' };
   }, [
     temporaryDeletePhotoList,
@@ -310,6 +317,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     targetRecord,
     latlon,
     isDecimal,
+    isLatLonDirty,
     dataUser.uid,
     dataUser.displayName,
     dispatch,
@@ -384,6 +392,16 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
   );
 
   const changeLatLonType = useCallback(() => {
+    //位置なし（空欄）の場合は変換するとNaNになるため、表示形式のみ切り替える
+    const isEmpty =
+      latlon.latitude.decimal === '' &&
+      latlon.longitude.decimal === '' &&
+      latlon.latitude.deg === '' &&
+      latlon.longitude.deg === '';
+    if (isEmpty) {
+      setIsDecimal(!isDecimal);
+      return;
+    }
     const latLonDms = latLonDMS(latlon, isDecimal);
     setLatLon(latLonDms);
     setIsDecimal(!isDecimal);
@@ -394,6 +412,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
       const newLatLon = cloneDeep(latlon);
       newLatLon[latlonType][dmsType] = val;
       setLatLon(newLatLon);
+      setIsLatLonDirty(true);
       setIsEditingRecord(true);
     },
     [latlon, setIsEditingRecord]
@@ -427,6 +446,7 @@ export const useDataEdit = (record: RecordType, layer: LayerType): UseDataEditRe
     targetRecord,
     targetLayer,
     latlon,
+    isLatLonDirty,
     selectedPhoto,
     isEditingRecord,
     isDecimal,

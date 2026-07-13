@@ -315,7 +315,14 @@ export const checkCoordsInput = (latlon: LatLonDMSType, isDecimal: boolean) => {
   return true;
 };
 
-export const updateRecordCoords = (record: RecordType, latlon: LatLonDMSType, isDecimal: boolean) => {
+export const updateRecordCoords = (
+  record: RecordType,
+  latlon: LatLonDMSType,
+  isDecimal: boolean,
+  isLatLonDirty: boolean = true
+) => {
+  //位置なしレコードは、座標欄が編集されていない限りcoordsを付与しない（テンプレート値(0,0)の書き込み防止）
+  if (record.coords === undefined && !isLatLonDirty) return record;
   if (isLocationType(record.coords) || record.coords === undefined) {
     const latLonDms = latLonDMS(latlon, isDecimal);
     return {

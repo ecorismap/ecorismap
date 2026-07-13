@@ -148,6 +148,21 @@ export const LatLonDMSTemplate = {
     sec: '0',
   },
 };
+//位置なしレコード用の空テンプレート（座標欄を空欄表示にする）
+export const LatLonDMSEmptyTemplate = {
+  latitude: {
+    decimal: '',
+    deg: '',
+    min: '',
+    sec: '',
+  },
+  longitude: {
+    decimal: '',
+    deg: '',
+    min: '',
+    sec: '',
+  },
+};
 export const SelectedPhotoTemplate = {
   id: '',
   name: '',
@@ -328,6 +343,8 @@ export const DATA_BTN = {
   ADD: 'plus',
   DELETE: 'delete',
   EXPORT: 'database-export',
+  LOCATION_ON: 'map-marker',
+  LOCATION_OFF: 'map-marker-off',
 } as const;
 
 export const LAYERS_BTN = {

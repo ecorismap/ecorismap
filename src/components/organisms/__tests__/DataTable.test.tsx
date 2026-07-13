@@ -79,6 +79,8 @@ const mockContextValue = {
   sortedOrder: 'UNSORTED' as const,
   isEditable: true,
   isExporting: false,
+  isLocationEnabled: true,
+  pressToggleLocation: jest.fn(),
   changeOrder: jest.fn(),
   changeChecked: jest.fn(),
   changeCheckedAll: jest.fn(),

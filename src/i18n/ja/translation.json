@@ -630,7 +630,8 @@
     "label": {
       "export": "ｴｸｽﾎﾟｰﾄ",
       "delete": "削除",
-      "add": "追加"
+      "add": "追加",
+      "location": "位置"
     },
     "message": {
       "exporting": "データをエクスポートしています..."
@@ -663,6 +664,9 @@
       "copy": "複製",
       "delete": "削除",
       "save": "保存"
+    },
+    "placeholder": {
+      "noCoords": "位置なし"
     }
   },
   "firebase": {

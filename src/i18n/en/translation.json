@@ -115,6 +115,9 @@
       "copy": "copy",
       "delete": "delete",
       "save": "save"
+    },
+    "placeholder": {
+      "noCoords": "No location"
     }
   },
   "common": {
@@ -563,7 +566,8 @@
     "label": {
       "add": "add",
       "export": "export",
-      "delete": "delete"
+      "delete": "delete",
+      "location": "location"
     },
     "message": {
       "exporting": "Exporting data..."

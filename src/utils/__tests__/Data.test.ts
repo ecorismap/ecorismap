@@ -1,5 +1,5 @@
-import { RecordType } from '../../types';
-import { sortData, getInitialFieldValue, mergeLayerData } from '../Data';
+import { LatLonDMSType, RecordType } from '../../types';
+import { sortData, getInitialFieldValue, mergeLayerData, updateRecordCoords } from '../Data';
 
 describe('sortData', () => {
   const recordExt: RecordType[] = [
@@ -481,5 +481,59 @@ describe('mergeLayerData（同一userId・merge-on-upload）', () => {
     const own = merged.find((d) => d.userId === userId)!;
     expect(own.data.find((r) => r.id === 'x')!.deleted).toBe(true);
     expect(own.data.find((r) => r.id === 'y')!.deleted).toBe(true);
+  });
+});
+
+describe('updateRecordCoords', () => {
+  const baseRecord: RecordType = {
+    id: '0',
+    userId: '0',
+    displayName: 'mizutani',
+    visible: true,
+    redraw: false,
+    coords: undefined,
+    field: { name: 'test' },
+  };
+  const latlon: LatLonDMSType = {
+    latitude: { decimal: '35.5', deg: '35', min: '30', sec: '0' },
+    longitude: { decimal: '135.5', deg: '135', min: '30', sec: '0' },
+  };
+  const emptyLatlon: LatLonDMSType = {
+    latitude: { decimal: '', deg: '', min: '', sec: '' },
+    longitude: { decimal: '', deg: '', min: '', sec: '' },
+  };
+
+  it('位置なしレコードで座標欄が未編集ならcoordsはundefinedのまま', () => {
+    const result = updateRecordCoords(baseRecord, emptyLatlon, true, false);
+    expect(result.coords).toBeUndefined();
+    expect(result).toBe(baseRecord);
+  });
+
+  it('位置なしレコードでも座標欄を編集したらcoordsが付与される', () => {
+    const result = updateRecordCoords(baseRecord, latlon, true, true);
+    expect(result.coords).toEqual({ latitude: 35.5, longitude: 135.5 });
+  });
+
+  it('デフォルト（isLatLonDirty省略）は従来通りcoordsを更新する', () => {
+    const result = updateRecordCoords(baseRecord, latlon, true);
+    expect(result.coords).toEqual({ latitude: 35.5, longitude: 135.5 });
+  });
+
+  it('位置ありレコードは未編集フラグでも座標欄の値で更新される（既存挙動維持）', () => {
+    const recordWithCoords: RecordType = { ...baseRecord, coords: { latitude: 10, longitude: 20 } };
+    const result = updateRecordCoords(recordWithCoords, latlon, true, false);
+    expect(result.coords).toEqual({ latitude: 35.5, longitude: 135.5 });
+  });
+
+  it('ライン等（coordsが配列）のレコードは変更されない', () => {
+    const lineRecord: RecordType = {
+      ...baseRecord,
+      coords: [
+        { latitude: 0, longitude: 0 },
+        { latitude: 1, longitude: 1 },
+      ],
+    };
+    const result = updateRecordCoords(lineRecord, latlon, true, true);
+    expect(result).toBe(lineRecord);
   });
 });

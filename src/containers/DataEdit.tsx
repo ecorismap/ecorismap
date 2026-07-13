@@ -33,6 +33,7 @@ export default function DataEditContainer() {
     targetRecord,
     targetLayer,
     latlon,
+    isLatLonDirty,
     selectedPhoto,
     isEditingRecord,
     isDecimal,
@@ -98,7 +99,9 @@ export default function DataEditContainer() {
       Alert.alert('', checkInputResult.message);
       return;
     }
-    if (!checkCoordsInput(latlon, isDecimal)) {
+    //位置なしレコードで座標欄が未編集（空欄）の場合は座標チェックをスキップ
+    const skipCoordsCheck = targetRecord.coords === undefined && !isLatLonDirty;
+    if (!skipCoordsCheck && !checkCoordsInput(latlon, isDecimal)) {
       Alert.alert('', t('hooks.message.invalidCoordinate'));
       return;
     }
@@ -131,6 +134,7 @@ export default function DataEditContainer() {
     changeActiveLayer,
     checkRecordEditable,
     isDecimal,
+    isLatLonDirty,
     keyboardShown,
     latlon,
     navigate,
