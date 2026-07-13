@@ -71,6 +71,12 @@ export default function GoogleDriveProjects() {
       paddingHorizontal: 10,
       paddingVertical: 8,
     },
+    listNote: {
+      color: COLOR.GRAY4,
+      fontSize: 12,
+      paddingHorizontal: 15,
+      paddingVertical: 8,
+    },
   });
 
   const loadingText = progress !== undefined ? `${Math.round(progress * 100)}%` : '';
@@ -124,6 +130,7 @@ export default function GoogleDriveProjects() {
               onPress={pressSaveToDrive}
             />
           )}
+          <Text style={styles.listNote}>{t('GoogleDriveProjects.listNote')}</Text>
           <FlatList
             data={driveProjects}
             keyExtractor={(item) => item.fileId}

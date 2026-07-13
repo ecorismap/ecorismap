@@ -980,6 +980,7 @@
       "loadTitle": "Load from Google Drive"
     },
     "description": "A personal storage feature that works with your Google account. Save the current data to your Google Drive and load previously saved data.",
+    "listNote": "* Only files saved from EcorisMap appear in this list. Files placed in Google Drive manually are not shown.",
     "connect": {
       "text": "Connect Google account"
     },

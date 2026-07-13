@@ -980,6 +980,7 @@
       "loadTitle": "Google Driveから読み込み"
     },
     "description": "Googleアカウントに接続して使う、個人用の保存機能です。現在のデータを自分のGoogle Driveに保存したり、保存済みのデータを読み込んだりできます。",
+    "listNote": "※ 一覧に表示されるのは、EcorisMapから保存したファイルのみです。Google Driveに手動で置いたファイルは表示されません。",
     "connect": {
       "text": "Googleアカウントに接続"
     },
