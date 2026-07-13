@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { shallowEqual, useDispatch, useSelector } from 'react-redux';
+import { shallowEqual, useDispatch, useSelector, useStore } from 'react-redux';
 import { RootState } from '../store';
+import { saveProjectBackup } from '../utils/projectBackup';
 import { editSettingsAction } from '../modules/settings';
 import { ProjectType, RegionType } from '../types';
 import { layersInitialState, setLayersAction } from '../modules/layers';
@@ -30,6 +31,7 @@ export type UseProjectReturnType = {
 
 export const useProject = (): UseProjectReturnType => {
   const dispatch = useDispatch();
+  const store = useStore<RootState>();
   const projectId = useSelector((state: RootState) => state.settings.projectId, shallowEqual);
   const user = useSelector((state: RootState) => state.user);
   const isSynced = useSelector((state: RootState) => state.settings.isSynced, shallowEqual);
@@ -62,6 +64,20 @@ export const useProject = (): UseProjectReturnType => {
   );
 
   const clearProject = useCallback(() => {
+    //破棄直前の自動バックアップ（プロジェクトを閉じる/切替/ログアウト/設定破棄の全経路が通る）
+    const state = store.getState();
+    saveProjectBackup(
+      {
+        settings: state.settings,
+        layers: state.layers,
+        tileMaps: state.tileMaps,
+        dataSet: state.dataSet,
+        user: state.user,
+        projects: state.projects,
+        dataSync: state.dataSync,
+      },
+      'projectClose'
+    );
     dispatch(
       editSettingsAction({
         role: undefined,
@@ -76,7 +92,7 @@ export const useProject = (): UseProjectReturnType => {
     dispatch(setTileMapsAction(tileMapsInitialState));
     // 動的辞書をクリア
     clearAllDynamicDictionaries();
-  }, [dispatch]);
+  }, [dispatch, store]);
 
   const saveProjectSetting = useCallback(async () => {
     //コモンデータの写真はあればアップロードする

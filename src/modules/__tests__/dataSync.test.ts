@@ -3,6 +3,7 @@ import reducer, {
   dataSyncKey,
   setDataSyncTimestampsAction,
   clearDataSyncProjectAction,
+  setDataSyncAllAction,
 } from '../dataSync';
 
 describe('dataSync slice', () => {
@@ -39,5 +40,12 @@ describe('dataSync slice', () => {
     const prev = { p1: { l1_PRIVATE: 100 }, p2: { l3_PRIVATE: 300 } };
     const state = reducer(prev, clearDataSyncProjectAction('p1'));
     expect(state).toEqual({ p2: { l3_PRIVATE: 300 } });
+  });
+
+  it('setDataSyncAllAction で全体を置換する（バックアップ復元用）', () => {
+    const prev = { p1: { l1_PRIVATE: 100 } };
+    const next = { p2: { l3_PRIVATE: 300 } };
+    expect(reducer(prev, setDataSyncAllAction(next))).toEqual(next);
+    expect(reducer(prev, setDataSyncAllAction({}))).toEqual({});
   });
 });

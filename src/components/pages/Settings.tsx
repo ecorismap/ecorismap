@@ -15,6 +15,7 @@ export default function Settings() {
     pressFileOpen,
     pressFileSave,
     pressClearData,
+    pressBackupRestoreOpen,
     pressClearCache,
     pressGotoManual,
     pressOSSLicense,
@@ -40,6 +41,13 @@ export default function Settings() {
         <TextButton name={SETTINGS_BTN.FILE_SAVE} text={t('Settings.file_save.text')} onPress={pressFileSave} />
         <TextButton name={SETTINGS_BTN.PDF_SAVE} text={t('Settings.pdf_save.text')} onPress={pressPDFSettingsOpen} />
         <TextButton name={SETTINGS_BTN.FILE_NEW} text={t('Settings.file_new.text')} onPress={pressClearData} />
+        {Platform.OS !== 'web' && (
+          <TextButton
+            name={SETTINGS_BTN.BACKUP_RESTORE}
+            text={t('Settings.backup_restore.text')}
+            onPress={pressBackupRestoreOpen}
+          />
+        )}
 
         {/* アプリ設定 */}
         <TextButton
