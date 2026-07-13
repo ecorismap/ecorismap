@@ -623,6 +623,7 @@
       "signupRestricted": "This email address cannot be registered. Account sign-up requires approval from the operator. You can also use \"Connect with Google\".",
       "errorInitEncrypt": "There is a problem with the encryption initialization.",
       "failedInitializeEncrypt": "Failed to initialize encryption",
+      "reloginRequired": "This data was restored after logging out, so syncing requires signing in again.\nPlease log out, log in, restore the backup again, and then retry download/upload.\n(Your current data will be backed up automatically when you log out.)",
       "failAddGroupMembers": "Failed to add member",
       "failCreateE3kitGroup": "Failed to create a group.",
       "failDeleteAccount": "Failed to delete the user account.",

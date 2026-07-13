@@ -70,6 +70,7 @@ import { InfoToolContext } from '../contexts/InfoTool';
 import { AppStateContext } from '../contexts/AppState';
 import { useGeoFile } from '../hooks/useGeoFile';
 import * as e3kit from '../lib/virgilsecurity/e3kit';
+import { hasAuthSession } from '../lib/firebase/sign-in';
 import { getReceivedFiles, deleteReceivedFiles, exportFileFromData, exportFileFromUri } from '../utils/File';
 import { getDropedFile } from '../utils/File.web';
 import { useMapMemo } from '../hooks/useMapMemo';
@@ -415,6 +416,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     async ({ isAdmin = false, shouldPhotoDownload = false }) => {
       if (project === undefined) throw new Error(t('hooks.message.unknownError'));
 
+      //ログアウト後にバックアップ復元した状態（Redux上はログイン済みだが認証セッションなし）では
+      //サーバー同期できないため、再ログインを案内する
+      if (user.uid && !hasAuthSession()) {
+        throw new Error(t('hooks.message.reloginRequired'));
+      }
       // e3kitの初期化チェック
       if (!e3kit.isInitialized() && user.uid) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);
@@ -1125,6 +1131,13 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
         return;
       }
       setIsLoading(true);
+      //ログアウト後にバックアップ復元した状態（Redux上はログイン済みだが認証セッションなし）では
+      //サーバー同期できないため、再ログインを案内する
+      if (user.uid && !hasAuthSession()) {
+        await AlertAsync(t('hooks.message.reloginRequired'));
+        setIsLoading(false);
+        return;
+      }
       // e3kitの初期化チェック
       if (!e3kit.isInitialized() && user.uid) {
         const { isOK: initE3kitOK, message: initE3kitMessage } = await e3kit.initializeUser(user.uid);

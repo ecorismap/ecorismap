@@ -148,4 +148,7 @@ export const FBsignOut = async () => {
   }
 };
 
+//Firebase認証セッションが生きているか（ログアウト後にバックアップ復元した場合はfalseになる）
+export const hasAuthSession = () => auth.currentUser !== null;
+
 export const initFirebaseAuth = async () => {};
