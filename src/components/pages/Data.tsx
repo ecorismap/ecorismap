@@ -19,6 +19,11 @@ export default function DataScreen() {
   const { layer, gotoBack, addDataByDictionary, isExporting, isLocationEnabled, pressToggleLocation, isEditable } =
     useContext(DataContext);
 
+  // 過去の不具合でdictionaryFieldIdが残留したレイヤがあるため、辞書型フィールドの実在も確認する
+  const hasValidDictionaryField =
+    layer.dictionaryFieldId !== undefined &&
+    layer.field.some((f) => f.id === layer.dictionaryFieldId && f.format === 'STRING_DICTIONARY');
+
   // useEffect(() => {
   //   let screenTrace: FirebasePerformanceTypes.ScreenTrace;
   //   (async () => {
@@ -35,7 +40,7 @@ export default function DataScreen() {
   return (
     <View style={styles.container}>
       <BottomSheetHeader title={layer.name} showBackButton onBack={gotoBack} />
-      {layer.dictionaryFieldId !== undefined && (
+      {hasValidDictionaryField && (
         <View style={styles.dictionaryContainer}>
           {/* 位置あり/なし切替。辞書からのデータ追加時に現在地を付与するかを制御する */}
           {layer.type === 'POINT' && (

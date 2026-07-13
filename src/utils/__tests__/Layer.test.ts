@@ -108,3 +108,65 @@ describe('test ecorismap', function () {
     done();
   });
 });
+
+describe('changeLayerId dictionaryFieldId', () => {
+  const baseLayer: LayerType = {
+    id: '1',
+    name: 'ポイント',
+    type: 'POINT',
+    permission: 'PRIVATE',
+    colorStyle: {
+      colorType: 'SINGLE',
+      color: COLOR.RED,
+      fieldName: 'name',
+      colorRamp: 'RANDOM',
+      colorList: [],
+      customFieldValue: '',
+      transparency: 1,
+    },
+    label: 'name',
+    visible: true,
+    active: true,
+    field: [],
+  };
+
+  it('辞書型フィールドのuseDictionaryAddからdictionaryFieldIdを引き継ぐ', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      dictionaryFieldId: '1-0',
+      field: [
+        { id: '1-0', name: 'species', format: 'STRING_DICTIONARY', useDictionaryAdd: true },
+        { id: '1-1', name: 'cmt', format: 'STRING' },
+      ],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.dictionaryFieldId).toBe(newLayer.field[0].id);
+    expect(newLayer.field[0].useDictionaryAdd).toBe(true);
+  });
+
+  it('辞書型以外に残留したuseDictionaryAddは解除しdictionaryFieldIdを設定しない', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      field: [
+        { id: '1-0', name: 'species', format: 'STRING', useDictionaryAdd: true },
+        { id: '1-1', name: 'cmt', format: 'STRING' },
+      ],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.dictionaryFieldId).toBeUndefined();
+    expect(newLayer.field[0].useDictionaryAdd).toBe(false);
+  });
+
+  it('辞書型以外を指すdictionaryFieldIdは引き継がない', () => {
+    const layer: LayerType = {
+      ...baseLayer,
+      dictionaryFieldId: '1-0',
+      field: [
+        { id: '1-0', name: 'species', format: 'STRING' },
+        { id: '1-1', name: 'cmt', format: 'STRING' },
+      ],
+    };
+    const { layer: newLayer } = changeLayerId(layer);
+    expect(newLayer.dictionaryFieldId).toBeUndefined();
+  });
+});

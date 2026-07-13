@@ -102,7 +102,8 @@ export const DataEditReference = (props: Props) => {
         </View>
       </View>
       <View style={[styles.td3, { minWidth: 40, justifyContent: 'flex-end' }]}>
-        {refLayer.dictionaryFieldId !== undefined && (
+        {refLayer.dictionaryFieldId !== undefined &&
+          refLayer.field.some((f) => f.id === refLayer.dictionaryFieldId && f.format === 'STRING_DICTIONARY') && (
           <View style={{ flexDirection: 'row', justifyContent: 'center', margin: 10 }}>
             <DictionaryTextInput
               initialValue=""
