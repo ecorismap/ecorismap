@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Pressable } from '../atoms/Pressable';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -212,6 +212,9 @@ export const DataTable = React.memo(() => {
   );
   const keyExtractor = useCallback((item: RecordType) => item.id, []);
 
+  //毎レンダリングで新オブジェクトを渡すとFlatListの行再評価が無駄に走るためメモ化
+  const extraData = useMemo(() => ({ checkList, sortedRecordSet }), [checkList, sortedRecordSet]);
+
   // ListHeaderComponentをメモ化（頻繁な再レンダリングでボタンが反応しなくなる問題を回避）
   const ListHeader = useCallback(
     () => (
@@ -241,7 +244,7 @@ export const DataTable = React.memo(() => {
       maxToRenderPerBatch={10}
       windowSize={5}
       removeClippedSubviews={true}
-      extraData={{ checkList, sortedRecordSet }}
+      extraData={extraData}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
       onDragEnd={({ data }) => updateRecordSetOrder(data)}
