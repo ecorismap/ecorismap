@@ -10,8 +10,15 @@ import { t } from '../../i18n/config';
 
 export const HomeAccountButton = React.memo(() => {
   const { user } = useContext(AppStateContext);
-  const { gotoLogin, gotoProjects, gotoAccount, pressLogout, googleAccountEmail, pressDisconnectDrive } =
-    useContext(ProjectContext);
+  const {
+    gotoLogin,
+    gotoProjects,
+    gotoAccount,
+    pressLogout,
+    googleAccountEmail,
+    pressDisconnectDrive,
+    gotoDriveProjects,
+  } = useContext(ProjectContext);
   const insets = useSafeAreaInsets();
   const [valid, setValid] = useState(true);
 
@@ -115,6 +122,17 @@ export const HomeAccountButton = React.memo(() => {
                 backgroundColor={COLOR.ORANGE}
                 onPressCustom={gotoAccount}
                 labelText={t('Home.label.setting')}
+              />
+            )}
+            {/* 組織ユーザー（Firebaseログイン中）のDrive導線はSettings側に統一しているため、個人利用（Drive接続のみ）のときだけ表示 */}
+            {!isLoggedIn && (
+              <Button
+                id="DRIVE"
+                name={HOME_ACCOUNT_BTN.DRIVE}
+                backgroundColor={COLOR.ORANGE}
+                onPressCustom={gotoDriveProjects}
+                labelText={t('Home.label.drive')}
+                labelFontSize={9}
               />
             )}
             <Button

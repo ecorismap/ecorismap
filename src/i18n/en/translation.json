@@ -355,6 +355,7 @@
         "projectClose": "before closing project",
         "projectOpen": "before opening project",
         "fileNew": "before clearing data",
+        "fileOpen": "before loading file",
         "beforeRestore": "before restore"
       }
     }
@@ -835,6 +836,7 @@
       "projects": "project",
       "setting": "set",
       "logout": "logout",
+      "drive": "Drive",
       "saveProject": "save",
       "discardProject": "cancel",
       "jumpProject": "home",
@@ -980,7 +982,7 @@
       "loadTitle": "Load from Google Drive"
     },
     "description": "A personal storage feature that works with your Google account. Save the current data to your Google Drive and load previously saved data.",
-    "listNote": "* Only files saved from EcorisMap appear in this list. Files placed in Google Drive manually are not shown.",
+    "listNote": "This list shows files in the \"My Drive > EcorisMap\" folder in Google Drive.\n* Only files saved from EcorisMap appear here. Files placed there manually are not shown.",
     "connect": {
       "text": "Connect Google account"
     },
@@ -992,7 +994,8 @@
     },
     "modal": {
       "saveTitle": "Project name",
-      "savePlaceholder": "Enter project name"
+      "savePlaceholder": "Enter project name",
+      "saveNote": "Saved to the \"My Drive > EcorisMap\" folder in Google Drive."
     },
     "confirm": {
       "saveInRunningProject": "A shared project is running. This backup is saved to your personal Google Drive and will not be shared with the team. Continue?",

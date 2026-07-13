@@ -156,14 +156,17 @@ export default function GoogleDriveProjects() {
                     />
                   </View>
                 )}
-                <View style={{ width: 33 }}>
-                  <Button
-                    name={GOOGLEDRIVE_BTN.DELETE}
-                    borderRadius={5}
-                    backgroundColor={COLOR.DARKRED}
-                    onPress={() => pressDeleteProject(item)}
-                  />
-                </View>
+                {/* 削除は管理画面（アカウントメニューから開いたモードなし表示）のみ。保存/読み込みの文脈では誤操作防止のため非表示 */}
+                {mode === undefined && (
+                  <View style={{ width: 33 }}>
+                    <Button
+                      name={GOOGLEDRIVE_BTN.DELETE}
+                      borderRadius={5}
+                      backgroundColor={COLOR.DARKRED}
+                      onPress={() => pressDeleteProject(item)}
+                    />
+                  </View>
+                )}
               </View>
             )}
           />

@@ -24,6 +24,8 @@ const triggerLabel = (trigger: BackupTriggerType) => {
       return t('Settings.backup.trigger.projectOpen');
     case 'fileNew':
       return t('Settings.backup.trigger.fileNew');
+    case 'fileOpen':
+      return t('Settings.backup.trigger.fileOpen');
     case 'beforeRestore':
       return t('Settings.backup.trigger.beforeRestore');
     default:

@@ -1261,6 +1261,11 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
     await disconnectGoogleAccount();
   }, [disconnectGoogleAccount]);
 
+  const gotoDriveProjects = useCallback(async () => {
+    navigateToSplit?.('GoogleDriveProjects', { previous: 'Home' });
+    bottomSheetRef.current?.snapToIndex(2);
+  }, [navigateToSplit]);
+
   const gotoHome = useCallback(
     (params?: NavigateToHomeParams) => {
       navigation.navigate('Home', {
@@ -2283,6 +2288,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressLogout,
       googleAccountEmail,
       pressDisconnectDrive,
+      gotoDriveProjects,
     }),
     [
       projectName,
@@ -2302,6 +2308,7 @@ function HomeContainersInner({ navigation, route }: Props_Home) {
       pressLogout,
       googleAccountEmail,
       pressDisconnectDrive,
+      gotoDriveProjects,
     ]
   );
 

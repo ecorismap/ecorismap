@@ -8,7 +8,7 @@ import { DataSyncState } from '../modules/dataSync';
 // ためにも、このファイルで全APIを空実装にする。
 // ============================================================================
 
-export type BackupTriggerType = 'projectClose' | 'projectOpen' | 'fileNew' | 'beforeRestore';
+export type BackupTriggerType = 'projectClose' | 'projectOpen' | 'fileNew' | 'fileOpen' | 'beforeRestore';
 
 export type BackupMetaType = {
   id: string;

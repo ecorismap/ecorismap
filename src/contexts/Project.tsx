@@ -24,6 +24,7 @@ export interface ProjectContextType {
   // Google Drive account
   googleAccountEmail: string | undefined;
   pressDisconnectDrive: () => void;
+  gotoDriveProjects: () => void;
 }
 
 export const ProjectContext = React.createContext<ProjectContextType>({} as ProjectContextType);
